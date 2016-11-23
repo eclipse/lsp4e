@@ -25,7 +25,9 @@ import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IInformationControl;
 import org.eclipse.jface.text.IInformationControlCreator;
+import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.ICompletionProposalExtension;
@@ -61,8 +63,8 @@ public class LSCompletionProposal implements ICompletionProposal, ICompletionPro
 	private static final String EDIT_AREA_CLOSE_PATTERN = "}}"; //$NON-NLS-1$
 	private CompletionItem item;
 	private int initialOffset;
-	private int selectionOffset;
 	private ITextViewer viewer;
+	private IRegion selection;
 	private LinkedPosition firstPosition;
 	private LSPDocumentInfo info;
 
@@ -237,12 +239,12 @@ public class LSCompletionProposal implements ICompletionProposal, ICompletionPro
 				insertText = item.getTextEdit().getNewText();
 				insertionOffset = LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getStart(), document);
 				LSPEclipseUtils.applyEdit(item.getTextEdit(), document);
+				selection = new Region(insertionOffset + insertText.length(), 0);
 			} catch (BadLocationException e) {
 				e.printStackTrace();
 			}
 		} else { //compute a best edit by reusing prefixes and suffixes
 			insertText = getInsertText();
-			this.selectionOffset = insertText.length();
 			
 			// Look for letters that are available before completion offset
 			try {
@@ -256,7 +258,6 @@ public class LSCompletionProposal implements ICompletionProposal, ICompletionPro
 				}
 				if (backOffset != 0) {
 					insertText = insertText.substring(backOffset);
-					this.selectionOffset -= backOffset;
 				}
 			} catch (BadLocationException ex) {
 				ex.printStackTrace();
@@ -275,6 +276,7 @@ public class LSCompletionProposal implements ICompletionProposal, ICompletionPro
 			
 			try {
 				document.replace(this.initialOffset + aheadOffset, 0, insertText);
+				selection = new Region(this.initialOffset + aheadOffset + insertText.length(), 0);
 			} catch (BadLocationException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -336,7 +338,7 @@ public class LSCompletionProposal implements ICompletionProposal, ICompletionPro
 
 	@Override
 	public void apply(ITextViewer viewer, char trigger, int stateMask, int offset) {
-		// TODO Auto-generated method stub
+		this.viewer = viewer;
 		apply(viewer.getDocument());
 	}
 	
@@ -362,7 +364,7 @@ public class LSCompletionProposal implements ICompletionProposal, ICompletionPro
 		if (this.firstPosition != null) {
 			return new Point(this.firstPosition.getOffset(), this.firstPosition.getLength());
 		}
-		return new Point(this.initialOffset + this.selectionOffset, 0);
+		return new Point(selection.getOffset(), selection.getLength());
 	}
 
 	@Override
