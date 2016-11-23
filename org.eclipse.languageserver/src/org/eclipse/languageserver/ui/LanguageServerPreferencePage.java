@@ -24,8 +24,8 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
+import org.eclipse.languageserver.ContentTypeToLSPLaunchConfigEntry;
 import org.eclipse.languageserver.LSPStreamConnectionProviderRegistry;
-import org.eclipse.languageserver.LSPStreamConnectionProviderRegistry.ContentTypeToLSPLaunchConfigEntry;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -81,7 +81,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		contentTypeColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				return ((ContentTypeToLSPLaunchConfigEntry)element).contentType.getName();
+				return ((ContentTypeToLSPLaunchConfigEntry)element).getContentType().getName();
 			}
 		});
 		TableViewerColumn launchConfigColumn = new TableViewerColumn(viewer, SWT.NONE);
@@ -90,7 +90,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				return ((ContentTypeToLSPLaunchConfigEntry)element).launchConfiguration.getName();
+				return ((ContentTypeToLSPLaunchConfigEntry)element).getLaunchConfiguration().getName();
 			}
 		});
 		TableViewerColumn launchModeColumn = new TableViewerColumn(viewer, SWT.NONE);
@@ -100,7 +100,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 			@Override
 			public String getText(Object element) {
 				StringBuilder res = new StringBuilder();
-				for (String s : ((ContentTypeToLSPLaunchConfigEntry)element).launchModes) {
+				for (String s : ((ContentTypeToLSPLaunchConfigEntry)element).getLaunchModes()) {
 					res.append(s);
 					res.append(',');
 				}

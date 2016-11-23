@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <plugin>
+   <extension-point id="languageServer" name="Language Server" schema="schema/languageServer.exsd"/>
    <!-- Extension point will ideally be "org.eclipse.text...." because
    the feature should be part of the generic text editor -->
    <extension

@@ -82,40 +82,49 @@ public class InitializeLaunchConfigurations implements IStartup {
 			e.printStackTrace();
 		}
 		// VSCode CSS
-		try {
-			String omniSharpLaunchName = VSCODE_CSS_NAME;
-			ILaunchConfiguration omniSharpLauch = null;
-			for (ILaunchConfiguration launch : launchManager.getLaunchConfigurations(externalType)) {
-				if (launch.getName().equals(omniSharpLaunchName)) {
-					omniSharpLauch = launch;
-				}
-			}
-			if (omniSharpLauch == null) {
-				ILaunchConfigurationWorkingCopy workingCopy = externalType.newInstance(null, omniSharpLaunchName);
-				// some common config
-				workingCopy.setAttribute(IExternalToolConstants.ATTR_LAUNCH_IN_BACKGROUND, true);
-				workingCopy.setAttribute(IExternalToolConstants.ATTR_BUILDER_ENABLED, false);
-				workingCopy.setAttribute(IExternalToolConstants.ATTR_SHOW_CONSOLE, false);
-				workingCopy.setAttribute(IExternalToolConstants.ATTR_BUILD_SCOPE, "${none}");
-				workingCopy.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, true);
-				workingCopy.setAttribute(IExternalToolConstants.ATTR_LOCATION, getNodeJsLocation());
-				// Assume node is already installed on machine and uses it
-				// TODO: implement smarter and multi-platform discovery
-				workingCopy.setAttribute(IExternalToolConstants.ATTR_TOOL_ARGUMENTS, getVSCodeLocation("/resources/app/extensions/css/server/out/cssServerMain.js") + " --stdio");
-				omniSharpLauch = workingCopy.doSave();
-				registry.registerAssociation(contentTypeManager.getContentType("org.eclipse.languageserver.languages.css"),
-						LaunchConfigurationStreamProvider.findLaunchConfiguration(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE, InitializeLaunchConfigurations.VSCODE_CSS_NAME),
-						Collections.singleton(ILaunchManager.RUN_MODE));
-				registry.registerAssociation(contentTypeManager.getContentType("org.eclipse.languageserver.languages.less"),
-						LaunchConfigurationStreamProvider.findLaunchConfiguration(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE, InitializeLaunchConfigurations.VSCODE_CSS_NAME),
-						Collections.singleton(ILaunchManager.RUN_MODE));
-				registry.registerAssociation(contentTypeManager.getContentType("org.eclipse.languageserver.languages.scss"),
-						LaunchConfigurationStreamProvider.findLaunchConfiguration(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE, InitializeLaunchConfigurations.VSCODE_CSS_NAME),
-						Collections.singleton(ILaunchManager.RUN_MODE));
-			}
-		} catch (CoreException e) {
-			e.printStackTrace();
-		}
+//		try {
+//			String omniSharpLaunchName = VSCODE_CSS_NAME;
+//			ILaunchConfiguration omniSharpLauch = null;
+//			for (ILaunchConfiguration launch : launchManager.getLaunchConfigurations(externalType)) {
+//				if (launch.getName().equals(omniSharpLaunchName)) {
+//					omniSharpLauch = launch;
+//				}
+//			}
+//			if (omniSharpLauch == null) {
+//				ILaunchConfigurationWorkingCopy workingCopy = externalType.newInstance(null, omniSharpLaunchName);
+//				// some common config
+//				workingCopy.setAttribute(IExternalToolConstants.ATTR_LAUNCH_IN_BACKGROUND, true);
+//				workingCopy.setAttribute(IExternalToolConstants.ATTR_BUILDER_ENABLED, false);
+//				workingCopy.setAttribute(IExternalToolConstants.ATTR_SHOW_CONSOLE, false);
+//				workingCopy.setAttribute(IExternalToolConstants.ATTR_BUILD_SCOPE, "${none}");
+//				workingCopy.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, false);
+//				workingCopy.setAttribute(IExternalToolConstants.ATTR_LOCATION, getNodeJsLocation());
+//				// Assume node is already installed on machine and uses it
+//				// TODO: implement smarter and multi-platform discovery
+//				workingCopy.setAttribute(IExternalToolConstants.ATTR_TOOL_ARGUMENTS, getVSCodeLocation("/resources/app/extensions/css/server/out/cssServerMain.js") + " --stdio");
+//				omniSharpLauch = workingCopy.doSave();
+//				registry.registerAssociation(contentTypeManager.getContentType("org.eclipse.languageserver.languages.css"),
+//						LaunchConfigurationStreamProvider.findLaunchConfiguration(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE, InitializeLaunchConfigurations.VSCODE_CSS_NAME),
+//						Collections.singleton(ILaunchManager.RUN_MODE));
+//				registry.registerAssociation(contentTypeManager.getContentType("org.eclipse.languageserver.languages.less"),
+//						LaunchConfigurationStreamProvider.findLaunchConfiguration(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE, InitializeLaunchConfigurations.VSCODE_CSS_NAME),
+//						Collections.singleton(ILaunchManager.RUN_MODE));
+//				registry.registerAssociation(contentTypeManager.getContentType("org.eclipse.languageserver.languages.scss"),
+//						LaunchConfigurationStreamProvider.findLaunchConfiguration(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE, InitializeLaunchConfigurations.VSCODE_CSS_NAME),
+//						Collections.singleton(ILaunchManager.RUN_MODE));
+//			}
+//		} catch (CoreException e) {
+//			e.printStackTrace();
+//		}
+//		List<String> commands = new ArrayList<>();
+//		
+//		commands.add(getNodeJsLocation());
+//		commands.add(getVSCodeLocation("/resources/app/extensions/css/server/out/cssServerMain.js"));
+//		commands.add("--stdio");
+//		String workingDir = getVSCodeLocation("/resources/app/extensions/css/server/out");
+//		StreamConnectionProvider provider = new ProcessStreamConnectionProvider(commands, workingDir);
+//		registry.registerAssociation(contentTypeManager.getContentType("org.eclipse.languageserver.languages.css"), provider);
+		
 		// VSCode CSS
 		try {
 			String omniSharpLaunchName = VSCODE_JSON_NAME;
@@ -147,7 +156,7 @@ public class InitializeLaunchConfigurations implements IStartup {
 		}
 	}
 
-	private String getVSCodeLocation(String appendPathSuffix) {
+	public static String getVSCodeLocation(String appendPathSuffix) {
 		String res = null;
 		if (Platform.getOS().equals(Platform.OS_LINUX)) {
 			res = "/usr/share/code";
@@ -165,7 +174,7 @@ public class InitializeLaunchConfigurations implements IStartup {
 		return "/unknown/path/to/VSCode" + appendPathSuffix;
 	}
 
-	private String getNodeJsLocation() {
+	public static String getNodeJsLocation() {
 		String res = "/path/to/node";
 		String[] command = new String[] {"/bin/bash", "-c", "which node"};
 		if (Platform.getOS().equals(Platform.OS_WIN32)) {

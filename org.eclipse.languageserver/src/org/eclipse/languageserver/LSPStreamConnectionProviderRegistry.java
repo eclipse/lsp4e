@@ -13,16 +13,16 @@ package org.eclipse.languageserver;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.debug.core.ILaunchConfiguration;
-import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -36,61 +36,18 @@ import org.eclipse.jface.preference.IPreferenceStore;
  *
  */
 public class LSPStreamConnectionProviderRegistry {
-	
+
 	private static final String CONTENT_TYPE_TO_LSP_LAUNCH_PREF_KEY = "contentTypeToLSPLauch"; //$NON-NLS-1$
 
-	public static class ContentTypeToLSPLaunchConfigEntry {
-		public IContentType contentType;
-		public ILaunchConfiguration launchConfiguration;
-		public Set<String> launchModes;
-		
-		public ContentTypeToLSPLaunchConfigEntry(@NonNull IContentType contentType,
-		        @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {
-			this.contentType = contentType;
-			this.launchConfiguration = launchConfig;
-			this.launchModes = Collections.unmodifiableSet(launchMode);
-		}
-		
-		private ContentTypeToLSPLaunchConfigEntry() {
-		}
+	private static final String EXTENSION_POINT_ID = LanguageServerPluginActivator.PLUGIN_ID + ".languageServer"; //$NON-NLS-1$
 
-		static ContentTypeToLSPLaunchConfigEntry readFromPreference(String preferenceEntry) {
-			ContentTypeToLSPLaunchConfigEntry res = new ContentTypeToLSPLaunchConfigEntry();
-			String[] parts = preferenceEntry.split(":"); //$NON-NLS-1$
-			String contentTypeId = parts[0];
-			String[] launchParts = parts[1].split("/"); //$NON-NLS-1$
-			String launchType = launchParts[0];
-			String launchName = launchParts[1];
-			res.launchModes = Collections.singleton(ILaunchManager.RUN_MODE);
-			if (launchParts.length > 2) {
-				res.launchModes = new HashSet<>(Arrays.asList(launchParts[2].split("\\+"))); //$NON-NLS-1$
-			}
-			res.contentType = Platform.getContentTypeManager().getContentType(contentTypeId);
-			if (res.contentType != null) {
-				res.launchConfiguration = LaunchConfigurationStreamProvider.findLaunchConfiguration(launchType, launchName);
-			}
-			return res;
-		}
+	private static final String LS_ELEMENT = "server"; //$NON-NLS-1$
+	private static final String MAPPING_ELEMENT = "contentTypeMapping"; //$NON-NLS-1$
 
-		void appendTo(StringBuilder builder) {
-			builder.append(contentType.getId());
-			builder.append(':');
-			try {
-				builder.append(launchConfiguration.getType().getIdentifier());
-			} catch (CoreException e) {
-				e.printStackTrace();
-			}
-			builder.append('/');
-			builder.append(launchConfiguration.getName());
-			builder.append('/');
-			for (String launchMode : launchModes) {
-				builder.append(launchMode);
-				builder.append('+');
-			}
-			builder.deleteCharAt(builder.length() - 1);
-		}
-	}
-	
+	private static final String ID_ATTRIBUTE = "id"; //$NON-NLS-1$
+	private static final String CONTENT_TYPE_ATTRIBUTE = "contentType"; //$NON-NLS-1$
+	private static final String CLASS_ATTRIBUTE = "class"; //$NON-NLS-1$
+
 	private static LSPStreamConnectionProviderRegistry INSTANCE = null;
 	public static LSPStreamConnectionProviderRegistry getInstance() {
 		if (INSTANCE == null) {
@@ -99,30 +56,62 @@ public class LSPStreamConnectionProviderRegistry {
 		return INSTANCE;
 	}
 
-	private List<ContentTypeToLSPLaunchConfigEntry> connections = new ArrayList<>();
+	private List<ContentTypeToStreamProvider> connections = new ArrayList<>();
 	private IPreferenceStore preferenceStore;
-	
+
 	private LSPStreamConnectionProviderRegistry() {
 		this.preferenceStore = LanguageServerPluginActivator.getDefault().getPreferenceStore();
 		initialize();
 	}
-	
+
 	private void initialize() {
 		String prefs = preferenceStore.getString(CONTENT_TYPE_TO_LSP_LAUNCH_PREF_KEY);
 		if (prefs != null && !prefs.isEmpty()) {
 			String[] entries = prefs.split(","); //$NON-NLS-1$
 			for (String entry : entries) {
-				ContentTypeToLSPLaunchConfigEntry mapping = ContentTypeToLSPLaunchConfigEntry.readFromPreference(entry);
-				if (mapping.contentType != null && mapping.launchConfiguration != null && mapping.launchModes != null) {
+				ContentTypeToStreamProvider mapping = ContentTypeToLSPLaunchConfigEntry.readFromPreference(entry);
+				if (mapping != null) {
 					connections.add(mapping);
 				}
 			}
 		}
+
+		Map<String, StreamConnectionProvider> servers = new HashMap<>();
+		Map<IContentType, String> contentTypes = new HashMap<>();
+		for (IConfigurationElement extension : Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION_POINT_ID)) {
+			String id = extension.getAttribute(ID_ATTRIBUTE);
+			if (id != null && !id.isEmpty()) {
+				if (extension.getName().equals(LS_ELEMENT)) {
+					try {
+						StreamConnectionProvider scp = (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
+						if (scp != null) {
+							servers.put(id, scp);
+						}
+					} catch (CoreException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				} else if (extension.getName().equals(MAPPING_ELEMENT)) {
+					IContentType contentType = Platform.getContentTypeManager().getContentType(extension.getAttribute(CONTENT_TYPE_ATTRIBUTE));
+					if (contentType != null) {
+						contentTypes.put(contentType, id);
+					}
+				}
+			}
+		}
+		for (IContentType contentType : contentTypes.keySet()) {
+			StreamConnectionProvider scp = servers.get(contentTypes.get(contentType));
+			if (scp != null) {
+				registerAssociation(contentType, scp);
+			} else {
+				// TODO log message about missing server
+			}
+		}
 	}
-	
+
 	private void persist() {
 		StringBuilder builder = new StringBuilder();
-		for (ContentTypeToLSPLaunchConfigEntry entry : connections) {
+		for (ContentTypeToStreamProvider entry : connections) {
 			entry.appendTo(builder);
 			builder.append(',');
 		}
@@ -138,26 +127,30 @@ public class LSPStreamConnectionProviderRegistry {
 			}
 		}
 	}
-	
+
 	public List<StreamConnectionProvider> findProviderFor(final IContentType contentType) {
 		return Arrays.asList(connections
 			.stream()
-			.filter(entry -> { return entry.contentType.equals(contentType); })
-			.map(entry -> { return new LaunchConfigurationStreamProvider(entry.launchConfiguration, entry.launchModes); })
+			.filter(entry -> { return entry.getContentType().equals(contentType); })
+			.map(entry -> { return entry.getStreamConnectionProvider(); })
 			.toArray(StreamConnectionProvider[]::new));
 	}
-	
+
 	public void registerAssociation(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {
 		connections.add(new ContentTypeToLSPLaunchConfigEntry(contentType, launchConfig, launchMode));
 		persist();
 	}
 
+	public void registerAssociation(@NonNull IContentType contentType, @NonNull StreamConnectionProvider provider) {
+		connections.add(new ContentTypeToStreamProvider(contentType, provider));
+	}
+
 	public List<ContentTypeToLSPLaunchConfigEntry> getContentTypeToLSPLaunches() {
-		return Collections.unmodifiableList(this.connections);
+		return Arrays.asList(this.connections.stream().filter(element -> element instanceof ContentTypeToLSPLaunchConfigEntry).toArray(size -> new ContentTypeToLSPLaunchConfigEntry[size]));
 	}
 
 	public void setAssociations(List<ContentTypeToLSPLaunchConfigEntry> wc) {
-		this.connections.clear();
+		this.connections.removeIf(entry -> entry instanceof ContentTypeToLSPLaunchConfigEntry);
 		this.connections.addAll(wc);
 		persist();
 	}
