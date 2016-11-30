@@ -25,7 +25,7 @@ The easiest way to have a language server running is to install VSCode: http://c
 We choose to start implementing a JavaScript Editor as VSCode already provides a Language Server Service for a JavaScript editor. 
 You can extend this by adding any other editor, as example XML, Java, Xtext, PHP, HTML, XSLT, SASS, etc.  
 
-* We created a plugin `org.eclipse.languageserver`, which implements an extension to `org.eclipse.wst.jsdt.ui.javaCompletionProposalComputer`. 
+* We created a plugin `org.eclipse.lsp4e`, which implements an extension to `org.eclipse.wst.jsdt.ui.javaCompletionProposalComputer`. 
 * The LanguageCompletionProposalComputer#computeCompletionProposals(..) is the method that actually provides content assist.
 * To run, you need to setup for JSDT, explained here: https://www.youtube.com/watch?v=gOz1hk-ohMA
 

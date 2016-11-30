@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
    <category-def name="Language Server Support for Eclipse" label="Language Server Support for Eclipse IDE"/>
-   <bundle id="org.eclipse.languageserver">
+   <bundle id="org.eclipse.lsp4e">
       <category name="Language Server Support for Eclipse"/>
    </bundle>
-   <bundle id="org.eclipse.languageserver.languages">
+   <bundle id="org.eclipse.lsp4e.languages">
       <category name="Language Server Support for Eclipse"/>
    </bundle>
    
