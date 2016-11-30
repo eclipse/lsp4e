@@ -28,8 +28,6 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.languageserver.LSPEclipseUtils;
 import org.eclipse.languageserver.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.DocumentSymbolParams;
-import org.eclipse.lsp4j.Location;
-import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.ui.IMemento;
@@ -41,40 +39,28 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	public static final Object COMPUTING = new Object();
 	
 	private TreeViewer viewer;
-	private List<? extends SymbolInformation> lastResponse;
 	private Throwable lastError;
 	private LSPDocumentInfo info;
 
+	private SymbolsModel symbolsModel = new SymbolsModel();
 	private CompletableFuture<List<? extends SymbolInformation>> symbols;
 
 	private IResource resource;
-	
-	@Override
-	public void restoreState(IMemento aMemento) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void saveState(IMemento aMemento) {
-		// TODO Auto-generated method stub
-		
-	}
 
 	@Override
 	public void init(ICommonContentExtensionSite aConfig) {
 	}
-	
+
 	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-		this.viewer = (TreeViewer)viewer;
-		this.info = (LSPDocumentInfo)newInput;
+		this.viewer = (TreeViewer) viewer;
+		this.info = (LSPDocumentInfo) newInput;
 		info.getDocument().addDocumentListener(this);
 		resource = LSPEclipseUtils.findResourceFor(info.getFileUri().toString());
 		resource.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
 		refreshTreeContentFromLS();
 	}
-			
+
 	@Override
 	public Object[] getElements(Object inputElement) {
 		if (this.symbols != null && !this.symbols.isDone()) {
@@ -83,50 +69,22 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		if (this.lastError != null) {
 			return new Object[] { this.lastError };
 		}
-		if (lastResponse != null) {
-			return this.lastResponse.stream().filter(symbol -> getParent(symbol) == null).toArray();
-		}
-		return null;
+		return symbolsModel.getElements();
 	}
 
 	@Override
 	public Object[] getChildren(Object parentElement) {
-		if (parentElement != null && parentElement instanceof SymbolInformation && this.lastResponse != null) {
-			// TODO: this can be optimized by building the tree upon response (O(n) instead of O(n^2))
-			return this.lastResponse.stream().filter(symbol -> getParent(symbol) == parentElement).toArray();
-		}
-		return null;
-	}
-
-	private boolean isIncluded(Location reference, Location included) {
-		return reference.getUri().equals(included.getUri()) &&
-			isAfter(reference.getRange().getStart(), included.getRange().getStart()) &&
-			isAfter(included.getRange().getEnd(), reference.getRange().getEnd());
-	}
-
-	private boolean isAfter(Position reference, Position included) {
-		return included.getLine() > reference.getLine() ||
-			(included.getLine() == reference.getLine() && included.getLine() > reference.getLine());
+		return symbolsModel.getChildren(parentElement);
 	}
 
 	@Override
 	public Object getParent(Object element) {
-		if (element instanceof SymbolInformation) {
-			SymbolInformation child = (SymbolInformation)element;
-			SymbolInformation res = null;
-			for (SymbolInformation current : this.lastResponse) {
-				if (current != null && isIncluded(current.getLocation(), child.getLocation()) && (res == null || isIncluded(res.getLocation(), current.getLocation()))) {
-					res = current;
-				}
-			}
-			return res;
-		}
-		return null;
+		return symbolsModel.getParent(element);
 	}
 
 	@Override
-	public boolean hasChildren(Object element) {
-		Object[] children = getChildren(element);
+	public boolean hasChildren(Object parentElement) {
+		Object[] children = symbolsModel.getChildren(parentElement);
 		return children != null && children.length > 0;
 	}
 
@@ -143,23 +101,24 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		if (symbols != null && !symbols.isDone()) {
 			symbols.cancel(true);
 		}
-		lastResponse = null;
 		lastError = null;
 		DocumentSymbolParams params = new DocumentSymbolParams(new TextDocumentIdentifier(info.getFileUri().toString()));
 		symbols = info.getLanguageClient().getTextDocumentService().documentSymbol(params);
 
 		symbols.thenAccept((List<? extends SymbolInformation> t) -> {
-			lastResponse = t;
+			symbolsModel.update(t);
+
 			viewer.getControl().getDisplay().asyncExec(() -> {
 				viewer.refresh();
 			});
 		});
+
 		symbols.exceptionally(ex -> {
 			lastError = ex;
 			viewer.getControl().getDisplay().asyncExec(() -> {
 				viewer.refresh();
 			});
- 			return Collections.emptyList();
+			return Collections.emptyList();
 		});
 	}
 
@@ -178,7 +137,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 					if (delta.getResource().equals(this.resource)) {
 						viewer.getControl().getDisplay().asyncExec(() -> {
 							if (viewer instanceof StructuredViewer) {
-								((TreeViewer)viewer).refresh(true);
+								((TreeViewer) viewer).refresh(true);
 							}
 						});
 					}
@@ -189,5 +148,13 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 				e.printStackTrace();
 			}
 		}
+	}
+
+	@Override
+	public void restoreState(IMemento aMemento) {
+	}
+
+	@Override
+	public void saveState(IMemento aMemento) {
 	}
 }
