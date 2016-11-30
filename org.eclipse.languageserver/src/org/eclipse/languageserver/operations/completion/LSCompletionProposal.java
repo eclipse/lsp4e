@@ -129,16 +129,10 @@ public class LSCompletionProposal implements ICompletionProposal, ICompletionPro
 		if (capabilities != null) {
 			CompletionOptions options = capabilities.getCompletionProvider();
 			if (options != null && options.getResolveProvider()) {
-				// TODO why a copy?
-				CompletionItem i = new CompletionItem();
-				i.setLabel(item.getLabel());
-				i.setKind(item.getKind());
-				i.setData(item.getData());
-				i.setTextEdit(i.getTextEdit());
 				CompletableFuture<CompletionItem> resolvedItem = info.getLanguageClient().getTextDocumentService()
-				        .resolveCompletionItem(i);
+				        .resolveCompletionItem(item);
 				try {
-					this.item = resolvedItem.get(500, TimeUnit.MILLISECONDS);
+					updateCompletionItem(resolvedItem.get(500, TimeUnit.MILLISECONDS));
 				} catch (InterruptedException | ExecutionException | TimeoutException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -158,6 +152,33 @@ public class LSCompletionProposal implements ICompletionProposal, ICompletionPro
 		}
 
 		return res.toString();
+	}
+	
+	private void updateCompletionItem(CompletionItem resolvedItem) {
+		if (resolvedItem == null) {
+			return;
+		}
+		if (resolvedItem.getLabel() != null) {
+			item.setLabel(resolvedItem.getLabel());
+		}
+		if (resolvedItem.getKind() != null) {
+			item.setKind(resolvedItem.getKind());
+		}
+		if (resolvedItem.getDetail() != null) {
+			item.setDetail(resolvedItem.getDetail());
+		}
+		if (resolvedItem.getDocumentation() != null) {
+			item.setDocumentation(resolvedItem.getDocumentation());
+		}
+		if (resolvedItem.getInsertText() != null) {
+			item.setInsertText(resolvedItem.getInsertText());
+		}
+		if (resolvedItem.getTextEdit() != null) {
+			item.setTextEdit(resolvedItem.getTextEdit());
+		}
+		if (resolvedItem.getAdditionalTextEdits() != null) {
+			item.setAdditionalTextEdits(resolvedItem.getAdditionalTextEdits());
+		}
 	}
 
 	@Override
@@ -308,11 +329,10 @@ public class LSCompletionProposal implements ICompletionProposal, ICompletionPro
 	private String getInsertText() {
 		String insertText = this.item.getInsertText();
 		if (insertText == null) {
-			insertText = this.item.getSortText();
+			insertText = this.item.getLabel();
 		}
 		return insertText;
 	}
-
 
 	@Override
 	public void apply(ITextViewer viewer, char trigger, int stateMask, int offset) {
