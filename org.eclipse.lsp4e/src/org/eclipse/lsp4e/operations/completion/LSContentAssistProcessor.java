@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistProcessor;
@@ -78,9 +77,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			}
 		});
 		List<ICompletionProposal> proposals = new ArrayList<>();
-		for (@NonNull CompletionItem item : completionList.getItems()) {
-			if (item.getLabel() != null && !item.getLabel().isEmpty()) {
-				proposals.add(new LSCompletionProposal(item, offset, info));
+		for (CompletionItem item : completionList.getItems()) {
+			if (item != null) {
+				LSCompletionProposal proposal = new LSCompletionProposal(item, offset, info);
+				if (proposal.validate(info.getDocument(), offset, null)) {
+					proposals.add(proposal);
+				}
 			}
 		}
 		return proposals.toArray(new ICompletionProposal[proposals.size()]);
