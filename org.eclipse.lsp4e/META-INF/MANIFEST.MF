@@ -39,5 +39,6 @@ Bundle-ActivationPolicy: lazy
 Bundle-Activator: org.eclipse.lsp4e.LanguageServerPlugin
 Export-Package: org.eclipse.lsp4e,
  org.eclipse.lsp4e.operations.completion,
- org.eclipse.lsp4e.operations.hover
+ org.eclipse.lsp4e.operations.hover,
+ org.eclipse.lsp4e.outline
 Bundle-Vendor: Eclipse.org

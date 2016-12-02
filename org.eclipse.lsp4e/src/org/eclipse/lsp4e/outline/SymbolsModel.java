@@ -23,22 +23,23 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 
-class SymbolsModel {
+public class SymbolsModel {
 
 	private static final SymbolInformation ROOT = new SymbolInformation();
 
 	private List<? extends SymbolInformation> response;
-	private Map<SymbolInformation, List<SymbolInformation>> childrenMap = new HashMap<>();
+	private Map<SymbolInformation, List<SymbolInformation>> childrenMap;
 
 	public boolean update(List<? extends SymbolInformation> response) {
 		// TODO update model only on real change
-		childrenMap.clear();
+		childrenMap = null;
 		this.response = response;
 		return true;
 	}
 
 	public Object[] getElements() {
-		if (response != null && !response.isEmpty()) {
+		if (response != null && !response.isEmpty() && childrenMap == null) {
+			childrenMap = new HashMap<>();
 			Collections.sort(response, new Comparator<SymbolInformation>() {
 
 				@Override
@@ -110,19 +111,21 @@ class SymbolsModel {
 	}
 
 	private boolean isIncluded(Location reference, Location included) {
-		return reference.getUri().equals(included.getUri()) && isAfter(reference.getRange().getStart(), included.getRange().getStart())
+		return reference.getUri().equals(included.getUri())
+				&& isAfter(reference.getRange().getStart(), included.getRange().getStart())
 				&& isAfter(included.getRange().getEnd(), reference.getRange().getEnd());
 	}
 
 	private boolean isAfter(Position reference, Position included) {
-		return included.getLine() > reference.getLine() || (included.getLine() == reference.getLine() && included.getLine() > reference.getLine());
+		return included.getLine() > reference.getLine()
+				|| (included.getLine() == reference.getLine() && included.getLine() > reference.getLine());
 	}
 
 	public Object getParent(Object element) {
 		return childrenMap.keySet().stream().filter(parent -> {
 			List<SymbolInformation> children = childrenMap.get(parent);
 			return children == null ? false : children.contains(element);
-		}).findFirst();
+		}).findFirst().get();
 	}
 
 }

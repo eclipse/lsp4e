@@ -13,6 +13,7 @@
 		<module>target-platform</module>
 		<module>org.eclipse.lsp4e</module>
 		<module>org.eclipse.lsp4e.languages</module>
+		<module>org.eclipse.lsp4e.test</module>
 		<module>repository</module>
 	</modules>
   <build>

@@ -1,0 +1,28 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<artifactId>org.eclipse.lsp4e.test</artifactId>
+	<parent>
+		<groupId>org.eclipse.lsp4e</groupId>
+		<artifactId>parent</artifactId>
+		<version>0.1.0-SNAPSHOT</version>
+	</parent>
+	<packaging>eclipse-test-plugin</packaging>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-surefire-plugin</artifactId>
+				<version>${tycho-version}</version>
+				<configuration>
+					<testClass>org.eclipse.lsp4e.test.AllTests</testClass>
+					<useUIHarness>true</useUIHarness>
+					<useUIThread>true</useUIThread>
+					<testFailureIgnore>false</testFailureIgnore>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
