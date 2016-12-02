@@ -35,6 +35,9 @@ public class ProcessStreamConnectionProvider implements StreamConnectionProvider
 		ProcessBuilder builder = new ProcessBuilder(getCommands());
 		builder.directory(new File(getWorkingDirectory()));
 		this.process = builder.start();
+		if (!this.process.isAlive()) {
+			throw new IOException("Unable to start language server: " + this.toString()); //$NON-NLS-1$
+		}
 	}
 
 	@Override
@@ -52,7 +55,6 @@ public class ProcessStreamConnectionProvider implements StreamConnectionProvider
 		process.destroy();
 	}
 
-	
 	protected List<String> getCommands() {
 		return commands;
 	}
@@ -60,11 +62,11 @@ public class ProcessStreamConnectionProvider implements StreamConnectionProvider
 	public void setCommands(List<String> commands) {
 		this.commands = commands;
 	}
-	
+
 	protected String getWorkingDirectory() {
 		return workingDir;
 	}
-	
+
 	public void setWorkingDirectory(String workingDir) {
 		this.workingDir = workingDir;
 	}
@@ -78,12 +80,12 @@ public class ProcessStreamConnectionProvider implements StreamConnectionProvider
 			return false;
 		}
 		ProcessStreamConnectionProvider other = (ProcessStreamConnectionProvider) obj;
-		if (getCommands().size() != other.getCommands().size()){
+		if (getCommands().size() != other.getCommands().size()) {
 			return false;
 		}
 		return this.getCommands().containsAll(other.getCommands()) && this.getWorkingDirectory().equals(other.getWorkingDirectory());
 	}
-	
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;

@@ -129,7 +129,7 @@ public class ProjectSpecificLanguageServerWrapper {
 				try {
 					// try to convert the Eclipse start/end offset to LS range.
 					Range range = new Range(LSPEclipseUtils.toPosition(offset, document),
-					        LSPEclipseUtils.toPosition(offset + length, document));
+							LSPEclipseUtils.toPosition(offset + length, document));
 					changeEvent.setRange(range);
 					changeEvent.setText(newText);
 					changeEvent.setRangeLength(length);
@@ -166,7 +166,7 @@ public class ProjectSpecificLanguageServerWrapper {
 	private Job initializeJob;
 	private InitializeResult initializeResult;
 	private Future<?> launcherFuture;
-	
+
 	public ProjectSpecificLanguageServerWrapper(IProject project, StreamConnectionProvider connection) {
 		this.project = project;
 		this.lspStreamProvider = connection;
@@ -184,76 +184,76 @@ public class ProjectSpecificLanguageServerWrapper {
 		}
 		try {
 			this.lspStreamProvider.start();
-			LanguageClient client = new LanguageClient() {
-				private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project);
-				
-				@Override
-				public void telemetryEvent(Object object) {
-					// TODO
-				}
-				
-				@Override
-				public CompletableFuture<Void> showMessageRequest(ShowMessageRequestParams requestParams) {
-					return ServerMessageHandler.showMessageRequest(requestParams);
-				}
-				
-				@Override
-				public void showMessage(MessageParams messageParams) {
-					ServerMessageHandler.showMessage(messageParams);
-				}
-				
-				@Override
-				public void publishDiagnostics(PublishDiagnosticsParams diagnostics) {
-					this.diagnosticHandler.accept(diagnostics);
-				}
-				
-				@Override
-				public void logMessage(MessageParams message) {
-					ServerMessageHandler.logMessage(message);
-				}
-			};
-			ExecutorService executorService = Executors.newCachedThreadPool();
-			Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
+		LanguageClient client = new LanguageClient() {
+			private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project);
+
+			@Override
+			public void telemetryEvent(Object object) {
+				// TODO
+			}
+
+			@Override
+			public CompletableFuture<Void> showMessageRequest(ShowMessageRequestParams requestParams) {
+				return ServerMessageHandler.showMessageRequest(requestParams);
+			}
+
+			@Override
+			public void showMessage(MessageParams messageParams) {
+				ServerMessageHandler.showMessage(messageParams);
+			}
+
+			@Override
+			public void publishDiagnostics(PublishDiagnosticsParams diagnostics) {
+				this.diagnosticHandler.accept(diagnostics);
+			}
+
+			@Override
+			public void logMessage(MessageParams message) {
+				ServerMessageHandler.logMessage(message);
+			}
+		};
+		ExecutorService executorService = Executors.newCachedThreadPool();
+		Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
 				this.lspStreamProvider.getInputStream(),
 				this.lspStreamProvider.getOutputStream(),
 				executorService,
 				consumer -> (
 					message -> {
-						System.err.println(message.toString());
-						consumer.consume(message);
-					}));
-			this.languageServer = launcher.getRemoteProxy();
-			this.launcherFuture = launcher.startListening();
+					System.err.println(message.toString());
+					consumer.consume(message);
+				}));
+		this.languageServer = launcher.getRemoteProxy();
+		this.launcherFuture = launcher.startListening();
 
-			this.initializeJob = new Job(Messages.initializeLanguageServer_job) {
-				protected IStatus run(IProgressMonitor monitor) {
-					InitializeParams initParams = new InitializeParams();
-					initParams.setRootPath(project.getLocation().toFile().getAbsolutePath());
-					String name = "Eclipse IDE"; //$NON-NLS-1$
-					if (Platform.getProduct() != null) {
-						name = Platform.getProduct().getName();
-					}
-					initParams.setClientName(name);
-					initParams.setCapabilities(new ClientCapabilities());
-					CompletableFuture<InitializeResult> result = languageServer.initialize(initParams);
-					try {
-						initializeResult = result.get(3, TimeUnit.SECONDS);
-					} catch (InterruptedException | ExecutionException | TimeoutException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-					return Status.OK_STATUS;
+		this.initializeJob = new Job(Messages.initializeLanguageServer_job) {
+			protected IStatus run(IProgressMonitor monitor) {
+				InitializeParams initParams = new InitializeParams();
+				initParams.setRootPath(project.getLocation().toFile().getAbsolutePath());
+				String name = "Eclipse IDE"; //$NON-NLS-1$
+				if (Platform.getProduct() != null) {
+					name = Platform.getProduct().getName();
 				}
-			};
-			this.initializeJob.setUser(true);
-			this.initializeJob.setSystem(false);
-			this.initializeJob.schedule();
+				initParams.setClientName(name);
+				initParams.setCapabilities(new ClientCapabilities());
+				CompletableFuture<InitializeResult> result = languageServer.initialize(initParams);
+				try {
+					initializeResult = result.get(3, TimeUnit.SECONDS);
+				} catch (InterruptedException | ExecutionException | TimeoutException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				return Status.OK_STATUS;
+			}
+		};
+		this.initializeJob.setUser(true);
+		this.initializeJob.setSystem(false);
+		this.initializeJob.schedule();
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			stop();
 		}
 	}
-	
+
 	private boolean stillActive() {
 		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
 	}
@@ -268,7 +268,7 @@ public class ProjectSpecificLanguageServerWrapper {
 			try {
 				this.languageServer.shutdown();
 			} catch (Exception ex) {
-				// most likely closed externally				
+				// most likely closed externally
 			}
 		}
 		if (this.launcherFuture != null) {
@@ -302,13 +302,13 @@ public class ProjectSpecificLanguageServerWrapper {
 			e.printStackTrace();
 		}
 		this.languageServer.getTextDocumentService().didOpen(open);
-		
+
 		DocumentChangeListenenr listener = new DocumentChangeListenenr(file.getLocationURI());
 		document.addDocumentListener(listener);
 		this.connectedFiles.put(file.getLocation(), listener);
 		this.documents.put(file.getLocation(), document);
 	}
-	
+
 	public void disconnect(IPath path) {
 		this.documents.get(path).removeDocumentListener(this.connectedFiles.get(path));
 		this.connectedFiles.remove(path);

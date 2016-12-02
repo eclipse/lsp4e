@@ -26,4 +26,9 @@ public class CSSLanguageServer extends ProcessStreamConnectionProvider {
 		setCommands(commands);
 		setWorkingDirectory(workingDir);
 	}
+
+	@Override
+	public String toString() {
+		return "CSS Language Server: " + super.toString();
+	}
 }

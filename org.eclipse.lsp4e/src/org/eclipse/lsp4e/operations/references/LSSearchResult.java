@@ -26,7 +26,7 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServerPluginActivator;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
@@ -62,7 +62,7 @@ public class LSSearchResult extends FileSearchResult {
 				return Status.OK_STATUS;
 			} catch (Exception ex) {
 				return new Status(IStatus.ERROR,
-				        LanguageServerPluginActivator.getDefault().getBundle().getSymbolicName(), ex.getMessage(), ex);
+				        LanguageServerPlugin.getDefault().getBundle().getSymbolicName(), ex.getMessage(), ex);
 			}
 		}
 

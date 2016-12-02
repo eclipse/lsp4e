@@ -35,7 +35,7 @@ import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServerPluginActivator;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
@@ -101,7 +101,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 							}
 							file.setContents(new ByteArrayInputStream(document.get().getBytes(file.getCharset())), false, true, monitor);
 						} catch (UnsupportedEncodingException | BadLocationException e) {
-							return new Status(IStatus.ERROR, LanguageServerPluginActivator.getDefault().getBundle().getSymbolicName(), e.getMessage(), e);
+							return new Status(IStatus.ERROR, LanguageServerPlugin.getDefault().getBundle().getSymbolicName(), e.getMessage(), e);
 						}
 					}
 				}

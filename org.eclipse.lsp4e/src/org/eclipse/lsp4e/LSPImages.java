@@ -87,7 +87,7 @@ public class LSPImages {
 
 	private final static void declareRegistryImage(String key, String path) {
 		ImageDescriptor desc = ImageDescriptor.getMissingImageDescriptor();
-		Bundle bundle = Platform.getBundle(LanguageServerPluginActivator.PLUGIN_ID);
+		Bundle bundle = Platform.getBundle(LanguageServerPlugin.PLUGIN_ID);
 		URL url = null;
 		if (bundle != null) {
 			url = FileLocator.find(bundle, new Path(path), null);
@@ -116,7 +116,7 @@ public class LSPImages {
 
 	public static ImageRegistry getImageRegistry() {
 		if (imageRegistry == null) {
-			imageRegistry = LanguageServerPluginActivator.getDefault().getImageRegistry();
+			imageRegistry = LanguageServerPlugin.getDefault().getImageRegistry();
 		}
 		return imageRegistry;
 	}

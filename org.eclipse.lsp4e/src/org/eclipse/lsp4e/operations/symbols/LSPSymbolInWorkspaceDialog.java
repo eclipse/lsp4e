@@ -24,7 +24,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.viewers.StyledString;
-import org.eclipse.lsp4e.LanguageServerPluginActivator;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPServerInfo;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.ui.Messages;
@@ -154,10 +154,10 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	@Override
 	protected IDialogSettings getDialogSettings() {
-		IDialogSettings settings = LanguageServerPluginActivator.getDefault().getDialogSettings()
+		IDialogSettings settings = LanguageServerPlugin.getDefault().getDialogSettings()
 		        .getSection(DIALOG_SETTINGS);
 		if (settings == null) {
-			settings = LanguageServerPluginActivator.getDefault().getDialogSettings().addNewSection(DIALOG_SETTINGS);
+			settings = LanguageServerPlugin.getDefault().getDialogSettings().addNewSection(DIALOG_SETTINGS);
 		}
 		return settings;
 	}

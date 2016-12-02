@@ -36,7 +36,7 @@ Require-Bundle: org.eclipse.core.runtime;bundle-version="3.12.0",
 Bundle-ClassPath: .
 Bundle-Localization: plugin
 Bundle-ActivationPolicy: lazy
-Bundle-Activator: org.eclipse.lsp4e.LanguageServerPluginActivator
+Bundle-Activator: org.eclipse.lsp4e.LanguageServerPlugin
 Export-Package: org.eclipse.lsp4e,
  org.eclipse.lsp4e.operations.completion,
  org.eclipse.lsp4e.operations.hover

@@ -39,7 +39,7 @@ public class LSPStreamConnectionProviderRegistry {
 
 	private static final String CONTENT_TYPE_TO_LSP_LAUNCH_PREF_KEY = "contentTypeToLSPLauch"; //$NON-NLS-1$
 
-	private static final String EXTENSION_POINT_ID = LanguageServerPluginActivator.PLUGIN_ID + ".languageServer"; //$NON-NLS-1$
+	private static final String EXTENSION_POINT_ID = LanguageServerPlugin.PLUGIN_ID + ".languageServer"; //$NON-NLS-1$
 
 	private static final String LS_ELEMENT = "server"; //$NON-NLS-1$
 	private static final String MAPPING_ELEMENT = "contentTypeMapping"; //$NON-NLS-1$
@@ -60,7 +60,7 @@ public class LSPStreamConnectionProviderRegistry {
 	private IPreferenceStore preferenceStore;
 
 	private LSPStreamConnectionProviderRegistry() {
-		this.preferenceStore = LanguageServerPluginActivator.getDefault().getPreferenceStore();
+		this.preferenceStore = LanguageServerPlugin.getDefault().getPreferenceStore();
 		initialize();
 	}
 
