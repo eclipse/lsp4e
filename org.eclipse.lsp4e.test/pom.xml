@@ -19,7 +19,6 @@
 					<testClass>org.eclipse.lsp4e.test.AllTests</testClass>
 					<useUIHarness>true</useUIHarness>
 					<useUIThread>true</useUIThread>
-					<testFailureIgnore>false</testFailureIgnore>
 				</configuration>
 			</plugin>
 		</plugins>
