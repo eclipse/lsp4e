@@ -1,0 +1,76 @@
+= Demoing C# edition using OmniSharp language server
+
+== Shows
+
+. Validation/diagnostics
+. Completion
+. Hover
+. Outline
+. Find References
+. Jump to Definition
+. Association with Launch Configuration
+
+== Known issues/limitations of demo
+
+This is a very difficult demo to run properly! It is often so broken (because of request timeouts) that it seems to not work at all. OmniSharp has some very annoying bugs that make demo unstable to dangerous: https:// github.com/OmniSharp/omnisharp-node-client/issues/289 and others on the same tracker.
+
+. Many features of OmniSharp do not take advantage of the full LSP (such as cursor, markdown hover...) so they can feel "cheap" compared to other ones such as JSon with VSCode. Make sure watchers understand OmniSharp is the wrong component here
+. Outline/symbols missing
+
+== Requirements
+
+. Eclipse IDE and LSP4E
+. nodejs installed and working
+. a working dotnet-core on your machine. `dotnet --version` and other dotnet commands must work
+.. For Fedora 25, see https://github.com/dotnet/cli/issues/4865#issuecomment-263663473
+. OmniSharp
+.. Clone OmniSharp/omnisharp-node-client
+.. TODO
+
+== Preparation (off demo)
+
+. Get OmniSharp-node-client installed and working
+. Start Eclipse IDE with at least the following bundles available (check in target IDE whether plugins are loaded)
+.. org.eclipse.lsp4e
+.. org.eclipse.lsp4e.languages
+. Check the Launch Configuration `OmniSharp`: the path to `server.js` is correct
+. If NOT correct: fix it replacing the few 1st segments to the path where VSCode is located
+. Create a project in the workspace, copy the files `project.json` and `test.cs` in it
+. Run `dotnet restore` from command-line in the directory where the files were placed ( https://github.com/OmniSharp/omnisharp-node-client/issues/265 )
+. Open `test.cs` with Generic Editor (make sure it is actually the Generic Editor and not some other editor Editor)
+. Try Hovering on a field and make sure you see description
+. Close outline
+. Close editors
+
+== Demo
+
+=== Edition
+
+. Open `test.cs` with Generic Editor
+. Hover
+.. on System.Console.WriteLine
+.. Show content
+. Completion
+.. After `System.Console.`, do Ctrl+Click.
+.. Show possible values, with documentation
+. Find References
+.. On the Console view where OmniSharp logs, untoggle `Show Console when...`
+.. Go on `value` on the loop line
+.. Right-Click > Find References
+.. Show the `Search` view contains all references
+.. Navigate from references in Search view to code with double-click
+. Go to definition
+.. Go on `value` in the loop line
+.. Ctrl+Click 
+. Diagnostics
+.. TODO
+
+=== Preferences
+
+. Window > Preferences > Language Servers
+.. Show association of `C Sharp` content-type with `OmniSharp` launch config
+.. Mention ability to add language servers without installing a plugin
+.. But also mention ability to fully define a LS and a mapping from a plugin.xml
+
+Another demo (still te be described) will explain how to add support for a language server from scratch
+

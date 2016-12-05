@@ -1,0 +1,11 @@
+{
+   "$schema": "http://json-schema.org/draft-04/schema#",
+   "type": "object",
+   "title": "JSON schema for component.json files",
+    "additionalProperties": true,
+   "properties": {
+      "key" : {},
+      "another": {}
+   },
+   "minItems": 0
+}
