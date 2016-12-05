@@ -165,9 +165,4 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 	public void init(ICommonContentExtensionSite aConfig) {
 	}
 
-	@Override
-	public void dispose() {
-		
-		super.dispose();
-	}
 }

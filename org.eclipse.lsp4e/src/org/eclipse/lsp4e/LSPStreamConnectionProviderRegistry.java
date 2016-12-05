@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -99,12 +100,13 @@ public class LSPStreamConnectionProviderRegistry {
 				}
 			}
 		}
-		for (IContentType contentType : contentTypes.keySet()) {
-			StreamConnectionProvider scp = servers.get(contentTypes.get(contentType));
+		for (Entry<IContentType, String> entry : contentTypes.entrySet()) {
+			IContentType contentType = entry.getKey();
+			StreamConnectionProvider scp = servers.get(entry.getValue());
 			if (scp != null) {
 				registerAssociation(contentType, scp);
 			} else {
-				// TODO log message about missing server
+				LanguageServerPlugin.logWarning("server '" + entry.getValue() + "' not available", null); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 	}

@@ -82,9 +82,6 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToStreamProvid
 		String launchType = launchParts[0];
 		String launchName = launchParts[1];
 		Set<String> launchModes = Collections.singleton(ILaunchManager.RUN_MODE);
-		if (launchModes == null) {
-			return null;
-		}
 		if (launchParts.length > 2) {
 			launchModes = new HashSet<>(Arrays.asList(launchParts[2].split("\\+"))); //$NON-NLS-1$
 		}
@@ -92,10 +89,7 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToStreamProvid
 		if (contentType == null) {
 			return null;
 		}
-		ILaunchConfiguration launchConfiguration = null;
-		if (contentType != null) {
-			launchConfiguration = LaunchConfigurationStreamProvider.findLaunchConfiguration(launchType, launchName);
-		}
+		ILaunchConfiguration launchConfiguration = LaunchConfigurationStreamProvider.findLaunchConfiguration(launchType, launchName);
 		if (launchConfiguration == null) {
 			return null;
 		}

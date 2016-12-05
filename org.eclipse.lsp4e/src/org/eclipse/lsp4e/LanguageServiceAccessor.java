@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -167,7 +168,7 @@ public class LanguageServiceAccessor {
 		URI fileUri = null;
 		LanguageServer languageClient = null;
 		ServerCapabilities capabilities = null;
-		if (file.exists()) { // TODO, also support non resource file
+		if (file.exists()) {
 			fileUri = file.getLocation().toFile().toURI();
 			try {
 				ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, capabilityRequest);
@@ -178,13 +179,12 @@ public class LanguageServiceAccessor {
 					return new LSPDocumentInfo(fileUri, document, languageClient, capabilities);
 				}
 			} catch (final IOException e) {
-				// TODO report?
-				e.printStackTrace();
+				LanguageServerPlugin.logError(e);
 			}
-		} else {
+		} /*else if (location.toFile().exists()) {
 			fileUri = location.toFile().toURI();
-		}
-		// TODO handle case of plain file (no IFile)
+			TODO handle case of plain file (no IFile)
+		}*/
 		return null;
 	}
 
@@ -291,15 +291,14 @@ public class LanguageServiceAccessor {
 	@NonNull public static List<LSPServerInfo> getLSPServerInfos(@NonNull IProject project,
 	        Predicate<ServerCapabilities> request) {
 		List<LSPServerInfo> serverInfos = new ArrayList<>();
-		for (WrapperEntryKey wrapperEntryKey : projectServers.keySet()) {
+		for (Entry<WrapperEntryKey, List<ProjectSpecificLanguageServerWrapper>> entry : projectServers.entrySet()) {
+			WrapperEntryKey wrapperEntryKey = entry.getKey();
 			if (project.equals(wrapperEntryKey.project)) {
-				if (projectServers.containsKey(wrapperEntryKey)) {
-					for (ProjectSpecificLanguageServerWrapper wrapper : projectServers.get(wrapperEntryKey)) {
-						if ((request == null
-							|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-						    || request.test(wrapper.getServerCapabilities()))) {
-							serverInfos.add(new LSPServerInfo(project, wrapper.getServer(), wrapper.getServerCapabilities()));
-						}
+				for (ProjectSpecificLanguageServerWrapper wrapper : entry.getValue()) {
+					if ((request == null
+						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+					    || request.test(wrapper.getServerCapabilities()))) {
+						serverInfos.add(new LSPServerInfo(project, wrapper.getServer(), wrapper.getServerCapabilities()));
 					}
 				}
 			}

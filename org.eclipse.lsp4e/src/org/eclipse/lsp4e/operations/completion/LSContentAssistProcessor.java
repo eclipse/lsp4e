@@ -23,6 +23,7 @@ import org.eclipse.jface.text.contentassist.IContentAssistProcessor;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.jface.text.contentassist.IContextInformationValidator;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.CompletionItem;
@@ -52,9 +53,9 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 				res = toProposals(offset, completionList);
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace(); //TODO
+			LanguageServerPlugin.logError(ex);
 			if (request != null) {
-				res = toProposals(offset, request.getNow(null));
+				res = toProposals(offset, request.getNow(new CompletionList()));
 			}
 		}
 		return res;

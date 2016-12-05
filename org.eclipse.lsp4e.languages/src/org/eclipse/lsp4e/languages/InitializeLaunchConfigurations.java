@@ -165,7 +165,7 @@ public class InitializeLaunchConfigurations implements IStartup {
 		} else if (Platform.getOS().equals(Platform.OS_MACOSX)) {
 			res = "/usr/share/code";
 		}
-		if (new File(res).isDirectory()) {
+		if (res != null && new File(res).isDirectory()) {
 			if (res.contains(" ")) {
 				return "\"" + res + appendPathSuffix + "\"";
 			}
