@@ -10,12 +10,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.LocationKind;
@@ -24,6 +22,7 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.ui.Messages;
@@ -104,8 +103,8 @@ public class LSPCodeActionMarkerResolution extends WorkbenchMarkerResolution imp
 					marker.setAttribute(LSP_REMEDIATION, resolutions);
 				}
 			}
-		} catch (CoreException | InterruptedException | ExecutionException | IOException ex) {
-			ex.printStackTrace(); //TODO
+		} catch (Exception ex) {
+			LanguageServerPlugin.logError(ex);
 		}
 		return resolutions != null && !resolutions.isEmpty();
 	}

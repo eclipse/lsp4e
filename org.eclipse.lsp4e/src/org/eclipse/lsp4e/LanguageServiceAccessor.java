@@ -178,7 +178,7 @@ public class LanguageServiceAccessor {
 					capabilities = wrapper.getServerCapabilities();
 					return new LSPDocumentInfo(fileUri, document, languageClient, capabilities);
 				}
-			} catch (final IOException e) {
+			} catch (final Exception e) {
 				LanguageServerPlugin.logError(e);
 			}
 		} /*else if (location.toFile().exists()) {
@@ -202,7 +202,7 @@ public class LanguageServiceAccessor {
 	}
 
 	public static LanguageServer getLanguageServer(IFile file, IDocument document,
-			Predicate<ServerCapabilities> request) throws IOException {
+			Predicate<ServerCapabilities> request) throws Exception {
 		ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, request);
 		if (wrapper != null) {
 			wrapper.connect(file, document);
@@ -232,6 +232,7 @@ public class LanguageServiceAccessor {
 			for (StreamConnectionProvider connection : LSPStreamConnectionProviderRegistry.getInstance().findProviderFor(contentType)) {
 				if (!usedConnections.contains(connection)) {
 					wrapper = new ProjectSpecificLanguageServerWrapper(project, connection);
+					wrapper.start();
 					WrapperEntryKey key = new WrapperEntryKey(project, contentType);
 					if (!projectServers.containsKey(key)) {
 						projectServers.put(key, new ArrayList<>());
@@ -288,8 +289,7 @@ public class LanguageServiceAccessor {
 	 * @param request
 	 * @return list of servers info
 	 */
-	@NonNull public static List<LSPServerInfo> getLSPServerInfos(@NonNull IProject project,
-	        Predicate<ServerCapabilities> request) {
+	@NonNull public static List<LSPServerInfo> getLSPServerInfos(@NonNull IProject project, Predicate<ServerCapabilities> request) {
 		List<LSPServerInfo> serverInfos = new ArrayList<>();
 		for (Entry<WrapperEntryKey, List<ProjectSpecificLanguageServerWrapper>> entry : projectServers.entrySet()) {
 			WrapperEntryKey wrapperEntryKey = entry.getKey();

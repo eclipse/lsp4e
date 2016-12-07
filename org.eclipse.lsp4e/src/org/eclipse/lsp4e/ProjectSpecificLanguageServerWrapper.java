@@ -28,11 +28,11 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
@@ -58,7 +58,7 @@ import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.internal.progress.ProgressMonitorFocusJobDialog;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * Wraps instantiation, initialization of project-specific instance of the
@@ -163,9 +163,9 @@ public class ProjectSpecificLanguageServerWrapper {
 	private Map<IPath, DocumentChangeListenenr> connectedFiles;
 	private Map<IPath, IDocument> documents;
 
-	private Job initializeJob;
 	private InitializeResult initializeResult;
 	private Future<?> launcherFuture;
+	private CompletableFuture<InitializeResult> initializeFuture;
 
 	public ProjectSpecificLanguageServerWrapper(IProject project, StreamConnectionProvider connection) {
 		this.project = project;
@@ -174,7 +174,13 @@ public class ProjectSpecificLanguageServerWrapper {
 		this.documents = new HashMap<>();
 	}
 
-	private void start() throws IOException {
+	/**
+	 * Starts a language server and triggers initialization.
+	 * If language server is started and active, does nothing.
+	 * If language server is inactive, restart it.
+	 * @throws IOException
+	 */
+	public void start() throws IOException {
 		if (this.languageServer != null) {
 			if (stillActive()) {
 				return;
@@ -184,70 +190,56 @@ public class ProjectSpecificLanguageServerWrapper {
 		}
 		try {
 			this.lspStreamProvider.start();
-		LanguageClient client = new LanguageClient() {
-			private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project);
-
-			@Override
-			public void telemetryEvent(Object object) {
-				// TODO
-			}
-
-			@Override
-			public CompletableFuture<Void> showMessageRequest(ShowMessageRequestParams requestParams) {
-				return ServerMessageHandler.showMessageRequest(requestParams);
-			}
-
-			@Override
-			public void showMessage(MessageParams messageParams) {
-				ServerMessageHandler.showMessage(messageParams);
-			}
-
-			@Override
-			public void publishDiagnostics(PublishDiagnosticsParams diagnostics) {
-				this.diagnosticHandler.accept(diagnostics);
-			}
-
-			@Override
-			public void logMessage(MessageParams message) {
-				ServerMessageHandler.logMessage(message);
-			}
-		};
-		ExecutorService executorService = Executors.newCachedThreadPool();
-		Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
-				this.lspStreamProvider.getInputStream(),
-				this.lspStreamProvider.getOutputStream(),
-				executorService,
-				consumer -> (
-					message -> {
-					System.err.println(message.toString());
-					consumer.consume(message);
-				}));
-		this.languageServer = launcher.getRemoteProxy();
-		this.launcherFuture = launcher.startListening();
-
-		this.initializeJob = new Job(Messages.initializeLanguageServer_job) {
-			protected IStatus run(IProgressMonitor monitor) {
-				InitializeParams initParams = new InitializeParams();
-				initParams.setRootPath(project.getLocation().toFile().getAbsolutePath());
-				String name = "Eclipse IDE"; //$NON-NLS-1$
-				if (Platform.getProduct() != null) {
-					name = Platform.getProduct().getName();
+			LanguageClient client = new LanguageClient() {
+				private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project);
+	
+				@Override
+				public void telemetryEvent(Object object) {
+					// TODO
 				}
-				initParams.setClientName(name);
-				initParams.setCapabilities(new ClientCapabilities());
-				CompletableFuture<InitializeResult> result = languageServer.initialize(initParams);
-				try {
-					initializeResult = result.get(3, TimeUnit.SECONDS);
-				} catch (InterruptedException | ExecutionException | TimeoutException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+
+				@Override
+				public CompletableFuture<Void> showMessageRequest(ShowMessageRequestParams requestParams) {
+					return ServerMessageHandler.showMessageRequest(requestParams);
 				}
-				return Status.OK_STATUS;
+
+				@Override
+				public void showMessage(MessageParams messageParams) {
+					ServerMessageHandler.showMessage(messageParams);
+				}
+
+				@Override
+				public void publishDiagnostics(PublishDiagnosticsParams diagnostics) {
+					this.diagnosticHandler.accept(diagnostics);
+				}
+
+				@Override
+				public void logMessage(MessageParams message) {
+					ServerMessageHandler.logMessage(message);
+				}
+			};
+			ExecutorService executorService = Executors.newCachedThreadPool();
+			Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
+					this.lspStreamProvider.getInputStream(),
+					this.lspStreamProvider.getOutputStream(),
+					executorService,
+					consumer -> (
+						message -> {
+						System.err.println(message.toString());
+						consumer.consume(message);
+					}));
+			this.languageServer = launcher.getRemoteProxy();
+			this.launcherFuture = launcher.startListening();
+
+			InitializeParams initParams = new InitializeParams();
+			initParams.setRootPath(project.getLocation().toFile().getAbsolutePath());
+			String name = "Eclipse IDE"; //$NON-NLS-1$
+			if (Platform.getProduct() != null) {
+				name = Platform.getProduct().getName();
 			}
-		};
-		this.initializeJob.setUser(true);
-		this.initializeJob.setSystem(false);
-		this.initializeJob.schedule();
+			initParams.setClientName(name);
+			initParams.setCapabilities(new ClientCapabilities());
+			initializeFuture = languageServer.initialize(initParams).thenApply(res -> { initializeResult = res; return res;});
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			stop();
@@ -259,9 +251,9 @@ public class ProjectSpecificLanguageServerWrapper {
 	}
 
 	private void stop() {
-		if (this.initializeJob != null) {
-			this.initializeJob.cancel();
-			this.initializeJob = null;
+		if (this.initializeFuture != null) {
+			this.initializeFuture.cancel(true);
+			this.initializeFuture = null;
 		}
 		this.initializeResult = null;
 		if (this.languageServer != null) {
@@ -284,7 +276,7 @@ public class ProjectSpecificLanguageServerWrapper {
 		this.languageServer = null;
 	}
 
-	public void connect(IFile file, final IDocument document) throws IOException {
+	public void connect(IFile file, final IDocument document) throws IOException, InterruptedException, ExecutionException, TimeoutException {
 		start();
 		if (this.connectedFiles.containsKey(file.getLocation())) {
 			return;
@@ -296,11 +288,7 @@ public class ProjectSpecificLanguageServerWrapper {
 		textDocument.setText(document.get());
 		textDocument.setLanguageId(file.getFileExtension());
 		open.setTextDocument(textDocument);
-		try {
-			this.initializeJob.join();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+		this.initializeFuture.get(3, TimeUnit.SECONDS);
 		this.languageServer.getTextDocumentService().didOpen(open);
 
 		DocumentChangeListenenr listener = new DocumentChangeListenenr(file.getLocationURI());
@@ -319,29 +307,42 @@ public class ProjectSpecificLanguageServerWrapper {
 	}
 
 	@NonNull public LanguageServer getServer() {
-		if (this.initializeJob.getState() != Job.NONE) {
+		try {
+			start();
+		} catch (IOException ex) {
+			LanguageServerPlugin.logError(ex);
+		}
+		if (!this.initializeFuture.isDone()) {
 			if (Display.getCurrent() != null) { // UI Thread
-				ProgressMonitorFocusJobDialog dialog = new ProgressMonitorFocusJobDialog(null);
-				dialog.setBlockOnOpen(true);
-				dialog.show(this.initializeJob, null);
+				Job waitForInitialization = new Job(Messages.initializeLanguageServer_job) {
+					@Override
+					protected IStatus run(IProgressMonitor monitor) {
+						initializeFuture.join();
+						return Status.OK_STATUS;
+					}
+				};
+				waitForInitialization.setUser(true);
+				waitForInitialization.setSystem(false);
+				PlatformUI.getWorkbench().getProgressService().showInDialog(
+					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),
+					waitForInitialization);
 			}
-			try {
-				this.initializeJob.join();
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			this.initializeFuture.join();
 		}
 		return this.languageServer;
 	}
 
+	/**
+	 * Warning: this is a long running operation
+	 * @return the server capabilities, or null if initialization job didn't complete
+	 */
+	@Nullable
 	public ServerCapabilities getServerCapabilities() {
 		try {
 			start();
-			this.initializeJob.join(1000, new NullProgressMonitor());
-		} catch (InterruptedException | IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			this.initializeFuture.get(1000, TimeUnit.MILLISECONDS);
+		} catch (TimeoutException | IOException | InterruptedException | ExecutionException e) {
+			LanguageServerPlugin.logError(e);
 		}
 		if (this.initializeResult != null) {
 			return this.initializeResult.getCapabilities();
