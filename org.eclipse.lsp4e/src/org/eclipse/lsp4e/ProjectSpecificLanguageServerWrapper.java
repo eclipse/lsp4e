@@ -13,8 +13,11 @@ package org.eclipse.lsp4e;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -103,7 +106,7 @@ public class ProjectSpecificLanguageServerWrapper {
 		 * Convert Eclipse {@link DocumentEvent} to LS according
 		 * {@link TextDocumentSyncKind}.
 		 * {@link TextDocumentContentChangeEventImpl}.
-		 * 
+		 *
 		 * @param event
 		 *            Eclipse {@link DocumentEvent}
 		 * @return the converted LS {@link TextDocumentContentChangeEventImpl}.
@@ -145,7 +148,7 @@ public class ProjectSpecificLanguageServerWrapper {
 		/**
 		 * Returns the text document sync kind capabilities of the server and
 		 * {@link TextDocumentSyncKind#Full} otherwise.
-		 * 
+		 *
 		 * @return the text document sync kind capabilities of the server and
 		 *         {@link TextDocumentSyncKind#Full} otherwise.
 		 */
@@ -180,10 +183,12 @@ public class ProjectSpecificLanguageServerWrapper {
 	 * @throws IOException
 	 */
 	public void start() throws IOException {
+		Set<IPath> filesToReconnect = Collections.emptySet();
 		if (this.languageServer != null) {
-			if (stillActive()) {
+			if (isActive()) {
 				return;
 			} else {
+				filesToReconnect =  new HashSet(this.connectedFiles.keySet());
 				stop();
 			}
 		}
@@ -191,7 +196,7 @@ public class ProjectSpecificLanguageServerWrapper {
 			this.lspStreamProvider.start();
 			LanguageClient client = new LanguageClient() {
 				private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project);
-	
+
 				@Override
 				public void telemetryEvent(Object object) {
 					// TODO
@@ -239,13 +244,19 @@ public class ProjectSpecificLanguageServerWrapper {
 			initParams.setClientName(name);
 			initParams.setCapabilities(new ClientCapabilities());
 			initializeFuture = languageServer.initialize(initParams).thenApply(res -> { initializeResult = res; return res;});
+			for (IPath fileToReconnect : filesToReconnect) {
+				connect(fileToReconnect);
+			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			LanguageServerPlugin.logError(ex);
 			stop();
 		}
 	}
 
-	private boolean stillActive() {
+	/**
+	 * @return whether the underlying connection to language server is still active
+	 */
+	public boolean isActive() {
 		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
 	}
 
@@ -275,8 +286,10 @@ public class ProjectSpecificLanguageServerWrapper {
 		this.languageServer = null;
 	}
 
-	public void connect(IFile file, final IDocument document) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+	public void connect(@NonNull IPath absolutePath) throws IOException, InterruptedException, ExecutionException, TimeoutException {
 		start();
+		IFile file = (IFile) LSPEclipseUtils.findResourceFor(absolutePath.toFile().toURI().toString());
+		IDocument document = LSPEclipseUtils.getDocument(file);
 		if (this.connectedFiles.containsKey(file.getLocation())) {
 			return;
 		}

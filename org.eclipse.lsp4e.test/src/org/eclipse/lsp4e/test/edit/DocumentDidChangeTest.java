@@ -46,14 +46,12 @@ public class DocumentDidChangeTest {
 		testFile.create(new ByteArrayInputStream(new byte[0]), true, null);
 
 		ITextViewer viewer = TestUtils.createTextViewer(testFile);
-		LanguageServiceAccessor.getLanguageServer(testFile, viewer.getDocument(), new Predicate<ServerCapabilities>() {
-
+		LanguageServiceAccessor.getLanguageServer(testFile, new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
 				assertEquals(TextDocumentSyncKind.Incremental, t.getTextDocumentSync());
 				return true;
 			}
-			
 		});
 		
 		//Test initial insert

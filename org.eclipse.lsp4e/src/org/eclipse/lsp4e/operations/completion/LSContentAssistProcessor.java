@@ -17,6 +17,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistProcessor;
@@ -30,20 +38,33 @@ import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.texteditor.ITextEditor;
+import org.eclipse.xtext.xbase.lib.Pair;
 
 public class LSContentAssistProcessor implements IContentAssistProcessor {
 
+	private static final long TRIGGERS_TIMEOUT = 50;
+	private static final long COMPLETION_TIMEOUT = 1000;
 	private LSPDocumentInfo info;
 	private LSPDocumentInfo lastCheckedForAutoActiveCharactersInfo;
 	private char[] triggerChars;
+	private Pair<IDocument, Job> findInfoJob;
 
 	public LSContentAssistProcessor() {
 	}
 
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
+		checkInfoAndJob(viewer.getDocument());
+		if (info == null) {
+			try {
+				this.findInfoJob.getValue().join(COMPLETION_TIMEOUT, new NullProgressMonitor());
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
 		ICompletionProposal[] res = new ICompletionProposal[0];
-		info = LanguageServiceAccessor.getLSPDocumentInfoFor(viewer, capabilities -> capabilities.getCompletionProvider() != null);
 		CompletableFuture<CompletionList> request = null;
 		try {
 			if (info != null) {
@@ -59,6 +80,21 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			}
 		}
 		return res;
+	}
+
+	private void checkInfoAndJob(@NonNull IDocument refDocument) {
+		if (info == null || !info.isActive() || !refDocument.equals(info.getDocument())) {
+			info = null;
+		}
+		if (info == null) {
+			if (this.findInfoJob != null && !refDocument.equals(this.findInfoJob.getKey())) {
+				this.findInfoJob.getValue().cancel();
+				this.findInfoJob = null;
+			}
+			if (this.findInfoJob == null) {
+				createInfoJob(refDocument);
+			}
+		}
 	}
 
 	private ICompletionProposal[] toProposals(int offset, CompletionList completionList) {
@@ -104,6 +140,14 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	@Override
 	public char[] getCompletionProposalAutoActivationCharacters() {
+		checkInfoAndJob(LSPEclipseUtils.getDocument((ITextEditor) PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor()));
+		if (info == null) {
+			try {
+				this.findInfoJob.getValue().join(TRIGGERS_TIMEOUT, new NullProgressMonitor());
+			} catch (InterruptedException | OperationCanceledException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
 		if (info != this.lastCheckedForAutoActiveCharactersInfo) {
 			ServerCapabilities currentCapabilites = info.getCapabilites();
 			if (currentCapabilites == null) {
@@ -128,6 +172,21 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			this.lastCheckedForAutoActiveCharactersInfo = info;
 		}
 		return triggerChars;
+	}
+
+	private void createInfoJob(@NonNull final IDocument document) {
+		Job job = new Job("[Completion] Find Language Server") { //$NON-NLS-1$
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				info = LanguageServiceAccessor.getLSPDocumentInfoFor(document, capabilities -> capabilities.getCompletionProvider() != null);
+				return Status.OK_STATUS;
+			}
+		};
+		job.setPriority(Job.INTERACTIVE);
+		job.setSystem(true);
+		job.setUser(false);
+		job.schedule();
+		this.findInfoJob = new Pair<IDocument, Job>(document, job);
 	}
 
 	@Override

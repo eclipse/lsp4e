@@ -18,6 +18,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.ContributionItem;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
@@ -42,7 +43,9 @@ public class LSPCodeLensMenu extends ContributionItem implements IWorkbenchContr
 	public void initialize(IServiceLocator serviceLocator) {
 		IEditorPart editor = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
 		if (editor instanceof ITextEditor) {
-			info = LanguageServiceAccessor.getLSPDocumentInfoFor((ITextEditor) editor, (capabilities) -> Boolean.TRUE.equals(capabilities.getCodeLensProvider()));
+			info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+					LSPEclipseUtils.getDocument((ITextEditor) editor),
+					(capabilities) -> Boolean.TRUE.equals(capabilities.getCodeLensProvider()));
 			// TODO should be ServerCapabilities::isCodeLensProvider, when available in ls-api
 		}
 	}

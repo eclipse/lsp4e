@@ -47,7 +47,8 @@ public class LSPFormatHandler extends AbstractHandler implements IHandler {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
 		if (part instanceof ITextEditor) {
 			ITextEditor textEditor = (ITextEditor) part;
-			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textEditor,
+			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+					LSPEclipseUtils.getDocument(textEditor),
 			        (capabilities) -> supportFormatting(capabilities));
 			if (info != null) {
 				ISelection sel = textEditor.getSelectionProvider().getSelection();
@@ -102,7 +103,8 @@ public class LSPFormatHandler extends AbstractHandler implements IHandler {
 	public boolean isEnabled() {
 		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
 		if (part instanceof ITextEditor) {
-			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor((ITextEditor) part,
+			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+					LSPEclipseUtils.getDocument((ITextEditor) part),
 			        (capabilities) -> supportFormatting(capabilities));
 			ISelection selection = ((ITextEditor) part).getSelectionProvider().getSelection();
 			return info != null && !selection.isEmpty() && selection instanceof ITextSelection;

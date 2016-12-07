@@ -10,14 +10,16 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.ClosedDirectoryStreamException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -44,12 +46,13 @@ public class CompletionTest {
 
 	@Before
 	public void setUp() throws CoreException {
-		project = TestUtils.createProject("CompletionTest");
+		project = TestUtils.createProject("CompletionTest" + System.currentTimeMillis());
 	}
 
 	@After
 	public void tearDown() throws CoreException {
 		project.delete(true, true, new NullProgressMonitor());
+		MockLanguageSever.INSTANCE.shutdown();
 	}
 
 	@Test
@@ -92,7 +95,7 @@ public class CompletionTest {
 	}
 	
 	@Test
-	public void testCompleteOnFileEnd() throws Exception {
+	public void testCompleteOnFileEnd() throws Exception { // bug 508842
 		List<CompletionItem> items = new ArrayList<>();
 		CompletionItem item = new CompletionItem();
 		item.setLabel("1024M");
@@ -122,6 +125,22 @@ public class CompletionTest {
 		item.setKind(kind);
 		item.setTextEdit(new TextEdit(new Range(new Position(0, 0), new Position(0, label.length())), label));
 		return item;
+	}
+	
+	@Test
+	public void testTriggerCharsWithoutPreliminaryCompletion() throws Exception  { // bug 508463
+		Set<String> triggers = new HashSet<>();
+		triggers.add("a");
+		triggers.add("b");
+		MockLanguageSever.INSTANCE.setCompletionTriggerChars(triggers);
+		IFile testFile = project.getFile("test02.lspt");
+		String content = "First";
+		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
+
+		ITextViewer viewer = TestUtils.createTextViewer(testFile);
+
+		LSContentAssistProcessor contentAssistProcessor = new LSContentAssistProcessor();
+		assertArrayEquals(new char[] {'a', 'b'}, contentAssistProcessor.getCompletionProposalAutoActivationCharacters());
 	}
 
 }

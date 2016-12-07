@@ -50,7 +50,9 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		IEditorPart editor = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
 		if (editor instanceof ITextEditor) {
 			ITextEditor textEditor = (ITextEditor) editor;
-			info = LanguageServiceAccessor.getLSPDocumentInfoFor(textEditor, (capabilities) -> Boolean.TRUE.equals(capabilities.getCodeActionProvider()));
+			info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+					LSPEclipseUtils.getDocument(textEditor),
+					(capabilities) -> Boolean.TRUE.equals(capabilities.getCodeActionProvider()));
 			if (info != null) {
 				ITextSelection selection = (ITextSelection) textEditor.getSelectionProvider().getSelection();
 				try {

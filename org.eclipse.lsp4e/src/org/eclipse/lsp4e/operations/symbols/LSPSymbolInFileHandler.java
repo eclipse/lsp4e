@@ -16,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.DocumentSymbolParams;
@@ -33,7 +34,8 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
 		if (part instanceof ITextEditor) {
 			final ITextEditor textEditor = (ITextEditor) part;
-			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textEditor,
+			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+					LSPEclipseUtils.getDocument(textEditor),
 			        (capabilities) -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
 			if (info == null) {
 				return null;

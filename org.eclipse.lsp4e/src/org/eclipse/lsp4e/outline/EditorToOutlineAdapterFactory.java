@@ -11,6 +11,7 @@
 package org.eclipse.lsp4e.outline;
 
 import org.eclipse.core.runtime.IAdapterFactory;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -21,7 +22,9 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 	@Override
 	public <T> T getAdapter(Object adaptableObject, Class<T> adapterType) {
 		if (adapterType == IContentOutlinePage.class && adaptableObject instanceof ITextEditor) {
-			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor((ITextEditor) adaptableObject, capabilities -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
+			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+				LSPEclipseUtils.getDocument((ITextEditor) adaptableObject),
+				capabilities -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
 			if (info != null) {
 				return (T)new CNFOutinePage(info);
 			}

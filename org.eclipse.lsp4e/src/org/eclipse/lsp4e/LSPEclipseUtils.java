@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.List;
 
@@ -28,6 +29,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Location;
@@ -45,6 +47,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
+import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
  * Some utility methods to convert between Eclipse and LS-API types
@@ -217,6 +220,18 @@ public class LSPEclipseUtils {
 		} catch (BadLocationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+	}
+
+	public static IDocument getDocument(ITextEditor editor) {
+		try {
+			Method getSourceViewerMethod= AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
+			getSourceViewerMethod.setAccessible(true);
+			ITextViewer viewer = (ITextViewer) getSourceViewerMethod.invoke(editor);
+			return viewer.getDocument();
+		} catch (Exception ex) {
+			LanguageServerPlugin.logError(ex);
+			return null;
 		}
 	}
 

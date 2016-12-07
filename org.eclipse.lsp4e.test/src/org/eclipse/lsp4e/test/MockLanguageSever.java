@@ -10,7 +10,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -60,6 +63,7 @@ public class MockLanguageSever implements LanguageServer {
 
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
 
+	private Set<String> completionTriggerChars;
 
 	private MockLanguageSever() {
 	}
@@ -67,8 +71,12 @@ public class MockLanguageSever implements LanguageServer {
 	@Override
 	public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
 		ServerCapabilities capabilities = new ServerCapabilities();
-		capabilities.setCompletionProvider(new CompletionOptions());
 		capabilities.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+		CompletionOptions completionProvider = new CompletionOptions();
+		if (this.completionTriggerChars != null) {
+			completionProvider.setTriggerCharacters(new ArrayList<>(this.completionTriggerChars));
+		}
+		capabilities.setCompletionProvider(completionProvider);
 		return CompletableFuture.completedFuture(new InitializeResult(capabilities));
 	}
 
@@ -223,6 +231,10 @@ public class MockLanguageSever implements LanguageServer {
 		this.didChangeCallback = didChangeExpectation;
 	}
 
+	public void setCompletionTriggerChars(Set<String> chars) {
+		this.completionTriggerChars = new HashSet<>(chars);
+	}
+	
 	@Override
 	public CompletableFuture<Object> shutdown() {
 		// TODO Auto-generated method stub

@@ -12,7 +12,6 @@ package org.eclipse.lsp4e;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,8 +37,6 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.services.LanguageServer;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
-import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
  * The entry-point to retrieve a Language Server for a given resource/project.
@@ -95,20 +92,18 @@ public class LanguageServiceAccessor {
 
 	/**
 	 * A bean storing association of a Document/File with a language server.
-	 * See {@link LanguageServiceAccessor#getLSPDocumentInfoFor(ITextViewer, Predicate)} 
+	 * See {@link LanguageServiceAccessor#getLSPDocumentInfoFor(ITextViewer, Predicate)}
 	 */
 	public static class LSPDocumentInfo {
 
 		private final @NonNull URI fileUri;
 		private final @NonNull IDocument document;
-		private final @Nullable ServerCapabilities capabilities;
-		private final @NonNull LanguageServer languageServer;
+		private final @NonNull ProjectSpecificLanguageServerWrapper wrapper;
 
-		private LSPDocumentInfo(@NonNull URI fileUri, @NonNull IDocument document, @NonNull LanguageServer languageServer, @Nullable ServerCapabilities capabilities) {
+		private LSPDocumentInfo(@NonNull URI fileUri, @NonNull IDocument document, @NonNull ProjectSpecificLanguageServerWrapper wrapper) {
 			this.fileUri = fileUri;
 			this.document = document;
-			this.languageServer = languageServer;
-			this.capabilities = capabilities;
+			this.wrapper = wrapper;
 		}
 
 		public @NonNull IDocument getDocument() {
@@ -124,16 +119,20 @@ public class LanguageServiceAccessor {
 		}
 
 		public @NonNull LanguageServer getLanguageClient() {
-			return this.languageServer;
+			return this.wrapper.getServer();
 		}
 
 		public @Nullable ServerCapabilities getCapabilites() {
-			return this.capabilities;
+			return this.wrapper.getServerCapabilities();
+		}
+
+		public boolean isActive() {
+			return this.wrapper.isActive();
 		}
 	}
 
 	/**
-	 * A bean storing association of a IProject with a language server. 
+	 * A bean storing association of a IProject with a language server.
 	 */
 	public static class LSPServerInfo {
 
@@ -161,22 +160,21 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-	@Nullable public static LSPDocumentInfo getLSPDocumentInfoFor(ITextViewer viewer, Predicate<ServerCapabilities> capabilityRequest) {
-		IDocument document = viewer.getDocument();
+	@Nullable public static LSPDocumentInfo getLSPDocumentInfoFor(@NonNull ITextViewer viewer, @Nullable Predicate<ServerCapabilities> capabilityRequest) {
+		return getLSPDocumentInfoFor(viewer.getDocument(), capabilityRequest);
+	}
+
+	@Nullable public static LSPDocumentInfo getLSPDocumentInfoFor(@NonNull IDocument document, @Nullable Predicate<ServerCapabilities> capabilityRequest) {
 		final IPath location = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document).getLocation();
 		final IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(location);
 		URI fileUri = null;
-		LanguageServer languageClient = null;
-		ServerCapabilities capabilities = null;
 		if (file.exists()) {
 			fileUri = file.getLocation().toFile().toURI();
 			try {
 				ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, capabilityRequest);
 				if (wrapper != null) {
-					wrapper.connect(file, document);
-					languageClient = wrapper.getServer();
-					capabilities = wrapper.getServerCapabilities();
-					return new LSPDocumentInfo(fileUri, document, languageClient, capabilities);
+					wrapper.connect(file.getLocation());
+					return new LSPDocumentInfo(fileUri, document, wrapper);
 				}
 			} catch (final Exception e) {
 				LanguageServerPlugin.logError(e);
@@ -188,24 +186,10 @@ public class LanguageServiceAccessor {
 		return null;
 	}
 
-	public static LSPDocumentInfo getLSPDocumentInfoFor(ITextEditor editor, Predicate<ServerCapabilities> capabilityRequest) {
-		// Ugly hack, but not worse than duplication
-		try {
-			Method getSourceViewerMethod= AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
-			getSourceViewerMethod.setAccessible(true);
-			ITextViewer viewer = (ITextViewer) getSourceViewerMethod.invoke(editor);
-			return getLSPDocumentInfoFor(viewer, capabilityRequest);
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			return null;
-		}
-	}
-
-	public static LanguageServer getLanguageServer(IFile file, IDocument document,
-			Predicate<ServerCapabilities> request) throws Exception {
+	public static LanguageServer getLanguageServer(@NonNull IFile file, Predicate<ServerCapabilities> request) throws Exception {
 		ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, request);
 		if (wrapper != null) {
-			wrapper.connect(file, document);
+			wrapper.connect(file.getLocation());
 			return wrapper.getServer();
 		}
 		return null;
@@ -283,8 +267,8 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
-	 * Gets list of LS initialized for given project. 
-	 * 
+	 * Gets list of LS initialized for given project.
+	 *
 	 * @param project
 	 * @param request
 	 * @return list of servers info

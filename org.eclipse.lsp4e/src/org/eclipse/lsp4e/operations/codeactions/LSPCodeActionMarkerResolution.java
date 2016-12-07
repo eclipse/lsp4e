@@ -15,13 +15,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.core.filebuffers.FileBuffers;
-import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
@@ -89,8 +86,7 @@ public class LSPCodeActionMarkerResolution extends WorkbenchMarkerResolution imp
 			if (marker.getAttribute(LSP_REMEDIATION) != null) {
 				resolutions = (List<? extends Command>)marker.getAttribute(LSP_REMEDIATION);
 			} else if (marker.getResource().getType() == IResource.FILE) {
-				IDocument document = FileBuffers.getTextFileBufferManager().getTextFileBuffer(marker.getResource().getFullPath(), LocationKind.IFILE).getDocument();
-				LanguageServer lsp = LanguageServiceAccessor.getLanguageServer((IFile)marker.getResource(), document, (capabilities) -> Boolean.TRUE.equals(capabilities.getCodeActionProvider()));
+				LanguageServer lsp = LanguageServiceAccessor.getLanguageServer((IFile)marker.getResource(), (capabilities) -> Boolean.TRUE.equals(capabilities.getCodeActionProvider()));
 				if (lsp != null) {
 					Diagnostic diagnostic = (Diagnostic)marker.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC);
 					CodeActionContext context = new CodeActionContext(Collections.singletonList(diagnostic));
