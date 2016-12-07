@@ -14,12 +14,15 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.ClosedDirectoryStreamException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
@@ -31,6 +34,7 @@ import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,6 +45,11 @@ public class CompletionTest {
 	@Before
 	public void setUp() throws CoreException {
 		project = TestUtils.createProject("CompletionTest");
+	}
+
+	@After
+	public void tearDown() throws CoreException {
+		project.delete(true, true, new NullProgressMonitor());
 	}
 
 	@Test
@@ -80,6 +89,31 @@ public class CompletionTest {
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
 		assertEquals(1, proposals.length);
 		// TODO compare items
+	}
+	
+	@Test
+	public void testCompleteOnFileEnd() throws Exception {
+		List<CompletionItem> items = new ArrayList<>();
+		CompletionItem item = new CompletionItem();
+		item.setLabel("1024M");
+		item.setKind(CompletionItemKind.Value);
+		item.setTextEdit(new TextEdit(new Range(new Position(2, 10), new Position(2, 10)), "1024M"));
+		CompletionList completionList = new CompletionList(false, Collections.singletonList(item));
+		MockLanguageSever.INSTANCE.setCompletionList(completionList);	
+
+		IFile testFile = project.getFile("test03.lspt");
+		String content = "applications:\n" + 
+				"- name: hello\n" + 
+				"  memory: ";
+		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
+
+		ITextViewer viewer = TestUtils.createTextViewer(testFile);
+
+		LSContentAssistProcessor contentAssistProcessor = new LSContentAssistProcessor();
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
+		assertEquals(1, proposals.length);
+		proposals[0].apply(viewer.getDocument());
+		assertEquals(content + "1024M", viewer.getDocument().get());
 	}
 
 	private CompletionItem createCompletionItem(String label, CompletionItemKind kind) {
