@@ -258,7 +258,7 @@ public class LSCompletionProposal
 				int end = LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getEnd(), document)
 						+ (document.getLength() - initalLength);
 				if (insertionOffset == end){
-					String postfix = document.get(initialOffset, insertText.length());
+					String postfix = document.get(initialOffset, Math.min(insertText.length(), document.getLength() - initialOffset));
 					if (postfix.startsWith(insertText)){
 						end += insertText.length();
 					}
