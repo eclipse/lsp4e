@@ -11,13 +11,14 @@
 package org.eclipse.lsp4e.test;
 
 import org.eclipse.lsp4e.test.completion.CompletionTest;
+import org.eclipse.lsp4e.test.edit.DocumentDidChangeTest;
 import org.eclipse.lsp4e.test.symbols.SymbolsModelTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
-@SuiteClasses({ CompletionTest.class, SymbolsModelTest.class })
+@SuiteClasses({ CompletionTest.class, DocumentDidChangeTest.class, SymbolsModelTest.class })
 public class AllTests {
 
 }

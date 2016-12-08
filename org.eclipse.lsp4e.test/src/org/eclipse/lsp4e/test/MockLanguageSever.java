@@ -12,6 +12,9 @@ package org.eclipse.lsp4e.test;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
@@ -41,6 +44,7 @@ import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
+import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
@@ -54,6 +58,9 @@ public class MockLanguageSever implements LanguageServer {
 
 	private CompletionList completionList;
 
+	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
+
+
 	private MockLanguageSever() {
 	}
 
@@ -61,6 +68,7 @@ public class MockLanguageSever implements LanguageServer {
 	public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
 		ServerCapabilities capabilities = new ServerCapabilities();
 		capabilities.setCompletionProvider(new CompletionOptions());
+		capabilities.setTextDocumentSync(TextDocumentSyncKind.Incremental);
 		return CompletableFuture.completedFuture(new InitializeResult(capabilities));
 	}
 
@@ -156,8 +164,10 @@ public class MockLanguageSever implements LanguageServer {
 
 			@Override
 			public void didChange(DidChangeTextDocumentParams params) {
-				// TODO Auto-generated method stub
-
+				if (didChangeCallback != null) {
+					didChangeCallback.complete(params);
+					didChangeCallback = null;
+				}
 			}
 
 			@Override
@@ -208,7 +218,11 @@ public class MockLanguageSever implements LanguageServer {
 	public void setCompletionList(CompletionList completionList) {
 		this.completionList = completionList;
 	}
-	
+
+	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
+		this.didChangeCallback = didChangeExpectation;
+	}
+
 	@Override
 	public CompletableFuture<Object> shutdown() {
 		// TODO Auto-generated method stub

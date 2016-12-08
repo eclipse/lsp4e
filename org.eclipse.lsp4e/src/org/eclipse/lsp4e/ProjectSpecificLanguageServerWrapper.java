@@ -80,7 +80,6 @@ public class ProjectSpecificLanguageServerWrapper {
 			if (this.change == null) {
 				return;
 			}
-			this.change.getContentChanges().get(0).setText(event.getDocument().get());
 			languageServer.getTextDocumentService().didChange(this.change);
 			version++;
 		}
