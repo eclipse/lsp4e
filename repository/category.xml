@@ -7,6 +7,20 @@
    <bundle id="org.eclipse.lsp4e.languages">
       <category name="Language Server Support for Eclipse"/>
    </bundle>
+
+   <category-def name="Sources and Tests" label="Sources and Tests"/>
+   <bundle id="org.eclipse.lsp4e.source">
+      <category name="Sources and Tests"/>
+   </bundle>
+   <bundle id="org.eclipse.lsp4e.languages.source">
+      <category name="Sources and Tests"/>
+   </bundle>
+   <bundle id="org.eclipse.lsp4e.test">
+      <category name="Sources and Tests"/>
+   </bundle>
+   <bundle id="org.eclipse.lsp4e.test.source">
+      <category name="Sources and Tests"/>
+   </bundle>
    
    <category-def name="deps" label="Dependencies"/>
    <bundle id="org.eclipse.lsp4j">
