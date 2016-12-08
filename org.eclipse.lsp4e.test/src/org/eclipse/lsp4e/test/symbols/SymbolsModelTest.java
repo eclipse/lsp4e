@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.test.symbols;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.lsp4e.outline.SymbolsModel;
@@ -53,6 +54,40 @@ public class SymbolsModelTest {
 		assertEquals(items.get(1), parent);
 		parent = symbolsModel.getParent(parent);
 		assertEquals(items.get(0), parent);
+	}
+	
+	@Test
+	public void testGetElementsEmptyResponse() {
+		List<SymbolInformation> items = new ArrayList<>();
+
+		SymbolsModel symbolsModel = new SymbolsModel();
+		symbolsModel.update(items);
+
+		assertEquals(0, symbolsModel.getElements().length);
+	}
+	
+	@Test
+	public void testGetElementsNullResponse() {
+		SymbolsModel symbolsModel = new SymbolsModel();
+		symbolsModel.update(null);
+
+		assertEquals(0, symbolsModel.getElements().length);
+	}
+	
+	@Test
+	public void testGetParentEmptyResponse() {
+		SymbolsModel symbolsModel = new SymbolsModel();
+		symbolsModel.update(Collections.emptyList());
+
+		assertEquals(null, symbolsModel.getParent(null));
+	}
+	
+	@Test
+	public void testGetParentNullResponse() {
+		SymbolsModel symbolsModel = new SymbolsModel();
+		symbolsModel.update(null);
+
+		assertEquals(null, symbolsModel.getParent(null));
 	}
 
 	private SymbolInformation createSymbolInformation(String name, SymbolKind kind, Range range) {

@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Stack;
 
 import org.eclipse.lsp4j.Location;
@@ -26,20 +27,14 @@ import org.eclipse.lsp4j.SymbolInformation;
 public class SymbolsModel {
 
 	private static final SymbolInformation ROOT = new SymbolInformation();
+	private static final Object[] EMPTY = new Object[0];
 
-	private List<? extends SymbolInformation> response;
-	private Map<SymbolInformation, List<SymbolInformation>> childrenMap;
+	private Map<SymbolInformation, List<SymbolInformation>> childrenMap = new HashMap<>();
 
 	public boolean update(List<? extends SymbolInformation> response) {
 		// TODO update model only on real change
-		childrenMap = null;
-		this.response = response;
-		return true;
-	}
-
-	public Object[] getElements() {
-		if (response != null && !response.isEmpty() && childrenMap == null) {
-			childrenMap = new HashMap<>();
+		childrenMap.clear();
+		if (response != null && !response.isEmpty()) {
 			Collections.sort(response, new Comparator<SymbolInformation>() {
 
 				@Override
@@ -77,27 +72,7 @@ public class SymbolsModel {
 				previousSymbol = symbol;
 			}
 		}
-
-		return getChildren(ROOT);
-	}
-
-	private void addChild(SymbolInformation parent, SymbolInformation child) {
-		List<SymbolInformation> children = childrenMap.get(parent);
-		if (children == null) {
-			children = new ArrayList<>();
-			childrenMap.put(parent, children);
-		}
-		children.add(child);
-	}
-
-	public Object[] getChildren(Object parentElement) {
-		if (parentElement != null && parentElement instanceof SymbolInformation && response != null) {
-			List<SymbolInformation> children = childrenMap.get(parentElement);
-			if (children != null) {
-				return children.toArray();
-			}
-		}
-		return null;
+		return true;
 	}
 
 	private boolean isIncluded(SymbolInformation parent, SymbolInformation symbol) {
@@ -121,11 +96,35 @@ public class SymbolsModel {
 				|| (included.getLine() == reference.getLine() && included.getLine() > reference.getLine());
 	}
 
+	private void addChild(SymbolInformation parent, SymbolInformation child) {
+		List<SymbolInformation> children = childrenMap.get(parent);
+		if (children == null) {
+			children = new ArrayList<>();
+			childrenMap.put(parent, children);
+		}
+		children.add(child);
+	}
+
+	public Object[] getElements() {
+		return getChildren(ROOT);
+	}
+
+	public Object[] getChildren(Object parentElement) {
+		if (parentElement != null && parentElement instanceof SymbolInformation) {
+			List<SymbolInformation> children = childrenMap.get(parentElement);
+			if (children != null) {
+				return children.toArray();
+			}
+		}
+		return EMPTY;
+	}
+
 	public Object getParent(Object element) {
-		return childrenMap.keySet().stream().filter(parent -> {
+		Optional<SymbolInformation> result = childrenMap.keySet().stream().filter(parent -> {
 			List<SymbolInformation> children = childrenMap.get(parent);
 			return children == null ? false : children.contains(element);
-		}).findFirst().get();
+		}).findFirst();
+		return result.isPresent() ? result.get() : null;
 	}
 
 }
