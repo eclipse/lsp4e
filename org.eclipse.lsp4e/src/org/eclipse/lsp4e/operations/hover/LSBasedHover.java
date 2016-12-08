@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.DefaultInformationControl;
 import org.eclipse.jface.text.IInformationControl;
 import org.eclipse.jface.text.IInformationControlCreator;
@@ -34,11 +35,29 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.mylyn.wikitext.core.parser.MarkupParser;
 import org.eclipse.mylyn.wikitext.markdown.core.MarkdownLanguage;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.editors.text.EditorsUI;
 
 public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage());
-	
+
+	private static class FocusableBrowserInformationControl extends BrowserInformationControl {
+
+		public FocusableBrowserInformationControl(Shell parent) {
+			super(parent, JFaceResources.DEFAULT_FONT, EditorsUI.getTooltipAffordanceString());
+		}
+
+		@Override
+		public IInformationControlCreator getInformationPresenterControlCreator() {
+			return new IInformationControlCreator() {
+				@Override
+				public IInformationControl createInformationControl(Shell parent) {
+					return new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT, true);
+				}
+			};
+		}
+	}
+
 	private CompletableFuture<Hover> hoverRequest;
 	private IRegion lastRegion;
 	private ITextViewer textViewer;
@@ -106,13 +125,11 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 	@Override
 	public IInformationControlCreator getHoverControlCreator() {
-		return new IInformationControlCreator() {
-
+		return new AbstractReusableInformationControlCreator() {
 			@Override
-			public IInformationControl createInformationControl(Shell parent) {
-				// DefaultInformationControl is not able to render HTML use browser version if available
+			protected IInformationControl doCreateInformationControl(Shell parent) {
 				if (BrowserInformationControl.isAvailable(parent)) {
-					return new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT, true);
+					return new FocusableBrowserInformationControl(parent);
 				} else {
 					return new DefaultInformationControl(parent);
 				}
