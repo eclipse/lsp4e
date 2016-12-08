@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.List;
@@ -25,6 +26,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.text.BadLocationException;
@@ -98,20 +100,22 @@ public class LSPEclipseUtils {
 	public static IResource findResourceFor(String uri) {
 		uri = uri.replace("file:///", "file:/");  //$NON-NLS-1$//$NON-NLS-2$
 		uri = uri.replace("file://", "file:/");  //$NON-NLS-1$//$NON-NLS-2$
+		IPath path = Path.fromOSString(new File(URI.create(uri)).getAbsolutePath());
 		IProject project = null;
 		for (IProject aProject : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
-			if (uri.startsWith(aProject.getLocationURI().toString()) && (project == null || project.getLocation().segmentCount() < aProject.getLocation().segmentCount())) {
+			if (aProject.getLocation().isPrefixOf(path) && (project == null || project.getLocation().segmentCount() < aProject.getLocation().segmentCount())) {
 				project = aProject;
 			}
 		}
 		if (project == null) {
 			return null;
 		}
-		IResource resource = project.getFile(new Path(uri.substring(project.getLocationURI().toString().length())));
-		if (!resource.exists()) {
-			//resource.refresh ?
+		IPath projectRelativePath = path.removeFirstSegments(project.getLocation().segmentCount());
+		if (projectRelativePath.isEmpty()) {
+			return project;
+		} else {
+			return project.findMember(projectRelativePath);
 		}
-		return resource;
 	}
 	
 	public static void applyEdit(TextEdit textEdit, IDocument document) throws BadLocationException {
