@@ -27,8 +27,8 @@ import org.osgi.framework.Bundle;
 public class LSPImages {
 
 	private static ImageRegistry imageRegistry;
-	private static String ICONS_PATH = "$nl$/icons/full/"; //$NON-NLS-1$
-	private final static String OBJECT = ICONS_PATH + "obj16/"; //basic colors - size 16x16 //$NON-NLS-1$
+	private static final String ICONS_PATH = "$nl$/icons/full/"; //$NON-NLS-1$
+	private static final String OBJECT = ICONS_PATH + "obj16/"; // basic colors - size 16x16 //$NON-NLS-1$
 
 	public static final String IMG_MODULE = "IMG_MODULE"; //$NON-NLS-1$
 	public static final String IMG_NAMESPACE = "IMG_NAMESPACE"; //$NON-NLS-1$
@@ -99,16 +99,14 @@ public class LSPImages {
 	}
 
 	/**
-	 * Returns the <code>Image</code> identified by the given key, or
-	 * <code>null</code> if it does not exist.
+	 * Returns the <code>Image</code> identified by the given key, or <code>null</code> if it does not exist.
 	 */
 	public static Image getImage(String key) {
 		return getImageRegistry().get(key);
 	}
 
 	/**
-	 * Returns the <code>ImageDescriptor</code> identified by the given key, or
-	 * <code>null</code> if it does not exist.
+	 * Returns the <code>ImageDescriptor</code> identified by the given key, or <code>null</code> if it does not exist.
 	 */
 	public static ImageDescriptor getImageDescriptor(String key) {
 		return getImageRegistry().getDescriptor(key);
@@ -196,7 +194,7 @@ public class LSPImages {
 		case Snippet:
 			return getImage(IMG_SNIPPET);
 		case Color:
-			return getImage(IMG_COLOR); //Color TODO use Gef Palette icon or generate color image
+			return getImage(IMG_COLOR); // Color TODO use Gef Palette icon or generate color image
 		case File:
 			return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FILE);
 		case Reference:

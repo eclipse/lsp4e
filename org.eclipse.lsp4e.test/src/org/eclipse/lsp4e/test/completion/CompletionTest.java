@@ -66,7 +66,7 @@ public class CompletionTest {
 		IFile testFile = project.getFile("test01.lspt");
 		testFile.create(new ByteArrayInputStream(new byte[0]), true, null);
 
-		ITextViewer viewer = TestUtils.createTextViewer(testFile);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 
 		LSContentAssistProcessor contentAssistProcessor = new LSContentAssistProcessor();
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
@@ -86,7 +86,7 @@ public class CompletionTest {
 		String content = "First";
 		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
 
-		ITextViewer viewer = TestUtils.createTextViewer(testFile);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 
 		LSContentAssistProcessor contentAssistProcessor = new LSContentAssistProcessor();
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
@@ -110,7 +110,7 @@ public class CompletionTest {
 				"  memory: ";
 		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
 
-		ITextViewer viewer = TestUtils.createTextViewer(testFile);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 
 		LSContentAssistProcessor contentAssistProcessor = new LSContentAssistProcessor();
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
@@ -137,7 +137,7 @@ public class CompletionTest {
 		String content = "First";
 		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
 
-		ITextViewer viewer = TestUtils.createTextViewer(testFile);
+		TestUtils.openTextViewer(testFile);
 
 		LSContentAssistProcessor contentAssistProcessor = new LSContentAssistProcessor();
 		assertArrayEquals(new char[] {'a', 'b'}, contentAssistProcessor.getCompletionProposalAutoActivationCharacters());

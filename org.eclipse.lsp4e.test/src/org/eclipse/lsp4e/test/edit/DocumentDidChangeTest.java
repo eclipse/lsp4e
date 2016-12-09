@@ -45,7 +45,7 @@ public class DocumentDidChangeTest {
 		IFile testFile = project.getFile("test01.lspt");
 		testFile.create(new ByteArrayInputStream(new byte[0]), true, null);
 
-		ITextViewer viewer = TestUtils.createTextViewer(testFile);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		LanguageServiceAccessor.getLanguageServer(testFile, new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {

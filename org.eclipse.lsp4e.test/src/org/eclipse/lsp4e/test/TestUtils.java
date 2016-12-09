@@ -32,7 +32,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 public class TestUtils {
 
-	public static ITextViewer createTextViewer(IFile file) throws PartInitException, NoSuchMethodException,
+	public static ITextViewer openTextViewer(IFile file) throws PartInitException, NoSuchMethodException,
 			SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
