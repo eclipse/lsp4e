@@ -18,23 +18,28 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.ReferenceContext;
 import org.eclipse.lsp4j.ReferenceParams;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.search.ui.NewSearchUI;
 import org.eclipse.search2.internal.ui.SearchView;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.eclipse.ui.progress.UIJob;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -43,12 +48,9 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		SearchView searchView = null;
-		try {
-			searchView = (SearchView) HandlerUtil.getActiveWorkbenchWindow(event).getActivePage().showView("org.eclipse.search.ui.views.SearchView"); //$NON-NLS-1$
-		} catch (PartInitException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		final SearchView searchView = getSearchView(event);
+		if (searchView == null) {
+			return null;
 		}
 		if (part instanceof ITextEditor) {
 			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
@@ -61,24 +63,41 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 				if (sel instanceof TextSelection) {
 					try {
 						ReferenceParams params = new ReferenceParams();
-						// TODO params.setContext(...)
+						params.setContext(new ReferenceContext(true));
 						params.setTextDocument(new TextDocumentIdentifier(info.getFileUri().toString()));
 						params.setPosition(LSPEclipseUtils.toPosition(((TextSelection) sel).getOffset(), info.getDocument()));
 						CompletableFuture<List<? extends Location>> references = info.getLanguageClient()
 						        .getTextDocumentService().references(params);
 						LSSearchResult search = new LSSearchResult(references);
-						search.getQuery().run(new NullProgressMonitor());
-						if (searchView != null) {
-							searchView.showSearchResult(search);
-						}
-					} catch (BadLocationException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						searchView.getProgressService().run(true, true, monitor -> {
+							search.getQuery().run(monitor);
+							UIJob refresh = new UIJob("Refresh Result View") { //$NON-NLS-1$
+								@Override
+								public IStatus runInUIThread(IProgressMonitor monitor) {
+									searchView.showSearchResult(search);
+									return Status.OK_STATUS;
+								}
+							};
+							refresh.schedule();
+							refresh.join(0, monitor);
+						});
+					} catch (Exception e) {
+						LanguageServerPlugin.logError(e);
 					}
 				}
 			}
 		}
 		return null;
+	}
+
+	private SearchView getSearchView(ExecutionEvent event) {
+		SearchView searchView = null;
+		try {
+			searchView = (SearchView) HandlerUtil.getActiveWorkbenchWindow(event).getActivePage().showView(NewSearchUI.SEARCH_VIEW_ID);
+		} catch (PartInitException e) {
+			LanguageServerPlugin.logError(e);
+		}
+		return searchView;
 	}
 
 	@Override
