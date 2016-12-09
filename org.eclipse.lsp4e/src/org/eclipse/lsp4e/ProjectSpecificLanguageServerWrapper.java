@@ -57,6 +57,9 @@ import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.Message;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -229,8 +232,8 @@ public class ProjectSpecificLanguageServerWrapper {
 					executorService,
 					consumer -> (
 						message -> {
-						System.err.println(message.toString());
 						consumer.consume(message);
+						logServerError(message);
 					}));
 			this.languageServer = launcher.getRemoteProxy();
 			this.launcherFuture = launcher.startListening();
@@ -250,6 +253,17 @@ public class ProjectSpecificLanguageServerWrapper {
 		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 			stop();
+		}
+	}
+	
+	private void logServerError(Message message) {
+		if (message instanceof ResponseMessage) {
+			ResponseMessage responseMessage = (ResponseMessage) message;
+			if (responseMessage.getError() != null) {
+				LanguageServerPlugin.logError(new ResponseErrorException(responseMessage.getError()));
+			}
+		} else {
+			System.err.println(message.toString());
 		}
 	}
 
