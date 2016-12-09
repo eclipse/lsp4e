@@ -16,7 +16,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
+import org.eclipse.jface.resource.ColorRegistry;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.DefaultInformationControl;
@@ -34,6 +36,8 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.mylyn.wikitext.core.parser.MarkupParser;
 import org.eclipse.mylyn.wikitext.markdown.core.MarkdownLanguage;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.editors.text.EditorsUI;
 
@@ -52,7 +56,8 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 			return new IInformationControlCreator() {
 				@Override
 				public IInformationControl createInformationControl(Shell parent) {
-					return new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT, true);
+					BrowserInformationControl res = new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT, true);
+					return res;
 				}
 			};
 		}
@@ -67,6 +72,9 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 	@Override
 	public String getHoverInfo(ITextViewer textViewer, IRegion hoverRegion) {
+		if (textViewer == null || hoverRegion == null) {
+			return null;
+		}
 		if (!(hoverRegion.equals(this.lastRegion) && textViewer.equals(this.textViewer) && this.hoverRequest != null)) {
 			initiateHoverRequest(textViewer, hoverRegion.getOffset());
 		}
@@ -83,11 +91,47 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 			return null;
 		}
 		String result = hoverResult.getContents().stream().collect(Collectors.joining("\n\n")); //$NON-NLS-1$
-		return MARKDOWN_PARSER.parseToHtml(result);
+		result = MARKDOWN_PARSER.parseToHtml(result);
+		// put CSS styling to match Eclipse style
+		ColorRegistry colorRegistry =  JFaceResources.getColorRegistry();
+		Color foreground= colorRegistry.get("org.eclipse.ui.workbench.HOVER_FOREGROUND"); //$NON-NLS-1$
+		Color background= colorRegistry.get("org.eclipse.ui.workbench.HOVER_BACKGROUND"); //$NON-NLS-1$
+		String style = "<style TYPE='text/css'>html { " + //$NON-NLS-1$
+				"font-family: " + JFaceResources.getDefaultFontDescriptor().getFontData()[0].getName() + "; " + //$NON-NLS-1$ //$NON-NLS-2$
+				"font-size: " + Integer.toString(JFaceResources.getDefaultFontDescriptor().getFontData()[0].getHeight()) + "pt; " + //$NON-NLS-1$ //$NON-NLS-2$
+				(background != null ? "background-color: " + toHTMLrgb(background.getRGB()) + "; " : "") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				(foreground != null ? "color: " + toHTMLrgb(foreground.getRGB()) + "; " : "") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				" }</style>"; //$NON-NLS-1$
+
+		int headIndex = result.indexOf("<head>"); //$NON-NLS-1$
+		StringBuilder builder = new StringBuilder(result.length() + style.length());
+		builder.append(result.substring(0, headIndex + "<head>".length())); //$NON-NLS-1$
+		builder.append(style);
+		builder.append(result.substring(headIndex + "<head>".length())); //$NON-NLS-1$
+		return builder.toString();
+	}
+
+	private static String toHTMLrgb(RGB rgb) {
+		StringBuilder builder = new StringBuilder(7);
+		builder.append('#');
+		appendAsHexString(builder, rgb.red);
+		appendAsHexString(builder, rgb.green);
+		appendAsHexString(builder, rgb.blue);
+		return builder.toString();
+	}
+
+	private static void appendAsHexString(StringBuilder buffer, int intValue) {
+		String hexValue= Integer.toHexString(intValue);
+		if (hexValue.length() == 1)
+			buffer.append('0');
+		buffer.append(hexValue);
 	}
 
 	@Override
 	public IRegion getHoverRegion(ITextViewer textViewer, int offset) {
+		if (textViewer == null) {
+			return null;
+		}
 		IRegion res = new Region(offset, 0);
 		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer, (capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
 		if (info != null) {
@@ -111,7 +155,7 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		return res;
 	}
 
-	private void initiateHoverRequest(ITextViewer viewer, int offset) {
+	private void initiateHoverRequest(@NonNull ITextViewer viewer, int offset) {
 		this.textViewer = viewer;
 		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(viewer, (capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
 		if (info != null) {
