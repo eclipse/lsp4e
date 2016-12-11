@@ -12,6 +12,7 @@ package org.eclipse.lsp4e.test;
 
 import static org.junit.Assert.fail;
 
+import java.io.ByteArrayInputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -61,5 +62,12 @@ public class TestUtils {
 		// configure nature
 		return project;
 	}
+
+	public static IFile createUniqueTestFile(IProject p, String content) throws CoreException {
+		IFile testFile = p.getFile("test" + (System.currentTimeMillis()) + ".lspt");
+		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
+		return testFile;
+	}
+
 
 }

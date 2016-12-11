@@ -27,6 +27,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
+import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
 import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
 import org.eclipse.lsp4e.test.MockLanguageSever;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -36,6 +37,7 @@ import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.swt.graphics.Point;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -73,6 +75,9 @@ public class CompletionTest {
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(items.size(), proposals.length);
 		// TODO compare both structures
+		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
+		lsCompletionProposal.apply(viewer, '\n', 0, 0);
+		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 	}
 
 	@Test
@@ -84,11 +89,14 @@ public class CompletionTest {
 		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
 
 		String content = "First";
-		ITextViewer viewer = TestUtils.openTextViewer(createUniqueTestFile(content));
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
 		assertEquals(1, proposals.length);
 		// TODO compare items
+		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
+		lsCompletionProposal.apply(viewer, '\n', 0, 0);
+		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 	}
 
 	@Test
@@ -101,12 +109,15 @@ public class CompletionTest {
 		MockLanguageSever.INSTANCE.setCompletionList(completionList);
 
 		String content = "applications:\n" + "- name: hello\n" + "  memory: ";
-		ITextViewer viewer = TestUtils.openTextViewer(createUniqueTestFile(content));
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
 		assertEquals(1, proposals.length);
-		proposals[0].apply(viewer.getDocument());
+		
+		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
+		lsCompletionProposal.apply(viewer, '\n', 0, 0);
 		assertEquals(content + "1024M", viewer.getDocument().get());
+		assertEquals(new Point(viewer.getDocument().getLength(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 	}
 
 	@Test
@@ -117,25 +128,10 @@ public class CompletionTest {
 		MockLanguageSever.INSTANCE.setCompletionTriggerChars(triggers);
 
 		String content = "First";
-		TestUtils.openTextViewer(createUniqueTestFile(content));
+		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
 		assertArrayEquals(new char[] { 'a', 'b' },
 				contentAssistProcessor.getCompletionProposalAutoActivationCharacters());
-	}
-
-	@Test
-	public void testApplyCompletion() throws Exception {
-		Range range = new Range(new Position(0, 0), new Position(0, 0));
-		List<CompletionItem> items = Collections
-				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
-
-		String content = "";
-		ITextViewer viewer = TestUtils.openTextViewer(createUniqueTestFile(content));
-
-		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
-		proposals[0].apply(viewer.getDocument());
-		assertEquals(true, viewer.getDocument().get().equals("FirstClass"));
 	}
 
 	@Test
@@ -146,11 +142,13 @@ public class CompletionTest {
 		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
 
 		String content = "First";
-		ITextViewer viewer = TestUtils.openTextViewer(createUniqueTestFile(content));
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
-		proposals[0].apply(viewer.getDocument());
+		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
+		lsCompletionProposal.apply(viewer, '\n', 0, 0);
 		assertEquals(true, viewer.getDocument().get().equals("FirstClass"));
+		assertEquals(new Point(viewer.getDocument().getLength(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 	}
 
 	@Test
@@ -161,17 +159,27 @@ public class CompletionTest {
 		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
 
 		String content = "FirstNotMatchedLabel";
-		ITextViewer viewer = TestUtils.openTextViewer(createUniqueTestFile(content));
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,content));
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 5);
-		proposals[0].apply(viewer.getDocument());
-		assertEquals(true, viewer.getDocument().get().equals("FirstClass"));
+		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
+		lsCompletionProposal.apply(viewer, '\n', 0, 0);
+		assertEquals("FirstClass", viewer.getDocument().get());
+		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 	}
-
-	private IFile createUniqueTestFile(String content) throws CoreException {
-		IFile testFile = project.getFile("test" + (System.currentTimeMillis()) + ".lspt");
-		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
-		return testFile;
+	
+	@Test
+	public void testCompletionReplace() throws Exception {
+		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineInsertHere");
+		ITextViewer viewer = TestUtils.openTextViewer(file);
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, Collections.singletonList(
+			createCompletionItem("Inserted", CompletionItemKind.Text, new Range(new Position(1, 4), new Position(1, 4 + "InsertHere".length())))
+		)));
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, viewer.getDocument().getLength() - "InsertHere".length());
+		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
+		lsCompletionProposal.apply(viewer, '\n', 0, 0);
+		assertEquals("line1\nlineInserted", viewer.getDocument().get());
+		assertEquals(new Point(viewer.getDocument().getLength(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 	}
 
 	private CompletionItem createCompletionItem(String label, CompletionItemKind kind) {

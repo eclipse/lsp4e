@@ -46,10 +46,13 @@ import org.eclipse.jface.text.link.LinkedPositionGroup;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LSPImages;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionOptions;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -65,7 +68,6 @@ public class LSCompletionProposal
 	private static final String EDIT_AREA_CLOSE_PATTERN = "}}"; //$NON-NLS-1$
 	private CompletionItem item;
 	private int initialOffset;
-	private int initalLength;
 	private ITextViewer viewer;
 	private IRegion selection;
 	private LinkedPosition firstPosition;
@@ -75,7 +77,6 @@ public class LSCompletionProposal
 		this.item = item;
 		this.initialOffset = offset;
 		this.info = info;
-		this.initalLength = info.getDocument().getLength();
 	}
 
 	@Override
@@ -251,23 +252,31 @@ public class LSCompletionProposal
 	public void apply(IDocument document) {
 		String insertText = null;
 		int insertionOffset = this.initialOffset;
-		if (item.getTextEdit() != null) {
+		TextEdit textEdit = item.getTextEdit();
+		if (textEdit != null) {
 			try {
-				insertText = item.getTextEdit().getNewText();
-				insertionOffset = LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getStart(), document);
-				int end = LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getEnd(), document)
-						+ (document.getLength() - initalLength);
-				if (insertionOffset == end){
-					String postfix = document.get(initialOffset, Math.min(insertText.length(), document.getLength() - initialOffset));
-					if (postfix.startsWith(insertText)){
-						end += insertText.length();
+				{ // workaround https://github.com/Microsoft/vscode/issues/17036
+					Position start = textEdit.getRange().getStart();
+					Position end = textEdit.getRange().getEnd();
+					if (start.getLine() > end.getLine() || (start.getLine() == end.getLine() && start.getCharacter() > end.getCharacter())) {
+						textEdit.getRange().setEnd(start);
+						textEdit.getRange().setStart(end);
 					}
 				}
-				item.getTextEdit().getRange().setEnd(LSPEclipseUtils.toPosition(end, document));
-				LSPEclipseUtils.applyEdit(item.getTextEdit(), document);
-				selection = new Region(insertionOffset + insertText.length(), 0);
+				{ // allow completion items to be wrong with a too wide range
+					Position documentEnd = LSPEclipseUtils.toPosition(document.getLength(), document);
+					Position textEditEnd = textEdit.getRange().getEnd();
+					if (documentEnd.getLine() < textEditEnd.getLine()
+						|| (documentEnd.getLine() == textEditEnd.getLine() && documentEnd.getCharacter() < textEditEnd.getCharacter())) {
+						textEdit.getRange().setEnd(documentEnd);
+					}
+				}
+				insertText = textEdit.getNewText();
+				LSPEclipseUtils.applyEdit(textEdit, document);
+				selection = new Region(LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document) + textEdit.getNewText().length(), 0);
 			} catch (BadLocationException e) {
-				e.printStackTrace();
+				LanguageServerPlugin.logError("issue while trying to apply:\n" + textEdit, e); //$NON-NLS-1$
+				return;
 			}
 		} else { // compute a best edit by reusing prefixes and suffixes
 			insertText = getInsertText();
