@@ -24,7 +24,7 @@ public class ProcessStreamConnectionProvider implements StreamConnectionProvider
 
 	public ProcessStreamConnectionProvider() {
 	}
-	
+
 	public ProcessStreamConnectionProvider(List<String> commands, String workingDir) {
 		this.commands = commands;
 		this.workingDir = workingDir;

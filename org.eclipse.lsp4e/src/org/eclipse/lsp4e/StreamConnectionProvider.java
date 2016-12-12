@@ -17,13 +17,13 @@ import java.io.OutputStream;
 /**
  * Abstraction of a connection which we can start/stop and connect to via streams.
  * It's typically used to wrap startup of language servers and to retrieve their
- * streams. 
+ * streams.
  * There most likely an existing Java class already taking care of this somewhere
  * in a popular API. In such case, we should consider getting read of this one and
  * use a more popular similar interface.
  * Note that in the context of Eclipse, the ILaunch might be such interface but I'm
  * not sure we want to bind to org.eclipse.debug from this Language Server bindings.
- * 
+ *
  * This method MUST implement meaningful {@link #hashCode()} and {@link #equals(Object)}
  * to prevent multiple connections to be initiated multiple times.
  */
@@ -34,6 +34,13 @@ public interface StreamConnectionProvider {
 	public InputStream getInputStream();
 
 	public OutputStream getOutputStream();
+
+	/**
+     * User provided initialization options.
+     */
+	public default Object getInitializationOptions(String rootPath){
+		return null;
+	}
 
 	public void stop();
 

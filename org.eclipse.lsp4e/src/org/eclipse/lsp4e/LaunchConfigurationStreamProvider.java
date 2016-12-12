@@ -100,7 +100,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 			this.launchModes = Collections.singleton(ILaunchManager.RUN_MODE);
 		}
 	}
-	
+
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == null) {
@@ -112,7 +112,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		LaunchConfigurationStreamProvider other = (LaunchConfigurationStreamProvider)obj;
 		return this.launchConfiguration.equals(other.launchConfiguration) && this.launchModes.equals(other.launchModes);
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return this.launchConfiguration.hashCode() ^ this.launchModes.hashCode();
@@ -144,6 +144,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		}
 	}
 
+	@Override
 	public InputStream getInputStream() {
 		if (this.inputStream == null) {
 			process = this.launch.getProcesses()[0];
@@ -153,6 +154,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		return this.inputStream;
 	}
 
+	@Override
 	public OutputStream getOutputStream() {
 		if (this.outputStream == null) {
 			try {

@@ -248,6 +248,7 @@ public class ProjectSpecificLanguageServerWrapper {
 			}
 			initParams.setClientName(name);
 			initParams.setCapabilities(new ClientCapabilities());
+			initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(initParams.getRootPath()));
 			initializeFuture = languageServer.initialize(initParams).thenApply(res -> { initializeResult = res; return res;});
 			for (IPath fileToReconnect : filesToReconnect) {
 				connect(fileToReconnect);
