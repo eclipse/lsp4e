@@ -86,6 +86,9 @@ public class ProjectSpecificLanguageServerWrapper {
 			if (this.change == null) {
 				return;
 			}
+			if (getTextDocumentSyncKind() == TextDocumentSyncKind.Full){
+				this.change.getContentChanges().get(0).setText(event.getDocument().get());
+			}
 			languageServer.getTextDocumentService().didChange(this.change);
 			version++;
 		}
@@ -124,7 +127,6 @@ public class ProjectSpecificLanguageServerWrapper {
 				break;
 			case Full:
 				changeEvent = new TextDocumentContentChangeEvent();
-				changeEvent.setText(document.get());
 				break;
 			case Incremental:
 				changeEvent = new TextDocumentContentChangeEvent();
@@ -255,13 +257,11 @@ public class ProjectSpecificLanguageServerWrapper {
 			stop();
 		}
 	}
-	
+
 	private void logServerError(Message message) {
-		if (message instanceof ResponseMessage) {
+		if (message instanceof ResponseMessage && ((ResponseMessage) message).getError() != null) {
 			ResponseMessage responseMessage = (ResponseMessage) message;
-			if (responseMessage.getError() != null) {
-				LanguageServerPlugin.logError(new ResponseErrorException(responseMessage.getError()));
-			}
+			LanguageServerPlugin.logError(new ResponseErrorException(responseMessage.getError()));
 		} else {
 			System.err.println(message.toString());
 		}

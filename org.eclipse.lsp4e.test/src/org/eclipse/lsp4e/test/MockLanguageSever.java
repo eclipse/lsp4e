@@ -11,7 +11,6 @@
 package org.eclipse.lsp4e.test;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -32,21 +31,19 @@ public final class MockLanguageSever implements LanguageServer {
 
 	private MockTextDocumentService textDocumentService = new MockTextDocumentService();
 	private MockWorkspaceService workspaceService = new MockWorkspaceService();
-	private Set<String> completionTriggerChars;
+	private InitializeResult initializeResult = new InitializeResult();
 
 	private MockLanguageSever() {
+		ServerCapabilities capabilities = new ServerCapabilities();
+		capabilities.setTextDocumentSync(TextDocumentSyncKind.Full);
+		CompletionOptions completionProvider = new CompletionOptions();
+		capabilities.setCompletionProvider(completionProvider);
+		initializeResult.setCapabilities(capabilities);
 	}
 
 	@Override
 	public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-		ServerCapabilities capabilities = new ServerCapabilities();
-		capabilities.setTextDocumentSync(TextDocumentSyncKind.Incremental);
-		CompletionOptions completionProvider = new CompletionOptions();
-		if (this.completionTriggerChars != null) {
-			completionProvider.setTriggerCharacters(new ArrayList<>(this.completionTriggerChars));
-		}
-		capabilities.setCompletionProvider(completionProvider);
-		return CompletableFuture.completedFuture(new InitializeResult(capabilities));
+		return CompletableFuture.completedFuture(initializeResult);
 	}
 
 	@Override
@@ -68,7 +65,13 @@ public final class MockLanguageSever implements LanguageServer {
 	}
 
 	public void setCompletionTriggerChars(Set<String> chars) {
-		this.completionTriggerChars = new HashSet<>(chars);
+		if (chars != null) {
+			initializeResult.getCapabilities().getCompletionProvider().setTriggerCharacters(new ArrayList<>(chars));
+		}
+	}
+
+	public InitializeResult getInitializeResult() {
+		return initializeResult;
 	}
 
 	@Override
