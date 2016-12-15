@@ -11,8 +11,9 @@
 package org.eclipse.lsp4e.languages;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.lsp4e.ProcessStreamConnectionProvider;
 
@@ -30,7 +31,14 @@ public class HTMLLanguageServer extends ProcessStreamConnectionProvider {
 
 	@Override
 	public Object getInitializationOptions(String rootPath) {
-		return Collections.singletonMap("css", true);
+		Map<String, Object> map = new HashMap<>();
+		map.put("css", true);
+		map.put("javascript", true);
+		
+		Map<String, Object> options = new HashMap<>();
+		options.put("embeddedLanguages", map);
+		options.put("format.enable", true);
+		return options;
 	}
 	
 	@Override
