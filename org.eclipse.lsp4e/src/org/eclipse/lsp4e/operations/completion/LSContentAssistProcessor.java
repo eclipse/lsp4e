@@ -102,7 +102,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			return new ICompletionProposal[0];
 		}
 
-		Collections.sort(completionList.getItems(), new Comparator<CompletionItem>() {
+		List<CompletionItem> items = new ArrayList<>(completionList.getItems());
+		Collections.sort(items, new Comparator<CompletionItem>() {
 			@Override
 			public int compare(CompletionItem o1, CompletionItem o2) {
 				String c1 = getComparableLabel(o1);
@@ -114,7 +115,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			}
 		});
 		List<ICompletionProposal> proposals = new ArrayList<>();
-		for (CompletionItem item : completionList.getItems()) {
+		for (CompletionItem item : items) {
 			if (item != null) {
 				LSCompletionProposal proposal = new LSCompletionProposal(item, offset, info);
 				if (proposal.validate(info.getDocument(), offset, null)) {

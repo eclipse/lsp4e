@@ -14,7 +14,9 @@ package org.eclipse.lsp4e.operations.declaration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -24,6 +26,7 @@ import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
@@ -33,19 +36,19 @@ import org.eclipse.ui.PlatformUI;
 
 public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector {
 
-	public class LSBasedHyperlink implements IHyperlink {
+	public static class LSBasedHyperlink implements IHyperlink {
 
 		private Location location;
-		private IRegion region;
+		private IRegion highlightRegion;
 
-		public LSBasedHyperlink(Location response, IRegion region) {
+		public LSBasedHyperlink(Location response, IRegion highlightRegion) {
 			this.location = response;
-			this.region = region;
+			this.highlightRegion = highlightRegion;
 		}
 
 		@Override
 		public IRegion getHyperlinkRegion() {
-			return this.region;
+			return this.highlightRegion;
 		}
 
 		@Override
@@ -74,7 +77,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 				CompletableFuture<List<? extends Location>> documentHighlight = info.getLanguageClient().getTextDocumentService()
 						.definition(LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), region.getOffset(), info.getDocument()));
 				List<? extends Location> response = documentHighlight.get(2, TimeUnit.SECONDS);
-				if (response.isEmpty()) {
+				if (response == null || response.isEmpty()) {
 					return null;
 				}
 				IRegion linkRegion = findWord(textViewer.getDocument(), region.getOffset());
@@ -86,9 +89,8 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 					hyperlinks.add(new LSBasedHyperlink(responseLocation, linkRegion));
 				}
 				return hyperlinks.toArray(new IHyperlink[hyperlinks.size()]);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			} catch (BadLocationException | InterruptedException | ExecutionException | TimeoutException e) {
+				LanguageServerPlugin.logError(e);
 			}
 		}
 		return null;
@@ -97,10 +99,10 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 	/**
 	 * This method is only a workaround for missing range value (which can be
 	 * used to highlight hyperlink) in LSP 'definition' response.
-	 * 
+	 *
 	 * Should be removed when protocol will be updated
 	 * (https://github.com/Microsoft/language-server-protocol/issues/3)
-	 * 
+	 *
 	 * @param document
 	 * @param offset
 	 * @return

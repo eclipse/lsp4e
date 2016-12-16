@@ -22,7 +22,6 @@ import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.junit.Test;
 
-@SuppressWarnings("restriction")
 public class DocumentDidChangeTest {
 
 	@Test

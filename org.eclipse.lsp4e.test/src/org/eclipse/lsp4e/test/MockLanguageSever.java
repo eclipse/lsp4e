@@ -11,14 +11,17 @@
 package org.eclipse.lsp4e.test;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
+import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
+import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -38,6 +41,8 @@ public final class MockLanguageSever implements LanguageServer {
 		capabilities.setTextDocumentSync(TextDocumentSyncKind.Full);
 		CompletionOptions completionProvider = new CompletionOptions();
 		capabilities.setCompletionProvider(completionProvider);
+		capabilities.setHoverProvider(true);
+		capabilities.setDefinitionProvider(true);
 		initializeResult.setCapabilities(capabilities);
 	}
 
@@ -58,6 +63,14 @@ public final class MockLanguageSever implements LanguageServer {
 
 	public void setCompletionList(CompletionList completionList) {
 		this.textDocumentService.setCompletionList(completionList);
+	}
+	
+	public void setHover(Hover hover) {
+		this.textDocumentService.setHover(hover);
+	}
+	
+	public void setDefinition(List<? extends Location> definitionLocations){
+		this.textDocumentService.setDefinitionLocations(definitionLocations);
 	}
 
 	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {

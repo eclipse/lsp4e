@@ -21,6 +21,7 @@ import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.resource.ColorRegistry;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DefaultInformationControl;
 import org.eclipse.jface.text.IInformationControl;
 import org.eclipse.jface.text.IInformationControlCreator;
@@ -30,6 +31,7 @@ import org.eclipse.jface.text.ITextHoverExtension;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.Hover;
@@ -85,9 +87,9 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		try {
 			hoverResult = this.hoverRequest.get(500, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
-			e.printStackTrace(); // TODO
+			LanguageServerPlugin.logError(e);
 		}
-		if (hoverResult == null) {
+		if (hoverResult == null || hoverResult.getContents().isEmpty()) {
 			return null;
 		}
 		String result = hoverResult.getContents().stream().collect(Collectors.joining("\n\n")); //$NON-NLS-1$
@@ -137,13 +139,14 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		if (info != null) {
 			try {
 				initiateHoverRequest(textViewer, offset);
-				Range range = hoverRequest.get(800, TimeUnit.MILLISECONDS).getRange();
-				if (range != null) {
+				Hover hover = hoverRequest.get(800, TimeUnit.MILLISECONDS);
+				if (hover != null && hover.getRange() != null) {
+					Range range = hover.getRange();
 					int rangeOffset = LSPEclipseUtils.toOffset(range.getStart(), info.getDocument());
 					res = new Region(rangeOffset, LSPEclipseUtils.toOffset(range.getEnd(), info.getDocument()) - rangeOffset);
 				}
-			} catch (Exception e) {
-				e.printStackTrace();
+			} catch (TimeoutException | InterruptedException | ExecutionException | BadLocationException e) {
+				LanguageServerPlugin.logError(e);
 				res = new Region(offset, 1);
 			}
 		} else {
@@ -161,8 +164,8 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		if (info != null) {
 			try {
 				this.hoverRequest = info.getLanguageClient().getTextDocumentService().hover(LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument()));
-			} catch (Exception e) {
-				e.printStackTrace();
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
 			}
 		}
 	}

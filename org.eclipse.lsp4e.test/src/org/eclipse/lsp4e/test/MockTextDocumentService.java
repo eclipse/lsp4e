@@ -42,6 +42,8 @@ import org.eclipse.lsp4j.services.TextDocumentService;
 public class MockTextDocumentService implements TextDocumentService {
 
 	private CompletionList completionList;
+	private Hover hover;
+	private List<? extends Location> definitionLocations;
 
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
 	
@@ -58,8 +60,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<Hover> hover(TextDocumentPositionParams position) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(hover);
 	}
 
 	@Override
@@ -70,8 +71,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(definitionLocations);
 	}
 
 	@Override
@@ -166,6 +166,14 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
 		this.didChangeCallback = didChangeExpectation;
+	}
+	
+	public void setHover(Hover hover) {
+		this.hover = hover;
+	}
+	
+	public void setDefinitionLocations(List<? extends Location> definitionLocations) {
+		this.definitionLocations = definitionLocations;
 	}
 	
 }
