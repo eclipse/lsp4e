@@ -12,6 +12,7 @@ package org.eclipse.lsp4e.test;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
 import org.eclipse.lsp4j.DidChangeWatchedFilesParams;
@@ -21,6 +22,22 @@ import org.eclipse.lsp4j.services.WorkspaceService;
 
 public class MockWorkspaceService implements WorkspaceService {
 
+	private Function<?, ?> _futureFactory;
+
+	public <U> MockWorkspaceService(Function<U, CompletableFuture<U>> futureFactory) {
+		this._futureFactory = futureFactory;
+	}
+
+	/**
+	 * Use this method to get a future that will wait specified delay before returning
+	 * value
+	 * @param value the value that will be returned by the future
+	 * @return a future that completes to value, after delay from {@link MockLanguageSever#delay}
+	 */
+	private <U> CompletableFuture<U> futureFactory(U value) {
+		return ((Function<U, CompletableFuture<U>>)this._futureFactory).apply(value);
+	}
+	
 	@Override
 	public CompletableFuture<List<? extends SymbolInformation>> symbol(WorkspaceSymbolParams params) {
 		// TODO Auto-generated method stub

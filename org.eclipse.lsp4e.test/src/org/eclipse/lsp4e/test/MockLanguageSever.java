@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016-2017 Rogue Wave Software Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Mickael Istria (Red Hat Inc.) - added support for delays
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionOptions;
@@ -25,34 +27,56 @@ import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.services.LanguageServer;
-import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 
 public final class MockLanguageSever implements LanguageServer {
 
 	public static final MockLanguageSever INSTANCE = new MockLanguageSever();
 
-	private MockTextDocumentService textDocumentService = new MockTextDocumentService();
-	private MockWorkspaceService workspaceService = new MockWorkspaceService();
+	private MockTextDocumentService textDocumentService = new MockTextDocumentService(this::buildMaybeDelayedFuture);
+	private MockWorkspaceService workspaceService = new MockWorkspaceService(this::buildMaybeDelayedFuture);
 	private InitializeResult initializeResult = new InitializeResult();
+	private long delay = 0;
 
 	private MockLanguageSever() {
+		resetInitializeResult();
+	}
+
+	private void resetInitializeResult() {
 		ServerCapabilities capabilities = new ServerCapabilities();
 		capabilities.setTextDocumentSync(TextDocumentSyncKind.Full);
 		CompletionOptions completionProvider = new CompletionOptions();
 		capabilities.setCompletionProvider(completionProvider);
 		capabilities.setHoverProvider(true);
 		capabilities.setDefinitionProvider(true);
+		capabilities.setReferencesProvider(true);
 		initializeResult.setCapabilities(capabilities);
+	}
+	
+	<U> CompletableFuture<U> buildMaybeDelayedFuture(U value) {
+		if (delay > 0) {
+			return CompletableFuture.runAsync(() -> {
+				try {
+					Thread.sleep(delay);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}).thenApply(new Function<Void, U>() {
+				public U apply(Void v) {
+					return value;
+				}
+			});  
+		}
+		return CompletableFuture.completedFuture(value);
 	}
 
 	@Override
 	public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-		return CompletableFuture.completedFuture(initializeResult);
+		return buildMaybeDelayedFuture(initializeResult);
 	}
 
 	@Override
-	public TextDocumentService getTextDocumentService() {
+	public MockTextDocumentService getTextDocumentService() {
 		return textDocumentService;
 	}
 
@@ -62,15 +86,15 @@ public final class MockLanguageSever implements LanguageServer {
 	}
 
 	public void setCompletionList(CompletionList completionList) {
-		this.textDocumentService.setCompletionList(completionList);
+		this.textDocumentService.setMockCompletionList(completionList);
 	}
 	
 	public void setHover(Hover hover) {
-		this.textDocumentService.setHover(hover);
+		this.textDocumentService.setMockHover(hover);
 	}
 	
 	public void setDefinition(List<? extends Location> definitionLocations){
-		this.textDocumentService.setDefinitionLocations(definitionLocations);
+		this.textDocumentService.setMockDefinitionLocations(definitionLocations);
 	}
 
 	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
@@ -89,12 +113,18 @@ public final class MockLanguageSever implements LanguageServer {
 
 	@Override
 	public CompletableFuture<Object> shutdown() {
-		// TODO Auto-generated method stub
+		this.delay = 0;
+		resetInitializeResult();
+		this.textDocumentService.reset();
 		return null;
 	}
 
 	@Override
 	public void exit() {
+	}
+
+	public void setTimeToProceedQueries(int i) {
+		this.delay = i;
 	}
 
 }

@@ -171,8 +171,7 @@ public class CompletionTest {
 		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
 
 		String content = "FirstNotMatchedLabel";
-		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,content));
-
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 5);
 		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
 		lsCompletionProposal.apply(viewer, '\n', 0, 5);

@@ -35,6 +35,8 @@ public class Messages extends NLS {
 	public static String LSPSymbolInWorkspaceDialog_DialogTitle;
 	public static String updateCodelensMenu_job;
 	public static String outline_computingSymbols;
+	public static String findReferences_jobName;
+	public static String findReferences_updateResultView_jobName;
 
 
 	static {

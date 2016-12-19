@@ -21,6 +21,7 @@ import org.eclipse.core.commands.IHandler;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -28,6 +29,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.ReferenceContext;
 import org.eclipse.lsp4j.ReferenceParams;
@@ -59,7 +61,7 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 
 			if (info != null) {
 				ISelection sel = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
-				
+
 				if (sel instanceof TextSelection) {
 					try {
 						ReferenceParams params = new ReferenceParams();
@@ -69,17 +71,20 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 						CompletableFuture<List<? extends Location>> references = info.getLanguageClient()
 						        .getTextDocumentService().references(params);
 						LSSearchResult search = new LSSearchResult(references);
-						searchView.getProgressService().run(true, true, monitor -> {
-							search.getQuery().run(monitor);
-							UIJob refresh = new UIJob("Refresh Result View") { //$NON-NLS-1$
-								@Override
-								public IStatus runInUIThread(IProgressMonitor monitor) {
-									searchView.showSearchResult(search);
-									return Status.OK_STATUS;
-								}
-							};
-							refresh.schedule();
-							refresh.join(0, monitor);
+						searchView.getProgressService().schedule(new Job(Messages.findReferences_jobName) {
+							@Override
+							public IStatus run(IProgressMonitor monitor) {
+								search.getQuery().run(monitor);
+								UIJob refresh = new UIJob(Messages.findReferences_updateResultView_jobName) {
+									@Override
+									public IStatus runInUIThread(IProgressMonitor monitor) {
+										searchView.showSearchResult(search);
+										return Status.OK_STATUS;
+									}
+								};
+								refresh.schedule();
+								return Status.OK_STATUS;
+							}
 						});
 					} catch (Exception e) {
 						LanguageServerPlugin.logError(e);

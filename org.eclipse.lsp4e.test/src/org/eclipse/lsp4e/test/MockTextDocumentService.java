@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2017 Rogue Wave Software Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,11 +7,14 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Mickael Istria (Red Hat Inc.) - Support for delay and mock references
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
@@ -41,15 +44,26 @@ import org.eclipse.lsp4j.services.TextDocumentService;
 
 public class MockTextDocumentService implements TextDocumentService {
 
-	private CompletionList completionList;
-	private Hover hover;
-	private List<? extends Location> definitionLocations;
+	private CompletionList mockCompletionList;
+	private Hover mockHover;
+	private List<? extends Location> mockDefinitionLocations;
 
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
+
+	private Function<?,? extends CompletableFuture<?>> _futureFactory;
+	private Location mockReferences;
 	
+	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
+		this._futureFactory = futureFactory;
+	}
+
+	private <U> CompletableFuture<U> futureFactory(U value) {
+		return ((Function<U, CompletableFuture<U>>)this._futureFactory).apply(value);
+	}
+
 	@Override
 	public CompletableFuture<CompletionList> completion(TextDocumentPositionParams position) {
-		return CompletableFuture.completedFuture(completionList);
+		return futureFactory(mockCompletionList);
 	}
 
 	@Override
@@ -60,7 +74,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<Hover> hover(TextDocumentPositionParams position) {
-		return CompletableFuture.completedFuture(hover);
+		return CompletableFuture.completedFuture(mockHover);
 	}
 
 	@Override
@@ -71,13 +85,12 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
-		return CompletableFuture.completedFuture(definitionLocations);
+		return CompletableFuture.completedFuture(mockDefinitionLocations);
 	}
 
 	@Override
 	public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
-		// TODO Auto-generated method stub
-		return null;
+		return futureFactory(Collections.singletonList(this.mockReferences));
 	}
 
 	@Override
@@ -160,20 +173,31 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	}
 	
-	public void setCompletionList(CompletionList completionList) {
-		this.completionList = completionList;
+	public void setMockCompletionList(CompletionList completionList) {
+		this.mockCompletionList = completionList;
 	}
 
 	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
 		this.didChangeCallback = didChangeExpectation;
 	}
 	
-	public void setHover(Hover hover) {
-		this.hover = hover;
+	public void setMockHover(Hover hover) {
+		this.mockHover = hover;
 	}
 	
-	public void setDefinitionLocations(List<? extends Location> definitionLocations) {
-		this.definitionLocations = definitionLocations;
+	public void setMockDefinitionLocations(List<? extends Location> definitionLocations) {
+		this.mockDefinitionLocations = definitionLocations;
+	}
+
+	public void setMockReferences(Location location) {
+		this.mockReferences = location;
+	}
+
+	public void reset() {
+		this.mockCompletionList = new CompletionList();
+		this.mockDefinitionLocations = Collections.emptyList();
+		this.mockHover = null;
+		this.mockReferences = null;
 	}
 	
 }
