@@ -97,6 +97,24 @@ public class CompletionTest {
 		lsCompletionProposal.apply(viewer, '\n', 0, 0);
 		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 	}
+	
+	@Test
+	public void testPrefixCaseSensitivity() throws CoreException, NoSuchMethodException, SecurityException, IllegalAccessException,
+			IllegalArgumentException, InvocationTargetException {
+		List<CompletionItem> items = new ArrayList<>();
+		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
+
+		String content = "FIRST";
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
+
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
+		assertEquals(1, proposals.length);
+		// TODO compare items
+		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
+		lsCompletionProposal.apply(viewer, '\n', 0, 0);
+		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
+	}
 
 	@Test
 	public void testCompleteOnFileEnd() throws Exception { // bug 508842

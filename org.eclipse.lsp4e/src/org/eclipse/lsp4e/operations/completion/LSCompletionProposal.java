@@ -91,6 +91,8 @@ public class LSCompletionProposal
 				subString = document.get(start, end - start);
 			}
 			int lastIndex = 0;
+			subString = subString.toLowerCase();
+			rawString = subString.toLowerCase();
 			for (Character c : subString.toCharArray()) {
 				int index = rawString.indexOf(c, lastIndex);
 				if (index < 0) {
@@ -101,8 +103,7 @@ public class LSCompletionProposal
 				}
 			}
 		} catch (BadLocationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
 		return res;
 	}
@@ -233,6 +234,8 @@ public class LSCompletionProposal
 			}
 
 			int lastIndex = 0;
+			insert = insert.toLowerCase();
+			subString = subString.toLowerCase();
 			for (Character c : subString.toCharArray()) {
 				int index = insert.indexOf(c, lastIndex);
 				if (index < 0) {
@@ -242,8 +245,7 @@ public class LSCompletionProposal
 				}
 			}
 		} catch (BadLocationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
 		return true;
 	}

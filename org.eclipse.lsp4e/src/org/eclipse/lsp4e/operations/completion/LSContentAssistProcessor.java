@@ -149,7 +149,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 				LanguageServerPlugin.logError(e);
 			}
 		}
-		if (info != this.lastCheckedForAutoActiveCharactersInfo) {
+		if (info != null && info != this.lastCheckedForAutoActiveCharactersInfo) {
 			ServerCapabilities currentCapabilites = info.getCapabilites();
 			if (currentCapabilites == null) {
 				return null;
