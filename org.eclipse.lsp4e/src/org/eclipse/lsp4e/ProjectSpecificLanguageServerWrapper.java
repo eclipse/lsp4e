@@ -167,6 +167,7 @@ public class ProjectSpecificLanguageServerWrapper {
 	final private StreamConnectionProvider lspStreamProvider;
 	private LanguageServer languageServer;
 	private IProject project;
+	private String label;
 	private Map<IPath, DocumentChangeListenenr> connectedFiles;
 	private Map<IPath, IDocument> documents;
 
@@ -174,8 +175,9 @@ public class ProjectSpecificLanguageServerWrapper {
 	private Future<?> launcherFuture;
 	private CompletableFuture<InitializeResult> initializeFuture;
 
-	public ProjectSpecificLanguageServerWrapper(IProject project, StreamConnectionProvider connection) {
+	public ProjectSpecificLanguageServerWrapper(IProject project, String label, StreamConnectionProvider connection) {
 		this.project = project;
+		this.label = label;
 		this.lspStreamProvider = connection;
 		this.connectedFiles = new HashMap<>();
 		this.documents = new HashMap<>();
@@ -193,7 +195,7 @@ public class ProjectSpecificLanguageServerWrapper {
 			if (isActive()) {
 				return;
 			} else {
-				filesToReconnect =  new HashSet(this.connectedFiles.keySet());
+				filesToReconnect =  new HashSet<>(this.connectedFiles.keySet());
 				stop();
 			}
 		}
@@ -224,7 +226,7 @@ public class ProjectSpecificLanguageServerWrapper {
 
 				@Override
 				public void logMessage(MessageParams message) {
-					ServerMessageHandler.logMessage(message);
+					ServerMessageHandler.logMessage(project, label, message);
 				}
 			};
 			ExecutorService executorService = Executors.newCachedThreadPool();

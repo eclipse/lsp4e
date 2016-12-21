@@ -48,6 +48,25 @@ public class LSPStreamConnectionProviderRegistry {
 	private static final String ID_ATTRIBUTE = "id"; //$NON-NLS-1$
 	private static final String CONTENT_TYPE_ATTRIBUTE = "contentType"; //$NON-NLS-1$
 	private static final String CLASS_ATTRIBUTE = "class"; //$NON-NLS-1$
+	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
+
+	protected static final class StreamConnectionInfo {
+		private String id;
+		private String label;
+
+		public StreamConnectionInfo(String id, String label) {
+			this.id = id;
+			this.label = label;
+		}
+
+		public String getId() {
+			return id;
+		}
+
+		public String getLabel() {
+			return label;
+		}
+	}
 
 	private static LSPStreamConnectionProviderRegistry INSTANCE = null;
 	public static LSPStreamConnectionProviderRegistry getInstance() {
@@ -58,6 +77,7 @@ public class LSPStreamConnectionProviderRegistry {
 	}
 
 	private List<ContentTypeToStreamProvider> connections = new ArrayList<>();
+	private Map<StreamConnectionProvider, StreamConnectionInfo> infos = new HashMap<>();
 	private IPreferenceStore preferenceStore;
 
 	private LSPStreamConnectionProviderRegistry() {
@@ -84,13 +104,14 @@ public class LSPStreamConnectionProviderRegistry {
 			if (id != null && !id.isEmpty()) {
 				if (extension.getName().equals(LS_ELEMENT)) {
 					try {
+						String label = extension.getAttribute(LABEL_ATTRIBUTE);
 						StreamConnectionProvider scp = (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
 						if (scp != null) {
 							servers.put(id, scp);
+							infos.put(scp, new StreamConnectionInfo(id, label));
 						}
 					} catch (CoreException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						LanguageServerPlugin.logError(e);
 					}
 				} else if (extension.getName().equals(MAPPING_ELEMENT)) {
 					IContentType contentType = Platform.getContentTypeManager().getContentType(extension.getAttribute(CONTENT_TYPE_ATTRIBUTE));
@@ -125,7 +146,7 @@ public class LSPStreamConnectionProviderRegistry {
 			try {
 				((IPersistentPreferenceStore) this.preferenceStore).save();
 			} catch (IOException e) {
-				e.printStackTrace();
+				LanguageServerPlugin.logError(e);
 			}
 		}
 	}
@@ -136,6 +157,10 @@ public class LSPStreamConnectionProviderRegistry {
 			.filter(entry -> { return entry.getContentType().equals(contentType); })
 			.map(entry -> { return entry.getStreamConnectionProvider(); })
 			.toArray(StreamConnectionProvider[]::new));
+	}
+
+	protected StreamConnectionInfo getInfo(@NonNull StreamConnectionProvider provider) {
+		return infos.get(provider);
 	}
 
 	public void registerAssociation(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {

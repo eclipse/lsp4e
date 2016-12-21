@@ -14,13 +14,20 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.mylyn.commons.notifications.core.AbstractNotification;
 import org.eclipse.mylyn.commons.notifications.ui.NotificationsUi;
+import org.eclipse.ui.console.ConsolePlugin;
+import org.eclipse.ui.console.IConsole;
+import org.eclipse.ui.console.IConsoleManager;
+import org.eclipse.ui.console.MessageConsole;
 
 @SuppressWarnings("restriction")
 public class ServerMessageHandler {
+
+	private static final String NAME_PATTERN = "%s (%s)"; //$NON-NLS-1$
 
 	private static class LSPNotification extends AbstractNotification {
 
@@ -55,19 +62,34 @@ public class ServerMessageHandler {
 
 	}
 
-	public static void logMessage(MessageParams params) {
-		// TODO 
+	public static void logMessage(IProject project, String serverLabel, MessageParams params) {
+		MessageConsole console = findConsole(String.format(NAME_PATTERN, serverLabel, project.getName()));
+		console.newMessageStream().println(String.format("[%s]\t%s", params.getType(), params.getMessage())); //$NON-NLS-1$
 	}
 
 	public static void showMessage(MessageParams params) {
 		AbstractNotification notification = new LSPNotification(String.format("LSP (%s)", params.getType()), //$NON-NLS-1$
-		        params.getMessage());
+				params.getMessage());
 		NotificationsUi.getService().notify(Collections.singletonList(notification));
 	}
 
 	public static CompletableFuture<Void> showMessageRequest(ShowMessageRequestParams params) {
-		// TODO 
+		// TODO
 		return null;
+	}
+
+	private static MessageConsole findConsole(String name) {
+		ConsolePlugin plugin = ConsolePlugin.getDefault();
+		IConsoleManager conMan = plugin.getConsoleManager();
+		IConsole[] existing = conMan.getConsoles();
+		for (int i = 0; i < existing.length; i++)
+			if (name.equals(existing[i].getName())) {
+				return (MessageConsole) existing[i];
+			}
+		// no console found, so create a new one
+		MessageConsole myConsole = new MessageConsole(name, null);
+		conMan.addConsoles(new IConsole[] { myConsole });
+		return myConsole;
 	}
 
 }

@@ -35,6 +35,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.LSPStreamConnectionProviderRegistry.StreamConnectionInfo;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -206,8 +207,7 @@ public class LanguageServiceAccessor {
 		try (InputStream contents = file.getContents()) {
 			fileContentTypes = Platform.getContentTypeManager().findContentTypesFor(contents, file.getName()); //TODO consider using document as inputstream
 		} catch (CoreException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 			return null;
 		}
 		ProjectSpecificLanguageServerWrapper wrapper = getMatchingStartedWrapper(project, fileContentTypes, request);
@@ -219,8 +219,9 @@ public class LanguageServiceAccessor {
 		// try to create one for available content type
 		for (IContentType contentType : fileContentTypes) {
 			for (StreamConnectionProvider connection : LSPStreamConnectionProviderRegistry.getInstance().findProviderFor(contentType)) {
-				if (!usedConnections.contains(connection)) {
-					wrapper = new ProjectSpecificLanguageServerWrapper(project, connection);
+				if (connection != null && !usedConnections.contains(connection)) {
+					StreamConnectionInfo info = LSPStreamConnectionProviderRegistry.getInstance().getInfo(connection);
+					wrapper = new ProjectSpecificLanguageServerWrapper(project, info.getLabel(), connection);
 					wrapper.start();
 					WrapperEntryKey key = new WrapperEntryKey(project, contentType);
 					if (!projectServers.containsKey(key)) {
