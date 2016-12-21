@@ -251,7 +251,22 @@ public class LSCompletionProposal
 	}
 
 	@Override
+	public void apply(ITextViewer viewer, char trigger, int stateMask, int offset) {
+		this.viewer = viewer;
+		apply(viewer.getDocument(), trigger, stateMask, offset);
+	}
+
+	@Override
+	public void apply(IDocument document, char trigger, int offset) {
+		apply(document, trigger, 0, offset);
+	}
+
+	@Override
 	public void apply(IDocument document) {
+		apply(document, Character.MIN_VALUE, 0, this.initialOffset);
+	}
+
+	private void apply(IDocument document, char trigger, int stateMask, int offset) {
 		String insertText = null;
 		int insertionOffset = this.initialOffset;
 		TextEdit textEdit = item.getTextEdit();
@@ -271,6 +286,13 @@ public class LSCompletionProposal
 					if (documentEnd.getLine() < textEditEnd.getLine()
 						|| (documentEnd.getLine() == textEditEnd.getLine() && documentEnd.getCharacter() < textEditEnd.getCharacter())) {
 						textEdit.getRange().setEnd(documentEnd);
+					}
+				}
+				{
+					// shift range if user typed something after invoking completion
+					if (insertionOffset != offset) {
+						int shift = offset - insertionOffset;
+						textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + shift);
 					}
 				}
 				insertText = textEdit.getNewText();
@@ -375,17 +397,6 @@ public class LSCompletionProposal
 			insertText = this.item.getLabel();
 		}
 		return insertText;
-	}
-
-	@Override
-	public void apply(ITextViewer viewer, char trigger, int stateMask, int offset) {
-		this.viewer = viewer;
-		apply(viewer.getDocument());
-	}
-
-	@Override
-	public void apply(IDocument document, char trigger, int offset) {
-		apply(document);
 	}
 
 	@Override
