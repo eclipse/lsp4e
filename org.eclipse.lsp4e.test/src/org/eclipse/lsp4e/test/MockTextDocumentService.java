@@ -49,6 +49,8 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<? extends Location> mockDefinitionLocations;
 
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
+	private CompletableFuture<DidSaveTextDocumentParams> didSaveCallback;
+	private CompletableFuture<DidCloseTextDocumentParams> didCloseCallback;
 
 	private Function<?,? extends CompletableFuture<?>> _futureFactory;
 	private Location mockReferences;
@@ -163,14 +165,18 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public void didClose(DidCloseTextDocumentParams params) {
-		// TODO Auto-generated method stub
-
+		if (didCloseCallback != null) {
+			didCloseCallback.complete(params);
+			didCloseCallback = null;
+		}
 	}
 
 	@Override
 	public void didSave(DidSaveTextDocumentParams params) {
-		// TODO Auto-generated method stub
-
+		if (didSaveCallback != null) {
+			didSaveCallback.complete(params);
+			didSaveCallback = null;
+		}
 	}
 	
 	public void setMockCompletionList(CompletionList completionList) {
@@ -179,6 +185,14 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
 		this.didChangeCallback = didChangeExpectation;
+	}
+	
+	public void setDidSaveCallback(CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation) {
+		this.didSaveCallback = didSaveExpectation;
+	}
+	
+	public void setDidCloseCallback(CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation) {
+		this.didCloseCallback = didCloseExpectation;
 	}
 	
 	public void setMockHover(Hover hover) {

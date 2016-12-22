@@ -20,6 +20,8 @@ import java.util.function.Function;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
+import org.eclipse.lsp4j.DidCloseTextDocumentParams;
+import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
@@ -100,6 +102,14 @@ public final class MockLanguageSever implements LanguageServer {
 	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
 		this.textDocumentService.setDidChangeCallback(didChangeExpectation);
 	}
+	
+	public void setDidSaveCallback(CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation) {
+		this.textDocumentService.setDidSaveCallback(didSaveExpectation);
+	}
+	
+	public void setDidCloseCallback(CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation) {
+		this.textDocumentService.setDidCloseCallback(didCloseExpectation);
+	}
 
 	public void setCompletionTriggerChars(Set<String> chars) {
 		if (chars != null) {
@@ -116,7 +126,7 @@ public final class MockLanguageSever implements LanguageServer {
 		this.delay = 0;
 		resetInitializeResult();
 		this.textDocumentService.reset();
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
 
 	@Override

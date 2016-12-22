@@ -33,15 +33,12 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 public class TestUtils {
 
-	public static ITextViewer openTextViewer(IFile file) throws InvocationTargetException {
-		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		IWorkbenchPage page = workbenchWindow.getActivePage();
-		IEditorInput input = new FileEditorInput(file);
+	public static ITextViewer openTextViewer(IFile file) throws InvocationTargetException, PartInitException {
+		return openTextViewer(file, openEditor(file));
+	}
 
-		IEditorPart part;
-		try {
-			part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", true);
-			part.setFocus();
+	public static ITextViewer openTextViewer(IFile file, IEditorPart part) throws InvocationTargetException {
+		try {			
 			if (part instanceof ITextEditor) {
 				ITextEditor textEditor = (ITextEditor) part;
 
@@ -52,10 +49,26 @@ public class TestUtils {
 				fail("Unable to open editor");
 				return null;
 			}
-		} catch (PartInitException | NoSuchMethodException | SecurityException | IllegalAccessException
-				| IllegalArgumentException | InvocationTargetException e) {
+		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
+				| InvocationTargetException e) {
 			throw new InvocationTargetException(e);
 		}
+	}
+	
+	public static IEditorPart openEditor(IFile file) throws PartInitException {
+		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		IWorkbenchPage page = workbenchWindow.getActivePage();
+		IEditorInput input = new FileEditorInput(file);
+
+		IEditorPart part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", false);
+		part.setFocus();
+		return part;
+	}
+
+	public static boolean closeEditor(IEditorPart editor, boolean save) {
+		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		IWorkbenchPage page = workbenchWindow.getActivePage();
+		return page.closeEditor(editor, save);
 	}
 
 	public static IProject createProject(String projectName) throws CoreException {

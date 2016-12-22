@@ -11,8 +11,6 @@
 package org.eclipse.lsp4e;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,37 +24,32 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.IFileBuffer;
+import org.eclipse.core.filebuffers.IFileBufferListener;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.jface.text.BadLocationException;
-import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.ClientCapabilities;
-import org.eclipse.lsp4j.DidChangeTextDocumentParams;
-import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
-import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
-import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
-import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
-import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
@@ -68,108 +61,50 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 
 /**
- * Wraps instantiation, initialization of project-specific instance of the
- * language server
+ * Wraps instantiation, initialization of project-specific instance of the language server
  */
 public class ProjectSpecificLanguageServerWrapper {
 
-	private final class DocumentChangeListenenr implements IDocumentListener {
-		private URI fileURI;
-		private int version = 2;
-		private DidChangeTextDocumentParams change;
-
-		public DocumentChangeListenenr(URI fileURI) {
-			this.fileURI = fileURI;
+	private IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
+		@Override
+		public void bufferDisposed(IFileBuffer buffer) {
+			Path filePath = new Path(buffer.getFileStore().toURI().getPath());
+			if (!isFromProject(filePath)) {
+				return;
+			}
+			disconnect(filePath);
 		}
 
 		@Override
-		public void documentChanged(DocumentEvent event) {
-			if (this.change == null) {
+		public void dirtyStateChanged(IFileBuffer buffer, boolean isDirty) {
+			if (isDirty) {
 				return;
 			}
-			if (getTextDocumentSyncKind() == TextDocumentSyncKind.Full){
-				this.change.getContentChanges().get(0).setText(event.getDocument().get());
-			}
-			languageServer.getTextDocumentService().didChange(this.change);
-			version++;
-		}
-
-		@Override
-		public void documentAboutToBeChanged(DocumentEvent event) {
-			// create change event according synch
-			TextDocumentContentChangeEvent changeEvent = toChangeEvent(event);
-			if (changeEvent == null) {
+			Path filePath = new Path(buffer.getFileStore().toURI().getPath());
+			if (!isFromProject(filePath)) {
 				return;
 			}
-			this.change = new DidChangeTextDocumentParams();
-			VersionedTextDocumentIdentifier doc = new VersionedTextDocumentIdentifier();
-			doc.setUri(fileURI.toString());
-			doc.setVersion(version);
-			this.change.setTextDocument(doc);
-			this.change.setContentChanges(Arrays.asList(new TextDocumentContentChangeEvent[] { changeEvent }));
-		}
 
-		/**
-		 * Convert Eclipse {@link DocumentEvent} to LS according
-		 * {@link TextDocumentSyncKind}.
-		 * {@link TextDocumentContentChangeEventImpl}.
-		 *
-		 * @param event
-		 *            Eclipse {@link DocumentEvent}
-		 * @return the converted LS {@link TextDocumentContentChangeEventImpl}.
-		 */
-		private TextDocumentContentChangeEvent toChangeEvent(DocumentEvent event) {
-			IDocument document = event.getDocument();
-			TextDocumentContentChangeEvent changeEvent = null;
-			TextDocumentSyncKind syncKind = getTextDocumentSyncKind();
-			switch (syncKind) {
-			case None:
-				changeEvent = null;
-				break;
-			case Full:
-				changeEvent = new TextDocumentContentChangeEvent();
-				break;
-			case Incremental:
-				changeEvent = new TextDocumentContentChangeEvent();
-				String newText = event.getText();
-				int offset = event.getOffset();
-				int length = event.getLength();
-				try {
-					// try to convert the Eclipse start/end offset to LS range.
-					Range range = new Range(LSPEclipseUtils.toPosition(offset, document),
-							LSPEclipseUtils.toPosition(offset + length, document));
-					changeEvent.setRange(range);
-					changeEvent.setText(newText);
-					changeEvent.setRangeLength(length);
-				} catch (BadLocationException e) {
-					// error while conversion (should never occur)
-					// set the full document text as changes.
-					changeEvent.setText(document.get());
-				}
-				break;
+			DocumentContentSynchronizer documentListener = connectedFiles.get(filePath);
+			if (documentListener != null && documentListener.getModificationStamp() < buffer.getModificationStamp()) {
+				documentListener.documentSaved(buffer.getModificationStamp());
 			}
-			return changeEvent;
 		}
 
-		/**
-		 * Returns the text document sync kind capabilities of the server and
-		 * {@link TextDocumentSyncKind#Full} otherwise.
-		 *
-		 * @return the text document sync kind capabilities of the server and
-		 *         {@link TextDocumentSyncKind#Full} otherwise.
-		 */
-		private TextDocumentSyncKind getTextDocumentSyncKind() {
-			TextDocumentSyncKind syncKind = initializeResult != null
-			        ? initializeResult.getCapabilities().getTextDocumentSync() : null;
-			return syncKind != null ? syncKind : TextDocumentSyncKind.Full;
+		private boolean isFromProject(IPath path) {
+			if (project == null || project.getLocation() == null) {
+				return false;
+			}
+			return project.getLocation().isPrefixOf(path);
 		}
-	}
 
-	final private StreamConnectionProvider lspStreamProvider;
+	};
+
+	private final StreamConnectionProvider lspStreamProvider;
 	private LanguageServer languageServer;
 	private IProject project;
 	private String label;
-	private Map<IPath, DocumentChangeListenenr> connectedFiles;
+	private Map<IPath, DocumentContentSynchronizer> connectedFiles;
 	private Map<IPath, IDocument> documents;
 
 	private InitializeResult initializeResult;
@@ -182,12 +117,13 @@ public class ProjectSpecificLanguageServerWrapper {
 		this.lspStreamProvider = connection;
 		this.connectedFiles = new HashMap<>();
 		this.documents = new HashMap<>();
+		FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
 	}
 
 	/**
-	 * Starts a language server and triggers initialization.
-	 * If language server is started and active, does nothing.
-	 * If language server is inactive, restart it.
+	 * Starts a language server and triggers initialization. If language server is started and active, does nothing. If
+	 * language server is inactive, restart it.
+	 *
 	 * @throws IOException
 	 */
 	public void start() throws IOException {
@@ -232,11 +168,8 @@ public class ProjectSpecificLanguageServerWrapper {
 			};
 			ExecutorService executorService = Executors.newCachedThreadPool();
 			Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
-					this.lspStreamProvider.getInputStream(),
-					this.lspStreamProvider.getOutputStream(),
-					executorService,
-					consumer -> (
-						message -> {
+					this.lspStreamProvider.getInputStream(), this.lspStreamProvider.getOutputStream(), executorService,
+					consumer -> (message -> {
 						consumer.consume(message);
 						logServerError(message);
 					}));
@@ -251,8 +184,12 @@ public class ProjectSpecificLanguageServerWrapper {
 			}
 			initParams.setClientName(name);
 			initParams.setCapabilities(new ClientCapabilities());
-			initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(initParams.getRootPath()));
-			initializeFuture = languageServer.initialize(initParams).thenApply(res -> { initializeResult = res; return res;});
+			initParams.setInitializationOptions(
+					this.lspStreamProvider.getInitializationOptions(initParams.getRootPath()));
+			initializeFuture = languageServer.initialize(initParams).thenApply(res -> {
+				initializeResult = res;
+				return res;
+			});
 			for (IPath fileToReconnect : filesToReconnect) {
 				connect(fileToReconnect);
 			}
@@ -302,41 +239,42 @@ public class ProjectSpecificLanguageServerWrapper {
 			disconnect(this.documents.keySet().iterator().next());
 		}
 		this.languageServer = null;
+
+		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
 	}
 
-	public void connect(@NonNull IPath absolutePath) throws IOException, InterruptedException, ExecutionException, TimeoutException {
+	public void connect(@NonNull IPath absolutePath)
+			throws IOException, InterruptedException, ExecutionException, TimeoutException {
 		start();
 		IFile file = (IFile) LSPEclipseUtils.findResourceFor(absolutePath.toFile().toURI().toString());
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		if (this.connectedFiles.containsKey(file.getLocation())) {
 			return;
 		}
-		// add a document buffer
-		DidOpenTextDocumentParams open = new DidOpenTextDocumentParams();
-		TextDocumentItem textDocument = new TextDocumentItem();
-		textDocument.setUri(file.getLocationURI().toString());
-		textDocument.setText(document.get());
-		textDocument.setLanguageId(file.getFileExtension());
-		open.setTextDocument(textDocument);
-		this.initializeFuture.get(3, TimeUnit.SECONDS);
-		this.languageServer.getTextDocumentService().didOpen(open);
 
-		DocumentChangeListenenr listener = new DocumentChangeListenenr(file.getLocationURI());
+		this.initializeFuture.get(3, TimeUnit.SECONDS);
+
+		TextDocumentSyncKind syncKind = initializeFuture == null ? null
+				: initializeResult.getCapabilities().getTextDocumentSync();
+		DocumentContentSynchronizer listener = new DocumentContentSynchronizer(languageServer, document, absolutePath, syncKind);
 		document.addDocumentListener(listener);
 		this.connectedFiles.put(file.getLocation(), listener);
 		this.documents.put(file.getLocation(), document);
 	}
 
 	public void disconnect(IPath path) {
-		this.documents.get(path).removeDocumentListener(this.connectedFiles.get(path));
-		this.connectedFiles.remove(path);
-		this.documents.remove(path);
+		DocumentContentSynchronizer documentListener = this.connectedFiles.remove(path);
+		if (documentListener != null) {
+			documentListener.documentClosed();
+			this.documents.remove(path).removeDocumentListener(documentListener);
+		}
 		if (this.connectedFiles.isEmpty()) {
 			stop();
 		}
 	}
 
-	@NonNull public LanguageServer getServer() {
+	@NonNull
+	public LanguageServer getServer() {
 		try {
 			start();
 		} catch (IOException ex) {
@@ -354,8 +292,7 @@ public class ProjectSpecificLanguageServerWrapper {
 				waitForInitialization.setUser(true);
 				waitForInitialization.setSystem(false);
 				PlatformUI.getWorkbench().getProgressService().showInDialog(
-					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(),
-					waitForInitialization);
+						PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), waitForInitialization);
 			}
 			this.initializeFuture.join();
 		}
@@ -364,6 +301,7 @@ public class ProjectSpecificLanguageServerWrapper {
 
 	/**
 	 * Warning: this is a long running operation
+	 *
 	 * @return the server capabilities, or null if initialization job didn't complete
 	 */
 	@Nullable
@@ -384,4 +322,5 @@ public class ProjectSpecificLanguageServerWrapper {
 	public StreamConnectionProvider getUnderlyingConnection() {
 		return this.lspStreamProvider;
 	}
+
 }
