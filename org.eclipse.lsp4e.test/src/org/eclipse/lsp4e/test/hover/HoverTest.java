@@ -12,7 +12,6 @@ package org.eclipse.lsp4e.test.hover;
 
 import static org.junit.Assert.assertEquals;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 
 import org.eclipse.core.resources.IFile;
@@ -49,7 +48,7 @@ public class HoverTest {
 	}
 
 	@Test
-	public void testHoverRegion() throws CoreException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException  {
+	public void testHoverRegion() throws Exception {
 		Hover hoverResponse = new Hover(Collections.singletonList("HoverContent"), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageSever.INSTANCE.setHover(hoverResponse);
 
@@ -60,7 +59,7 @@ public class HoverTest {
 	}
 	
 	@Test
-	public void testHoverRegionInvalidOffset() throws CoreException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException  {
+	public void testHoverRegionInvalidOffset() throws Exception {
 		MockLanguageSever.INSTANCE.setHover(null);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -70,7 +69,7 @@ public class HoverTest {
 	}
 	
 	@Test
-	public void testHoverInfo() throws CoreException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException  {
+	public void testHoverInfo() throws Exception {
 		Hover hoverResponse = new Hover(Collections.singletonList("HoverContent"), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageSever.INSTANCE.setHover(hoverResponse);
 
@@ -82,7 +81,7 @@ public class HoverTest {
 	}
 	
 	@Test
-	public void testHoverInfoEmptyContentList() throws CoreException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException  {
+	public void testHoverInfoEmptyContentList() throws Exception {
 		Hover hoverResponse = new Hover(Collections.emptyList(), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageSever.INSTANCE.setHover(hoverResponse);
 
@@ -93,7 +92,7 @@ public class HoverTest {
 	}
 	
 	@Test
-	public void testHoverInfoInvalidOffset() throws CoreException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException  {
+	public void testHoverInfoInvalidOffset() throws Exception {
 		MockLanguageSever.INSTANCE.setHover(null);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");

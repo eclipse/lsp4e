@@ -13,8 +13,6 @@ package org.eclipse.lsp4e.test.completion;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import java.io.ByteArrayInputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -60,15 +58,12 @@ public class CompletionTest {
 	}
 
 	@Test
-	public void testNoPrefix() throws CoreException, NoSuchMethodException, SecurityException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException {
+	public void testNoPrefix() throws Exception {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
 		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
 
-		IFile testFile = project.getFile("test01.lspt");
-		testFile.create(new ByteArrayInputStream(new byte[0]), true, null);
-
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
@@ -80,8 +75,7 @@ public class CompletionTest {
 	}
 
 	@Test
-	public void testPrefix() throws CoreException, NoSuchMethodException, SecurityException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException {
+	public void testPrefix() throws Exception {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
 		items.add(createCompletionItem("SecondClass", CompletionItemKind.Class));
@@ -99,8 +93,7 @@ public class CompletionTest {
 	}
 	
 	@Test
-	public void testPrefixCaseSensitivity() throws CoreException, NoSuchMethodException, SecurityException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException {
+	public void testPrefixCaseSensitivity() throws Exception {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
 		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));

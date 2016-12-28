@@ -33,22 +33,27 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 public class TestUtils {
 
-	public static ITextViewer openTextViewer(IFile file) throws PartInitException, NoSuchMethodException,
-			SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	public static ITextViewer openTextViewer(IFile file) throws InvocationTargetException {
 		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
 		IEditorInput input = new FileEditorInput(file);
 
-		IEditorPart part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", false);
-		if (part instanceof ITextEditor) {
-			ITextEditor textEditor = (ITextEditor) part;
+		IEditorPart part;
+		try {
+			part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", false);
+			if (part instanceof ITextEditor) {
+				ITextEditor textEditor = (ITextEditor) part;
 
-			Method getSourceViewerMethod = AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
-			getSourceViewerMethod.setAccessible(true);
-			return (ITextViewer) getSourceViewerMethod.invoke(textEditor);
-		} else {
-			fail("Unable to open editor");
-			return null;
+				Method getSourceViewerMethod = AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
+				getSourceViewerMethod.setAccessible(true);
+				return (ITextViewer) getSourceViewerMethod.invoke(textEditor);
+			} else {
+				fail("Unable to open editor");
+				return null;
+			}
+		} catch (PartInitException | NoSuchMethodException | SecurityException | IllegalAccessException
+				| IllegalArgumentException | InvocationTargetException e) {
+			throw new InvocationTargetException(e);
 		}
 	}
 
@@ -64,10 +69,13 @@ public class TestUtils {
 	}
 
 	public static IFile createUniqueTestFile(IProject p, String content) throws CoreException {
-		IFile testFile = p.getFile("test" + (System.currentTimeMillis()) + ".lspt");
+		return createFile(p, "test" + (System.currentTimeMillis()) + ".lspt", content);
+	}
+
+	public static IFile createFile(IProject p, String name, String content) throws CoreException {
+		IFile testFile = p.getFile(name);
 		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
 		return testFile;
 	}
-
 
 }

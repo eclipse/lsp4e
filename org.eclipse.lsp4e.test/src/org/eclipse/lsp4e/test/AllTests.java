@@ -22,6 +22,7 @@ import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
 @SuiteClasses({
+	LanguageServiceAccessorTest.class,
 	CompletionTest.class,
 	DocumentDidChangeTest.class,
 	SymbolsModelTest.class,

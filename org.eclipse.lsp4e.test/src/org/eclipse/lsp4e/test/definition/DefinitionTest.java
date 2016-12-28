@@ -12,7 +12,6 @@ package org.eclipse.lsp4e.test.definition;
 
 import static org.junit.Assert.assertEquals;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -52,8 +51,7 @@ public class DefinitionTest {
 	}
 
 	@Test
-	public void testDefinitionOneLocation() throws CoreException, NoSuchMethodException, SecurityException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException {
+	public void testDefinitionOneLocation() throws Exception {
 		Location location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
 		MockLanguageSever.INSTANCE.setDefinition(Collections.singletonList(location));
 
@@ -66,8 +64,7 @@ public class DefinitionTest {
 	}
 	
 	@Test
-	public void testDefinitionManyLocation() throws CoreException, NoSuchMethodException, SecurityException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException {
+	public void testDefinitionManyLocation() throws Exception {
 		List<Location> locations = new ArrayList<>();
 		locations.add(new Location("file://test0", new Range(new Position(0, 0), new Position(0, 10))));
 		locations.add(new Location("file://test1", new Range(new Position(1, 0), new Position(1, 10))));
@@ -83,8 +80,7 @@ public class DefinitionTest {
 	}
 
 	@Test
-	public void testDefinitionNoLocations() throws CoreException, NoSuchMethodException, SecurityException,
-			IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	public void testDefinitionNoLocations() throws Exception {
 		MockLanguageSever.INSTANCE.setDefinition(null);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
@@ -95,8 +91,7 @@ public class DefinitionTest {
 	}
 	
 	@Test
-	public void testDefinitionEmptyLocations() throws CoreException, NoSuchMethodException, SecurityException,
-			IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	public void testDefinitionEmptyLocations() throws Exception {
 		MockLanguageSever.INSTANCE.setDefinition(Collections.emptyList());
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");

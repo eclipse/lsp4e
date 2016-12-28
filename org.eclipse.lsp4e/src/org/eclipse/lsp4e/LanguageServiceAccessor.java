@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 
 import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
@@ -165,7 +166,11 @@ public class LanguageServiceAccessor {
 	}
 
 	@Nullable public static LSPDocumentInfo getLSPDocumentInfoFor(@NonNull IDocument document, @Nullable Predicate<ServerCapabilities> capabilityRequest) {
-		final IPath location = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document).getLocation();
+		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
+		if (buffer == null) {
+			return null;
+		}
+		final IPath location = buffer.getLocation();
 		final IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(location);
 		URI fileUri = null;
 		if (file.exists()) {
