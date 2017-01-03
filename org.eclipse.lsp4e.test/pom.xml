@@ -19,6 +19,7 @@
 					<testClass>org.eclipse.lsp4e.test.AllTests</testClass>
 					<useUIHarness>true</useUIHarness>
 					<useUIThread>true</useUIThread>
+					<argLine>${tycho.testArgLine} ${ui.test.vmargs}</argLine>
 				</configuration>
 			</plugin>
 		</plugins>

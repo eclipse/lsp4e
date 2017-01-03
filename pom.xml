@@ -10,6 +10,7 @@
 		<tycho-extras-version>${tycho-version}</tycho-extras-version>
 		<sonar.jacoco.reportPath>../target/jacoco.exec</sonar.jacoco.reportPath>
 		<tycho.scmUrl>scm:git:https://git.eclipse.org/r/p/lsp4e/lsp4e.git</tycho.scmUrl>
+		<ui.test.vmargs></ui.test.vmargs>
 	</properties>
 
 	<modules>
@@ -210,6 +211,18 @@
 					</plugin>
 				</plugins>
 			</build>
+		</profile>
+		<!-- Automatic profile for Mac-specific settings -->
+		<profile>
+			<id>macos</id>
+			<activation>
+				<os>
+					<family>mac</family>
+				</os>
+			</activation>
+			<properties>
+				<ui.test.vmargs>-XstartOnFirstThread -Dorg.eclipse.swt.internal.carbon.smallFonts -Djava.awt.headless=false</ui.test.vmargs>
+			</properties>
 		</profile>
 	</profiles>
 
