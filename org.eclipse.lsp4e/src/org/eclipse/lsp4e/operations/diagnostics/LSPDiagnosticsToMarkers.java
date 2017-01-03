@@ -25,16 +25,17 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 
 import com.google.common.base.Objects;
 
 public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParams> {
-	
-	protected static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
+
 	public static final String LSP_DIAGNOSTIC = "lspDiagnostic"; //$NON-NLS-1$
-	protected IProject project;
+	private static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
+	private final IProject project;
 
 	public LSPDiagnosticsToMarkers(IProject project) {
 		this.project = project;
@@ -62,7 +63,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 				marker.delete();
 			}
 		} catch (CoreException ex) {
-			ex.printStackTrace(); // TODO
+			LanguageServerPlugin.logError(ex);
 		}
 	}
 
@@ -80,7 +81,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 				marker.setAttribute(IMarker.LINE_NUMBER, diagnostic.getRange().getStart().getLine());
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace(); // TODO
+			LanguageServerPlugin.logError(ex);
 		}
 	}
 
@@ -101,7 +102,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 					return marker;
 				}
 			} catch (Exception e) {
-				e.printStackTrace(); // TODO
+				LanguageServerPlugin.logError(e);
 			}
 		}
 		return null;

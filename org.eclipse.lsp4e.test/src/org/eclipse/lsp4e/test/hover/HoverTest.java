@@ -12,6 +12,7 @@ package org.eclipse.lsp4e.test.hover;
 
 import static org.junit.Assert.assertEquals;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 
 import org.eclipse.core.resources.IFile;
@@ -48,7 +49,7 @@ public class HoverTest {
 	}
 
 	@Test
-	public void testHoverRegion() throws Exception {
+	public void testHoverRegion() throws CoreException, InvocationTargetException {
 		Hover hoverResponse = new Hover(Collections.singletonList("HoverContent"), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageSever.INSTANCE.setHover(hoverResponse);
 
@@ -59,7 +60,7 @@ public class HoverTest {
 	}
 	
 	@Test
-	public void testHoverRegionInvalidOffset() throws Exception {
+	public void testHoverRegionInvalidOffset() throws CoreException, InvocationTargetException {
 		MockLanguageSever.INSTANCE.setHover(null);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -69,7 +70,7 @@ public class HoverTest {
 	}
 	
 	@Test
-	public void testHoverInfo() throws Exception {
+	public void testHoverInfo() throws CoreException, InvocationTargetException {
 		Hover hoverResponse = new Hover(Collections.singletonList("HoverContent"), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageSever.INSTANCE.setHover(hoverResponse);
 
@@ -81,7 +82,7 @@ public class HoverTest {
 	}
 	
 	@Test
-	public void testHoverInfoEmptyContentList() throws Exception {
+	public void testHoverInfoEmptyContentList() throws CoreException, InvocationTargetException {
 		Hover hoverResponse = new Hover(Collections.emptyList(), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageSever.INSTANCE.setHover(hoverResponse);
 
@@ -92,7 +93,7 @@ public class HoverTest {
 	}
 	
 	@Test
-	public void testHoverInfoInvalidOffset() throws Exception {
+	public void testHoverInfoInvalidOffset() throws CoreException, InvocationTargetException {
 		MockLanguageSever.INSTANCE.setHover(null);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");

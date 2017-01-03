@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.test.completion;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -23,6 +24,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
@@ -58,7 +60,7 @@ public class CompletionTest {
 	}
 
 	@Test
-	public void testNoPrefix() throws Exception {
+	public void testNoPrefix() throws CoreException, InvocationTargetException {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
 		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
@@ -75,7 +77,7 @@ public class CompletionTest {
 	}
 
 	@Test
-	public void testPrefix() throws Exception {
+	public void testPrefix() throws CoreException, InvocationTargetException {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
 		items.add(createCompletionItem("SecondClass", CompletionItemKind.Class));
@@ -93,7 +95,7 @@ public class CompletionTest {
 	}
 	
 	@Test
-	public void testPrefixCaseSensitivity() throws Exception {
+	public void testPrefixCaseSensitivity() throws CoreException, InvocationTargetException {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
 		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
@@ -110,7 +112,7 @@ public class CompletionTest {
 	}
 
 	@Test
-	public void testCompleteOnFileEnd() throws Exception { // bug 508842
+	public void testCompleteOnFileEnd() throws CoreException, InvocationTargetException { // bug 508842
 		CompletionItem item = new CompletionItem();
 		item.setLabel("1024M");
 		item.setKind(CompletionItemKind.Value);
@@ -131,7 +133,7 @@ public class CompletionTest {
 	}
 
 	@Test
-	public void testTriggerCharsWithoutPreliminaryCompletion() throws Exception { // bug 508463
+	public void testTriggerCharsWithoutPreliminaryCompletion() throws CoreException, InvocationTargetException { // bug 508463
 		Set<String> triggers = new HashSet<>();
 		triggers.add("a");
 		triggers.add("b");
@@ -145,7 +147,7 @@ public class CompletionTest {
 	}
 
 	@Test
-	public void testApplyCompletionWithPrefix() throws Exception {
+	public void testApplyCompletionWithPrefix() throws CoreException, InvocationTargetException {
 		Range range = new Range(new Position(0, 0), new Position(0, 5));
 		List<CompletionItem> items = Collections
 				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
@@ -162,7 +164,7 @@ public class CompletionTest {
 	}
 
 	@Test
-	public void testApplyCompletionReplace() throws Exception {
+	public void testApplyCompletionReplace() throws CoreException, InvocationTargetException {
 		Range range = new Range(new Position(0, 0), new Position(0, 20));
 		List<CompletionItem> items = Collections
 				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
@@ -179,7 +181,7 @@ public class CompletionTest {
 	}
 	
 	@Test
-	public void testApplyCompletionReplaceAndTyping() throws Exception {
+	public void testApplyCompletionReplaceAndTyping() throws CoreException, InvocationTargetException, BadLocationException {
 		Range range = new Range(new Position(0, 0), new Position(0, 20));
 		List<CompletionItem> items = Collections
 				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
@@ -201,7 +203,7 @@ public class CompletionTest {
 	}
 	
 	@Test
-	public void testCompletionReplace() throws Exception {
+	public void testCompletionReplace() throws CoreException, InvocationTargetException {
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineInsertHere");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, Collections.singletonList(
