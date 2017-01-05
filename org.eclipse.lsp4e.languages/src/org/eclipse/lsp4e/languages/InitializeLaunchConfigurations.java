@@ -14,6 +14,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,6 +23,8 @@ import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.eclipse.core.externaltools.internal.IExternalToolConstants;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentTypeManager;
 import org.eclipse.debug.core.DebugPlugin;
@@ -163,10 +167,17 @@ public class InitializeLaunchConfigurations implements IStartup {
 		} else if (Platform.getOS().equals(Platform.OS_WIN32)) {
 			res = "C:/Program Files (x86)/Microsoft VS Code";
 		} else if (Platform.getOS().equals(Platform.OS_MACOSX)) {
-			res = "/usr/share/code";
+			res = "/Applications/Visual Studio Code.app";
+
+			IPath path = new Path(appendPathSuffix);
+			// resources/ maps to Contents/Resources on macOS
+			if (path.segmentCount() > 1 && path.segment(0).equals("resources")) {
+				path = path.removeFirstSegments(1);
+				appendPathSuffix = new Path("/Contents/Resources").append(path).toOSString();
+			}
 		}
 		if (res != null && new File(res).isDirectory()) {
-			if (res.contains(" ")) {
+			if (res.contains(" ") && Platform.getOS().equals(Platform.OS_WIN32)) {
 				return "\"" + res + appendPathSuffix + "\"";
 			}
 			return res + appendPathSuffix;
@@ -190,6 +201,15 @@ public class InitializeLaunchConfigurations implements IStartup {
 		} finally {
 			IOUtils.closeQuietly(reader);
 		}
+
+		// Try default install path as last resort
+		if (res == null && Platform.getOS().equals(Platform.OS_MACOSX)) {
+			String defaultInstallPath = "/usr/local/bin/node";
+			if (Files.exists(Paths.get(defaultInstallPath))) {
+				return defaultInstallPath;
+			}
+		}
+
 		return res;
 	}
 
