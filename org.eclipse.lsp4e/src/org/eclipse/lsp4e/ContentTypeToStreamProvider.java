@@ -12,6 +12,7 @@ package org.eclipse.lsp4e;
 
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
 public class ContentTypeToStreamProvider {
 

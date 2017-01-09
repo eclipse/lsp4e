@@ -27,6 +27,7 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
 /**
  * This registry aims at providing a good language server connection (as {@link StreamConnectionProvider}

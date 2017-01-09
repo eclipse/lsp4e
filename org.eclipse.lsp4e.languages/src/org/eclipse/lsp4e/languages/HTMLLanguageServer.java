@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.lsp4e.ProcessStreamConnectionProvider;
+import org.eclipse.lsp4e.server.ProcessStreamConnectionProvider;
 
 public class HTMLLanguageServer extends ProcessStreamConnectionProvider {
 

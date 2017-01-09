@@ -13,7 +13,7 @@ package org.eclipse.lsp4e.languages;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.lsp4e.ProcessStreamConnectionProvider;
+import org.eclipse.lsp4e.server.ProcessStreamConnectionProvider;
 
 public class CSSLanguageServer extends ProcessStreamConnectionProvider {
 

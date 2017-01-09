@@ -8,7 +8,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e;
+package org.eclipse.lsp4e.server;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +16,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 
+/**
+ *
+ * @since 0.1.0
+ */
 public class ProcessStreamConnectionProvider implements StreamConnectionProvider {
 
 	private Process process;
@@ -83,7 +87,8 @@ public class ProcessStreamConnectionProvider implements StreamConnectionProvider
 		if (getCommands().size() != other.getCommands().size()) {
 			return false;
 		}
-		return this.getCommands().containsAll(other.getCommands()) && this.getWorkingDirectory().equals(other.getWorkingDirectory());
+		return this.getCommands().containsAll(other.getCommands())
+				&& this.getWorkingDirectory().equals(other.getWorkingDirectory());
 	}
 
 	@Override

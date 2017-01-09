@@ -21,6 +21,7 @@ import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
 public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToStreamProvider {
 

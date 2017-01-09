@@ -8,7 +8,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e;
+package org.eclipse.lsp4e.server;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +26,8 @@ import java.io.OutputStream;
  *
  * This method MUST implement meaningful {@link #hashCode()} and {@link #equals(Object)}
  * to prevent multiple connections to be initiated multiple times.
+ *
+ * @since 0.1.0
  */
 public interface StreamConnectionProvider {
 

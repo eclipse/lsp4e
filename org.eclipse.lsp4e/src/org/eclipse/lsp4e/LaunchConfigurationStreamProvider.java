@@ -34,6 +34,7 @@ import org.eclipse.debug.core.IStreamListener;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.IStreamMonitor;
 import org.eclipse.debug.core.model.RuntimeProcess;
+import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
 /**
  * Access and control IO streams from a Launch Configuration to connect
