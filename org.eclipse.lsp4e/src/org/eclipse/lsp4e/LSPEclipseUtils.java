@@ -86,17 +86,8 @@ public class LSPEclipseUtils {
 		default:
 			return IMarker.SEVERITY_INFO;
 		}
-
 	}
-	
-//	public static int toEclipseMarkerSeverity(int lspSeverity) {
-//		switch (lspSeverity) {
-//		case 1: return IMarker.SEVERITY_ERROR;
-//		case 2: return IMarker.SEVERITY_WARNING;
-//		}
-//		return IMarker.SEVERITY_INFO;
-//	}
-	
+
 	public static IResource findResourceFor(String uri) {
 		uri = uri.replace("file:///", "file:/");  //$NON-NLS-1$//$NON-NLS-2$
 		uri = uri.replace("file://", "file:/");  //$NON-NLS-1$//$NON-NLS-2$
