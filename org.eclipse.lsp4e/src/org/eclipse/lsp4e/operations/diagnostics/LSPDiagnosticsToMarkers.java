@@ -31,6 +31,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.ui.texteditor.MarkerUtilities;
 
 import com.google.common.base.Objects;
 
@@ -78,23 +79,27 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			marker.setAttribute(IMarker.MESSAGE, diagnostic.getMessage());
 			// TODO mapping Eclipse <-> LS severity
 			marker.setAttribute(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
-			if (resource.getType() == IResource.FILE) {
-				IFile file = (IFile) resource;
-				ITextFileBufferManager manager = FileBuffers.getTextFileBufferManager();
-				ITextFileBuffer textFileBuffer = manager.getTextFileBuffer(file.getFullPath(), LocationKind.IFILE);
-
-				if (textFileBuffer == null) {
-					manager.connect(file.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
-					textFileBuffer = manager.getTextFileBuffer(file.getFullPath(), LocationKind.IFILE);
-				}
-				IDocument document = textFileBuffer.getDocument();
-				marker.setAttribute(IMarker.CHAR_START,
-						LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), document));
-				marker.setAttribute(IMarker.CHAR_END,
-						LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document));
-				marker.setAttribute(IMarker.LINE_NUMBER, diagnostic.getRange().getStart().getLine());
-
+			if (resource.getType() != IResource.FILE) {
+				return;
 			}
+			IFile file = (IFile) resource;
+			ITextFileBufferManager manager = FileBuffers.getTextFileBufferManager();
+			ITextFileBuffer textFileBuffer = manager.getTextFileBuffer(file.getFullPath(), LocationKind.IFILE);
+
+			if (textFileBuffer == null) {
+				manager.connect(file.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
+				textFileBuffer = manager.getTextFileBuffer(file.getFullPath(), LocationKind.IFILE);
+			}
+
+			IDocument document = textFileBuffer.getDocument();
+			int start = Math.min(LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), document),
+					document.getLength());
+			int end = Math.min(LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document),
+					document.getLength());
+
+			marker.setAttribute(IMarker.CHAR_START, start);
+			marker.setAttribute(IMarker.CHAR_END, end);
+			marker.setAttribute(IMarker.LINE_NUMBER, document.getLineOfOffset(start) + 1);
 		} catch (CoreException | BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}
@@ -106,10 +111,11 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		if (textFileBuffer == null) {
 			return null;
 		}
+
 		IDocument document = textFileBuffer.getDocument();
 		for (IMarker marker : remainingMarkers) {
-			int startOffset = marker.getAttribute(IMarker.CHAR_START, -1);
-			int endOffset = marker.getAttribute(IMarker.CHAR_END, -1);
+			int startOffset = MarkerUtilities.getCharStart(marker);
+			int endOffset = MarkerUtilities.getCharEnd(marker);
 			try {
 				if (marker.getResource().getProjectRelativePath().toString().equals(diagnostic.getSource())
 						&& LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), document) == startOffset + 1

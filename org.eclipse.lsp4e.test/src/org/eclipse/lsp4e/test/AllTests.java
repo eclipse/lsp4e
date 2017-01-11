@@ -12,6 +12,7 @@ package org.eclipse.lsp4e.test;
 
 import org.eclipse.lsp4e.test.completion.CompletionTest;
 import org.eclipse.lsp4e.test.definition.DefinitionTest;
+import org.eclipse.lsp4e.test.diagnostics.DiagnosticsTest;
 import org.eclipse.lsp4e.test.document.LSPEclipseUtilsTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidChangeTest;
 import org.eclipse.lsp4e.test.hover.HoverTest;
@@ -28,7 +29,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	SymbolsModelTest.class,
 	LSPEclipseUtilsTest.class,
 	HoverTest.class,
-	DefinitionTest.class
+	DefinitionTest.class,
+	DiagnosticsTest.class
 })
 public class AllTests {
 

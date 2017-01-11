@@ -53,7 +53,7 @@ public class DiagnosticsTest {
 	}
 
 	@Test
-	public void testHoverRegion() throws Exception {
+	public void testDiagnostics() throws CoreException {
 		IFile file = TestUtils.createUniqueTestFile(project, "Diagnostic Other Text");
 
 		Range range = new Range(new Position(0, 0), new Position(0, 10));
@@ -63,29 +63,55 @@ public class DiagnosticsTest {
 		diagnostics.add(createDiagnostic("3", "message3", range, DiagnosticSeverity.Information, "source3"));
 		diagnostics.add(createDiagnostic("4", "message4", range, DiagnosticSeverity.Hint, "source4"));
 
-		PublishDiagnosticsParams params = new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics);
-		diagnosticsToMarkers.accept(params);
+		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics));
 
 		IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
 				IResource.DEPTH_INFINITE);
 		assertEquals(diagnostics.size(), markers.length);
-		
-		for(int i = 0; i < diagnostics.size(); i++) {
+
+		for (int i = 0; i < diagnostics.size(); i++) {
 			Diagnostic diagnostic = diagnostics.get(i);
 			IMarker marker = markers[i];
-			
+
 			assertEquals(diagnostic.getMessage(), MarkerUtilities.getMessage(marker));
 			assertEquals(0, MarkerUtilities.getCharStart(marker));
 			assertEquals(10, MarkerUtilities.getCharEnd(marker));
-			
+			assertEquals(1, MarkerUtilities.getLineNumber(marker));
 			// TODO compare code, severity, source
 		}
 
-		params = new PublishDiagnosticsParams(file.getLocationURI().toString(), Collections.emptyList());
-		diagnosticsToMarkers.accept(params);
+		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), Collections.emptyList()));
 
 		markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_INFINITE);
 		assertEquals(0, markers.length);
+	}
+
+	@Test
+	public void testDiagnosticsRangeAfterDocument() throws CoreException {
+		String content = "Diagnostic Other Text";
+		IFile file = TestUtils.createUniqueTestFile(project, content);
+
+		Range range = new Range(new Position(1, 0), new Position(1, 5));
+		List<Diagnostic> diagnostics = Collections
+				.singletonList(createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"));
+
+		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics));
+
+		IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
+				IResource.DEPTH_INFINITE);
+		assertEquals(diagnostics.size(), markers.length);
+
+		for (int i = 0; i < diagnostics.size(); i++) {
+			Diagnostic diagnostic = diagnostics.get(i);
+			IMarker marker = markers[i];
+
+			assertEquals(diagnostic.getMessage(), MarkerUtilities.getMessage(marker));
+			assertEquals(content.length(), MarkerUtilities.getCharStart(marker));
+			assertEquals(content.length(), MarkerUtilities.getCharEnd(marker));
+			assertEquals(1, MarkerUtilities.getLineNumber(marker));
+
+			// TODO compare code, severity, source
+		}
 	}
 
 	private Diagnostic createDiagnostic(String code, String message, Range range, DiagnosticSeverity severity,
