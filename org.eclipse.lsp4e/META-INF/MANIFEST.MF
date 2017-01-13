@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Language Server Protocol client for Eclipse
+Bundle-Name: Language Server Protocol client for Eclipse IDE (Incubation)
 Bundle-SymbolicName: org.eclipse.lsp4e;singleton:=true
 Bundle-Version: 0.1.0.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8

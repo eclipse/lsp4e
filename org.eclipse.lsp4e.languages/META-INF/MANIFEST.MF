@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: Support for Languages using Language Servers (C#, CSS, LESS, SCSS, JSON)
+Bundle-Name: Enable C#, CSS, LESS, SCSS, JSON Language Servers (Incubation)
 Bundle-SymbolicName: org.eclipse.lsp4e.languages;singleton:=true
 Bundle-Version: 0.1.0.qualifier
 Bundle-Vendor: Eclipse.org
