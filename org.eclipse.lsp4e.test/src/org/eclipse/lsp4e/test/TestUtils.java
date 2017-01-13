@@ -40,7 +40,8 @@ public class TestUtils {
 
 		IEditorPart part;
 		try {
-			part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", false);
+			part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", true);
+			part.setFocus();
 			if (part instanceof ITextEditor) {
 				ITextEditor textEditor = (ITextEditor) part;
 
