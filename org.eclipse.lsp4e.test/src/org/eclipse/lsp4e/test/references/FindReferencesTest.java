@@ -13,12 +13,15 @@ package org.eclipse.lsp4e.test.references;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashMap;
+
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.operations.references.LSFindReferences;
 import org.eclipse.lsp4e.test.MockLanguageSever;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4j.Location;
@@ -30,7 +33,7 @@ import org.eclipse.search.ui.SearchUI;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.commands.ICommandService;
+import org.eclipse.ui.services.IEvaluationService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -57,13 +60,15 @@ public class FindReferencesTest {
 	@Test
 	public void findReferencesShowsResultView() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "dummyContent");
-		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+		TestUtils.openTextViewer(testFile);
 		MockLanguageSever.INSTANCE.getTextDocumentService().setMockReferences(
 				new Location(testFile.getLocationURI().toString(),	new Range(
 						new Position(1, 1), new Position(1, 2))));
-		viewer.getTextWidget().setFocus();
-		ICommandService commandService = (ICommandService) PlatformUI.getWorkbench().getService(ICommandService.class);
-		commandService.getCommand("org.eclipse.ui.genericeditor.findReferences").executeWithChecks(new ExecutionEvent());
+		
+		LSFindReferences handler = new LSFindReferences();
+		IEvaluationService evaluationService = (IEvaluationService)PlatformUI.getWorkbench().getService(IEvaluationService.class);
+		handler.execute(new ExecutionEvent(null, new HashMap<>(), null, evaluationService.getCurrentState()));
+		
 		ISearchResultViewPart part = findSearchResultView(1000);
 		assertNotNull("Search results not shown", part);
 	}
@@ -86,11 +91,13 @@ public class FindReferencesTest {
 		int responseDelay = 3000;
 		int uiFreezeThreesholdreezeThreeshold = 200;
 		MockLanguageSever.INSTANCE.setTimeToProceedQueries(responseDelay);
-		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "dummyContent"));
-		viewer.getTextWidget().setFocus();
-		ICommandService commandService = (ICommandService) PlatformUI.getWorkbench().getService(ICommandService.class);
-		long time = System.currentTimeMillis(); 
-		commandService.getCommand("org.eclipse.ui.genericeditor.findReferences").executeWithChecks(new ExecutionEvent());
+		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "dummyContent"));
+
+		LSFindReferences handler = new LSFindReferences();
+		IEvaluationService evaluationService = (IEvaluationService)PlatformUI.getWorkbench().getService(IEvaluationService.class);
+		long time = System.currentTimeMillis();
+		handler.execute(new ExecutionEvent(null, new HashMap<>(), null, evaluationService.getCurrentState()));
+		
 		long delay = System.currentTimeMillis() - time;
 		assertTrue("Find references blocked UI for " + delay + "ms", delay < uiFreezeThreesholdreezeThreeshold);
 		while (delay < responseDelay) {

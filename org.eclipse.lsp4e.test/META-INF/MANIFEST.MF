@@ -16,4 +16,5 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.ui.ide,
  org.eclipse.ui.workbench.texteditor,
  org.eclipse.jface.text,
- org.eclipse.search
+ org.eclipse.search,
+ org.eclipse.core.expressions
