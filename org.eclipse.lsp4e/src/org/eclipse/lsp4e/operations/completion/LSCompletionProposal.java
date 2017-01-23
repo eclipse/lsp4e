@@ -139,7 +139,7 @@ public class LSCompletionProposal
 		ServerCapabilities capabilities = info.getCapabilites();
 		if (capabilities != null) {
 			CompletionOptions options = capabilities.getCompletionProvider();
-			if (options != null && options.getResolveProvider()) {
+			if (options != null && Boolean.TRUE.equals(options.getResolveProvider())) {
 				CompletableFuture<CompletionItem> resolvedItem = info.getLanguageClient().getTextDocumentService()
 						.resolveCompletionItem(item);
 				try {
