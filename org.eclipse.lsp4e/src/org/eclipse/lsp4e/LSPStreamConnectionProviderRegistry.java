@@ -78,7 +78,7 @@ public class LSPStreamConnectionProviderRegistry {
 	}
 
 	private List<ContentTypeToStreamProvider> connections = new ArrayList<>();
-	private Map<StreamConnectionProvider, StreamConnectionInfo> infos = new HashMap<>();
+	private Map<StreamConnectionProvider, StreamConnectionInfo> connectionsInfo = new HashMap<>();
 	private IPreferenceStore preferenceStore;
 
 	private LSPStreamConnectionProviderRegistry() {
@@ -91,9 +91,10 @@ public class LSPStreamConnectionProviderRegistry {
 		if (prefs != null && !prefs.isEmpty()) {
 			String[] entries = prefs.split(","); //$NON-NLS-1$
 			for (String entry : entries) {
-				ContentTypeToStreamProvider mapping = ContentTypeToLSPLaunchConfigEntry.readFromPreference(entry);
+				ContentTypeToLSPLaunchConfigEntry mapping = ContentTypeToLSPLaunchConfigEntry.readFromPreference(entry);
 				if (mapping != null) {
 					connections.add(mapping);
+					connectionsInfo.put(mapping.getStreamConnectionProvider(), new StreamConnectionInfo(mapping.getContentType().getId(), mapping.getContentType().getName()));
 				}
 			}
 		}
@@ -109,7 +110,7 @@ public class LSPStreamConnectionProviderRegistry {
 						StreamConnectionProvider scp = (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
 						if (scp != null) {
 							servers.put(id, scp);
-							infos.put(scp, new StreamConnectionInfo(id, label));
+							connectionsInfo.put(scp, new StreamConnectionInfo(id, label));
 						}
 					} catch (CoreException e) {
 						LanguageServerPlugin.logError(e);
@@ -133,10 +134,10 @@ public class LSPStreamConnectionProviderRegistry {
 		}
 	}
 
-	private void persist() {
+	private void persistContentTypeToLaunchConfigurationMapping() {
 		StringBuilder builder = new StringBuilder();
-		for (ContentTypeToStreamProvider entry : connections) {
-			entry.appendTo(builder);
+		for (ContentTypeToLSPLaunchConfigEntry entry : getContentTypeToLSPLaunches()) {
+			entry.appendPreferenceTo(builder);
 			builder.append(',');
 		}
 		if (builder.length() > 0) {
@@ -161,12 +162,14 @@ public class LSPStreamConnectionProviderRegistry {
 	}
 
 	protected StreamConnectionInfo getInfo(@NonNull StreamConnectionProvider provider) {
-		return infos.get(provider);
+		return connectionsInfo.get(provider);
 	}
 
 	public void registerAssociation(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {
-		connections.add(new ContentTypeToLSPLaunchConfigEntry(contentType, launchConfig, launchMode));
-		persist();
+		ContentTypeToLSPLaunchConfigEntry mapping = new ContentTypeToLSPLaunchConfigEntry(contentType, launchConfig, launchMode);
+		connections.add(mapping);
+		connectionsInfo.put(mapping.getStreamConnectionProvider(), new StreamConnectionInfo(mapping.getContentType().getId(), mapping.getContentType().getName()));
+		persistContentTypeToLaunchConfigurationMapping();
 	}
 
 	public void registerAssociation(@NonNull IContentType contentType, @NonNull StreamConnectionProvider provider) {
@@ -180,7 +183,7 @@ public class LSPStreamConnectionProviderRegistry {
 	public void setAssociations(List<ContentTypeToLSPLaunchConfigEntry> wc) {
 		this.connections.removeIf(entry -> entry instanceof ContentTypeToLSPLaunchConfigEntry);
 		this.connections.addAll(wc);
-		persist();
+		persistContentTypeToLaunchConfigurationMapping();
 	}
 
 }

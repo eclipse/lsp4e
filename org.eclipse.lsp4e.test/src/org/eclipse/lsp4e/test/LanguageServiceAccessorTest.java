@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016-2017 Rogue Wave Software Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,10 +7,12 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Mickael Istria (Red Hat Inc.) - added test for Run config
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.lang.reflect.InvocationTargetException;
 
@@ -62,4 +64,18 @@ public class LanguageServiceAccessorTest {
 		assertEquals(null, info);
 	}
 
+	@Test
+	public void testLSAsExtension() throws Exception {
+		IFile testFile = TestUtils.createFile(project, "shouldUseExtension.lspt", "");
+		LanguageServer info = LanguageServiceAccessor.getLanguageServer(testFile, null);
+		assertNotNull(info);
+	}
+
+	@Test
+	public void testLSAsRunConfiguration() throws Exception {
+		IFile testFile = TestUtils.createFile(project, "shouldUseRunConfiguration.lspt2", "");
+		LanguageServer info = LanguageServiceAccessor.getLanguageServer(testFile, null);
+		assertNotNull(info);
+	}
+	
 }

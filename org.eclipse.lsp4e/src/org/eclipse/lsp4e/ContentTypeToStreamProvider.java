@@ -32,7 +32,4 @@ public class ContentTypeToStreamProvider {
 		return provider;
 	}
 
-	public void appendTo(StringBuilder builder){	
-	}
-
 }

@@ -9,7 +9,7 @@
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Mickael Istria (Red Hat Inc.) - Support for delay and mock references
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e.tests.mock;
 
 import java.util.Collections;
 import java.util.List;
@@ -57,6 +57,11 @@ public class MockTextDocumentService implements TextDocumentService {
 	
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
+		// Some default values for mocks, can be overriden
+		CompletionItem item = new CompletionItem();
+		item.setLabel("Mock completion item");
+		mockCompletionList = new CompletionList(false, Collections.singletonList(item));
+		mockHover = new Hover(Collections.singletonList("Mock hover"), null);
 	}
 
 	private <U> CompletableFuture<U> futureFactory(U value) {

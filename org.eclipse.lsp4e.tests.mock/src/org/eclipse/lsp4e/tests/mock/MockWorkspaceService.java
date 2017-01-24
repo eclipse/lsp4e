@@ -8,7 +8,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e.tests.mock;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;

@@ -37,7 +37,7 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToStreamProvid
 		this.launchModes = Collections.unmodifiableSet(launchMode);
 	}
 
-	public void appendTo(StringBuilder builder) {
+	public void appendPreferenceTo(StringBuilder builder) {
 		builder.append(contentType.getId());
 		builder.append(':');
 		try {

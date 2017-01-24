@@ -9,12 +9,13 @@
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Mickael Istria (Red Hat Inc.) - added support for delays
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e.tests.mock;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import org.eclipse.lsp4j.CompletionList;
@@ -28,6 +29,9 @@ import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
+import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.launch.LSPLauncher;
+import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.WorkspaceService;
 
@@ -42,6 +46,17 @@ public final class MockLanguageSever implements LanguageServer {
 
 	private MockLanguageSever() {
 		resetInitializeResult();
+	}
+	
+	/**
+	 * Starts the language server on stdin/stdout
+	 * @throws ExecutionException 
+	 * @throws InterruptedException 
+	 */
+	public static void main(String[] args) throws InterruptedException, ExecutionException {
+		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageSever.INSTANCE, System.in, System.out);
+		l.startListening().get();
+		System.err.println("lololo");
 	}
 
 	private void resetInitializeResult() {
