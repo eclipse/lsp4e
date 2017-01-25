@@ -83,14 +83,14 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	}
 
 	private void checkInfoAndJob(@NonNull IDocument refDocument) {
-		if (info == null || !info.isActive() || !refDocument.equals(info.getDocument())) {
+		if (info != null && !refDocument.equals(info.getDocument())) {
+			if (findInfoJob != null) {
+				findInfoJob.getValue().cancel();
+				findInfoJob = null;
+			}
 			info = null;
 		}
 		if (info == null) {
-			if (this.findInfoJob != null && !refDocument.equals(this.findInfoJob.getKey())) {
-				this.findInfoJob.getValue().cancel();
-				this.findInfoJob = null;
-			}
 			if (this.findInfoJob == null) {
 				createInfoJob(refDocument);
 			}

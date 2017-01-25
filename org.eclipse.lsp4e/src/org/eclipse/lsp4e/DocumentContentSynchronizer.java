@@ -40,6 +40,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private int version = 0;
 	private final DidChangeTextDocumentParams changeParams;
 	private long modificationStamp;
+	private @NonNull IDocument document;
 
 	public DocumentContentSynchronizer(@NonNull LanguageServer languageServer, @NonNull IDocument document,
 			@NonNull IPath filePath, TextDocumentSyncKind syncKind) {
@@ -54,6 +55,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 				Collections.singletonList(new TextDocumentContentChangeEvent()));
 		this.changeParams.getTextDocument().setUri(fileUri);
 
+		this.document = document;
 		// add a document buffer
 		TextDocumentItem textDocument = new TextDocumentItem();
 		textDocument.setUri(fileUri);
@@ -65,16 +67,22 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 	@Override
 	public void documentChanged(DocumentEvent event) {
-		if (!updateChangeEvent(event)) {
-			return;
+		checkEvent(event);
+		if (syncKind == TextDocumentSyncKind.Full) {
+			updateChangeEvent(event);
 		}
-
 		changeParams.getTextDocument().setVersion(++version);
 		languageServer.getTextDocumentService().didChange(changeParams);
 	}
 
 	@Override
 	public void documentAboutToBeChanged(DocumentEvent event) {
+		checkEvent(event);
+		if (syncKind == TextDocumentSyncKind.Incremental) {
+			// this really needs to happen before event gets actually
+			// applied, to properly compute positions
+			updateChangeEvent(event);
+		}
 	}
 
 	/**
@@ -143,4 +151,13 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		return modificationStamp;
 	}
 
+	public IDocument getDocument() {
+		return this.document;
+	}
+
+	private void checkEvent(DocumentEvent event) {
+		if (this.document != event.getDocument()) {
+			throw new IllegalStateException("Synchronizer should apply to only a single document, which is the one it was instantiated for"); //$NON-NLS-1$
+		}
+	}
 }

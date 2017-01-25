@@ -85,7 +85,7 @@ public class ProjectSpecificLanguageServerWrapper {
 				return;
 			}
 
-			DocumentContentSynchronizer documentListener = connectedFiles.get(filePath);
+			DocumentContentSynchronizer documentListener = connectedDocuments.get(filePath);
 			if (documentListener != null && documentListener.getModificationStamp() < buffer.getModificationStamp()) {
 				documentListener.documentSaved(buffer.getModificationStamp());
 			}
@@ -104,8 +104,7 @@ public class ProjectSpecificLanguageServerWrapper {
 	private LanguageServer languageServer;
 	private IProject project;
 	private String label;
-	private Map<IPath, DocumentContentSynchronizer> connectedFiles;
-	private Map<IPath, IDocument> documents;
+	private Map<IPath, DocumentContentSynchronizer> connectedDocuments;
 
 	private InitializeResult initializeResult;
 	private Future<?> launcherFuture;
@@ -115,8 +114,7 @@ public class ProjectSpecificLanguageServerWrapper {
 		this.project = project;
 		this.label = label;
 		this.lspStreamProvider = connection;
-		this.connectedFiles = new HashMap<>();
-		this.documents = new HashMap<>();
+		this.connectedDocuments = new HashMap<>();
 		FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
 	}
 
@@ -132,7 +130,7 @@ public class ProjectSpecificLanguageServerWrapper {
 			if (isActive()) {
 				return;
 			} else {
-				filesToReconnect =  new HashSet<>(this.connectedFiles.keySet());
+				filesToReconnect =  new HashSet<>(this.connectedDocuments.keySet());
 				stop();
 			}
 		}
@@ -235,8 +233,8 @@ public class ProjectSpecificLanguageServerWrapper {
 		if (this.lspStreamProvider != null) {
 			this.lspStreamProvider.stop();
 		}
-		while (!this.documents.isEmpty()) {
-			disconnect(this.documents.keySet().iterator().next());
+		while (!this.connectedDocuments.isEmpty()) {
+			disconnect(this.connectedDocuments.keySet().iterator().next());
 		}
 		this.languageServer = null;
 
@@ -248,7 +246,7 @@ public class ProjectSpecificLanguageServerWrapper {
 		start();
 		IFile file = (IFile) LSPEclipseUtils.findResourceFor(absolutePath.toFile().toURI().toString());
 		IDocument document = LSPEclipseUtils.getDocument(file);
-		if (this.connectedFiles.containsKey(file.getLocation())) {
+		if (this.connectedDocuments.containsKey(file.getLocation())) {
 			return;
 		}
 
@@ -258,17 +256,17 @@ public class ProjectSpecificLanguageServerWrapper {
 				: initializeResult.getCapabilities().getTextDocumentSync();
 		DocumentContentSynchronizer listener = new DocumentContentSynchronizer(languageServer, document, absolutePath, syncKind);
 		document.addDocumentListener(listener);
-		this.connectedFiles.put(file.getLocation(), listener);
-		this.documents.put(file.getLocation(), document);
+		this.connectedDocuments.put(file.getLocation(), listener);
 	}
 
 	public void disconnect(IPath path) {
-		DocumentContentSynchronizer documentListener = this.connectedFiles.remove(path);
+		DocumentContentSynchronizer documentListener = this.connectedDocuments.remove(path);
 		if (documentListener != null) {
+			documentListener.getDocument().removeDocumentListener(documentListener);
 			documentListener.documentClosed();
-			this.documents.remove(path).removeDocumentListener(documentListener);
+			this.connectedDocuments.remove(documentListener);
 		}
-		if (this.connectedFiles.isEmpty()) {
+		if (this.connectedDocuments.isEmpty()) {
 			stop();
 		}
 	}

@@ -1,3 +1,14 @@
+/*******************************************************************************
+ * Copyright (c) 2016-2017 Rogue Wave Software Inc. and others.
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v10.html
+ *
+ * Contributors:
+ *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Mickael Istria (Red Hat Inc.)
+ *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
 import static org.junit.Assert.assertEquals;
@@ -15,8 +26,8 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
-import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
@@ -105,6 +116,42 @@ public class DocumentDidChangeTest {
 		assertEquals(5, range.getEnd().getCharacter());
 		assertEquals(Integer.valueOf(5), change0.getRangeLength());
 		assertEquals("Hallo", change0.getText());
+		
+	}
+
+	@Test
+	public void testIncrementalSync_deleteLastLine() throws Exception {
+		MockLanguageSever.INSTANCE.getInitializeResult().getCapabilities()
+				.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+
+		String multiLineText = "line1\nline2\nline3\n";
+		IFile testFile = TestUtils.createUniqueTestFile(project, multiLineText);
+
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+		LanguageServiceAccessor.getLanguageServer(testFile, new Predicate<ServerCapabilities>() {
+			@Override
+			public boolean test(ServerCapabilities t) {
+				assertEquals(TextDocumentSyncKind.Incremental, t.getTextDocumentSync());
+				return true;
+			}
+		});
+
+		// Test initial insert
+		CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
+		MockLanguageSever.INSTANCE.setDidChangeCallback(didChangeExpectation);
+		viewer.getDocument().replace("line1\nline2\n".length(), "line3\n".length(), "");
+		DidChangeTextDocumentParams lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+		assertNotNull(lastChange.getContentChanges());
+		assertEquals(1, lastChange.getContentChanges().size());
+		TextDocumentContentChangeEvent change0 = lastChange.getContentChanges().get(0);
+		Range range = change0.getRange();
+		assertNotNull(range);
+		assertEquals(2, range.getStart().getLine());
+		assertEquals(0, range.getStart().getCharacter());
+		assertEquals(3, range.getEnd().getLine());
+		assertEquals(0, range.getEnd().getCharacter());
+		assertEquals(Integer.valueOf(6), change0.getRangeLength());
+		assertEquals("", change0.getText());
 	}
 
 	@Test
