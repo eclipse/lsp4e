@@ -165,17 +165,18 @@ public class ProjectSpecificLanguageServerWrapper {
 				}
 			};
 			ExecutorService executorService = Executors.newCachedThreadPool();
+			final InitializeParams initParams = new InitializeParams();
+			initParams.setRootPath(project.getLocation().toFile().getAbsolutePath());
 			Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
 					this.lspStreamProvider.getInputStream(), this.lspStreamProvider.getOutputStream(), executorService,
 					consumer -> (message -> {
 						consumer.consume(message);
-						logServerError(message);
+						logMessage(message);
+						this.lspStreamProvider.handleMessage(message, this.languageServer, initParams.getRootPath());
 					}));
 			this.languageServer = launcher.getRemoteProxy();
 			this.launcherFuture = launcher.startListening();
 
-			InitializeParams initParams = new InitializeParams();
-			initParams.setRootPath(project.getLocation().toFile().getAbsolutePath());
 			String name = "Eclipse IDE"; //$NON-NLS-1$
 			if (Platform.getProduct() != null) {
 				name = Platform.getProduct().getName();
@@ -197,12 +198,12 @@ public class ProjectSpecificLanguageServerWrapper {
 		}
 	}
 
-	private void logServerError(Message message) {
+	private void logMessage(Message message) {
 		if (message instanceof ResponseMessage && ((ResponseMessage) message).getError() != null) {
 			ResponseMessage responseMessage = (ResponseMessage) message;
 			LanguageServerPlugin.logError(new ResponseErrorException(responseMessage.getError()));
 		} else {
-			System.err.println(message.toString());
+			LanguageServerPlugin.logInfo(message.getClass().getSimpleName() +'\n' + message.toString());
 		}
 	}
 

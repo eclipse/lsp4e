@@ -11,9 +11,17 @@
 package org.eclipse.lsp4e.languages;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.lsp4e.server.ProcessStreamConnectionProvider;
+import org.eclipse.lsp4j.DidChangeConfigurationParams;
+import org.eclipse.lsp4j.InitializeResult;
+import org.eclipse.lsp4j.jsonrpc.messages.Message;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
+import org.eclipse.lsp4j.services.LanguageServer;
 
 public class CSSLanguageServer extends ProcessStreamConnectionProvider {
 
@@ -30,5 +38,25 @@ public class CSSLanguageServer extends ProcessStreamConnectionProvider {
 	@Override
 	public String toString() {
 		return "CSS Language Server: " + super.toString();
+	}
+	
+	@Override
+	public Object getInitializationOptions(String rootPath) {
+		Map<String, Object> settings = new HashMap<>();
+		settings.put("css", Collections.singletonMap("validate", true));
+		settings.put("scss", Collections.singletonMap("validate", true));
+		settings.put("less", Collections.singletonMap("validate", true));
+		return settings;
+	}
+	
+	public void handleMessage(Message message, LanguageServer languageServer, String rootPath) {
+		if (message instanceof ResponseMessage) {
+			ResponseMessage responseMessage = (ResponseMessage)message;
+			if (responseMessage.getResult() instanceof InitializeResult) {
+				// enable validation: so far, no better way found than changing conf after init.
+				DidChangeConfigurationParams params = new DidChangeConfigurationParams(getInitializationOptions(rootPath));
+				languageServer.getWorkspaceService().didChangeConfiguration(params);
+			}
+		}
 	}
 }

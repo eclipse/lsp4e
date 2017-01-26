@@ -14,6 +14,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.eclipse.lsp4j.jsonrpc.messages.Message;
+import org.eclipse.lsp4j.services.LanguageServer;
+
 /**
  * Abstraction of a connection which we can start/stop and connect to via streams.
  * It's typically used to wrap startup of language servers and to retrieve their
@@ -45,5 +48,13 @@ public interface StreamConnectionProvider {
 	}
 
 	public void stop();
+
+	/**
+	 * Allows to hook custom behavior on messages.
+	 * @param message a message
+	 * @param languageServer the language server receiving/sending the message.
+	 * @param rootPath
+	 */
+	public default void handleMessage(Message message, LanguageServer languageServer, String rootPath) {}
 
 }
