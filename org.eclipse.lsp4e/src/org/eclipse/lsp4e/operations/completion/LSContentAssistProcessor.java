@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -70,7 +69,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			if (info != null) {
 				TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument());
 				request = info.getLanguageClient().getTextDocumentService().completion(param);
-				CompletionList completionList = request.get(5, TimeUnit.SECONDS);
+				CompletionList completionList = request.get();
 				res = toProposals(offset, completionList);
 			}
 		} catch (Exception ex) {

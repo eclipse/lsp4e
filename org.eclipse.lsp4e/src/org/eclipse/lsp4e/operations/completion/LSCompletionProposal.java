@@ -51,6 +51,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.swt.SWT;
@@ -83,27 +84,28 @@ public class LSCompletionProposal
 	public StyledString getStyledDisplayString(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {
 		String rawString = getDisplayString();
 		StyledString res = new StyledString(rawString);
-		try {
-			String subString = document.get(this.initialOffset, offset - this.initialOffset);
-			if (item.getTextEdit() != null) {
-				int start = LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getStart(), document);
-				int end = offset;
-				subString = document.get(start, end - start);
-			}
-			int lastIndex = 0;
-			subString = subString.toLowerCase();
-			rawString = subString.toLowerCase();
-			for (Character c : subString.toCharArray()) {
-				int index = rawString.indexOf(c, lastIndex);
-				if (index < 0) {
-					return res;
-				} else {
-					res.setStyle(index, 1, boldStylerProvider.getBoldStyler());
-					lastIndex = index + 1;
+		if (offset > this.initialOffset) {
+			try {
+				String subString = document.get(this.initialOffset, offset - this.initialOffset);
+				if (item.getTextEdit() != null) {
+					int start = LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getStart(), document);
+					int end = offset;
+					subString = document.get(start, end - start);
 				}
+				int lastIndex = 0;
+				subString = subString.toLowerCase();
+				for (Character c : subString.toCharArray()) {
+					int index = rawString.indexOf(c, lastIndex);
+					if (index < 0) {
+						return res;
+					} else {
+						res.setStyle(index, 1, boldStylerProvider.getBoldStyler());
+						lastIndex = index + 1;
+					}
+				}
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
 			}
-		} catch (BadLocationException e) {
-			LanguageServerPlugin.logError(e);
 		}
 		return res;
 	}
@@ -221,7 +223,9 @@ public class LSCompletionProposal
 		if (item.getLabel() == null || item.getLabel().isEmpty()) {
 			return false;
 		}
-
+		if (offset < this.initialOffset) {
+			return false;
+		}
 		try {
 			String subString = document.get(this.initialOffset, offset - this.initialOffset);
 			String insert = getInsertText();
@@ -270,78 +274,42 @@ public class LSCompletionProposal
 		String insertText = null;
 		int insertionOffset = this.initialOffset;
 		TextEdit textEdit = item.getTextEdit();
-		if (textEdit != null) {
-			try {
-				{ // workaround https://github.com/Microsoft/vscode/issues/17036
-					Position start = textEdit.getRange().getStart();
-					Position end = textEdit.getRange().getEnd();
-					if (start.getLine() > end.getLine() || (start.getLine() == end.getLine() && start.getCharacter() > end.getCharacter())) {
-						textEdit.getRange().setEnd(start);
-						textEdit.getRange().setStart(end);
-					}
-				}
-				{ // allow completion items to be wrong with a too wide range
-					Position documentEnd = LSPEclipseUtils.toPosition(document.getLength(), document);
-					Position textEditEnd = textEdit.getRange().getEnd();
-					if (documentEnd.getLine() < textEditEnd.getLine()
-						|| (documentEnd.getLine() == textEditEnd.getLine() && documentEnd.getCharacter() < textEditEnd.getCharacter())) {
-						textEdit.getRange().setEnd(documentEnd);
-					}
-				}
-				{
-					// shift range if user typed something after invoking completion
-					if (insertionOffset != offset) {
-						int shift = offset - insertionOffset;
-						textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + shift);
-					}
-				}
-				insertText = textEdit.getNewText();
-				LSPEclipseUtils.applyEdit(textEdit, document);
-				selection = new Region(LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document) + textEdit.getNewText().length(), 0);
-			} catch (BadLocationException e) {
-				LanguageServerPlugin.logError("issue while trying to apply:\n" + textEdit, e); //$NON-NLS-1$
-				return;
+		try {
+			if (textEdit == null) {
+				insertText = getInsertText();
+				Position start = LSPEclipseUtils.toPosition(this.initialOffset, document);
+				Position end = LSPEclipseUtils.toPosition(this.initialOffset, document); // need 2 distinct objects
+				textEdit = new TextEdit(new Range(start, end), insertText);
 			}
-		} else { // compute a best edit by reusing prefixes and suffixes
-			insertText = getInsertText();
-
-			// Look for letters that are available before completion offset
-			try {
-				int backOffset = 0;
-				int size = Math.min(this.initialOffset, insertText.length());
-				while (backOffset == 0 && size != 0) {
-					if (document.get(this.initialOffset - size, size).equals(insertText.substring(0, size))) {
-						backOffset = size;
-					}
-					size--;
+			{ // workaround https://github.com/Microsoft/vscode/issues/17036
+				Position start = textEdit.getRange().getStart();
+				Position end = textEdit.getRange().getEnd();
+				if (start.getLine() > end.getLine() || (start.getLine() == end.getLine() && start.getCharacter() > end.getCharacter())) {
+					textEdit.getRange().setEnd(start);
+					textEdit.getRange().setStart(end);
 				}
-				if (backOffset != 0) {
-					insertText = insertText.substring(backOffset);
+			}
+			{ // allow completion items to be wrong with a too wide range
+				Position documentEnd = LSPEclipseUtils.toPosition(document.getLength(), document);
+				Position textEditEnd = textEdit.getRange().getEnd();
+				if (documentEnd.getLine() < textEditEnd.getLine()
+					|| (documentEnd.getLine() == textEditEnd.getLine() && documentEnd.getCharacter() < textEditEnd.getCharacter())) {
+					textEdit.getRange().setEnd(documentEnd);
 				}
-			} catch (BadLocationException ex) {
-				ex.printStackTrace();
 			}
-
-			// Looks for letters that were added after completion was triggered
-			int aheadOffset = 0;
-			try {
-				while (aheadOffset < document.getLength() && aheadOffset < insertText.length()
-						&& document.getChar(this.initialOffset + aheadOffset) == insertText.charAt(aheadOffset)) {
-					aheadOffset++;
+			{
+				// shift range if user typed something after invoking completion
+				if (insertionOffset != offset) {
+					int shift = offset - insertionOffset;
+					textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + shift);
 				}
-				insertText = insertText.substring(aheadOffset);
-			} catch (BadLocationException x) {
-				x.printStackTrace();
 			}
-
-			try {
-				document.replace(this.initialOffset + aheadOffset, 0, insertText);
-				selection = new Region(this.initialOffset + aheadOffset + insertText.length(), 0);
-			} catch (BadLocationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				return;
-			}
+			insertText = textEdit.getNewText();
+			LSPEclipseUtils.applyEdit(textEdit, document);
+			selection = new Region(LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document) + textEdit.getNewText().length(), 0);
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError("issue while trying to apply:\n" + textEdit, e); //$NON-NLS-1$
+			return;
 		}
 
 		if (viewer != null) {
