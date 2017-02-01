@@ -68,7 +68,8 @@ public class LSCompletionProposal
 	private static final String EDIT_AREA_OPEN_PATTERN = "{{"; //$NON-NLS-1$
 	private static final String EDIT_AREA_CLOSE_PATTERN = "}}"; //$NON-NLS-1$
 	private CompletionItem item;
-	private int initialOffset;
+	private int initialOffset = -1;
+	private int bestOffset = -1;
 	private ITextViewer viewer;
 	private IRegion selection;
 	private LinkedPosition firstPosition;
@@ -76,17 +77,26 @@ public class LSCompletionProposal
 
 	public LSCompletionProposal(@NonNull CompletionItem item, int offset, LSPDocumentInfo info) {
 		this.item = item;
-		this.initialOffset = offset;
 		this.info = info;
+		this.initialOffset = offset;
+		this.bestOffset = getPrefixCompletionStart(info.getDocument(), offset);
+	}
+
+	public int getBestOffset() {
+		return this.bestOffset;
+	}
+
+	public CompletionItem getItem() {
+		return this.item;
 	}
 
 	@Override
 	public StyledString getStyledDisplayString(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {
 		String rawString = getDisplayString();
 		StyledString res = new StyledString(rawString);
-		if (offset > this.initialOffset) {
+		if (offset > this.bestOffset) {
 			try {
-				String subString = document.get(this.initialOffset, offset - this.initialOffset);
+				String subString = document.get(this.bestOffset, offset - this.bestOffset);
 				if (item.getTextEdit() != null) {
 					int start = LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getStart(), document);
 					int end = offset;
@@ -94,8 +104,9 @@ public class LSCompletionProposal
 				}
 				int lastIndex = 0;
 				subString = subString.toLowerCase();
+				String lowerRawString = rawString.toLowerCase();
 				for (Character c : subString.toCharArray()) {
-					int index = rawString.indexOf(c, lastIndex);
+					int index = lowerRawString.indexOf(c, lastIndex);
 					if (index < 0) {
 						return res;
 					} else {
@@ -201,11 +212,32 @@ public class LSCompletionProposal
 
 	@Override
 	public CharSequence getPrefixCompletionText(IDocument document, int completionOffset) {
-		return item.getInsertText().substring(completionOffset - this.initialOffset);
+		return item.getInsertText().substring(completionOffset - this.bestOffset);
 	}
 
 	@Override
 	public int getPrefixCompletionStart(IDocument document, int completionOffset) {
+		if (this.item.getTextEdit() != null) {
+			try {
+				return LSPEclipseUtils.toOffset(this.item.getTextEdit().getRange().getStart(), document);
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
+		String insertText = getInsertText();
+		try {
+			String subDoc = document.get(
+					Math.max(0, completionOffset - insertText.length()),
+					Math.min(insertText.length(), completionOffset));
+			for (int i = 0; i < insertText.length() && i < completionOffset; i++) {
+				String tentativeCommonString = subDoc.substring(i);
+				if (insertText.startsWith(tentativeCommonString)) {
+					return completionOffset - tentativeCommonString.length();
+				}
+			}
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+		}
 		return completionOffset;
 	}
 
@@ -223,11 +255,11 @@ public class LSCompletionProposal
 		if (item.getLabel() == null || item.getLabel().isEmpty()) {
 			return false;
 		}
-		if (offset < this.initialOffset) {
+		if (offset < this.bestOffset) {
 			return false;
 		}
 		try {
-			String subString = document.get(this.initialOffset, offset - this.initialOffset);
+			String subString = document.get(this.bestOffset, offset - this.bestOffset);
 			String insert = getInsertText();
 			if (item.getTextEdit() != null) {
 				int start = LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getStart(), document);
@@ -267,18 +299,17 @@ public class LSCompletionProposal
 
 	@Override
 	public void apply(IDocument document) {
-		apply(document, Character.MIN_VALUE, 0, this.initialOffset);
+		apply(document, Character.MIN_VALUE, 0, this.bestOffset);
 	}
 
 	private void apply(IDocument document, char trigger, int stateMask, int offset) {
 		String insertText = null;
-		int insertionOffset = this.initialOffset;
 		TextEdit textEdit = item.getTextEdit();
 		try {
 			if (textEdit == null) {
 				insertText = getInsertText();
-				Position start = LSPEclipseUtils.toPosition(this.initialOffset, document);
-				Position end = LSPEclipseUtils.toPosition(this.initialOffset, document); // need 2 distinct objects
+				Position start = LSPEclipseUtils.toPosition(this.bestOffset, document);
+				Position end = LSPEclipseUtils.toPosition(offset, document); // need 2 distinct objects
 				textEdit = new TextEdit(new Range(start, end), insertText);
 			}
 			{ // workaround https://github.com/Microsoft/vscode/issues/17036
@@ -297,14 +328,24 @@ public class LSCompletionProposal
 					textEdit.getRange().setEnd(documentEnd);
 				}
 			}
-			{
-				// shift range if user typed something after invoking completion
-				if (insertionOffset != offset) {
-					int shift = offset - insertionOffset;
-					textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + shift);
+			if (offset > this.initialOffset) {
+				// characters were added after completion was activated
+				int shift = offset - this.initialOffset;
+				textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + shift);
+			}
+			if (insertText != null) {
+				// try to reuse existing characters after completion location
+				int shift = offset - this.bestOffset;
+				int commonSize = 0;
+				while (commonSize < insertText.length() - shift
+					&& document.getLength() > offset + commonSize
+					&& document.getChar(this.bestOffset + shift + commonSize) == insertText.charAt(commonSize + shift)) {
+					commonSize++;
 				}
+				textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + commonSize);
 			}
 			insertText = textEdit.getNewText();
+			// TODO apply additional text edits too. apply from bottom to top of the document
 			LSPEclipseUtils.applyEdit(textEdit, document);
 			selection = new Region(LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document) + textEdit.getNewText().length(), 0);
 		} catch (BadLocationException e) {
@@ -313,9 +354,10 @@ public class LSCompletionProposal
 		}
 
 		if (viewer != null) {
-			LinkedHashMap<String, LinkedPositionGroup> groups = new LinkedHashMap<>();
-			int currentOffset = insertText.indexOf(EDIT_AREA_OPEN_PATTERN);
 			try {
+				int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
+				LinkedHashMap<String, LinkedPositionGroup> groups = new LinkedHashMap<>();
+				int currentOffset = insertText.indexOf(EDIT_AREA_OPEN_PATTERN);
 				while (currentOffset != -1) {
 					int closeOffset = insertText.indexOf(EDIT_AREA_CLOSE_PATTERN,
 							currentOffset + EDIT_AREA_OPEN_PATTERN.length());
@@ -361,6 +403,9 @@ public class LSCompletionProposal
 
 	private String getInsertText() {
 		String insertText = this.item.getInsertText();
+		if (this.item.getTextEdit() != null) {
+			insertText = this.item.getTextEdit().getNewText();
+		}
 		if (insertText == null) {
 			insertText = this.item.getLabel();
 		}
@@ -409,6 +454,38 @@ public class LSCompletionProposal
 	@Override
 	public String getInformationDisplayString() {
 		return getAdditionalProposalInfo();
+	}
+
+	public String getSortText() {
+		if (item.getSortText() != null && !item.getSortText().isEmpty()) {
+			return item.getSortText();
+		}
+		return item.getLabel();
+	}
+
+	public int getNumberOfModifsBeforeOffset() {
+		if (this.item.getTextEdit() == null) {
+			// only insertion and offset is moved back in case document contains prefix
+			// of insertion, so no change done before offset
+			return 0;
+		}
+		int res = 0;
+		try {
+			int startOffset = LSPEclipseUtils.toOffset(this.item.getTextEdit().getRange().getStart(), this.info.getDocument());
+			String insert = this.item.getTextEdit().getNewText();
+			String subDoc = this.info.getDocument().get(startOffset, Math.min(
+					startOffset + insert.length(),
+					this.info.getDocument().getLength()));
+			for (int i = 0; i < subDoc.length() && i < insert.length(); i++) {
+				if (subDoc.charAt(i) != insert.charAt(i)) {
+					res++;
+				}
+			}
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+		}
+		return res;
+
 	}
 
 }

@@ -11,8 +11,6 @@
 package org.eclipse.lsp4e.operations.completion;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -101,20 +99,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			return new ICompletionProposal[0];
 		}
 
-		List<CompletionItem> items = new ArrayList<>(completionList.getItems());
-		Collections.sort(items, new Comparator<CompletionItem>() {
-			@Override
-			public int compare(CompletionItem o1, CompletionItem o2) {
-				String c1 = getComparableLabel(o1);
-				String c2 = getComparableLabel(o2);
-				if (c1 == null) {
-					return -1;
-				}
-				return c1.compareToIgnoreCase(c2);
-			}
-		});
-		List<ICompletionProposal> proposals = new ArrayList<>();
-		for (CompletionItem item : items) {
+		List<LSCompletionProposal> proposals = new ArrayList<>();
+		for (CompletionItem item : completionList.getItems()) {
 			if (item != null) {
 				LSCompletionProposal proposal = new LSCompletionProposal(item, offset, info);
 				if (proposal.validate(info.getDocument(), offset, null)) {
@@ -122,14 +108,26 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 				}
 			}
 		}
+		proposals.sort((o1, o2) -> {
+			// prefer the one that matches the most backward
+			if (o1.getBestOffset() < o2.getBestOffset()) {
+				return -1;
+			} else if (o1.getBestOffset() > o2.getBestOffset()) {
+				return +1;
+			} else if (o1.getNumberOfModifsBeforeOffset() < o2.getNumberOfModifsBeforeOffset()) {
+				return -1;
+			} else if (o1.getNumberOfModifsBeforeOffset() > o2.getNumberOfModifsBeforeOffset()) {
+				return +1;
+			} else {
+				String c1 = o1.getSortText();
+				String c2 = o2.getSortText();
+				if (c1 == null) {
+					return -1;
+				}
+				return c1.compareToIgnoreCase(c2);
+			}
+		});
 		return proposals.toArray(new ICompletionProposal[proposals.size()]);
-	}
-
-	private String getComparableLabel(CompletionItem item) {
-		if (item.getSortText() != null && !item.getSortText().isEmpty()) {
-			return item.getSortText();
-		}
-		return item.getLabel();
 	}
 
 	@Override

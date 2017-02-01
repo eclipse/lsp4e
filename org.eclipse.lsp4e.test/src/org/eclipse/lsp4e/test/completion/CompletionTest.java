@@ -15,6 +15,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -178,7 +179,7 @@ public class CompletionTest {
 		assertEquals("FirstClass", viewer.getDocument().get());
 		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 	}
-	
+			
 	@Test
 	public void testApplyCompletionReplaceAndTyping() throws CoreException, InvocationTargetException, BadLocationException {
 		Range range = new Range(new Position(0, 0), new Position(0, 20));
@@ -229,4 +230,31 @@ public class CompletionTest {
 		return item;
 	}
 
+	@Test
+	public void testItemOrdering() throws Exception {
+		Range range = new Range(new Position(0, 0), new Position(0, 1));
+		List<CompletionItem> items = Arrays.asList(new CompletionItem[] {
+			createCompletionItem("AA", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
+			createCompletionItem("AB", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
+			createCompletionItem("BA", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
+			createCompletionItem("BB", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
+			createCompletionItem("CB", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
+			createCompletionItem("CC", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
+		});
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
+
+		String content = "B";
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,content));
+
+		int invokeOffset = 1;
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+		assertEquals(4, proposals.length); // only those containing a "B"
+		assertEquals("BA", proposals[0].getDisplayString());
+		assertEquals("BB", proposals[1].getDisplayString());
+		assertEquals("AB", proposals[2].getDisplayString());
+		assertEquals("CB", proposals[3].getDisplayString());
+		
+		((LSCompletionProposal)proposals[0]).apply(viewer, '\n', 0, invokeOffset);
+		assertEquals("BA", viewer.getDocument().get());
+	}
 }
