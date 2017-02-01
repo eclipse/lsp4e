@@ -5,6 +5,6 @@ Bundle-SymbolicName: org.eclipse.lsp4e.tests.mock
 Bundle-Version: 0.1.0.qualifier
 Bundle-Vendor: Eclipse LSP4E
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
-Require-Bundle: org.eclipse.lsp4j;bundle-version="0.1.0",
- org.eclipse.lsp4j.jsonrpc;bundle-version="0.1.0"
+Require-Bundle: org.eclipse.lsp4j;bundle-version="[0.1.0,0.2.0)",
+ org.eclipse.lsp4j.jsonrpc;bundle-version="[0.1.0,0.2.0)"
 Export-Package: org.eclipse.lsp4e.tests.mock
