@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.operations.declaration;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -31,6 +32,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 
@@ -74,18 +76,27 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer, (capabilities) -> Boolean.TRUE.equals(capabilities.getDefinitionProvider()));
 		if (info != null) {
 			try {
-				CompletableFuture<List<? extends Location>> documentHighlight = info.getLanguageClient().getTextDocumentService()
+				CompletableFuture<Either<Location, List<? extends Location>>> documentHighlight = info.getLanguageClient().getTextDocumentService()
 						.definition(LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), region.getOffset(), info.getDocument()));
-				List<? extends Location> response = documentHighlight.get(2, TimeUnit.SECONDS);
-				if (response == null || response.isEmpty()) {
+				Either<Location, List<? extends Location>> response = documentHighlight.get(2, TimeUnit.SECONDS);
+				if (response == null) {
+					return null;
+				}
+				List<? extends Location> locations = Collections.emptyList();
+				if (response.isLeft()) {
+					locations = Collections.singletonList(response.getLeft());
+				} else if (response.isRight()) {
+					locations = response.getRight();
+				}
+				if (locations.isEmpty()) {
 					return null;
 				}
 				IRegion linkRegion = findWord(textViewer.getDocument(), region.getOffset());
 				if (linkRegion == null) {
 					linkRegion = region;
 				}
-				List<IHyperlink> hyperlinks = new ArrayList<IHyperlink>(response.size());
-				for (Location responseLocation : response) {
+				List<IHyperlink> hyperlinks = new ArrayList<IHyperlink>(locations.size());
+				for (Location responseLocation : locations) {
 					hyperlinks.add(new LSBasedHyperlink(responseLocation, linkRegion));
 				}
 				return hyperlinks.toArray(new IHyperlink[hyperlinks.size()]);

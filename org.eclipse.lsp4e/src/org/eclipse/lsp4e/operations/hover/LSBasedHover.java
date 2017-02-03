@@ -10,6 +10,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -35,7 +37,9 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.Hover;
+import org.eclipse.lsp4j.MarkedString;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.mylyn.wikitext.core.parser.MarkupParser;
 import org.eclipse.mylyn.wikitext.markdown.core.MarkdownLanguage;
 import org.eclipse.swt.graphics.Color;
@@ -89,10 +93,28 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
 		}
-		if (hoverResult == null || hoverResult.getContents().isEmpty()) {
+		if (hoverResult == null) {
 			return null;
 		}
-		String result = hoverResult.getContents().stream().collect(Collectors.joining("\n\n")); //$NON-NLS-1$
+		List<Either<String, MarkedString>> contents = null;
+		if (hoverResult.getContents().isLeft()) {
+			contents = Collections.singletonList(hoverResult.getContents().getLeft());
+		} else if (hoverResult.getContents().isRight()) {
+			contents = hoverResult.getContents().getRight();
+		}
+		if (contents == null || contents.isEmpty()) {
+			return null;
+		}
+		String result = contents.stream().map(content -> {
+			if (content.isLeft()) {
+				return content.getLeft();
+			} else if (content.isRight()) {
+				// TODO: improve support for MarkedString
+				return content.getRight().getValue();
+			} else {
+				return ""; //$NON-NLS-1$
+			}
+		}).collect(Collectors.joining("\n\n")); //$NON-NLS-1$
 		result = MARKDOWN_PARSER.parseToHtml(result);
 		// put CSS styling to match Eclipse style
 		ColorRegistry colorRegistry =  JFaceResources.getColorRegistry();

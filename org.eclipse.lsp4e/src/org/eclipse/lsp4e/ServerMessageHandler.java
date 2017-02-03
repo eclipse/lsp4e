@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.mylyn.commons.notifications.core.AbstractNotification;
@@ -73,7 +74,7 @@ public class ServerMessageHandler {
 		NotificationsUi.getService().notify(Collections.singletonList(notification));
 	}
 
-	public static CompletableFuture<Void> showMessageRequest(ShowMessageRequestParams params) {
+	public static CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams params) {
 		// TODO
 		return null;
 	}

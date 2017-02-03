@@ -11,6 +11,7 @@
 package org.eclipse.lsp4e.operations.completion;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -35,6 +36,7 @@ import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.xtext.xbase.lib.Pair;
@@ -47,6 +49,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private LSPDocumentInfo lastCheckedForAutoActiveCharactersInfo;
 	private char[] triggerChars;
 	private Pair<IDocument, Job> findInfoJob;
+	private String errorMessage;
 
 	public LSContentAssistProcessor() {
 	}
@@ -62,18 +65,19 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			}
 		}
 		ICompletionProposal[] res = new ICompletionProposal[0];
-		CompletableFuture<CompletionList> request = null;
+		CompletableFuture<Either<List<CompletionItem>, CompletionList>> request = null;
 		try {
 			if (info != null) {
 				TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument());
 				request = info.getLanguageClient().getTextDocumentService().completion(param);
-				CompletionList completionList = request.get();
-				res = toProposals(offset, completionList);
+				res = toProposals(offset, request.get());
 			}
 		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 			if (request != null) {
-				res = toProposals(offset, request.getNow(new CompletionList()));
+				// TODO: consider showing an error message as proposal?
+				res = toProposals(offset, request.getNow(Either.forLeft(Collections.emptyList())));
+				this.errorMessage = ex.getMessage();
 			}
 		}
 		return res;
@@ -94,13 +98,18 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 	}
 
-	private ICompletionProposal[] toProposals(int offset, CompletionList completionList) {
+	private ICompletionProposal[] toProposals(int offset, Either<List<CompletionItem>, CompletionList> completionList) {
 		if (completionList == null) {
 			return new ICompletionProposal[0];
 		}
-
+		List<CompletionItem> items = Collections.emptyList();
+		if (completionList.isLeft()) {
+			items = completionList.getLeft();
+		} else if (completionList.isRight()) {
+			items = completionList.getRight().getItems();
+		}
 		List<LSCompletionProposal> proposals = new ArrayList<>();
-		for (CompletionItem item : completionList.getItems()) {
+		for (CompletionItem item : items) {
 			if (item != null) {
 				LSCompletionProposal proposal = new LSCompletionProposal(item, offset, info);
 				if (proposal.validate(info.getDocument(), offset, null)) {
@@ -194,7 +203,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	@Override
 	public String getErrorMessage() {
-		return "Error"; //$NON-NLS-1$
+		return this.errorMessage;
 	}
 
 	@Override

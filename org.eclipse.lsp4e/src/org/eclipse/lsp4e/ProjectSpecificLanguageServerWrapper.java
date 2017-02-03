@@ -45,13 +45,16 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
+import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
+import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.launch.LSPLauncher;
@@ -145,7 +148,7 @@ public class ProjectSpecificLanguageServerWrapper {
 				}
 
 				@Override
-				public CompletableFuture<Void> showMessageRequest(ShowMessageRequestParams requestParams) {
+				public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams requestParams) {
 					return ServerMessageHandler.showMessageRequest(requestParams);
 				}
 
@@ -253,8 +256,16 @@ public class ProjectSpecificLanguageServerWrapper {
 
 		this.initializeFuture.get(3, TimeUnit.SECONDS);
 
-		TextDocumentSyncKind syncKind = initializeFuture == null ? null
+		Either<TextDocumentSyncKind, TextDocumentSyncOptions> syncOptions = initializeFuture == null ? null
 				: initializeResult.getCapabilities().getTextDocumentSync();
+		TextDocumentSyncKind syncKind = null;
+		if (syncOptions != null) {
+			if (syncOptions.isRight()) {
+				syncKind = syncOptions.getRight().getChange();
+			} else if (syncOptions.isLeft()) {
+				syncKind = syncOptions.getLeft();
+			}
+		}
 		DocumentContentSynchronizer listener = new DocumentContentSynchronizer(languageServer, document, absolutePath, syncKind);
 		document.addDocumentListener(listener);
 		this.connectedDocuments.put(file.getLocation(), listener);

@@ -128,7 +128,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	public void documentSaved(long timestamp) {
 		this.modificationStamp = timestamp;
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri);
-		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier);
+		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
 		languageServer.getTextDocumentService().didSave(params);
 	}
 

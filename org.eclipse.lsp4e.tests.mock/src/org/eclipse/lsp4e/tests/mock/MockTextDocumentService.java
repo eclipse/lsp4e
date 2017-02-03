@@ -40,6 +40,7 @@ import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
 public class MockTextDocumentService implements TextDocumentService {
@@ -61,7 +62,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		CompletionItem item = new CompletionItem();
 		item.setLabel("Mock completion item");
 		mockCompletionList = new CompletionList(false, Collections.singletonList(item));
-		mockHover = new Hover(Collections.singletonList("Mock hover"), null);
+		mockHover = new Hover(Either.forLeft(Either.forLeft("Mock hover")), null);
 	}
 
 	private <U> CompletableFuture<U> futureFactory(U value) {
@@ -69,8 +70,8 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<CompletionList> completion(TextDocumentPositionParams position) {
-		return futureFactory(mockCompletionList);
+	public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(TextDocumentPositionParams position) {
+		return futureFactory(Either.forRight(mockCompletionList));
 	}
 
 	@Override
@@ -91,8 +92,8 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
-		return CompletableFuture.completedFuture(mockDefinitionLocations);
+	public CompletableFuture<Either<Location, List<? extends Location>>> definition(TextDocumentPositionParams position) {
+		return CompletableFuture.completedFuture(Either.forRight(mockDefinitionLocations));
 	}
 
 	@Override

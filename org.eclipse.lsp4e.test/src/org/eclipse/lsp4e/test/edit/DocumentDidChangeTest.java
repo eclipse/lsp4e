@@ -26,8 +26,8 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
-import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
@@ -61,7 +61,8 @@ public class DocumentDidChangeTest {
 		LanguageServiceAccessor.getLanguageServer(testFile, new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
-				assertEquals(TextDocumentSyncKind.Incremental, t.getTextDocumentSync());
+				TextDocumentSyncKind syncKind = getDocumentSyncKind(t);
+				assertEquals(TextDocumentSyncKind.Incremental, syncKind);
 				return true;
 			}
 		});
@@ -131,7 +132,7 @@ public class DocumentDidChangeTest {
 		LanguageServiceAccessor.getLanguageServer(testFile, new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
-				assertEquals(TextDocumentSyncKind.Incremental, t.getTextDocumentSync());
+				assertEquals(TextDocumentSyncKind.Incremental, getDocumentSyncKind(t));
 				return true;
 			}
 		});
@@ -165,7 +166,7 @@ public class DocumentDidChangeTest {
 		LanguageServiceAccessor.getLanguageServer(testFile, new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
-				assertEquals(TextDocumentSyncKind.Full, t.getTextDocumentSync());
+				assertEquals(TextDocumentSyncKind.Full, getDocumentSyncKind(t));
 				return true;
 			}
 		});
@@ -191,4 +192,13 @@ public class DocumentDidChangeTest {
 		assertEquals("Hello World", change0.getText());
 	}
 
+	private TextDocumentSyncKind getDocumentSyncKind(ServerCapabilities t) {
+		TextDocumentSyncKind syncKind = null;
+		if (t.getTextDocumentSync().isLeft()) {
+			syncKind = t.getTextDocumentSync().getLeft();
+		} else if (t.getTextDocumentSync().isRight()) {
+			syncKind = t.getTextDocumentSync().getRight().getChange();
+		}
+		return syncKind;
+	}
 }
