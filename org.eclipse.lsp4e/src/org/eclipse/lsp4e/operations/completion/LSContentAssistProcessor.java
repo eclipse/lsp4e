@@ -118,6 +118,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			}
 		}
 		proposals.sort((o1, o2) -> {
+			// TODO: evaluate ICompletionProposalSorter
+
 			// prefer the one that matches the most backward
 			if (o1.getBestOffset() < o2.getBestOffset()) {
 				return -1;

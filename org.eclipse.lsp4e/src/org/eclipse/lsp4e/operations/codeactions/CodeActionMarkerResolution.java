@@ -13,10 +13,12 @@ package org.eclipse.lsp4e.operations.codeactions;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.lsp4j.Command;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
 
-public class CodeActionMarkerResolution implements IMarkerResolution {
+public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implements IMarkerResolution {
 
 	private Command command;
 
@@ -32,6 +34,23 @@ public class CodeActionMarkerResolution implements IMarkerResolution {
 	@Override
 	public void run(IMarker marker) {
 		MessageDialog.openWarning(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), "Not yet supported", "LSP Commands are not yet supported");  //$NON-NLS-1$//$NON-NLS-2$
+	}
+
+	@Override
+	public String getDescription() {
+		return null;
+	}
+
+	@Override
+	public Image getImage() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public IMarker[] findOtherMarkers(IMarker[] markers) {
+		// TODO Auto-generated method stub
+		return new IMarker[0];
 	}
 
 }
