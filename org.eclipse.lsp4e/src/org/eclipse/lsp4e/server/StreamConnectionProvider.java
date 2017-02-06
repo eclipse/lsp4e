@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.server;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -43,7 +44,7 @@ public interface StreamConnectionProvider {
 	/**
      * User provided initialization options.
      */
-	public default Object getInitializationOptions(String rootPath){
+	public default Object getInitializationOptions(URI rootUri){
 		return null;
 	}
 
@@ -53,8 +54,8 @@ public interface StreamConnectionProvider {
 	 * Allows to hook custom behavior on messages.
 	 * @param message a message
 	 * @param languageServer the language server receiving/sending the message.
-	 * @param rootPath
+	 * @param rootUri
 	 */
-	public default void handleMessage(Message message, LanguageServer languageServer, String rootPath) {}
+	public default void handleMessage(Message message, LanguageServer languageServer, URI rootURI) {}
 
 }

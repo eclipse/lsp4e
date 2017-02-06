@@ -39,6 +39,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.text.edits.MalformedTreeException;
 import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
@@ -108,7 +109,7 @@ public class LSPEclipseUtils {
 			return project.findMember(projectRelativePath);
 		}
 	}
-	
+
 	public static void applyEdit(TextEdit textEdit, IDocument document) throws BadLocationException {
 		document.replace(
 				LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document),
@@ -119,7 +120,7 @@ public class LSPEclipseUtils {
 	/**
 	 * Method will apply all edits to document as single modification. Needs to
 	 * be executed in UI thread.
-	 * 
+	 *
 	 * @param document
 	 *            document to modify
 	 * @param edits
@@ -227,6 +228,14 @@ public class LSPEclipseUtils {
 		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 			return null;
+		}
+	}
+
+	public static void applyWorkspaceEdit(WorkspaceEdit wsEdit) {
+		for (java.util.Map.Entry<String, List<TextEdit>> edit : wsEdit.getChanges().entrySet()) {
+			String uri = edit.getKey();
+			IDocument document = LSPEclipseUtils.getDocument(LSPEclipseUtils.findResourceFor(uri));
+			LSPEclipseUtils.applyEdits(document, edit.getValue());
 		}
 	}
 

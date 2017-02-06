@@ -62,7 +62,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		CompletionItem item = new CompletionItem();
 		item.setLabel("Mock completion item");
 		mockCompletionList = new CompletionList(false, Collections.singletonList(item));
-		mockHover = new Hover(Either.forLeft(Either.forLeft("Mock hover")), null);
+		mockHover = new Hover(Collections.singletonList(Either.forLeft("Mock hover")), null);
 	}
 
 	private <U> CompletableFuture<U> futureFactory(U value) {
@@ -92,8 +92,8 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<Either<Location, List<? extends Location>>> definition(TextDocumentPositionParams position) {
-		return CompletableFuture.completedFuture(Either.forRight(mockDefinitionLocations));
+	public CompletableFuture<List<? extends Location>> definition(TextDocumentPositionParams position) {
+		return CompletableFuture.completedFuture(mockDefinitionLocations);
 	}
 
 	@Override

@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.languages;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,7 +42,7 @@ public class CSSLanguageServer extends ProcessStreamConnectionProvider {
 	}
 	
 	@Override
-	public Object getInitializationOptions(String rootPath) {
+	public Object getInitializationOptions(URI rootUri) {
 		Map<String, Object> settings = new HashMap<>();
 		settings.put("css", Collections.singletonMap("validate", true));
 		settings.put("scss", Collections.singletonMap("validate", true));
@@ -49,12 +50,13 @@ public class CSSLanguageServer extends ProcessStreamConnectionProvider {
 		return settings;
 	}
 	
-	public void handleMessage(Message message, LanguageServer languageServer, String rootPath) {
+	@Override
+	public void handleMessage(Message message, LanguageServer languageServer, URI rootUri) {
 		if (message instanceof ResponseMessage) {
 			ResponseMessage responseMessage = (ResponseMessage)message;
 			if (responseMessage.getResult() instanceof InitializeResult) {
 				// enable validation: so far, no better way found than changing conf after init.
-				DidChangeConfigurationParams params = new DidChangeConfigurationParams(getInitializationOptions(rootPath));
+				DidChangeConfigurationParams params = new DidChangeConfigurationParams(getInitializationOptions(rootUri));
 				languageServer.getWorkspaceService().didChangeConfiguration(params);
 			}
 		}

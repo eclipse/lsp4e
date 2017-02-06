@@ -10,7 +10,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -96,12 +95,7 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		if (hoverResult == null) {
 			return null;
 		}
-		List<Either<String, MarkedString>> contents = null;
-		if (hoverResult.getContents().isLeft()) {
-			contents = Collections.singletonList(hoverResult.getContents().getLeft());
-		} else if (hoverResult.getContents().isRight()) {
-			contents = hoverResult.getContents().getRight();
-		}
+		List<Either<String, MarkedString>> contents = hoverResult.getContents();
 		if (contents == null || contents.isEmpty()) {
 			return null;
 		}

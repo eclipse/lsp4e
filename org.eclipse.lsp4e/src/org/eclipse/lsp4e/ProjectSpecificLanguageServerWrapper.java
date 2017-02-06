@@ -11,6 +11,7 @@
 package org.eclipse.lsp4e;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,7 +43,10 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
+import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
 import org.eclipse.lsp4j.ClientCapabilities;
+import org.eclipse.lsp4j.ExecuteCommandCapabilites;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.MessageActionItem;
@@ -50,8 +54,10 @@ import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
+import org.eclipse.lsp4j.SymbolCapabilites;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
+import org.eclipse.lsp4j.WorkspaceClientCapabilites;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -166,16 +172,24 @@ public class ProjectSpecificLanguageServerWrapper {
 				public void logMessage(MessageParams message) {
 					ServerMessageHandler.logMessage(project, label, message);
 				}
+
+				@Override
+				public CompletableFuture<ApplyWorkspaceEditResponse> applyEdit(ApplyWorkspaceEditParams params) {
+					return CompletableFuture.supplyAsync(() -> {
+						LSPEclipseUtils.applyWorkspaceEdit(params.getEdit());
+						return new ApplyWorkspaceEditResponse(true);
+					});
+				}
 			};
 			ExecutorService executorService = Executors.newCachedThreadPool();
 			final InitializeParams initParams = new InitializeParams();
-			initParams.setRootPath(project.getLocation().toFile().getAbsolutePath());
+			initParams.setRootUri(project.getLocation().toFile().toURI().toString());
 			Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
 					this.lspStreamProvider.getInputStream(), this.lspStreamProvider.getOutputStream(), executorService,
 					consumer -> (message -> {
 						consumer.consume(message);
 						logMessage(message);
-						this.lspStreamProvider.handleMessage(message, this.languageServer, initParams.getRootPath());
+						this.lspStreamProvider.handleMessage(message, this.languageServer, URI.create(initParams.getRootUri()));
 					}));
 			this.languageServer = launcher.getRemoteProxy();
 			this.launcherFuture = launcher.startListening();
@@ -184,10 +198,15 @@ public class ProjectSpecificLanguageServerWrapper {
 			if (Platform.getProduct() != null) {
 				name = Platform.getProduct().getName();
 			}
+			WorkspaceClientCapabilites workspaceClientCapabilites = new WorkspaceClientCapabilites();
+			workspaceClientCapabilites.setApplyEdit(Boolean.TRUE);
+			workspaceClientCapabilites.setExecuteCommand(new ExecuteCommandCapabilites());
+			workspaceClientCapabilites.setSymbol(new SymbolCapabilites());
+			initParams.setCapabilities(new ClientCapabilities(workspaceClientCapabilites, null, null));
 			initParams.setClientName(name);
 			initParams.setCapabilities(new ClientCapabilities());
 			initParams.setInitializationOptions(
-					this.lspStreamProvider.getInitializationOptions(initParams.getRootPath()));
+					this.lspStreamProvider.getInitializationOptions(URI.create(initParams.getRootUri())));
 			initializeFuture = languageServer.initialize(initParams).thenApply(res -> {
 				initializeResult = res;
 				return res;

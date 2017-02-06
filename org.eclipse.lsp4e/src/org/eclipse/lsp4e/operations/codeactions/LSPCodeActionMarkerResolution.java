@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -40,6 +41,7 @@ import org.eclipse.ui.internal.progress.ProgressInfoItem;
 public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator2 {
 
 	private static final String LSP_REMEDIATION = "lspCodeActions"; //$NON-NLS-1$
+	private static final String LS = "languageServer"; //$NON-NLS-1$
 
 	private static final IMarkerResolution2 COMPUTING = new IMarkerResolution2() {
 
@@ -47,6 +49,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		public void run(IMarker marker) {
 			// TODO Auto-generated method stub
 			// join on Future?
+
 		}
 
 		@Override
@@ -71,9 +74,11 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 	@Override
 	public IMarkerResolution[] getResolutions(IMarker marker) {
 		Object att;
+		LanguageServer languageServer = null;
 		try {
 			checkMarkerResoultion(marker);
 			att = marker.getAttribute(LSP_REMEDIATION);
+			languageServer = (LanguageServer) marker.getAttribute(LS);
 		} catch (Exception e) {
 			LanguageServerPlugin.logError(e);
 			return new IMarkerResolution[0];
@@ -84,7 +89,9 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		List<? extends Command> commands = (List<? extends Command>)att;
 		List<IMarkerResolution> res = new ArrayList<>(commands.size());
 		for (Command command : commands) {
-			res.add(new CodeActionMarkerResolution(command));
+			if (command != null) {
+				res.add(new CodeActionMarkerResolution(command));
+			}
 		}
 		return res.toArray(new IMarkerResolution[res.size()]);
 	}
@@ -96,6 +103,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 			LanguageServer lsp = LanguageServiceAccessor.getLanguageServer((IFile)marker.getResource(), (capabilities) -> Boolean.TRUE.equals(capabilities.getCodeActionProvider()));
 			if (lsp != null) {
 				marker.setAttribute(LSP_REMEDIATION, COMPUTING);
+				marker.setAttribute(LS, lsp);
 				Diagnostic diagnostic = (Diagnostic)marker.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC);
 				CodeActionContext context = new CodeActionContext(Collections.singletonList(diagnostic));
 				CodeActionParams params = new CodeActionParams();
@@ -110,6 +118,8 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 						LanguageServerPlugin.logError(e);
 					}
 				});
+				// wait a bit to avoid showing too much "Computing" without looking like a freeze
+				codeAction.get(300, TimeUnit.MILLISECONDS);
 			}
 		}
 	}

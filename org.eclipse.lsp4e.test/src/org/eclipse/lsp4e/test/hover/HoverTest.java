@@ -51,7 +51,7 @@ public class HoverTest {
 
 	@Test
 	public void testHoverRegion() throws CoreException, InvocationTargetException {
-		Hover hoverResponse = new Hover(Either.forLeft(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageSever.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -72,7 +72,7 @@ public class HoverTest {
 	
 	@Test
 	public void testHoverInfo() throws CoreException, InvocationTargetException {
-		Hover hoverResponse = new Hover(Either.forLeft(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageSever.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -84,7 +84,7 @@ public class HoverTest {
 	
 	@Test
 	public void testHoverInfoEmptyContentList() throws CoreException, InvocationTargetException {
-		Hover hoverResponse = new Hover(Either.forRight(Collections.emptyList()), new Range(new Position(0,  0), new Position(0, 10)));
+		Hover hoverResponse = new Hover(Collections.emptyList(), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageSever.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");

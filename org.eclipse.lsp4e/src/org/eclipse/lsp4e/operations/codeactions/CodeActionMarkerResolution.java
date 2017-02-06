@@ -10,19 +10,31 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.eclipse.core.resources.IMarker;
-import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.Command;
+import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
+
+import com.google.gson.Gson;
 
 public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implements IMarkerResolution {
 
-	private Command command;
+	private @NonNull Command command;
 
-	public CodeActionMarkerResolution(Command command) {
+	public CodeActionMarkerResolution(@NonNull Command command) {
 		this.command = command;
 	}
 
@@ -33,17 +45,73 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 
 	@Override
 	public void run(IMarker marker) {
-		MessageDialog.openWarning(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), "Not yet supported", "LSP Commands are not yet supported");  //$NON-NLS-1$//$NON-NLS-2$
+		try {
+			// This is a *client-side* command, no need to go through workspace/executeCommand operation
+			// TODO? Consider binding LS commands to Eclipse commands and handlers???
+			if (command.getArguments() != null) {
+				WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), marker.getResource());
+				LSPEclipseUtils.applyWorkspaceEdit(edit);
+			}
+		} catch (Exception e) {
+			LanguageServerPlugin.logError(e);
+		}
+	}
+
+	private static final class Pair<K, V> {
+		K key;
+		V value;
+		Pair(K key,V value) {
+			this.key = key;
+			this.value = value;
+		}
+	}
+
+	/**
+	 * Very empirical and unsafe heuristic to turn unknown command arguments
+	 * into a workspace edit...
+	 */
+	private WorkspaceEdit createWorkspaceEdit(List<Object> arguments, IResource initialResource) {
+		WorkspaceEdit res = new WorkspaceEdit();
+		Map<String, List<TextEdit>> changes = new HashMap<>();
+		res.setChanges(changes);
+		Pair<IResource, List<TextEdit>> currentEntry = new Pair<>(initialResource, new ArrayList<>());
+		arguments.stream().flatMap(item -> {
+			if (item instanceof List) {
+				return ((List<?>)item).stream();
+			} else {
+				return Collections.singleton(item).stream();
+			}
+		}).forEach(arg -> {
+			if (arg instanceof String) {
+				changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
+				IResource resource = LSPEclipseUtils.findResourceFor((String)arg);
+				if (resource != null) {
+					currentEntry.key = resource;
+					currentEntry.value = new ArrayList<>();
+				}
+			} else if (arg instanceof WorkspaceEdit) {
+				changes.putAll(((WorkspaceEdit)arg).getChanges());
+			} else if (arg instanceof TextEdit) {
+				currentEntry.value.add((TextEdit)arg);
+			} else if (arg instanceof Map) {
+				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
+				TextEdit edit = gson.fromJson(gson.toJson(arg), TextEdit.class);
+				if (edit != null) {
+					currentEntry.value.add(edit);
+				}
+			}
+		});
+		changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
+		return res;
 	}
 
 	@Override
 	public String getDescription() {
-		return null;
+		return command.getTitle();
 	}
 
 	@Override
 	public Image getImage() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 

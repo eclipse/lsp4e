@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.languages;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +31,7 @@ public class HTMLLanguageServer extends ProcessStreamConnectionProvider {
 	}
 
 	@Override
-	public Object getInitializationOptions(String rootPath) {
+	public Object getInitializationOptions(URI rootUri) {
 		Map<String, Object> map = new HashMap<>();
 		map.put("css", true);
 		map.put("javascript", true);
