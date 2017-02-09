@@ -46,15 +46,29 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
 import org.eclipse.lsp4j.ClientCapabilities;
+import org.eclipse.lsp4j.CodeActionCapabilities;
+import org.eclipse.lsp4j.CodeLensCapabilities;
+import org.eclipse.lsp4j.DefinitionCapabilities;
+import org.eclipse.lsp4j.DocumentHighlightCapabilities;
+import org.eclipse.lsp4j.DocumentLinkCapabilities;
+import org.eclipse.lsp4j.DocumentSymbolCapabilities;
 import org.eclipse.lsp4j.ExecuteCommandCapabilites;
+import org.eclipse.lsp4j.FormattingCapabilities;
+import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.RangeFormattingCapabilities;
+import org.eclipse.lsp4j.ReferencesCapabilities;
+import org.eclipse.lsp4j.RenameCapabilities;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
+import org.eclipse.lsp4j.SignatureHelpCapabilities;
 import org.eclipse.lsp4j.SymbolCapabilites;
+import org.eclipse.lsp4j.SynchronizationCapabilities;
+import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.WorkspaceClientCapabilites;
@@ -202,9 +216,24 @@ public class ProjectSpecificLanguageServerWrapper {
 			workspaceClientCapabilites.setApplyEdit(Boolean.TRUE);
 			workspaceClientCapabilites.setExecuteCommand(new ExecuteCommandCapabilites());
 			workspaceClientCapabilites.setSymbol(new SymbolCapabilites());
-			initParams.setCapabilities(new ClientCapabilities(workspaceClientCapabilites, null, null));
+			TextDocumentClientCapabilities textDocumentClientCapabilities = new TextDocumentClientCapabilities();
+			textDocumentClientCapabilities.setCodeAction(new CodeActionCapabilities());
+			textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
+			// TODO missing completion: https://github.com/eclipse/lsp4j/issues/70
+			textDocumentClientCapabilities.setDefinition(new DefinitionCapabilities());
+			textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
+			textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
+			textDocumentClientCapabilities.setDocumentSymbol(new DocumentSymbolCapabilities());
+			textDocumentClientCapabilities.setFormatting(new FormattingCapabilities());
+			textDocumentClientCapabilities.setHover(new HoverCapabilities());
+			textDocumentClientCapabilities.setOnTypeFormatting(null); // TODO
+			textDocumentClientCapabilities.setRangeFormatting(new RangeFormattingCapabilities());
+			textDocumentClientCapabilities.setReferences(new ReferencesCapabilities());
+			textDocumentClientCapabilities.setRename(new RenameCapabilities());
+			textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
+			textDocumentClientCapabilities.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
+			initParams.setCapabilities(new ClientCapabilities(workspaceClientCapabilites, textDocumentClientCapabilities, null));
 			initParams.setClientName(name);
-			initParams.setCapabilities(new ClientCapabilities());
 			initParams.setInitializationOptions(
 					this.lspStreamProvider.getInitializationOptions(URI.create(initParams.getRootUri())));
 			initializeFuture = languageServer.initialize(initParams).thenApply(res -> {
