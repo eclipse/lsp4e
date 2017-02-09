@@ -19,13 +19,13 @@ This is a very difficult demo to run properly! It is often so broken (because of
 
 == Requirements
 
-. Eclipse IDE and LSP4E
+. Eclipse IDE and aCute (see https://marketplace.eclipse.org/content/acute-c-edition-eclipse-ide-experimental )
 . nodejs installed and working
 . a working dotnet-core on your machine. `dotnet --version` and other dotnet commands must work
 .. For Fedora 25, see https://github.com/dotnet/cli/issues/4865#issuecomment-263663473
 . OmniSharp
 .. Clone OmniSharp/omnisharp-node-client
-.. TODO
+.. Build OmniSharp/omnisharp-node-client (according to build-server instructions)
 
 == Preparation (off demo)
 
