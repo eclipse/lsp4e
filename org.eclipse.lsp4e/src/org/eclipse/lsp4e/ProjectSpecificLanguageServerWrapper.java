@@ -48,6 +48,8 @@ import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.CodeActionCapabilities;
 import org.eclipse.lsp4j.CodeLensCapabilities;
+import org.eclipse.lsp4j.CompletionCapabilities;
+import org.eclipse.lsp4j.CompletionItemCapabilities;
 import org.eclipse.lsp4j.DefinitionCapabilities;
 import org.eclipse.lsp4j.DocumentHighlightCapabilities;
 import org.eclipse.lsp4j.DocumentLinkCapabilities;
@@ -219,7 +221,7 @@ public class ProjectSpecificLanguageServerWrapper {
 			TextDocumentClientCapabilities textDocumentClientCapabilities = new TextDocumentClientCapabilities();
 			textDocumentClientCapabilities.setCodeAction(new CodeActionCapabilities());
 			textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
-			// TODO missing completion: https://github.com/eclipse/lsp4j/issues/70
+			textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(new CompletionItemCapabilities(Boolean.TRUE)));
 			textDocumentClientCapabilities.setDefinition(new DefinitionCapabilities());
 			textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
 			textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());

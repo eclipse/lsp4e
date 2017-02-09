@@ -473,9 +473,10 @@ public class LSCompletionProposal
 		try {
 			int startOffset = LSPEclipseUtils.toOffset(this.item.getTextEdit().getRange().getStart(), this.info.getDocument());
 			String insert = this.item.getTextEdit().getNewText();
+			System.err.println(startOffset);
 			String subDoc = this.info.getDocument().get(startOffset, Math.min(
 					startOffset + insert.length(),
-					this.info.getDocument().getLength()));
+					this.info.getDocument().getLength() - startOffset));
 			for (int i = 0; i < subDoc.length() && i < insert.length(); i++) {
 				if (subDoc.charAt(i) != insert.charAt(i)) {
 					res++;
