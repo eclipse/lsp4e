@@ -135,6 +135,8 @@ public class ProjectSpecificLanguageServerWrapper {
 	private Future<?> launcherFuture;
 	private CompletableFuture<InitializeResult> initializeFuture;
 
+	private boolean capabilitiesAlreadyRequested;
+
 	public ProjectSpecificLanguageServerWrapper(IProject project, String label, StreamConnectionProvider connection) {
 		this.project = project;
 		this.label = label;
@@ -242,9 +244,16 @@ public class ProjectSpecificLanguageServerWrapper {
 				initializeResult = res;
 				return res;
 			});
-			for (IPath fileToReconnect : filesToReconnect) {
-				connect(fileToReconnect);
-			}
+			final Set<IPath> toReconnect = filesToReconnect;
+			initializeFuture.thenRun(() -> {
+				for (IPath fileToReconnect : toReconnect) {
+					try {
+						connect(fileToReconnect);
+					} catch (IOException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				}
+			});
 		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 			stop();
@@ -295,33 +304,32 @@ public class ProjectSpecificLanguageServerWrapper {
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
 	}
 
-	public void connect(@NonNull IPath absolutePath)
-			throws IOException, InterruptedException, ExecutionException, TimeoutException {
+	public void connect(@NonNull IPath absolutePath) throws IOException {
 		start();
 		if (this.initializeFuture == null) {
 			return;
 		}
-		IFile file = (IFile) LSPEclipseUtils.findResourceFor(absolutePath.toFile().toURI().toString());
-		IDocument document = LSPEclipseUtils.getDocument(file);
-		if (this.connectedDocuments.containsKey(file.getLocation())) {
-			return;
-		}
-
-		this.initializeFuture.get(3, TimeUnit.SECONDS);
-
-		Either<TextDocumentSyncKind, TextDocumentSyncOptions> syncOptions = initializeFuture == null ? null
-				: initializeResult.getCapabilities().getTextDocumentSync();
-		TextDocumentSyncKind syncKind = null;
-		if (syncOptions != null) {
-			if (syncOptions.isRight()) {
-				syncKind = syncOptions.getRight().getChange();
-			} else if (syncOptions.isLeft()) {
-				syncKind = syncOptions.getLeft();
+		initializeFuture.thenRun(() -> {
+			IFile file = (IFile) LSPEclipseUtils.findResourceFor(absolutePath.toFile().toURI().toString());
+			IDocument document = LSPEclipseUtils.getDocument(file);
+			if (this.connectedDocuments.containsKey(file.getLocation())) {
+				return;
 			}
-		}
-		DocumentContentSynchronizer listener = new DocumentContentSynchronizer(languageServer, document, absolutePath, syncKind);
-		document.addDocumentListener(listener);
-		this.connectedDocuments.put(file.getLocation(), listener);
+
+			Either<TextDocumentSyncKind, TextDocumentSyncOptions> syncOptions = initializeFuture == null ? null
+					: initializeResult.getCapabilities().getTextDocumentSync();
+			TextDocumentSyncKind syncKind = null;
+			if (syncOptions != null) {
+				if (syncOptions.isRight()) {
+					syncKind = syncOptions.getRight().getChange();
+				} else if (syncOptions.isLeft()) {
+					syncKind = syncOptions.getLeft();
+				}
+			}
+			DocumentContentSynchronizer listener = new DocumentContentSynchronizer(languageServer, document, absolutePath, syncKind);
+			document.addDocumentListener(listener);
+			ProjectSpecificLanguageServerWrapper.this.connectedDocuments.put(file.getLocation(), listener);
+		});
 	}
 
 	public void disconnect(IPath path) {
@@ -356,8 +364,9 @@ public class ProjectSpecificLanguageServerWrapper {
 				waitForInitialization.setSystem(false);
 				PlatformUI.getWorkbench().getProgressService().showInDialog(
 						PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), waitForInitialization);
+			} else {
+				this.initializeFuture.join();
 			}
-			this.initializeFuture.join();
 		}
 		return this.languageServer;
 	}
@@ -372,11 +381,12 @@ public class ProjectSpecificLanguageServerWrapper {
 		try {
 			start();
 			if (this.initializeFuture != null) {
-				this.initializeFuture.get(1000, TimeUnit.MILLISECONDS);
+				this.initializeFuture.get(capabilitiesAlreadyRequested? 0 : 1000, TimeUnit.MILLISECONDS);
 			}
 		} catch (TimeoutException | IOException | InterruptedException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		}
+		this.capabilitiesAlreadyRequested = true;
 		if (this.initializeResult != null) {
 			return this.initializeResult.getCapabilities();
 		} else {
