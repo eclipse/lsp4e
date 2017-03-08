@@ -19,9 +19,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jdt.annotation.NonNull;
@@ -105,16 +105,14 @@ public class LSPStreamConnectionProviderRegistry {
 			String id = extension.getAttribute(ID_ATTRIBUTE);
 			if (id != null && !id.isEmpty()) {
 				if (extension.getName().equals(LS_ELEMENT)) {
-					try {
+					SafeRunner.run(() -> {
 						String label = extension.getAttribute(LABEL_ATTRIBUTE);
 						StreamConnectionProvider scp = (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
 						if (scp != null) {
 							servers.put(id, scp);
 							connectionsInfo.put(scp, new StreamConnectionInfo(id, label));
 						}
-					} catch (CoreException e) {
-						LanguageServerPlugin.logError(e);
-					}
+					});
 				} else if (extension.getName().equals(MAPPING_ELEMENT)) {
 					IContentType contentType = Platform.getContentTypeManager().getContentType(extension.getAttribute(CONTENT_TYPE_ATTRIBUTE));
 					if (contentType != null) {

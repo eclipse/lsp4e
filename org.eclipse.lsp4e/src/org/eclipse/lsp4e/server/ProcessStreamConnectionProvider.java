@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Objects;
 
 /**
  *
@@ -94,12 +95,8 @@ public class ProcessStreamConnectionProvider implements StreamConnectionProvider
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		for (String s : this.getCommands()) {
-			result = result * prime + s.hashCode();
-		}
-		return result ^ this.getWorkingDirectory().hashCode();
+        int result = Objects.hashCode(this.getCommands());
+        return result ^ Objects.hashCode(this.getWorkingDirectory());
 	}
 
 }
