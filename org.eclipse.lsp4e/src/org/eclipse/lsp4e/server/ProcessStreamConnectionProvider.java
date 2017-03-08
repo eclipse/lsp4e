@@ -38,6 +38,7 @@ public class ProcessStreamConnectionProvider implements StreamConnectionProvider
 	public void start() throws IOException {
 		ProcessBuilder builder = new ProcessBuilder(getCommands());
 		builder.directory(new File(getWorkingDirectory()));
+		builder.redirectError(ProcessBuilder.Redirect.INHERIT);
 		this.process = builder.start();
 		if (!this.process.isAlive()) {
 			throw new IOException("Unable to start language server: " + this.toString()); //$NON-NLS-1$
