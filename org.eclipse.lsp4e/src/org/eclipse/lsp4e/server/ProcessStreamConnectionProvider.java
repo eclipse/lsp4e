@@ -17,13 +17,15 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 /**
  *
  * @since 0.1.0
  */
 public class ProcessStreamConnectionProvider implements StreamConnectionProvider {
 
-	private Process process;
+	private @Nullable Process process;
 	private List<String> commands;
 	private String workingDir;
 
@@ -37,28 +39,38 @@ public class ProcessStreamConnectionProvider implements StreamConnectionProvider
 
 	@Override
 	public void start() throws IOException {
+		if (this.workingDir == null || this.commands == null || this.commands.isEmpty() || this.commands.stream().anyMatch(Objects::isNull)) {
+			throw new IOException("Unable to start language server: " + this.toString()); //$NON-NLS-1$
+		}
+
 		ProcessBuilder builder = new ProcessBuilder(getCommands());
 		builder.directory(new File(getWorkingDirectory()));
 		builder.redirectError(ProcessBuilder.Redirect.INHERIT);
-		this.process = builder.start();
-		if (!this.process.isAlive()) {
+		Process p = builder.start();
+		this.process = p;
+		if (!p.isAlive()) {
 			throw new IOException("Unable to start language server: " + this.toString()); //$NON-NLS-1$
 		}
 	}
 
 	@Override
-	public InputStream getInputStream() {
-		return process.getInputStream();
+	public @Nullable InputStream getInputStream() {
+		Process p = process;
+		return p == null ? null : p.getInputStream();
 	}
 
 	@Override
-	public OutputStream getOutputStream() {
-		return process.getOutputStream();
+	public @Nullable OutputStream getOutputStream() {
+		Process p = process;
+		return p == null ? null : p.getOutputStream();
 	}
 
 	@Override
 	public void stop() {
-		process.destroy();
+		Process p = process;
+		if (p != null) {
+			p.destroy();
+		}
 	}
 
 	protected List<String> getCommands() {

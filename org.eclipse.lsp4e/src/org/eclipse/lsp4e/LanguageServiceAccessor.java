@@ -35,8 +35,8 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.LSPStreamConnectionProviderRegistry.StreamConnectionInfo;
+import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -102,11 +102,13 @@ public class LanguageServiceAccessor {
 		private final @NonNull URI fileUri;
 		private final @NonNull IDocument document;
 		private final @NonNull ProjectSpecificLanguageServerWrapper wrapper;
+		private final @NonNull LanguageServer server;
 
-		private LSPDocumentInfo(@NonNull URI fileUri, @NonNull IDocument document, @NonNull ProjectSpecificLanguageServerWrapper wrapper) {
+		private LSPDocumentInfo(@NonNull URI fileUri, @NonNull IDocument document, @NonNull ProjectSpecificLanguageServerWrapper wrapper, @NonNull LanguageServer server) {
 			this.fileUri = fileUri;
 			this.document = document;
 			this.wrapper = wrapper;
+			this.server = server;
 		}
 
 		public @NonNull IDocument getDocument() {
@@ -122,7 +124,7 @@ public class LanguageServiceAccessor {
 		}
 
 		public @NonNull LanguageServer getLanguageClient() {
-			return this.wrapper.getServer();
+			return this.server;
 		}
 
 		public @Nullable ServerCapabilities getCapabilites() {
@@ -181,7 +183,11 @@ public class LanguageServiceAccessor {
 				ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, capabilityRequest);
 				if (wrapper != null) {
 					wrapper.connect(file.getLocation());
-					return new LSPDocumentInfo(fileUri, document, wrapper);
+					@Nullable
+					LanguageServer server = wrapper.getServer();
+					if (server != null) {
+						return new LSPDocumentInfo(fileUri, document, wrapper, server);
+					}
 				}
 			} catch (final Exception e) {
 				LanguageServerPlugin.logError(e);
@@ -286,10 +292,15 @@ public class LanguageServiceAccessor {
 			WrapperEntryKey wrapperEntryKey = entry.getKey();
 			if (project.equals(wrapperEntryKey.project)) {
 				for (ProjectSpecificLanguageServerWrapper wrapper : entry.getValue()) {
+					@Nullable
+					LanguageServer server = wrapper.getServer();
+					if (server == null) {
+						continue;
+					}
 					if ((request == null
 						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 					    || request.test(wrapper.getServerCapabilities()))) {
-						serverInfos.add(new LSPServerInfo(project, wrapper.getServer(), wrapper.getServerCapabilities()));
+						serverInfos.add(new LSPServerInfo(project, server, wrapper.getServerCapabilities()));
 					}
 				}
 			}

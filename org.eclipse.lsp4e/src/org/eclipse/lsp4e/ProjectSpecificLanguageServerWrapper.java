@@ -298,6 +298,9 @@ public class ProjectSpecificLanguageServerWrapper {
 	public void connect(@NonNull IPath absolutePath)
 			throws IOException, InterruptedException, ExecutionException, TimeoutException {
 		start();
+		if (this.initializeFuture == null) {
+			return;
+		}
 		IFile file = (IFile) LSPEclipseUtils.findResourceFor(absolutePath.toFile().toURI().toString());
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		if (this.connectedDocuments.containsKey(file.getLocation())) {
@@ -333,14 +336,14 @@ public class ProjectSpecificLanguageServerWrapper {
 		}
 	}
 
-	@NonNull
+	@Nullable
 	public LanguageServer getServer() {
 		try {
 			start();
 		} catch (IOException ex) {
 			LanguageServerPlugin.logError(ex);
 		}
-		if (!this.initializeFuture.isDone()) {
+		if (initializeFuture != null && !this.initializeFuture.isDone()) {
 			if (Display.getCurrent() != null) { // UI Thread
 				Job waitForInitialization = new Job(Messages.initializeLanguageServer_job) {
 					@Override
@@ -368,7 +371,9 @@ public class ProjectSpecificLanguageServerWrapper {
 	public ServerCapabilities getServerCapabilities() {
 		try {
 			start();
-			this.initializeFuture.get(1000, TimeUnit.MILLISECONDS);
+			if (this.initializeFuture != null) {
+				this.initializeFuture.get(1000, TimeUnit.MILLISECONDS);
+			}
 		} catch (TimeoutException | IOException | InterruptedException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		}
