@@ -41,7 +41,7 @@ import org.eclipse.ui.navigator.ICommonLabelProvider;
 public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelProvider, IStyledLabelProvider {
 
 	private Map<Image, Image[]> overlays = new HashMap<>();
-	
+
 	private boolean showLocation;
 
 	public SymbolsLabelProvider() {
@@ -51,7 +51,7 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 	public SymbolsLabelProvider(boolean showLocation) {
 		this.showLocation = showLocation;
 	}
-	
+
 	@Override
 	public Image getImage(Object element) {
 		if (element == null){
@@ -126,7 +126,11 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 			return new StyledString(Messages.outline_computingSymbols);
 		}
 		if (element instanceof Throwable) {
-			return new StyledString(((Throwable) element).getMessage());
+			String message = ((Throwable) element).getMessage();
+			if (message == null) {
+				message = element.getClass().getName();
+			}
+			return new StyledString(message);
 		}
 		if (element instanceof LSPDocumentInfo) {
 			return new StyledString(((LSPDocumentInfo)element).getFileUri().getPath());
