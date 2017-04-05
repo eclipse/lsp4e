@@ -236,5 +236,12 @@
 		    </defaultHandler>
 		</event>
    </extension>
+   <extension
+         point="org.eclipse.core.filebuffers.documentSetup">
+      <participant
+            class="org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant"
+            contentTypeId="org.eclipse.core.runtime.text">
+      </participant>
+   </extension>
 
 </plugin>

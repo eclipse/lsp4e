@@ -227,14 +227,7 @@ public class LanguageServiceAccessor {
 		for (IContentType contentType : fileContentTypes) {
 			for (StreamConnectionProvider connection : LSPStreamConnectionProviderRegistry.getInstance().findProviderFor(contentType)) {
 				if (connection != null && !usedConnections.contains(connection)) {
-					StreamConnectionInfo info = LSPStreamConnectionProviderRegistry.getInstance().getInfo(connection);
-					wrapper = new ProjectSpecificLanguageServerWrapper(project, info.getLabel(), connection);
-					wrapper.start();
-					WrapperEntryKey key = new WrapperEntryKey(project, contentType);
-					if (!projectServers.containsKey(key)) {
-						projectServers.put(key, new ArrayList<>());
-					}
-					projectServers.get(key).add(wrapper);
+					wrapper = getLSWrapperForConnection(project, contentType, connection);
 					if (request == null
 						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 						|| request.test(wrapper.getServerCapabilities())) {
@@ -244,6 +237,37 @@ public class LanguageServiceAccessor {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Return existing {@link ProjectSpecificLanguageServerWrapper} for the given connection. If not found,
+	 * create a new one with the given connection and register it for this project/content-type.
+	 * @param project
+	 * @param contentType
+	 * @param connection
+	 * @return
+	 * @throws IOException
+	 */
+	public static ProjectSpecificLanguageServerWrapper getLSWrapperForConnection(IProject project,
+			IContentType contentType, StreamConnectionProvider connection) throws IOException {
+		WrapperEntryKey key = new WrapperEntryKey(project, contentType);
+		List<ProjectSpecificLanguageServerWrapper> startedWrappers = projectServers.get(key);
+		if (startedWrappers != null) {
+			for (ProjectSpecificLanguageServerWrapper wrapper : startedWrappers) {
+				if (wrapper.getUnderlyingConnection().equals(connection)) {
+					return wrapper;
+				}
+			}
+		}
+		StreamConnectionInfo info = LSPStreamConnectionProviderRegistry.getInstance().getInfo(connection);
+		ProjectSpecificLanguageServerWrapper wrapper = new ProjectSpecificLanguageServerWrapper(project, info.getLabel(), connection);
+		wrapper.start();
+
+		if (!projectServers.containsKey(key)) {
+			projectServers.put(key, new ArrayList<>());
+		}
+		projectServers.get(key).add(wrapper);
+		return wrapper;
 	}
 
 	private static Set<StreamConnectionProvider> getAllActiveConnections(IProject project,
