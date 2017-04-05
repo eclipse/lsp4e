@@ -177,7 +177,7 @@ public class LanguageServiceAccessor {
 		final IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(location);
 		URI fileUri = null;
 		if (file.exists()) {
-			fileUri = file.getLocation().toFile().toURI();
+			fileUri = URI.create(LSPEclipseUtils.toUri(file));
 			try {
 				ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, capabilityRequest);
 				if (wrapper != null) {
@@ -192,7 +192,7 @@ public class LanguageServiceAccessor {
 				LanguageServerPlugin.logError(e);
 			}
 		} /*else if (location.toFile().exists()) {
-			fileUri = location.toFile().toURI();
+			fileUri = "file://" + location.toFile().getAbsolutePath();
 			TODO handle case of plain file (no IFile)
 		}*/
 		return null;

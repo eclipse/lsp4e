@@ -240,4 +240,17 @@ public class LSPEclipseUtils {
 		}
 	}
 
+	public static String toUri(IPath absolutePath) {
+		return toUri(absolutePath.toFile());
+	}
+
+	public static String toUri(IResource resource) {
+		return toUri(resource.getLocation());
+	}
+
+	public static String toUri(File file) {
+		// URI scheme specified by language server protocol and LSP
+		return "file://" + file.getAbsoluteFile().toURI().getPath(); //$NON-NLS-1$
+	}
+
 }

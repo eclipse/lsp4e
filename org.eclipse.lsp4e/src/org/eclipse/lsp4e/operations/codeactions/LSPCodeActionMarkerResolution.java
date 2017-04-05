@@ -22,6 +22,7 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
@@ -108,7 +109,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				CodeActionContext context = new CodeActionContext(Collections.singletonList(diagnostic));
 				CodeActionParams params = new CodeActionParams();
 				params.setContext(context);
-				params.setTextDocument(new TextDocumentIdentifier(marker.getResource().getLocation().toFile().toURI().toString()));
+				params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(marker.getResource())));
 				params.setRange(diagnostic.getRange());
 				CompletableFuture<List<? extends Command>> codeAction = lsp.getTextDocumentService().codeAction(params);
 				codeAction.thenAccept(actions -> {

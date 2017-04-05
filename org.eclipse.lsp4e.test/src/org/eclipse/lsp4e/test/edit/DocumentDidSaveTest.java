@@ -21,6 +21,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
@@ -65,7 +66,7 @@ public class DocumentDidSaveTest {
 
 		DidSaveTextDocumentParams lastChange = didSaveExpectation.get(1000, TimeUnit.MILLISECONDS);
 		assertNotNull(lastChange.getTextDocument());
-		assertEquals(testFile.getLocationURI().toString(), lastChange.getTextDocument().getUri());
+		assertEquals(LSPEclipseUtils.toUri(testFile), lastChange.getTextDocument().getUri());
 	}
 
 }

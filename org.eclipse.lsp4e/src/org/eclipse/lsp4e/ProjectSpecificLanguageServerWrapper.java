@@ -201,7 +201,7 @@ public class ProjectSpecificLanguageServerWrapper {
 			};
 			ExecutorService executorService = Executors.newCachedThreadPool();
 			final InitializeParams initParams = new InitializeParams();
-			initParams.setRootUri(project.getLocation().toFile().toURI().toString());
+			initParams.setRootUri(LSPEclipseUtils.toUri(project));
 			Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
 					this.lspStreamProvider.getInputStream(), this.lspStreamProvider.getOutputStream(), executorService,
 					consumer -> (message -> {
