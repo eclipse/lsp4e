@@ -95,7 +95,8 @@ public class LSPEclipseUtils {
 		IPath path = Path.fromOSString(new File(URI.create(uri)).getAbsolutePath());
 		IProject project = null;
 		for (IProject aProject : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
-			if (aProject.getLocation().isPrefixOf(path) && (project == null || project.getLocation().segmentCount() < aProject.getLocation().segmentCount())) {
+			IPath location = aProject.getLocation();
+			if (location != null && location.isPrefixOf(path) && (project == null || project.getLocation().segmentCount() < location.segmentCount())) {
 				project = aProject;
 			}
 		}
