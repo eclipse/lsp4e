@@ -398,4 +398,8 @@ public class ProjectSpecificLanguageServerWrapper {
 		return this.lspStreamProvider;
 	}
 
+	public IProject getProject() {
+		return this.project;
+	}
+
 }

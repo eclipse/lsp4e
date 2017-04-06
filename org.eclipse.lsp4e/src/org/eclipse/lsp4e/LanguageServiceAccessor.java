@@ -15,12 +15,11 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
@@ -222,11 +221,9 @@ public class LanguageServiceAccessor {
 			return wrapper;
 		}
 
-		Set<StreamConnectionProvider> usedConnections = getAllActiveConnections(project, fileContentTypes);
-		// try to create one for available content type
 		for (IContentType contentType : fileContentTypes) {
 			for (StreamConnectionProvider connection : LSPStreamConnectionProviderRegistry.getInstance().findProviderFor(contentType)) {
-				if (connection != null && !usedConnections.contains(connection)) {
+				if (connection != null) {
 					wrapper = getLSWrapperForConnection(project, contentType, connection);
 					if (request == null
 						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
@@ -248,21 +245,21 @@ public class LanguageServiceAccessor {
 	 * @return
 	 * @throws IOException
 	 */
-	public static ProjectSpecificLanguageServerWrapper getLSWrapperForConnection(IProject project,
-			IContentType contentType, StreamConnectionProvider connection) throws IOException {
-		WrapperEntryKey key = new WrapperEntryKey(project, contentType);
-		List<ProjectSpecificLanguageServerWrapper> startedWrappers = projectServers.get(key);
-		if (startedWrappers != null) {
-			for (ProjectSpecificLanguageServerWrapper wrapper : startedWrappers) {
-				if (wrapper.getUnderlyingConnection().equals(connection)) {
-					return wrapper;
-				}
+	public static ProjectSpecificLanguageServerWrapper getLSWrapperForConnection(IProject project, IContentType contentType, StreamConnectionProvider connection) throws IOException {
+		ProjectSpecificLanguageServerWrapper wrapper = null;
+		for (ProjectSpecificLanguageServerWrapper startedWrapper : getStartedLSWarppers(project)) {
+			if (startedWrapper.getUnderlyingConnection().equals(connection)) {
+				wrapper = startedWrapper;
+				break;
 			}
 		}
-		StreamConnectionInfo info = LSPStreamConnectionProviderRegistry.getInstance().getInfo(connection);
-		ProjectSpecificLanguageServerWrapper wrapper = new ProjectSpecificLanguageServerWrapper(project, info.getLabel(), connection);
-		wrapper.start();
+		if (wrapper == null) {
+			StreamConnectionInfo info = LSPStreamConnectionProviderRegistry.getInstance().getInfo(connection);
+			wrapper = new ProjectSpecificLanguageServerWrapper(project, info.getLabel(), connection);
+			wrapper.start();
+		}
 
+		WrapperEntryKey key = new WrapperEntryKey(project, contentType);
 		if (!projectServers.containsKey(key)) {
 			projectServers.put(key, new ArrayList<>());
 		}
@@ -270,18 +267,8 @@ public class LanguageServiceAccessor {
 		return wrapper;
 	}
 
-	private static Set<StreamConnectionProvider> getAllActiveConnections(IProject project,
-	        IContentType[] fileContentTypes) {
-		Set<StreamConnectionProvider> usedConnections = new HashSet<>();
-		for (IContentType contentType : fileContentTypes) {
-			WrapperEntryKey key = new WrapperEntryKey(project, contentType);
-			if (projectServers.containsKey(key)) {
-				for (ProjectSpecificLanguageServerWrapper activeWrapper : projectServers.get(key)) {
-					usedConnections.add(activeWrapper.getUnderlyingConnection());
-				}
-			}
-		}
-		return usedConnections;
+	private static @NonNull List<ProjectSpecificLanguageServerWrapper> getStartedLSWarppers(@NonNull IProject project) {
+		return projectServers.values().stream().flatMap(List::stream).filter(wrapper -> wrapper.getProject().equals(project)).collect(Collectors.toList());
 	}
 
 	private static ProjectSpecificLanguageServerWrapper getMatchingStartedWrapper(IProject project,
