@@ -140,8 +140,10 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 			return res;
 		}
 		SymbolInformation symbol = (SymbolInformation) element;
-		res.append(symbol.getName(), null);
-		res.append(" :", null); //$NON-NLS-1$
+		if (symbol.getName() != null) {
+			res.append(symbol.getName(), null);
+			res.append(" :", null); //$NON-NLS-1$
+		}
 		res.append(symbol.getKind().toString(), StyledString.DECORATIONS_STYLER);
 
 		if (showLocation) {
