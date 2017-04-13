@@ -14,6 +14,7 @@ package org.eclipse.lsp4e;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -240,17 +241,22 @@ public class LSPEclipseUtils {
 		}
 	}
 
-	public static String toUri(IPath absolutePath) {
+	public static URI toUri(IPath absolutePath) {
 		return toUri(absolutePath.toFile());
 	}
 
-	public static String toUri(IResource resource) {
+	public static URI toUri(IResource resource) {
 		return toUri(resource.getLocation());
 	}
 
-	public static String toUri(File file) {
+	public static URI toUri(File file) {
 		// URI scheme specified by language server protocol and LSP
-		return "file://" + file.getAbsoluteFile().toURI().getPath(); //$NON-NLS-1$
+		try {
+			return new URI("file", "", file.getAbsoluteFile().toURI().getPath(), null); //$NON-NLS-1$ //$NON-NLS-2$
+		} catch (URISyntaxException e) {
+			LanguageServerPlugin.logError(e);
+			return file.getAbsoluteFile().toURI();
+		}
 	}
 
 }

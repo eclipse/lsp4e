@@ -46,7 +46,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			@NonNull IPath filePath, TextDocumentSyncKind syncKind) {
 		this.languageServer = languageServer;
 		File file = filePath.toFile();
-		this.fileUri = LSPEclipseUtils.toUri(file);
+		this.fileUri = LSPEclipseUtils.toUri(file).toString();
 		this.modificationStamp = file.lastModified();
 		this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
 

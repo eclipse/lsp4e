@@ -66,7 +66,7 @@ public class DocumentDidSaveTest {
 
 		DidSaveTextDocumentParams lastChange = didSaveExpectation.get(1000, TimeUnit.MILLISECONDS);
 		assertNotNull(lastChange.getTextDocument());
-		assertEquals(LSPEclipseUtils.toUri(testFile), lastChange.getTextDocument().getUri());
+		assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
 	}
 
 }

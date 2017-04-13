@@ -11,11 +11,13 @@
 package org.eclipse.lsp4e.test.document;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -24,6 +26,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 
 public class LSPEclipseUtilsTest {
@@ -77,5 +80,11 @@ public class LSPEclipseUtilsTest {
 		} finally {
 			if (project != null) project.delete(true, new NullProgressMonitor());
 		}
+	}
+	
+	@Test
+	public void testURICreationUnix() {
+		Assume.assumeFalse(Platform.OS_WIN32.equals(Platform.getOS()));
+		Assert.assertEquals("file:///test%20with%20space", LSPEclipseUtils.toUri(new File("/test with space")).toString());
 	}
 }

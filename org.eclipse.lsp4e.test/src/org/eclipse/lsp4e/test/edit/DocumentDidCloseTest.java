@@ -46,7 +46,7 @@ public class DocumentDidCloseTest {
 
 		DidCloseTextDocumentParams lastChange = didCloseExpectation.get(1000, TimeUnit.MILLISECONDS);
 		assertNotNull(lastChange.getTextDocument());
-		assertEquals(LSPEclipseUtils.toUri(testFile), lastChange.getTextDocument().getUri());
+		assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
 
 		project.delete(true, true, new NullProgressMonitor());
 		

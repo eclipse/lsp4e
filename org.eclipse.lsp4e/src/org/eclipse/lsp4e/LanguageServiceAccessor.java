@@ -177,7 +177,7 @@ public class LanguageServiceAccessor {
 		final IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(location);
 		URI fileUri = null;
 		if (file.exists()) {
-			fileUri = URI.create(LSPEclipseUtils.toUri(file));
+			fileUri = LSPEclipseUtils.toUri(file);
 			try {
 				ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, capabilityRequest);
 				if (wrapper != null) {
