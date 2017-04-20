@@ -88,6 +88,9 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 			return new IMarkerResolution[] { COMPUTING };
 		}
 		List<? extends Command> commands = (List<? extends Command>)att;
+		if (commands == null) {
+			return new CodeActionMarkerResolution[0];
+		}
 		List<IMarkerResolution> res = new ArrayList<>(commands.size());
 		for (Command command : commands) {
 			if (command != null) {
