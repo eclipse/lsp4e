@@ -54,7 +54,7 @@ import org.eclipse.lsp4j.DefinitionCapabilities;
 import org.eclipse.lsp4j.DocumentHighlightCapabilities;
 import org.eclipse.lsp4j.DocumentLinkCapabilities;
 import org.eclipse.lsp4j.DocumentSymbolCapabilities;
-import org.eclipse.lsp4j.ExecuteCommandCapabilites;
+import org.eclipse.lsp4j.ExecuteCommandCapabilities;
 import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
@@ -68,12 +68,12 @@ import org.eclipse.lsp4j.RenameCapabilities;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.SignatureHelpCapabilities;
-import org.eclipse.lsp4j.SymbolCapabilites;
+import org.eclipse.lsp4j.SymbolCapabilities;
 import org.eclipse.lsp4j.SynchronizationCapabilities;
 import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
-import org.eclipse.lsp4j.WorkspaceClientCapabilites;
+import org.eclipse.lsp4j.WorkspaceClientCapabilities;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -216,10 +216,10 @@ public class ProjectSpecificLanguageServerWrapper {
 			if (Platform.getProduct() != null) {
 				name = Platform.getProduct().getName();
 			}
-			WorkspaceClientCapabilites workspaceClientCapabilites = new WorkspaceClientCapabilites();
+			WorkspaceClientCapabilities workspaceClientCapabilites = new WorkspaceClientCapabilities();
 			workspaceClientCapabilites.setApplyEdit(Boolean.TRUE);
-			workspaceClientCapabilites.setExecuteCommand(new ExecuteCommandCapabilites());
-			workspaceClientCapabilites.setSymbol(new SymbolCapabilites());
+			workspaceClientCapabilites.setExecuteCommand(new ExecuteCommandCapabilities());
+			workspaceClientCapabilites.setSymbol(new SymbolCapabilities());
 			TextDocumentClientCapabilities textDocumentClientCapabilities = new TextDocumentClientCapabilities();
 			textDocumentClientCapabilities.setCodeAction(new CodeActionCapabilities());
 			textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
