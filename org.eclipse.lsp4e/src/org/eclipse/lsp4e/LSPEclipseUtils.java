@@ -21,6 +21,9 @@ import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBufferManager;
 import org.eclipse.core.filebuffers.LocationKind;
+import org.eclipse.core.filesystem.EFS;
+import org.eclipse.core.filesystem.IFileInfo;
+import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -198,10 +201,15 @@ public class LSPEclipseUtils {
 				targetDocument = FileBuffers.getTextFileBufferManager()
 				        .getTextFileBuffer(targetResource.getFullPath(), LocationKind.IFILE).getDocument();
 			} else {
-				URI fileUri = URI.create(location.getUri());
-				part = IDE.openEditor(page, fileUri, null, true);
-				targetDocument = FileBuffers.getTextFileBufferManager()
-				        .getTextFileBuffer(new Path(fileUri.getPath()), LocationKind.LOCATION).getDocument();
+				URI fileUri = URI.create(location.getUri()).normalize();
+				IFileStore fileStore =  EFS.getLocalFileSystem().getStore(fileUri);
+				IFileInfo fetchInfo = fileStore.fetchInfo();
+				if (!fetchInfo.isDirectory() && fetchInfo.exists()) {
+					part = IDE.openEditorOnFileStore(page, fileStore);
+					ITextFileBuffer fileStoreTextFileBuffer = FileBuffers.getTextFileBufferManager()
+							.getFileStoreTextFileBuffer(fileStore);
+					targetDocument = fileStoreTextFileBuffer.getDocument();
+				}
 			}
 		} catch (PartInitException e) {
 			// TODO Auto-generated catch block
