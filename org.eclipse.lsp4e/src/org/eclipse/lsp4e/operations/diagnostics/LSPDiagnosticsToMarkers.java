@@ -12,6 +12,7 @@ package org.eclipse.lsp4e.operations.diagnostics;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -32,8 +33,6 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.ui.texteditor.MarkerUtilities;
-
-import com.google.common.base.Objects;
 
 public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParams> {
 
@@ -120,7 +119,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 				if (marker.getResource().getProjectRelativePath().toString().equals(diagnostic.getSource())
 						&& LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), document) == startOffset + 1
 						&& LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document) == endOffset + 1
-						&& Objects.equal(marker.getAttribute(IMarker.MESSAGE), diagnostic.getMessage())) {
+						&& Objects.equals(marker.getAttribute(IMarker.MESSAGE), diagnostic.getMessage())) {
 					return marker;
 				}
 			} catch (CoreException | BadLocationException e) {
