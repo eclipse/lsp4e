@@ -50,6 +50,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionOptions;
+import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -65,8 +66,6 @@ public class LSCompletionProposal
 		ICompletionProposalExtension3, ICompletionProposalExtension4, ICompletionProposalExtension5,
 		ICompletionProposalExtension6, ICompletionProposalExtension7, IContextInformation {
 
-	private static final String EDIT_AREA_OPEN_PATTERN = "{{"; //$NON-NLS-1$
-	private static final String EDIT_AREA_CLOSE_PATTERN = "}}"; //$NON-NLS-1$
 	private CompletionItem item;
 	private int initialOffset = -1;
 	private int bestOffset = -1;
@@ -353,32 +352,45 @@ public class LSCompletionProposal
 			return;
 		}
 
-		if (viewer != null) {
+		if (viewer != null && item.getInsertTextFormat() == InsertTextFormat.Snippet) {
 			try {
 				int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
 				LinkedHashMap<String, LinkedPositionGroup> groups = new LinkedHashMap<>();
-				int currentOffset = insertText.indexOf(EDIT_AREA_OPEN_PATTERN);
-				while (currentOffset != -1) {
-					int closeOffset = insertText.indexOf(EDIT_AREA_CLOSE_PATTERN,
-							currentOffset + EDIT_AREA_OPEN_PATTERN.length());
-					if (closeOffset != -1) {
-						String key = insertText.substring(currentOffset,
-								closeOffset + EDIT_AREA_CLOSE_PATTERN.length());
+				int currentOffset = 0;
+				while ((currentOffset = insertText.indexOf("$", currentOffset)) != -1) { //$NON-NLS-1$
+					String key = ""; //$NON-NLS-1$
+					String defaultValue = ""; //$NON-NLS-1$
+					int length = 1;
+					while (currentOffset + length < insertText.length() && Character.isDigit(insertText.charAt(currentOffset + length))) {
+						key += insertText.charAt(currentOffset + length);
+						length++;
+					}
+					if (length == 1 && insertText.length() >= 2 && insertText.charAt(currentOffset + 1) == '{') {
+						length++;
+						while (currentOffset + length < insertText.length() && Character.isDigit(insertText.charAt(currentOffset + length))) {
+							key += insertText.charAt(currentOffset + length);
+							length++;
+						}
+						if (currentOffset + length < insertText.length() && insertText.charAt(currentOffset + length) == ':') {
+							length++;
+						}
+						while (currentOffset + length < insertText.length() && insertText.charAt(currentOffset + length) != '}') {
+							defaultValue += insertText.charAt(currentOffset + length);
+							length++;
+						}
+					}
+					// TODO proceed with replacement of placeholders by default value, and fix group positions and sizes accordingly
+					if (!key.isEmpty()) {
 						if (!groups.containsKey(key)) {
 							groups.put(key, new LinkedPositionGroup());
 						}
-						LinkedPosition position = new LinkedPosition(document, insertionOffset + currentOffset,
-								key.length());
+						LinkedPosition position = new LinkedPosition(document, insertionOffset + currentOffset, length);
 						if (firstPosition == null) {
 							firstPosition = position;
 						}
 						groups.get(key).addPosition(firstPosition);
-						currentOffset = closeOffset + EDIT_AREA_CLOSE_PATTERN.length();
-					} else {
-						// TODO log
-						currentOffset += EDIT_AREA_OPEN_PATTERN.length();
 					}
-					currentOffset = insertText.indexOf(EDIT_AREA_OPEN_PATTERN, currentOffset);
+					currentOffset += length;
 				}
 				if (!groups.isEmpty()) {
 					LinkedModeModel model = new LinkedModeModel();
