@@ -14,9 +14,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -152,12 +151,15 @@ public class ProjectSpecificLanguageServerWrapper {
 	 * @throws IOException
 	 */
 	public void start() throws IOException {
-		Set<IPath> filesToReconnect = Collections.emptySet();
+		Map<IPath, IDocument> filesToReconnect = Collections.emptyMap();
 		if (this.languageServer != null) {
 			if (isActive()) {
 				return;
 			} else {
-				filesToReconnect =  new HashSet<>(this.connectedDocuments.keySet());
+				filesToReconnect = new HashMap<>();
+				for (Entry<IPath, DocumentContentSynchronizer> entry : this.connectedDocuments.entrySet()) {
+					filesToReconnect.put(entry.getKey(), entry.getValue().getDocument());
+				}
 				stop();
 			}
 		}
@@ -245,11 +247,11 @@ public class ProjectSpecificLanguageServerWrapper {
 				initializeResult = res;
 				return res;
 			});
-			final Set<IPath> toReconnect = filesToReconnect;
+			final Map<IPath, IDocument> toReconnect = filesToReconnect;
 			initializeFuture.thenRun(() -> {
-				for (IPath fileToReconnect : toReconnect) {
+				for (Entry<IPath, IDocument> fileToReconnect : toReconnect.entrySet()) {
 					try {
-						connect(fileToReconnect);
+						connect(fileToReconnect.getKey(), fileToReconnect.getValue());
 					} catch (IOException e) {
 						LanguageServerPlugin.logError(e);
 					}
@@ -305,18 +307,24 @@ public class ProjectSpecificLanguageServerWrapper {
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
 	}
 
-	public void connect(@NonNull IPath absolutePath) throws IOException {
+	public void connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
+		final IPath thePath = Path.fromOSString(absolutePath.toFile().getAbsolutePath()); // should be useless
+		if (this.connectedDocuments.containsKey(thePath)) {
+			return;
+		}
 		start();
 		if (this.initializeFuture == null) {
 			return;
 		}
+		if (document == null) {
+			IFile file = (IFile) LSPEclipseUtils.findResourceFor(thePath.toFile().toURI().toString());
+			document = LSPEclipseUtils.getDocument(file);
+		}
+		final IDocument theDocument = document;
 		initializeFuture.thenRun(() -> {
-			IFile file = (IFile) LSPEclipseUtils.findResourceFor(absolutePath.toFile().toURI().toString());
-			IDocument document = LSPEclipseUtils.getDocument(file);
-			if (this.connectedDocuments.containsKey(file.getLocation())) {
+			if (this.connectedDocuments.containsKey(thePath)) {
 				return;
 			}
-
 			Either<TextDocumentSyncKind, TextDocumentSyncOptions> syncOptions = initializeFuture == null ? null
 					: initializeResult.getCapabilities().getTextDocumentSync();
 			TextDocumentSyncKind syncKind = null;
@@ -327,9 +335,9 @@ public class ProjectSpecificLanguageServerWrapper {
 					syncKind = syncOptions.getLeft();
 				}
 			}
-			DocumentContentSynchronizer listener = new DocumentContentSynchronizer(languageServer, document, absolutePath, syncKind);
-			document.addDocumentListener(listener);
-			ProjectSpecificLanguageServerWrapper.this.connectedDocuments.put(file.getLocation(), listener);
+			DocumentContentSynchronizer listener = new DocumentContentSynchronizer(languageServer, theDocument, thePath, syncKind);
+			theDocument.addDocumentListener(listener);
+			ProjectSpecificLanguageServerWrapper.this.connectedDocuments.put(thePath, listener);
 		});
 	}
 

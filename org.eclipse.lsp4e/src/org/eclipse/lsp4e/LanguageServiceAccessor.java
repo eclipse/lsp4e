@@ -181,7 +181,7 @@ public class LanguageServiceAccessor {
 			try {
 				ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, capabilityRequest);
 				if (wrapper != null) {
-					wrapper.connect(file.getLocation());
+					wrapper.connect(file.getLocation(), document);
 					@Nullable
 					LanguageServer server = wrapper.getServer();
 					if (server != null) {
@@ -201,7 +201,7 @@ public class LanguageServiceAccessor {
 	public static LanguageServer getLanguageServer(@NonNull IFile file, Predicate<ServerCapabilities> request) throws Exception {
 		ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, request);
 		if (wrapper != null) {
-			wrapper.connect(file.getLocation());
+			wrapper.connect(file.getLocation(), null);
 			return wrapper.getServer();
 		}
 		return null;

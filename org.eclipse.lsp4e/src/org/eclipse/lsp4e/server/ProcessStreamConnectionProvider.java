@@ -43,14 +43,19 @@ public class ProcessStreamConnectionProvider implements StreamConnectionProvider
 			throw new IOException("Unable to start language server: " + this.toString()); //$NON-NLS-1$
 		}
 
-		ProcessBuilder builder = new ProcessBuilder(getCommands());
-		builder.directory(new File(getWorkingDirectory()));
-		builder.redirectError(ProcessBuilder.Redirect.INHERIT);
+		ProcessBuilder builder = createProcessBuilder();
 		Process p = builder.start();
 		this.process = p;
 		if (!p.isAlive()) {
 			throw new IOException("Unable to start language server: " + this.toString()); //$NON-NLS-1$
 		}
+	}
+
+	protected ProcessBuilder createProcessBuilder() {
+		ProcessBuilder builder = new ProcessBuilder(getCommands());
+		builder.directory(new File(getWorkingDirectory()));
+		builder.redirectError(ProcessBuilder.Redirect.INHERIT);
+		return builder;
 	}
 
 	@Override

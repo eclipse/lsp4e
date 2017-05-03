@@ -22,8 +22,12 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.content.IContentType;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
@@ -67,34 +71,46 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 
 	@Override
 	public void setup(IDocument document, IPath location, LocationKind locationKind) {
-		String fileName = location.segment(location.segmentCount() - 1);
-		IContentType[] fileContentTypes = new IContentType[0];
-		try (InputStream contents = new DocumentInputStream(document)) {
-			fileContentTypes = Platform.getContentTypeManager().findContentTypesFor(contents, fileName);
-		} catch (IOException e) {
-			LanguageServerPlugin.logError(e);
-		}
+		Job job = new Job("Initialize Language Servers for " + location.toFile().getName()) { //$NON-NLS-1$
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				String fileName = location.segment(location.segmentCount() - 1);
+				IContentType[] fileContentTypes = new IContentType[0];
+				try (InputStream contents = new DocumentInputStream(document)) {
+					fileContentTypes = Platform.getContentTypeManager().findContentTypesFor(contents, fileName);
+				} catch (IOException e) {
+					LanguageServerPlugin.logError(e);
+				}
 
-		if (locationKind == LocationKind.IFILE) {
-			IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(location);
-			IProject project = file.getProject();
+				if (locationKind == LocationKind.IFILE) {
+					IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(location);
+					IProject project = file.getProject();
 
-			// create servers one for available content type
-			for (IContentType contentType : fileContentTypes) {
-				for (StreamConnectionProvider connection : LSPStreamConnectionProviderRegistry.getInstance().findProviderFor(contentType)) {
-					if (connection != null) {
-						try {
-							LanguageServiceAccessor.getLSWrapperForConnection(project, contentType, connection);
-						} catch (IOException e) {
-							e.printStackTrace();
+					// create servers one for available content type
+					for (IContentType contentType : fileContentTypes) {
+						for (StreamConnectionProvider connection : LSPStreamConnectionProviderRegistry.getInstance().findProviderFor(contentType)) {
+							if (connection != null) {
+								try {
+									ProjectSpecificLanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor.getLSWrapperForConnection(project, contentType, connection);
+									if (lsWrapperForConnection != null) {
+										lsWrapperForConnection.connect(file.getLocation(), document);
+									}
+								} catch (IOException e) {
+									e.printStackTrace();
+									return new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, e.getMessage(), e);
+								}
+							}
 						}
 					}
-				}
+				} else {
+					// only support workspace file so far
+				};
+				return Status.OK_STATUS;
 			}
-		} else {
-			// only support workspace file so far
-			return;
-		}
+		};
+		job.setUser(true);
+		job.setPriority(Job.INTERACTIVE);
+		job.schedule(100); // give some time to populate doc
 	}
 
 }
