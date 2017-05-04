@@ -124,10 +124,11 @@ public class ProjectSpecificLanguageServerWrapper {
 
 	};
 
-	private final StreamConnectionProvider lspStreamProvider;
+	private final @NonNull StreamConnectionProvider lspStreamProvider;
 	private LanguageServer languageServer;
-	private IProject project;
-	private String label;
+	private final @NonNull IProject project;
+	private final @NonNull String languageServerId;
+	private final String label;
 	private Map<IPath, DocumentContentSynchronizer> connectedDocuments;
 
 	private InitializeResult initializeResult;
@@ -136,8 +137,9 @@ public class ProjectSpecificLanguageServerWrapper {
 
 	private boolean capabilitiesAlreadyRequested;
 
-	public ProjectSpecificLanguageServerWrapper(IProject project, String label, StreamConnectionProvider connection) {
+	public ProjectSpecificLanguageServerWrapper(@NonNull IProject project, @NonNull String languageServerId, String label, @NonNull StreamConnectionProvider connection) {
 		this.project = project;
+		this.languageServerId = languageServerId;
 		this.label = label;
 		this.lspStreamProvider = connection;
 		this.connectedDocuments = new HashMap<>();
@@ -166,7 +168,7 @@ public class ProjectSpecificLanguageServerWrapper {
 		try {
 			this.lspStreamProvider.start();
 			LanguageClient client = new LanguageClient() {
-				private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project);
+				private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project, ProjectSpecificLanguageServerWrapper.this.languageServerId);
 
 				@Override
 				public void telemetryEvent(Object object) {

@@ -43,7 +43,7 @@ public class DiagnosticsTest {
 	@Before
 	public void setUp() throws CoreException {
 		project = TestUtils.createProject("DiagnoticsTest" + System.currentTimeMillis());
-		diagnosticsToMarkers = new LSPDiagnosticsToMarkers(project);
+		diagnosticsToMarkers = new LSPDiagnosticsToMarkers(project, "dummy");
 	}
 
 	@After
@@ -112,6 +112,21 @@ public class DiagnosticsTest {
 
 			// TODO compare code, severity, source
 		}
+	}
+
+	@Test
+	public void testDiagnosticsFromVariousLS() throws Exception {
+		String content = "Diagnostic Other Text";
+		IFile file = TestUtils.createUniqueTestFileMultiLS(project, content);
+		Range range = new Range(new Position(1, 0), new Position(1, 0));
+		MockLanguageSever.INSTANCE.setDiagnostics(Collections.singletonList(
+				createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1")));
+		IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO);
+		assertEquals("no marker should be shown at file initialization", 0, markers.length);
+		TestUtils.openEditor(file);
+		Thread.sleep(300); //give some time to LSs to process
+		markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO);
+		assertEquals("there should be 1 marker for each language server", 2, markers.length);
 	}
 
 	private Diagnostic createDiagnostic(String code, String message, Range range, DiagnosticSeverity severity,

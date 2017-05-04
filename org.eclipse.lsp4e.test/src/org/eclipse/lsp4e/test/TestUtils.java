@@ -86,6 +86,10 @@ public class TestUtils {
 		return createFile(p, "test" + (System.currentTimeMillis()) + ".lspt", content);
 	}
 
+	public static IFile createUniqueTestFileMultiLS(IProject p, String content) throws CoreException {
+		return createFile(p, "test" + (System.currentTimeMillis()) + ".lsptmultils", content);
+	}
+
 	public static IFile createFile(IProject p, String name, String content) throws CoreException {
 		IFile testFile = p.getFile(name);
 		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);

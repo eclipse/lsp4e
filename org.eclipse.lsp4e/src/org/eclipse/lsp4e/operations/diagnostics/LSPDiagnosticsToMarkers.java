@@ -26,6 +26,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -37,11 +38,14 @@ import org.eclipse.ui.texteditor.MarkerUtilities;
 public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParams> {
 
 	public static final String LSP_DIAGNOSTIC = "lspDiagnostic"; //$NON-NLS-1$
+	private static final String LSP_SERVER_ID = "languageServerId"; //$NON-NLS-1$
 	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
-	private final IProject project;
+	private final @NonNull IProject project;
+	private final @NonNull String languageServerId;
 
-	public LSPDiagnosticsToMarkers(IProject project) {
+	public LSPDiagnosticsToMarkers(@NonNull IProject project, @NonNull String serverId) {
 		this.project = project;
+		this.languageServerId = serverId;
 	}
 
 	@Override
@@ -55,13 +59,15 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			}
 			Set<IMarker> remainingMarkers = new HashSet<>(
 					Arrays.asList(resource.findMarkers(LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_ONE)));
+			remainingMarkers.removeIf(marker -> !Objects.equals(marker.getAttribute(LSP_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
 			for (Diagnostic diagnostic : diagnostics.getDiagnostics()) {
 				IMarker associatedMarker = getExistingMarkerFor(resource, diagnostic, remainingMarkers);
 				if (associatedMarker == null) {
-					createMarkerForDiagnostic(resource, diagnostic);
+					associatedMarker = resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE);
 				} else {
 					remainingMarkers.remove(associatedMarker);
 				}
+				updateMarker(resource, diagnostic, associatedMarker);
 			}
 			for (IMarker marker : remainingMarkers) {
 				marker.delete();
@@ -71,12 +77,11 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		}
 	}
 
-	private void createMarkerForDiagnostic(IResource resource, Diagnostic diagnostic) {
+	protected void updateMarker(IResource resource, Diagnostic diagnostic, IMarker marker) {
 		try {
-			IMarker marker = resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE);
 			marker.setAttribute(LSP_DIAGNOSTIC, diagnostic);
+			marker.setAttribute(LSP_SERVER_ID, this.languageServerId);
 			marker.setAttribute(IMarker.MESSAGE, diagnostic.getMessage());
-			// TODO mapping Eclipse <-> LS severity
 			marker.setAttribute(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
 			if (resource.getType() != IResource.FILE) {
 				return;
@@ -119,7 +124,8 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 				if (marker.getResource().getProjectRelativePath().toString().equals(diagnostic.getSource())
 						&& LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), document) == startOffset + 1
 						&& LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document) == endOffset + 1
-						&& Objects.equals(marker.getAttribute(IMarker.MESSAGE), diagnostic.getMessage())) {
+						&& Objects.equals(marker.getAttribute(IMarker.MESSAGE), diagnostic.getMessage())
+						&& Objects.equals(marker.getAttribute(LSP_SERVER_ID), this.languageServerId)) {
 					return marker;
 				}
 			} catch (CoreException | BadLocationException e) {

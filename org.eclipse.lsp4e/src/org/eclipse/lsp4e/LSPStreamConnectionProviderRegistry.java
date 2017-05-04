@@ -11,6 +11,7 @@
 package org.eclipse.lsp4e;
 
 import java.io.IOException;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -52,10 +53,10 @@ public class LSPStreamConnectionProviderRegistry {
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
 
 	protected static final class StreamConnectionInfo {
-		private String id;
-		private String label;
+		private final @NonNull String id;
+		private final @NonNull String label;
 
-		public StreamConnectionInfo(String id, String label) {
+		public StreamConnectionInfo(@NonNull String id, @NonNull String label) {
 			this.id = id;
 			this.label = label;
 		}
@@ -100,7 +101,7 @@ public class LSPStreamConnectionProviderRegistry {
 		}
 
 		Map<String, StreamConnectionProvider> servers = new HashMap<>();
-		Map<IContentType, String> contentTypes = new HashMap<>();
+		List<Entry<IContentType, String>> contentTypes = new ArrayList<>();
 		for (IConfigurationElement extension : Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION_POINT_ID)) {
 			String id = extension.getAttribute(ID_ATTRIBUTE);
 			if (id != null && !id.isEmpty()) {
@@ -116,12 +117,12 @@ public class LSPStreamConnectionProviderRegistry {
 				} else if (extension.getName().equals(MAPPING_ELEMENT)) {
 					IContentType contentType = Platform.getContentTypeManager().getContentType(extension.getAttribute(CONTENT_TYPE_ATTRIBUTE));
 					if (contentType != null) {
-						contentTypes.put(contentType, id);
+						contentTypes.add(new SimpleEntry<>(contentType, id));
 					}
 				}
 			}
 		}
-		for (Entry<IContentType, String> entry : contentTypes.entrySet()) {
+		for (Entry<IContentType, String> entry : contentTypes) {
 			IContentType contentType = entry.getKey();
 			StreamConnectionProvider scp = servers.get(entry.getValue());
 			if (scp != null) {

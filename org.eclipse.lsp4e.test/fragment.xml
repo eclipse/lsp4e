@@ -8,9 +8,22 @@
             id="org.eclipse.lsp4e.test.server"
             label="Test LS">
       </server>
+      <server
+            class="org.eclipse.lsp4e.test.MockConnectionProvider"
+            id="org.eclipse.lsp4e.test.server2"
+            label="Test LS 2">
+      </server>
       <contentTypeMapping
             contentType="org.eclipse.lsp4e.test.content-type"
             id="org.eclipse.lsp4e.test.server">
+      </contentTypeMapping>
+      <contentTypeMapping
+            contentType="org.eclipse.lsp4e.test.content-type-multi-ls"
+            id="org.eclipse.lsp4e.test.server">
+      </contentTypeMapping>
+      <contentTypeMapping
+            contentType="org.eclipse.lsp4e.test.content-type-multi-ls"
+            id="org.eclipse.lsp4e.test.server2">
       </contentTypeMapping>
    </extension>
    <extension
@@ -19,6 +32,13 @@
             base-type="org.eclipse.core.runtime.text"
             file-extensions="lspt"
             id="org.eclipse.lsp4e.test.content-type"
+            name="Test Content Type"
+            priority="normal">
+      </content-type>
+      <content-type
+            base-type="org.eclipse.core.runtime.text"
+            file-extensions="lsptmultils"
+            id="org.eclipse.lsp4e.test.content-type-multi-ls"
             name="Test Content Type"
             priority="normal">
       </content-type>

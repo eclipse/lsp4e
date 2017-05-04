@@ -12,14 +12,17 @@
 package org.eclipse.lsp4e.tests.mock;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionOptions;
+import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
@@ -55,8 +58,13 @@ public final class MockLanguageSever implements LanguageServer {
 	 */
 	public static void main(String[] args) throws InterruptedException, ExecutionException {
 		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageSever.INSTANCE, System.in, System.out);
-		l.startListening().get();
-		System.err.println("lololo");
+		Future<?> f = l.startListening();
+		MockLanguageSever.INSTANCE.addRemoteProxy(l.getRemoteProxy());
+		f.get();
+	}
+
+	public void addRemoteProxy(LanguageClient remoteProxy) {
+		this.textDocumentService.addRemoteProxy(remoteProxy);
 	}
 
 	private void resetInitializeResult() {
@@ -150,6 +158,10 @@ public final class MockLanguageSever implements LanguageServer {
 
 	public void setTimeToProceedQueries(int i) {
 		this.delay = i;
+	}
+
+	public void setDiagnostics(List<Diagnostic> diagnostics) {
+		this.textDocumentService.setDiagnostics(diagnostics);
 	}
 
 }

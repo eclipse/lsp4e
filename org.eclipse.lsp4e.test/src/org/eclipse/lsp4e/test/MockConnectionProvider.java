@@ -41,6 +41,7 @@ public class MockConnectionProvider implements StreamConnectionProvider {
 		inputStream = in;
 		outputStream = out;
 		l.startListening();
+		MockLanguageSever.INSTANCE.addRemoteProxy(l.getRemoteProxy());
 	}
 
 	@Override

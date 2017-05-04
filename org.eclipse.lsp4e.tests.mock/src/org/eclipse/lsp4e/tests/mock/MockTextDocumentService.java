@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -22,6 +23,7 @@ import org.eclipse.lsp4j.CodeLensParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
@@ -33,6 +35,7 @@ import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.ReferenceParams;
 import org.eclipse.lsp4j.RenameParams;
 import org.eclipse.lsp4j.SignatureHelp;
@@ -41,6 +44,7 @@ import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
 public class MockTextDocumentService implements TextDocumentService {
@@ -54,7 +58,9 @@ public class MockTextDocumentService implements TextDocumentService {
 	private CompletableFuture<DidCloseTextDocumentParams> didCloseCallback;
 
 	private Function<?,? extends CompletableFuture<?>> _futureFactory;
+	private List<LanguageClient> remoteProxies;
 	private Location mockReferences;
+	private List<Diagnostic> diagnostics;
 	
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -63,6 +69,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		item.setLabel("Mock completion item");
 		mockCompletionList = new CompletionList(false, Collections.singletonList(item));
 		mockHover = new Hover(Collections.singletonList(Either.forLeft("Mock hover")), null);
+		this.remoteProxies = new ArrayList<>();
 	}
 
 	private <U> CompletableFuture<U> futureFactory(U value) {
@@ -157,8 +164,9 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public void didOpen(DidOpenTextDocumentParams params) {
-		// TODO Auto-generated method stub
-
+		if (this.diagnostics != null && !this.diagnostics.isEmpty()) {
+			this.remoteProxies.stream().forEach(p -> p.publishDiagnostics(new PublishDiagnosticsParams(params.getTextDocument().getUri(), this.diagnostics)));
+		}
 	}
 
 	@Override
@@ -218,6 +226,15 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockDefinitionLocations = Collections.emptyList();
 		this.mockHover = null;
 		this.mockReferences = null;
+		this.remoteProxies = new ArrayList<LanguageClient>();
+	}
+
+	public void setDiagnostics(List<Diagnostic> diagnostics) {
+		this.diagnostics = diagnostics;
+	}
+
+	public void addRemoteProxy(LanguageClient remoteProxy) {
+		this.remoteProxies.add(remoteProxy);
 	}
 	
 }
