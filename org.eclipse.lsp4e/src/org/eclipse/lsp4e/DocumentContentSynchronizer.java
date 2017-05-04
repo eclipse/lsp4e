@@ -34,7 +34,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
 
-	private final LanguageServer languageServer;
+	private final @NonNull ProjectSpecificLanguageServerWrapper languageServerWrapper;
 	private final String fileUri;
 	private final TextDocumentSyncKind syncKind;
 	private int version = 0;
@@ -42,17 +42,16 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private long modificationStamp;
 	private @NonNull IDocument document;
 
-	public DocumentContentSynchronizer(@NonNull LanguageServer languageServer, @NonNull IDocument document,
+	public DocumentContentSynchronizer(@NonNull ProjectSpecificLanguageServerWrapper languageServerWrapper, @NonNull IDocument document,
 			@NonNull IPath filePath, TextDocumentSyncKind syncKind) {
-		this.languageServer = languageServer;
+		this.languageServerWrapper = languageServerWrapper;
 		File file = filePath.toFile();
 		this.fileUri = LSPEclipseUtils.toUri(file).toString();
 		this.modificationStamp = file.lastModified();
 		this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
 
 		// Initialize change params to avoid it during text typing
-		this.changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(), null,
-				Collections.singletonList(new TextDocumentContentChangeEvent()));
+		this.changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(), Collections.singletonList(new TextDocumentContentChangeEvent()));
 		this.changeParams.getTextDocument().setUri(fileUri);
 
 		this.document = document;
@@ -62,7 +61,10 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		textDocument.setText(document.get());
 		textDocument.setLanguageId(filePath.getFileExtension());
 		textDocument.setVersion(++version);
-		this.languageServer.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument, null));
+		LanguageServer ls = languageServerWrapper.getServer();
+		if (ls != null) {
+			ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument));
+		}
 	}
 
 	@Override
@@ -72,7 +74,10 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			updateChangeEvent(event);
 		}
 		changeParams.getTextDocument().setVersion(++version);
-		languageServer.getTextDocumentService().didChange(changeParams);
+		LanguageServer ls = languageServerWrapper.getServer();
+		if (ls != null) {
+			ls.getTextDocumentService().didChange(changeParams);
+		}
 	}
 
 	@Override
@@ -129,13 +134,19 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		this.modificationStamp = timestamp;
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri);
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
-		languageServer.getTextDocumentService().didSave(params);
+		LanguageServer ls = languageServerWrapper.getServer();
+		if (ls != null) {
+			ls.getTextDocumentService().didSave(params);
+		}
 	}
 
 	public void documentClosed() {
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri);
 		DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
-		languageServer.getTextDocumentService().didClose(params);
+		LanguageServer ls = languageServerWrapper.getServer();
+		if (ls != null) {
+			ls.getTextDocumentService().didClose(params);
+		}
 	}
 
 	/**

@@ -337,7 +337,7 @@ public class ProjectSpecificLanguageServerWrapper {
 					syncKind = syncOptions.getLeft();
 				}
 			}
-			DocumentContentSynchronizer listener = new DocumentContentSynchronizer(languageServer, theDocument, thePath, syncKind);
+			DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, thePath, syncKind);
 			theDocument.addDocumentListener(listener);
 			ProjectSpecificLanguageServerWrapper.this.connectedDocuments.put(thePath, listener);
 		});
