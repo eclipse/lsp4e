@@ -344,18 +344,9 @@ public class LSCompletionProposal
 				textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + commonSize);
 			}
 			insertText = textEdit.getNewText();
-			// TODO apply additional text edits too. apply from bottom to top of the document
-			LSPEclipseUtils.applyEdit(textEdit, document);
-			selection = new Region(LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document) + textEdit.getNewText().length(), 0);
-		} catch (BadLocationException e) {
-			LanguageServerPlugin.logError("issue while trying to apply:\n" + textEdit, e); //$NON-NLS-1$
-			return;
-		}
-
-		if (viewer != null && item.getInsertTextFormat() == InsertTextFormat.Snippet) {
-			try {
+			LinkedHashMap<String, LinkedPositionGroup> groups = new LinkedHashMap<>();
+			if (item.getInsertTextFormat() == InsertTextFormat.Snippet) {
 				int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
-				LinkedHashMap<String, LinkedPositionGroup> groups = new LinkedHashMap<>();
 				int currentOffset = 0;
 				while ((currentOffset = insertText.indexOf("$", currentOffset)) != -1) { //$NON-NLS-1$
 					String key = ""; //$NON-NLS-1$
@@ -378,38 +369,48 @@ public class LSCompletionProposal
 							defaultValue += insertText.charAt(currentOffset + length);
 							length++;
 						}
+						if (currentOffset + length < insertText.length() && insertText.charAt(currentOffset + length) == '}') {
+							length++;
+						}
 					}
-					// TODO proceed with replacement of placeholders by default value, and fix group positions and sizes accordingly
 					if (!key.isEmpty()) {
 						if (!groups.containsKey(key)) {
 							groups.put(key, new LinkedPositionGroup());
 						}
-						LinkedPosition position = new LinkedPosition(document, insertionOffset + currentOffset, length);
+						insertText = insertText.substring(0, currentOffset) + defaultValue + insertText.substring(currentOffset + length);
+						LinkedPosition position = new LinkedPosition(document, insertionOffset + currentOffset, defaultValue.length());
 						if (firstPosition == null) {
 							firstPosition = position;
 						}
 						groups.get(key).addPosition(firstPosition);
+						currentOffset += defaultValue.length();
+					} else {
+						currentOffset++;
 					}
-					currentOffset += length;
 				}
-				if (!groups.isEmpty()) {
-					LinkedModeModel model = new LinkedModeModel();
-					for (LinkedPositionGroup group : groups.values()) {
-						model.addGroup(group);
-					}
-					model.forceInstall();
-
-					LinkedModeUI ui = new EditorLinkedModeUI(model, viewer);
-					// ui.setSimpleMode(true);
-					// ui.setExitPolicy(new ExitPolicy(closingCharacter, document));
-					// ui.setExitPosition(getTextViewer(), exit, 0, Integer.MAX_VALUE);
-					ui.setCyclingMode(LinkedModeUI.CYCLE_NEVER);
-					ui.enter();
-				}
-			} catch (BadLocationException ex) {
-				// TODO log
-				ex.printStackTrace();
 			}
+			textEdit.setNewText(insertText); // insertText now has placeholder removed
+			LSPEclipseUtils.applyEdit(textEdit, document);
+
+			if (viewer != null && !groups.isEmpty()) {
+				LinkedModeModel model = new LinkedModeModel();
+				for (LinkedPositionGroup group : groups.values()) {
+					model.addGroup(group);
+				}
+				model.forceInstall();
+
+				LinkedModeUI ui = new EditorLinkedModeUI(model, viewer);
+				// ui.setSimpleMode(true);
+				// ui.setExitPolicy(new ExitPolicy(closingCharacter, document));
+				// ui.setExitPosition(getTextViewer(), exit, 0, Integer.MAX_VALUE);
+				ui.setCyclingMode(LinkedModeUI.CYCLE_NEVER);
+				ui.enter();
+			} else {
+				selection = new Region(LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document) + textEdit.getNewText().length(), 0);
+			}
+		} catch (BadLocationException ex) {
+			// TODO log
+			ex.printStackTrace();
 		}
 	}
 

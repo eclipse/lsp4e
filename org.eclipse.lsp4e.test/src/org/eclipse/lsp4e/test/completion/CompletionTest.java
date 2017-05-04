@@ -35,10 +35,12 @@ import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.ui.PartInitException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -256,5 +258,19 @@ public class CompletionTest {
 		
 		((LSCompletionProposal)proposals[0]).apply(viewer, '\n', 0, invokeOffset);
 		assertEquals("BA", viewer.getDocument().get());
+	}
+
+	@Test
+	public void testBasicSnippet() throws PartInitException, InvocationTargetException, CoreException {
+		CompletionItem completionItem = createCompletionItem("$1 and ${2:foo}", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
+		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, Collections.singletonList(completionItem)));
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,""));
+		int invokeOffset = 0;
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+		assertEquals(1, proposals.length);
+		((LSCompletionProposal)proposals[0]).apply(viewer, '\n', 0, invokeOffset);
+		assertEquals(" and foo", viewer.getDocument().get());
+		// TODO check link edit groups
 	}
 }
