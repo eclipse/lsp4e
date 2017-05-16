@@ -29,6 +29,7 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -149,16 +150,14 @@ public class LSPEclipseUtils {
 					int length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
 					edit.addChild(new ReplaceEdit(offset, length, textEdit.getNewText()));
 				} catch (BadLocationException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LanguageServerPlugin.logError(e);
 				}
 			}
 		}
 		try {
 			edit.apply(document);
 		} catch (MalformedTreeException | BadLocationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
 		if (manager != null) {
 			manager.endCompoundChange();
@@ -179,8 +178,7 @@ public class LSPEclipseUtils {
 			try {
 				bufferManager.connect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
 			} catch (CoreException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LanguageServerPlugin.logError(e);
 				return document;
 			}
 			buffer = bufferManager.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
@@ -212,8 +210,7 @@ public class LSPEclipseUtils {
 				}
 			}
 		} catch (PartInitException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
 		try {
 			if (part instanceof AbstractTextEditor) {
@@ -224,8 +221,7 @@ public class LSPEclipseUtils {
 				        .setSelection(new TextSelection(offset, endOffset > offset ? endOffset - offset : 0));
 			}
 		} catch (BadLocationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
 	}
 
@@ -241,6 +237,12 @@ public class LSPEclipseUtils {
 		}
 	}
 
+	/**
+	 * Applies a worksapce edit. It does simply change the underlying documents. It's usually
+	 * better to wrap this command in a {@link WorkspaceJob} to make the change atomic from
+	 * workspace perspective, save resources and implement undo.
+	 * @param wsEdit
+	 */
 	public static void applyWorkspaceEdit(WorkspaceEdit wsEdit) {
 		for (java.util.Map.Entry<String, List<TextEdit>> edit : wsEdit.getChanges().entrySet()) {
 			String uri = edit.getKey();

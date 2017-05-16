@@ -29,6 +29,8 @@ import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.IFileBufferListener;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -198,8 +200,21 @@ public class ProjectSpecificLanguageServerWrapper {
 				@Override
 				public CompletableFuture<ApplyWorkspaceEditResponse> applyEdit(ApplyWorkspaceEditParams params) {
 					return CompletableFuture.supplyAsync(() -> {
-						LSPEclipseUtils.applyWorkspaceEdit(params.getEdit());
-						return new ApplyWorkspaceEditResponse(true);
+						WorkspaceJob job = new WorkspaceJob(Messages.serverEdit) {
+							@Override
+							public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
+								LSPEclipseUtils.applyWorkspaceEdit(params.getEdit());
+								return Status.OK_STATUS;
+							}
+						};
+						job.schedule();
+						try {
+							job.join();
+							return new ApplyWorkspaceEditResponse(true);
+						} catch (InterruptedException e) {
+							LanguageServerPlugin.logError(e);
+							return new ApplyWorkspaceEditResponse(Boolean.FALSE);
+						}
 					});
 				}
 			};

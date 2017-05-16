@@ -26,6 +26,7 @@ import org.eclipse.jface.viewers.StructuredViewer;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.SymbolInformation;
@@ -35,9 +36,9 @@ import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonContentProvider;
 
 public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeContentProvider, IDocumentListener, IResourceChangeListener {
-	
+
 	public static final Object COMPUTING = new Object();
-	
+
 	private TreeViewer viewer;
 	private Throwable lastError;
 	private LSPDocumentInfo info;
@@ -137,15 +138,14 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 					if (delta.getResource().equals(this.resource)) {
 						viewer.getControl().getDisplay().asyncExec(() -> {
 							if (viewer instanceof StructuredViewer) {
-								((TreeViewer) viewer).refresh(true);
+								viewer.refresh(true);
 							}
 						});
 					}
 					return delta.getResource().getFullPath().isPrefixOf(this.resource.getFullPath());
 				});
 			} catch (CoreException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LanguageServerPlugin.logError(e);
 			}
 		}
 	}

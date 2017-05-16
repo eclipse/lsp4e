@@ -27,6 +27,7 @@ import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LSPImages;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.SymbolInformation;
@@ -81,12 +82,8 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 				if (maxSeverity > IMarker.SEVERITY_INFO) {
 					return getOverlay(res, maxSeverity);
 				}
-			} catch (CoreException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (BadLocationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			} catch (CoreException | BadLocationException e) {
+				LanguageServerPlugin.logError(e);
 			}
 		}
 		return res;

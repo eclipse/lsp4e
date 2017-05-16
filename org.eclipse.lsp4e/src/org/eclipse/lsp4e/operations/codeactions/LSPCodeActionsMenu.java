@@ -22,6 +22,7 @@ import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
@@ -60,8 +61,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 							LSPEclipseUtils.toPosition(selection.getOffset(), info.getDocument()),
 							LSPEclipseUtils.toPosition(selection.getOffset() + selection.getLength(), info.getDocument()));
 				} catch (BadLocationException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LanguageServerPlugin.logError(e);
 				}
 			}
 		}
@@ -75,7 +75,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 			item.setText(Messages.notImplemented);
 			return;
 		}
-		
+
 		item.setText(Messages.computing);
 		CodeActionContext context = new CodeActionContext(Collections.emptyList());
 		CodeActionParams params = new CodeActionParams();

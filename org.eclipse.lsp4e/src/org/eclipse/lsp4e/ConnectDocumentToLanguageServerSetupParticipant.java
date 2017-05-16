@@ -96,7 +96,6 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 										lsWrapperForConnection.connect(file.getLocation(), document);
 									}
 								} catch (IOException e) {
-									e.printStackTrace();
 									return new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, e.getMessage(), e);
 								}
 							}

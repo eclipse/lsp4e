@@ -157,8 +157,7 @@ public class LSCompletionProposal
 				try {
 					updateCompletionItem(resolvedItem.get(500, TimeUnit.MILLISECONDS));
 				} catch (InterruptedException | ExecutionException | TimeoutException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LanguageServerPlugin.logError(e);
 				}
 			}
 		}
@@ -409,8 +408,7 @@ public class LSCompletionProposal
 				selection = new Region(LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document) + textEdit.getNewText().length(), 0);
 			}
 		} catch (BadLocationException ex) {
-			// TODO log
-			ex.printStackTrace();
+			LanguageServerPlugin.logError(ex);
 		}
 	}
 

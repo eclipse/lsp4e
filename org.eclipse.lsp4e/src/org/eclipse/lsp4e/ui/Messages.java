@@ -37,6 +37,10 @@ public class Messages extends NLS {
 	public static String outline_computingSymbols;
 	public static String findReferences_jobName;
 	public static String findReferences_updateResultView_jobName;
+	public static String rename_title;
+	public static String rename_label;
+	public static String rename_invalid;
+	public static String serverEdit;
 
 
 	static {

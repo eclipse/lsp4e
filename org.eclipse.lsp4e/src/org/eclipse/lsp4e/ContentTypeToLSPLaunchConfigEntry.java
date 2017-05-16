@@ -43,7 +43,7 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToStreamProvid
 		try {
 			builder.append(launchConfiguration.getType().getIdentifier());
 		} catch (CoreException e) {
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
 		builder.append('/');
 		builder.append(launchConfiguration.getName());

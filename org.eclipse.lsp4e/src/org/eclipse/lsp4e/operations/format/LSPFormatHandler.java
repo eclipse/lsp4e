@@ -23,6 +23,7 @@ import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.DocumentFormattingParams;
@@ -63,8 +64,7 @@ public class LSPFormatHandler extends AbstractHandler implements IHandler {
 							});
 						});
 					} catch (BadLocationException e) {
-						// TODO
-						e.printStackTrace();
+						LanguageServerPlugin.logError(e);
 						return null;
 					}
 				}

@@ -23,6 +23,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.SymbolInformation;
@@ -92,8 +93,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 					int endOffset = LSPEclipseUtils.toOffset(location.getRange().getEnd(), targetDocument);
 					fTextEditor.selectAndReveal(offset, endOffset - offset);
 				} catch (BadLocationException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LanguageServerPlugin.logError(e);
 				}
 			}
 		});

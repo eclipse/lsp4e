@@ -124,8 +124,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 					}
 				}
 			} catch (InterruptedException | ExecutionException | TimeoutException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				LanguageServerPlugin.logError(e);
 			}
 		}
 	}

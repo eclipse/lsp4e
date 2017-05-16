@@ -18,6 +18,11 @@ import java.util.Map;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -50,7 +55,13 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 			// TODO? Consider binding LS commands to Eclipse commands and handlers???
 			if (command.getArguments() != null) {
 				WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), marker.getResource());
-				LSPEclipseUtils.applyWorkspaceEdit(edit);
+				new WorkspaceJob(command.getTitle()) {
+					@Override
+					public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
+						LSPEclipseUtils.applyWorkspaceEdit(edit);
+						return Status.OK_STATUS;
+					}
+				}.schedule();
 			}
 		} catch (Exception e) {
 			LanguageServerPlugin.logError(e);

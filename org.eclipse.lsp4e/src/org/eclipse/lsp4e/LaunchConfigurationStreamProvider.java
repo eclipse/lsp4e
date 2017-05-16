@@ -77,13 +77,12 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 				try {
 					Thread.sleep(5, 0);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+					LanguageServerPlugin.logError(e);
 				}
 			}
 			return queue.poll();
 		}
-		
+
 		@Override
 		public int available() throws IOException {
 			return queue.size();
@@ -130,7 +129,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 				}
 			}
 		} catch (CoreException e) {
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
 		return res;
 	}
@@ -140,8 +139,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		try {
 			launch = this.launchConfiguration.launch(this.launchModes.iterator().next(), new NullProgressMonitor());
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
 	}
 
@@ -165,7 +163,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 				Process systemProcess = (Process)systemProcessGetter.invoke(process);
 				this.outputStream = systemProcess.getOutputStream();
 			} catch (ReflectiveOperationException ex) {
-				ex.printStackTrace();
+				LanguageServerPlugin.logError(ex);
 			}
 		}
 		return this.outputStream;
@@ -182,8 +180,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 				p.terminate();
 			}
 		} catch (DebugException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+			LanguageServerPlugin.logError(e1);
 		}
 		this.launch = null;
 		this.process = null;
@@ -192,8 +189,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 				this.inputStream.close();
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
 		this.inputStream = null;
 		this.outputStream = null;

@@ -10,27 +10,20 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.rename;
 
-import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
-import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
-import org.eclipse.core.filebuffers.FileBuffers;
-import org.eclipse.core.filebuffers.LocationKind;
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.dialogs.Dialog;
+import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.text.BadLocationException;
-import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -41,14 +34,16 @@ import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.RenameParams;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
-import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
+
+import com.google.common.base.Strings;
 
 public class LSPRenameHandler extends AbstractHandler implements IHandler {
 
@@ -68,12 +63,13 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 						TextDocumentIdentifier identifier = new TextDocumentIdentifier();
 						identifier.setUri(info.getFileUri().toString());
 						params.setTextDocument(identifier);
-						params.setNewName(askNewName());
-						CompletableFuture<WorkspaceEdit> rename = info.getLanguageClient().getTextDocumentService().rename(params);
-						rename.thenAccept((WorkspaceEdit t) -> apply(t));
+						params.setNewName(askNewName(part.getSite().getShell()));
+						if (params.getNewName() != null) {
+							CompletableFuture<WorkspaceEdit> rename = info.getLanguageClient().getTextDocumentService().rename(params);
+							rename.thenAccept((WorkspaceEdit t) -> apply(t));
+						}
 					} catch (BadLocationException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+						LanguageServerPlugin.logError(e);
 					}
 				}
 			}
@@ -82,31 +78,10 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 	}
 
 	private void apply(WorkspaceEdit workspaceEdit) {
-		for (Entry<String, ? extends List<? extends TextEdit>> entry : workspaceEdit.getChanges().entrySet()) {
-			IResource resource = LSPEclipseUtils.findResourceFor(entry.getKey());
-			if (resource.getType() == IResource.FILE) {
-				IFile file = (IFile)resource;
-				// save all open modified editors?
-			}
-		}
 		WorkspaceJob job = new WorkspaceJob(Messages.rename_job) {
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-				for (Entry<String, ? extends List<? extends TextEdit>> entry : workspaceEdit.getChanges().entrySet()) {
-					IResource resource = LSPEclipseUtils.findResourceFor(entry.getKey());
-					if (resource.getType() == IResource.FILE) {
-						IFile file = (IFile) resource;
-						IDocument document = FileBuffers.getTextFileBufferManager().getTextFileBuffer(file.getFullPath(), LocationKind.IFILE).getDocument();
-						try {
-							for (TextEdit textEdit : entry.getValue()) {
-								LSPEclipseUtils.applyEdit(textEdit, document);
-							}
-							file.setContents(new ByteArrayInputStream(document.get().getBytes(file.getCharset())), false, true, monitor);
-						} catch (UnsupportedEncodingException | BadLocationException e) {
-							return new Status(IStatus.ERROR, LanguageServerPlugin.getDefault().getBundle().getSymbolicName(), e.getMessage(), e);
-						}
-					}
-				}
+				LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
 				return Status.OK_STATUS;
 			}
 		};
@@ -119,16 +94,25 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 		if (part instanceof AbstractTextEditor) {
 			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
 				LSPEclipseUtils.getDocument((ITextEditor) part),
-				(capabilities) -> Boolean.TRUE.equals(capabilities.getRenameProvider()));
+				(capabilities) ->
+					Boolean.TRUE.equals(capabilities.getRenameProvider()));
 			ISelection selection = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
 			return info != null && !selection.isEmpty() && selection instanceof ITextSelection;
 		}
 		return false;
 	}
 
-	private String askNewName() {
-		// TODO: show popup to ask user
-		return "blah"; //$NON-NLS-1$
+	private String askNewName(Shell parentShell) {
+		InputDialog dialog = new InputDialog(parentShell,
+				Messages.rename_title,
+				Messages.rename_label,
+				"newName", //$NON-NLS-1$
+				s -> Strings.isNullOrEmpty(s) ? Messages.rename_invalid : null);
+		dialog.setBlockOnOpen(true);
+		if (dialog.open() == Dialog.OK) {
+			return dialog.getValue();
+		}
+		return null;
 	}
 
 }

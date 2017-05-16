@@ -100,7 +100,7 @@ public class LSSearchResult extends FileSearchResult {
 			        String.format("%s:%s", startPosition.getLine(), startPosition.getCharacter())); //$NON-NLS-1$
 			return new FileMatch((IFile) resource, 0, 0, lineEntry);
 		} catch (BadLocationException ex) {
-			ex.printStackTrace();
+			LanguageServerPlugin.logError(ex);
 		}
 		return null;
 	}
