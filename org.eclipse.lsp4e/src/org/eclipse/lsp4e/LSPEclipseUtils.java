@@ -37,6 +37,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.RewriteSessionEditProcessor;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Location;
@@ -155,7 +156,9 @@ public class LSPEclipseUtils {
 			}
 		}
 		try {
-			edit.apply(document);
+			RewriteSessionEditProcessor editProcessor = new RewriteSessionEditProcessor(document, edit,
+					org.eclipse.text.edits.TextEdit.NONE);
+			editProcessor.performEdits();
 		} catch (MalformedTreeException | BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}

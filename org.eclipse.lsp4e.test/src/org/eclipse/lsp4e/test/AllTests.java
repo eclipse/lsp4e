@@ -18,6 +18,7 @@ import org.eclipse.lsp4e.test.document.LSPEclipseUtilsTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidChangeTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidCloseTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidSaveTest;
+import org.eclipse.lsp4e.test.format.FormatTest;
 import org.eclipse.lsp4e.test.hover.HoverTest;
 import org.eclipse.lsp4e.test.references.FindReferencesTest;
 import org.eclipse.lsp4e.test.symbols.SymbolsModelTest;
@@ -37,7 +38,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	HoverTest.class,
 	DefinitionTest.class,
 	DiagnosticsTest.class,
-	FindReferencesTest.class
+	FindReferencesTest.class,
+	FormatTest.class
 })
 public class AllTests {
 

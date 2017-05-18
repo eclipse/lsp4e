@@ -32,6 +32,7 @@ import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
+import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
@@ -75,6 +76,7 @@ public final class MockLanguageSever implements LanguageServer {
 		capabilities.setHoverProvider(true);
 		capabilities.setDefinitionProvider(true);
 		capabilities.setReferencesProvider(true);
+		capabilities.setDocumentFormattingProvider(true);
 		initializeResult.setCapabilities(capabilities);
 	}
 	
@@ -132,6 +134,10 @@ public final class MockLanguageSever implements LanguageServer {
 	
 	public void setDidCloseCallback(CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation) {
 		this.textDocumentService.setDidCloseCallback(didCloseExpectation);
+	}
+	
+	public void setFormattingTextEdits(List<? extends TextEdit> formattingTextEdits) {
+		this.textDocumentService.setMockFormattingTextEdits(formattingTextEdits);
 	}
 
 	public void setCompletionTriggerChars(Set<String> chars) {

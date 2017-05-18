@@ -52,6 +52,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private CompletionList mockCompletionList;
 	private Hover mockHover;
 	private List<? extends Location> mockDefinitionLocations;
+	private List<? extends TextEdit> mockFormattingTextEdits;
 
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
 	private CompletableFuture<DidSaveTextDocumentParams> didSaveCallback;
@@ -140,8 +141,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends TextEdit>> formatting(DocumentFormattingParams params) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(mockFormattingTextEdits);
 	}
 
 	@Override
@@ -219,6 +219,10 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void setMockReferences(Location location) {
 		this.mockReferences = location;
+	}
+	
+	public void setMockFormattingTextEdits(List<? extends TextEdit> formattingTextEdits) {
+		this.mockFormattingTextEdits = formattingTextEdits;
 	}
 
 	public void reset() {
