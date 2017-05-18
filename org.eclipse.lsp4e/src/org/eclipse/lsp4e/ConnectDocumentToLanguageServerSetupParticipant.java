@@ -50,7 +50,9 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 		public int read() throws IOException {
 			if (index < document.getLength()) {
 				try {
-					return document.getChar(index);
+					char res = document.getChar(index);
+					index++;
+					return res;
 				} catch (BadLocationException e) {
 					throw new IOException(e);
 				}
