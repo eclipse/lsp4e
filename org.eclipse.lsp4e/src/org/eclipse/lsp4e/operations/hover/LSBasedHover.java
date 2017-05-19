@@ -103,8 +103,14 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 			if (content.isLeft()) {
 				return content.getLeft();
 			} else if (content.isRight()) {
-				// TODO: improve support for MarkedString
-				return content.getRight().getValue();
+				MarkedString markedString = content.getRight();
+				// TODO this won't work fully until markup parser will support syntax highlighting but will help display
+				// strings with language tags, e.g. without it things after <?php tag aren't displayed
+				if (markedString.getLanguage() != null && !markedString.getLanguage().isEmpty()) {
+					return String.format("```%s\n%s\n```", markedString.getLanguage(), markedString.getValue()); //$NON-NLS-1$
+				} else {
+					return markedString.getValue();
+				}
 			} else {
 				return ""; //$NON-NLS-1$
 			}
