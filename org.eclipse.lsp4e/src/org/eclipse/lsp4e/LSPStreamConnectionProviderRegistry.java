@@ -28,6 +28,7 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.util.SafeRunnable;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
 /**
@@ -106,12 +107,15 @@ public class LSPStreamConnectionProviderRegistry {
 			String id = extension.getAttribute(ID_ATTRIBUTE);
 			if (id != null && !id.isEmpty()) {
 				if (extension.getName().equals(LS_ELEMENT)) {
-					SafeRunner.run(() -> {
-						String label = extension.getAttribute(LABEL_ATTRIBUTE);
-						StreamConnectionProvider scp = (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
-						if (scp != null) {
-							servers.put(id, scp);
-							connectionsInfo.put(scp, new StreamConnectionInfo(id, label));
+					SafeRunner.run(new SafeRunnable() {
+						@Override
+						public void run() throws Exception {
+							String label = extension.getAttribute(LABEL_ATTRIBUTE);
+							StreamConnectionProvider scp = (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
+							if (scp != null) {
+								servers.put(id, scp);
+								connectionsInfo.put(scp, new StreamConnectionInfo(id, label));
+							}
 						}
 					});
 				} else if (extension.getName().equals(MAPPING_ELEMENT)) {
