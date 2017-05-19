@@ -95,7 +95,7 @@ public class LSPStreamConnectionProviderRegistry {
 				ContentTypeToLSPLaunchConfigEntry mapping = ContentTypeToLSPLaunchConfigEntry.readFromPreference(entry);
 				if (mapping != null) {
 					connections.add(mapping);
-					connectionsInfo.put(mapping.getStreamConnectionProvider(), new StreamConnectionInfo(mapping.getContentType().getId(), mapping.getContentType().getName()));
+					connectionsInfo.put(mapping.getValue(), new StreamConnectionInfo(mapping.getKey().getId(), mapping.getKey().getName()));
 				}
 			}
 		}
@@ -155,8 +155,8 @@ public class LSPStreamConnectionProviderRegistry {
 	public List<StreamConnectionProvider> findProviderFor(final IContentType contentType) {
 		return Arrays.asList(connections
 			.stream()
-			.filter(entry -> { return entry.getContentType().equals(contentType); })
-			.map(entry -> { return entry.getStreamConnectionProvider(); })
+			.filter(entry -> entry.getKey().equals(contentType))
+			.map(Entry::getValue)
 			.toArray(StreamConnectionProvider[]::new));
 	}
 
@@ -167,7 +167,7 @@ public class LSPStreamConnectionProviderRegistry {
 	public void registerAssociation(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {
 		ContentTypeToLSPLaunchConfigEntry mapping = new ContentTypeToLSPLaunchConfigEntry(contentType, launchConfig, launchMode);
 		connections.add(mapping);
-		connectionsInfo.put(mapping.getStreamConnectionProvider(), new StreamConnectionInfo(mapping.getContentType().getId(), mapping.getContentType().getName()));
+		connectionsInfo.put(mapping.getValue(), new StreamConnectionInfo(mapping.getKey().getId(), mapping.getKey().getName()));
 		persistContentTypeToLaunchConfigurationMapping();
 	}
 

@@ -25,6 +25,7 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.lsp4e.ContentTypeToLSPLaunchConfigEntry;
+import org.eclipse.lsp4e.ContentTypeToStreamProvider;
 import org.eclipse.lsp4e.LSPStreamConnectionProviderRegistry;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -81,7 +82,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		contentTypeColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				return ((ContentTypeToLSPLaunchConfigEntry)element).getContentType().getName();
+				return ((ContentTypeToStreamProvider)element).getKey().getName();
 			}
 		});
 		TableViewerColumn launchConfigColumn = new TableViewerColumn(viewer, SWT.NONE);
@@ -137,7 +138,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 				ISelection sel = viewer.getSelection();
 				if (!sel.isEmpty() && sel instanceof IStructuredSelection) {
 					for (Object item : ((IStructuredSelection)sel).toArray()) {
-						workingCopy.remove((ContentTypeToLSPLaunchConfigEntry)item);
+						workingCopy.remove(item);
 					}
 					viewer.refresh();
 				}
@@ -153,7 +154,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		updateButtons();
 		return res;
 	}
-	
+
 	protected void updateButtons() {
 		this.removeButton.setEnabled(!this.viewer.getSelection().isEmpty());
 	}

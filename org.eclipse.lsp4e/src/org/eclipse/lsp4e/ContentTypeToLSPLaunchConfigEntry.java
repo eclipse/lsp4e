@@ -21,24 +21,21 @@ import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
 public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToStreamProvider {
 
-	private IContentType contentType;
 	private ILaunchConfiguration launchConfiguration;
 	private Set<String> launchModes;
 
 	public ContentTypeToLSPLaunchConfigEntry(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig,
-			@NonNull Set<String> launchMode) {
-		super(contentType, null);
-		this.contentType = contentType;
+			@NonNull Set<String> launchModes) {
+		super(contentType, new LaunchConfigurationStreamProvider(launchConfig, launchModes));
 		this.launchConfiguration = launchConfig;
-		this.launchModes = Collections.unmodifiableSet(launchMode);
+		this.launchModes = Collections.unmodifiableSet(launchModes);
 	}
 
 	public void appendPreferenceTo(StringBuilder builder) {
-		builder.append(contentType.getId());
+		builder.append(getKey().getId());
 		builder.append(':');
 		try {
 			builder.append(launchConfiguration.getType().getIdentifier());
@@ -53,16 +50,6 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToStreamProvid
 			builder.append('+');
 		}
 		builder.deleteCharAt(builder.length() - 1);
-	}
-
-	@Override
-	public IContentType getContentType() {
-		return contentType;
-	}
-
-	@Override
-	public StreamConnectionProvider getStreamConnectionProvider() {
-		return new LaunchConfigurationStreamProvider(launchConfiguration, launchModes);
 	}
 
 	public ILaunchConfiguration getLaunchConfiguration() {

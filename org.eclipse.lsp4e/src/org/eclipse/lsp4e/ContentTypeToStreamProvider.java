@@ -10,26 +10,21 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import java.util.AbstractMap.SimpleEntry;
+
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
-public class ContentTypeToStreamProvider {
+public class ContentTypeToStreamProvider extends SimpleEntry<IContentType, StreamConnectionProvider> {
 
-	private IContentType contentType;
-	private StreamConnectionProvider provider;
+	/**
+	 *
+	 */
+	private static final long serialVersionUID = 6002703726009331762L;
 
-	public ContentTypeToStreamProvider(@NonNull IContentType contentType, StreamConnectionProvider provider) {
-		this.contentType = contentType;
-		this.provider = provider;
-	}
-
-	public IContentType getContentType() {
-		return contentType;
-	}
-
-	public StreamConnectionProvider getStreamConnectionProvider() {
-		return provider;
+	public ContentTypeToStreamProvider(@NonNull IContentType contentType, @NonNull StreamConnectionProvider provider) {
+		super(contentType, provider);
 	}
 
 }
