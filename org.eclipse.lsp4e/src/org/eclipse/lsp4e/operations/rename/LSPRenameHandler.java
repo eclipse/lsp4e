@@ -16,11 +16,6 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
-import org.eclipse.core.resources.WorkspaceJob;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.text.BadLocationException;
@@ -66,7 +61,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 						params.setNewName(askNewName(part.getSite().getShell()));
 						if (params.getNewName() != null) {
 							CompletableFuture<WorkspaceEdit> rename = info.getLanguageClient().getTextDocumentService().rename(params);
-							rename.thenAccept((WorkspaceEdit t) -> apply(t));
+							rename.thenAccept((WorkspaceEdit t) -> LSPEclipseUtils.applyWorkspaceEdit(t));
 						}
 					} catch (BadLocationException e) {
 						LanguageServerPlugin.logError(e);
@@ -75,17 +70,6 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 			}
 		}
 		return null;
-	}
-
-	private void apply(WorkspaceEdit workspaceEdit) {
-		WorkspaceJob job = new WorkspaceJob(Messages.rename_job) {
-			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-				LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
-				return Status.OK_STATUS;
-			}
-		};
-		job.schedule();
 	}
 
 	@Override

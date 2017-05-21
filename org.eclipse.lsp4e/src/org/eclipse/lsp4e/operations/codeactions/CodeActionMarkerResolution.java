@@ -18,14 +18,8 @@ import java.util.Map;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.WorkspaceJob;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
@@ -50,22 +44,13 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 
 	@Override
 	public void run(IMarker marker) {
-		try {
-			// This is a *client-side* command, no need to go through workspace/executeCommand operation
-			// TODO? Consider binding LS commands to Eclipse commands and handlers???
-			if (command.getArguments() != null) {
-				WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), marker.getResource());
-				new WorkspaceJob(command.getTitle()) {
-					@Override
-					public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
-						LSPEclipseUtils.applyWorkspaceEdit(edit);
-						return Status.OK_STATUS;
-					}
-				}.schedule();
-			}
-		} catch (Exception e) {
-			LanguageServerPlugin.logError(e);
+		// This is a *client-side* command, no need to go through workspace/executeCommand operation
+		// TODO? Consider binding LS commands to Eclipse commands and handlers???
+		if (command.getArguments() == null) {
+			return;
 		}
+		WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), marker.getResource());
+		LSPEclipseUtils.applyWorkspaceEdit(edit);
 	}
 
 	private static final class Pair<K, V> {

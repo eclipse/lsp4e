@@ -29,7 +29,6 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -46,6 +45,9 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.ltk.core.refactoring.CompositeChange;
+import org.eclipse.ltk.core.refactoring.DocumentChange;
+import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
 import org.eclipse.text.edits.MalformedTreeException;
 import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
@@ -247,16 +249,33 @@ public class LSPEclipseUtils {
 	}
 
 	/**
-	 * Applies a worksapce edit. It does simply change the underlying documents. It's usually
-	 * better to wrap this command in a {@link WorkspaceJob} to make the change atomic from
-	 * workspace perspective, save resources and implement undo.
+	 * Applies a worksapce edit. It does simply change the underlying documents.
+	 *
 	 * @param wsEdit
 	 */
 	public static void applyWorkspaceEdit(WorkspaceEdit wsEdit) {
+		CompositeChange change = new CompositeChange("LSP Workspace Edit"); //$NON-NLS-1$
 		for (java.util.Map.Entry<String, List<TextEdit>> edit : wsEdit.getChanges().entrySet()) {
 			String uri = edit.getKey();
 			IDocument document = LSPEclipseUtils.getDocument(LSPEclipseUtils.findResourceFor(uri));
-			LSPEclipseUtils.applyEdits(document, edit.getValue());
+			for (TextEdit textEdit : edit.getValue()) {
+				try {
+					int offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
+					int length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
+					DocumentChange documentChange = new DocumentChange("Change in document " + uri, document); //$NON-NLS-1$
+					documentChange.initializeValidationData(new NullProgressMonitor());
+					documentChange.setEdit(new ReplaceEdit(offset, length, textEdit.getNewText()));
+					change.add(documentChange);
+				} catch (BadLocationException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			}
+		}
+		PerformChangeOperation changeOperation = new PerformChangeOperation(change);
+		try {
+			ResourcesPlugin.getWorkspace().run(changeOperation, new NullProgressMonitor());
+		} catch (CoreException e) {
+			LanguageServerPlugin.logError(e);
 		}
 	}
 
