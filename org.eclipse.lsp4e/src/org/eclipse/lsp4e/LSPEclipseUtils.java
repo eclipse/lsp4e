@@ -87,9 +87,15 @@ public class LSPEclipseUtils {
 	}
 
 	public static int toEclipseMarkerSeverity(DiagnosticSeverity lspSeverity) {
+		if (lspSeverity == null) {
+			// if severity is empty it is up to the client to interpret diagnostics
+			return IMarker.SEVERITY_ERROR;
+		}
 		switch (lspSeverity) {
-		case Error: return IMarker.SEVERITY_ERROR;
-		case Warning: return IMarker.SEVERITY_WARNING;
+		case Error:
+			return IMarker.SEVERITY_ERROR;
+		case Warning:
+			return IMarker.SEVERITY_WARNING;
 		default:
 			return IMarker.SEVERITY_INFO;
 		}
