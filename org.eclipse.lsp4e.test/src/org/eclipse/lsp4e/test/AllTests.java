@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import org.eclipse.lsp4e.test.codeactions.CodeActionTests;
 import org.eclipse.lsp4e.test.completion.CompletionTest;
 import org.eclipse.lsp4e.test.definition.DefinitionTest;
 import org.eclipse.lsp4e.test.diagnostics.DiagnosticsTest;
@@ -39,7 +40,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DefinitionTest.class,
 	DiagnosticsTest.class,
 	FindReferencesTest.class,
-	FormatTest.class
+	FormatTest.class,
+	CodeActionTests.class
 })
 public class AllTests {
 

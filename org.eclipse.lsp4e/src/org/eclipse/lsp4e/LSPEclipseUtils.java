@@ -15,7 +15,11 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
@@ -59,6 +63,8 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
+
+import com.google.gson.Gson;
 
 /**
  * Some utility methods to convert between Eclipse and LS-API types
@@ -297,4 +303,52 @@ public class LSPEclipseUtils {
 		}
 	}
 
+	// TODO consider using Entry/SimpleEntry instead
+	private static final class Pair<K, V> {
+		K key;
+		V value;
+		Pair(K key,V value) {
+			this.key = key;
+			this.value = value;
+		}
+	}
+
+	/**
+	 * Very empirical and unsafe heuristic to turn unknown command arguments
+	 * into a workspace edit...
+	 */
+	public static WorkspaceEdit createWorkspaceEdit(List<Object> commandArguments, IResource initialResource) {
+		WorkspaceEdit res = new WorkspaceEdit();
+		Map<String, List<TextEdit>> changes = new HashMap<>();
+		res.setChanges(changes);
+		Pair<IResource, List<TextEdit>> currentEntry = new Pair<>(initialResource, new ArrayList<>());
+		commandArguments.stream().flatMap(item -> {
+			if (item instanceof List) {
+				return ((List<?>)item).stream();
+			} else {
+				return Collections.singleton(item).stream();
+			}
+		}).forEach(arg -> {
+			if (arg instanceof String) {
+				changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
+				IResource resource = LSPEclipseUtils.findResourceFor((String)arg);
+				if (resource != null) {
+					currentEntry.key = resource;
+					currentEntry.value = new ArrayList<>();
+				}
+			} else if (arg instanceof WorkspaceEdit) {
+				changes.putAll(((WorkspaceEdit)arg).getChanges());
+			} else if (arg instanceof TextEdit) {
+				currentEntry.value.add((TextEdit)arg);
+			} else if (arg instanceof Map) {
+				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
+				TextEdit edit = gson.fromJson(gson.toJson(arg), TextEdit.class);
+				if (edit != null) {
+					currentEntry.value.add(edit);
+				}
+			}
+		});
+		changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
+		return res;
+	}
 }

@@ -62,6 +62,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<LanguageClient> remoteProxies;
 	private Location mockReferences;
 	private List<Diagnostic> diagnostics;
+	private List<Command> mockCodeActions;
 	
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -123,8 +124,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends Command>> codeAction(CodeActionParams params) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(this.mockCodeActions);
 	}
 
 	@Override
@@ -231,6 +231,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockHover = null;
 		this.mockReferences = null;
 		this.remoteProxies = new ArrayList<LanguageClient>();
+		this.mockCodeActions = new ArrayList<Command>();
 	}
 
 	public void setDiagnostics(List<Diagnostic> diagnostics) {
@@ -239,6 +240,10 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void addRemoteProxy(LanguageClient remoteProxy) {
 		this.remoteProxies.add(remoteProxy);
+	}
+
+	public void setCodeActions(List<Command> commands) {
+		this.mockCodeActions = commands;
 	}
 	
 }

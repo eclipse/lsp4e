@@ -12,7 +12,6 @@
 package org.eclipse.lsp4e.tests.mock;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -20,6 +19,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
+import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.Diagnostic;
@@ -77,6 +77,7 @@ public final class MockLanguageSever implements LanguageServer {
 		capabilities.setDefinitionProvider(true);
 		capabilities.setReferencesProvider(true);
 		capabilities.setDocumentFormattingProvider(true);
+		capabilities.setCodeActionProvider(Boolean.TRUE);
 		initializeResult.setCapabilities(capabilities);
 	}
 	
@@ -168,6 +169,10 @@ public final class MockLanguageSever implements LanguageServer {
 
 	public void setDiagnostics(List<Diagnostic> diagnostics) {
 		this.textDocumentService.setDiagnostics(diagnostics);
+	}
+
+	public void setCodeActions(List<Command> commands) {
+		this.textDocumentService.setCodeActions(commands);
 	}
 
 }

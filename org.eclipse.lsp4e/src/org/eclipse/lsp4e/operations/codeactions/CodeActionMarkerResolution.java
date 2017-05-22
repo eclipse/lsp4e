@@ -10,24 +10,14 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4j.Command;
-import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
-
-import com.google.gson.Gson;
 
 public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implements IMarkerResolution {
 
@@ -49,56 +39,8 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 		if (command.getArguments() == null) {
 			return;
 		}
-		WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), marker.getResource());
+		WorkspaceEdit edit = LSPEclipseUtils.createWorkspaceEdit(command.getArguments(), marker.getResource());
 		LSPEclipseUtils.applyWorkspaceEdit(edit);
-	}
-
-	private static final class Pair<K, V> {
-		K key;
-		V value;
-		Pair(K key,V value) {
-			this.key = key;
-			this.value = value;
-		}
-	}
-
-	/**
-	 * Very empirical and unsafe heuristic to turn unknown command arguments
-	 * into a workspace edit...
-	 */
-	private WorkspaceEdit createWorkspaceEdit(List<Object> arguments, IResource initialResource) {
-		WorkspaceEdit res = new WorkspaceEdit();
-		Map<String, List<TextEdit>> changes = new HashMap<>();
-		res.setChanges(changes);
-		Pair<IResource, List<TextEdit>> currentEntry = new Pair<>(initialResource, new ArrayList<>());
-		arguments.stream().flatMap(item -> {
-			if (item instanceof List) {
-				return ((List<?>)item).stream();
-			} else {
-				return Collections.singleton(item).stream();
-			}
-		}).forEach(arg -> {
-			if (arg instanceof String) {
-				changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
-				IResource resource = LSPEclipseUtils.findResourceFor((String)arg);
-				if (resource != null) {
-					currentEntry.key = resource;
-					currentEntry.value = new ArrayList<>();
-				}
-			} else if (arg instanceof WorkspaceEdit) {
-				changes.putAll(((WorkspaceEdit)arg).getChanges());
-			} else if (arg instanceof TextEdit) {
-				currentEntry.value.add((TextEdit)arg);
-			} else if (arg instanceof Map) {
-				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
-				TextEdit edit = gson.fromJson(gson.toJson(arg), TextEdit.class);
-				if (edit != null) {
-					currentEntry.value.add(edit);
-				}
-			}
-		});
-		changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
-		return res;
 	}
 
 	@Override

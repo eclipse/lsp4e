@@ -18,4 +18,5 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.search,
  org.eclipse.core.expressions,
  org.eclipse.osgi.services,
- org.eclipse.lsp4e.tests.mock;bundle-version="[0.2.0,0.3.0)"
+ org.eclipse.lsp4e.tests.mock;bundle-version="[0.2.0,0.3.0)",
+ org.eclipse.jface.text.tests
