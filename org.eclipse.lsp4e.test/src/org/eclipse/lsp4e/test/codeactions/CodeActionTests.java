@@ -80,6 +80,12 @@ public class CodeActionTests {
 				}
 			}.waitForCondition(Display.getCurrent(), 20000);
 			IDE.getMarkerHelpRegistry().getResolutions(m)[0].run(m);
+			new DisplayHelper() {
+				@Override
+				protected boolean condition() {
+					return "fixed".equals(editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
+				}
+			}.waitForCondition(Display.getCurrent(), 1000);
 			Assert.assertEquals("fixed", ((StyledText)editor.getAdapter(Control.class)).getText());
 			Assert.assertEquals("fixed", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
 		} finally {
