@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -22,8 +23,11 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.contentassist.ContextInformation;
+import org.eclipse.jface.text.contentassist.ContextInformationValidator;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContentAssistProcessor;
 import org.eclipse.jface.text.contentassist.IContextInformation;
@@ -35,6 +39,8 @@ import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.SignatureHelp;
+import org.eclipse.lsp4j.SignatureInformation;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.PlatformUI;
@@ -48,6 +54,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private LSPDocumentInfo info;
 	private LSPDocumentInfo lastCheckedForAutoActiveCharactersInfo;
 	private char[] triggerChars;
+	private char[] contextTriggerChars;
 	private Pair<IDocument, Job> findInfoJob;
 	private String errorMessage;
 
@@ -68,7 +75,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		CompletableFuture<Either<List<CompletionItem>, CompletionList>> request = null;
 		try {
 			if (info != null) {
-				TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument());
+				TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(),
+						offset, info.getDocument());
 				request = info.getLanguageClient().getTextDocumentService().completion(param);
 				res = toProposals(offset, request.get());
 			}
@@ -143,13 +151,46 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	@Override
 	public IContextInformation[] computeContextInformation(ITextViewer viewer, int offset) {
-		// TODO
-		return new IContextInformation[0];
+		checkInfoAndJob(viewer.getDocument());
+		if (info == null) {
+			try {
+				this.findInfoJob.getValue().join(COMPLETION_TIMEOUT, new NullProgressMonitor());
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
+
+		if (info == null) {
+			return new IContextInformation[0];
+		}
+		List<IContextInformation> contextInformations = new ArrayList<>();
+		try {
+			TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset,
+					info.getDocument());
+			SignatureHelp signatureHelp = info.getLanguageClient().getTextDocumentService().signatureHelp(param).get();
+
+			for (SignatureInformation information : signatureHelp.getSignatures()) {
+				StringBuilder signature = new StringBuilder(information.getLabel());
+				if (information.getDocumentation() != null && !information.getDocumentation().isEmpty()) {
+					signature.append('\n').append(information.getDocumentation());
+				}
+				contextInformations.add(new ContextInformation(information.getLabel(), signature.toString()));
+			}
+		} catch (BadLocationException | InterruptedException | ExecutionException e) {
+			LanguageServerPlugin.logError(e);
+		}
+		return contextInformations.toArray(new IContextInformation[0]);
 	}
 
 	@Override
 	public char[] getCompletionProposalAutoActivationCharacters() {
-		checkInfoAndJob(LSPEclipseUtils.getDocument((ITextEditor) PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor()));
+		collectAutoActivationCharacters();
+		return triggerChars;
+	}
+
+	private void collectAutoActivationCharacters() {
+		checkInfoAndJob(LSPEclipseUtils.getDocument(
+				(ITextEditor) PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor()));
 		if (info == null) {
 			try {
 				this.findInfoJob.getValue().join(TRIGGERS_TIMEOUT, new NullProgressMonitor());
@@ -160,25 +201,34 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		if (info != null && info != this.lastCheckedForAutoActiveCharactersInfo) {
 			ServerCapabilities currentCapabilites = info.getCapabilites();
 			if (currentCapabilites == null) {
-				return null;
+				return;
 			}
-			List<Character> chars = new ArrayList<>();
-			List<String> triggerCharacters = currentCapabilites.getCompletionProvider().getTriggerCharacters();
-			if (triggerCharacters == null) {
-				return null;
+
+			if (currentCapabilites.getCompletionProvider() != null) {
+				triggerChars = collectCharacters(currentCapabilites.getCompletionProvider().getTriggerCharacters());
 			}
-			for (String s : triggerCharacters) {
-				if (s.length() == 1) {
-					chars.add(s.charAt(0));
-				}
+
+			if (currentCapabilites.getSignatureHelpProvider() != null) {
+				contextTriggerChars = collectCharacters(
+						currentCapabilites.getSignatureHelpProvider().getTriggerCharacters());
 			}
-			triggerChars = new char[chars.size()];
-			int i = 0;
-			for (Character c : chars) {
-				triggerChars[i] = c;
-				i++;
-			}
+
 			this.lastCheckedForAutoActiveCharactersInfo = info;
+		}
+	}
+
+	private char[] collectCharacters(List<String> triggerCharacters) {
+		List<Character> chars = new ArrayList<>();
+		for (String s : triggerCharacters) {
+			if (s.length() == 1) {
+				chars.add(s.charAt(0));
+			}
+		}
+		char[] triggerChars = new char[chars.size()];
+		int i = 0;
+		for (Character c : chars) {
+			triggerChars[i] = c;
+			i++;
 		}
 		return triggerChars;
 	}
@@ -187,7 +237,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		Job job = new Job("[Completion] Find Language Server") { //$NON-NLS-1$
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				info = LanguageServiceAccessor.getLSPDocumentInfoFor(document, capabilities -> capabilities.getCompletionProvider() != null);
+				info = LanguageServiceAccessor.getLSPDocumentInfoFor(document,
+						capabilities -> capabilities.getCompletionProvider() != null);
 				return Status.OK_STATUS;
 			}
 		};
@@ -200,7 +251,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	@Override
 	public char[] getContextInformationAutoActivationCharacters() {
-		return null;
+		collectAutoActivationCharacters();
+		return contextTriggerChars;
 	}
 
 	@Override
@@ -210,8 +262,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	@Override
 	public IContextInformationValidator getContextInformationValidator() {
-		// TODO Auto-generated method stub
-		return null;
+		return new ContextInformationValidator(this);
 	}
 
 }

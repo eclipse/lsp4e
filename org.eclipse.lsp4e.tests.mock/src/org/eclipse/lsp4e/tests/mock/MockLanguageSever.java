@@ -31,6 +31,7 @@ import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
@@ -175,4 +176,8 @@ public final class MockLanguageSever implements LanguageServer {
 		this.textDocumentService.setCodeActions(commands);
 	}
 
+	public void setSignatureHelp(SignatureHelp signatureHelp) {
+		this.textDocumentService.setSignatureHelp(signatureHelp);
+	}
+	
 }

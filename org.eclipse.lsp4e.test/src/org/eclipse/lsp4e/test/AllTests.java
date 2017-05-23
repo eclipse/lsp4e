@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.test;
 
 import org.eclipse.lsp4e.test.codeactions.CodeActionTests;
 import org.eclipse.lsp4e.test.completion.CompletionTest;
+import org.eclipse.lsp4e.test.completion.ContextInformationTest;
 import org.eclipse.lsp4e.test.definition.DefinitionTest;
 import org.eclipse.lsp4e.test.diagnostics.DiagnosticsTest;
 import org.eclipse.lsp4e.test.document.LSPEclipseUtilsTest;
@@ -31,6 +32,7 @@ import org.junit.runners.Suite.SuiteClasses;
 @SuiteClasses({
 	LanguageServiceAccessorTest.class,
 	CompletionTest.class,
+	ContextInformationTest.class,
 	DocumentDidChangeTest.class,
 	DocumentDidSaveTest.class,
 	DocumentDidCloseTest.class,

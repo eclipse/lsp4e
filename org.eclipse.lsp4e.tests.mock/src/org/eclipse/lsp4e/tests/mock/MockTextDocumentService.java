@@ -53,6 +53,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private Hover mockHover;
 	private List<? extends Location> mockDefinitionLocations;
 	private List<? extends TextEdit> mockFormattingTextEdits;
+	private SignatureHelp mockSignatureHelp;
 
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
 	private CompletableFuture<DidSaveTextDocumentParams> didSaveCallback;
@@ -96,8 +97,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<SignatureHelp> signatureHelp(TextDocumentPositionParams position) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(mockSignatureHelp);
 	}
 
 	@Override
@@ -244,6 +244,10 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void setCodeActions(List<Command> commands) {
 		this.mockCodeActions = commands;
+	}
+	
+	public void setSignatureHelp(SignatureHelp signatureHelp) {
+		this.mockSignatureHelp = signatureHelp;
 	}
 	
 }
