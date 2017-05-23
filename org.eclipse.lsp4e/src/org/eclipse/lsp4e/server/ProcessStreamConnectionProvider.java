@@ -23,7 +23,7 @@ import org.eclipse.jdt.annotation.Nullable;
  *
  * @since 0.1.0
  */
-public class ProcessStreamConnectionProvider implements StreamConnectionProvider {
+public abstract class ProcessStreamConnectionProvider implements StreamConnectionProvider {
 
 	private @Nullable Process process;
 	private List<String> commands;
