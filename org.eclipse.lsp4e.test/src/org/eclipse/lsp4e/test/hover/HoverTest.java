@@ -102,4 +102,15 @@ public class HoverTest {
 
 		assertEquals(null, hover.getHoverInfo(viewer, new Region(0, 10)));
 	}
+	
+	@Test
+	public void testHoverEmptyContentItem() throws CoreException, InvocationTargetException {
+		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("")), new Range(new Position(0,  0), new Position(0, 10)));
+		MockLanguageSever.INSTANCE.setHover(hoverResponse);
+
+		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
+		ITextViewer viewer = TestUtils.openTextViewer(file);
+
+		assertEquals(null, hover.getHoverInfo(viewer, new Region(0, 10)));
+	}
 }

@@ -114,7 +114,10 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 			} else {
 				return ""; //$NON-NLS-1$
 			}
-		}).collect(Collectors.joining("\n\n")); //$NON-NLS-1$
+		}).filter(line -> !line.isEmpty()).collect(Collectors.joining("\n\n")); //$NON-NLS-1$
+		if (result.isEmpty()) {
+			return null;
+		}
 		result = MARKDOWN_PARSER.parseToHtml(result);
 		// put CSS styling to match Eclipse style
 		ColorRegistry colorRegistry =  JFaceResources.getColorRegistry();
