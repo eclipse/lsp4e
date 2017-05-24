@@ -34,6 +34,7 @@ Examples of integration contain:
 * [aCute](https://github.com/mickaelistria/aCute) C# edition in Eclipse IDE using LSP4E and OmniSharp LSP implementation
 * [BlueSky](https://github.com/mickaelistria/eclipse-bluesky) HTML (with embedded JS and CSS), CSS, JSON (with schema), JavaScript and TypeScript edition, using LSP4E and language servers.
 * [lsp4e-php](https://github.com/eclipselabs/lsp4e-php) Binds a PHP language server to the Eclipse IDE.
+* [lsp4e-python](https://github.com/eclipselabs/lsp4e-python) Binds a Python language server to the Eclipse IDE.
 
 All those examples are already good for usage as they provide advanced edition features, and great for showcase of the LSP4E project.
 
