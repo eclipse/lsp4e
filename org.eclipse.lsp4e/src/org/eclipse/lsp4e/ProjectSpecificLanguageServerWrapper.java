@@ -335,6 +335,9 @@ public class ProjectSpecificLanguageServerWrapper {
 			IFile file = (IFile) LSPEclipseUtils.findResourceFor(thePath.toFile().toURI().toString());
 			document = LSPEclipseUtils.getDocument(file);
 		}
+		if (document == null) {
+			return;
+		}
 		final IDocument theDocument = document;
 		initializeFuture.thenRun(() -> {
 			if (this.connectedDocuments.containsKey(thePath)) {

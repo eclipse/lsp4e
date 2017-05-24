@@ -74,7 +74,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		TreeViewer viewer = fFilteredTree.getViewer();
 
 		viewer.setContentProvider(new SymbolsContentProvider());
-		viewer.setLabelProvider(new SymbolsLabelProvider()); // TODO style
+		viewer.setLabelProvider(new SymbolsLabelProvider());
 		viewer.setUseHashlookup(true);
 		viewer.addSelectionChangedListener(event -> {
 			IStructuredSelection selection = (IStructuredSelection) event.getSelection();
@@ -85,6 +85,9 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 			Location location = symbolInformation.getLocation();
 
 			IResource targetResource = LSPEclipseUtils.findResourceFor(location.getUri());
+			if (targetResource == null) {
+				return;
+			}
 			IDocument targetDocument = FileBuffers.getTextFileBufferManager()
 			        .getTextFileBuffer(targetResource.getFullPath(), LocationKind.IFILE).getDocument();
 			if (targetDocument != null) {

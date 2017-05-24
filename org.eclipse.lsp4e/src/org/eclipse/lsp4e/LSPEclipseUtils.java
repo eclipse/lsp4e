@@ -37,6 +37,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
@@ -109,14 +110,20 @@ public class LSPEclipseUtils {
 		}
 	}
 
-	public static IResource findResourceFor(String uri) {
-		uri = uri.replace("file:///", "file:/");  //$NON-NLS-1$//$NON-NLS-2$
-		uri = uri.replace("file://", "file:/");  //$NON-NLS-1$//$NON-NLS-2$
-		IPath path = Path.fromOSString(new File(URI.create(uri)).getAbsolutePath());
+
+	@Nullable
+	public static IResource findResourceFor(@Nullable String uri) {
+		if (uri == null || uri.isEmpty()) {
+			return null;
+		}
+		String convertedUri = uri.replace("file:///", "file:/"); //$NON-NLS-1$//$NON-NLS-2$
+		convertedUri = convertedUri.replace("file://", "file:/"); //$NON-NLS-1$//$NON-NLS-2$
+		IPath path = Path.fromOSString(new File(URI.create(convertedUri)).getAbsolutePath());
 		IProject project = null;
 		for (IProject aProject : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
 			IPath location = aProject.getLocation();
-			if (location != null && location.isPrefixOf(path) && (project == null || project.getLocation().segmentCount() < location.segmentCount())) {
+			if (location != null && location.isPrefixOf(path)
+					&& (project == null || project.getLocation().segmentCount() < location.segmentCount())) {
 				project = aProject;
 			}
 		}
@@ -181,7 +188,8 @@ public class LSPEclipseUtils {
 		}
 	}
 
-	public static IDocument getDocument(IResource resource) {
+	@Nullable
+	public static IDocument getDocument(@Nullable IResource resource) {
 		if (resource == null) {
 			return null;
 		}
