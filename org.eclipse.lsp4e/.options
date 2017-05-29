@@ -1,0 +1,3 @@
+# Debugging options for the org.eclipse.lsp4e/debug plug-in
+
+org.eclipse.lsp4e/debug= false

@@ -282,8 +282,8 @@ public class ProjectSpecificLanguageServerWrapper {
 		if (message instanceof ResponseMessage && ((ResponseMessage) message).getError() != null) {
 			ResponseMessage responseMessage = (ResponseMessage) message;
 			LanguageServerPlugin.logError(new ResponseErrorException(responseMessage.getError()));
-		} else {
-			LanguageServerPlugin.logInfo(message.getClass().getSimpleName() +'\n' + message.toString());
+		} else if (LanguageServerPlugin.DEBUG) {
+			LanguageServerPlugin.logInfo(message.getClass().getSimpleName() + '\n' + message.toString());
 		}
 	}
 

@@ -11,6 +11,7 @@
 package org.eclipse.lsp4e;
 
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -20,27 +21,21 @@ public class LanguageServerPlugin extends AbstractUIPlugin {
 
 	public static final String PLUGIN_ID = "org.eclipse.lsp4e"; //$NON-NLS-1$ ;
 
+	public static final boolean DEBUG = Boolean.parseBoolean(Platform.getDebugOption("org.eclipse.lsp4e/debug")); //$NON-NLS-1$
+
 	// The shared instance
 	private static LanguageServerPlugin plugin;
 
 	public LanguageServerPlugin() {
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#start(org.osgi.framework.BundleContext)
-	 */
+	@Override
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.eclipse.ui.plugin.AbstractUIPlugin#stop(org.osgi.framework.BundleContext)
-	 */
+	@Override
 	public void stop(BundleContext context) throws Exception {
 		plugin = null;
 		super.stop(context);
@@ -62,7 +57,7 @@ public class LanguageServerPlugin extends AbstractUIPlugin {
 
 	/**
 	 * Utility method to log errors.
-	 * 
+	 *
 	 * @param thr
 	 *            The exception through which we noticed the error
 	 */
@@ -72,7 +67,7 @@ public class LanguageServerPlugin extends AbstractUIPlugin {
 
 	/**
 	 * Utility method to log errors.
-	 * 
+	 *
 	 * @param message
 	 *            User comprehensible message
 	 * @param thr
