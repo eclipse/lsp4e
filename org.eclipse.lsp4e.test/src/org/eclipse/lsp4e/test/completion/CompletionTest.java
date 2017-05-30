@@ -183,7 +183,7 @@ public class CompletionTest {
 	}
 			
 	@Test
-	public void testApplyCompletionReplaceAndTyping() throws CoreException, InvocationTargetException, BadLocationException {
+	public void testApplyCompletionReplaceAndTypingWithTextEdit() throws CoreException, InvocationTargetException, BadLocationException {
 		Range range = new Range(new Position(0, 0), new Position(0, 20));
 		List<CompletionItem> items = Collections
 				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
@@ -202,6 +202,31 @@ public class CompletionTest {
 		lsCompletionProposal.apply(viewer, '\n', 0, invokeOffset + "No".length());
 		assertEquals("FirstClass", viewer.getDocument().get());
 		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
+	}
+	
+	@Test
+	public void testApplyCompletionReplaceAndTyping()
+			throws CoreException, InvocationTargetException, BadLocationException {
+		CompletionItem item = new CompletionItem("strncasecmp");
+		item.setKind(CompletionItemKind.Function);
+		item.setInsertText("strncasecmp()");
+
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false,  Collections.singletonList(item)));
+
+		String content = "str";
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
+
+		int invokeOffset = content.length();
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+		assertEquals(1, proposals.length);
+		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal) proposals[0];
+
+		// simulate additional typing (to filter) after invoking completion
+		viewer.getDocument().replace(content.length(), 0, "nc");
+
+		lsCompletionProposal.apply(viewer, '\0', 0, invokeOffset + "nc".length());
+		assertEquals(item.getInsertText(), viewer.getDocument().get());
+		assertEquals(new Point(item.getInsertText().length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 	}
 	
 	@Test

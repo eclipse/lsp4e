@@ -309,6 +309,10 @@ public class LSCompletionProposal
 				Position start = LSPEclipseUtils.toPosition(this.bestOffset, document);
 				Position end = LSPEclipseUtils.toPosition(offset, document); // need 2 distinct objects
 				textEdit = new TextEdit(new Range(start, end), insertText);
+			} else if (offset > this.initialOffset) {
+				// characters were added after completion was activated
+				int shift = offset - this.initialOffset;
+				textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + shift);
 			}
 			{ // workaround https://github.com/Microsoft/vscode/issues/17036
 				Position start = textEdit.getRange().getStart();
@@ -326,11 +330,7 @@ public class LSCompletionProposal
 					textEdit.getRange().setEnd(documentEnd);
 				}
 			}
-			if (offset > this.initialOffset) {
-				// characters were added after completion was activated
-				int shift = offset - this.initialOffset;
-				textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + shift);
-			}
+
 			if (insertText != null) {
 				// try to reuse existing characters after completion location
 				int shift = offset - this.bestOffset;
@@ -438,6 +438,9 @@ public class LSCompletionProposal
 	public Point getSelection(IDocument document) {
 		if (this.firstPosition != null) {
 			return new Point(this.firstPosition.getOffset(), this.firstPosition.getLength());
+		}
+		if (selection == null) {
+			return null;
 		}
 		return new Point(selection.getOffset(), selection.getLength());
 	}
