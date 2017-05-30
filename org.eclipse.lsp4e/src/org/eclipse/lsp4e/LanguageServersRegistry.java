@@ -14,21 +14,22 @@ import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.util.SafeRunnable;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
 /**
@@ -39,7 +40,7 @@ import org.eclipse.lsp4e.server.StreamConnectionProvider;
  * (for end-users to directly register a new server).
  *
  */
-public class LSPStreamConnectionProviderRegistry {
+public class LanguageServersRegistry {
 
 	private static final String CONTENT_TYPE_TO_LSP_LAUNCH_PREF_KEY = "contentTypeToLSPLauch"; //$NON-NLS-1$
 
@@ -53,11 +54,11 @@ public class LSPStreamConnectionProviderRegistry {
 	private static final String CLASS_ATTRIBUTE = "class"; //$NON-NLS-1$
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
 
-	protected static final class StreamConnectionInfo {
+	public static abstract class LanguageServerDefinition {
 		private final @NonNull String id;
 		private final @NonNull String label;
 
-		public StreamConnectionInfo(@NonNull String id, @NonNull String label) {
+		public LanguageServerDefinition(@NonNull String id, @NonNull String label) {
 			this.id = id;
 			this.label = label;
 		}
@@ -69,21 +70,57 @@ public class LSPStreamConnectionProviderRegistry {
 		public String getLabel() {
 			return label;
 		}
+
+		public abstract StreamConnectionProvider createConnectionProvider();
 	}
 
-	private static LSPStreamConnectionProviderRegistry INSTANCE = null;
-	public static LSPStreamConnectionProviderRegistry getInstance() {
+	static class ExtensionLanguageServerDefinition extends LanguageServerDefinition {
+		private IConfigurationElement extension;
+
+		public ExtensionLanguageServerDefinition(IConfigurationElement element) {
+			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE));
+			this.extension = element;
+		}
+
+		@Override
+		public StreamConnectionProvider createConnectionProvider() {
+			try {
+				return (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
+			} catch (CoreException e) {
+				return null;
+			}
+		}
+	}
+
+	static class LaunchConfigurationLanguageServerDefinition extends LanguageServerDefinition {
+		final ILaunchConfiguration launchConfiguration;
+		final Set<String> launchModes;
+
+		public LaunchConfigurationLanguageServerDefinition(ILaunchConfiguration launchConfiguration,
+				Set<String> launchModes) {
+			super(launchConfiguration.getName(), launchConfiguration.getName());
+			this.launchConfiguration = launchConfiguration;
+			this.launchModes = launchModes;
+		}
+
+		@Override
+		public StreamConnectionProvider createConnectionProvider() {
+			return new LaunchConfigurationStreamProvider(this.launchConfiguration, launchModes);
+		}
+	}
+
+	private static LanguageServersRegistry INSTANCE = null;
+	public static LanguageServersRegistry getInstance() {
 		if (INSTANCE == null) {
-			INSTANCE = new LSPStreamConnectionProviderRegistry();
+			INSTANCE = new LanguageServersRegistry();
 		}
 		return INSTANCE;
 	}
 
-	private List<ContentTypeToStreamProvider> connections = new ArrayList<>();
-	private Map<StreamConnectionProvider, StreamConnectionInfo> connectionsInfo = new HashMap<>();
+	private List<ContentTypeToLanguageServerDefinition> connections = new ArrayList<>();
 	private IPreferenceStore preferenceStore;
 
-	private LSPStreamConnectionProviderRegistry() {
+	private LanguageServersRegistry() {
 		this.preferenceStore = LanguageServerPlugin.getDefault().getPreferenceStore();
 		initialize();
 	}
@@ -96,28 +133,17 @@ public class LSPStreamConnectionProviderRegistry {
 				ContentTypeToLSPLaunchConfigEntry mapping = ContentTypeToLSPLaunchConfigEntry.readFromPreference(entry);
 				if (mapping != null) {
 					connections.add(mapping);
-					connectionsInfo.put(mapping.getValue(), new StreamConnectionInfo(mapping.getKey().getId(), mapping.getKey().getName()));
 				}
 			}
 		}
 
-		Map<String, StreamConnectionProvider> servers = new HashMap<>();
+		Map<String, LanguageServerDefinition> servers = new HashMap<>();
 		List<Entry<IContentType, String>> contentTypes = new ArrayList<>();
 		for (IConfigurationElement extension : Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION_POINT_ID)) {
 			String id = extension.getAttribute(ID_ATTRIBUTE);
 			if (id != null && !id.isEmpty()) {
 				if (extension.getName().equals(LS_ELEMENT)) {
-					SafeRunner.run(new SafeRunnable() {
-						@Override
-						public void run() throws Exception {
-							String label = extension.getAttribute(LABEL_ATTRIBUTE);
-							StreamConnectionProvider scp = (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
-							if (scp != null) {
-								servers.put(id, scp);
-								connectionsInfo.put(scp, new StreamConnectionInfo(id, label));
-							}
-						}
-					});
+					servers.put(id, new ExtensionLanguageServerDefinition(extension));
 				} else if (extension.getName().equals(MAPPING_ELEMENT)) {
 					IContentType contentType = Platform.getContentTypeManager().getContentType(extension.getAttribute(CONTENT_TYPE_ATTRIBUTE));
 					if (contentType != null) {
@@ -128,9 +154,9 @@ public class LSPStreamConnectionProviderRegistry {
 		}
 		for (Entry<IContentType, String> entry : contentTypes) {
 			IContentType contentType = entry.getKey();
-			StreamConnectionProvider scp = servers.get(entry.getValue());
-			if (scp != null) {
-				registerAssociation(contentType, scp);
+			LanguageServerDefinition lsDefinition = servers.get(entry.getValue());
+			if (lsDefinition != null) {
+				registerAssociation(contentType, lsDefinition);
 			} else {
 				LanguageServerPlugin.logWarning("server '" + entry.getValue() + "' not available", null); //$NON-NLS-1$ //$NON-NLS-2$
 			}
@@ -156,27 +182,21 @@ public class LSPStreamConnectionProviderRegistry {
 		}
 	}
 
-	public List<StreamConnectionProvider> findProviderFor(final IContentType contentType) {
-		return Arrays.asList(connections
-			.stream()
+	public List<LanguageServerDefinition> findProviderFor(final IContentType contentType) {
+		return connections.stream()
 			.filter(entry -> entry.getKey().equals(contentType))
 			.map(Entry::getValue)
-			.toArray(StreamConnectionProvider[]::new));
-	}
-
-	protected StreamConnectionInfo getInfo(@NonNull StreamConnectionProvider provider) {
-		return connectionsInfo.get(provider);
+			.collect(Collectors.toList());
 	}
 
 	public void registerAssociation(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {
 		ContentTypeToLSPLaunchConfigEntry mapping = new ContentTypeToLSPLaunchConfigEntry(contentType, launchConfig, launchMode);
 		connections.add(mapping);
-		connectionsInfo.put(mapping.getValue(), new StreamConnectionInfo(mapping.getKey().getId(), mapping.getKey().getName()));
 		persistContentTypeToLaunchConfigurationMapping();
 	}
 
-	public void registerAssociation(@NonNull IContentType contentType, @NonNull StreamConnectionProvider provider) {
-		connections.add(new ContentTypeToStreamProvider(contentType, provider));
+	public void registerAssociation(@NonNull IContentType contentType, @NonNull LanguageServerDefinition serverDefinition) {
+		connections.add(new ContentTypeToLanguageServerDefinition(contentType, serverDefinition));
 	}
 
 	public List<ContentTypeToLSPLaunchConfigEntry> getContentTypeToLSPLaunches() {
@@ -187,6 +207,10 @@ public class LSPStreamConnectionProviderRegistry {
 		this.connections.removeIf(entry -> entry instanceof ContentTypeToLSPLaunchConfigEntry);
 		this.connections.addAll(wc);
 		persistContentTypeToLaunchConfigurationMapping();
+	}
+
+	public List<ContentTypeToLanguageServerDefinition> getContentTypeToLSPExtensions() {
+		return Collections.unmodifiableList(connections);
 	}
 
 }

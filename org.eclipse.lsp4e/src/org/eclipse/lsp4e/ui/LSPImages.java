@@ -8,7 +8,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e;
+package org.eclipse.lsp4e.ui;
 
 import java.net.URL;
 
@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.swt.graphics.Image;

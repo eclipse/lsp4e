@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016-2017 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -14,8 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.PreferencePage;
-import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
 import org.eclipse.jface.viewers.ISelection;
@@ -25,8 +25,8 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.lsp4e.ContentTypeToLSPLaunchConfigEntry;
-import org.eclipse.lsp4e.ContentTypeToStreamProvider;
-import org.eclipse.lsp4e.LSPStreamConnectionProviderRegistry;
+import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
+import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -35,54 +35,62 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.preferences.IWorkbenchPreferenceContainer;
 
 public class LanguageServerPreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
 
-	private LSPStreamConnectionProviderRegistry registry;
+	private LanguageServersRegistry registry;
 	private List<ContentTypeToLSPLaunchConfigEntry> workingCopy;
 	private Button removeButton;
 	private TableViewer viewer;
+	private SelectionAdapter contentTypeLinkListener;
 
 	public LanguageServerPreferencePage() {
-	}
-
-	public LanguageServerPreferencePage(String title) {
-		super(title);
-	}
-
-	public LanguageServerPreferencePage(String title, ImageDescriptor image) {
-		super(title, image);
+		contentTypeLinkListener = new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				if (getContainer() instanceof IWorkbenchPreferenceContainer) {
+					((IWorkbenchPreferenceContainer)getContainer()).openPage("org.eclipse.ui.preferencePages.ContentTypes", null); //$NON-NLS-1$
+				}
+			}
+		};
 	}
 
 	@Override
 	public void init(IWorkbench workbench) {
-		this.registry = LSPStreamConnectionProviderRegistry.getInstance();
+		this.registry = LanguageServersRegistry.getInstance();
 	}
 
 	@Override
 	protected Control createContents(Composite parent) {
 		Composite res = new Composite(parent, SWT.NONE);
 		res.setLayout(new GridLayout(2, false));
-		Label intro = new Label(res, SWT.WRAP);
-		GridData introLayoutData = new GridData(SWT.FILL, SWT.TOP, true, false, 2, 1);
-		introLayoutData.widthHint = 400;
-		intro.setLayoutData(introLayoutData);
+		Link intro = new Link(res, SWT.WRAP);
+		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.TOP).grab(true, false).span(2, 1).hint(400, SWT.DEFAULT).applyTo(intro);
 		intro.setText(Messages.PreferencesPage_Intro);
+		intro.addSelectionListener(this.contentTypeLinkListener);
+
+		createStaticServersTable(res);
+
+		Link manualServersIntro = new Link(res, SWT.WRAP);
+		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.TOP).grab(true, false).span(2, 1).hint(400, SWT.DEFAULT).applyTo(manualServersIntro);
+		manualServersIntro.setText(Messages.PreferencesPage_manualServers);
+		manualServersIntro.addSelectionListener(this.contentTypeLinkListener);
 		viewer = new TableViewer(res);
 		viewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		viewer.setContentProvider(new ArrayContentProvider());
 		workingCopy = new ArrayList<>();
-		workingCopy.addAll(LSPStreamConnectionProviderRegistry.getInstance().getContentTypeToLSPLaunches());
+		workingCopy.addAll(LanguageServersRegistry.getInstance().getContentTypeToLSPLaunches());
 		TableViewerColumn contentTypeColumn = new TableViewerColumn(viewer, SWT.NONE);
 		contentTypeColumn.getColumn().setText(Messages.PreferencesPage_contentType);
 		contentTypeColumn.getColumn().setWidth(200);
 		contentTypeColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				return ((ContentTypeToStreamProvider)element).getKey().getName();
+				return ((ContentTypeToLanguageServerDefinition)element).getKey().getName();
 			}
 		});
 		TableViewerColumn launchConfigColumn = new TableViewerColumn(viewer, SWT.NONE);
@@ -153,6 +161,37 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		viewer.setInput(workingCopy);
 		updateButtons();
 		return res;
+	}
+
+	private void createStaticServersTable(Composite res) {
+		Link staticServersIntro = new Link(res, SWT.WRAP);
+		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.TOP).grab(true, false).span(2, 1).hint(400, SWT.DEFAULT).applyTo(staticServersIntro);
+		staticServersIntro.setText(Messages.PreferencesPage_staticServers);
+		staticServersIntro.addSelectionListener(this.contentTypeLinkListener);
+		viewer = new TableViewer(res);
+		viewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		viewer.setContentProvider(new ArrayContentProvider());
+		TableViewerColumn contentTypeColumn = new TableViewerColumn(viewer, SWT.NONE);
+		contentTypeColumn.getColumn().setText(Messages.PreferencesPage_contentType);
+		contentTypeColumn.getColumn().setWidth(200);
+		contentTypeColumn.setLabelProvider(new ColumnLabelProvider() {
+			@Override
+			public String getText(Object element) {
+				return ((ContentTypeToLanguageServerDefinition)element).getKey().getName();
+			}
+		});
+		TableViewerColumn launchConfigColumn = new TableViewerColumn(viewer, SWT.NONE);
+		launchConfigColumn.getColumn().setText(Messages.PreferencesPage_languageServer);
+		launchConfigColumn.getColumn().setWidth(300);
+		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
+			@Override
+			public String getText(Object element) {
+				return ((ContentTypeToLanguageServerDefinition)element).getValue().getLabel();
+			}
+		});
+		viewer.setInput(LanguageServersRegistry.getInstance().getContentTypeToLSPExtensions());
+		viewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+		viewer.getTable().setHeaderVisible(true);
 	}
 
 	protected void updateButtons() {

@@ -34,7 +34,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.lsp4e.LSPStreamConnectionProviderRegistry.StreamConnectionInfo;
+import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
@@ -91,6 +91,7 @@ public class LanguageServiceAccessor {
 	}
 
 	private static Map<WrapperEntryKey, List<ProjectSpecificLanguageServerWrapper>> projectServers = new HashMap<>();
+	private static Map<StreamConnectionProvider, LanguageServerDefinition> connectionsInfo = new HashMap<>();
 
 	/**
 	 * A bean storing association of a Document/File with a language server.
@@ -222,9 +223,9 @@ public class LanguageServiceAccessor {
 		}
 
 		for (IContentType contentType : fileContentTypes) {
-			for (StreamConnectionProvider connection : LSPStreamConnectionProviderRegistry.getInstance().findProviderFor(contentType)) {
-				if (connection != null) {
-					wrapper = getLSWrapperForConnection(project, contentType, connection);
+			for (LanguageServerDefinition serverDefinition : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
+				if (serverDefinition != null) {
+					wrapper = getLSWrapperForConnection(project, contentType, serverDefinition);
 					if (request == null
 						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 						|| request.test(wrapper.getServerCapabilities())) {
@@ -241,21 +242,20 @@ public class LanguageServiceAccessor {
 	 * create a new one with the given connection and register it for this project/content-type.
 	 * @param project
 	 * @param contentType
-	 * @param connection
+	 * @param serverDefinition
 	 * @return
 	 * @throws IOException
 	 */
-	public static ProjectSpecificLanguageServerWrapper getLSWrapperForConnection(IProject project, IContentType contentType, StreamConnectionProvider connection) throws IOException {
+	public static ProjectSpecificLanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project, @NonNull IContentType contentType, @NonNull LanguageServerDefinition serverDefinition) throws IOException {
 		ProjectSpecificLanguageServerWrapper wrapper = null;
 		for (ProjectSpecificLanguageServerWrapper startedWrapper : getStartedLSWarppers(project)) {
-			if (startedWrapper.getUnderlyingConnection().equals(connection)) {
+			if (startedWrapper.serverDefinition.equals(serverDefinition)) {
 				wrapper = startedWrapper;
 				break;
 			}
 		}
 		if (wrapper == null) {
-			StreamConnectionInfo info = LSPStreamConnectionProviderRegistry.getInstance().getInfo(connection);
-			wrapper = new ProjectSpecificLanguageServerWrapper(project, info.getId(), info.getLabel(), connection);
+			wrapper = new ProjectSpecificLanguageServerWrapper(project, serverDefinition);
 			wrapper.start();
 		}
 
@@ -268,7 +268,7 @@ public class LanguageServiceAccessor {
 	}
 
 	private static @NonNull List<ProjectSpecificLanguageServerWrapper> getStartedLSWarppers(@NonNull IProject project) {
-		return projectServers.values().stream().flatMap(List::stream).filter(wrapper -> wrapper.getProject().equals(project)).collect(Collectors.toList());
+		return projectServers.values().stream().flatMap(List::stream).filter(wrapper -> wrapper.project.equals(project)).collect(Collectors.toList());
 	}
 
 	private static ProjectSpecificLanguageServerWrapper getMatchingStartedWrapper(IProject project,
@@ -319,4 +319,8 @@ public class LanguageServiceAccessor {
 		return serverInfos;
 	}
 
+
+	protected static LanguageServerDefinition getInfo(@NonNull StreamConnectionProvider provider) {
+		return connectionsInfo.get(provider);
+	}
 }

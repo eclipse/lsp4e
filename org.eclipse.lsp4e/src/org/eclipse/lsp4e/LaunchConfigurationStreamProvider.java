@@ -38,7 +38,7 @@ import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
 /**
  * Access and control IO streams from a Launch Configuration to connect
- * them to language server protocal client.
+ * them to language server protocol client.
  */
 public class LaunchConfigurationStreamProvider implements StreamConnectionProvider  {
 

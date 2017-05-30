@@ -21,15 +21,16 @@ import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.lsp4e.LanguageServersRegistry.LaunchConfigurationLanguageServerDefinition;
 
-public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToStreamProvider {
+public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToLanguageServerDefinition {
 
 	private ILaunchConfiguration launchConfiguration;
 	private Set<String> launchModes;
 
 	public ContentTypeToLSPLaunchConfigEntry(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig,
 			@NonNull Set<String> launchModes) {
-		super(contentType, new LaunchConfigurationStreamProvider(launchConfig, launchModes));
+		super(contentType, new LaunchConfigurationLanguageServerDefinition(launchConfig, launchModes));
 		this.launchConfiguration = launchConfig;
 		this.launchModes = Collections.unmodifiableSet(launchModes);
 	}

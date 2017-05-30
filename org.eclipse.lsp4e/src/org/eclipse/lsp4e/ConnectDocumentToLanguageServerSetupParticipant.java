@@ -30,7 +30,7 @@ import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.lsp4e.server.StreamConnectionProvider;
+import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 
 /**
  * Startup the language servers that can be used by the document.
@@ -90,10 +90,10 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 
 					// create servers one for available content type
 					for (IContentType contentType : fileContentTypes) {
-						for (StreamConnectionProvider connection : LSPStreamConnectionProviderRegistry.getInstance().findProviderFor(contentType)) {
-							if (connection != null) {
+						for (LanguageServerDefinition serverDefinition : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
+							if (serverDefinition != null) {
 								try {
-									ProjectSpecificLanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor.getLSWrapperForConnection(project, contentType, connection);
+									ProjectSpecificLanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor.getLSWrapperForConnection(project, contentType, serverDefinition);
 									if (lsWrapperForConnection != null) {
 										lsWrapperForConnection.connect(file.getLocation(), document);
 									}

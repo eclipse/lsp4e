@@ -39,6 +39,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.ui.Messages;
@@ -124,11 +125,10 @@ public class ProjectSpecificLanguageServerWrapper {
 
 	};
 
+	final @NonNull LanguageServerDefinition serverDefinition;
+	final @NonNull IProject project;
 	private final @NonNull StreamConnectionProvider lspStreamProvider;
 	private LanguageServer languageServer;
-	private final @NonNull IProject project;
-	private final @NonNull String languageServerId;
-	private final String label;
 	private Map<IPath, DocumentContentSynchronizer> connectedDocuments;
 
 	private InitializeResult initializeResult;
@@ -137,11 +137,10 @@ public class ProjectSpecificLanguageServerWrapper {
 
 	private boolean capabilitiesAlreadyRequested;
 
-	public ProjectSpecificLanguageServerWrapper(@NonNull IProject project, @NonNull String languageServerId, String label, @NonNull StreamConnectionProvider connection) {
+	public ProjectSpecificLanguageServerWrapper(@NonNull IProject project, @NonNull LanguageServerDefinition serverDefinition) {
 		this.project = project;
-		this.languageServerId = languageServerId;
-		this.label = label;
-		this.lspStreamProvider = connection;
+		this.serverDefinition = serverDefinition;
+		this.lspStreamProvider = serverDefinition.createConnectionProvider();
 		this.connectedDocuments = new HashMap<>();
 		FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
 	}
@@ -168,7 +167,7 @@ public class ProjectSpecificLanguageServerWrapper {
 		try {
 			this.lspStreamProvider.start();
 			LanguageClient client = new LanguageClient() {
-				private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project, ProjectSpecificLanguageServerWrapper.this.languageServerId);
+				private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project, ProjectSpecificLanguageServerWrapper.this.serverDefinition.getId());
 
 				@Override
 				public void telemetryEvent(Object object) {
@@ -192,7 +191,7 @@ public class ProjectSpecificLanguageServerWrapper {
 
 				@Override
 				public void logMessage(MessageParams message) {
-					ServerMessageHandler.logMessage(project, label, message);
+					ServerMessageHandler.logMessage(project, serverDefinition.getLabel(), message);
 				}
 
 				@Override
@@ -419,14 +418,6 @@ public class ProjectSpecificLanguageServerWrapper {
 		} else {
 			return null;
 		}
-	}
-
-	public StreamConnectionProvider getUnderlyingConnection() {
-		return this.lspStreamProvider;
-	}
-
-	public IProject getProject() {
-		return this.project;
 	}
 
 }

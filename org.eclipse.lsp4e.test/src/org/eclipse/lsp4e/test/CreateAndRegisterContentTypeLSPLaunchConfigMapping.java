@@ -30,7 +30,7 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationType;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.core.ILaunchManager;
-import org.eclipse.lsp4e.LSPStreamConnectionProviderRegistry;
+import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LaunchConfigurationStreamProvider;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
@@ -47,7 +47,7 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 		IContentTypeManager contentTypeManager = Platform.getContentTypeManager();
 		ILaunchManager launchManager = DebugPlugin.getDefault().getLaunchManager();
 		ILaunchConfigurationType externalType = launchManager.getLaunchConfigurationType(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE);
-		LSPStreamConnectionProviderRegistry registry = LSPStreamConnectionProviderRegistry.getInstance();
+		LanguageServersRegistry registry = LanguageServersRegistry.getInstance();
 		try {
 			String externalProcessLaunchName = "Mock external LS";
 			ILaunchConfiguration mockServerLauch = null;
