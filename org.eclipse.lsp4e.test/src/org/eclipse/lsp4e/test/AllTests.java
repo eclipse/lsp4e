@@ -17,6 +17,7 @@ import org.eclipse.lsp4e.test.completion.ContextInformationTest;
 import org.eclipse.lsp4e.test.definition.DefinitionTest;
 import org.eclipse.lsp4e.test.diagnostics.DiagnosticsTest;
 import org.eclipse.lsp4e.test.document.LSPEclipseUtilsTest;
+import org.eclipse.lsp4e.test.documentLink.DocumentLinkTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidChangeTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidCloseTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidSaveTest;
@@ -43,7 +44,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DiagnosticsTest.class,
 	FindReferencesTest.class,
 	FormatTest.class,
-	CodeActionTests.class
+	CodeActionTests.class,
+	DocumentLinkTest.class
 })
 public class AllTests {
 

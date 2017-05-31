@@ -26,6 +26,8 @@ import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.lsp4j.DocumentLink;
+import org.eclipse.lsp4j.DocumentLinkOptions;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
@@ -79,6 +81,7 @@ public final class MockLanguageSever implements LanguageServer {
 		capabilities.setReferencesProvider(true);
 		capabilities.setDocumentFormattingProvider(true);
 		capabilities.setCodeActionProvider(Boolean.TRUE);
+		capabilities.setDocumentLinkProvider(new DocumentLinkOptions());
 		initializeResult.setCapabilities(capabilities);
 	}
 	
@@ -178,6 +181,10 @@ public final class MockLanguageSever implements LanguageServer {
 
 	public void setSignatureHelp(SignatureHelp signatureHelp) {
 		this.textDocumentService.setSignatureHelp(signatureHelp);
+	}
+
+	public void setDocumentLinks(List<DocumentLink> documentLinks) {
+		this.textDocumentService.setMockDocumentLinks(documentLinks);
 	}
 	
 }

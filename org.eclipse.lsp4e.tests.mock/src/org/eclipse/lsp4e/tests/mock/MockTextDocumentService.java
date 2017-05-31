@@ -30,6 +30,8 @@ import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.DocumentHighlight;
+import org.eclipse.lsp4j.DocumentLink;
+import org.eclipse.lsp4j.DocumentLinkParams;
 import org.eclipse.lsp4j.DocumentOnTypeFormattingParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.DocumentSymbolParams;
@@ -54,6 +56,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<? extends Location> mockDefinitionLocations;
 	private List<? extends TextEdit> mockFormattingTextEdits;
 	private SignatureHelp mockSignatureHelp;
+	private List<DocumentLink> mockDocumentLinks;
 
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
 	private CompletableFuture<DidSaveTextDocumentParams> didSaveCallback;
@@ -120,6 +123,11 @@ public class MockTextDocumentService implements TextDocumentService {
 	public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	@Override
+	public CompletableFuture<List<DocumentLink>> documentLink(DocumentLinkParams params) {
+		return CompletableFuture.completedFuture(mockDocumentLinks);
 	}
 
 	@Override
@@ -225,6 +233,10 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockFormattingTextEdits = formattingTextEdits;
 	}
 
+	public void setMockDocumentLinks(List<DocumentLink> documentLinks) {
+		this.mockDocumentLinks = documentLinks;
+	}
+	
 	public void reset() {
 		this.mockCompletionList = new CompletionList();
 		this.mockDefinitionLocations = Collections.emptyList();

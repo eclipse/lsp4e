@@ -28,6 +28,14 @@
             name="%openDeclarationHyperlink_name"
             targetId="org.eclipse.ui.DefaultTextEditor">
       </hyperlinkDetector>
+      <hyperlinkDetector
+            activate="true"
+            class="org.eclipse.lsp4e.operations.documentLink.DocumentLinkDetector"
+            description="Document Link Detector"
+            id="org.eclipse.lsp4e.documentLinkDetector"
+            name="Document Link Detector"
+            targetId="org.eclipse.ui.DefaultTextEditor">
+      </hyperlinkDetector>
    </extension>
    <extension
          point="org.eclipse.ui.commands">
