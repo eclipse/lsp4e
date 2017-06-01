@@ -10,10 +10,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -50,29 +53,53 @@ public class ContextInformationTest {
 	@Test
 	public void testNoContextInformation() throws CoreException, InvocationTargetException {
 		MockLanguageSever.INSTANCE.setSignatureHelp(new SignatureHelp());
-		
+
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 
 		IContextInformation[] infos = contentAssistProcessor.computeContextInformation(viewer, 0);
 		assertEquals(0, infos.length);
 	}
-	
+
 	@Test
 	public void testContextInformationNoParameters() throws CoreException, InvocationTargetException {
 		SignatureHelp signatureHelp = new SignatureHelp();
-		SignatureInformation information = new SignatureInformation("label", "documentation", Collections.emptyList());		
+		SignatureInformation information = new SignatureInformation("label", "documentation", Collections.emptyList());
 		signatureHelp.setSignatures(Collections.singletonList(information));
 		MockLanguageSever.INSTANCE.setSignatureHelp(signatureHelp);
-		
+
 		IFile testFile = TestUtils.createUniqueTestFile(project, "method()");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 
 		IContextInformation[] infos = contentAssistProcessor.computeContextInformation(viewer, 0);
 		assertEquals(1, infos.length);
-		
-		String expected = new StringBuilder(information.getLabel()).append('\n').append(information.getDocumentation()).toString();
+
+		String expected = new StringBuilder(information.getLabel()).append('\n').append(information.getDocumentation())
+				.toString();
 		assertEquals(expected, infos[0].getInformationDisplayString());
 	}
-	
+
+	@Test
+	public void testTriggerChars() throws CoreException, InvocationTargetException {
+		Set<String> triggers = new HashSet<>();
+		triggers.add("a");
+		triggers.add("b");
+		MockLanguageSever.INSTANCE.setContextInformationTriggerChars(triggers);
+
+		String content = "First";
+		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
+
+		assertArrayEquals(new char[] { 'a', 'b' },
+				contentAssistProcessor.getContextInformationAutoActivationCharacters());
+	}
+
+	@Test
+	public void testTriggerCharsNullList() throws CoreException, InvocationTargetException {
+		MockLanguageSever.INSTANCE.setContextInformationTriggerChars(null);
+
+		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "First"));
+
+		assertArrayEquals(null, contentAssistProcessor.getContextInformationAutoActivationCharacters());
+	}
+
 }

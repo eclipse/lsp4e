@@ -34,6 +34,7 @@ import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelp;
+import org.eclipse.lsp4j.SignatureHelpOptions;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
@@ -74,7 +75,7 @@ public final class MockLanguageSever implements LanguageServer {
 	private void resetInitializeResult() {
 		ServerCapabilities capabilities = new ServerCapabilities();
 		capabilities.setTextDocumentSync(TextDocumentSyncKind.Full);
-		CompletionOptions completionProvider = new CompletionOptions();
+		CompletionOptions completionProvider = new CompletionOptions(false, null);
 		capabilities.setCompletionProvider(completionProvider);
 		capabilities.setHoverProvider(true);
 		capabilities.setDefinitionProvider(true);
@@ -82,6 +83,7 @@ public final class MockLanguageSever implements LanguageServer {
 		capabilities.setDocumentFormattingProvider(true);
 		capabilities.setCodeActionProvider(Boolean.TRUE);
 		capabilities.setDocumentLinkProvider(new DocumentLinkOptions());
+		capabilities.setSignatureHelpProvider(new SignatureHelpOptions());
 		initializeResult.setCapabilities(capabilities);
 	}
 	
@@ -148,6 +150,12 @@ public final class MockLanguageSever implements LanguageServer {
 	public void setCompletionTriggerChars(Set<String> chars) {
 		if (chars != null) {
 			initializeResult.getCapabilities().getCompletionProvider().setTriggerCharacters(new ArrayList<>(chars));
+		}
+	}
+	
+	public void setContextInformationTriggerChars(Set<String> chars) {
+		if (chars != null) {
+			initializeResult.getCapabilities().getSignatureHelpProvider().setTriggerCharacters(new ArrayList<>(chars));
 		}
 	}
 

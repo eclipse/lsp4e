@@ -150,6 +150,15 @@ public class CompletionTest {
 	}
 
 	@Test
+	public void testTriggerCharsNullList() throws CoreException, InvocationTargetException {
+		MockLanguageSever.INSTANCE.setCompletionTriggerChars(null);
+		
+		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "First"));
+		
+		assertArrayEquals(null, contentAssistProcessor.getCompletionProposalAutoActivationCharacters());
+	}
+	
+	@Test
 	public void testApplyCompletionWithPrefix() throws CoreException, InvocationTargetException {
 		Range range = new Range(new Position(0, 0), new Position(0, 5));
 		List<CompletionItem> items = Collections
@@ -298,4 +307,5 @@ public class CompletionTest {
 		assertEquals(" and foo", viewer.getDocument().get());
 		// TODO check link edit groups
 	}
+
 }
