@@ -452,7 +452,7 @@ public class LSCompletionProposal
 
 	@Override
 	public Image getImage() {
-		return LSPImages.imageFromCompletionKind(this.item.getKind());
+		return LSPImages.imageFromCompletionItem(this.item);
 	}
 
 	@Override

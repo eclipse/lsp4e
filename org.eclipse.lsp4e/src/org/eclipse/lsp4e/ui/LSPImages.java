@@ -11,6 +11,8 @@
 package org.eclipse.lsp4e.ui;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
@@ -18,14 +20,20 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.osgi.framework.Bundle;
 
 public class LSPImages {
+
+	private static final Map<java.awt.Color, Image> colorToImageCache = new HashMap<>();
 
 	private static ImageRegistry imageRegistry;
 	private static final String ICONS_PATH = "$nl$/icons/full/"; //$NON-NLS-1$
@@ -162,7 +170,8 @@ public class LSPImages {
 		return null;
 	}
 
-	public static Image imageFromCompletionKind(CompletionItemKind kind) {
+	public static Image imageFromCompletionItem(CompletionItem completionItem) {
+		CompletionItemKind kind = completionItem.getKind();
 		switch (kind) {
 		case Text:
 			return getImage(IMG_TEXT);
@@ -195,13 +204,50 @@ public class LSPImages {
 		case Snippet:
 			return getImage(IMG_SNIPPET);
 		case Color:
-			return getImage(IMG_COLOR); // Color TODO use Gef Palette icon or generate color image
+			return getImageForColor(completionItem);
 		case File:
 			return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FILE);
 		case Reference:
 			return getImage(IMG_REFERENCE);
 		}
 		return null;
+	}
+
+	private static Image getImageForColor(CompletionItem completionItem) {
+		String hexValue = null;
+
+		// TODO most probably can be extended for more cases
+		if (completionItem.getDocumentation().startsWith("#")) { //$NON-NLS-1$
+			hexValue = completionItem.getDocumentation();
+		} else if (completionItem.getLabel().startsWith("#")) { //$NON-NLS-1$
+			hexValue = completionItem.getLabel();
+		}
+		if (hexValue == null) {
+			return null;
+		}
+
+		java.awt.Color decodedColor = null;
+		try {
+			decodedColor = java.awt.Color.decode(hexValue);
+		} catch (NumberFormatException e) {
+			LanguageServerPlugin.logError(e);
+			return null;
+		}
+
+		Image image = colorToImageCache.get(decodedColor);
+		if (image == null) {
+			// TODO most probably some scaling should be done for HIDPI
+			image = new Image(Display.getDefault(), 16, 16);
+			GC gc = new GC(image);
+			Color color = new Color(Display.getDefault(), decodedColor.getRed(), decodedColor.getGreen(),
+					decodedColor.getBlue(), decodedColor.getAlpha());
+			gc.setBackground(color);
+			gc.fillRectangle(0, 0, 16, 16);
+			color.dispose();
+			gc.dispose();
+			colorToImageCache.put(decodedColor, image);
+		}
+		return image;
 	}
 
 }
