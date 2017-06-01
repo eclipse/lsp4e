@@ -86,6 +86,9 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 
 				if (locationKind == LocationKind.IFILE) {
 					IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(location);
+					if (!file.exists()) { // file probably deleted in the meantime.
+						return Status.OK_STATUS;
+					}
 					IProject project = file.getProject();
 
 					// create servers one for available content type
@@ -95,7 +98,10 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 								try {
 									ProjectSpecificLanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor.getLSWrapperForConnection(project, contentType, serverDefinition);
 									if (lsWrapperForConnection != null) {
-										lsWrapperForConnection.connect(file.getLocation(), document);
+										IPath fileLocation = file.getLocation();
+										if (fileLocation != null) {
+											lsWrapperForConnection.connect(fileLocation, document);
+										}
 									}
 								} catch (IOException e) {
 									return new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, e.getMessage(), e);

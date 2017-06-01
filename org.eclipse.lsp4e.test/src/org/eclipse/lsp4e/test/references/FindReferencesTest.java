@@ -105,7 +105,7 @@ public class FindReferencesTest {
 		Thread uiThreadActiveChecker = new Thread(() -> {
 			while (!Thread.currentThread().isInterrupted()) {
 				long triggerTime = System.currentTimeMillis();
-				Display.getCurrent().syncExec(() -> {
+				PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
 					long uiThreadRequestTime = System.currentTimeMillis() - triggerTime;
 					assertTrue("UI Thread blocked for " + uiThreadRequestTime, uiThreadRequestTime < uiFreezeThreesholdreezeThreeshold);
 				});
