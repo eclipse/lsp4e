@@ -8,21 +8,23 @@
 	<prerequisites>
 		<maven>3.1.1</maven>
 	</prerequisites>
+	
 	<properties>
 		<tycho-version>1.0.0</tycho-version>
 		<tycho-extras-version>${tycho-version}</tycho-extras-version>
 		<sonar.jacoco.reportPath>../target/jacoco.exec</sonar.jacoco.reportPath>
 		<tycho.scmUrl>scm:git:https://git.eclipse.org/r/p/lsp4e/lsp4e.git</tycho.scmUrl>
 		<ui.test.vmargs></ui.test.vmargs>
+		<target-config>target-platform</target-config>
 	</properties>
 
 	<modules>
 		<module>target-platform</module>
+		<module>target-platform-e46-compatibility</module>
 		<module>org.eclipse.lsp4e</module>
-		<module>org.eclipse.lsp4e.test</module>
 		<module>org.eclipse.lsp4e.tests.mock</module>
-		<module>repository</module>
 	</modules>
+
 	<build>
 		<plugins>
 			<plugin>
@@ -40,7 +42,7 @@
 					<target>
 						<artifact>
 							<groupId>${project.groupId}</groupId>
-							<artifactId>target-platform</artifactId>
+							<artifactId>${target-config}</artifactId>
 							<version>${project.version}</version>
 						</artifact>
 					</target>
@@ -147,8 +149,54 @@
 		</pluginManagement>
 	</build>
 	
-	
 	<profiles>
+		<profile>
+			<id>oxygen-target</id>
+			<activation>
+				<property>
+					<name>!neon-compatibility</name>
+				</property>
+			</activation>
+			<modules>
+				<module>org.eclipse.lsp4e.test</module>
+				<module>repository</module>
+			</modules>
+		</profile>
+		
+		<profile>
+			<id>neon-target</id>
+			<activation>
+				<property>
+					<name>neon-compatibility</name>
+				</property>
+			</activation>
+			<properties>
+				<target-config>target-platform-e46</target-config>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>target-platform-configuration</artifactId>
+						<version>${tycho-version}</version>
+						<configuration>
+							<includePackedArtifacts>true</includePackedArtifacts>
+							<dependency-resolution>
+								<optionalDependencies>ignore</optionalDependencies>
+								<extraRequirements>
+									<requirement>
+										<type>eclipse-plugin</type>
+										<id>org.eclipse.jdt.annotation</id>
+										<versionRange>2.1.0</versionRange>
+									</requirement>
+								</extraRequirements>
+ 					       </dependency-resolution>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		
 		<profile>
 			<id>packAndSign</id>
 			<build>
