@@ -23,6 +23,7 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
@@ -217,7 +218,10 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 	}
 
-	private char[] collectCharacters(List<String> triggerCharacters) {
+	private char[] collectCharacters(@Nullable List<String> triggerCharacters) {
+		if (triggerCharacters == null || triggerCharacters.isEmpty()) {
+			return null;
+		}
 		List<Character> chars = new ArrayList<>();
 		for (String s : triggerCharacters) {
 			if (s.length() == 1) {
