@@ -190,7 +190,7 @@ public class LanguageServiceAccessor {
 		if (file.exists()) {
 			fileUri = LSPEclipseUtils.toUri(file);
 			try {
-				ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, capabilityRequest);
+				ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, capabilityRequest, null);
 				if (wrapper != null) {
 					wrapper.connect(file.getLocation(), document);
 					@Nullable
@@ -209,8 +209,8 @@ public class LanguageServiceAccessor {
 		return null;
 	}
 
-	public static LanguageServer getLanguageServer(@NonNull IFile file, Predicate<ServerCapabilities> request) throws Exception {
-		ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, request);
+	public static @Nullable LanguageServer getLanguageServer(@NonNull IFile file, Predicate<ServerCapabilities> request) throws IOException {
+		ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, request, null);
 		if (wrapper != null) {
 			wrapper.connect(file.getLocation(), null);
 			return wrapper.getServer();
@@ -218,8 +218,27 @@ public class LanguageServiceAccessor {
 		return null;
 	}
 
-	@Nullable private static ProjectSpecificLanguageServerWrapper getLSWrapper(@NonNull IFile file, @Nullable Predicate<ServerCapabilities> request) throws IOException {
+	/**
+	 *
+	 * @param file
+	 * @param request
+	 * @param serverId
+	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified requst
+	 */
+	public static @Nullable LanguageServer getLanguageServer(@NonNull IFile file, Predicate<ServerCapabilities> request, @NonNull String serverId) throws IOException {
+		ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, request, serverId);
+		if (wrapper != null) {
+			wrapper.connect(file.getLocation(), null);
+			return wrapper.getServer();
+		}
+		return null;
+	}
+
+	@Nullable private static ProjectSpecificLanguageServerWrapper getLSWrapper(@NonNull IFile file, @Nullable Predicate<ServerCapabilities> request, @Nullable String serverId) throws IOException {
 		IProject project = file.getProject();
+		if (project == null) {
+			return null;
+		}
 		IContentType[] fileContentTypes = null;
 		try (InputStream contents = file.getContents()) {
 			fileContentTypes = Platform.getContentTypeManager().findContentTypesFor(contents, file.getName()); //TODO consider using document as inputstream
@@ -227,14 +246,17 @@ public class LanguageServiceAccessor {
 			LanguageServerPlugin.logError(e);
 			return null;
 		}
-		ProjectSpecificLanguageServerWrapper wrapper = getMatchingStartedWrapper(project, fileContentTypes, request);
+		ProjectSpecificLanguageServerWrapper wrapper = getMatchingStartedWrapper(project, fileContentTypes, request, serverId);
 		if (wrapper != null) {
 			return wrapper;
 		}
 
 		for (IContentType contentType : fileContentTypes) {
+			if (contentType == null) {
+				continue;
+			}
 			for (LanguageServerDefinition serverDefinition : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
-				if (serverDefinition != null) {
+				if (serverDefinition != null && (serverId == null || serverDefinition.getId().equals(serverId))) {
 					wrapper = getLSWrapperForConnection(project, contentType, serverDefinition);
 					if (request == null
 						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
@@ -282,14 +304,14 @@ public class LanguageServiceAccessor {
 	}
 
 	private static ProjectSpecificLanguageServerWrapper getMatchingStartedWrapper(IProject project,
-	        IContentType[] fileContentTypes, Predicate<ServerCapabilities> request) {
+	        IContentType[] fileContentTypes, Predicate<ServerCapabilities> request, @Nullable String serverId) {
 		for (IContentType contentType : fileContentTypes) {
 			WrapperEntryKey key = new WrapperEntryKey(project, contentType);
 			if (!projectServers.containsKey(key)) {
 				projectServers.put(key, new ArrayList<>());
 			}
 			for (ProjectSpecificLanguageServerWrapper aWrapper : projectServers.get(key)) {
-				if (aWrapper != null && (request == null
+				if (aWrapper != null && (serverId == null || aWrapper.serverDefinition.getId().equals(serverId)) && (request == null
 						|| aWrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 						|| request.test(aWrapper.getServerCapabilities())
 					)) {
@@ -319,7 +341,7 @@ public class LanguageServiceAccessor {
 						continue;
 					}
 					if ((request == null
-						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+					    || wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 					    || request.test(wrapper.getServerCapabilities()))) {
 						serverInfos.add(new LSPServerInfo(project, server, wrapper.getServerCapabilities()));
 					}
@@ -333,4 +355,5 @@ public class LanguageServiceAccessor {
 	protected static LanguageServerDefinition getInfo(@NonNull StreamConnectionProvider provider) {
 		return connectionsInfo.get(provider);
 	}
+
 }

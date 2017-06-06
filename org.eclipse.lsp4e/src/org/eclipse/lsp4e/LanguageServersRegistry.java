@@ -13,8 +13,6 @@ package org.eclipse.lsp4e;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -199,18 +197,18 @@ public class LanguageServersRegistry {
 		connections.add(new ContentTypeToLanguageServerDefinition(contentType, serverDefinition));
 	}
 
-	public List<ContentTypeToLSPLaunchConfigEntry> getContentTypeToLSPLaunches() {
-		return Arrays.asList(this.connections.stream().filter(element -> element instanceof ContentTypeToLSPLaunchConfigEntry).toArray(size -> new ContentTypeToLSPLaunchConfigEntry[size]));
-	}
-
 	public void setAssociations(List<ContentTypeToLSPLaunchConfigEntry> wc) {
-		this.connections.removeIf(entry -> entry instanceof ContentTypeToLSPLaunchConfigEntry);
+		this.connections.removeIf(ContentTypeToLSPLaunchConfigEntry.class::isInstance);
 		this.connections.addAll(wc);
 		persistContentTypeToLaunchConfigurationMapping();
 	}
 
+	public List<ContentTypeToLSPLaunchConfigEntry> getContentTypeToLSPLaunches() {
+		return this.connections.stream().filter(ContentTypeToLSPLaunchConfigEntry.class::isInstance).map(ContentTypeToLSPLaunchConfigEntry.class::cast).collect(Collectors.toList());
+	}
+
 	public List<ContentTypeToLanguageServerDefinition> getContentTypeToLSPExtensions() {
-		return Collections.unmodifiableList(connections);
+		return this.connections.stream().filter(mapping -> mapping.getValue() instanceof ExtensionLanguageServerDefinition).collect(Collectors.toList());
 	}
 
 }

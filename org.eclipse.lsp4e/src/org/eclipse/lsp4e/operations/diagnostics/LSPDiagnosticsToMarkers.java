@@ -38,7 +38,7 @@ import org.eclipse.ui.texteditor.MarkerUtilities;
 public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParams> {
 
 	public static final String LSP_DIAGNOSTIC = "lspDiagnostic"; //$NON-NLS-1$
-	private static final String LSP_SERVER_ID = "languageServerId"; //$NON-NLS-1$
+	public static final String LANGUAGE_SERVER_ID = "languageServerId"; //$NON-NLS-1$
 	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
 	private final @NonNull IProject project;
 	private final @NonNull String languageServerId;
@@ -59,7 +59,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			}
 			Set<IMarker> remainingMarkers = new HashSet<>(
 					Arrays.asList(resource.findMarkers(LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_ONE)));
-			remainingMarkers.removeIf(marker -> !Objects.equals(marker.getAttribute(LSP_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
+			remainingMarkers.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
 			for (Diagnostic diagnostic : diagnostics.getDiagnostics()) {
 				IMarker associatedMarker = getExistingMarkerFor(resource, diagnostic, remainingMarkers);
 				if (associatedMarker == null) {
@@ -80,7 +80,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	protected void updateMarker(IResource resource, Diagnostic diagnostic, IMarker marker) {
 		try {
 			marker.setAttribute(LSP_DIAGNOSTIC, diagnostic);
-			marker.setAttribute(LSP_SERVER_ID, this.languageServerId);
+			marker.setAttribute(LANGUAGE_SERVER_ID, this.languageServerId);
 			marker.setAttribute(IMarker.MESSAGE, diagnostic.getMessage());
 			marker.setAttribute(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
 			if (resource.getType() != IResource.FILE) {
@@ -125,7 +125,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 						&& LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), document) == startOffset + 1
 						&& LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document) == endOffset + 1
 						&& Objects.equals(marker.getAttribute(IMarker.MESSAGE), diagnostic.getMessage())
-						&& Objects.equals(marker.getAttribute(LSP_SERVER_ID), this.languageServerId)) {
+						&& Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID), this.languageServerId)) {
 					return marker;
 				}
 			} catch (CoreException | BadLocationException e) {
