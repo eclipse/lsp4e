@@ -27,6 +27,7 @@ import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,10 +35,10 @@ import org.junit.Test;
 public class DocumentDidSaveTest {
 
 	private IProject project;
-	
+
 	@Before
 	public void setUp() throws CoreException {
-		project =  TestUtils.createProject("DocumentDidSaveTest"+System.currentTimeMillis());
+		project =  TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
 	}
 
 	@After
@@ -45,21 +46,21 @@ public class DocumentDidSaveTest {
 		project.delete(true, true, new NullProgressMonitor());
 		MockLanguageSever.INSTANCE.shutdown();
 	}
-	
+
 	@Test
 	public void testSave() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = TestUtils.openTextViewer(testFile, editor);
-		
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
+
 		// make sure that timestamp after save will differ from creation time (no better idea at the moment)
 		testFile.setLocalTimeStamp(0);
-		
+
 		// Force LS to initialize and open file
 		LanguageServiceAccessor.getLanguageServer(testFile, null);
 		CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
 		MockLanguageSever.INSTANCE.setDidSaveCallback(didSaveExpectation);
-		
+
 		// simulate change in file
 		viewer.getDocument().replace(0, 0, "Hello");
 		editor.doSave(new NullProgressMonitor());
@@ -67,6 +68,8 @@ public class DocumentDidSaveTest {
 		DidSaveTextDocumentParams lastChange = didSaveExpectation.get(1000, TimeUnit.MILLISECONDS);
 		assertNotNull(lastChange.getTextDocument());
 		assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
+
+		((AbstractTextEditor)editor).close(false);
 	}
 
 }

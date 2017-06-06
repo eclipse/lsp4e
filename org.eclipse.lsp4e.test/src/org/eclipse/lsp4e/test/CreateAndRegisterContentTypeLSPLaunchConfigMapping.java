@@ -30,8 +30,8 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationType;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.core.ILaunchManager;
-import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LaunchConfigurationStreamProvider;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
 import org.eclipse.ui.IStartup;
@@ -70,7 +70,7 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 						MockLanguageSever.class.getName());
 				mockServerLauch = workingCopy.doSave();
 				registry.registerAssociation(contentTypeManager.getContentType("org.eclipse.lsp4e.test.content-type2"),
-						LaunchConfigurationStreamProvider.findLaunchConfiguration(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE, externalProcessLaunchName),
+						LaunchConfigurationStreamProvider.findLaunchConfiguration(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE, mockServerLauch.getName()),
 						Collections.singleton(ILaunchManager.RUN_MODE));
 			}
 		} catch (CoreException e) {

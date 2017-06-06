@@ -149,8 +149,9 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 	private static void appendAsHexString(StringBuilder buffer, int intValue) {
 		String hexValue= Integer.toHexString(intValue);
-		if (hexValue.length() == 1)
+		if (hexValue.length() == 1) {
 			buffer.append('0');
+		}
 		buffer.append(hexValue);
 	}
 

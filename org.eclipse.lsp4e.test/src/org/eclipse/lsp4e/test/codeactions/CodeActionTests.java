@@ -86,8 +86,14 @@ public class CodeActionTests {
 					return "fixed".equals(editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
 				}
 			}.waitForCondition(Display.getCurrent(), 1000);
-			Assert.assertEquals("fixed", ((StyledText)editor.getAdapter(Control.class)).getText());
 			Assert.assertEquals("fixed", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
+			new DisplayHelper() {
+				@Override
+				protected boolean condition() {
+					return "fixed".equals(((StyledText)editor.getAdapter(Control.class)).getText());
+				}
+			}.waitForCondition(Display.getCurrent(), 1000);
+			Assert.assertEquals("fixed", ((StyledText)editor.getAdapter(Control.class)).getText());
 		} finally {
 			editor.close(false);
 			p.delete(true, new NullProgressMonitor());

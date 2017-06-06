@@ -28,6 +28,10 @@ import org.eclipse.ui.console.MessageConsole;
 @SuppressWarnings("restriction")
 public class ServerMessageHandler {
 
+	private ServerMessageHandler() {
+		// this class shouldn't be instantiated
+	}
+
 	private static final String NAME_PATTERN = "%s (%s)"; //$NON-NLS-1$
 
 	private static class LSPNotification extends AbstractNotification {
@@ -83,10 +87,11 @@ public class ServerMessageHandler {
 		ConsolePlugin plugin = ConsolePlugin.getDefault();
 		IConsoleManager conMan = plugin.getConsoleManager();
 		IConsole[] existing = conMan.getConsoles();
-		for (int i = 0; i < existing.length; i++)
+		for (int i = 0; i < existing.length; i++) {
 			if (name.equals(existing[i].getName())) {
 				return (MessageConsole) existing[i];
 			}
+		}
 		// no console found, so create a new one
 		MessageConsole myConsole = new MessageConsole(name, null);
 		conMan.addConsoles(new IConsole[] { myConsole });

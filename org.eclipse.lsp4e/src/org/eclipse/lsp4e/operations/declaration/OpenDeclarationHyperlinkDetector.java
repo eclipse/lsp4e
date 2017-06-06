@@ -118,8 +118,9 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 
 			while (pos >= 0) {
 				c = document.getChar(pos);
-				if (!Character.isUnicodeIdentifierPart(c))
+				if (!Character.isUnicodeIdentifierPart(c)) {
 					break;
+				}
 				--pos;
 			}
 

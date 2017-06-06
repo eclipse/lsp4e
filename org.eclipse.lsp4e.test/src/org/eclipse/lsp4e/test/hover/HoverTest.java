@@ -28,6 +28,7 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.ui.PlatformUI;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,6 +46,7 @@ public class HoverTest {
 
 	@After
 	public void tearDown() throws CoreException {
+		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
 		project.delete(true, true, new NullProgressMonitor());
 		MockLanguageSever.INSTANCE.shutdown();
 	}

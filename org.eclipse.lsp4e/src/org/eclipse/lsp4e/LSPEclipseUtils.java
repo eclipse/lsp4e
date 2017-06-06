@@ -72,6 +72,10 @@ import com.google.gson.Gson;
  */
 public class LSPEclipseUtils {
 
+	private LSPEclipseUtils() {
+		// this class shouldn't be instantiated
+	}
+
 	public static Position toPosition(int offset, IDocument document) throws BadLocationException {
 		Position res = new Position();
 		res.setLine(document.getLineOfOffset(offset));

@@ -47,6 +47,10 @@ import org.eclipse.lsp4j.services.LanguageServer;
  */
 public class LanguageServiceAccessor {
 
+	private LanguageServiceAccessor() {
+		// this class shouldn't be instantiated
+	}
+
 	static class WrapperEntryKey {
 		final IProject project;
 		final IContentType contentType;
@@ -67,26 +71,32 @@ public class LanguageServiceAccessor {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (this == obj)
+			if (this == obj) {
 				return true;
-			if (obj == null)
+			}
+			if (obj == null) {
 				return false;
-			if (getClass() != obj.getClass())
+			}
+			if (getClass() != obj.getClass()) {
 				return false;
+			}
 			WrapperEntryKey other = (WrapperEntryKey) obj;
 			if (contentType == null) {
-				if (other.contentType != null)
+				if (other.contentType != null) {
 					return false;
-			} else if (!contentType.equals(other.contentType))
+				}
+			} else if (!contentType.equals(other.contentType)) {
 				return false;
+			}
 			if (project == null) {
-				if (other.project != null)
+				if (other.project != null) {
 					return false;
-			} else if (!project.equals(other.project))
+				}
+			} else if (!project.equals(other.project)) {
 				return false;
+			}
 			return true;
 		}
-
 
 	}
 

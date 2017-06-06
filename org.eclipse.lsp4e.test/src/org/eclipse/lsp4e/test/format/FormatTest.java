@@ -45,7 +45,7 @@ public class FormatTest {
 
 	@Before
 	public void setUp() throws CoreException {
-		project = TestUtils.createProject("FormatTest" + System.currentTimeMillis());
+		project = TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
 	}
 
 	@After
@@ -70,7 +70,7 @@ public class FormatTest {
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
 		IEditorPart editor = TestUtils.openEditor(file);
-		ITextViewer viewer = TestUtils.openTextViewer(file, editor);
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
 
 		LSPFormatter formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
@@ -97,7 +97,7 @@ public class FormatTest {
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
 		IEditorPart editor = TestUtils.openEditor(file);
-		ITextViewer viewer = TestUtils.openTextViewer(file, editor);
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
 
 		LSPFormatter formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();

@@ -38,7 +38,7 @@ import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
  */
 public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumentSetupParticipant, IDocumentSetupParticipantExtension {
 
-	private class DocumentInputStream extends InputStream {
+	private static final class DocumentInputStream extends InputStream {
 		private int index = 0;
 		private IDocument document;
 

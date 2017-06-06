@@ -29,6 +29,7 @@ import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.ui.PlatformUI;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,6 +47,7 @@ public class DocumentLinkTest {
 
 	@After
 	public void tearDown() throws CoreException {
+		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
 		project.delete(true, true, new NullProgressMonitor());
 		MockLanguageSever.INSTANCE.shutdown();
 	}

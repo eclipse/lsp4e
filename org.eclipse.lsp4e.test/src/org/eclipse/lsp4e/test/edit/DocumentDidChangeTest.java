@@ -31,6 +31,8 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,7 +40,7 @@ import org.junit.Test;
 public class DocumentDidChangeTest {
 
 	private IProject project;
-	
+
 	@Before
 	public void setUp() throws CoreException {
 		project =  TestUtils.createProject("DocumentDidChangeTest"+System.currentTimeMillis());
@@ -56,8 +58,8 @@ public class DocumentDidChangeTest {
 				.setTextDocumentSync(TextDocumentSyncKind.Incremental);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
-
-		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
 		LanguageServiceAccessor.getLanguageServer(testFile, new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
@@ -117,7 +119,8 @@ public class DocumentDidChangeTest {
 		assertEquals(5, range.getEnd().getCharacter());
 		assertEquals(Integer.valueOf(5), change0.getRangeLength());
 		assertEquals("Hallo", change0.getText());
-		
+
+		((AbstractTextEditor)editor).close(false);
 	}
 
 	@Test
@@ -127,8 +130,8 @@ public class DocumentDidChangeTest {
 
 		String multiLineText = "line1\nline2\nline3\n";
 		IFile testFile = TestUtils.createUniqueTestFile(project, multiLineText);
-
-		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
 		LanguageServiceAccessor.getLanguageServer(testFile, new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
@@ -153,6 +156,8 @@ public class DocumentDidChangeTest {
 		assertEquals(0, range.getEnd().getCharacter());
 		assertEquals(Integer.valueOf(6), change0.getRangeLength());
 		assertEquals("", change0.getText());
+
+		((AbstractTextEditor)editor).close(false);
 	}
 
 	@Test
@@ -161,8 +166,8 @@ public class DocumentDidChangeTest {
 				.setTextDocumentSync(TextDocumentSyncKind.Full);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
-
-		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
 		LanguageServiceAccessor.getLanguageServer(testFile, new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
@@ -190,6 +195,8 @@ public class DocumentDidChangeTest {
 		assertEquals(1, lastChange.getContentChanges().size());
 		change0 = lastChange.getContentChanges().get(0);
 		assertEquals("Hello World", change0.getText());
+		
+		((AbstractTextEditor)editor).close(false);
 	}
 
 	private TextDocumentSyncKind getDocumentSyncKind(ServerCapabilities t) {

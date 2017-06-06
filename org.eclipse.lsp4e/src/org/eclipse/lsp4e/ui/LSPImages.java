@@ -33,9 +33,13 @@ import org.osgi.framework.Bundle;
 
 public class LSPImages {
 
-	private static final Map<java.awt.Color, Image> colorToImageCache = new HashMap<>();
+	
+	private LSPImages() {
+		// this class shouldn't be instantiated
+	}
 
 	private static ImageRegistry imageRegistry;
+	private static final Map<java.awt.Color, Image> colorToImageCache = new HashMap<>();
 	private static final String ICONS_PATH = "$nl$/icons/full/"; //$NON-NLS-1$
 	private static final String OBJECT = ICONS_PATH + "obj16/"; // basic colors - size 16x16 //$NON-NLS-1$
 

@@ -25,6 +25,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.ui.PlatformUI;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,6 +41,7 @@ public class LanguageServiceAccessorTest {
 
 	@After
 	public void tearDown() throws CoreException {
+		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
 		project.delete(true, true, new NullProgressMonitor());
 	}
 

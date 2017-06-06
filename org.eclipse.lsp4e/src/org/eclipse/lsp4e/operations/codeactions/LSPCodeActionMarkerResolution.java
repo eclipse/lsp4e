@@ -61,9 +61,8 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 
 		@Override
 		public Image getImage() {
-			Class<?> clazz = ProgressInfoItem.class;
 			// load class so image is loaded
-			return JFaceResources.getImage("org.eclipse.ui.internal.progress.PROGRESS_DEFAULT"); //$NON-NLS-1$
+			return JFaceResources.getImage(ProgressInfoItem.class.getPackage().getName() + ".PROGRESS_DEFAULT"); //$NON-NLS-1$
 		}
 
 		@Override

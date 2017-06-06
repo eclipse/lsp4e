@@ -41,6 +41,7 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,6 +59,7 @@ public class CompletionTest {
 
 	@After
 	public void tearDown() throws CoreException {
+		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
 		project.delete(true, true, new NullProgressMonitor());
 		MockLanguageSever.INSTANCE.shutdown();
 	}
@@ -270,12 +272,12 @@ public class CompletionTest {
 	public void testItemOrdering() throws Exception {
 		Range range = new Range(new Position(0, 0), new Position(0, 1));
 		List<CompletionItem> items = Arrays.asList(new CompletionItem[] {
-			createCompletionItem("AA", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
-			createCompletionItem("AB", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
-			createCompletionItem("BA", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
-			createCompletionItem("BB", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
-			createCompletionItem("CB", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
-			createCompletionItem("CC", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1))),
+			createCompletionItem("AA", CompletionItemKind.Class, range),
+			createCompletionItem("AB", CompletionItemKind.Class, range),
+			createCompletionItem("BA", CompletionItemKind.Class, range),
+			createCompletionItem("BB", CompletionItemKind.Class, range),
+			createCompletionItem("CB", CompletionItemKind.Class, range),
+			createCompletionItem("CC", CompletionItemKind.Class, range),
 		});
 		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
 

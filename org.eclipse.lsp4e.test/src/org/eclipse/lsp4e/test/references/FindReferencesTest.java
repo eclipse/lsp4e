@@ -54,6 +54,7 @@ public class FindReferencesTest {
 
 	@After
 	public void tearDown() throws CoreException {
+		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
 		project.delete(true, true, new NullProgressMonitor());
 		IViewPart searchPart = NewSearchUI.getSearchResultView();
 		if (searchPart != null) {

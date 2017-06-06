@@ -33,11 +33,16 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 public class TestUtils {
 
-	public static ITextViewer openTextViewer(IFile file) throws InvocationTargetException, PartInitException {
-		return openTextViewer(file, openEditor(file));
+	private TestUtils() {
+		// this class shouldn't be instantiated
 	}
 
-	public static ITextViewer openTextViewer(IFile file, IEditorPart part) throws InvocationTargetException {
+	public static ITextViewer openTextViewer(IFile file) throws InvocationTargetException, PartInitException {
+		IEditorPart editor = openEditor(file);
+		return getTextViewer(editor);
+	}
+
+	public static ITextViewer getTextViewer(IEditorPart part) throws InvocationTargetException {
 		try {			
 			if (part instanceof ITextEditor) {
 				ITextEditor textEditor = (ITextEditor) part;

@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.tests.mock;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -168,7 +169,7 @@ public final class MockLanguageSever implements LanguageServer {
 		this.delay = 0;
 		resetInitializeResult();
 		this.textDocumentService.reset();
-		return CompletableFuture.completedFuture(null);
+		return CompletableFuture.completedFuture(Collections.emptySet());
 	}
 
 	@Override

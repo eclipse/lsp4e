@@ -363,7 +363,6 @@ public class ProjectSpecificLanguageServerWrapper {
 		if (documentListener != null) {
 			documentListener.getDocument().removeDocumentListener(documentListener);
 			documentListener.documentClosed();
-			this.connectedDocuments.remove(documentListener);
 		}
 		if (this.connectedDocuments.isEmpty()) {
 			stop();

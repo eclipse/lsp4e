@@ -347,18 +347,18 @@ public class LSCompletionProposal
 			if (item.getInsertTextFormat() == InsertTextFormat.Snippet) {
 				int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
 				int currentOffset = 0;
-				while ((currentOffset = insertText.indexOf("$", currentOffset)) != -1) { //$NON-NLS-1$
-					String key = ""; //$NON-NLS-1$
+				while ((currentOffset = insertText.indexOf('$', currentOffset)) != -1) {
+					StringBuilder keyBuilder = new StringBuilder();
 					String defaultValue = ""; //$NON-NLS-1$
 					int length = 1;
 					while (currentOffset + length < insertText.length() && Character.isDigit(insertText.charAt(currentOffset + length))) {
-						key += insertText.charAt(currentOffset + length);
+						keyBuilder.append(insertText.charAt(currentOffset + length));
 						length++;
 					}
 					if (length == 1 && insertText.length() >= 2 && insertText.charAt(currentOffset + 1) == '{') {
 						length++;
 						while (currentOffset + length < insertText.length() && Character.isDigit(insertText.charAt(currentOffset + length))) {
-							key += insertText.charAt(currentOffset + length);
+							keyBuilder.append(insertText.charAt(currentOffset + length));
 							length++;
 						}
 						if (currentOffset + length < insertText.length() && insertText.charAt(currentOffset + length) == ':') {
@@ -372,7 +372,8 @@ public class LSCompletionProposal
 							length++;
 						}
 					}
-					if (!key.isEmpty()) {
+					if (keyBuilder.length() > 0) {
+						String key = keyBuilder.toString();
 						if (!groups.containsKey(key)) {
 							groups.put(key, new LinkedPositionGroup());
 						}
