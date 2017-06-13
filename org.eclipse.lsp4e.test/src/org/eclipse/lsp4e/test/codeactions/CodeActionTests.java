@@ -36,12 +36,18 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class CodeActionTests {
 	
 	@Rule public NoErrorLoggedRule rule = new NoErrorLoggedRule(LanguageServerPlugin.getDefault().getLog());
+
+	@Before
+	public void setUp() throws CoreException {
+		MockLanguageSever.reset();
+	}
 
 	@Test
 	public void testCodeActions() throws CoreException {

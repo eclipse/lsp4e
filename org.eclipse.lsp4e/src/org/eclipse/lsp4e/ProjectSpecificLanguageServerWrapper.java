@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2017 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -142,7 +142,6 @@ public class ProjectSpecificLanguageServerWrapper {
 		this.serverDefinition = serverDefinition;
 		this.lspStreamProvider = serverDefinition.createConnectionProvider();
 		this.connectedDocuments = new HashMap<>();
-		FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
 	}
 
 	/**
@@ -151,7 +150,7 @@ public class ProjectSpecificLanguageServerWrapper {
 	 *
 	 * @throws IOException
 	 */
-	public void start() throws IOException {
+	public synchronized void start() throws IOException {
 		Map<IPath, IDocument> filesToReconnect = Collections.emptyMap();
 		if (this.languageServer != null) {
 			if (isActive()) {
@@ -166,6 +165,7 @@ public class ProjectSpecificLanguageServerWrapper {
 		}
 		try {
 			this.lspStreamProvider.start();
+
 			LanguageClient client = new LanguageClient() {
 				private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project, ProjectSpecificLanguageServerWrapper.this.serverDefinition.getId());
 
@@ -271,6 +271,7 @@ public class ProjectSpecificLanguageServerWrapper {
 					}
 				}
 			});
+			FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
 		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 			stop();
@@ -293,12 +294,14 @@ public class ProjectSpecificLanguageServerWrapper {
 		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
 	}
 
-	private void stop() {
+	private synchronized void stop() {
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
 			this.initializeFuture = null;
 		}
 		this.initializeResult = null;
+		this.capabilitiesAlreadyRequested = false;
+
 		if (this.languageServer != null) {
 			try {
 				this.languageServer.shutdown();
@@ -406,7 +409,7 @@ public class ProjectSpecificLanguageServerWrapper {
 		try {
 			start();
 			if (this.initializeFuture != null) {
-				this.initializeFuture.get(capabilitiesAlreadyRequested? 0 : 1000, TimeUnit.MILLISECONDS);
+				this.initializeFuture.get(capabilitiesAlreadyRequested ? 0 : 1000, TimeUnit.MILLISECONDS);
 			}
 		} catch (TimeoutException | IOException | InterruptedException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);

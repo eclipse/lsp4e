@@ -46,15 +46,18 @@ import org.eclipse.lsp4j.services.WorkspaceService;
 
 public final class MockLanguageSever implements LanguageServer {
 
-	public static final MockLanguageSever INSTANCE = new MockLanguageSever();
+	public static MockLanguageSever INSTANCE = new MockLanguageSever();
 
 	private MockTextDocumentService textDocumentService = new MockTextDocumentService(this::buildMaybeDelayedFuture);
 	private MockWorkspaceService workspaceService = new MockWorkspaceService(this::buildMaybeDelayedFuture);
 	private InitializeResult initializeResult = new InitializeResult();
 	private long delay = 0;
-	
-	private boolean isShutDown;
+	private boolean started;
 
+	public static void reset() {
+		INSTANCE = new MockLanguageSever();
+	}
+	
 	private MockLanguageSever() {
 		resetInitializeResult();
 	}
@@ -73,7 +76,7 @@ public final class MockLanguageSever implements LanguageServer {
 
 	public void addRemoteProxy(LanguageClient remoteProxy) {
 		this.textDocumentService.addRemoteProxy(remoteProxy);
-		this.isShutDown = false;
+		this.started = true;
 	}
 
 	private void resetInitializeResult() {
@@ -169,10 +172,10 @@ public final class MockLanguageSever implements LanguageServer {
 
 	@Override
 	public CompletableFuture<Object> shutdown() {
+		this.started = false;
 		this.delay = 0;
 		resetInitializeResult();
 		this.textDocumentService.reset();
-		this.isShutDown = true;
 		return CompletableFuture.completedFuture(Collections.emptySet());
 	}
 
@@ -199,9 +202,9 @@ public final class MockLanguageSever implements LanguageServer {
 	public void setDocumentLinks(List<DocumentLink> documentLinks) {
 		this.textDocumentService.setMockDocumentLinks(documentLinks);
 	}
-	
-	public boolean isShutDown() {
-		return isShutDown;
+
+	public boolean isRunning() {
+		return this.started;
 	}
-	
+
 }

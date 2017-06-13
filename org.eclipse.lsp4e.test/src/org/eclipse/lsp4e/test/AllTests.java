@@ -47,7 +47,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	FindReferencesTest.class,
 	FormatTest.class,
 	CodeActionTests.class,
-	DocumentLinkTest.class
+	DocumentLinkTest.class,
+	OpenCloseLanguageServerTest.class
 })
 public class AllTests {
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2017 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -280,22 +280,29 @@ public class LanguageServiceAccessor {
 	 */
 	public static ProjectSpecificLanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project, @NonNull IContentType contentType, @NonNull LanguageServerDefinition serverDefinition) throws IOException {
 		ProjectSpecificLanguageServerWrapper wrapper = null;
-		for (ProjectSpecificLanguageServerWrapper startedWrapper : getStartedLSWarppers(project)) {
-			if (startedWrapper.serverDefinition.equals(serverDefinition)) {
-				wrapper = startedWrapper;
-				break;
+
+		synchronized(projectServers) {
+			for (ProjectSpecificLanguageServerWrapper startedWrapper : getStartedLSWarppers(project)) {
+				if (startedWrapper.serverDefinition.equals(serverDefinition)) {
+					wrapper = startedWrapper;
+					break;
+				}
+			}
+			if (wrapper == null) {
+				wrapper = new ProjectSpecificLanguageServerWrapper(project, serverDefinition);
+				wrapper.start();
+			}
+
+			WrapperEntryKey key = new WrapperEntryKey(project, contentType);
+			if (!projectServers.containsKey(key)) {
+				projectServers.put(key, new ArrayList<>());
+			}
+
+			List<ProjectSpecificLanguageServerWrapper> wrapperList = projectServers.get(key);
+			if (!wrapperList.contains(wrapper)) {
+				wrapperList.add(wrapper);
 			}
 		}
-		if (wrapper == null) {
-			wrapper = new ProjectSpecificLanguageServerWrapper(project, serverDefinition);
-			wrapper.start();
-		}
-
-		WrapperEntryKey key = new WrapperEntryKey(project, contentType);
-		if (!projectServers.containsKey(key)) {
-			projectServers.put(key, new ArrayList<>());
-		}
-		projectServers.get(key).add(wrapper);
 		return wrapper;
 	}
 
@@ -307,15 +314,18 @@ public class LanguageServiceAccessor {
 	        IContentType[] fileContentTypes, Predicate<ServerCapabilities> request, @Nullable String serverId) {
 		for (IContentType contentType : fileContentTypes) {
 			WrapperEntryKey key = new WrapperEntryKey(project, contentType);
-			if (!projectServers.containsKey(key)) {
-				projectServers.put(key, new ArrayList<>());
-			}
-			for (ProjectSpecificLanguageServerWrapper aWrapper : projectServers.get(key)) {
-				if (aWrapper != null && (serverId == null || aWrapper.serverDefinition.getId().equals(serverId)) && (request == null
-						|| aWrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-						|| request.test(aWrapper.getServerCapabilities())
-					)) {
-					return aWrapper;
+
+			synchronized(projectServers) {
+				if (!projectServers.containsKey(key)) {
+					projectServers.put(key, new ArrayList<>());
+				}
+				for (ProjectSpecificLanguageServerWrapper aWrapper : projectServers.get(key)) {
+					if (aWrapper != null && (serverId == null || aWrapper.serverDefinition.getId().equals(serverId)) && (request == null
+							|| aWrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+							|| request.test(aWrapper.getServerCapabilities())
+						)) {
+						return aWrapper;
+					}
 				}
 			}
 		}

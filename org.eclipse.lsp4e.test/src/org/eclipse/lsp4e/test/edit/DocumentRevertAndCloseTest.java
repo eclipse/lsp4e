@@ -17,6 +17,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
@@ -34,6 +35,7 @@ public class DocumentRevertAndCloseTest {
 
 	@Before
 	public void setUp() throws CoreException {
+		MockLanguageSever.reset();
 		project =  TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
 	}
 
@@ -60,15 +62,13 @@ public class DocumentRevertAndCloseTest {
 		((AbstractTextEditor)editor).getSite().getPage().closeEditor(editor, false);
 		
 		Display display = PlatformUI.getWorkbench().getDisplay();
-		while (!display.isDisposed() && display.readAndDispatch()) {
-			Thread.sleep(200L);
-		}
-		
-		// Wait for jobs to finish
-		Thread.sleep(3000);
-		
-		assertTrue(MockLanguageSever.INSTANCE.isShutDown());
-		
+		assertTrue(new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return !MockLanguageSever.INSTANCE.isRunning();
+			}
+			
+		}.waitForCondition(display, 3000));
 	}
 
 }

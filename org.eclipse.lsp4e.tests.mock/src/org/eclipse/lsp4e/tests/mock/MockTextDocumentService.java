@@ -89,8 +89,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem unresolved) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
 
 	@Override
@@ -115,14 +114,12 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(TextDocumentPositionParams position) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
 
 	@Override
 	public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
 	
 	@Override
@@ -137,14 +134,12 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends CodeLens>> codeLens(CodeLensParams params) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
 
 	@Override
 	public CompletableFuture<CodeLens> resolveCodeLens(CodeLens unresolved) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
 
 	@Override
@@ -154,20 +149,17 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends TextEdit>> rangeFormatting(DocumentRangeFormattingParams params) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
 
 	@Override
 	public CompletableFuture<List<? extends TextEdit>> onTypeFormatting(DocumentOnTypeFormattingParams params) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
 
 	@Override
 	public CompletableFuture<WorkspaceEdit> rename(RenameParams params) {
-		// TODO Auto-generated method stub
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
 
 	@Override
