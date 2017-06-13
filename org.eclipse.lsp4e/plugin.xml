@@ -176,13 +176,13 @@
             commandId="org.eclipse.lsp4e.symbolinfile"
             contextId="org.eclipse.ui.textEditorScope"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+M2+O">
+            sequence="M1+O">
       </key>
       <key
             commandId="org.eclipse.lsp4e.symbolinworkspace"
             contextId="org.eclipse.ui.contexts.window"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
-            sequence="M1+T">
+            sequence="M1+M2+T">
       </key>
    </extension>
    <extension
