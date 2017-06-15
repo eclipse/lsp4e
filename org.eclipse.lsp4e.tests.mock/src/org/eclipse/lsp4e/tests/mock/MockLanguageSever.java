@@ -52,6 +52,8 @@ public final class MockLanguageSever implements LanguageServer {
 	private MockWorkspaceService workspaceService = new MockWorkspaceService(this::buildMaybeDelayedFuture);
 	private InitializeResult initializeResult = new InitializeResult();
 	private long delay = 0;
+	
+	private boolean isShutDown;
 
 	private MockLanguageSever() {
 		resetInitializeResult();
@@ -71,6 +73,7 @@ public final class MockLanguageSever implements LanguageServer {
 
 	public void addRemoteProxy(LanguageClient remoteProxy) {
 		this.textDocumentService.addRemoteProxy(remoteProxy);
+		this.isShutDown = false;
 	}
 
 	private void resetInitializeResult() {
@@ -169,6 +172,7 @@ public final class MockLanguageSever implements LanguageServer {
 		this.delay = 0;
 		resetInitializeResult();
 		this.textDocumentService.reset();
+		this.isShutDown = true;
 		return CompletableFuture.completedFuture(Collections.emptySet());
 	}
 
@@ -194,6 +198,10 @@ public final class MockLanguageSever implements LanguageServer {
 
 	public void setDocumentLinks(List<DocumentLink> documentLinks) {
 		this.textDocumentService.setMockDocumentLinks(documentLinks);
+	}
+	
+	public boolean isShutDown() {
+		return isShutDown;
 	}
 	
 }

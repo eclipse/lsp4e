@@ -13,6 +13,7 @@ package org.eclipse.lsp4e;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.IDocumentSetupParticipant;
 import org.eclipse.core.filebuffers.IDocumentSetupParticipantExtension;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
@@ -86,7 +87,7 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 
 				if (locationKind == LocationKind.IFILE) {
 					IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(location);
-					if (!file.exists()) { // file probably deleted in the meantime.
+					if (!file.exists() || FileBuffers.getTextFileBufferManager().getFileBuffer(location, locationKind) == null) { // file probably deleted in the meantime.
 						return Status.OK_STATUS;
 					}
 					IProject project = file.getProject();

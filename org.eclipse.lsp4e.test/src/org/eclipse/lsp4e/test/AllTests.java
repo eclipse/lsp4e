@@ -21,6 +21,7 @@ import org.eclipse.lsp4e.test.documentLink.DocumentLinkTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidChangeTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidCloseTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidSaveTest;
+import org.eclipse.lsp4e.test.edit.DocumentRevertAndCloseTest;
 import org.eclipse.lsp4e.test.format.FormatTest;
 import org.eclipse.lsp4e.test.hover.HoverTest;
 import org.eclipse.lsp4e.test.references.FindReferencesTest;
@@ -37,6 +38,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DocumentDidChangeTest.class,
 	DocumentDidSaveTest.class,
 	DocumentDidCloseTest.class,
+	DocumentRevertAndCloseTest.class,
 	SymbolsModelTest.class,
 	LSPEclipseUtilsTest.class,
 	HoverTest.class,
