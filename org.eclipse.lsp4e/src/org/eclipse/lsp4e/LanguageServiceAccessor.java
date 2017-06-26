@@ -282,7 +282,7 @@ public class LanguageServiceAccessor {
 		ProjectSpecificLanguageServerWrapper wrapper = null;
 
 		synchronized(projectServers) {
-			for (ProjectSpecificLanguageServerWrapper startedWrapper : getStartedLSWarppers(project)) {
+			for (ProjectSpecificLanguageServerWrapper startedWrapper : getStartedLSWrappers(project)) {
 				if (startedWrapper.serverDefinition.equals(serverDefinition)) {
 					wrapper = startedWrapper;
 					break;
@@ -306,7 +306,7 @@ public class LanguageServiceAccessor {
 		return wrapper;
 	}
 
-	private static @NonNull List<ProjectSpecificLanguageServerWrapper> getStartedLSWarppers(@NonNull IProject project) {
+	private static @NonNull List<ProjectSpecificLanguageServerWrapper> getStartedLSWrappers(@NonNull IProject project) {
 		return projectServers.values().stream().flatMap(List::stream).filter(wrapper -> wrapper.project.equals(project)).collect(Collectors.toList());
 	}
 
