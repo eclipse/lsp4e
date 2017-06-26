@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -239,6 +240,14 @@ public class LanguageServiceAccessor {
 		if (project == null) {
 			return null;
 		}
+
+		// look for running language server via connected document
+		ProjectSpecificLanguageServerWrapper wrapper = getMatchingStartedWrapper(file, request, serverId);
+		if (wrapper != null) {
+			return wrapper;
+		}
+
+		// look for running language servers via content-type
 		IContentType[] fileContentTypes = null;
 		try (InputStream contents = file.getContents()) {
 			fileContentTypes = Platform.getContentTypeManager().findContentTypesFor(contents, file.getName()); //TODO consider using document as inputstream
@@ -246,7 +255,8 @@ public class LanguageServiceAccessor {
 			LanguageServerPlugin.logError(e);
 			return null;
 		}
-		ProjectSpecificLanguageServerWrapper wrapper = getMatchingStartedWrapper(project, fileContentTypes, request, serverId);
+
+		wrapper = getMatchingStartedWrapper(project, fileContentTypes, request, serverId);
 		if (wrapper != null) {
 			return wrapper;
 		}
@@ -332,6 +342,26 @@ public class LanguageServiceAccessor {
 		return null;
 	}
 
+	private static ProjectSpecificLanguageServerWrapper getMatchingStartedWrapper(IFile file,
+	        Predicate<ServerCapabilities> request, @Nullable String serverId) {
+		IProject project = file.getProject();
+
+		synchronized(projectServers) {
+			Set<WrapperEntryKey> servers = projectServers.keySet();
+			for (WrapperEntryKey server : servers) {
+				if (server.project == project) {
+					List<ProjectSpecificLanguageServerWrapper> wrappers = projectServers.get(server);
+					for (ProjectSpecificLanguageServerWrapper wrapper : wrappers) {
+						if (wrapper.isConnectedTo(file.getLocation())) {
+							return wrapper;
+						}
+					}
+				}
+			}
+		}
+		return null;
+	}
+
 	/**
 	 * Gets list of LS initialized for given project.
 	 *
@@ -360,7 +390,6 @@ public class LanguageServiceAccessor {
 		}
 		return serverInfos;
 	}
-
 
 	protected static LanguageServerDefinition getInfo(@NonNull StreamConnectionProvider provider) {
 		return connectionsInfo.get(provider);

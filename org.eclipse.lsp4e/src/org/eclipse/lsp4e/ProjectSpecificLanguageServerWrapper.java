@@ -372,6 +372,13 @@ public class ProjectSpecificLanguageServerWrapper {
 		}
 	}
 
+	/**
+	 * checks if the wrapper is already connected to the document at the given path
+	 */
+	public boolean isConnectedTo(IPath location) {
+		return connectedDocuments.containsKey(location);
+	}
+
 	@Nullable
 	public LanguageServer getServer() {
 		try {
