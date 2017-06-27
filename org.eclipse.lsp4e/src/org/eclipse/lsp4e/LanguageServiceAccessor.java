@@ -14,7 +14,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -22,13 +25,9 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.eclipse.core.filebuffers.FileBuffers;
-import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
@@ -102,7 +101,7 @@ public class LanguageServiceAccessor {
 	}
 
 	private static Map<WrapperEntryKey, List<ProjectSpecificLanguageServerWrapper>> projectServers = new HashMap<>();
-	private static Map<StreamConnectionProvider, LanguageServerDefinition> connectionsInfo = new HashMap<>();
+	private static Map<StreamConnectionProvider, LanguageServerDefinition> providersToLSDefinitions = new HashMap<>();
 
 	/**
 	 * A bean storing association of a Document/File with a language server.
@@ -181,15 +180,9 @@ public class LanguageServiceAccessor {
 	}
 
 	@Nullable public static LSPDocumentInfo getLSPDocumentInfoFor(@NonNull IDocument document, @Nullable Predicate<ServerCapabilities> capabilityRequest) {
-		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
-		if (buffer == null) {
-			return null;
-		}
-		final IPath location = buffer.getLocation();
-		final IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(location);
-		URI fileUri = null;
-		if (file.exists()) {
-			fileUri = LSPEclipseUtils.toUri(file);
+		final IFile file = LSPEclipseUtils.getFile(document);
+		if (file != null && file.exists()) {
+			URI fileUri = LSPEclipseUtils.toUri(file);
 			try {
 				ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, capabilityRequest, null);
 				if (wrapper != null) {
@@ -203,10 +196,11 @@ public class LanguageServiceAccessor {
 			} catch (final Exception e) {
 				LanguageServerPlugin.logError(e);
 			}
-		} /*else if (location.toFile().exists()) {
-			fileUri = "file://" + location.toFile().getAbsolutePath();
-			TODO handle case of plain file (no IFile)
-		}*/
+		} else {
+			LanguageServerPlugin.logInfo("Non IFiles not supported yet"); //$NON-NLS-1$
+			//fileUri = "file://" + location.toFile().getAbsolutePath();
+			//TODO handle case of plain file (no IFile)
+		}
 		return null;
 	}
 
@@ -278,6 +272,46 @@ public class LanguageServiceAccessor {
 		}
 		return null;
 	}
+
+	@NonNull private static Collection<ProjectSpecificLanguageServerWrapper> getLSWrappers(@NonNull IFile file, @Nullable Predicate<ServerCapabilities> request) throws IOException {
+		LinkedHashSet<ProjectSpecificLanguageServerWrapper> res = new LinkedHashSet<>();
+		IProject project = file.getProject();
+		if (project == null) {
+			return res;
+		}
+
+		ProjectSpecificLanguageServerWrapper wrapper = getMatchingStartedWrapper(file, request, null);
+		if (wrapper != null) {
+			res.add(wrapper);
+		}
+
+		// look for running language servers via content-type
+		IContentType[] fileContentTypes = null;
+		try (InputStream contents = file.getContents()) {
+			fileContentTypes = Platform.getContentTypeManager().findContentTypesFor(contents, file.getName()); //TODO consider using document as inputstream
+		} catch (CoreException e) {
+			LanguageServerPlugin.logError(e);
+			return res;
+		}
+
+		for (IContentType contentType : fileContentTypes) {
+			if (contentType == null) {
+				continue;
+			}
+			for (LanguageServerDefinition serverDefinition : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
+				if (serverDefinition != null) {
+					wrapper = getLSWrapperForConnection(project, contentType, serverDefinition);
+					if (request == null
+						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+						|| request.test(wrapper.getServerCapabilities())) {
+						res.add(wrapper);
+					}
+				}
+			}
+		}
+		return res;
+	}
+
 
 	/**
 	 * Return existing {@link ProjectSpecificLanguageServerWrapper} for the given connection. If not found,
@@ -391,8 +425,36 @@ public class LanguageServiceAccessor {
 		return serverInfos;
 	}
 
-	protected static LanguageServerDefinition getInfo(@NonNull StreamConnectionProvider provider) {
-		return connectionsInfo.get(provider);
+	protected static LanguageServerDefinition getLSDefinition(@NonNull StreamConnectionProvider provider) {
+		return providersToLSDefinitions.get(provider);
+	}
+
+	@NonNull public static List<LSPDocumentInfo> getLSPDocumentInfosFor(@NonNull IDocument document, Predicate<ServerCapabilities> capabilityRequest) {
+		final IFile file = LSPEclipseUtils.getFile(document);
+		URI fileUri = null;
+		if (file != null && file.exists()) {
+			fileUri = LSPEclipseUtils.toUri(file);
+			List<LSPDocumentInfo> res = new ArrayList<>();
+			try {
+				for (ProjectSpecificLanguageServerWrapper wrapper : getLSWrappers(file, capabilityRequest)) {
+					wrapper.connect(file.getLocation(), document);
+					@Nullable
+					LanguageServer server = wrapper.getServer();
+					if (server != null) {
+						res.add(new LSPDocumentInfo(fileUri, document, wrapper, server));
+					}
+				}
+			} catch (final Exception e) {
+				LanguageServerPlugin.logError(e);
+			}
+			return res;
+		} else {
+			LanguageServerPlugin.logInfo("Non IFiles not supported yet"); //$NON-NLS-1$
+			//fileUri = "file://" + location.toFile().getAbsolutePath();
+			//TODO handle case of plain file (no IFile)
+		}
+		return Collections.emptyList();
+
 	}
 
 }

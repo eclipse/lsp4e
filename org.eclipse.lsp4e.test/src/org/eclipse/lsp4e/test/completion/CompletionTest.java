@@ -74,6 +74,11 @@ public class CompletionTest {
 		MockLanguageSever.INSTANCE.shutdown();
 	}
 	
+	/*
+	 * This tests the not-so-official way to associate a LS to a file programmatically, and then to retrieve the LS
+	 * for the file independently of the content-types. Although doing it programatically isn't recommended, consuming
+	 * file-specific LS already associated is something we want to support.
+	 */
 	@Test
 	public void testAssistForUnknownButConnectedType() throws CoreException, InvocationTargetException, IOException, InterruptedException {
 		List<CompletionItem> items = new ArrayList<>();
@@ -205,7 +210,7 @@ public class CompletionTest {
 		
 		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "First"));
 		
-		assertArrayEquals(null, contentAssistProcessor.getCompletionProposalAutoActivationCharacters());
+		assertArrayEquals(new char[0], contentAssistProcessor.getCompletionProposalAutoActivationCharacters());
 	}
 	
 	@Test
@@ -356,6 +361,19 @@ public class CompletionTest {
 		((LSCompletionProposal)proposals[0]).apply(viewer, '\n', 0, invokeOffset);
 		assertEquals(" and foo", viewer.getDocument().get());
 		// TODO check link edit groups
+	}
+
+	@Test
+	public void testMultipleLS() throws Exception {
+		List<CompletionItem> items = new ArrayList<>();
+		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
+
+		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "");
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
+		assertEquals(2 * items.size(), proposals.length);
 	}
 
 }

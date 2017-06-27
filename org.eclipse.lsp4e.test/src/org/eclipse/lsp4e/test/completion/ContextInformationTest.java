@@ -99,7 +99,7 @@ public class ContextInformationTest {
 
 		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "First"));
 
-		assertArrayEquals(null, contentAssistProcessor.getContextInformationAutoActivationCharacters());
+		assertArrayEquals(new char[0], contentAssistProcessor.getContextInformationAutoActivationCharacters());
 	}
 
 }

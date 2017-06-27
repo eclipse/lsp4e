@@ -363,4 +363,13 @@ public class LSPEclipseUtils {
 		changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
 		return res;
 	}
+
+	@Nullable public static IFile getFile(IDocument document) {
+		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
+		if (buffer == null) {
+			return null;
+		}
+		final IPath location = buffer.getLocation();
+		return ResourcesPlugin.getWorkspace().getRoot().getFile(location);
+	}
 }

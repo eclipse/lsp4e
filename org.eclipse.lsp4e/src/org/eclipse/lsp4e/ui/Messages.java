@@ -44,6 +44,7 @@ public class Messages extends NLS {
 	public static String rename_label;
 	public static String rename_invalid;
 	public static String serverEdit;
+	public static String completionError;
 
 	static {
 		NLS.initializeMessages(Messages.class.getPackage().getName() + ".messages", Messages.class); //$NON-NLS-1$
