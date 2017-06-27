@@ -304,7 +304,8 @@ public class ProjectSpecificLanguageServerWrapper {
 
 		if (this.languageServer != null) {
 			try {
-				this.languageServer.shutdown();
+				CompletableFuture<Object> shutdown = this.languageServer.shutdown();
+				shutdown.get(5000, TimeUnit.MILLISECONDS);
 			} catch (Exception ex) {
 				// most likely closed externally
 			}
