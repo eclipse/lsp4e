@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2017 Rogue Wave Software Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.test.completion;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,10 +25,18 @@ import java.util.Set;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
+import org.eclipse.jface.text.tests.util.DisplayHelper;
+import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.ProjectSpecificLanguageServerWrapper;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
 import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -40,6 +49,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.junit.After;
@@ -62,6 +72,44 @@ public class CompletionTest {
 		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
 		project.delete(true, true, new NullProgressMonitor());
 		MockLanguageSever.INSTANCE.shutdown();
+	}
+	
+	@Test
+	public void testAssistForUnknownButConnectedType() throws CoreException, InvocationTargetException, IOException, InterruptedException {
+		List<CompletionItem> items = new ArrayList<>();
+		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
+
+		IFile testFile = TestUtils.createUniqueTestFileOfUnknownType(project, "");
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+		
+		IContentType contentType = Platform.getContentTypeManager().getContentType("org.eclipse.lsp4e.test.content-type");
+		for (LanguageServerDefinition serverDefinition : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
+			if (serverDefinition != null) {
+				final ProjectSpecificLanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor.getLSWrapperForConnection(project, contentType, serverDefinition);
+				if (lsWrapperForConnection != null) {
+					IPath fileLocation = testFile.getLocation();
+					if (fileLocation != null) {
+						lsWrapperForConnection.connect(fileLocation, null);
+						
+						new DisplayHelper() {
+							@Override
+							protected boolean condition() {
+								return lsWrapperForConnection.isConnectedTo(fileLocation);
+							}
+						}.waitForCondition(Display.getCurrent(), 3000);
+					}
+				}
+			}
+		}
+		
+		
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
+		assertEquals(items.size(), proposals.length);
+		// TODO compare both structures
+		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
+		lsCompletionProposal.apply(viewer, '\n', 0, 0);
+		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 	}
 
 	@Test

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2017 Rogue Wave Software Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -93,6 +93,10 @@ public class TestUtils {
 
 	public static IFile createUniqueTestFileMultiLS(IProject p, String content) throws CoreException {
 		return createFile(p, "test" + (System.currentTimeMillis()) + ".lsptmultils", content);
+	}
+
+	public static IFile createUniqueTestFileOfUnknownType(IProject p, String content) throws CoreException {
+		return createFile(p, "test" + (System.currentTimeMillis()) + ".lsptunknown", content);
 	}
 
 	public static IFile createFile(IProject p, String name, String content) throws CoreException {
