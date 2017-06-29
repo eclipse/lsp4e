@@ -82,9 +82,12 @@ public class CodeActionTests {
 			new DisplayHelper() {
 				@Override
 				protected boolean condition() {
-					return IDE.getMarkerHelpRegistry().hasResolutions(m);
+					return
+						IDE.getMarkerHelpRegistry().hasResolutions(m) &&
+						// need this 2nd condition because async introduces a dummy resolution that's not the one we want
+						IDE.getMarkerHelpRegistry().getResolutions(m)[0].getLabel().equals("fixme");
 				}
-			}.waitForCondition(Display.getCurrent(), 20000);
+			}.waitForCondition(Display.getCurrent(), 2000);
 			IDE.getMarkerHelpRegistry().getResolutions(m)[0].run(m);
 			new DisplayHelper() {
 				@Override
