@@ -62,21 +62,21 @@ public class LanguageServiceAccessorTest {
 	@Test
 	public void testGetLanguageServerInvalidFile() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "not_associated_with_ls.abc", "");
-		LanguageServer info = LanguageServiceAccessor.getLanguageServer(testFile, null);
+		LanguageServer info = LanguageServiceAccessor.getLanguageServer(testFile, capabilites -> Boolean.TRUE);
 		assertEquals(null, info);
 	}
 
 	@Test
 	public void testLSAsExtension() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "shouldUseExtension.lspt", "");
-		LanguageServer info = LanguageServiceAccessor.getLanguageServer(testFile, null);
+		LanguageServer info = LanguageServiceAccessor.getLanguageServer(testFile, capabilites -> Boolean.TRUE);
 		assertNotNull(info);
 	}
 
 	@Test
 	public void testLSAsRunConfiguration() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "shouldUseRunConfiguration.lspt2", "");
-		LanguageServer info = LanguageServiceAccessor.getLanguageServer(testFile, null);
+		LanguageServer info = LanguageServiceAccessor.getLanguageServer(testFile, capabilites -> Boolean.TRUE);
 		assertNotNull(info);
 	}
 	

@@ -37,7 +37,7 @@ public class DocumentDidCloseTest {
 		IEditorPart editor = TestUtils.openEditor(testFile);
 
 		// Force LS to initialize and open file
-		LanguageServiceAccessor.getLanguageServer(testFile, null);
+		LanguageServiceAccessor.getLanguageServer(testFile, capabilites -> Boolean.TRUE);
 
 		CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
 		MockLanguageSever.INSTANCE.setDidCloseCallback(didCloseExpectation);

@@ -26,6 +26,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
@@ -209,6 +210,15 @@ public class LanguageServersRegistry {
 
 	public List<ContentTypeToLanguageServerDefinition> getContentTypeToLSPExtensions() {
 		return this.connections.stream().filter(mapping -> mapping.getValue() instanceof ExtensionLanguageServerDefinition).collect(Collectors.toList());
+	}
+
+	public @Nullable LanguageServerDefinition getDefinition(@NonNull String languageServerId) {
+		for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
+			if (mapping.getValue().id.equals(languageServerId)) {
+				return mapping.getValue();
+			}
+		}
+		return null;
 	}
 
 }

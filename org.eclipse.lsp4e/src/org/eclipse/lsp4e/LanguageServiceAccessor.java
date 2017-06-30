@@ -17,10 +17,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -51,56 +51,7 @@ public class LanguageServiceAccessor {
 		// this class shouldn't be instantiated
 	}
 
-	static class WrapperEntryKey {
-		final IProject project;
-		final IContentType contentType;
-
-		public WrapperEntryKey(IProject project, IContentType contentType) {
-			this.project = project;
-			this.contentType = contentType;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((contentType == null) ? 0 : contentType.hashCode());
-			result = prime * result + ((project == null) ? 0 : project.hashCode());
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj) {
-				return true;
-			}
-			if (obj == null) {
-				return false;
-			}
-			if (getClass() != obj.getClass()) {
-				return false;
-			}
-			WrapperEntryKey other = (WrapperEntryKey) obj;
-			if (contentType == null) {
-				if (other.contentType != null) {
-					return false;
-				}
-			} else if (!contentType.equals(other.contentType)) {
-				return false;
-			}
-			if (project == null) {
-				if (other.project != null) {
-					return false;
-				}
-			} else if (!project.equals(other.project)) {
-				return false;
-			}
-			return true;
-		}
-
-	}
-
-	private static Map<WrapperEntryKey, List<ProjectSpecificLanguageServerWrapper>> projectServers = new HashMap<>();
+	private static Set<ProjectSpecificLanguageServerWrapper> projectServers = new HashSet<>();
 	private static Map<StreamConnectionProvider, LanguageServerDefinition> providersToLSDefinitions = new HashMap<>();
 
 	/**
@@ -175,17 +126,35 @@ public class LanguageServiceAccessor {
 		}
 	}
 
+	/**
+	 *
+	 * @param viewer
+	 * @param capabilityRequest
+	 * @return
+	 * @deprecated use #getLSPDocumentInfosFor instead
+	 */
+	@Deprecated
 	@Nullable public static LSPDocumentInfo getLSPDocumentInfoFor(@NonNull ITextViewer viewer, @Nullable Predicate<ServerCapabilities> capabilityRequest) {
 		return getLSPDocumentInfoFor(viewer.getDocument(), capabilityRequest);
 	}
 
+	/**
+	 *
+	 * @param document
+	 * @param capabilityRequest
+	 * @return
+	 * @deprecated use #getLSPDocumentInfosFor instead
+	 */
+	@Deprecated
 	@Nullable public static LSPDocumentInfo getLSPDocumentInfoFor(@NonNull IDocument document, @Nullable Predicate<ServerCapabilities> capabilityRequest) {
 		final IFile file = LSPEclipseUtils.getFile(document);
+		final @NonNull Predicate<ServerCapabilities> request = capabilityRequest != null ? capabilityRequest : capabilities -> Boolean.TRUE;
 		if (file != null && file.exists()) {
 			URI fileUri = LSPEclipseUtils.toUri(file);
 			try {
-				ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, capabilityRequest, null);
-				if (wrapper != null) {
+				Collection<ProjectSpecificLanguageServerWrapper> wrappers = getLSWrappers(file, request);
+				if (!wrappers.isEmpty()) {
+					ProjectSpecificLanguageServerWrapper wrapper = wrappers.iterator().next();
 					wrapper.connect(file.getLocation(), document);
 					@Nullable
 					LanguageServer server = wrapper.getServer();
@@ -204,9 +173,19 @@ public class LanguageServiceAccessor {
 		return null;
 	}
 
+	/**
+	 *
+	 * @param file
+	 * @param request
+	 * @return
+	 * @throws IOException
+	 * @deprecated should use {@link #getLanguageServers(IFile, LanguageServerDefinition)}
+	 */
+	@Deprecated
 	public static @Nullable LanguageServer getLanguageServer(@NonNull IFile file, Predicate<ServerCapabilities> request) throws IOException {
-		ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, request, null);
-		if (wrapper != null) {
+		Collection<ProjectSpecificLanguageServerWrapper> wrappers = getLSWrappers(file, request);
+		if (!wrappers.isEmpty()) {
+			ProjectSpecificLanguageServerWrapper wrapper = wrappers.iterator().next();
 			wrapper.connect(file.getLocation(), null);
 			return wrapper.getServer();
 		}
@@ -214,14 +193,13 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
-	 *
+	 * Get the requested language server instance for the given file. Starts the language server if not already started.
 	 * @param file
-	 * @param request
 	 * @param serverId
 	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified requst
 	 */
-	public static @Nullable LanguageServer getLanguageServer(@NonNull IFile file, Predicate<ServerCapabilities> request, @NonNull String serverId) throws IOException {
-		ProjectSpecificLanguageServerWrapper wrapper = getLSWrapper(file, request, serverId);
+	public static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition) throws IOException {
+		ProjectSpecificLanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition);
 		if (wrapper != null) {
 			wrapper.connect(file.getLocation(), null);
 			return wrapper.getServer();
@@ -229,61 +207,14 @@ public class LanguageServiceAccessor {
 		return null;
 	}
 
-	@Nullable private static ProjectSpecificLanguageServerWrapper getLSWrapper(@NonNull IFile file, @Nullable Predicate<ServerCapabilities> request, @Nullable String serverId) throws IOException {
-		IProject project = file.getProject();
-		if (project == null) {
-			return null;
-		}
-
-		// look for running language server via connected document
-		ProjectSpecificLanguageServerWrapper wrapper = getMatchingStartedWrapper(file, request, serverId);
-		if (wrapper != null) {
-			return wrapper;
-		}
-
-		// look for running language servers via content-type
-		IContentType[] fileContentTypes = null;
-		try (InputStream contents = file.getContents()) {
-			fileContentTypes = Platform.getContentTypeManager().findContentTypesFor(contents, file.getName()); //TODO consider using document as inputstream
-		} catch (CoreException e) {
-			LanguageServerPlugin.logError(e);
-			return null;
-		}
-
-		wrapper = getMatchingStartedWrapper(project, fileContentTypes, request, serverId);
-		if (wrapper != null) {
-			return wrapper;
-		}
-
-		for (IContentType contentType : fileContentTypes) {
-			if (contentType == null) {
-				continue;
-			}
-			for (LanguageServerDefinition serverDefinition : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
-				if (serverDefinition != null && (serverId == null || serverDefinition.getId().equals(serverId))) {
-					wrapper = getLSWrapperForConnection(project, contentType, serverDefinition);
-					if (request == null
-						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-						|| request.test(wrapper.getServerCapabilities())) {
-						return wrapper;
-					}
-				}
-			}
-		}
-		return null;
-	}
-
-	@NonNull private static Collection<ProjectSpecificLanguageServerWrapper> getLSWrappers(@NonNull IFile file, @Nullable Predicate<ServerCapabilities> request) throws IOException {
+	@NonNull private static Collection<ProjectSpecificLanguageServerWrapper> getLSWrappers(@NonNull IFile file, @NonNull Predicate<ServerCapabilities> request) throws IOException {
 		LinkedHashSet<ProjectSpecificLanguageServerWrapper> res = new LinkedHashSet<>();
 		IProject project = file.getProject();
 		if (project == null) {
 			return res;
 		}
 
-		ProjectSpecificLanguageServerWrapper wrapper = getMatchingStartedWrapper(file, request, null);
-		if (wrapper != null) {
-			res.add(wrapper);
-		}
+		res.addAll(getMatchingStartedWrappers(file, request));
 
 		// look for running language servers via content-type
 		IContentType[] fileContentTypes = null;
@@ -300,7 +231,7 @@ public class LanguageServiceAccessor {
 			}
 			for (LanguageServerDefinition serverDefinition : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
 				if (serverDefinition != null) {
-					wrapper = getLSWrapperForConnection(project, contentType, serverDefinition);
+					ProjectSpecificLanguageServerWrapper wrapper = getLSWrapperForConnection(project, serverDefinition);
 					if (request == null
 						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 						|| request.test(wrapper.getServerCapabilities())) {
@@ -317,12 +248,11 @@ public class LanguageServiceAccessor {
 	 * Return existing {@link ProjectSpecificLanguageServerWrapper} for the given connection. If not found,
 	 * create a new one with the given connection and register it for this project/content-type.
 	 * @param project
-	 * @param contentType
 	 * @param serverDefinition
 	 * @return
 	 * @throws IOException
 	 */
-	public static ProjectSpecificLanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project, @NonNull IContentType contentType, @NonNull LanguageServerDefinition serverDefinition) throws IOException {
+	public static ProjectSpecificLanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project, @NonNull LanguageServerDefinition serverDefinition) throws IOException {
 		ProjectSpecificLanguageServerWrapper wrapper = null;
 
 		synchronized(projectServers) {
@@ -337,63 +267,28 @@ public class LanguageServiceAccessor {
 				wrapper.start();
 			}
 
-			WrapperEntryKey key = new WrapperEntryKey(project, contentType);
-			if (!projectServers.containsKey(key)) {
-				projectServers.put(key, new ArrayList<>());
-			}
-
-			List<ProjectSpecificLanguageServerWrapper> wrapperList = projectServers.get(key);
-			if (!wrapperList.contains(wrapper)) {
-				wrapperList.add(wrapper);
+			if (wrapper != null) {
+				projectServers.add(wrapper);
 			}
 		}
 		return wrapper;
 	}
 
 	private static @NonNull List<ProjectSpecificLanguageServerWrapper> getStartedLSWrappers(@NonNull IProject project) {
-		return projectServers.values().stream().flatMap(List::stream).filter(wrapper -> wrapper.project.equals(project)).collect(Collectors.toList());
+		return projectServers.stream().filter(wrapper -> wrapper.project.equals(project)).collect(Collectors.toList());
 	}
 
-	private static ProjectSpecificLanguageServerWrapper getMatchingStartedWrapper(IProject project,
-	        IContentType[] fileContentTypes, Predicate<ServerCapabilities> request, @Nullable String serverId) {
-		for (IContentType contentType : fileContentTypes) {
-			WrapperEntryKey key = new WrapperEntryKey(project, contentType);
-
-			synchronized(projectServers) {
-				if (!projectServers.containsKey(key)) {
-					projectServers.put(key, new ArrayList<>());
-				}
-				for (ProjectSpecificLanguageServerWrapper aWrapper : projectServers.get(key)) {
-					if (aWrapper != null && (serverId == null || aWrapper.serverDefinition.getId().equals(serverId)) && (request == null
-							|| aWrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-							|| request.test(aWrapper.getServerCapabilities())
-						)) {
-						return aWrapper;
-					}
-				}
-			}
-		}
-		return null;
-	}
-
-	private static ProjectSpecificLanguageServerWrapper getMatchingStartedWrapper(IFile file,
-	        Predicate<ServerCapabilities> request, @Nullable String serverId) {
-		IProject project = file.getProject();
+	private static Collection<ProjectSpecificLanguageServerWrapper> getMatchingStartedWrappers(@NonNull IFile file,
+	       @NonNull Predicate<ServerCapabilities> request) {
+		final IProject project = file.getProject();
 
 		synchronized(projectServers) {
-			Set<WrapperEntryKey> servers = projectServers.keySet();
-			for (WrapperEntryKey server : servers) {
-				if (server.project == project) {
-					List<ProjectSpecificLanguageServerWrapper> wrappers = projectServers.get(server);
-					for (ProjectSpecificLanguageServerWrapper wrapper : wrappers) {
-						if (wrapper.isConnectedTo(file.getLocation())) {
-							return wrapper;
-						}
-					}
-				}
-			}
+			return projectServers.stream()
+				.filter(wrapper -> wrapper.project.equals(project))
+				.filter(wrapper -> wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities()))
+				.filter(wrapper -> wrapper.isConnectedTo(file.getLocation()))
+				.collect(Collectors.toList());
 		}
-		return null;
 	}
 
 	/**
@@ -405,21 +300,15 @@ public class LanguageServiceAccessor {
 	 */
 	@NonNull public static List<LSPServerInfo> getLSPServerInfos(@NonNull IProject project, Predicate<ServerCapabilities> request) {
 		List<LSPServerInfo> serverInfos = new ArrayList<>();
-		for (Entry<WrapperEntryKey, List<ProjectSpecificLanguageServerWrapper>> entry : projectServers.entrySet()) {
-			WrapperEntryKey wrapperEntryKey = entry.getKey();
-			if (project.equals(wrapperEntryKey.project)) {
-				for (ProjectSpecificLanguageServerWrapper wrapper : entry.getValue()) {
-					@Nullable
-					LanguageServer server = wrapper.getServer();
-					if (server == null) {
-						continue;
-					}
-					if ((request == null
-					    || wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-					    || request.test(wrapper.getServerCapabilities()))) {
-						serverInfos.add(new LSPServerInfo(project, server, wrapper.getServerCapabilities()));
-					}
-				}
+		for (ProjectSpecificLanguageServerWrapper wrapper : projectServers) {
+			@Nullable LanguageServer server = wrapper.getServer();
+			if (server == null) {
+				continue;
+			}
+			if ((request == null
+			    || wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+			    || request.test(wrapper.getServerCapabilities()))) {
+				serverInfos.add(new LSPServerInfo(project, server, wrapper.getServerCapabilities()));
 			}
 		}
 		return serverInfos;
@@ -429,7 +318,7 @@ public class LanguageServiceAccessor {
 		return providersToLSDefinitions.get(provider);
 	}
 
-	@NonNull public static List<LSPDocumentInfo> getLSPDocumentInfosFor(@NonNull IDocument document, Predicate<ServerCapabilities> capabilityRequest) {
+	@NonNull public static List<LSPDocumentInfo> getLSPDocumentInfosFor(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> capabilityRequest) {
 		final IFile file = LSPEclipseUtils.getFile(document);
 		URI fileUri = null;
 		if (file != null && file.exists()) {
@@ -454,7 +343,6 @@ public class LanguageServiceAccessor {
 			//TODO handle case of plain file (no IFile)
 		}
 		return Collections.emptyList();
-
 	}
 
 }

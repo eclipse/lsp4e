@@ -24,6 +24,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.ui.Messages;
@@ -106,10 +108,13 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
 				LanguageServer ls = null;
 				if (languageServerId != null) { // try to use same LS as the one that created the marker
-					LanguageServiceAccessor.getLanguageServer(file, (capabilities) -> Boolean.TRUE.equals(capabilities.getCodeActionProvider()), languageServerId);
+					LanguageServerDefinition definition = LanguageServersRegistry.getInstance().getDefinition(languageServerId);
+					if (definition != null) {
+						ls = LanguageServiceAccessor.getLanguageServer(file, definition);
+					}
 				}
 				if (ls == null) { // if it's not there, try any other server
-					ls = LanguageServiceAccessor.getLanguageServer(file, (capabilities) -> Boolean.TRUE.equals(capabilities.getCodeActionProvider()));
+					ls = LanguageServiceAccessor.getLanguageServer(file, capabilities -> Boolean.TRUE.equals(capabilities.getCodeActionProvider()));
 				}
 				if (ls != null) {
 					marker.setAttribute(LSP_REMEDIATION, COMPUTING);

@@ -91,19 +91,18 @@ public class CompletionTest {
 		IContentType contentType = Platform.getContentTypeManager().getContentType("org.eclipse.lsp4e.test.content-type");
 		for (LanguageServerDefinition serverDefinition : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
 			if (serverDefinition != null) {
-				final ProjectSpecificLanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor.getLSWrapperForConnection(project, contentType, serverDefinition);
-				if (lsWrapperForConnection != null) {
-					IPath fileLocation = testFile.getLocation();
-					if (fileLocation != null) {
-						lsWrapperForConnection.connect(fileLocation, null);
-						
-						new DisplayHelper() {
-							@Override
-							protected boolean condition() {
-								return lsWrapperForConnection.isConnectedTo(fileLocation);
-							}
-						}.waitForCondition(Display.getCurrent(), 3000);
-					}
+				ProjectSpecificLanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor.getLSWrapperForConnection(testFile.getProject(), serverDefinition);
+				IPath fileLocation = testFile.getLocation();
+				if (fileLocation != null) {
+					// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
+					lsWrapperForConnection.connect(fileLocation, null);
+					
+					new DisplayHelper() {
+						@Override
+						protected boolean condition() {
+							return lsWrapperForConnection.isConnectedTo(fileLocation);
+						}
+					}.waitForCondition(Display.getCurrent(), 3000);
 				}
 			}
 		}

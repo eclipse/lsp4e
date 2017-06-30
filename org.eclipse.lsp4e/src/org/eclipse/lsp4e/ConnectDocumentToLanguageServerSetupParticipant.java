@@ -71,7 +71,7 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				// connect to LS so they start receiving notifications and pushing diagnostics
-				LanguageServiceAccessor.getLSPDocumentInfosFor(document, null);
+				LanguageServiceAccessor.getLSPDocumentInfosFor(document, capabilities -> Boolean.TRUE);
 				return Status.OK_STATUS;
 			}
 		};
