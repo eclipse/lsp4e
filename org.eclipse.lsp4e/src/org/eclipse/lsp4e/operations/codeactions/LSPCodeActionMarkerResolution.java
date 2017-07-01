@@ -106,17 +106,18 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 			if (res != null && res.getType() == IResource.FILE) {
 				IFile file = (IFile)res;
 				String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
-				LanguageServer ls = null;
+				List<LanguageServer> languageServers = new ArrayList<>();
 				if (languageServerId != null) { // try to use same LS as the one that created the marker
 					LanguageServerDefinition definition = LanguageServersRegistry.getInstance().getDefinition(languageServerId);
 					if (definition != null) {
-						ls = LanguageServiceAccessor.getLanguageServer(file, definition);
+						languageServers.add(LanguageServiceAccessor.getLanguageServer(file, definition));
 					}
 				}
-				if (ls == null) { // if it's not there, try any other server
-					ls = LanguageServiceAccessor.getLanguageServer(file, capabilities -> Boolean.TRUE.equals(capabilities.getCodeActionProvider()));
+				if (languageServers.isEmpty()) { // if it's not there, try any other server
+					languageServers.addAll(LanguageServiceAccessor.getLanguageServers(file, capabilities -> Boolean.TRUE.equals(capabilities.getCodeActionProvider())));
 				}
-				if (ls != null) {
+				List<CompletableFuture<?>> futures = new ArrayList<>();
+				for (LanguageServer ls : languageServers) {
 					marker.setAttribute(LSP_REMEDIATION, COMPUTING);
 					Diagnostic diagnostic = (Diagnostic)marker.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC);
 					CodeActionContext context = new CodeActionContext(Collections.singletonList(diagnostic));
@@ -125,6 +126,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(marker.getResource()).toString()));
 					params.setRange(diagnostic.getRange());
 					CompletableFuture<List<? extends Command>> codeAction = ls.getTextDocumentService().codeAction(params);
+					futures.add(codeAction);
 					codeAction.thenAccept(actions -> {
 						try {
 							marker.setAttribute(LSP_REMEDIATION, actions);
@@ -132,9 +134,9 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 							LanguageServerPlugin.logError(e);
 						}
 					});
-					// wait a bit to avoid showing too much "Computing" without looking like a freeze
-					codeAction.get(300, TimeUnit.MILLISECONDS);
 				}
+				// wait a bit to avoid showing too much "Computing" without looking like a freeze
+				CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()])).get(300, TimeUnit.MILLISECONDS);
 			}
 		}
 	}

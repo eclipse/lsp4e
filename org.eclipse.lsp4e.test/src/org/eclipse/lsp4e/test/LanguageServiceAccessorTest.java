@@ -13,8 +13,10 @@ package org.eclipse.lsp4e.test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -62,21 +64,21 @@ public class LanguageServiceAccessorTest {
 	@Test
 	public void testGetLanguageServerInvalidFile() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "not_associated_with_ls.abc", "");
-		LanguageServer info = LanguageServiceAccessor.getLanguageServer(testFile, capabilites -> Boolean.TRUE);
-		assertEquals(null, info);
+		Collection<LanguageServer> servers = LanguageServiceAccessor.getLanguageServers(testFile, capabilites -> Boolean.TRUE);
+		assertTrue(servers.isEmpty());
 	}
 
 	@Test
 	public void testLSAsExtension() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "shouldUseExtension.lspt", "");
-		LanguageServer info = LanguageServiceAccessor.getLanguageServer(testFile, capabilites -> Boolean.TRUE);
+		LanguageServer info = LanguageServiceAccessor.getLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next();
 		assertNotNull(info);
 	}
 
 	@Test
 	public void testLSAsRunConfiguration() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "shouldUseRunConfiguration.lspt2", "");
-		LanguageServer info = LanguageServiceAccessor.getLanguageServer(testFile, capabilites -> Boolean.TRUE);
+		LanguageServer info = LanguageServiceAccessor.getLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next();
 		assertNotNull(info);
 	}
 	

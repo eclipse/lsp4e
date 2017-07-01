@@ -144,23 +144,16 @@ public class LanguageServiceAccessor {
 		return null;
 	}
 
-	/**
-	 *
-	 * @param file
-	 * @param request
-	 * @return
-	 * @throws IOException
-	 * @deprecated should use {@link #getLanguageServers(IFile, LanguageServerDefinition)}
-	 */
-	@Deprecated
-	public static @Nullable LanguageServer getLanguageServer(@NonNull IFile file, Predicate<ServerCapabilities> request) throws IOException {
+	public static @Nullable Collection<LanguageServer> getLanguageServers(@NonNull IFile file, Predicate<ServerCapabilities> request) throws IOException {
 		Collection<ProjectSpecificLanguageServerWrapper> wrappers = getLSWrappers(file, request);
-		if (!wrappers.isEmpty()) {
-			ProjectSpecificLanguageServerWrapper wrapper = wrappers.iterator().next();
-			wrapper.connect(file.getLocation(), null);
-			return wrapper.getServer();
-		}
-		return null;
+		wrappers.forEach(w -> {
+			try {
+				w.connect(file.getLocation(), null);
+			} catch (IOException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		});
+		return wrappers.stream().map(ProjectSpecificLanguageServerWrapper::getServer).collect(Collectors.toList());
 	}
 
 	/**
