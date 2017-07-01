@@ -18,14 +18,14 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPServerInfo;
 import org.eclipse.lsp4j.Location;
-import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
@@ -53,13 +53,13 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 			return null;
 		}
 		IProject project = resource.getProject();
-		List<LSPServerInfo> infos = LanguageServiceAccessor.getLSPServerInfos(project,
+		List<@NonNull LanguageServer> languageServers = LanguageServiceAccessor.getLanguageServers(project,
 				capabilities -> Boolean.TRUE.equals(capabilities.getWorkspaceSymbolProvider()));
-		if (infos.isEmpty()) {
+		if (languageServers.isEmpty()) {
 			return null;
 		}
 		final Shell shell = HandlerUtil.getActiveShell(event);
-		LSPSymbolInWorkspaceDialog dialog = new LSPSymbolInWorkspaceDialog(shell, infos);
+		LSPSymbolInWorkspaceDialog dialog = new LSPSymbolInWorkspaceDialog(shell, languageServers);
 		if (dialog.open() != IDialogConstants.OK_ID) {
 			return null;
 		}

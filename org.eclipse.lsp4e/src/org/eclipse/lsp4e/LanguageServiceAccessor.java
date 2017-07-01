@@ -98,35 +98,6 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
-	 * A bean storing association of a IProject with a language server.
-	 */
-	public static class LSPServerInfo {
-
-		private final @NonNull IProject project;
-		private final @Nullable ServerCapabilities capabilities;
-		private final @NonNull LanguageServer languageServer;
-
-		private LSPServerInfo(@NonNull IProject project, @NonNull LanguageServer languageServer,
-		        @Nullable ServerCapabilities capabilities) {
-			this.project = project;
-			this.languageServer = languageServer;
-			this.capabilities = capabilities;
-		}
-
-		public @NonNull IProject getProject() {
-			return project;
-		}
-
-		public @NonNull LanguageServer getLanguageServer() {
-			return this.languageServer;
-		}
-
-		public @Nullable ServerCapabilities getCapabilites() {
-			return this.capabilities;
-		}
-	}
-
-	/**
 	 *
 	 * @param viewer
 	 * @param capabilityRequest
@@ -296,10 +267,10 @@ public class LanguageServiceAccessor {
 	 *
 	 * @param project
 	 * @param request
-	 * @return list of servers info
+	 * @return list of Language Servers
 	 */
-	@NonNull public static List<LSPServerInfo> getLSPServerInfos(@NonNull IProject project, Predicate<ServerCapabilities> request) {
-		List<LSPServerInfo> serverInfos = new ArrayList<>();
+	@NonNull public static List<@NonNull LanguageServer> getLanguageServers(@NonNull IProject project, Predicate<ServerCapabilities> request) {
+		List<@NonNull LanguageServer> serverInfos = new ArrayList<>();
 		for (ProjectSpecificLanguageServerWrapper wrapper : projectServers) {
 			@Nullable LanguageServer server = wrapper.getServer();
 			if (server == null) {
@@ -308,7 +279,7 @@ public class LanguageServiceAccessor {
 			if ((request == null
 			    || wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 			    || request.test(wrapper.getServerCapabilities()))) {
-				serverInfos.add(new LSPServerInfo(project, server, wrapper.getServerCapabilities()));
+				serverInfos.add(server);
 			}
 		}
 		return serverInfos;

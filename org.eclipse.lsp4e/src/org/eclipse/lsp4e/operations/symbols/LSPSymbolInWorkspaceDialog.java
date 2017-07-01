@@ -21,15 +21,16 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPServerInfo;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
@@ -81,12 +82,12 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		}
 	}
 
-	private List<LSPServerInfo> infos;
+	private List<@NonNull LanguageServer> languageServers;
 	private InternalSymbolsLabelProvider labelProvider;
 
-	public LSPSymbolInWorkspaceDialog(Shell shell, List<LSPServerInfo> infos) {
+	public LSPSymbolInWorkspaceDialog(Shell shell, List<@NonNull LanguageServer> languageServers) {
 		super(shell);
-		this.infos = infos;
+		this.languageServers = languageServers;
 		this.labelProvider = new InternalSymbolsLabelProvider(new BoldStylerProvider(shell.getFont()));
 		setMessage(Messages.LSPSymbolInWorkspaceDialog_DialogLabel);
 		setTitle(Messages.LSPSymbolInWorkspaceDialog_DialogTitle);
@@ -107,14 +108,13 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 			return;
 		}
 
-		for (LSPServerInfo info : infos) {
+		for (LanguageServer server : this.languageServers) {
 			if (monitor.isCanceled()) {
 				return;
 			}
 
 			WorkspaceSymbolParams params = new WorkspaceSymbolParams(itemsFilter.getPattern());
-			CompletableFuture<List<? extends SymbolInformation>> symbols = info.getLanguageServer()
-			        .getWorkspaceService().symbol(params);
+			CompletableFuture<List<? extends SymbolInformation>> symbols = server.getWorkspaceService().symbol(params);
 
 			try {
 				List<?> items = symbols.get(1, TimeUnit.SECONDS);
