@@ -161,7 +161,7 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 			return null;
 		}
 		IRegion res = new Region(offset, 0);
-		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer, (capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
+		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer.getDocument(), (capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
 		if (info != null) {
 			try {
 				initiateHoverRequest(textViewer, offset);
@@ -186,7 +186,7 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 	private void initiateHoverRequest(@NonNull ITextViewer viewer, int offset) {
 		this.textViewer = viewer;
-		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(viewer, (capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
+		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(viewer.getDocument(), (capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
 		if (info != null) {
 			try {
 				this.hoverRequest = info.getLanguageClient().getTextDocumentService().hover(LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument()));

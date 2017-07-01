@@ -57,7 +57,7 @@ public class LanguageServiceAccessorTest {
 	public void testGetLSPDocumentInfoForInvalidTextEditor() throws CoreException, InvocationTargetException {
 		IFile testFile = TestUtils.createFile(project, "not_associated_with_ls.abc", "");
 		ITextViewer textViewer = TestUtils.openTextViewer(testFile);
-		LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer, null);
+		LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer.getDocument(), capabilities -> Boolean.TRUE);
 		assertEquals(null, info);
 	}
 	

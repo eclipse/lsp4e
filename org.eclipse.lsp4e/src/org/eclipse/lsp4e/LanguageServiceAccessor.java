@@ -33,7 +33,6 @@ import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -56,7 +55,6 @@ public class LanguageServiceAccessor {
 
 	/**
 	 * A bean storing association of a Document/File with a language server.
-	 * See {@link LanguageServiceAccessor#getLSPDocumentInfoFor(ITextViewer, Predicate)}
 	 */
 	public static class LSPDocumentInfo {
 
@@ -99,22 +97,10 @@ public class LanguageServiceAccessor {
 
 	/**
 	 *
-	 * @param viewer
-	 * @param capabilityRequest
-	 * @return
-	 * @deprecated use #getLSPDocumentInfosFor instead
-	 */
-	@Deprecated
-	@Nullable public static LSPDocumentInfo getLSPDocumentInfoFor(@NonNull ITextViewer viewer, @Nullable Predicate<ServerCapabilities> capabilityRequest) {
-		return getLSPDocumentInfoFor(viewer.getDocument(), capabilityRequest);
-	}
-
-	/**
-	 *
 	 * @param document
 	 * @param capabilityRequest
 	 * @return
-	 * @deprecated use #getLSPDocumentInfosFor instead
+	 * @deprecated use {@link #getLSPDocumentInfosFor(IDocument, Predicate)} instead
 	 */
 	@Deprecated
 	@Nullable public static LSPDocumentInfo getLSPDocumentInfoFor(@NonNull IDocument document, @Nullable Predicate<ServerCapabilities> capabilityRequest) {

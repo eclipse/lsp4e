@@ -82,7 +82,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 
 	@Override
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
-		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer,
+		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer.getDocument(),
 				(capabilities) -> capabilities.getDocumentLinkProvider() != null);
 		if (info == null) {
 			return null;

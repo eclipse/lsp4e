@@ -71,7 +71,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 
 	@Override
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
-		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer, (capabilities) -> Boolean.TRUE.equals(capabilities.getDefinitionProvider()));
+		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer.getDocument(), (capabilities) -> Boolean.TRUE.equals(capabilities.getDefinitionProvider()));
 		if (info != null) {
 			try {
 				CompletableFuture<List<? extends Location>> documentHighlight = info.getLanguageClient().getTextDocumentService()
