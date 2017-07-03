@@ -95,41 +95,6 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-	/**
-	 *
-	 * @param document
-	 * @param capabilityRequest
-	 * @return
-	 * @deprecated use {@link #getLSPDocumentInfosFor(IDocument, Predicate)} instead
-	 */
-	@Deprecated
-	@Nullable public static LSPDocumentInfo getLSPDocumentInfoFor(@NonNull IDocument document, @Nullable Predicate<ServerCapabilities> capabilityRequest) {
-		final IFile file = LSPEclipseUtils.getFile(document);
-		final @NonNull Predicate<ServerCapabilities> request = capabilityRequest != null ? capabilityRequest : capabilities -> Boolean.TRUE;
-		if (file != null && file.exists()) {
-			URI fileUri = LSPEclipseUtils.toUri(file);
-			try {
-				Collection<ProjectSpecificLanguageServerWrapper> wrappers = getLSWrappers(file, request);
-				if (!wrappers.isEmpty()) {
-					ProjectSpecificLanguageServerWrapper wrapper = wrappers.iterator().next();
-					wrapper.connect(file.getLocation(), document);
-					@Nullable
-					LanguageServer server = wrapper.getServer();
-					if (server != null) {
-						return new LSPDocumentInfo(fileUri, document, wrapper, server);
-					}
-				}
-			} catch (final Exception e) {
-				LanguageServerPlugin.logError(e);
-			}
-		} else {
-			LanguageServerPlugin.logInfo("Non IFiles not supported yet"); //$NON-NLS-1$
-			//fileUri = "file://" + location.toFile().getAbsolutePath();
-			//TODO handle case of plain file (no IFile)
-		}
-		return null;
-	}
-
 	public static @Nullable Collection<LanguageServer> getLanguageServers(@NonNull IFile file, Predicate<ServerCapabilities> request) throws IOException {
 		Collection<ProjectSpecificLanguageServerWrapper> wrappers = getLSWrappers(file, request);
 		wrappers.forEach(w -> {

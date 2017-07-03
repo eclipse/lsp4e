@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codelens;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -43,10 +44,14 @@ public class LSPCodeLensMenu extends ContributionItem implements IWorkbenchContr
 	public void initialize(IServiceLocator serviceLocator) {
 		IEditorPart editor = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
 		if (editor instanceof ITextEditor) {
-			info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument((ITextEditor) editor),
-					(capabilities) -> Boolean.TRUE.equals(capabilities.getCodeLensProvider()));
-			// TODO should be ServerCapabilities::isCodeLensProvider, when available in ls-api
+					capabilities -> capabilities.getCodeLensProvider() != null);
+			if (!infos.isEmpty()) {
+				this.info = infos.iterator().next();
+			} else {
+				this.info = null;
+			}
 		}
 	}
 
@@ -58,7 +63,7 @@ public class LSPCodeLensMenu extends ContributionItem implements IWorkbenchContr
 			item.setText(Messages.notImplemented);
 			return;
 		}
-		
+
 		item.setText(Messages.computing);
 		CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(info.getFileUri().toString()));;
 		final CompletableFuture<List<? extends CodeLens>> codeLens = info.getLanguageClient().getTextDocumentService().codeLens(param);

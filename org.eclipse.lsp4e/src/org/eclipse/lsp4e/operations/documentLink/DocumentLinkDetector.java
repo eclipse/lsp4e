@@ -19,6 +19,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
@@ -82,38 +83,35 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 
 	@Override
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
-		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer.getDocument(),
-				(capabilities) -> capabilities.getDocumentLinkProvider() != null);
-		if (info == null) {
-			return null;
-		}
-		try {
-			DocumentLinkParams params = new DocumentLinkParams(
-					new TextDocumentIdentifier(info.getFileUri().toString()));
-			CompletableFuture<List<DocumentLink>> documentLink = info.getLanguageClient().getTextDocumentService()
-					.documentLink(params);
-			List<DocumentLink> links = documentLink.get(2, TimeUnit.SECONDS);
-			if (links == null || links.isEmpty()) {
-				return null;
-			}
+		for (@NonNull LSPDocumentInfo info : LanguageServiceAccessor.getLSPDocumentInfosFor(textViewer.getDocument(), capabilities -> capabilities.getDocumentLinkProvider() != null)) {
+			try {
+				DocumentLinkParams params = new DocumentLinkParams(
+						new TextDocumentIdentifier(info.getFileUri().toString()));
+				CompletableFuture<List<DocumentLink>> documentLink = info.getLanguageClient().getTextDocumentService()
+						.documentLink(params);
+				List<DocumentLink> links = documentLink.get(2, TimeUnit.SECONDS);
+				if (links == null || links.isEmpty()) {
+					continue;
+				}
 
-			List<IHyperlink> hyperlinks = new ArrayList<IHyperlink>(links.size());
-			for (DocumentLink link : links) {
-				int start = LSPEclipseUtils.toOffset(link.getRange().getStart(), textViewer.getDocument());
-				int end = LSPEclipseUtils.toOffset(link.getRange().getEnd(), textViewer.getDocument());
-				IRegion linkRegion = new Region(start, end - start);
-				if (TextUtilities.overlaps(region, linkRegion)) {
-					if (link.getTarget() != null) {
-						hyperlinks.add(new DocumentHyperlink(link.getTarget(), linkRegion));
+				List<IHyperlink> hyperlinks = new ArrayList<IHyperlink>(links.size());
+				for (DocumentLink link : links) {
+					int start = LSPEclipseUtils.toOffset(link.getRange().getStart(), textViewer.getDocument());
+					int end = LSPEclipseUtils.toOffset(link.getRange().getEnd(), textViewer.getDocument());
+					IRegion linkRegion = new Region(start, end - start);
+					if (TextUtilities.overlaps(region, linkRegion)) {
+						if (link.getTarget() != null) {
+							hyperlinks.add(new DocumentHyperlink(link.getTarget(), linkRegion));
+						}
 					}
 				}
+				if (hyperlinks.isEmpty()) {
+					return null;
+				}
+				return hyperlinks.toArray(new IHyperlink[hyperlinks.size()]);
+			} catch (BadLocationException | InterruptedException | ExecutionException | TimeoutException e) {
+				LanguageServerPlugin.logError(e);
 			}
-			if (hyperlinks.isEmpty()) {
-				return null;
-			}
-			return hyperlinks.toArray(new IHyperlink[hyperlinks.size()]);
-		} catch (BadLocationException | InterruptedException | ExecutionException | TimeoutException e) {
-			LanguageServerPlugin.logError(e);
 		}
 		return null;
 	}

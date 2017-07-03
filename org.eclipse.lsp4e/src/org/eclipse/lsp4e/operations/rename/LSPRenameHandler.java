@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.rename;
 
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.AbstractHandler;
@@ -46,10 +47,12 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
 		if (part instanceof AbstractTextEditor) {
-			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 				LSPEclipseUtils.getDocument((ITextEditor) part),
-				(capabilities) -> Boolean.TRUE.equals(capabilities.getRenameProvider()));
-			if (info != null) {
+				capabilities -> Boolean.TRUE.equals(capabilities.getRenameProvider()));
+			if (!infos.isEmpty()) {
+				// TODO consider better strategy to pick LS, or iterate over LS until one gives a good result
+				LSPDocumentInfo info = infos.iterator().next();
 				ISelection sel = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
 				if (sel instanceof TextSelection) {
 					try {
@@ -76,12 +79,11 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 	public boolean isEnabled() {
 		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
 		if (part instanceof AbstractTextEditor) {
-			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 				LSPEclipseUtils.getDocument((ITextEditor) part),
-				(capabilities) ->
-					Boolean.TRUE.equals(capabilities.getRenameProvider()));
+				capabilities ->	Boolean.TRUE.equals(capabilities.getRenameProvider()));
 			ISelection selection = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
-			return info != null && !selection.isEmpty() && selection instanceof ITextSelection;
+			return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
 		}
 		return false;
 	}

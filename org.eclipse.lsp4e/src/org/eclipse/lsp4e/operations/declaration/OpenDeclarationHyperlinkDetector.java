@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -71,14 +72,13 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 
 	@Override
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
-		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer.getDocument(), (capabilities) -> Boolean.TRUE.equals(capabilities.getDefinitionProvider()));
-		if (info != null) {
+		for (@NonNull LSPDocumentInfo info : LanguageServiceAccessor.getLSPDocumentInfosFor(textViewer.getDocument(), capabilities -> Boolean.TRUE.equals(capabilities.getDefinitionProvider()))) {
 			try {
 				CompletableFuture<List<? extends Location>> documentHighlight = info.getLanguageClient().getTextDocumentService()
 						.definition(LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), region.getOffset(), info.getDocument()));
 				List<? extends Location> locations = documentHighlight.get(2, TimeUnit.SECONDS);
 				if (locations == null || locations.isEmpty()) {
-					return null;
+					continue;
 				}
 				IRegion linkRegion = findWord(textViewer.getDocument(), region.getOffset());
 				if (linkRegion == null) {

@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.format;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -39,11 +40,12 @@ public class LSPFormatter {
 
 	public CompletableFuture<List<? extends TextEdit>> requestFormatting(@NonNull IDocument document,
 			@NonNull ITextSelection textSelection) {
-		LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(document,
-				(capabilities) -> supportFormatting(capabilities));
-		if (info == null) {
+		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document, capabilities -> supportFormatting(capabilities));
+		if (infos.isEmpty()) {
 			return CompletableFuture.completedFuture(Collections.emptyList());
 		}
+		// TODO consider a better strategy for that, maybe iterate on all LS until one gives a result
+		LSPDocumentInfo info = infos.iterator().next();
 		try {
 			return requestFormatting(info, textSelection);
 		} catch (BadLocationException e) {

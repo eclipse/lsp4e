@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.references;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -44,11 +45,12 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
 		if (part instanceof ITextEditor) {
-			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument((ITextEditor)part),
-					(capabilities) -> Boolean.TRUE.equals(capabilities.getReferencesProvider()));
-
-			if (info != null) {
+					capabilities -> Boolean.TRUE.equals(capabilities.getReferencesProvider()));
+			if (!infos.isEmpty()) {
+				// TODO consider better way to choose the actual LS to use
+				LSPDocumentInfo info = infos.iterator().next();
 				ISelection sel = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
 
 				if (sel instanceof TextSelection) {
@@ -74,11 +76,11 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 	public boolean isEnabled() {
 		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
 		if (part instanceof ITextEditor) {
-			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 				LSPEclipseUtils.getDocument((ITextEditor) part),
-				(capabilities) -> Boolean.TRUE.equals(capabilities.getReferencesProvider()));
+				capabilities -> Boolean.TRUE.equals(capabilities.getReferencesProvider()));
 			ISelection selection = ((ITextEditor) part).getSelectionProvider().getSelection();
-			return info != null && !selection.isEmpty() && selection instanceof ITextSelection;
+			return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
 		}
 		return false;
 	}

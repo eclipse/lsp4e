@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.format;
 
+import java.util.Collection;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -52,11 +54,11 @@ public class LSPFormatHandler extends AbstractHandler {
 	public boolean isEnabled() {
 		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
 		if (part instanceof ITextEditor) {
-			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument((ITextEditor) part),
 					(capabilities) -> LSPFormatter.supportFormatting(capabilities));
 			ISelection selection = ((ITextEditor) part).getSelectionProvider().getSelection();
-			return info != null && !selection.isEmpty() && selection instanceof ITextSelection;
+			return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
 		}
 		return false;
 	}

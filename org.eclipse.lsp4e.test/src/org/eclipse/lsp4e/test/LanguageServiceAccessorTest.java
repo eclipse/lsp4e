@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -49,16 +48,16 @@ public class LanguageServiceAccessorTest {
 
 	@Test
 	public void testGetLSPDocumentInfoForInvalidDocument() {
-		LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(new Document(), null);
-		assertEquals(null, info);
+		Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(new Document(), null);
+		assertTrue(infos.isEmpty());
 	}
 
 	@Test
 	public void testGetLSPDocumentInfoForInvalidTextEditor() throws CoreException, InvocationTargetException {
 		IFile testFile = TestUtils.createFile(project, "not_associated_with_ls.abc", "");
 		ITextViewer textViewer = TestUtils.openTextViewer(testFile);
-		LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer.getDocument(), capabilities -> Boolean.TRUE);
-		assertEquals(null, info);
+		Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(textViewer.getDocument(), capabilities -> Boolean.TRUE);
+		assertTrue(infos.isEmpty());
 	}
 	
 	@Test

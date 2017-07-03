@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.symbols;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -34,12 +35,14 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
 		if (part instanceof ITextEditor) {
 			final ITextEditor textEditor = (ITextEditor) part;
-			LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(
+			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument(textEditor),
-			        (capabilities) -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
-			if (info == null) {
+					capabilities -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
+			if (infos.isEmpty()) {
 				return null;
 			}
+			// TODO maybe consider better strategy such as iterating on all LS until we have a good result
+			LSPDocumentInfo info = infos.iterator().next();
 			final Shell shell = HandlerUtil.getActiveShell(event);
 			DocumentSymbolParams params = new DocumentSymbolParams(new TextDocumentIdentifier(info.getFileUri().toString()));
 			CompletableFuture<List<? extends SymbolInformation>> symbols = info.getLanguageClient()
