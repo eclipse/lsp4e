@@ -88,15 +88,19 @@ public class TestUtils {
 	}
 
 	public static IFile createUniqueTestFile(IProject p, String content) throws CoreException {
-		return createFile(p, "test" + (System.currentTimeMillis()) + ".lspt", content);
+		return createUniqueTestFile(p, "lspt", content);
 	}
 
 	public static IFile createUniqueTestFileMultiLS(IProject p, String content) throws CoreException {
-		return createFile(p, "test" + (System.currentTimeMillis()) + ".lsptmultils", content);
+		return createUniqueTestFile(p, "lsptmultils", content);
 	}
 
 	public static IFile createUniqueTestFileOfUnknownType(IProject p, String content) throws CoreException {
-		return createFile(p, "test" + (System.currentTimeMillis()) + ".lsptunknown", content);
+		return createUniqueTestFile(p, "lsptunknown", content);
+	}
+
+	public static IFile createUniqueTestFile(IProject p, String extension, String content) throws CoreException {
+		return createFile(p, "test" + (System.currentTimeMillis()) + '.' + extension, content);
 	}
 
 	public static IFile createFile(IProject p, String name, String content) throws CoreException {

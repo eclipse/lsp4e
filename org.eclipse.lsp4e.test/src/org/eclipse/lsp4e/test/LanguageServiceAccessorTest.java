@@ -11,20 +11,26 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.ProjectSpecificLanguageServerWrapper;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.PlatformUI;
 import org.junit.After;
@@ -81,4 +87,37 @@ public class LanguageServiceAccessorTest {
 		assertNotNull(info);
 	}
 	
+	@Test
+	public void testReuseSameLSforMultiContentType() throws Exception {
+		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
+		IFile testFile2 = TestUtils.createUniqueTestFileMultiLS(project, "");
+		// wrap in HashSet as a workaround of https://github.com/eclipse/lsp4j/issues/106
+		Collection<LanguageServer> file1LanguageServers = new HashSet<>(LanguageServiceAccessor.getLanguageServers(testFile1, c -> Boolean.TRUE));
+		assertEquals(1, file1LanguageServers.size());
+		LanguageServer file1LS = file1LanguageServers.iterator().next();
+		Collection<LanguageServer> file2LanguageServers = new HashSet<>(LanguageServiceAccessor.getLanguageServers(testFile2, c -> Boolean.TRUE)); // shou
+		assertEquals(2, file2LanguageServers.size());
+		assertTrue(file2LanguageServers.contains(file1LS)); // LS from file1 is reused
+		assertEquals("Not right amount of language servers bound to project", 2, LanguageServiceAccessor.getLanguageServers(project, c -> Boolean.TRUE).size());
+	}
+
+	@Test
+	public void testLanguageServerHierarchy_moreSpecializedFirst() throws Exception {
+		// file with a content-type and a parent, each associated to one LS
+		IFile testFile = TestUtils.createUniqueTestFile(project, "lsptchild", "");
+		@NonNull Collection<ProjectSpecificLanguageServerWrapper> servers = LanguageServiceAccessor.getLSWrappers(testFile, c -> Boolean.TRUE);
+		Iterator<ProjectSpecificLanguageServerWrapper> iterator = servers.iterator();
+		assertEquals("org.eclipse.lsp4e.test.server2", iterator.next().serverDefinition.id);
+		assertEquals("org.eclipse.lsp4e.test.server", iterator.next().serverDefinition.id);
+	}
+		
+	@Test
+	public void testLanguageServerHierarchy_parentContentTypeUsed() throws Exception {
+		// file with a content-type whose parent (only) is associated to one LS
+		IFile testFile = TestUtils.createUniqueTestFile(project, "lsptchildNoLS", "");
+		@NonNull Collection<ProjectSpecificLanguageServerWrapper> servers = LanguageServiceAccessor.getLSWrappers(testFile, c -> Boolean.TRUE);
+		Iterator<ProjectSpecificLanguageServerWrapper> iterator = servers.iterator();
+		assertEquals("org.eclipse.lsp4e.test.server", iterator.next().serverDefinition.id);
+		assertFalse("Should only be a single LS", iterator.hasNext());
+	}
 }

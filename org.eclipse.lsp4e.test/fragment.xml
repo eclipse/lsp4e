@@ -25,6 +25,14 @@
             contentType="org.eclipse.lsp4e.test.content-type-multi-ls"
             id="org.eclipse.lsp4e.test.server2">
       </contentTypeMapping>
+      <contentTypeMapping
+            contentType="org.eclipse.lsp4e.test.childContentType"
+            id="org.eclipse.lsp4e.test.server">
+      </contentTypeMapping>
+      <contentTypeMapping
+            contentType="org.eclipse.lsp4e.test.childContentType"
+            id="org.eclipse.lsp4e.test.server2">
+      </contentTypeMapping>
    </extension>
    <extension
          point="org.eclipse.core.contenttype.contentTypes">
@@ -47,6 +55,22 @@
             file-extensions="lspt2"
             id="org.eclipse.lsp4e.test.content-type2"
             name="Test Content Type 2"
+            priority="normal">
+      </content-type>
+      <content-type
+            base-type="org.eclipse.lsp4e.test.content-type"
+            childContentTypename="child"
+            file-extensions="lsptchild"
+            id="org.eclipse.lsp4e.test.childContentType"
+            name="lsptchild"
+            priority="normal">
+      </content-type>
+      <content-type
+            base-type="org.eclipse.lsp4e.test.content-type"
+            childContentTypename="child"
+            file-extensions="lsptchildNoLS"
+            id="org.eclipse.lsp4e.test.childContentTypeNpLS"
+            name="lsptchild-no-ls"
             priority="normal">
       </content-type>
    </extension>

@@ -12,6 +12,7 @@ package org.eclipse.lsp4e.test.completion;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -27,8 +28,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
@@ -88,26 +87,20 @@ public class CompletionTest {
 		IFile testFile = TestUtils.createUniqueTestFileOfUnknownType(project, "");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		
-		IContentType contentType = Platform.getContentTypeManager().getContentType("org.eclipse.lsp4e.test.content-type");
-		for (LanguageServerDefinition serverDefinition : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
-			if (serverDefinition != null) {
-				ProjectSpecificLanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor.getLSWrapperForConnection(testFile.getProject(), serverDefinition);
-				IPath fileLocation = testFile.getLocation();
-				if (fileLocation != null) {
-					// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
-					lsWrapperForConnection.connect(fileLocation, null);
-					
-					new DisplayHelper() {
-						@Override
-						protected boolean condition() {
-							return lsWrapperForConnection.isConnectedTo(fileLocation);
-						}
-					}.waitForCondition(Display.getCurrent(), 3000);
-				}
+		LanguageServerDefinition serverDefinition = LanguageServersRegistry.getInstance().getDefinition("org.eclipse.lsp4e.test.server");
+		assertNotNull(serverDefinition);
+		ProjectSpecificLanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor.getLSWrapperForConnection(testFile.getProject(), serverDefinition);
+		IPath fileLocation = testFile.getLocation();
+		// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
+		lsWrapperForConnection.connect(fileLocation, null);
+		
+		new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return lsWrapperForConnection.isConnectedTo(fileLocation);
 			}
-		}
-		
-		
+		}.waitForCondition(Display.getCurrent(), 3000);
+
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(items.size(), proposals.length);
 		// TODO compare both structures

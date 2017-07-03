@@ -125,8 +125,9 @@ public class ProjectSpecificLanguageServerWrapper {
 
 	};
 
-	final @NonNull LanguageServerDefinition serverDefinition;
-	final @NonNull IProject project;
+	public final @NonNull LanguageServerDefinition serverDefinition;
+	public final @NonNull IProject project;
+
 	private final @NonNull StreamConnectionProvider lspStreamProvider;
 	private LanguageServer languageServer;
 	private Map<IPath, DocumentContentSynchronizer> connectedDocuments;
@@ -167,7 +168,7 @@ public class ProjectSpecificLanguageServerWrapper {
 			this.lspStreamProvider.start();
 
 			LanguageClient client = new LanguageClient() {
-				private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project, ProjectSpecificLanguageServerWrapper.this.serverDefinition.getId());
+				private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project, ProjectSpecificLanguageServerWrapper.this.serverDefinition.id);
 
 				@Override
 				public void telemetryEvent(Object object) {
@@ -191,7 +192,7 @@ public class ProjectSpecificLanguageServerWrapper {
 
 				@Override
 				public void logMessage(MessageParams message) {
-					ServerMessageHandler.logMessage(project, serverDefinition.getLabel(), message);
+					ServerMessageHandler.logMessage(project, serverDefinition.label, message);
 				}
 
 				@Override

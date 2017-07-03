@@ -54,20 +54,12 @@ public class LanguageServersRegistry {
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
 
 	public static abstract class LanguageServerDefinition {
-		private final @NonNull String id;
-		private final @NonNull String label;
+		public final @NonNull String id;
+		public final @NonNull String label;
 
 		public LanguageServerDefinition(@NonNull String id, @NonNull String label) {
 			this.id = id;
 			this.label = label;
-		}
-
-		public String getId() {
-			return id;
-		}
-
-		public String getLabel() {
-			return label;
 		}
 
 		public abstract StreamConnectionProvider createConnectionProvider();
@@ -181,9 +173,25 @@ public class LanguageServersRegistry {
 		}
 	}
 
-	public List<LanguageServerDefinition> findProviderFor(final IContentType contentType) {
+	/**
+	 * @param contentType
+	 * @return the {@link LanguageServerDefinition}s <strong>directly</strong> associated to the given content-type.
+	 * This does <strong>not</strong> include the one that match transitively as per content-type hierarchy
+	 */
+	List<LanguageServerDefinition> findProviderFor(final @NonNull IContentType contentType) {
 		return connections.stream()
 			.filter(entry -> entry.getKey().equals(contentType))
+			.sorted((mapping1, mapping2) -> {
+				// this sort should make that the content-type hierarchy is respected
+				// and the most specialized content-type are placed before the more generic ones
+				if (mapping1.getKey().isKindOf(mapping2.getKey())) {
+					return -1;
+				} else if (mapping2.getKey().isKindOf(mapping1.getKey())) {
+					return +1;
+				}
+				// TODO support "priority" attribute, but it's not made public
+				return mapping1.getKey().getId().compareTo(mapping2.getKey().getId());
+			})
 			.map(Entry::getValue)
 			.collect(Collectors.toList());
 	}

@@ -186,7 +186,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				return ((ContentTypeToLanguageServerDefinition)element).getValue().getLabel();
+				return ((ContentTypeToLanguageServerDefinition)element).getValue().label;
 			}
 		});
 		viewer.setInput(LanguageServersRegistry.getInstance().getContentTypeToLSPExtensions());

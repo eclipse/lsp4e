@@ -14,13 +14,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -95,7 +98,7 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-	public static @Nullable Collection<LanguageServer> getLanguageServers(@NonNull IFile file, Predicate<ServerCapabilities> request) throws IOException {
+	public static @NonNull Collection<LanguageServer> getLanguageServers(@NonNull IFile file, Predicate<ServerCapabilities> request) throws IOException {
 		Collection<ProjectSpecificLanguageServerWrapper> wrappers = getLSWrappers(file, request);
 		wrappers.forEach(w -> {
 			try {
@@ -122,7 +125,15 @@ public class LanguageServiceAccessor {
 		return null;
 	}
 
-	@NonNull private static Collection<ProjectSpecificLanguageServerWrapper> getLSWrappers(@NonNull IFile file, @NonNull Predicate<ServerCapabilities> request) throws IOException {
+	/**
+	 *
+	 * @param file
+	 * @param request
+	 * @return
+	 * @throws IOException
+	 * @noreference This method is currently internal and should only be referenced for testing
+	 */
+	@NonNull public static Collection<ProjectSpecificLanguageServerWrapper> getLSWrappers(@NonNull IFile file, @NonNull Predicate<ServerCapabilities> request) throws IOException {
 		LinkedHashSet<ProjectSpecificLanguageServerWrapper> res = new LinkedHashSet<>();
 		IProject project = file.getProject();
 		if (project == null) {
@@ -132,15 +143,18 @@ public class LanguageServiceAccessor {
 		res.addAll(getMatchingStartedWrappers(file, request));
 
 		// look for running language servers via content-type
-		IContentType[] fileContentTypes = null;
+		Queue<IContentType> contentTypes = new LinkedList<>();
+		Set<IContentType> addedContentTypes = new HashSet<>();
 		try (InputStream contents = file.getContents()) {
-			fileContentTypes = Platform.getContentTypeManager().findContentTypesFor(contents, file.getName()); //TODO consider using document as inputstream
+			contentTypes.addAll(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, file.getName()))); //TODO consider using document as inputstream
+			addedContentTypes.addAll(contentTypes);
 		} catch (CoreException e) {
 			LanguageServerPlugin.logError(e);
 			return res;
 		}
 
-		for (IContentType contentType : fileContentTypes) {
+		while (!contentTypes.isEmpty()) {
+			IContentType contentType = contentTypes.poll();
 			if (contentType == null) {
 				continue;
 			}
@@ -153,6 +167,10 @@ public class LanguageServiceAccessor {
 						res.add(wrapper);
 					}
 				}
+			}
+			if (contentType.getBaseType() != null && !addedContentTypes.contains(contentType.getBaseType())) {
+				addedContentTypes.add(contentType.getBaseType());
+				contentTypes.add(contentType.getBaseType());
 			}
 		}
 		return res;
