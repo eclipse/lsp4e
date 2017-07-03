@@ -11,6 +11,8 @@
 package org.eclipse.lsp4e.test.hover;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
@@ -81,7 +83,7 @@ public class HoverTest {
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 
 		// TODO update test when MARKDOWN to HTML will be finished
-		assertEquals(true, !hover.getHoverInfo(viewer, new Region(0, 10)).isEmpty());
+		assertTrue(hover.getHoverInfo(viewer, new Region(0, 10)).contains("HoverContent"));
 	}
 	
 	@Test
@@ -114,5 +116,22 @@ public class HoverTest {
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 
 		assertEquals(null, hover.getHoverInfo(viewer, new Region(0, 10)));
+	}
+
+	@Test
+	public void testMultipleHovers() throws Exception {
+		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		MockLanguageSever.INSTANCE.setHover(hoverResponse);
+
+		IFile file = TestUtils.createUniqueTestFileMultiLS(project, "HoverRange Other Text");
+		ITextViewer viewer = TestUtils.openTextViewer(file);
+
+		// TODO update test when MARKDOWN to HTML will be finished
+		String hoverInfo = hover.getHoverInfo(viewer, new Region(0, 10));
+		int index = hoverInfo.indexOf("HoverContent");
+		assertNotEquals("Hover content not found", -1, index);
+		index += "HoverContent".length();
+		index = hoverInfo.indexOf("HoverContent", index);
+		assertNotEquals("Hover content found only once", -1, index);
 	}
 }

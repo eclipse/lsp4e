@@ -268,7 +268,7 @@ public class LanguageServiceAccessor {
 		return providersToLSDefinitions.get(provider);
 	}
 
-	@NonNull public static List<LSPDocumentInfo> getLSPDocumentInfosFor(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> capabilityRequest) {
+	@NonNull public static List<@NonNull LSPDocumentInfo> getLSPDocumentInfosFor(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> capabilityRequest) {
 		final IFile file = LSPEclipseUtils.getFile(document);
 		URI fileUri = null;
 		if (file != null && file.exists()) {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016-2017 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,20 +10,26 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.resource.ColorRegistry;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DefaultInformationControl;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IInformationControl;
 import org.eclipse.jface.text.IInformationControlCreator;
 import org.eclipse.jface.text.IRegion;
@@ -68,7 +74,8 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		}
 	}
 
-	private CompletableFuture<Hover> hoverRequest;
+	private List<CompletableFuture<?>> hoverRequests;
+	private List<Hover> hoverResults;
 	private IRegion lastRegion;
 	private ITextViewer textViewer;
 
@@ -80,42 +87,23 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		if (textViewer == null || hoverRegion == null) {
 			return null;
 		}
-		if (!(hoverRegion.equals(this.lastRegion) && textViewer.equals(this.textViewer) && this.hoverRequest != null)) {
+		if (!(hoverRegion.equals(this.lastRegion) && textViewer.equals(this.textViewer) && this.hoverRequests != null)) {
 			initiateHoverRequest(textViewer, hoverRegion.getOffset());
 		}
-		if (this.hoverRequest == null) {
-			return null;
-		}
-		Hover hoverResult = null;
 		try {
-			hoverResult = this.hoverRequest.get(500, TimeUnit.MILLISECONDS);
+			CompletableFuture.allOf(this.hoverRequests.toArray(new CompletableFuture[this.hoverRequests.size()])).get(500, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
 		}
-		if (hoverResult == null) {
+		if (this.hoverResults == null || this.hoverResults.isEmpty()) {
 			return null;
 		}
-		List<Either<String, MarkedString>> contents = hoverResult.getContents();
-		if (contents == null || contents.isEmpty()) {
-			return null;
-		}
-		String result = contents.stream().map(content -> {
-			if (content.isLeft()) {
-				return content.getLeft();
-			} else if (content.isRight()) {
-				MarkedString markedString = content.getRight();
-				// TODO this won't work fully until markup parser will support syntax highlighting but will help display
-				// strings with language tags, e.g. without it things after <?php tag aren't displayed
-				if (markedString.getLanguage() != null && !markedString.getLanguage().isEmpty()) {
-					return String.format("```%s\n%s\n```", markedString.getLanguage(), markedString.getValue()); //$NON-NLS-1$
-				} else {
-					return markedString.getValue();
-				}
-			} else {
-				return ""; //$NON-NLS-1$
-			}
-		}).filter(line -> !line.isEmpty()).collect(Collectors.joining("\n\n")); //$NON-NLS-1$
-		if (result.isEmpty()) {
+		String result = hoverResults.stream()
+				.filter(Objects::nonNull)
+				.map(LSBasedHover::getHoverString)
+				.filter(Objects::nonNull)
+				.collect(Collectors.joining("\n\n")); //$NON-NLS-1$
+		if (result == null || result.isEmpty()) {
 			return null;
 		}
 		result = MARKDOWN_PARSER.parseToHtml(result);
@@ -138,7 +126,30 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		return builder.toString();
 	}
 
-	private static String toHTMLrgb(RGB rgb) {
+	protected static @Nullable String getHoverString(@NonNull Hover hover) {
+		List<Either<String, MarkedString>> contents = hover.getContents();
+		if (contents == null || contents.isEmpty()) {
+			return null;
+		}
+		return contents.stream().map(content -> {
+			if (content.isLeft()) {
+				return content.getLeft();
+			} else if (content.isRight()) {
+				MarkedString markedString = content.getRight();
+				// TODO this won't work fully until markup parser will support syntax highlighting but will help display
+				// strings with language tags, e.g. without it things after <?php tag aren't displayed
+				if (markedString.getLanguage() != null && !markedString.getLanguage().isEmpty()) {
+					return String.format("```%s\n%s\n```", markedString.getLanguage(), markedString.getValue()); //$NON-NLS-1$
+				} else {
+					return markedString.getValue();
+				}
+			} else {
+				return ""; //$NON-NLS-1$
+			}
+		}).filter(((Predicate<String>)String::isEmpty).negate()).collect(Collectors.joining("\n\n")); //$NON-NLS-1$)
+	}
+
+	private static @NonNull String toHTMLrgb(RGB rgb) {
 		StringBuilder builder = new StringBuilder(7);
 		builder.append('#');
 		appendAsHexString(builder, rgb.red);
@@ -160,20 +171,32 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		if (textViewer == null) {
 			return null;
 		}
-		IRegion res = new Region(offset, 0);
-		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(textViewer.getDocument(), (capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
-		if (info != null) {
-			try {
-				initiateHoverRequest(textViewer, offset);
-				Hover hover = hoverRequest.get(800, TimeUnit.MILLISECONDS);
+		IRegion res = null;
+		initiateHoverRequest(textViewer, offset);
+		try {
+			CompletableFuture.allOf(this.hoverRequests.toArray(new CompletableFuture[this.hoverRequests.size()])).get(800, TimeUnit.MILLISECONDS);
+		} catch (InterruptedException | ExecutionException | TimeoutException e1) {
+			LanguageServerPlugin.logError(e1);
+		}
+		final IDocument document = textViewer.getDocument();
+		if (!this.hoverResults.isEmpty()) {
+			res = new Region(0, document.getLength());
+			for (Hover hover : this.hoverResults) {
+				int rangeOffset = offset;
+				int rangeLength = 0;
 				if (hover != null && hover.getRange() != null) {
-					Range range = hover.getRange();
-					int rangeOffset = LSPEclipseUtils.toOffset(range.getStart(), info.getDocument());
-					res = new Region(rangeOffset, LSPEclipseUtils.toOffset(range.getEnd(), info.getDocument()) - rangeOffset);
+					try {
+						Range range = hover.getRange();
+						rangeOffset = LSPEclipseUtils.toOffset(range.getStart(), document);
+						rangeLength = LSPEclipseUtils.toOffset(range.getEnd(), document) - rangeOffset;
+					} catch (BadLocationException e) {
+						LanguageServerPlugin.logError(e);
+						res = new Region(offset, 1);
+					}
 				}
-			} catch (TimeoutException | InterruptedException | ExecutionException | BadLocationException e) {
-				LanguageServerPlugin.logError(e);
-				res = new Region(offset, 1);
+				res = new Region(
+						Math.max(res.getOffset(), rangeOffset),
+						Math.min(res.getLength(), rangeLength));
 			}
 		} else {
 			res = new Region(offset, 1);
@@ -186,14 +209,22 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 	private void initiateHoverRequest(@NonNull ITextViewer viewer, int offset) {
 		this.textViewer = viewer;
-		final LSPDocumentInfo info = LanguageServiceAccessor.getLSPDocumentInfoFor(viewer.getDocument(), (capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
-		if (info != null) {
+		List<@NonNull LSPDocumentInfo> docInfos = LanguageServiceAccessor.getLSPDocumentInfosFor(viewer.getDocument(), (capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
+		// use intermediary variables to make the lists specific to the request
+		// if we directly add/remove from members, we may have thread related issues such as some
+		// results from a previous request leaking in the new hover.
+		final List<CompletableFuture<?>> requests = new ArrayList<>(docInfos.size());
+		final List<Hover> result = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
+		for (@NonNull final LSPDocumentInfo info : docInfos) {
 			try {
-				this.hoverRequest = info.getLanguageClient().getTextDocumentService().hover(LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument()));
+				CompletableFuture<Hover> hover = info.getLanguageClient().getTextDocumentService().hover(LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument()));
+				requests.add(hover.thenAccept(result::add));
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
+		this.hoverRequests = requests;
+		this.hoverResults = result;
 	}
 
 	@Override
