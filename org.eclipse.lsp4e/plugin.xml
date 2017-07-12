@@ -39,17 +39,24 @@
    </extension>
    <extension
          point="org.eclipse.ui.commands">
+      <category
+            id="org.eclipse.lsp4e.category"
+            name="%commands.category.name">
+      </category>
       <command
+            categoryId="org.eclipse.lsp4e.category"
             id="org.eclipse.lsp4e.format"
             name="%format.command.name">
       </command>
       <command
+            categoryId="org.eclipse.lsp4e.category"
             id="org.eclipse.lsp4e.symbolinfile"
-            name="Go to Symbol in File">
+            name="%commands.symbolsInFile.name">
       </command>
       <command
+            categoryId="org.eclipse.lsp4e.category"
             id="org.eclipse.lsp4e.symbolinworkspace"
-            name="Go to Symbol in Workspace">
+            name="%commands.symbolsInWorksapce.name">
       </command>
    </extension>
    <extension
