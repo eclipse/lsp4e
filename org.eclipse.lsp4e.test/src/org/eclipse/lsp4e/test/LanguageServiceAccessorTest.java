@@ -25,6 +25,8 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.ITextViewer;
@@ -87,6 +89,19 @@ public class LanguageServiceAccessorTest {
 		assertNotNull(info);
 	}
 	
+	@Test
+	public void testLSAsExtensionForDifferentLanguageId() throws Exception {
+		IFile testFile = TestUtils.createFile(project, "shouldUseExtension.lspt-different", "");		@NonNull
+		Collection<ProjectSpecificLanguageServerWrapper> lsWrappers = LanguageServiceAccessor.getLSWrappers(testFile, capabilites -> Boolean.TRUE);
+		
+		assertEquals(1, lsWrappers.size());
+		ProjectSpecificLanguageServerWrapper wrapper = lsWrappers.iterator().next();
+		assertNotNull(wrapper);
+		
+		IContentType contentType = Platform.getContentTypeManager().getContentType("org.eclipse.lsp4e.test.content-type-different");
+		assertEquals("differentLanguageId", wrapper.getLanguageId(new IContentType[] {contentType}));
+	}
+
 	@Test
 	public void testReuseSameLSforMultiContentType() throws Exception {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");

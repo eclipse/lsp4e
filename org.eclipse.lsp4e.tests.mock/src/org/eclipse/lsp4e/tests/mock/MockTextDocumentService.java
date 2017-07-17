@@ -58,6 +58,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private SignatureHelp mockSignatureHelp;
 	private List<DocumentLink> mockDocumentLinks;
 
+	private CompletableFuture<DidOpenTextDocumentParams> didOpenCallback;
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
 	private CompletableFuture<DidSaveTextDocumentParams> didSaveCallback;
 	private CompletableFuture<DidCloseTextDocumentParams> didCloseCallback;
@@ -164,6 +165,11 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public void didOpen(DidOpenTextDocumentParams params) {
+		if (didOpenCallback != null) {
+			didOpenCallback.complete(params);
+			didOpenCallback = null;
+		}
+
 		if (this.diagnostics != null && !this.diagnostics.isEmpty()) {
 			this.remoteProxies.stream().forEach(p -> p.publishDiagnostics(new PublishDiagnosticsParams(params.getTextDocument().getUri(), this.diagnostics)));
 		}
@@ -197,6 +203,10 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockCompletionList = completionList;
 	}
 
+	public void setDidOpenCallback(CompletableFuture<DidOpenTextDocumentParams> didOpenExpectation) {
+		this.didOpenCallback = didOpenExpectation;
+	}
+	
 	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
 		this.didChangeCallback = didChangeExpectation;
 	}

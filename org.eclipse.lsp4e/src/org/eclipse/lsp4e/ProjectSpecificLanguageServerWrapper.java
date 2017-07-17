@@ -35,6 +35,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -137,6 +138,7 @@ public class ProjectSpecificLanguageServerWrapper {
 	private CompletableFuture<InitializeResult> initializeFuture;
 
 	private boolean capabilitiesAlreadyRequested;
+
 
 	public ProjectSpecificLanguageServerWrapper(@NonNull IProject project, @NonNull LanguageServerDefinition serverDefinition) {
 		this.project = project;
@@ -429,6 +431,21 @@ public class ProjectSpecificLanguageServerWrapper {
 		} else {
 			return null;
 		}
+	}
+
+	/**
+	 * @return The language ID that this wrapper is dealing with if defined in the content type mapping for the language server
+	 */
+	@Nullable
+	public String getLanguageId(IContentType[] contentTypes) {
+		for (IContentType contentType : contentTypes) {
+			String languageId = serverDefinition.langugeIdMappings.get(contentType);
+			if (languageId != null) {
+				return languageId;
+			}
+		}
+
+		return null;
 	}
 
 }

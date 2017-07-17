@@ -19,9 +19,6 @@ import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 
 public class ContentTypeToLanguageServerDefinition extends SimpleEntry<IContentType, LanguageServerDefinition> {
 
-	/**
-	 *
-	 */
 	private static final long serialVersionUID = 6002703726009331762L;
 
 	public ContentTypeToLanguageServerDefinition(@NonNull IContentType contentType, @NonNull LanguageServerDefinition provider) {

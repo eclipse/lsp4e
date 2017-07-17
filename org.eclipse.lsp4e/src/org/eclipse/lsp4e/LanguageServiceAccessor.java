@@ -114,7 +114,7 @@ public class LanguageServiceAccessor {
 	 * Get the requested language server instance for the given file. Starts the language server if not already started.
 	 * @param file
 	 * @param serverId
-	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified requst
+	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request
 	 */
 	public static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition) throws IOException {
 		ProjectSpecificLanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition);
@@ -158,9 +158,9 @@ public class LanguageServiceAccessor {
 			if (contentType == null) {
 				continue;
 			}
-			for (LanguageServerDefinition serverDefinition : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
-				if (serverDefinition != null) {
-					ProjectSpecificLanguageServerWrapper wrapper = getLSWrapperForConnection(project, serverDefinition);
+			for (ContentTypeToLanguageServerDefinition mapping : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
+				if (mapping != null && mapping.getValue() != null) {
+					ProjectSpecificLanguageServerWrapper wrapper = getLSWrapperForConnection(project, mapping.getValue());
 					if (request == null
 						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 						|| request.test(wrapper.getServerCapabilities())) {

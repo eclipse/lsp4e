@@ -92,7 +92,7 @@ public class FindReferencesTest {
 	@Test
 	public void findReferencesNonBlocking() throws Exception {
 		int responseDelay = 3000;
-		int uiFreezeThreesholdreezeThreeshold = 200;
+		int uiFreezeThreesholdreezeThreeshold = 300;
 		MockLanguageSever.INSTANCE.setTimeToProceedQueries(responseDelay);
 		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "dummyContent"));
 

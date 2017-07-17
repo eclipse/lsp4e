@@ -20,6 +20,7 @@ import org.eclipse.lsp4e.test.document.LSPEclipseUtilsTest;
 import org.eclipse.lsp4e.test.documentLink.DocumentLinkTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidChangeTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidCloseTest;
+import org.eclipse.lsp4e.test.edit.DocumentDidOpenTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidSaveTest;
 import org.eclipse.lsp4e.test.edit.DocumentRevertAndCloseTest;
 import org.eclipse.lsp4e.test.format.FormatTest;
@@ -35,6 +36,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	LanguageServiceAccessorTest.class,
 	CompletionTest.class,
 	ContextInformationTest.class,
+	DocumentDidOpenTest.class,
 	DocumentDidChangeTest.class,
 	DocumentDidSaveTest.class,
 	DocumentDidCloseTest.class,

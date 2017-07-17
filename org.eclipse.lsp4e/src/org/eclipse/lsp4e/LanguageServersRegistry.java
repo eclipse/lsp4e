@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2017 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -11,13 +11,12 @@
 package org.eclipse.lsp4e;
 
 import java.io.IOException;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
@@ -50,16 +49,23 @@ public class LanguageServersRegistry {
 
 	private static final String ID_ATTRIBUTE = "id"; //$NON-NLS-1$
 	private static final String CONTENT_TYPE_ATTRIBUTE = "contentType"; //$NON-NLS-1$
+	private static final String LANGUAGE_ID_ATTRIBUTE = "languageId"; //$NON-NLS-1$
 	private static final String CLASS_ATTRIBUTE = "class"; //$NON-NLS-1$
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
 
 	public static abstract class LanguageServerDefinition {
 		public final @NonNull String id;
 		public final @NonNull String label;
+		public final @NonNull Map<IContentType, String> langugeIdMappings;
 
 		public LanguageServerDefinition(@NonNull String id, @NonNull String label) {
 			this.id = id;
 			this.label = label;
+			this.langugeIdMappings = new ConcurrentHashMap<>();
+		}
+
+		public void registerAssociation(@NonNull IContentType contentType, @NonNull String languageId) {
+			this.langugeIdMappings.put(contentType, languageId);
 		}
 
 		public abstract StreamConnectionProvider createConnectionProvider();
@@ -129,7 +135,7 @@ public class LanguageServersRegistry {
 		}
 
 		Map<String, LanguageServerDefinition> servers = new HashMap<>();
-		List<Entry<IContentType, String>> contentTypes = new ArrayList<>();
+		List<ContentTypeMapping> contentTypes = new ArrayList<>();
 		for (IConfigurationElement extension : Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION_POINT_ID)) {
 			String id = extension.getAttribute(ID_ATTRIBUTE);
 			if (id != null && !id.isEmpty()) {
@@ -137,19 +143,21 @@ public class LanguageServersRegistry {
 					servers.put(id, new ExtensionLanguageServerDefinition(extension));
 				} else if (extension.getName().equals(MAPPING_ELEMENT)) {
 					IContentType contentType = Platform.getContentTypeManager().getContentType(extension.getAttribute(CONTENT_TYPE_ATTRIBUTE));
+					String languageId = extension.getAttribute(LANGUAGE_ID_ATTRIBUTE);
+
 					if (contentType != null) {
-						contentTypes.add(new SimpleEntry<>(contentType, id));
+						contentTypes.add(new ContentTypeMapping(contentType, id, languageId));
 					}
 				}
 			}
 		}
-		for (Entry<IContentType, String> entry : contentTypes) {
-			IContentType contentType = entry.getKey();
-			LanguageServerDefinition lsDefinition = servers.get(entry.getValue());
+
+		for (ContentTypeMapping mapping : contentTypes) {
+			LanguageServerDefinition lsDefinition = servers.get(mapping.id);
 			if (lsDefinition != null) {
-				registerAssociation(contentType, lsDefinition);
+				registerAssociation(mapping.contentType, lsDefinition, mapping.languageId);
 			} else {
-				LanguageServerPlugin.logWarning("server '" + entry.getValue() + "' not available", null); //$NON-NLS-1$ //$NON-NLS-2$
+				LanguageServerPlugin.logWarning("server '" + mapping.id + "' not available", null); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 	}
@@ -178,7 +186,7 @@ public class LanguageServersRegistry {
 	 * @return the {@link LanguageServerDefinition}s <strong>directly</strong> associated to the given content-type.
 	 * This does <strong>not</strong> include the one that match transitively as per content-type hierarchy
 	 */
-	List<LanguageServerDefinition> findProviderFor(final @NonNull IContentType contentType) {
+	List<ContentTypeToLanguageServerDefinition> findProviderFor(final @NonNull IContentType contentType) {
 		return connections.stream()
 			.filter(entry -> entry.getKey().equals(contentType))
 			.sorted((mapping1, mapping2) -> {
@@ -192,7 +200,6 @@ public class LanguageServersRegistry {
 				// TODO support "priority" attribute, but it's not made public
 				return mapping1.getKey().getId().compareTo(mapping2.getKey().getId());
 			})
-			.map(Entry::getValue)
 			.collect(Collectors.toList());
 	}
 
@@ -202,7 +209,11 @@ public class LanguageServersRegistry {
 		persistContentTypeToLaunchConfigurationMapping();
 	}
 
-	public void registerAssociation(@NonNull IContentType contentType, @NonNull LanguageServerDefinition serverDefinition) {
+	public void registerAssociation(@NonNull IContentType contentType, @NonNull LanguageServerDefinition serverDefinition, @Nullable String languageId) {
+		if (languageId != null) {
+			serverDefinition.registerAssociation(contentType, languageId);
+		}
+
 		connections.add(new ContentTypeToLanguageServerDefinition(contentType, serverDefinition));
 	}
 
@@ -227,6 +238,23 @@ public class LanguageServersRegistry {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * internal class to capture content-type mappings for language servers
+	 */
+	private static class ContentTypeMapping {
+
+		@NonNull public final String id;
+		@NonNull public final IContentType contentType;
+		@Nullable public final String languageId;
+
+		public ContentTypeMapping(@NonNull IContentType contentType, @NonNull String id, @Nullable String languageId) {
+			this.contentType = contentType;
+			this.id = id;
+			this.languageId = languageId;
+		}
+
 	}
 
 }

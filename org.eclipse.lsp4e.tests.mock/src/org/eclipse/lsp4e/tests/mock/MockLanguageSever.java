@@ -26,6 +26,7 @@ import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
+import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkOptions;
@@ -138,6 +139,10 @@ public final class MockLanguageSever implements LanguageServer {
 		this.textDocumentService.setMockDefinitionLocations(definitionLocations);
 	}
 
+	public void setDidOpenCallback(CompletableFuture<DidOpenTextDocumentParams> didOpenExpectation) {
+		this.textDocumentService.setDidOpenCallback(didOpenExpectation);
+	}
+	
 	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
 		this.textDocumentService.setDidChangeCallback(didChangeExpectation);
 	}

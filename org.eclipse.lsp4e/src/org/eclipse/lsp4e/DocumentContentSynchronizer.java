@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2017 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -12,9 +12,18 @@
 package org.eclipse.lsp4e;
 
 import java.io.File;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IWorkspace;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DocumentEvent;
@@ -59,7 +68,24 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		TextDocumentItem textDocument = new TextDocumentItem();
 		textDocument.setUri(fileUri);
 		textDocument.setText(document.get());
-		textDocument.setLanguageId(filePath.getFileExtension());
+
+		IWorkspace workspace= ResourcesPlugin.getWorkspace();
+		IFile ifile= workspace.getRoot().getFileForLocation(filePath);
+
+		List<IContentType> contentTypes = new ArrayList<>();
+		try (InputStream contents = ifile.getContents()) {
+			contentTypes.addAll(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, file.getName())));
+		} catch (Exception e) {
+			LanguageServerPlugin.logError(e);
+		}
+
+		String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
+
+		if (languageId == null) {
+			languageId = filePath.getFileExtension();
+		}
+
+		textDocument.setLanguageId(languageId);
 		textDocument.setVersion(++version);
 		LanguageServer ls = languageServerWrapper.getServer();
 		if (ls != null) {
