@@ -88,8 +88,8 @@ public class DisableShortcutsWorkaround implements IStartup {
 	private boolean isPlatformKeybindingBug517068Fixed() {
 		Bundle bundle = Platform.getBundle("org.eclipse.e4.ui.bindings"); //$NON-NLS-1$
 		Version currentVersion = bundle.getVersion();
-		Version brokenVersion = new Version(0, 12, 0);
-		return currentVersion.compareTo(brokenVersion) > 0;
+		Version fixVersion = new Version(0, 12, 1);
+		return currentVersion.compareTo(fixVersion) >= 0;
 	}
 
 }
