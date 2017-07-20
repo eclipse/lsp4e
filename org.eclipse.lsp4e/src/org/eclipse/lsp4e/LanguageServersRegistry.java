@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Miro Spoenemann (TypeFox) - added clientImpl and serverInterface attributes
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -21,7 +22,9 @@ import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jdt.annotation.NonNull;
@@ -29,6 +32,9 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
+import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.ui.statushandlers.StatusManager;
+import org.osgi.framework.Bundle;
 
 /**
  * This registry aims at providing a good language server connection (as {@link StreamConnectionProvider}
@@ -51,6 +57,8 @@ public class LanguageServersRegistry {
 	private static final String CONTENT_TYPE_ATTRIBUTE = "contentType"; //$NON-NLS-1$
 	private static final String LANGUAGE_ID_ATTRIBUTE = "languageId"; //$NON-NLS-1$
 	private static final String CLASS_ATTRIBUTE = "class"; //$NON-NLS-1$
+	private static final String CLIENT_IMPL_ATTRIBUTE = "clientImpl"; //$NON-NLS-1$
+	private static final String SERVER_INTERFACE_ATTRIBUTE = "serverInterface"; //$NON-NLS-1$
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
 
 	public static abstract class LanguageServerDefinition {
@@ -69,6 +77,14 @@ public class LanguageServersRegistry {
 		}
 
 		public abstract StreamConnectionProvider createConnectionProvider();
+
+		public LanguageClientImpl createLanguageClient() {
+			return new LanguageClientImpl();
+		}
+
+		public Class<? extends LanguageServer> getServerInterface() {
+			return LanguageServer.class;
+		}
 	}
 
 	static class ExtensionLanguageServerDefinition extends LanguageServerDefinition {
@@ -84,8 +100,40 @@ public class LanguageServersRegistry {
 			try {
 				return (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
 			} catch (CoreException e) {
+				StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
 				return null;
 			}
+		}
+
+		@Override
+		public LanguageClientImpl createLanguageClient() {
+			String clientImpl = extension.getAttribute(CLIENT_IMPL_ATTRIBUTE);
+			if (clientImpl != null && !clientImpl.isEmpty()) {
+				try {
+					return (LanguageClientImpl) extension.createExecutableExtension(CLIENT_IMPL_ATTRIBUTE);
+				} catch (CoreException e) {
+					StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
+				}
+			}
+			return super.createLanguageClient();
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public Class<? extends LanguageServer> getServerInterface() {
+			String serverInterface = extension.getAttribute(SERVER_INTERFACE_ATTRIBUTE);
+			if (serverInterface != null && !serverInterface.isEmpty()) {
+				Bundle bundle = Platform.getBundle(extension.getContributor().getName());
+				if (bundle != null) {
+					try {
+						return (Class<? extends LanguageServer>) bundle.loadClass(serverInterface);
+					} catch (ClassNotFoundException exception) {
+						StatusManager.getManager().handle(new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID,
+								exception.getMessage(), exception));
+					}
+				}
+			}
+			return super.getServerInterface();
 		}
 	}
 

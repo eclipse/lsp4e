@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Miro Spoenemann (TypeFox) - extracted LanguageClientImpl
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -41,11 +42,8 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
-import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.ui.Messages;
-import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
-import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.CodeActionCapabilities;
 import org.eclipse.lsp4j.CodeLensCapabilities;
@@ -60,14 +58,10 @@ import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
-import org.eclipse.lsp4j.MessageActionItem;
-import org.eclipse.lsp4j.MessageParams;
-import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.RangeFormattingCapabilities;
 import org.eclipse.lsp4j.ReferencesCapabilities;
 import org.eclipse.lsp4j.RenameCapabilities;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.SignatureHelpCapabilities;
 import org.eclipse.lsp4j.SymbolCapabilities;
 import org.eclipse.lsp4j.SynchronizationCapabilities;
@@ -80,8 +74,6 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
-import org.eclipse.lsp4j.launch.LSPLauncher;
-import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
@@ -169,60 +161,12 @@ public class ProjectSpecificLanguageServerWrapper {
 		try {
 			this.lspStreamProvider.start();
 
-			LanguageClient client = new LanguageClient() {
-				private LSPDiagnosticsToMarkers diagnosticHandler = new LSPDiagnosticsToMarkers(project, ProjectSpecificLanguageServerWrapper.this.serverDefinition.id);
-
-				@Override
-				public void telemetryEvent(Object object) {
-					// TODO
-				}
-
-				@Override
-				public CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams requestParams) {
-					return ServerMessageHandler.showMessageRequest(requestParams);
-				}
-
-				@Override
-				public void showMessage(MessageParams messageParams) {
-					ServerMessageHandler.showMessage(messageParams);
-				}
-
-				@Override
-				public void publishDiagnostics(PublishDiagnosticsParams diagnostics) {
-					this.diagnosticHandler.accept(diagnostics);
-				}
-
-				@Override
-				public void logMessage(MessageParams message) {
-					ServerMessageHandler.logMessage(project, serverDefinition.label, message);
-				}
-
-				@Override
-				public CompletableFuture<ApplyWorkspaceEditResponse> applyEdit(ApplyWorkspaceEditParams params) {
-					return CompletableFuture.supplyAsync(() -> {
-						Job job = new Job(Messages.serverEdit) {
-							@Override
-							public IStatus run(IProgressMonitor monitor) {
-								LSPEclipseUtils.applyWorkspaceEdit(params.getEdit());
-								return Status.OK_STATUS;
-							}
-						};
-						job.schedule();
-						try {
-							job.join();
-							return new ApplyWorkspaceEditResponse(true);
-						} catch (InterruptedException e) {
-							LanguageServerPlugin.logError(e);
-							return new ApplyWorkspaceEditResponse(Boolean.FALSE);
-						}
-					});
-				}
-			};
+			LanguageClientImpl client = serverDefinition.createLanguageClient();
 			ExecutorService executorService = Executors.newCachedThreadPool();
 			final InitializeParams initParams = new InitializeParams();
 			initParams.setRootUri(LSPEclipseUtils.toUri(project).toString());
 			initParams.setRootPath(project.getLocation().toFile().getAbsolutePath());
-			Launcher<LanguageServer> launcher = LSPLauncher.createClientLauncher(client,
+			Launcher<? extends LanguageServer> launcher = Launcher.createLauncher(client, serverDefinition.getServerInterface(),
 					this.lspStreamProvider.getInputStream(), this.lspStreamProvider.getOutputStream(), executorService,
 					consumer -> (message -> {
 						consumer.consume(message);
@@ -230,6 +174,7 @@ public class ProjectSpecificLanguageServerWrapper {
 						this.lspStreamProvider.handleMessage(message, this.languageServer, URI.create(initParams.getRootUri()));
 					}));
 			this.languageServer = launcher.getRemoteProxy();
+			client.connect(languageServer, this);
 			this.launcherFuture = launcher.startListening();
 
 			String name = "Eclipse IDE"; //$NON-NLS-1$

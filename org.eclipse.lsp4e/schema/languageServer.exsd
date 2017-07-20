@@ -74,6 +74,26 @@
                </appinfo>
             </annotation>
          </attribute>
+         <attribute name="clientImpl" type="string">
+            <annotation>
+               <documentation>
+                  An optional language client implementation to use as local endpoint. If undefined, the default implementation &lt;code&gt;org.eclipse.lsp4e.LanguageClientImpl&lt;/code&gt; is used. See the &lt;a href=&quot;https://github.com/eclipse/lsp4j/tree/master/documentation&quot;&gt;LSP4J documentation&lt;/a&gt; for more information on how to extend the Language Server Protocol.
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="java" basedOn="org.eclipse.lsp4e.LanguageClientImpl:"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+         <attribute name="serverInterface" type="string">
+            <annotation>
+               <documentation>
+                  An optional remote server interface from which to derive the protocol messages. If undefined, the default interface &lt;code&gt;org.eclipse.lsp4j.services.LanguageServer&lt;/code&gt; is used. See the &lt;a href=&quot;https://github.com/eclipse/lsp4j/tree/master/documentation&quot;&gt;LSP4J documentation&lt;/a&gt; for more information on how to extend the Language Server Protocol.
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="java" basedOn="org.eclipse.lsp4j.services.LanguageServer:"/>
+               </appinfo>
+            </annotation>
+         </attribute>
       </complexType>
    </element>
 
