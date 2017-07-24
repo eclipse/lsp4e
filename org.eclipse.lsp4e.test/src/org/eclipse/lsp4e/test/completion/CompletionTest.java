@@ -47,8 +47,11 @@ import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.ST;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.junit.After;
@@ -353,6 +356,33 @@ public class CompletionTest {
 		((LSCompletionProposal)proposals[0]).apply(viewer, '\n', 0, invokeOffset);
 		assertEquals(" and foo", viewer.getDocument().get());
 		// TODO check link edit groups
+	}
+
+	@Test
+	public void testSnippetTabStops() throws PartInitException, InvocationTargetException, CoreException {
+		CompletionItem completionItem = createCompletionItem("sum(${1:x}, ${2:y})", CompletionItemKind.Method,
+				new Range(new Position(0, 0), new Position(0, 1)));
+		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+		MockLanguageSever.INSTANCE
+				.setCompletionList(new CompletionList(false, Collections.singletonList(completionItem)));
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, ""));
+		int invokeOffset = 0;
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+		assertEquals(1, proposals.length);
+		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
+		assertEquals("sum(x, y)", viewer.getDocument().get());
+		// after the proposal is applied, the x parameter should be selected
+		Point range = proposals[0].getSelection(viewer.getDocument());
+		assertEquals(4, range.x);
+		assertEquals(1, range.y);
+
+		// fake a VerifyKey tabbing event to jump to the y parameter
+		Event event = new Event();
+		event.character = SWT.TAB;
+		viewer.getTextWidget().notifyListeners(ST.VerifyKey, event);
+		range = viewer.getSelectedRange();
+		assertEquals(7, range.x);
+		assertEquals(1, range.y);
 	}
 
 	@Test

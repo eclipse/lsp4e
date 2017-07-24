@@ -382,7 +382,7 @@ public class LSCompletionProposal
 						if (firstPosition == null) {
 							firstPosition = position;
 						}
-						groups.get(key).addPosition(firstPosition);
+						groups.get(key).addPosition(position);
 						currentOffset += defaultValue.length();
 					} else {
 						currentOffset++;
