@@ -28,6 +28,7 @@ import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkOptions;
 import org.eclipse.lsp4j.Hover;
@@ -92,6 +93,7 @@ public final class MockLanguageSever implements LanguageServer {
 		capabilities.setCodeActionProvider(Boolean.TRUE);
 		capabilities.setDocumentLinkProvider(new DocumentLinkOptions());
 		capabilities.setSignatureHelpProvider(new SignatureHelpOptions());
+		capabilities.setDocumentHighlightProvider(Boolean.TRUE);
 		initializeResult.setCapabilities(capabilities);
 	}
 	
@@ -159,6 +161,10 @@ public final class MockLanguageSever implements LanguageServer {
 		this.textDocumentService.setMockFormattingTextEdits(formattingTextEdits);
 	}
 
+	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
+		this.textDocumentService.setDocumentHighlights(documentHighlights);
+	}
+	
 	public void setCompletionTriggerChars(Set<String> chars) {
 		if (chars != null) {
 			initializeResult.getCapabilities().getCompletionProvider().setTriggerCharacters(new ArrayList<>(chars));

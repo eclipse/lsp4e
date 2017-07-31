@@ -264,5 +264,64 @@
             class="org.eclipse.lsp4e.DisableShortcutsWorkaround">
       </startup>
    </extension>
-
+   <extension
+         point="org.eclipse.ui.genericeditor.reconcilers">
+      <reconciler
+            class="org.eclipse.lsp4e.operations.highlight.HighlightReconciler"
+            contentType="org.eclipse.core.runtime.text">
+      </reconciler>
+   </extension>
+   <extension point="org.eclipse.ui.editors.annotationTypes">
+      <type name="org.eclipse.lsp4e.read"></type>
+      <type name="org.eclipse.lsp4e.write"></type>
+      <type name="org.eclipse.lsp4e.text"></type>
+   </extension>
+   <extension point="org.eclipse.ui.editors.markerAnnotationSpecification">
+		<specification annotationType="org.eclipse.lsp4e.read"
+			label="LSP Read Occurrence"
+			textPreferenceKey="LSP4EReadOccurrenceIndication" textPreferenceValue="false"
+			highlightPreferenceKey="LSP4EReadOccurrenceHighlighting"
+			highlightPreferenceValue="true" contributesToHeader="false"
+			overviewRulerPreferenceKey="LSP4EReadOccurrenceIndicationInOverviewRuler"
+			overviewRulerPreferenceValue="true"
+			verticalRulerPreferenceKey="LSP4EReadOccurrenceIndicationInVerticalRuler"
+			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4EReadOccurrenceIndicationColor"
+			colorPreferenceValue="212,212,212" presentationLayer="4"
+			showInNextPrevDropdownToolbarAction="true" 
+			textStylePreferenceKey="LSP4EReadOccurrenceTextStyle"
+			textStylePreferenceValue="NONE">
+		</specification>
+   </extension>
+   <extension point="org.eclipse.ui.editors.markerAnnotationSpecification">
+		<specification annotationType="org.eclipse.lsp4e.write"
+			label="LSP Write Occurrence"
+			textPreferenceKey="LSP4EWriteOccurrenceIndication" textPreferenceValue="false"
+			highlightPreferenceKey="LSP4EWriteOccurrenceHighlighting"
+			highlightPreferenceValue="true" contributesToHeader="false"
+			overviewRulerPreferenceKey="LSP4EWriteOccurrenceIndicationInOverviewRuler"
+			overviewRulerPreferenceValue="true"
+			verticalRulerPreferenceKey="LSP4EWriteOccurrenceIndicationInVerticalRuler"
+			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4EReadOccurrenceIndicationColor"
+			colorPreferenceValue="212,212,212" presentationLayer="4"
+			showInNextPrevDropdownToolbarAction="true"
+			textStylePreferenceKey="LSP4EWriteOccurrenceTextStyle"
+			textStylePreferenceValue="NONE">
+		</specification>
+   </extension>
+   <extension point="org.eclipse.ui.editors.markerAnnotationSpecification">
+		<specification annotationType="org.eclipse.lsp4e.text"
+			label="LSP Text Occurrence"
+			textPreferenceKey="LSP4ETextOccurrenceIndication" textPreferenceValue="false"
+			highlightPreferenceKey="LSP4ETextOccurrenceHighlighting"
+			highlightPreferenceValue="true" contributesToHeader="false"
+			overviewRulerPreferenceKey="LSP4ETextOccurrenceIndicationInOverviewRuler"
+			overviewRulerPreferenceValue="true"
+			verticalRulerPreferenceKey="LSP4ETextOccurrenceIndicationInVerticalRuler"
+			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4ETextOccurrenceIndicationColor"
+			colorPreferenceValue="212,212,212" presentationLayer="4"
+			showInNextPrevDropdownToolbarAction="true"
+			textStylePreferenceKey="LSP4ETextOccurrenceTextStyle"
+			textStylePreferenceValue="NONE">
+		</specification>
+   </extension>
 </plugin>

@@ -24,6 +24,7 @@ import org.eclipse.lsp4e.test.edit.DocumentDidOpenTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidSaveTest;
 import org.eclipse.lsp4e.test.edit.DocumentRevertAndCloseTest;
 import org.eclipse.lsp4e.test.format.FormatTest;
+import org.eclipse.lsp4e.test.highlight.HighlightTest;
 import org.eclipse.lsp4e.test.hover.HoverTest;
 import org.eclipse.lsp4e.test.references.FindReferencesTest;
 import org.eclipse.lsp4e.test.symbols.SymbolsModelTest;
@@ -50,7 +51,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	FormatTest.class,
 	CodeActionTests.class,
 	DocumentLinkTest.class,
-	OpenCloseLanguageServerTest.class
+	OpenCloseLanguageServerTest.class,
+	HighlightTest.class
 })
 public class AllTests {
 

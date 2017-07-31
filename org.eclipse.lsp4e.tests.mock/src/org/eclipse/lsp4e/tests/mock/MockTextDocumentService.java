@@ -57,18 +57,19 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<? extends TextEdit> mockFormattingTextEdits;
 	private SignatureHelp mockSignatureHelp;
 	private List<DocumentLink> mockDocumentLinks;
+	private List<? extends DocumentHighlight> mockDocumentHighlights;
 
 	private CompletableFuture<DidOpenTextDocumentParams> didOpenCallback;
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
 	private CompletableFuture<DidSaveTextDocumentParams> didSaveCallback;
 	private CompletableFuture<DidCloseTextDocumentParams> didCloseCallback;
 
-	private Function<?,? extends CompletableFuture<?>> _futureFactory;
+	private Function<?, ? extends CompletableFuture<?>> _futureFactory;
 	private List<LanguageClient> remoteProxies;
 	private Location mockReferences;
 	private List<Diagnostic> diagnostics;
 	private List<Command> mockCodeActions;
-	
+
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
 		// Some default values for mocks, can be overriden
@@ -80,7 +81,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	private <U> CompletableFuture<U> futureFactory(U value) {
-		return ((Function<U, CompletableFuture<U>>)this._futureFactory).apply(value);
+		return ((Function<U, CompletableFuture<U>>) this._futureFactory).apply(value);
 	}
 
 	@Override
@@ -115,14 +116,14 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(TextDocumentPositionParams position) {
-		return CompletableFuture.completedFuture(null);
+		return CompletableFuture.completedFuture(mockDocumentHighlights);
 	}
 
 	@Override
 	public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
 		return CompletableFuture.completedFuture(null);
 	}
-	
+
 	@Override
 	public CompletableFuture<List<DocumentLink>> documentLink(DocumentLinkParams params) {
 		return CompletableFuture.completedFuture(mockDocumentLinks);
@@ -198,7 +199,7 @@ public class MockTextDocumentService implements TextDocumentService {
 			didSaveCallback = null;
 		}
 	}
-	
+
 	public void setMockCompletionList(CompletionList completionList) {
 		this.mockCompletionList = completionList;
 	}
@@ -206,23 +207,23 @@ public class MockTextDocumentService implements TextDocumentService {
 	public void setDidOpenCallback(CompletableFuture<DidOpenTextDocumentParams> didOpenExpectation) {
 		this.didOpenCallback = didOpenExpectation;
 	}
-	
+
 	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
 		this.didChangeCallback = didChangeExpectation;
 	}
-	
+
 	public void setDidSaveCallback(CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation) {
 		this.didSaveCallback = didSaveExpectation;
 	}
-	
+
 	public void setDidCloseCallback(CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation) {
 		this.didCloseCallback = didCloseExpectation;
 	}
-	
+
 	public void setMockHover(Hover hover) {
 		this.mockHover = hover;
 	}
-	
+
 	public void setMockDefinitionLocations(List<? extends Location> definitionLocations) {
 		this.mockDefinitionLocations = definitionLocations;
 	}
@@ -230,7 +231,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	public void setMockReferences(Location location) {
 		this.mockReferences = location;
 	}
-	
+
 	public void setMockFormattingTextEdits(List<? extends TextEdit> formattingTextEdits) {
 		this.mockFormattingTextEdits = formattingTextEdits;
 	}
@@ -238,7 +239,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	public void setMockDocumentLinks(List<DocumentLink> documentLinks) {
 		this.mockDocumentLinks = documentLinks;
 	}
-	
+
 	public void reset() {
 		this.mockCompletionList = new CompletionList();
 		this.mockDefinitionLocations = Collections.emptyList();
@@ -259,9 +260,12 @@ public class MockTextDocumentService implements TextDocumentService {
 	public void setCodeActions(List<Command> commands) {
 		this.mockCodeActions = commands;
 	}
-	
+
 	public void setSignatureHelp(SignatureHelp signatureHelp) {
 		this.mockSignatureHelp = signatureHelp;
 	}
-	
+
+	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
+		this.mockDocumentHighlights = documentHighlights;
+	}
 }
