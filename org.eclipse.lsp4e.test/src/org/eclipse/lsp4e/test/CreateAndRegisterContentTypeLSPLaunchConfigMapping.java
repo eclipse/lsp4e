@@ -64,7 +64,11 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 				workingCopy.setAttribute(IExternalToolConstants.ATTR_SHOW_CONSOLE, false);
 				workingCopy.setAttribute(IExternalToolConstants.ATTR_BUILD_SCOPE, "${none}");
 				workingCopy.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, true);
-				workingCopy.setAttribute(IExternalToolConstants.ATTR_LOCATION, new File(System.getProperty("java.home"),"bin/java").getAbsolutePath());
+				String exe = "";
+				if (Platform.OS_WIN32.equals(Platform.getOS())) {
+					exe = ".exe";
+				}
+				workingCopy.setAttribute(IExternalToolConstants.ATTR_LOCATION, new File(System.getProperty("java.home"),"bin/java" + exe).getAbsolutePath());
 				workingCopy.setAttribute(IExternalToolConstants.ATTR_TOOL_ARGUMENTS, "-cp " +
 						getClassPath(MockLanguageSever.class) + " " +
 						MockLanguageSever.class.getName());
