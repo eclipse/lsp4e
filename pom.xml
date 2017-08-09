@@ -15,12 +15,13 @@
 		<sonar.jacoco.reportPath>../target/jacoco.exec</sonar.jacoco.reportPath>
 		<tycho.scmUrl>scm:git:https://git.eclipse.org/r/p/lsp4e/lsp4e.git</tycho.scmUrl>
 		<ui.test.vmargs></ui.test.vmargs>
-		<target-config>target-platform</target-config>
+		<target-config>target-platform-oxygen</target-config>
 	</properties>
 
 	<modules>
-		<module>target-platform</module>
-		<module>target-platform-e46-compatibility</module>
+		<module>target-platforms/target-platform-neon</module>
+		<module>target-platforms/target-platform-oxygen</module>
+		<module>target-platforms/target-platform-photon</module>
 		<module>org.eclipse.lsp4e</module>
 		<module>org.eclipse.lsp4e.tests.mock</module>
 	</modules>
@@ -151,11 +152,13 @@
 	
 	<profiles>
 		<profile>
-			<id>oxygen-target</id>
+			<id>regular</id>
 			<activation>
 				<property>
-					<name>!neon-compatibility</name>
+					<name>target-config</name>
+					<value>!target-platform-neon</value>
 				</property>
+				<activeByDefault>true</activeByDefault>
 			</activation>
 			<modules>
 				<module>org.eclipse.lsp4e.test</module>
@@ -167,11 +170,13 @@
 			<id>neon-target</id>
 			<activation>
 				<property>
-					<name>neon-compatibility</name>
+					<name>target-config</name>
+					<value>target-platform-neon</value>
 				</property>
+				<activeByDefault>false</activeByDefault>
 			</activation>
 			<properties>
-				<target-config>target-platform-e46</target-config>
+				<target-config>target-platform-neon</target-config>
 			</properties>
 			<build>
 				<plugins>
