@@ -8,6 +8,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Mickael Istria (Red Hat Inc.) - Support for delay and mock references
+ *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
@@ -56,6 +57,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<? extends Location> mockDefinitionLocations;
 	private List<? extends TextEdit> mockFormattingTextEdits;
 	private SignatureHelp mockSignatureHelp;
+	private List<CodeLens> mockCodeLenses;
 	private List<DocumentLink> mockDocumentLinks;
 	private List<? extends DocumentHighlight> mockDocumentHighlights;
 
@@ -136,7 +138,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends CodeLens>> codeLens(CodeLensParams params) {
-		return CompletableFuture.completedFuture(null);
+		return CompletableFuture.completedFuture(mockCodeLenses);
 	}
 
 	@Override
@@ -224,6 +226,10 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockHover = hover;
 	}
 
+	public void setMockCodeLenses(List<CodeLens> codeLenses) {
+		this.mockCodeLenses = codeLenses;
+	}
+
 	public void setMockDefinitionLocations(List<? extends Location> definitionLocations) {
 		this.mockDefinitionLocations = definitionLocations;
 	}
@@ -244,6 +250,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockCompletionList = new CompletionList();
 		this.mockDefinitionLocations = Collections.emptyList();
 		this.mockHover = null;
+		this.mockCodeLenses = new ArrayList<CodeLens>();
 		this.mockReferences = null;
 		this.remoteProxies = new ArrayList<LanguageClient>();
 		this.mockCodeActions = new ArrayList<Command>();

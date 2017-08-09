@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
@@ -41,9 +42,14 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4j.CodeLens;
+import org.eclipse.lsp4j.CodeLensParams;
+import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.MarkedString;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
@@ -74,8 +80,9 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		}
 	}
 
-	private List<CompletableFuture<?>> hoverRequests;
+	private List<CompletableFuture<?>> requests;
 	private List<Hover> hoverResults;
+	private List<CodeLens> codeLensResults;
 	private IRegion lastRegion;
 	private ITextViewer textViewer;
 
@@ -87,23 +94,35 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		if (textViewer == null || hoverRegion == null) {
 			return null;
 		}
-		if (!(hoverRegion.equals(this.lastRegion) && textViewer.equals(this.textViewer) && this.hoverRequests != null)) {
+		if (!(hoverRegion.equals(this.lastRegion) && textViewer.equals(this.textViewer) && this.requests != null)) {
 			initiateHoverRequest(textViewer, hoverRegion.getOffset());
 		}
 		try {
-			CompletableFuture.allOf(this.hoverRequests.toArray(new CompletableFuture[this.hoverRequests.size()])).get(500, TimeUnit.MILLISECONDS);
+			CompletableFuture.allOf(this.requests.toArray(new CompletableFuture[this.requests.size()])).get(500, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
 		}
-		if (this.hoverResults == null || this.hoverResults.isEmpty()) {
-			return null;
-		}
-		String result = hoverResults.stream()
+		String result = ""; //$NON-NLS-1$
+		if (!(this.hoverResults == null || this.hoverResults.isEmpty())) {
+			result += hoverResults.stream()
 				.filter(Objects::nonNull)
 				.map(LSBasedHover::getHoverString)
 				.filter(Objects::nonNull)
 				.collect(Collectors.joining("\n\n")); //$NON-NLS-1$
-		if (result == null || result.isEmpty()) {
+
+		}
+		if (!(this.codeLensResults == null || this.codeLensResults.isEmpty())) {
+			String codeLensResult = codeLensResults.stream()
+					.filter(Objects::nonNull)
+					.map(LSBasedHover::getCodeLensString)
+					.filter(Objects::nonNull)
+					.collect(Collectors.joining("\n\n")); //$NON-NLS-1$
+			if(!codeLensResult.isEmpty()) {
+				result += "\n\n"; //$NON-NLS-1$
+			}
+			result += codeLensResult;
+		}
+		if (result.isEmpty()) {
 			return null;
 		}
 		result = MARKDOWN_PARSER.parseToHtml(result);
@@ -149,6 +168,14 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		}).filter(((Predicate<String>)String::isEmpty).negate()).collect(Collectors.joining("\n\n")); //$NON-NLS-1$)
 	}
 
+	protected static @Nullable String getCodeLensString(@NonNull CodeLens codeLens) {
+		Command command = codeLens.getCommand();
+		if(command == null || command.getTitle().isEmpty()) {
+			return null;
+		}
+		return command.getTitle();
+	}
+
 	private static @NonNull String toHTMLrgb(RGB rgb) {
 		StringBuilder builder = new StringBuilder(7);
 		builder.append('#');
@@ -174,7 +201,7 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		IRegion res = null;
 		initiateHoverRequest(textViewer, offset);
 		try {
-			CompletableFuture.allOf(this.hoverRequests.toArray(new CompletableFuture[this.hoverRequests.size()])).get(800, TimeUnit.MILLISECONDS);
+			CompletableFuture.allOf(this.requests.toArray(new CompletableFuture[this.requests.size()])).get(800, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException | ExecutionException | TimeoutException e1) {
 			LanguageServerPlugin.logError(e1);
 		}
@@ -214,17 +241,44 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		// if we directly add/remove from members, we may have thread related issues such as some
 		// results from a previous request leaking in the new hover.
 		final List<CompletableFuture<?>> requests = new ArrayList<>(docInfos.size());
-		final List<Hover> result = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
+		final List<Hover> hoverResults = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
+		final List<CodeLens> codeLensResults = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
 		for (@NonNull final LSPDocumentInfo info : docInfos) {
 			try {
 				CompletableFuture<Hover> hover = info.getLanguageClient().getTextDocumentService().hover(LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument()));
-				requests.add(hover.thenAccept(result::add));
+				requests.add(hover.thenAccept(hoverResults::add));
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
+			}
+
+			CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(info.getFileUri().toString()));
+			CompletableFuture<List<? extends CodeLens>> codeLenses = info.getLanguageClient().getTextDocumentService().codeLens(param);
+
+			try {
+				int line = viewer.getDocument().getLineOfOffset(offset);
+				int index = offset - viewer.getDocument().getLineOffset(line);
+				requests.add(codeLenses.thenAccept(r -> {
+					for (CodeLens codeLens : r) {
+						if(codeLens == null) continue;
+						if(isOffsetInCodeLensRange(codeLens, line, index))codeLensResults.add(codeLens);
+					}
+				}));
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
-		this.hoverRequests = requests;
-		this.hoverResults = result;
+
+		this.requests = requests;
+		this.hoverResults = hoverResults;
+		this.codeLensResults = codeLensResults;
+	}
+
+	static private boolean isOffsetInCodeLensRange(CodeLens codeLens, int line, int index) {
+		System.out.println(codeLens.toString());
+		Position start = codeLens.getRange().getStart();
+		Position end = codeLens.getRange().getEnd();
+		return (start.getLine() < line || (start.getLine() == line && start.getCharacter() <= index))
+				&& (end.getLine() > line || (end.getLine() == line && end.getCharacter() >= index));
 	}
 
 	@Override

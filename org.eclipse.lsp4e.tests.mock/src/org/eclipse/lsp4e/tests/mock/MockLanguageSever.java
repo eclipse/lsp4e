@@ -8,6 +8,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Mickael Istria (Red Hat Inc.) - added support for delays
+ *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
@@ -32,6 +33,8 @@ import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkOptions;
 import org.eclipse.lsp4j.Hover;
+import org.eclipse.lsp4j.CodeLens;
+import org.eclipse.lsp4j.CodeLensOptions;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
@@ -59,11 +62,11 @@ public final class MockLanguageSever implements LanguageServer {
 	public static void reset() {
 		INSTANCE = new MockLanguageSever();
 	}
-	
+
 	private MockLanguageSever() {
 		resetInitializeResult();
 	}
-	
+
 	/**
 	 * Starts the language server on stdin/stdout
 	 * @throws ExecutionException 
@@ -91,12 +94,13 @@ public final class MockLanguageSever implements LanguageServer {
 		capabilities.setReferencesProvider(true);
 		capabilities.setDocumentFormattingProvider(true);
 		capabilities.setCodeActionProvider(Boolean.TRUE);
+		capabilities.setCodeLensProvider(new CodeLensOptions(true));
 		capabilities.setDocumentLinkProvider(new DocumentLinkOptions());
 		capabilities.setSignatureHelpProvider(new SignatureHelpOptions());
 		capabilities.setDocumentHighlightProvider(Boolean.TRUE);
 		initializeResult.setCapabilities(capabilities);
 	}
-	
+
 	<U> CompletableFuture<U> buildMaybeDelayedFuture(U value) {
 		if (delay > 0) {
 			return CompletableFuture.runAsync(() -> {
@@ -109,7 +113,7 @@ public final class MockLanguageSever implements LanguageServer {
 				public U apply(Void v) {
 					return value;
 				}
-			});  
+			});
 		}
 		return CompletableFuture.completedFuture(value);
 	}
@@ -132,11 +136,15 @@ public final class MockLanguageSever implements LanguageServer {
 	public void setCompletionList(CompletionList completionList) {
 		this.textDocumentService.setMockCompletionList(completionList);
 	}
-	
+
 	public void setHover(Hover hover) {
 		this.textDocumentService.setMockHover(hover);
 	}
-	
+
+	public void setCodeLens(List<CodeLens> codeLens) {
+		this.textDocumentService.setMockCodeLenses(codeLens);
+	}
+
 	public void setDefinition(List<? extends Location> definitionLocations){
 		this.textDocumentService.setMockDefinitionLocations(definitionLocations);
 	}
@@ -144,19 +152,19 @@ public final class MockLanguageSever implements LanguageServer {
 	public void setDidOpenCallback(CompletableFuture<DidOpenTextDocumentParams> didOpenExpectation) {
 		this.textDocumentService.setDidOpenCallback(didOpenExpectation);
 	}
-	
+
 	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
 		this.textDocumentService.setDidChangeCallback(didChangeExpectation);
 	}
-	
+
 	public void setDidSaveCallback(CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation) {
 		this.textDocumentService.setDidSaveCallback(didSaveExpectation);
 	}
-	
+
 	public void setDidCloseCallback(CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation) {
 		this.textDocumentService.setDidCloseCallback(didCloseExpectation);
 	}
-	
+
 	public void setFormattingTextEdits(List<? extends TextEdit> formattingTextEdits) {
 		this.textDocumentService.setMockFormattingTextEdits(formattingTextEdits);
 	}
@@ -164,13 +172,13 @@ public final class MockLanguageSever implements LanguageServer {
 	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
 		this.textDocumentService.setDocumentHighlights(documentHighlights);
 	}
-	
+
 	public void setCompletionTriggerChars(Set<String> chars) {
 		if (chars != null) {
 			initializeResult.getCapabilities().getCompletionProvider().setTriggerCharacters(new ArrayList<>(chars));
 		}
 	}
-	
+
 	public void setContextInformationTriggerChars(Set<String> chars) {
 		if (chars != null) {
 			initializeResult.getCapabilities().getSignatureHelpProvider().setTriggerCharacters(new ArrayList<>(chars));
