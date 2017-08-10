@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Lucas Bullen (Red Hat Inc.) - Bug 520700 - TextEditors within FormEditors are not supported
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.completion;
 
@@ -49,7 +50,6 @@ import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureInformation;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.xtext.xbase.lib.Pair;
 
@@ -136,7 +136,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	}
 
 	private void checkInfoAndJob(@NonNull IDocument refDocument) {
-		if (infos != null && !refDocument.equals(infos.get(0).getDocument())) {
+		if (infos != null && !infos.isEmpty() && refDocument.equals(infos.get(0).getDocument())) {
 			if (findInfoJob != null) {
 				findInfoJob.getValue().cancel();
 				findInfoJob = null;
@@ -215,12 +215,15 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	@Override
 	public char[] getCompletionProposalAutoActivationCharacters() {
-		checkInfoAndJob(LSPEclipseUtils.getDocument(
-				(ITextEditor) PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor()));
-		try {
-			this.findInfoJob.getValue().join(TRIGGERS_TIMEOUT, new NullProgressMonitor());
-		} catch (InterruptedException | OperationCanceledException e) {
-			LanguageServerPlugin.logError(e);
+		ITextEditor textEditor = LSPEclipseUtils.getActiveTextEditor();
+		if(textEditor != null) {
+			checkInfoAndJob(LSPEclipseUtils.getDocument(textEditor));
+			try {
+				this.findInfoJob.getValue().join(TRIGGERS_TIMEOUT, new NullProgressMonitor());
+			} catch (InterruptedException | OperationCanceledException e) {
+				LanguageServerPlugin.logError(e);
+			}
+			return triggerChars;
 		}
 		return triggerChars;
 	}
@@ -274,12 +277,14 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	@Override
 	public char[] getContextInformationAutoActivationCharacters() {
-		checkInfoAndJob(LSPEclipseUtils.getDocument(
-				(ITextEditor) PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor()));
-		try {
-			this.findInfoJob.getValue().join(TRIGGERS_TIMEOUT, new NullProgressMonitor());
-		} catch (InterruptedException | OperationCanceledException e) {
-			LanguageServerPlugin.logError(e);
+		ITextEditor textEditor = LSPEclipseUtils.getActiveTextEditor();
+		if(textEditor != null) {
+			checkInfoAndJob(LSPEclipseUtils.getDocument(textEditor));
+			try {
+				this.findInfoJob.getValue().join(TRIGGERS_TIMEOUT, new NullProgressMonitor());
+			} catch (InterruptedException | OperationCanceledException e) {
+				LanguageServerPlugin.logError(e);
+			}
 		}
 		return contextTriggerChars;
 	}

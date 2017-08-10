@@ -52,8 +52,8 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 
 	@Override
 	public void initialize(IServiceLocator serviceLocator) {
-		IEditorPart editor = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
-		if (editor instanceof ITextEditor) {
+		IEditorPart editor = LSPEclipseUtils.getActiveTextEditor();
+		if (editor != null) {
 			ITextEditor textEditor = (ITextEditor) editor;
 			IDocument document = LSPEclipseUtils.getDocument(textEditor);
 			if (document == null) {

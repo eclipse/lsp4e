@@ -29,8 +29,6 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.menus.IWorkbenchContribution;
 import org.eclipse.ui.progress.UIJob;
 import org.eclipse.ui.services.IServiceLocator;
@@ -42,10 +40,10 @@ public class LSPCodeLensMenu extends ContributionItem implements IWorkbenchContr
 
 	@Override
 	public void initialize(IServiceLocator serviceLocator) {
-		IEditorPart editor = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
-		if (editor instanceof ITextEditor) {
+		ITextEditor editor = LSPEclipseUtils.getActiveTextEditor();
+		if (editor != null) {
 			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-					LSPEclipseUtils.getDocument((ITextEditor) editor),
+					LSPEclipseUtils.getDocument(editor),
 					capabilities -> capabilities.getCodeLensProvider() != null);
 			if (!infos.isEmpty()) {
 				this.info = infos.iterator().next();

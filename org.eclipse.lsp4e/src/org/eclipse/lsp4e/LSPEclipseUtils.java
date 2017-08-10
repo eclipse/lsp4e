@@ -61,7 +61,9 @@ import org.eclipse.text.undo.IDocumentUndoManager;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -74,6 +76,20 @@ public class LSPEclipseUtils {
 
 	private LSPEclipseUtils() {
 		// this class shouldn't be instantiated
+	}
+
+	public static ITextEditor getActiveTextEditor() {
+		IEditorPart editorPart = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
+		if(editorPart instanceof ITextEditor) {
+			return (ITextEditor) editorPart;
+		} else if (editorPart instanceof MultiPageEditorPart) {
+			MultiPageEditorPart multiPageEditorPart = (MultiPageEditorPart) editorPart;
+			Object page = multiPageEditorPart.getSelectedPage();
+			if (page instanceof ITextEditor) {
+				return (ITextEditor) page;
+			}
+		}
+		return null;
 	}
 
 	public static Position toPosition(int offset, IDocument document) throws BadLocationException {
