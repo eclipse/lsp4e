@@ -104,7 +104,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 								item.setText(u.getMessage());
 								item.setImage(PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_DEC_FIELD_ERROR));
 								item.setEnabled(false);
-							} else {
+							} else if(t != null) {
 								for (Command command : t) {
 									if (command != null) {
 										final MenuItem item = new MenuItem(menu, SWT.NONE, index);
@@ -113,7 +113,9 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 									}
 								}
 							}
-							if (runningFutures.isEmpty()) {
+							if (menu.getItemCount() == 1) {
+								item.setText(Messages.codeActions_emptyMenu);
+							}else {
 								item.dispose();
 							}
 							return Status.OK_STATUS;

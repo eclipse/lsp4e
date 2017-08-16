@@ -75,14 +75,19 @@ public class LSPCodeLensMenu extends ContributionItem implements IWorkbenchContr
 						if (u != null) {
 							// log?
 							item.setText(u.getMessage());
-						} else {
+						} else if (t != null){
 							for (CodeLens lens : t) {
-								if (lens != null) {
+								if (lens != null && lens.getCommand() != null) {
 									final MenuItem item = new MenuItem(menu, SWT.NONE, index);
 									item.setText(lens.getCommand().getTitle());
 									item.setEnabled(false);
 								}
 							}
+						}
+						if (menu.getItemCount() == 1) {
+							item.setText(Messages.codeLens_emptyMenu);
+						}else {
+							item.dispose();
 						}
 						return Status.OK_STATUS;
 					}

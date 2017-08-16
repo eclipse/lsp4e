@@ -28,6 +28,8 @@ public class Messages extends NLS {
 	public static String NewContentTypeLSPLaunchDialog_withLSPLaunch;
 	public static String codeActions_description;
 	public static String codeActions_label;
+	public static String codeActions_emptyMenu;
+	public static String codeLens_emptyMenu;
 	public static String updateCodeActions_menu;
 	public static String initializeLanguageServer_job;
 	public static String rename_job;
