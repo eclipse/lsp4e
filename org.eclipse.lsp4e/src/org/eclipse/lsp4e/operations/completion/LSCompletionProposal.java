@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2017 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -194,6 +194,9 @@ public class LSCompletionProposal
 		}
 		if (resolvedItem.getInsertText() != null) {
 			item.setInsertText(resolvedItem.getInsertText());
+		}
+		if (resolvedItem.getInsertTextFormat() != null) {
+			item.setInsertTextFormat(resolvedItem.getInsertTextFormat());
 		}
 		if (resolvedItem.getTextEdit() != null) {
 			item.setTextEdit(resolvedItem.getTextEdit());
