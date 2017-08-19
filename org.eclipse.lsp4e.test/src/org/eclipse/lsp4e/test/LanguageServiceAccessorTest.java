@@ -117,6 +117,30 @@ public class LanguageServiceAccessorTest {
 	}
 
 	@Test
+	public void testDontRestartUnrelatedLSForFileFromSameProject() throws Exception {
+		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
+		IFile testFile2 = TestUtils.createUniqueTestFile(project, "lspt-different", "");
+
+		Collection<ProjectSpecificLanguageServerWrapper> wrappers1 = LanguageServiceAccessor.getLSWrappers(testFile1, c -> Boolean.TRUE);
+		assertEquals(1, wrappers1.size());
+		ProjectSpecificLanguageServerWrapper wrapper1 = wrappers1.iterator().next();
+		assertTrue(wrapper1.isActive());
+		
+		wrapper1.disconnect(testFile1.getFullPath());
+		assertFalse(wrapper1.isActive());
+		
+		Collection<ProjectSpecificLanguageServerWrapper> wrappers2 = LanguageServiceAccessor.getLSWrappers(testFile2, c -> Boolean.TRUE);
+		assertEquals(1, wrappers2.size());
+		ProjectSpecificLanguageServerWrapper wrapper2 = wrappers2.iterator().next();
+		assertTrue(wrapper2.isActive());
+		
+		// make sure the language server for testFile1 (which is unrelated to testFile2 is not started again)
+		assertFalse(wrapper1.isActive());
+
+		wrapper2.disconnect(testFile2.getFullPath());
+	}
+
+	@Test
 	public void testLanguageServerHierarchy_moreSpecializedFirst() throws Exception {
 		// file with a content-type and a parent, each associated to one LS
 		IFile testFile = TestUtils.createUniqueTestFile(project, "lsptchild", "");

@@ -218,8 +218,8 @@ public class LanguageServiceAccessor {
 		synchronized(projectServers) {
 			return projectServers.stream()
 				.filter(wrapper -> wrapper.project.equals(project))
-				.filter(wrapper -> wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities()))
 				.filter(wrapper -> wrapper.isConnectedTo(file.getLocation()))
+				.filter(wrapper -> wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities()))
 				.collect(Collectors.toList());
 		}
 	}
