@@ -8,6 +8,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Michał Niewrzał (Rogue Wave Software Inc.)
+ *  Lucas Bullen (Red Hat Inc.) - Get IDocument from IEditorInput
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -58,7 +59,11 @@ import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
 import org.eclipse.text.undo.DocumentUndoManagerRegistry;
 import org.eclipse.text.undo.IDocumentUndoManager;
+import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IFileEditorInput;
+import org.eclipse.ui.IPathEditorInput;
+import org.eclipse.ui.IURIEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
@@ -280,6 +285,20 @@ public class LSPEclipseUtils {
 			LanguageServerPlugin.logError(ex);
 			return null;
 		}
+	}
+
+	public static IDocument getDocument(IEditorInput editorInput) {
+		if(editorInput instanceof IFileEditorInput) {
+			IFileEditorInput fileEditorInput = (IFileEditorInput)editorInput;
+				return getDocument(fileEditorInput.getFile());
+		}else if(editorInput instanceof IPathEditorInput) {
+			IPathEditorInput pathEditorInput = (IPathEditorInput)editorInput;
+			return getDocument(ResourcesPlugin.getWorkspace().getRoot().getFile(pathEditorInput.getPath()));
+		}else if(editorInput instanceof IURIEditorInput) {
+			IURIEditorInput uriEditorInput = (IURIEditorInput)editorInput;
+			return getDocument(findResourceFor(uriEditorInput.getURI().toString()));
+		}
+		return null;
 	}
 
 	/**

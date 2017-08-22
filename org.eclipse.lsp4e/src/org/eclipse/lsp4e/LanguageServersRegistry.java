@@ -33,6 +33,7 @@ import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
@@ -286,6 +287,14 @@ public class LanguageServersRegistry {
 			}
 		}
 		return null;
+	}
+
+	public static boolean canUseLanguageServer(IEditorInput editorInput) {
+		List<ContentTypeToLanguageServerDefinition> contentTypes = LanguageServersRegistry.getInstance().getContentTypeToLSPExtensions();
+		for (ContentTypeToLanguageServerDefinition contentType : contentTypes) {
+			if(contentType.getKey().isAssociatedWith(editorInput.getName())) return true;
+		}
+		return false;
 	}
 
 	/**
