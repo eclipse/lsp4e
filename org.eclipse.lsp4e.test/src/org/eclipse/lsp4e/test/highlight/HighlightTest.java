@@ -29,7 +29,7 @@ import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
-import org.eclipse.lsp4e.operations.highlight.HighlightReconciler;
+import org.eclipse.lsp4e.operations.highlight.HighlightReconcilingStrategy;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
 import org.eclipse.lsp4j.DocumentHighlight;
@@ -103,15 +103,15 @@ public class HighlightTest {
 
 		Annotation annotation = annotations.get(new org.eclipse.jface.text.Position(2, 4));
 		Assert.assertNotNull(annotation);
-		assertEquals(HighlightReconciler.READ_ANNOTATION_TYPE, annotation.getType());
+		assertEquals(HighlightReconcilingStrategy.READ_ANNOTATION_TYPE, annotation.getType());
 
 		annotation = annotations.get(new org.eclipse.jface.text.Position(7, 5));
 		Assert.assertNotNull(annotation);
-		assertEquals(HighlightReconciler.WRITE_ANNOTATION_TYPE, annotation.getType());
+		assertEquals(HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, annotation.getType());
 
 		annotation = annotations.get(new org.eclipse.jface.text.Position(13, 4));
 		Assert.assertNotNull(annotation);
-		assertEquals(HighlightReconciler.TEXT_ANNOTATION_TYPE, annotation.getType());
+		assertEquals(HighlightReconcilingStrategy.TEXT_ANNOTATION_TYPE, annotation.getType());
 
 		assertEquals(false, iterator.hasNext());
 	}
