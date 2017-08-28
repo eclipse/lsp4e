@@ -11,7 +11,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.completion;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -346,7 +348,7 @@ public class LSCompletionProposal
 				textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + commonSize);
 			}
 			insertText = textEdit.getNewText();
-			LinkedHashMap<String, LinkedPositionGroup> groups = new LinkedHashMap<>();
+			LinkedHashMap<String, List<LinkedPosition>> regions = new LinkedHashMap<>();
 			if (item.getInsertTextFormat() == InsertTextFormat.Snippet) {
 				int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
 				int currentOffset = 0;
@@ -377,15 +379,15 @@ public class LSCompletionProposal
 					}
 					if (keyBuilder.length() > 0) {
 						String key = keyBuilder.toString();
-						if (!groups.containsKey(key)) {
-							groups.put(key, new LinkedPositionGroup());
+						if (!regions.containsKey(key)) {
+							regions.put(key, new ArrayList<>());
 						}
 						insertText = insertText.substring(0, currentOffset) + defaultValue + insertText.substring(currentOffset + length);
 						LinkedPosition position = new LinkedPosition(document, insertionOffset + currentOffset, defaultValue.length());
 						if (firstPosition == null) {
 							firstPosition = position;
 						}
-						groups.get(key).addPosition(position);
+						regions.get(key).add(position);
 						currentOffset += defaultValue.length();
 					} else {
 						currentOffset++;
@@ -395,9 +397,13 @@ public class LSCompletionProposal
 			textEdit.setNewText(insertText); // insertText now has placeholder removed
 			LSPEclipseUtils.applyEdit(textEdit, document);
 
-			if (viewer != null && !groups.isEmpty()) {
+			if (viewer != null && !regions.isEmpty()) {
 				LinkedModeModel model = new LinkedModeModel();
-				for (LinkedPositionGroup group : groups.values()) {
+				for (List<LinkedPosition> positions: regions.values()) {
+					LinkedPositionGroup group = new LinkedPositionGroup();
+					for (LinkedPosition position : positions) {
+						group.addPosition(position);
+					}
 					model.addGroup(group);
 				}
 				model.forceInstall();

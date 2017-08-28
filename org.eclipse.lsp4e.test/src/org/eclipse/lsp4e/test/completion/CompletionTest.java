@@ -359,6 +359,20 @@ public class CompletionTest {
 	}
 
 	@Test
+	public void testDuplicateVariable() throws PartInitException, InvocationTargetException, CoreException {
+		CompletionItem completionItem = createCompletionItem("${1:foo} and ${1:foo}", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
+		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, Collections.singletonList(completionItem)));
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,""));
+		int invokeOffset = 0;
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+		assertEquals(1, proposals.length);
+		((LSCompletionProposal)proposals[0]).apply(viewer, '\n', 0, invokeOffset);
+		assertEquals("foo and foo", viewer.getDocument().get());
+		// TODO check link edit groups
+	}
+
+	@Test
 	public void testSnippetTabStops() throws PartInitException, InvocationTargetException, CoreException {
 		CompletionItem completionItem = createCompletionItem("sum(${1:x}, ${2:y})", CompletionItemKind.Method,
 				new Range(new Position(0, 0), new Position(0, 1)));
