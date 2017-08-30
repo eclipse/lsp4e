@@ -45,12 +45,15 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 
 	private boolean showLocation;
 
+	private boolean showKind;
+
 	public SymbolsLabelProvider() {
-		this(false);
+		this(false, true);
 	}
 
-	public SymbolsLabelProvider(boolean showLocation) {
+	public SymbolsLabelProvider(boolean showLocation, boolean showKind) {
 		this.showLocation = showLocation;
+		this.showKind = showKind;
 	}
 
 	@Override
@@ -139,9 +142,11 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 		SymbolInformation symbol = (SymbolInformation) element;
 		if (symbol.getName() != null) {
 			res.append(symbol.getName(), null);
-			res.append(" :", null); //$NON-NLS-1$
 		}
-		res.append(symbol.getKind().toString(), StyledString.DECORATIONS_STYLER);
+		if (showKind) {
+			res.append(" :", null); //$NON-NLS-1$
+			res.append(symbol.getKind().toString(), StyledString.DECORATIONS_STYLER);
+		}
 
 		if (showLocation) {
 			URI uri = URI.create(symbol.getLocation().getUri());

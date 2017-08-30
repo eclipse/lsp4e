@@ -46,7 +46,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		private BoldStylerProvider stylerProvider;
 
 		public InternalSymbolsLabelProvider(BoldStylerProvider stylerProvider) {
-			super(true);
+			super(true, true);
 			this.stylerProvider = stylerProvider;
 		}
 
