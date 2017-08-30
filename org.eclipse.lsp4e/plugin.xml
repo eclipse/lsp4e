@@ -324,4 +324,14 @@
 			textStylePreferenceValue="NONE">
 		</specification>
    </extension>
+   <extension
+         point="org.eclipse.core.expressions.propertyTesters">
+      <propertyTester
+            class="org.eclipse.lsp4e.outline.SymbolInformationPropertyTester"
+            id="org.eclipse.lsp4e.SymbolInformationPropertyTester"
+            namespace="org.eclipse.lsp4e.symbolInformation"
+            properties="extension,contentTypeId"
+            type="java.lang.Object">
+      </propertyTester>
+   </extension>
 </plugin>
