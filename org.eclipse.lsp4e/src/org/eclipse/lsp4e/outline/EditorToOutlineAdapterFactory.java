@@ -38,7 +38,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 					if(adaptableObject instanceof ITextEditor) {
 						textEditor = (ITextEditor)adaptableObject;
 					}
-					return (T)new CNFOutinePage(info.iterator().next(), textEditor);
+					return (T)new CNFOutlinePage(info.iterator().next(), textEditor);
 				}
 			}
 		}

@@ -30,14 +30,14 @@ import org.eclipse.ui.navigator.CommonViewer;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
-public class CNFOutinePage implements IContentOutlinePage {
+public class CNFOutlinePage implements IContentOutlinePage {
 
 	private static final String ID = "org.eclipse.lsp4e.outline"; //$NON-NLS-1$
 	private CommonViewer viewer;
 	private LSPDocumentInfo info;
 	private ITextEditor textEditor;
 
-	public CNFOutinePage(LSPDocumentInfo info, @Nullable ITextEditor textEditor) {
+	public CNFOutlinePage(LSPDocumentInfo info, @Nullable ITextEditor textEditor) {
 		this.textEditor = textEditor;
 		this.info = info;
 	}
