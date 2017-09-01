@@ -8,6 +8,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Miro Spoenemann (TypeFox) - extracted LanguageClientImpl
+ *  Jan Koehnlein (TypeFox) - bug 521744
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -131,6 +132,8 @@ public class ProjectSpecificLanguageServerWrapper {
 
 	private boolean capabilitiesAlreadyRequested;
 
+	private long initializeStartTime;
+
 
 	public ProjectSpecificLanguageServerWrapper(@NonNull IProject project, @NonNull LanguageServerDefinition serverDefinition) {
 		this.project = project;
@@ -209,6 +212,7 @@ public class ProjectSpecificLanguageServerWrapper {
 				initializeResult = res;
 				return res;
 			});
+			initializeStartTime = System.currentTimeMillis();
 			final Map<IPath, IDocument> toReconnect = filesToReconnect;
 			initializeFuture.thenRun(() -> {
 				for (Entry<IPath, IDocument> fileToReconnect : toReconnect.entrySet()) {
@@ -367,7 +371,11 @@ public class ProjectSpecificLanguageServerWrapper {
 			if (this.initializeFuture != null) {
 				this.initializeFuture.get(capabilitiesAlreadyRequested ? 0 : 1000, TimeUnit.MILLISECONDS);
 			}
-		} catch (TimeoutException | IOException | InterruptedException | ExecutionException e) {
+		} catch (TimeoutException e) {
+			if (System.currentTimeMillis() - initializeStartTime > 10000) {
+				LanguageServerPlugin.logError("LanguageServer not initialized after 10s", e); //$NON-NLS-1$
+			}
+		} catch (IOException | InterruptedException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		}
 		this.capabilitiesAlreadyRequested = true;
