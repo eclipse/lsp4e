@@ -191,6 +191,12 @@
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+M2+T">
       </key>
+      <key
+            commandId="org.eclipse.lsp4e.format"
+            contextId="org.eclipse.ui.textEditorScope"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+M2+F">
+      </key>
    </extension>
    <extension
          point="org.eclipse.core.runtime.adapters">
