@@ -14,10 +14,12 @@ import static org.junit.Assert.assertEquals;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -62,8 +64,7 @@ public class HighlightTest {
 
 	@Test
 	public void testHighlight() throws CoreException, InvocationTargetException {
-		Bundle bundle = Platform.getBundle("org.eclipse.ui.genericeditor");
-		Assume.assumeTrue(bundle.getVersion().compareTo(new Version(1, 1, 0)) >= 0);
+		checkGenericEditorVersion();
 
 		List<DocumentHighlight> highlights = new ArrayList<>();
 		highlights.add(
@@ -115,4 +116,63 @@ public class HighlightTest {
 
 		assertEquals(false, iterator.hasNext());
 	}
+
+	@Test
+	public void testCheckIfOtherAnnotationsRemains() throws CoreException, InvocationTargetException {
+		checkGenericEditorVersion();
+
+		IFile testFile = TestUtils.createUniqueTestFile(project, "  READ WRITE TEXT");
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+
+		List<DocumentHighlight> highlights = Collections.singletonList(
+				new DocumentHighlight(new Range(new Position(0, 2), new Position(0, 6)), DocumentHighlightKind.Read));
+		MockLanguageSever.INSTANCE.setDocumentHighlights(highlights);
+
+		if (!(viewer instanceof ISourceViewer)) {
+			Assert.fail();
+		}
+
+		ISourceViewer sourceViewer = (ISourceViewer) viewer;
+		IAnnotationModel model = sourceViewer.getAnnotationModel();
+
+		String fakeAnnotationType = "FAKE_TYPE";
+		Annotation fakeAnnotation = new Annotation(fakeAnnotationType, false, null);
+		org.eclipse.jface.text.Position fakeAnnotationPosition = new org.eclipse.jface.text.Position(0, 10);
+		model.addAnnotation(fakeAnnotation, fakeAnnotationPosition);
+
+		// emulate cursor move
+		viewer.getTextWidget().setCaretOffset(1);
+
+		new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				Iterator<Annotation> iterator = sourceViewer.getAnnotationModel().getAnnotationIterator();
+				final AtomicInteger sum = new AtomicInteger(0);
+				iterator.forEachRemaining(element -> sum.incrementAndGet());
+				return sum.get() == 2;
+			}
+		}.waitForCondition(Display.getCurrent(), 3000);
+
+		Iterator<Annotation> iterator = model.getAnnotationIterator();
+		Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
+		while (iterator.hasNext()) {
+			Annotation annotation = iterator.next();
+			annotations.put(model.getPosition(annotation), annotation);
+		}
+
+		Annotation annotation = annotations.get(new org.eclipse.jface.text.Position(2, 4));
+		Assert.assertNotNull(annotation);
+		assertEquals(HighlightReconcilingStrategy.READ_ANNOTATION_TYPE, annotation.getType());
+
+		annotation = annotations.get(fakeAnnotationPosition);
+		Assert.assertNotNull(annotation);
+		assertEquals(fakeAnnotationType, annotation.getType());
+	}
+
+	private void checkGenericEditorVersion() {
+		// ignore tests for generic editor wihtout reconciler API
+		Bundle bundle = Platform.getBundle("org.eclipse.ui.genericeditor");
+		Assume.assumeTrue(bundle.getVersion().compareTo(new Version(1, 1, 0)) >= 0);
+	}
+
 }

@@ -6,7 +6,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *  Michal Niewrzal‚ (Rogue Wave Software Inc.) - initial implementation
+ *  Michal Niewrzalï¿½ (Rogue Wave Software Inc.) - initial implementation
  *  Angelo Zerr <angelo.zerr@gmail.com> - fix Bug 521020
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.highlight;
@@ -213,8 +213,8 @@ public class HighlightReconcilingStrategy
 			if (annotationModel instanceof IAnnotationModelExtension) {
 				((IAnnotationModelExtension) annotationModel).replaceAnnotations(fOccurrenceAnnotations, null);
 			} else {
-				for (int i = 0, length = fOccurrenceAnnotations.length; i < length; i++)
-					annotationModel.removeAnnotation(fOccurrenceAnnotations[i]);
+				for (Annotation fOccurrenceAnnotation : fOccurrenceAnnotations)
+					annotationModel.removeAnnotation(fOccurrenceAnnotation);
 			}
 			fOccurrenceAnnotations = null;
 		}
