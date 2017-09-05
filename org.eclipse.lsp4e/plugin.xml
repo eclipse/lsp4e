@@ -330,7 +330,7 @@
 			overviewRulerPreferenceKey="LSP4EWriteOccurrenceIndicationInOverviewRuler"
 			overviewRulerPreferenceValue="true"
 			verticalRulerPreferenceKey="LSP4EWriteOccurrenceIndicationInVerticalRuler"
-			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4EReadOccurrenceIndicationColor"
+			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4EWriteOccurrenceIndicationColor"
 			colorPreferenceValue="212,212,212" presentationLayer="4"
 			showInNextPrevDropdownToolbarAction="true"
 			textStylePreferenceKey="LSP4EWriteOccurrenceTextStyle"
@@ -370,5 +370,14 @@
             disabledIcon="icons/full/dtool16/mark_occurrences.png"
             icon="icons/full/etool16/mark_occurrences.png">
       </image>
+   </extension>
+   <extension
+         point="org.eclipse.e4.ui.css.swt.theme">
+      <stylesheet
+            uri="resources/css/dark.css">
+         <themeid
+               refid="org.eclipse.e4.ui.css.theme.e4_dark">
+         </themeid>
+      </stylesheet>
    </extension>
 </plugin>
