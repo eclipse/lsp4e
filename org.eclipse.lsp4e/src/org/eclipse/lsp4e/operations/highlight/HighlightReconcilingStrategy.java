@@ -6,7 +6,7 @@
  * http://www.eclipse.org/legal/epl-v10.html
  *
  * Contributors:
- *  Michal Niewrzal� (Rogue Wave Software Inc.) - initial implementation
+ *  Michal Niewrzal (Rogue Wave Software Inc.) - initial implementation
  *  Angelo Zerr <angelo.zerr@gmail.com> - fix Bug 521020
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.highlight;
@@ -19,6 +19,10 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -48,12 +52,15 @@ import org.eclipse.swt.custom.CaretListener;
  *
  */
 public class HighlightReconcilingStrategy
-		implements IReconcilingStrategy, IReconcilingStrategyExtension, CaretListener {
+		implements IReconcilingStrategy, IReconcilingStrategyExtension, CaretListener, IPreferenceChangeListener {
+
+	public static final String TOGGLE_HIGHLIGHT_PREFERENCE = "org.eclipse.lsp4e.toggle.highlight"; //$NON-NLS-1$
 
 	public static final String READ_ANNOTATION_TYPE = "org.eclipse.lsp4e.read"; //$NON-NLS-1$
 	public static final String WRITE_ANNOTATION_TYPE = "org.eclipse.lsp4e.write"; //$NON-NLS-1$
 	public static final String TEXT_ANNOTATION_TYPE = "org.eclipse.lsp4e.text"; //$NON-NLS-1$
 
+	private boolean enabled;
 	private ISourceViewer sourceViewer;
 	private IDocument document;
 
@@ -69,6 +76,9 @@ public class HighlightReconcilingStrategy
 		if (!(viewer instanceof ISourceViewer)) {
 			return;
 		}
+		IEclipsePreferences preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
+		preferences.addPreferenceChangeListener(this);
+		this.enabled = preferences.getBoolean(TOGGLE_HIGHLIGHT_PREFERENCE, false);
 		this.sourceViewer = (ISourceViewer) viewer;
 		this.sourceViewer.getTextWidget().addCaretListener(this);
 	}
@@ -109,7 +119,7 @@ public class HighlightReconcilingStrategy
 	 * @param caretOffset
 	 */
 	private void collectHighlights(int caretOffset) {
-		if (sourceViewer == null) {
+		if (sourceViewer == null || !enabled) {
 			return;
 		}
 		if (infos == null) {
@@ -228,6 +238,18 @@ public class HighlightReconcilingStrategy
 			return WRITE_ANNOTATION_TYPE;
 		default:
 			return TEXT_ANNOTATION_TYPE;
+		}
+	}
+
+	@Override
+	public void preferenceChange(PreferenceChangeEvent event) {
+		if (event.getKey().equals(TOGGLE_HIGHLIGHT_PREFERENCE)) {
+			this.enabled = Boolean.valueOf(event.getNewValue().toString());
+			if (enabled) {
+				initialReconcile();
+			} else {
+				removeOccurrenceAnnotations();
+			}
 		}
 	}
 

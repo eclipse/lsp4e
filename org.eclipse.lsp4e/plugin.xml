@@ -58,6 +58,15 @@
             id="org.eclipse.lsp4e.symbolinworkspace"
             name="%commands.symbolsInWorksapce.name">
       </command>
+      <command
+            categoryId="org.eclipse.lsp4e.category"
+            id="org.eclipse.lsp4e.togglehighlight"
+            name="%command.toggle.highlight.name">
+		   <state
+		         class="org.eclipse.ui.handlers.RegistryToggleState:true"
+		         id="org.eclipse.ui.commands.toggleState">
+		   </state>
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
@@ -111,6 +120,11 @@
             class="org.eclipse.lsp4e.operations.symbols.LSPSymbolInWorkspaceHandler"
             commandId="org.eclipse.lsp4e.symbolinworkspace">
       </handler>
+      <handler
+            commandId="org.eclipse.lsp4e.togglehighlight">
+         <class
+               class="org.eclipse.lsp4e.operations.highlight.ToggleHighlight"></class>
+      </handler>
    </extension>
    <extension
          point="org.eclipse.search.searchResultViewPages">
@@ -161,6 +175,15 @@
                   id="org.eclipse.lsp4e.codeActions">
             </dynamic>
          </menu>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="toolbar:org.eclipse.ui.genericeditor.GenericEditor">
+         <command
+               commandId="org.eclipse.lsp4e.togglehighlight"
+               label="%command.toggle.highlight.label"
+               style="toggle">
+         </command>
       </menuContribution>
    </extension>
    <extension
@@ -339,5 +362,13 @@
             properties="extension,contentTypeId"
             type="java.lang.Object">
       </propertyTester>
+   </extension>
+   <extension
+         point="org.eclipse.ui.commandImages">
+      <image
+            commandId="org.eclipse.lsp4e.togglehighlight"
+            disabledIcon="icons/full/dtool16/mark_occurrences.png"
+            icon="icons/full/etool16/mark_occurrences.png">
+      </image>
    </extension>
 </plugin>
