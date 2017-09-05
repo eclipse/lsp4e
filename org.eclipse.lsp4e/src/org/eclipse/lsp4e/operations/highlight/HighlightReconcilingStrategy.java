@@ -15,18 +15,21 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
+import org.eclipse.jface.text.ISynchronizable;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategy;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategyExtension;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
+import org.eclipse.jface.text.source.IAnnotationModelExtension;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -56,6 +59,11 @@ public class HighlightReconcilingStrategy
 
 	private CompletableFuture<List<? extends DocumentHighlight>> request;
 	private List<LSPDocumentInfo> infos;
+
+	/**
+	 * Holds the current occurrence annotations.
+	 */
+	private Annotation[] fOccurrenceAnnotations = null;
 
 	public void install(ITextViewer viewer) {
 		if (!(viewer instanceof ISourceViewer)) {
@@ -150,36 +158,65 @@ public class HighlightReconcilingStrategy
 	 *            annotation model to update.
 	 */
 	private void updateAnnotations(List<? extends DocumentHighlight> highlights, IAnnotationModel annotationModel) {
-		// TODO optimize with IAnnotationModelExtension
-		Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
+		Map<Annotation, org.eclipse.jface.text.Position> annotationMap = new HashMap<>(highlights.size());
 		for (DocumentHighlight h : highlights) {
 			if (h != null) {
 				try {
 					int start = LSPEclipseUtils.toOffset(h.getRange().getStart(), document);
 					int end = LSPEclipseUtils.toOffset(h.getRange().getEnd(), document);
-					annotations.put(new org.eclipse.jface.text.Position(start, end - start),
-							new Annotation(kindToAnnotationType(h.getKind()), false, null));
+					annotationMap.put(new Annotation(kindToAnnotationType(h.getKind()), false, null),
+							new org.eclipse.jface.text.Position(start, end - start));
 				} catch (BadLocationException e) {
 					LanguageServerPlugin.logError(e);
 				}
 			}
 		}
-		Iterator<Annotation> iterator = annotationModel.getAnnotationIterator();
-		while (iterator.hasNext()) {
-			Annotation annotation = iterator.next();
-			org.eclipse.jface.text.Position position = annotationModel.getPosition(annotation);
 
-			Annotation newAnnotation = annotations.get(position);
-			if (newAnnotation == null || !newAnnotation.getType().equals(annotation.getType())) {
-				annotationModel.removeAnnotation(annotation);
+		synchronized (getLockObject(annotationModel)) {
+			if (annotationModel instanceof IAnnotationModelExtension) {
+				((IAnnotationModelExtension) annotationModel).replaceAnnotations(fOccurrenceAnnotations, annotationMap);
 			} else {
-				annotations.remove(position);
+				removeOccurrenceAnnotations();
+				Iterator<Entry<Annotation, org.eclipse.jface.text.Position>> iter = annotationMap.entrySet().iterator();
+				while (iter.hasNext()) {
+					Entry<Annotation, org.eclipse.jface.text.Position> mapEntry = iter.next();
+					annotationModel.addAnnotation(mapEntry.getKey(), mapEntry.getValue());
+				}
 			}
+			fOccurrenceAnnotations = annotationMap.keySet().toArray(new Annotation[annotationMap.keySet().size()]);
 		}
+	}
 
-		for (org.eclipse.jface.text.Position position : annotations.keySet()) {
-			Annotation annotation = annotations.get(position);
-			annotationModel.addAnnotation(annotation, position);
+	/**
+	 * Returns the lock object for the given annotation model.
+	 *
+	 * @param annotationModel
+	 *            the annotation model
+	 * @return the annotation model's lock object
+	 */
+	private Object getLockObject(IAnnotationModel annotationModel) {
+		if (annotationModel instanceof ISynchronizable) {
+			Object lock = ((ISynchronizable) annotationModel).getLockObject();
+			if (lock != null)
+				return lock;
+		}
+		return annotationModel;
+	}
+
+	void removeOccurrenceAnnotations() {
+
+		IAnnotationModel annotationModel = sourceViewer.getAnnotationModel();
+		if (annotationModel == null || fOccurrenceAnnotations == null)
+			return;
+
+		synchronized (getLockObject(annotationModel)) {
+			if (annotationModel instanceof IAnnotationModelExtension) {
+				((IAnnotationModelExtension) annotationModel).replaceAnnotations(fOccurrenceAnnotations, null);
+			} else {
+				for (int i = 0, length = fOccurrenceAnnotations.length; i < length; i++)
+					annotationModel.removeAnnotation(fOccurrenceAnnotations[i]);
+			}
+			fOccurrenceAnnotations = null;
 		}
 	}
 
