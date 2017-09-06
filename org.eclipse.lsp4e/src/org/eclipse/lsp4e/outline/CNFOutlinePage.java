@@ -72,7 +72,8 @@ public class CNFOutlinePage implements IContentOutlinePage {
 			this.viewer.addOpenListener(new IOpenListener() {
 				@Override
 				public void open(OpenEvent event) {
-					textEditor.setFocus();
+					if (preferences.getBoolean(linkWithEditorPreference, true))
+						textEditor.setFocus();
 				}
 			});
 			final StyledText styledText;
@@ -85,7 +86,8 @@ public class CNFOutlinePage implements IContentOutlinePage {
 			this.viewer.addSelectionChangedListener(new ISelectionChangedListener() {
 				@Override
 				public void selectionChanged(SelectionChangedEvent event) {
-					if(viewer.getTree().isFocusControl() && viewer.getSelection() != null) {
+					if (preferences.getBoolean(linkWithEditorPreference, true) && viewer.getTree().isFocusControl()
+							&& viewer.getSelection() != null) {
 						Object selection = ((TreeSelection)viewer.getSelection()).getFirstElement();
 						if (selection != null && selection instanceof SymbolInformation) {
 							Range range = ((SymbolInformation)selection).getLocation().getRange();
