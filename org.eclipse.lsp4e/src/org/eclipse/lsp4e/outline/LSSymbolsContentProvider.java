@@ -20,8 +20,10 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocumentListener;
+import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.StructuredViewer;
 import org.eclipse.jface.viewers.TreeViewer;
@@ -32,9 +34,13 @@ import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IMemento;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonContentProvider;
+import org.eclipse.ui.texteditor.AbstractTextEditor;
 
 public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeContentProvider, IDocumentListener, IResourceChangeListener {
 
@@ -112,6 +118,19 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 			viewer.getControl().getDisplay().asyncExec(() -> {
 				viewer.refresh();
+			});
+			if (!InstanceScope.INSTANCE.getNode(CNFOutlinePage.ID + '.' + info.getFileUri())
+					.getBoolean(CNFOutlinePage.linkWithEditorPreference, true)) {
+				return;
+			}
+			Display.getDefault().asyncExec(() -> {
+				IEditorPart editorPart = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage()
+						.getActiveEditor();
+				if (editorPart instanceof AbstractTextEditor) {
+					ITextSelection selection = (ITextSelection) ((AbstractTextEditor) editorPart).getSelectionProvider()
+							.getSelection();
+					CNFOutlinePage.refreshTreeSelection(viewer, selection.getOffset(), info.getDocument());
+				}
 			});
 		});
 

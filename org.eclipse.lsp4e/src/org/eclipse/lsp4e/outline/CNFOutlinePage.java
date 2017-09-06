@@ -11,12 +11,14 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
+import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.IOpenListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
@@ -25,6 +27,7 @@ import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
+import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.Range;
@@ -35,6 +38,7 @@ import org.eclipse.swt.custom.CaretListener;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchCommandConstants;
@@ -47,17 +51,17 @@ import org.osgi.service.prefs.BackingStoreException;
 
 public class CNFOutlinePage implements IContentOutlinePage {
 
-	private static final String ID = "org.eclipse.lsp4e.outline"; //$NON-NLS-1$
-	private static final  String linkWithEditorPreference = "linkWithEditor"; //$NON-NLS-1$
+	public static final String ID = "org.eclipse.lsp4e.outline"; //$NON-NLS-1$
+	public static final String linkWithEditorPreference = "linkWithEditor"; //$NON-NLS-1$
 	private CommonViewer viewer;
-	private LSPDocumentInfo info;
 	private IEclipsePreferences preferences;
+	private LSPDocumentInfo info;
 	private ITextEditor textEditor;
 
 	public CNFOutlinePage(LSPDocumentInfo info, @Nullable ITextEditor textEditor) {
+		this.preferences = InstanceScope.INSTANCE.getNode(ID + '.' + info.getFileUri());
 		this.textEditor = textEditor;
 		this.info = info;
-		this.preferences = InstanceScope.INSTANCE.getNode(ID+'.'+info.getFileUri());
 	}
 
 	@Override
@@ -71,6 +75,13 @@ public class CNFOutlinePage implements IContentOutlinePage {
 					textEditor.setFocus();
 				}
 			});
+			final StyledText styledText;
+			if (textEditor instanceof AbstractTextEditor) {
+				AbstractTextEditor editor = (AbstractTextEditor) textEditor;
+				styledText = ((StyledText) editor.getAdapter(Control.class));
+			} else {
+				styledText = null;
+			}
 			this.viewer.addSelectionChangedListener(new ISelectionChangedListener() {
 				@Override
 				public void selectionChanged(SelectionChangedEvent event) {
@@ -80,7 +91,13 @@ public class CNFOutlinePage implements IContentOutlinePage {
 							Range range = ((SymbolInformation)selection).getLocation().getRange();
 							try {
 								int startLineOffest = info.getDocument().getLineOffset(range.getStart().getLine());
+								if (styledText != null) {
+									styledText.removeCaretListener(selectByEditorCaretListener);
+								}
 								textEditor.selectAndReveal(startLineOffest + range.getStart().getCharacter(), 0);
+								if (styledText != null) {
+									styledText.addCaretListener(selectByEditorCaretListener);
+								}
 							} catch (BadLocationException e) {
 								return;
 							}
@@ -89,9 +106,8 @@ public class CNFOutlinePage implements IContentOutlinePage {
 				}
 			});
 
-			if (textEditor instanceof AbstractTextEditor) {
-				AbstractTextEditor editor = (AbstractTextEditor) textEditor;
-				((StyledText) editor.getAdapter(Control.class)).addCaretListener(selectByEditorCaretListener);
+			if (styledText != null) {
+				styledText.addCaretListener(selectByEditorCaretListener);
 			}
 		}
 	}
@@ -99,42 +115,52 @@ public class CNFOutlinePage implements IContentOutlinePage {
 	private CaretListener selectByEditorCaretListener = new CaretListener() {
 		@Override
 		public void caretMoved(CaretEvent event) {
-			if (!preferences.getBoolean(linkWithEditorPreference, true))
+			if (!preferences.getBoolean(linkWithEditorPreference, true)) {
 				return;
-			ITreeContentProvider contentProvider = (ITreeContentProvider) viewer.getContentProvider();
-			int offset = event.caretOffset;
-			Object[] objects = contentProvider.getElements(null);
-			SymbolInformation bestSymbol = null;
-			int level = 0;
+			}
+			refreshTreeSelection(viewer, event.caretOffset, info.getDocument());
+		}
+	};
 
-			while (objects != null && objects.length > 0) {
-				SymbolInformation nextChild = null;
-				for (Object object : objects) {
-					SymbolInformation symbol = (SymbolInformation) object;
-					if (isOffsetInSymbolRange(offset, symbol)) {
+	public static void refreshTreeSelection(TreeViewer viewer, int offset, IDocument document) {
+		ITreeContentProvider contentProvider = (ITreeContentProvider) viewer.getContentProvider();
+		Object[] objects = contentProvider.getElements(null);
+		SymbolInformation bestSymbol = null;
+		int level = 0;
+		while (objects != null && objects.length > 0) {
+			SymbolInformation nextChild = null;
+			for (Object object : objects) {
+				SymbolInformation symbol = object instanceof SymbolInformation ? (SymbolInformation) object
+						: Adapters.adapt(object, SymbolInformation.class);
+				if (symbol != null) {
+					if (isOffsetInSymbolRange(offset, symbol, document)) {
 						nextChild = symbol;
 						objects = contentProvider.getChildren(symbol);
 						break;
 					}
 				}
-				if (nextChild == null)
-					break;
-				level++;
-				bestSymbol = nextChild;
 			}
-			if (bestSymbol != null) {
-				viewer.expandToLevel(level);
-				viewer.setSelection(new StructuredSelection(bestSymbol));
-			}
+			if (nextChild == null)
+				break;
+			level++;
+			bestSymbol = nextChild;
 		}
-	};
+		if (bestSymbol != null) {
+			final int finalLevel = level;
+			final SymbolInformation finalBestSymbol = bestSymbol;
+			Display.getDefault().asyncExec(() -> {
+				viewer.expandToLevel(finalLevel);
+				viewer.setSelection(new StructuredSelection(finalBestSymbol), true);
+			});
+		}
+	}
 
-	private boolean isOffsetInSymbolRange(int offset, SymbolInformation symbol) {
+	private static boolean isOffsetInSymbolRange(int offset, SymbolInformation symbol, IDocument document) {
 		Range range = symbol.getLocation().getRange();
 		try {
-			int startOffset = info.getDocument().getLineOffset(range.getStart().getLine())
+			int startOffset = document.getLineOffset(range.getStart().getLine())
 					+ range.getStart().getCharacter();
-			int endOffset = info.getDocument().getLineOffset(range.getEnd().getLine()) + range.getEnd().getCharacter();
+			int endOffset = document.getLineOffset(range.getEnd().getLine()) + range.getEnd().getCharacter();
 			return startOffset <= offset && endOffset >= offset;
 		} catch (BadLocationException e) {
 			return false;
