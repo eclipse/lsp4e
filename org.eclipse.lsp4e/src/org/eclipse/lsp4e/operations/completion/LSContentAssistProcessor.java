@@ -7,13 +7,15 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
- *  Lucas Bullen (Red Hat Inc.) - Bug 520700 - TextEditors within FormEditors are not supported
+ *  Lucas Bullen (Red Hat Inc.) - Bug 520700 - TextEditors within FormEditors are not supported *   Lucas Bullen (Red Hat Inc.) - Refactored for incomplete completion lists
+ *								- Refactored for incomplete completion lists
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.completion;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -62,9 +64,29 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private char[] contextTriggerChars;
 	private Pair<IDocument, Job> findInfoJob;
 	private String errorMessage;
+	private boolean isIncomplete = true;
 
 	public LSContentAssistProcessor() {
 	}
+
+	private Comparator<LSCompletionProposal> proposalConparoator = (o1, o2) -> {
+		if (o1.getBestOffset() < o2.getBestOffset()) {
+			return -1;
+		} else if (o1.getBestOffset() > o2.getBestOffset()) {
+			return +1;
+		} else if (o1.getNumberOfModifsBeforeOffset() < o2.getNumberOfModifsBeforeOffset()) {
+			return -1;
+		} else if (o1.getNumberOfModifsBeforeOffset() > o2.getNumberOfModifsBeforeOffset()) {
+			return +1;
+		} else {
+			String c1 = o1.getSortText();
+			String c2 = o2.getSortText();
+			if (c1 == null) {
+				return -1;
+			}
+			return c1.compareToIgnoreCase(c2);
+		}
+	};
 
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
@@ -84,11 +106,11 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		try {
 			TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(infos.get(0).getFileUri(),
 					offset, viewer.getDocument());
-			List<LSCompletionProposal> lsProposals = Collections.synchronizedList(new ArrayList<>());
+			List<ICompletionProposal> lsProposals = Collections.synchronizedList(new ArrayList<>());
 			// starts requests to various LS
 			Stream<CompletableFuture<Void>> requests = infos.stream().map(info ->
-				info.getLanguageClient().getTextDocumentService().completion(param).thenAccept(items ->
-				lsProposals.addAll(toProposals(offset, items, info))
+			info.getLanguageClient().getTextDocumentService().completion(param)
+					.thenAccept(items -> lsProposals.addAll(toProposals(offset, items, info))
 				)
 			);
 			// wait for them to complete
@@ -101,28 +123,13 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 					LSContentAssistProcessor.this.errorMessage = ex.getMessage();
 				}
 			});
-			lsProposals.sort((o1, o2) -> {
-				// TODO: evaluate ICompletionProposalSorter
-
-				// prefer the one that matches the most backward
-				if (o1.getBestOffset() < o2.getBestOffset()) {
-					return -1;
-				} else if (o1.getBestOffset() > o2.getBestOffset()) {
-					return +1;
-				} else if (o1.getNumberOfModifsBeforeOffset() < o2.getNumberOfModifsBeforeOffset()) {
-					return -1;
-				} else if (o1.getNumberOfModifsBeforeOffset() > o2.getNumberOfModifsBeforeOffset()) {
-					return +1;
-				} else {
-					String c1 = o1.getSortText();
-					String c2 = o2.getSortText();
-					if (c1 == null) {
-						return -1;
-					}
-					return c1.compareToIgnoreCase(c2);
-				}
-			});
-			proposals.addAll(lsProposals);
+			if (!isIncomplete) {
+				List<LSCompletionProposal> CompletionProposal = (List<LSCompletionProposal>) (List<?>) lsProposals;
+				CompletionProposal.sort(proposalConparoator);
+				proposals.addAll(CompletionProposal);
+			} else {
+				proposals.addAll(lsProposals);
+			}
 		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 			this.errorMessage = ex.getMessage();
@@ -150,7 +157,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 	}
 
-	private List<LSCompletionProposal> toProposals(int offset, Either<List<CompletionItem>, CompletionList> completionList, LSPDocumentInfo info) {
+	private List<ICompletionProposal> toProposals(int offset,
+			Either<List<CompletionItem>, CompletionList> completionList, LSPDocumentInfo info) {
 		if (completionList == null) {
 			return Collections.emptyList();
 		}
@@ -158,14 +166,20 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		if (completionList.isLeft()) {
 			items = completionList.getLeft();
 		} else if (completionList.isRight()) {
+			isIncomplete = completionList.getRight().isIncomplete();
 			items = completionList.getRight().getItems();
 		}
-		List<LSCompletionProposal> proposals = new ArrayList<>();
+		List<ICompletionProposal> proposals = new ArrayList<>();
 		for (CompletionItem item : items) {
 			if (item != null) {
-				LSCompletionProposal proposal = new LSCompletionProposal(item, offset, info);
-				if (proposal.validate(info.getDocument(), offset, null)) {
+				if (isIncomplete) {
+					ICompletionProposal proposal = new LSIncompleteCompletionProposal(item, offset, info);
 					proposals.add(proposal);
+				} else {
+					ICompletionProposal proposal = new LSCompletionProposal(item, offset, info);
+					if (((LSCompletionProposal) proposal).validate(info.getDocument(), offset, null)) {
+						proposals.add(proposal);
+					}
 				}
 			}
 		}

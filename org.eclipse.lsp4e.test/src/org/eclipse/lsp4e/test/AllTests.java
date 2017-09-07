@@ -13,8 +13,9 @@ package org.eclipse.lsp4e.test;
 
 import org.eclipse.lsp4e.codelens.CodeLensTests;
 import org.eclipse.lsp4e.test.codeactions.CodeActionTests;
-import org.eclipse.lsp4e.test.completion.CompletionTest;
+import org.eclipse.lsp4e.test.completion.CompleteCompletionTest;
 import org.eclipse.lsp4e.test.completion.ContextInformationTest;
+import org.eclipse.lsp4e.test.completion.IncompleteCompletionTest;
 import org.eclipse.lsp4e.test.definition.DefinitionTest;
 import org.eclipse.lsp4e.test.diagnostics.DiagnosticsTest;
 import org.eclipse.lsp4e.test.document.LSPEclipseUtilsTest;
@@ -36,7 +37,8 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
 	LanguageServiceAccessorTest.class,
-	CompletionTest.class,
+	CompleteCompletionTest.class,
+	IncompleteCompletionTest.class,
 	ContextInformationTest.class,
 	DocumentDidOpenTest.class,
 	DocumentDidChangeTest.class,
