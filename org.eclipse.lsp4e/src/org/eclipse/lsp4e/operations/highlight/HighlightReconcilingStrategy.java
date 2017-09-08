@@ -78,7 +78,7 @@ public class HighlightReconcilingStrategy
 		}
 		IEclipsePreferences preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 		preferences.addPreferenceChangeListener(this);
-		this.enabled = preferences.getBoolean(TOGGLE_HIGHLIGHT_PREFERENCE, false);
+		this.enabled = preferences.getBoolean(TOGGLE_HIGHLIGHT_PREFERENCE, true);
 		this.sourceViewer = (ISourceViewer) viewer;
 		this.sourceViewer.getTextWidget().addCaretListener(this);
 	}
@@ -87,6 +87,8 @@ public class HighlightReconcilingStrategy
 		if (sourceViewer != null) {
 			sourceViewer.getTextWidget().removeCaretListener(this);
 		}
+		IEclipsePreferences preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
+		preferences.removePreferenceChangeListener(this);
 		cancel();
 	}
 
