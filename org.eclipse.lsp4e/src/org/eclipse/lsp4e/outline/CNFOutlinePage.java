@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.ITextViewerExtension5;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ITreeContentProvider;
@@ -106,7 +107,10 @@ public class CNFOutlinePage implements IContentOutlinePage {
 			if (!preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true)) {
 				return;
 			}
-			refreshTreeSelection(viewer, event.caretOffset, info.getDocument());
+			int offset = viewer instanceof ITextViewerExtension5
+					? ((ITextViewerExtension5) viewer).widgetOffset2ModelOffset(event.caretOffset)
+					: event.caretOffset;
+			refreshTreeSelection(viewer, offset, info.getDocument());
 		}
 	};
 
