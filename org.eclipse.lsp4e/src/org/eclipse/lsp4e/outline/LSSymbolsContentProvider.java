@@ -119,8 +119,8 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			viewer.getControl().getDisplay().asyncExec(() -> {
 				viewer.refresh();
 			});
-			if (!InstanceScope.INSTANCE.getNode(CNFOutlinePage.ID + '.' + info.getFileUri())
-					.getBoolean(CNFOutlinePage.linkWithEditorPreference, true)) {
+			if (!InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
+					.getBoolean(CNFOutlinePage.LINK_WITH_EDITOR_PREFERENCE, true)) {
 				return;
 			}
 			Display.getDefault().asyncExec(() -> {

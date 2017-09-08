@@ -67,6 +67,15 @@
 		         id="org.eclipse.ui.commands.toggleState">
 		   </state>
       </command>
+      <command
+            categoryId="org.eclipse.lsp4e.category"
+            id="org.eclipse.lsp4e.togglelinkwitheditor"
+            name="Toggle Link with Editor">
+         <state
+               class="org.eclipse.ui.handlers.RegistryToggleState:true"
+               id="org.eclipse.ui.commands.toggleState">
+         </state>
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
@@ -124,6 +133,12 @@
             commandId="org.eclipse.lsp4e.togglehighlight">
          <class
                class="org.eclipse.lsp4e.operations.highlight.ToggleHighlight"></class>
+      </handler>
+      <handler
+            commandId="org.eclipse.lsp4e.togglelinkwitheditor">
+         <class
+               class="org.eclipse.lsp4e.outline.ToggleLinkingHandler">
+         </class>
       </handler>
    </extension>
    <extension
@@ -183,6 +198,24 @@
                commandId="org.eclipse.lsp4e.togglehighlight"
                label="%command.toggle.highlight.label"
                style="toggle">
+         </command>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="menu:org.eclipse.ui.views.ContentOutline">
+         <command
+               commandId="org.eclipse.lsp4e.togglelinkwitheditor"
+               label="Link with Editor"
+               style="toggle">
+            <visibleWhen
+                  checkEnabled="false">
+               <with
+                     variable="activeEditorId">
+                  <equals
+                        value="org.eclipse.ui.genericeditor.GenericEditor">
+                  </equals>
+               </with>
+            </visibleWhen>
          </command>
       </menuContribution>
    </extension>
@@ -369,6 +402,11 @@
             commandId="org.eclipse.lsp4e.togglehighlight"
             disabledIcon="icons/full/dtool16/mark_occurrences.png"
             icon="icons/full/etool16/mark_occurrences.png">
+      </image>
+      <image
+            commandId="org.eclipse.lsp4e.togglelinkwitheditor"
+            disabledIcon="icons/full/dlcl16/link_to_editor.png"
+            icon="icons/full/elcl16/link_to_editor.png">
       </image>
    </extension>
    <extension
