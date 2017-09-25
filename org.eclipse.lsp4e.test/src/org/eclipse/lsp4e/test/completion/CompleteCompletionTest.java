@@ -411,5 +411,33 @@ public class CompleteCompletionTest {
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(2 * items.size(), proposals.length);
 	}
+	
+	@Test
+	public void testReopeningFileAndReusingContentAssist() throws CoreException, InvocationTargetException {
+		List<CompletionItem> items = new ArrayList<>();
+		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
+
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
+		assertEquals(items.size(), proposals.length); // TODO compare both structures
+		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal) proposals[0];
+		lsCompletionProposal.apply(viewer, '\n', 0, 0);
+		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
+
+		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+		MockLanguageSever.INSTANCE.shutdown();
+
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
+		viewer = TestUtils.openTextViewer(testFile);
+
+		proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
+		assertEquals(items.size(), proposals.length); // TODO compare both structures
+		lsCompletionProposal = (LSCompletionProposal) proposals[0];
+		lsCompletionProposal.apply(viewer, '\n', 0, 0);
+		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
+	}
 
 }
