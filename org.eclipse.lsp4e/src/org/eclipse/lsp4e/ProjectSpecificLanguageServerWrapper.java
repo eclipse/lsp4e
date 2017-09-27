@@ -74,6 +74,7 @@ import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
@@ -231,7 +232,9 @@ public class ProjectSpecificLanguageServerWrapper {
 	}
 
 	private void logMessage(Message message) {
-		if (message instanceof ResponseMessage && ((ResponseMessage) message).getError() != null) {
+		if (message instanceof ResponseMessage && ((ResponseMessage) message).getError() != null
+				&& ((ResponseMessage) message).getId() == Integer
+						.toString(ResponseErrorCode.RequestCancelled.getValue())) {
 			ResponseMessage responseMessage = (ResponseMessage) message;
 			LanguageServerPlugin.logError(new ResponseErrorException(responseMessage.getError()));
 		} else if (LanguageServerPlugin.DEBUG) {
