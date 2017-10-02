@@ -7,19 +7,16 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525400 - [rename] improve rename support with ltk UI
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.rename;
 
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
-import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.dialogs.InputDialog;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -28,18 +25,15 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
-import org.eclipse.lsp4j.RenameParams;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
-import org.eclipse.lsp4j.WorkspaceEdit;
-import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ltk.core.refactoring.participants.ProcessorBasedRefactoring;
+import org.eclipse.ltk.core.refactoring.participants.RefactoringProcessor;
+import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
-
-import com.google.common.base.Strings;
 
 public class LSPRenameHandler extends AbstractHandler implements IHandler {
 
@@ -55,19 +49,15 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 				LSPDocumentInfo info = infos.iterator().next();
 				ISelection sel = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
 				if (sel instanceof TextSelection) {
+					int offset = ((TextSelection) sel).getOffset();
+					RefactoringProcessor processor = new LSPRenameProcessor(info, offset);
+					ProcessorBasedRefactoring refactoring = new ProcessorBasedRefactoring(processor);
+					LSPRenameRefactoringWizard wizard = new LSPRenameRefactoringWizard(refactoring);
+					RefactoringWizardOpenOperation operation = new RefactoringWizardOpenOperation(wizard);
 					try {
-						RenameParams params = new RenameParams();
-						params.setPosition(LSPEclipseUtils.toPosition(((TextSelection) sel).getOffset(), info.getDocument()));
-						TextDocumentIdentifier identifier = new TextDocumentIdentifier();
-						identifier.setUri(info.getFileUri().toString());
-						params.setTextDocument(identifier);
-						params.setNewName(askNewName(part.getSite().getShell()));
-						if (params.getNewName() != null) {
-							CompletableFuture<WorkspaceEdit> rename = info.getLanguageClient().getTextDocumentService().rename(params);
-							rename.thenAccept((WorkspaceEdit t) -> LSPEclipseUtils.applyWorkspaceEdit(t));
-						}
-					} catch (BadLocationException e) {
-						LanguageServerPlugin.logError(e);
+						operation.run(part.getSite().getShell(), Messages.rename_title);
+					} catch (InterruptedException e1) {
+						LanguageServerPlugin.logError(e1);
 					}
 				}
 			}
@@ -86,19 +76,6 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 			return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
 		}
 		return false;
-	}
-
-	private String askNewName(Shell parentShell) {
-		InputDialog dialog = new InputDialog(parentShell,
-				Messages.rename_title,
-				Messages.rename_label,
-				"newName", //$NON-NLS-1$
-				s -> Strings.isNullOrEmpty(s) ? Messages.rename_invalid : null);
-		dialog.setBlockOnOpen(true);
-		if (dialog.open() == Dialog.OK) {
-			return dialog.getValue();
-		}
-		return null;
 	}
 
 }

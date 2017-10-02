@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525400 - [rename] improve rename support with ltk UI
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
 
@@ -32,7 +33,6 @@ public class Messages extends NLS {
 	public static String codeLens_emptyMenu;
 	public static String updateCodeActions_menu;
 	public static String initializeLanguageServer_job;
-	public static String rename_job;
 	public static String referenceSearchQuery;
 	public static String computing;
 	public static String notImplemented;
@@ -44,7 +44,8 @@ public class Messages extends NLS {
 	public static String findReferences_updateResultView_jobName;
 	public static String rename_title;
 	public static String rename_label;
-	public static String rename_invalid;
+	public static String rename_processor_name;
+	public static String rename_processor_required;
 	public static String serverEdit;
 	public static String completionError;
 	public static String linkWithEditor_label;

@@ -9,6 +9,7 @@
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Michał Niewrzał (Rogue Wave Software Inc.)
  *  Lucas Bullen (Red Hat Inc.) - Get IDocument from IEditorInput
+ *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525400 - [rename] improve rename support with ltk UI
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -302,11 +303,27 @@ public class LSPEclipseUtils {
 	}
 
 	/**
-	 * Applies a worksapce edit. It does simply change the underlying documents.
+	 * Applies a workspace edit. It does simply change the underlying documents.
 	 *
 	 * @param wsEdit
 	 */
 	public static void applyWorkspaceEdit(WorkspaceEdit wsEdit) {
+		CompositeChange change = toCompositeChange(wsEdit);
+		PerformChangeOperation changeOperation = new PerformChangeOperation(change);
+		try {
+			ResourcesPlugin.getWorkspace().run(changeOperation, new NullProgressMonitor());
+		} catch (CoreException e) {
+			LanguageServerPlugin.logError(e);
+		}
+	}
+
+	/**
+	 * Returns a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
+	 *
+	 * @param wsEdit
+	 * @return a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
+	 */
+	public static CompositeChange toCompositeChange(WorkspaceEdit wsEdit) {
 		CompositeChange change = new CompositeChange("LSP Workspace Edit"); //$NON-NLS-1$
 		for (java.util.Map.Entry<String, List<TextEdit>> edit : wsEdit.getChanges().entrySet()) {
 			String uri = edit.getKey();
@@ -324,12 +341,7 @@ public class LSPEclipseUtils {
 				}
 			}
 		}
-		PerformChangeOperation changeOperation = new PerformChangeOperation(change);
-		try {
-			ResourcesPlugin.getWorkspace().run(changeOperation, new NullProgressMonitor());
-		} catch (CoreException e) {
-			LanguageServerPlugin.logError(e);
-		}
+		return change;
 	}
 
 	public static URI toUri(IPath absolutePath) {
