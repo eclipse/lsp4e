@@ -8,6 +8,7 @@
  * Contributors:
  *  Michal Niewrzal (Rogue Wave Software Inc.) - initial implementation
  *  Angelo Zerr <angelo.zerr@gmail.com> - fix Bug 521020
+ *  Lucas Bullen (Red Hat Inc.) - fix Bug 522737
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.highlight;
 
@@ -101,7 +102,11 @@ public class HighlightReconcilingStrategy
 	public void initialReconcile() {
 		if (sourceViewer != null) {
 			sourceViewer.getTextWidget().getDisplay()
-					.asyncExec(() -> collectHighlights(sourceViewer.getTextWidget().getCaretOffset()));
+					.asyncExec(() -> {
+						if (sourceViewer != null) {
+							collectHighlights(sourceViewer.getTextWidget().getCaretOffset());
+						}
+					});
 		}
 	}
 
@@ -116,7 +121,8 @@ public class HighlightReconcilingStrategy
 	}
 
 	/**
-	 * Collect list of highlight for teh given caret offset by consuming language server 'documentHighligh't.
+	 * Collect list of highlight for the given caret offset by consuming language
+	 * server 'documentHighligh't.
 	 *
 	 * @param caretOffset
 	 */
