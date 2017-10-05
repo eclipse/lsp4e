@@ -48,9 +48,11 @@ import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
 import org.eclipse.ltk.core.refactoring.DocumentChange;
@@ -325,23 +327,55 @@ public class LSPEclipseUtils {
 	 */
 	public static CompositeChange toCompositeChange(WorkspaceEdit wsEdit) {
 		CompositeChange change = new CompositeChange("LSP Workspace Edit"); //$NON-NLS-1$
-		for (java.util.Map.Entry<String, List<TextEdit>> edit : wsEdit.getChanges().entrySet()) {
-			String uri = edit.getKey();
-			IDocument document = LSPEclipseUtils.getDocument(LSPEclipseUtils.findResourceFor(uri));
-			for (TextEdit textEdit : edit.getValue()) {
-				try {
-					int offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
-					int length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
-					DocumentChange documentChange = new DocumentChange("Change in document " + uri, document); //$NON-NLS-1$
-					documentChange.initializeValidationData(new NullProgressMonitor());
-					documentChange.setEdit(new ReplaceEdit(offset, length, textEdit.getNewText()));
-					change.add(documentChange);
-				} catch (BadLocationException e) {
-					LanguageServerPlugin.logError(e);
+		List<TextDocumentEdit> documentChanges = wsEdit.getDocumentChanges();
+		if (documentChanges != null) {
+			// documentChanges are present, the latter are preferred over changes
+			// see specification at
+			// https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md#workspaceedit
+			documentChanges.stream().forEach(action -> {
+				VersionedTextDocumentIdentifier id = action.getTextDocument();
+				String uri = id.getUri();
+				List<TextEdit> textEdits = action.getEdits();
+				fillTextEdits(uri, textEdits, change);
+			});
+		} else {
+			Map<String, List<TextEdit>> changes = wsEdit.getChanges();
+			if (changes != null) {
+				for (java.util.Map.Entry<String, List<TextEdit>> edit : changes.entrySet()) {
+					String uri = edit.getKey();
+					List<TextEdit> textEdits = edit.getValue();
+					fillTextEdits(uri, textEdits, change);
 				}
 			}
 		}
 		return change;
+	}
+
+	/**
+	 * Transform LSP {@link TextEdit} list into ltk {@link DocumentChange} and add
+	 * it in the given ltk {@link CompositeChange}.
+	 *
+	 * @param uri
+	 *            document URI to update
+	 * @param textEdits
+	 *            LSP text edits
+	 * @param change
+	 *            ltk change to update
+	 */
+	private static void fillTextEdits(String uri, List<TextEdit> textEdits, CompositeChange change) {
+		IDocument document = LSPEclipseUtils.getDocument(LSPEclipseUtils.findResourceFor(uri));
+		for (TextEdit textEdit : textEdits) {
+			try {
+				int offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
+				int length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
+				DocumentChange documentChange = new DocumentChange("Change in document " + uri, document); //$NON-NLS-1$
+				documentChange.initializeValidationData(new NullProgressMonitor());
+				documentChange.setEdit(new ReplaceEdit(offset, length, textEdit.getNewText()));
+				change.add(documentChange);
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
 	}
 
 	public static URI toUri(IPath absolutePath) {
