@@ -53,6 +53,6 @@ public class Messages extends NLS {
 	public static String linkWithEditor_tooltip;
 
 	static {
-		NLS.initializeMessages(Messages.class.getPackage().getName() + ".messages", Messages.class); //$NON-NLS-1$
+		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$
 	}
 }
