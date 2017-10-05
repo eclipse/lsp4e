@@ -8,6 +8,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
+ *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525602 - LSBasedHover must check if LS have codelens capability
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
@@ -58,6 +59,10 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.editors.text.EditorsUI;
 
+/**
+ * LSP implementation of {@link org.eclipse.jface.text.ITextHover}
+ *
+ */
 public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage());
@@ -234,47 +239,95 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		return res;
 	}
 
+	/**
+	 * Initialize hover requests with hover (if available) and codelens (if
+	 * available).
+	 *
+	 * @param viewer
+	 *            the text viewer.
+	 * @param offset
+	 *            the hovered offset.
+	 */
 	private void initiateHoverRequest(@NonNull ITextViewer viewer, int offset) {
 		this.textViewer = viewer;
-		List<@NonNull LSPDocumentInfo> docInfos = LanguageServiceAccessor.getLSPDocumentInfosFor(viewer.getDocument(), (capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
 		// use intermediary variables to make the lists specific to the request
-		// if we directly add/remove from members, we may have thread related issues such as some
+		// if we directly add/remove from members, we may have thread related issues
+		// such as some
 		// results from a previous request leaking in the new hover.
-		final List<CompletableFuture<?>> requests = new ArrayList<>(docInfos.size());
+		final List<CompletableFuture<?>> requests = new ArrayList<>();
+		IDocument document = viewer.getDocument();
+		this.hoverResults = getHoverResults(document, offset, requests);
+		this.codeLensResults = getCodeLensResults(document, offset, requests);
+		this.requests = requests;
+	}
+
+	/**
+	 * Returns the list of hover.
+	 *
+	 * @param document
+	 *            the document of text viewer.
+	 * @param offset
+	 *            the hovered offset.
+	 * @param requests
+	 * @return the list of hover.
+	 */
+	private List<Hover> getHoverResults(@NonNull IDocument document, int offset, List<CompletableFuture<?>> requests) {
+		List<@NonNull LSPDocumentInfo> docInfos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
+				(capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
 		final List<Hover> hoverResults = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
-		final List<CodeLens> codeLensResults = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
-		for (@NonNull final LSPDocumentInfo info : docInfos) {
+		for (@NonNull
+		final LSPDocumentInfo info : docInfos) {
 			try {
-				CompletableFuture<Hover> hover = info.getLanguageClient().getTextDocumentService().hover(LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument()));
+				CompletableFuture<Hover> hover = info.getLanguageClient().getTextDocumentService().hover(
+						LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument()));
 				requests.add(hover.thenAccept(hoverResults::add));
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logError(e);
 			}
+		}
+		return hoverResults;
+	}
 
+	/**
+	 * Returns the list of codelens.
+	 *
+	 * @param document
+	 *            the document of text viewer.
+	 * @param offset
+	 *            the hovered offset.
+	 * @param requests
+	 * @return the list of codelens.
+	 */
+	private List<CodeLens> getCodeLensResults(@NonNull IDocument document, int offset,
+			List<CompletableFuture<?>> requests) {
+		List<@NonNull LSPDocumentInfo> docInfos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
+				(capabilities) -> (capabilities.getCodeLensProvider() != null));
+		final List<CodeLens> codeLensResults = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
+		for (@NonNull
+		final LSPDocumentInfo info : docInfos) {
 			CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(info.getFileUri().toString()));
-			CompletableFuture<List<? extends CodeLens>> codeLenses = info.getLanguageClient().getTextDocumentService().codeLens(param);
+			CompletableFuture<List<? extends CodeLens>> codeLenses = info.getLanguageClient().getTextDocumentService()
+					.codeLens(param);
 
 			try {
-				int line = viewer.getDocument().getLineOfOffset(offset);
-				int index = offset - viewer.getDocument().getLineOffset(line);
+				int line = document.getLineOfOffset(offset);
+				int index = offset - document.getLineOffset(line);
 				requests.add(codeLenses.thenAccept(r -> {
 					for (CodeLens codeLens : r) {
-						if(codeLens == null) continue;
-						if(isOffsetInCodeLensRange(codeLens, line, index))codeLensResults.add(codeLens);
+						if (codeLens == null)
+							continue;
+						if (isOffsetInCodeLensRange(codeLens, line, index))
+							codeLensResults.add(codeLens);
 					}
 				}));
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
-
-		this.requests = requests;
-		this.hoverResults = hoverResults;
-		this.codeLensResults = codeLensResults;
+		return codeLensResults;
 	}
 
 	static private boolean isOffsetInCodeLensRange(CodeLens codeLens, int line, int index) {
-		System.out.println(codeLens.toString());
 		Position start = codeLens.getRange().getStart();
 		Position end = codeLens.getRange().getEnd();
 		return (start.getLine() < line || (start.getLine() == line && start.getCharacter() <= index))
