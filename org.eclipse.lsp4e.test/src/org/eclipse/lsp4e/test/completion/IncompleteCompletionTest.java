@@ -185,6 +185,68 @@ public class IncompleteCompletionTest {
 	}
 
 	@Test
+	public void testCompletionWithAdditionalEdits() throws CoreException, InvocationTargetException {
+		List<CompletionItem> items = new ArrayList<>();
+		CompletionItem item = new CompletionItem("additionaEditsCompletion");
+		item.setKind(CompletionItemKind.Function);
+		item.setInsertText("MainInsertText");
+
+		List<TextEdit> additionalTextEdits = new ArrayList<>();
+
+		TextEdit additionaEdit1 = new TextEdit(new Range(new Position(0, 6), new Position(0, 6)), "addOnText1");
+		TextEdit additionaEdit2 = new TextEdit(new Range(new Position(0, 12), new Position(0, 12)), "addOnText2");
+		additionalTextEdits.add(additionaEdit1);
+		additionalTextEdits.add(additionaEdit2);
+
+		item.setAdditionalTextEdits(additionalTextEdits);
+		items.add(item);
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+
+		String content = "this <> is <> the main <> content of the file";
+		IFile testFile = TestUtils.createUniqueTestFile(project, content);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 24);
+		assertEquals(items.size(), proposals.length);
+		// TODO compare both structures
+		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSIncompleteCompletionProposal.apply(viewer.getDocument());
+
+		String newContent = viewer.getDocument().get();
+		assertEquals("this <addOnText1> is <addOnText2> the main <MainInsertText> content of the file", newContent);
+	}
+
+	@Test
+	public void testSnippetCompletionWithAdditionalEdits()
+			throws PartInitException, InvocationTargetException, CoreException {
+		CompletionItem item = new CompletionItem("snippet item");
+		item.setInsertText("$1 and ${2:foo}");
+		item.setKind(CompletionItemKind.Class);
+		item.setInsertTextFormat(InsertTextFormat.Snippet);
+		List<TextEdit> additionalTextEdits = new ArrayList<>();
+
+		TextEdit additionaEdit1 = new TextEdit(new Range(new Position(0, 6), new Position(0, 6)), "addOnText1");
+		TextEdit additionaEdit2 = new TextEdit(new Range(new Position(0, 12), new Position(0, 12)), "addOnText2");
+		additionalTextEdits.add(additionaEdit1);
+		additionalTextEdits.add(additionaEdit2);
+
+		item.setAdditionalTextEdits(additionalTextEdits);
+
+		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(item)));
+
+		String content = "this <> is <> the main <> content of the file";
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
+
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 24);
+		assertEquals(1, proposals.length);
+		((LSIncompleteCompletionProposal) proposals[0]).apply(viewer.getDocument());
+
+		String newContent = viewer.getDocument().get();
+		assertEquals("this <addOnText1> is <addOnText2> the main < and foo> content of the file", newContent);
+		// TODO check link edit groups
+	}
+
+	@Test
 	public void testApplyCompletionWithPrefix() throws CoreException, InvocationTargetException {
 		Range range = new Range(new Position(0, 0), new Position(0, 5));
 		List<CompletionItem> items = Collections

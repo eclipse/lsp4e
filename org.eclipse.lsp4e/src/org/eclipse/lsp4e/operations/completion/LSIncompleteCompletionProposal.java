@@ -60,6 +60,8 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
 
+import com.google.common.collect.ImmutableList;
+
 public class LSIncompleteCompletionProposal
 		implements ICompletionProposal, ICompletionProposalExtension3, ICompletionProposalExtension4,
 		ICompletionProposalExtension5, ICompletionProposalExtension6, ICompletionProposalExtension7,
@@ -289,8 +291,9 @@ public class LSIncompleteCompletionProposal
 			}
 			insertText = textEdit.getNewText();
 			LinkedHashMap<String, List<LinkedPosition>> regions = new LinkedHashMap<>();
+			int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
+			insertionOffset = computeNewOffset(item.getAdditionalTextEdits(), insertionOffset, document);
 			if (item.getInsertTextFormat() == InsertTextFormat.Snippet) {
-				int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
 				int currentOffset = 0;
 				while ((currentOffset = insertText.indexOf('$', currentOffset)) != -1) {
 					StringBuilder keyBuilder = new StringBuilder();
@@ -335,7 +338,15 @@ public class LSIncompleteCompletionProposal
 				}
 			}
 			textEdit.setNewText(insertText); // insertText now has placeholder removed
-			LSPEclipseUtils.applyEdit(textEdit, document);
+			List<TextEdit> additionalEdits = item.getAdditionalTextEdits();
+			if (additionalEdits != null && !additionalEdits.isEmpty()) {
+				ImmutableList.Builder<TextEdit> allEdits = ImmutableList.builder();
+				allEdits.add(textEdit);
+				allEdits.addAll(additionalEdits);
+				LSPEclipseUtils.applyEdits(document, allEdits.build());
+			} else {
+				LSPEclipseUtils.applyEdit(textEdit, document);
+			}
 
 			if (viewer != null && !regions.isEmpty()) {
 				LinkedModeModel model = new LinkedModeModel();
@@ -355,11 +366,34 @@ public class LSIncompleteCompletionProposal
 				ui.setCyclingMode(LinkedModeUI.CYCLE_NEVER);
 				ui.enter();
 			} else {
-				selection = new Region(LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document) + textEdit.getNewText().length(), 0);
+				selection = new Region(insertionOffset + textEdit.getNewText().length(), 0);
 			}
 		} catch (BadLocationException ex) {
 			LanguageServerPlugin.logError(ex);
 		}
+	}
+
+	private int computeNewOffset(List<TextEdit> additionalTextEdits, int insertionOffset, IDocument doc) {
+		if (additionalTextEdits != null && !additionalTextEdits.isEmpty()) {
+			int adjustment = 0;
+			for (TextEdit edit : additionalTextEdits) {
+				try {
+					Range rng = edit.getRange();
+					int start = LSPEclipseUtils.toOffset(rng.getStart(), doc);
+					if (start <= insertionOffset) {
+						int end = LSPEclipseUtils.toOffset(rng.getEnd(), doc);
+						int orgLen = end - start;
+						int newLeng = edit.getNewText().length();
+						int editChange = newLeng - orgLen;
+						adjustment += editChange;
+					}
+				} catch (BadLocationException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			}
+			return insertionOffset + adjustment;
+		}
+		return insertionOffset;
 	}
 
 	protected String getInsertText() {
