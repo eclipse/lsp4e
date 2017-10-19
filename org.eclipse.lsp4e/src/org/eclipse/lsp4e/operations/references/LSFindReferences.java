@@ -8,12 +8,11 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Michał Niewrzał (Rogue Wave Software Inc.)
+ *  Angelo Zerr <angelo.zerr@gmail.com> - fix Bug 526255
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.references;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -27,10 +26,6 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
-import org.eclipse.lsp4j.Location;
-import org.eclipse.lsp4j.ReferenceContext;
-import org.eclipse.lsp4j.ReferenceParams;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.search.ui.NewSearchUI;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
@@ -39,6 +34,10 @@ import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+/**
+ * LSP "Find references" handler.
+ *
+ */
 public class LSFindReferences extends AbstractHandler implements IHandler {
 
 	@Override
@@ -55,14 +54,9 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 
 				if (sel instanceof TextSelection) {
 					try {
-						ReferenceParams params = new ReferenceParams();
-						params.setContext(new ReferenceContext(true));
-						params.setTextDocument(new TextDocumentIdentifier(info.getFileUri().toString()));
-						params.setPosition(LSPEclipseUtils.toPosition(((TextSelection) sel).getOffset(), info.getDocument()));
-						CompletableFuture<List<? extends Location>> references = info.getLanguageClient()
-						        .getTextDocumentService().references(params);
-						LSSearchResult search = new LSSearchResult(references);
-						NewSearchUI.runQueryInBackground(search.getQuery());
+						int offset = ((TextSelection) sel).getOffset();
+						LSSearchQuery query = new LSSearchQuery(offset, info);
+						NewSearchUI.runQueryInBackground(query);
 					} catch (BadLocationException e) {
 						LanguageServerPlugin.logError(e);
 					}

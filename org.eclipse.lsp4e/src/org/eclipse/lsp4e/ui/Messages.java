@@ -33,15 +33,12 @@ public class Messages extends NLS {
 	public static String codeLens_emptyMenu;
 	public static String updateCodeActions_menu;
 	public static String initializeLanguageServer_job;
-	public static String referenceSearchQuery;
 	public static String computing;
 	public static String notImplemented;
 	public static String LSPSymbolInWorkspaceDialog_DialogLabel;
 	public static String LSPSymbolInWorkspaceDialog_DialogTitle;
 	public static String updateCodelensMenu_job;
 	public static String outline_computingSymbols;
-	public static String findReferences_jobName;
-	public static String findReferences_updateResultView_jobName;
 	public static String rename_title;
 	public static String rename_label;
 	public static String rename_processor_name;
@@ -51,6 +48,9 @@ public class Messages extends NLS {
 	public static String linkWithEditor_label;
 	public static String linkWithEditor_description;
 	public static String linkWithEditor_tooltip;
+	public static String LSSearchQuery_label;
+	public static String LSSearchQuery_singularReference;
+	public static String LSSearchQuery_pluralReferences;
 
 	static {
 		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$
