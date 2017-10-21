@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -102,13 +103,25 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			return new ICompletionProposal[0];
 		}
 
+		// Check if any of the infos have the required capabilities
+		final List<LSPDocumentInfo> applicableInfos = infos.stream().filter(info -> {
+			final ServerCapabilities capabilities = info.getCapabilites();
+			return capabilities != null && capabilities.getCompletionProvider() != null;
+		}).collect(Collectors.toList());
+
+		if (applicableInfos.isEmpty()) {
+			return new ICompletionProposal[0];
+		}
+
 		List<ICompletionProposal> proposals = new ArrayList<>();
 		try {
-			TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(infos.get(0).getFileUri(),
+			TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(
+					applicableInfos.get(0).getFileUri(),
 					offset, viewer.getDocument());
 			List<ICompletionProposal> lsProposals = Collections.synchronizedList(new ArrayList<>());
 			// starts requests to various LS
-			Stream<CompletableFuture<Void>> requests = infos.stream().map(info ->
+			Stream<CompletableFuture<Void>> requests = applicableInfos.stream()
+					.map(info ->
 			info.getLanguageClient().getTextDocumentService().completion(param)
 					.thenAccept(items -> lsProposals.addAll(toProposals(offset, items, info))
 				)
@@ -200,11 +213,24 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		if (infos == null || infos.isEmpty()) {
 			return new IContextInformation[0];
 		}
+
+		// Check if any of the infos have the required capabilities
+		final List<LSPDocumentInfo> applicableInfos = infos.stream().filter(info -> {
+			final ServerCapabilities capabilities = info.getCapabilites();
+			return capabilities != null && capabilities.getSignatureHelpProvider() != null;
+		}).collect(Collectors.toList());
+
+		if (applicableInfos.isEmpty()) {
+			return new IContextInformation[0];
+		}
+
 		List<IContextInformation> contextInformations = Collections.synchronizedList(new ArrayList<>());
 		try {
-			TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(infos.get(0).getFileUri(), offset,
+			TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(
+					applicableInfos.get(0).getFileUri(), offset,
 					viewer.getDocument());
-			Stream<CompletableFuture<Void>> requests = infos.stream().map(info -> info.getLanguageClient().getTextDocumentService().signatureHelp(param).thenAccept(signatureHelp -> {
+			Stream<CompletableFuture<Void>> requests = applicableInfos.stream().map(info -> info.getLanguageClient()
+					.getTextDocumentService().signatureHelp(param).thenAccept(signatureHelp -> {
 				for (SignatureInformation information : signatureHelp.getSignatures()) {
 					StringBuilder signature = new StringBuilder(information.getLabel());
 					if (information.getDocumentation() != null && !information.getDocumentation().isEmpty()) {
@@ -260,7 +286,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				infos = Collections.unmodifiableList(LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-						capabilities -> capabilities.getCompletionProvider() != null));
+						capabilities -> capabilities.getCompletionProvider() != null
+								|| capabilities.getSignatureHelpProvider() != null));
 				Set<Character> triggerChars = new HashSet<>();
 				Set<Character> contextTriggerChars = new HashSet<>();
 				if (infos != null) {
