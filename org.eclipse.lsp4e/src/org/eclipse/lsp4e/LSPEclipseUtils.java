@@ -17,6 +17,7 @@ import java.io.File;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,6 +71,7 @@ import org.eclipse.ui.IURIEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.browser.IWorkbenchBrowserSupport;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
@@ -141,9 +143,10 @@ public class LSPEclipseUtils {
 
 	@Nullable
 	public static IResource findResourceFor(@Nullable String uri) {
-		if (uri == null || uri.isEmpty()) {
+		if (uri == null || uri.isEmpty() || !uri.startsWith("file:")) { //$NON-NLS-1$
 			return null;
 		}
+
 		String convertedUri = uri.replace("file:///", "file:/"); //$NON-NLS-1$//$NON-NLS-2$
 		convertedUri = convertedUri.replace("file://", "file:/"); //$NON-NLS-1$//$NON-NLS-2$
 		IPath path = Path.fromOSString(new File(URI.create(convertedUri)).getAbsolutePath());
@@ -243,6 +246,33 @@ public class LSPEclipseUtils {
 	}
 
 	public static void openInEditor(Location location, IWorkbenchPage page) {
+		String uri = location.getUri();
+
+		if (uri.startsWith("file:")) { //$NON-NLS-1$
+			openFileLocationInEditor(location, page);
+		} else if (uri.startsWith("http")) { //$NON-NLS-1$
+			openHttpLocationInBrowser(location, page);
+		}
+	}
+
+	public static void openHttpLocationInBrowser(final Location location, IWorkbenchPage page) {
+		page.getWorkbenchWindow().getShell().getDisplay().asyncExec(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					URL url = new URL(location.getUri());
+					IWorkbenchBrowserSupport browserSupport = page.getWorkbenchWindow().getWorkbench()
+							.getBrowserSupport();
+					browserSupport.createBrowser("lsp4e-symbols").openURL(url); //$NON-NLS-1$
+					;
+				} catch (Exception e) {
+					LanguageServerPlugin.logError(e);
+				}
+			}
+		});
+	}
+
+	public static void openFileLocationInEditor(Location location, IWorkbenchPage page) {
 		IEditorPart part = null;
 		IDocument targetDocument = null;
 		IResource targetResource = LSPEclipseUtils.findResourceFor(location.getUri());
