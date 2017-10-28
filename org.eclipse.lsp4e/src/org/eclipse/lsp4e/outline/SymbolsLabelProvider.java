@@ -72,16 +72,7 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 		IResource resource = LSPEclipseUtils.findResourceFor(symbolInformation.getLocation().getUri());
 		if (resource != null) {
 			try {
-				IDocument doc = LSPEclipseUtils.getDocument(resource);
-				int maxSeverity = -1;
-				for (IMarker marker : resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO)) {
-					int offset = marker.getAttribute(IMarker.CHAR_START, -1);
-					if (offset != -1
-					    && offset >= LSPEclipseUtils.toOffset(symbolInformation.getLocation().getRange().getStart(), doc)
-					    && offset <= LSPEclipseUtils.toOffset(symbolInformation.getLocation().getRange().getEnd(), doc)) {
-						maxSeverity = Math.max(maxSeverity, marker.getAttribute(IMarker.SEVERITY, -1));
-					}
-				}
+				int maxSeverity = getMaxSeverity(resource, symbolInformation);
 				if (maxSeverity > IMarker.SEVERITY_INFO) {
 					return getOverlay(res, maxSeverity);
 				}
@@ -90,6 +81,21 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 			}
 		}
 		return res;
+	}
+
+	protected int getMaxSeverity(IResource resource, SymbolInformation symbolInformation)
+			throws CoreException, BadLocationException {
+		IDocument doc = LSPEclipseUtils.getDocument(resource);
+		int maxSeverity = -1;
+		for (IMarker marker : resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO)) {
+			int offset = marker.getAttribute(IMarker.CHAR_START, -1);
+			if (offset != -1
+					&& offset >= LSPEclipseUtils.toOffset(symbolInformation.getLocation().getRange().getStart(), doc)
+					&& offset <= LSPEclipseUtils.toOffset(symbolInformation.getLocation().getRange().getEnd(), doc)) {
+				maxSeverity = Math.max(maxSeverity, marker.getAttribute(IMarker.SEVERITY, -1));
+			}
+		}
+		return maxSeverity;
 	}
 
 	private Image getOverlay(Image res, int maxSeverity) {

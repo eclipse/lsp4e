@@ -17,12 +17,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.IDialogSettings;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -58,6 +61,19 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 				styledString.setStyle(index, pattern.length(), stylerProvider.getBoldStyler());
 			}
 			return styledString;
+		}
+
+		@Override
+		protected int getMaxSeverity(IResource resource, SymbolInformation symbolInformation)
+				throws CoreException, BadLocationException {
+			int maxSeverity = -1;
+			for (IMarker marker : resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO)) {
+				int offset = marker.getAttribute(IMarker.CHAR_START, -1);
+				if (offset != -1) {
+					maxSeverity = Math.max(maxSeverity, marker.getAttribute(IMarker.SEVERITY, -1));
+				}
+			}
+			return maxSeverity;
 		}
 
 		public void setPattern(String pattern) {
