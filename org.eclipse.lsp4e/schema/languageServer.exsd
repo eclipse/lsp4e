@@ -70,7 +70,7 @@
                   
                </documentation>
                <appinfo>
-                  <meta.attribute kind="java" basedOn=":org.eclipse.lsp4e.StreamConnectionProvider"/>
+                  <meta.attribute kind="java" basedOn=":org.eclipse.lsp4e.server.StreamConnectionProvider"/>
                </appinfo>
             </annotation>
          </attribute>
