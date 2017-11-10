@@ -21,12 +21,10 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.ProjectSpecificLanguageServerWrapper;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
-import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.graphics.Image;
@@ -60,21 +58,19 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 				IFile file = (IFile) marker.getResource();
 				LanguageServerDefinition definition = LanguageServersRegistry.getInstance()
 						.getDefinition(languageServerId);
-				if (definition != null) {
+				if (file != null && definition != null) {
 					try {
-						ProjectSpecificLanguageServerWrapper wrapper = LanguageServiceAccessor
-								.getLSWrapperForConnection(file.getProject(), definition);
-						LanguageServer server = wrapper.getServer();
-						ServerCapabilities capabilities = wrapper.getServerCapabilities();
-						if (server != null && capabilities != null) {
-							ExecuteCommandOptions provider = capabilities.getExecuteCommandProvider();
-							if (provider != null && provider.getCommands().contains(command.getCommand())) {
-								ExecuteCommandParams params = new ExecuteCommandParams();
-								params.setCommand(command.getCommand());
-								params.setArguments(command.getArguments());
-								server.getWorkspaceService().executeCommand(params);
-								return;
-							}
+						LanguageServer server = LanguageServiceAccessor.getLanguageServer(file, definition,
+								serverCapabilities -> {
+									ExecuteCommandOptions provider = serverCapabilities.getExecuteCommandProvider();
+									return provider != null && provider.getCommands().contains(command.getCommand());
+								});
+						if (server != null) {
+							ExecuteCommandParams params = new ExecuteCommandParams();
+							params.setCommand(command.getCommand());
+							params.setArguments(command.getArguments());
+							server.getWorkspaceService().executeCommand(params);
+							return;
 						}
 					} catch (IOException e) {
 						// log and let the code fall through for LSPEclipseUtils to handle

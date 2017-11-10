@@ -115,15 +115,34 @@ public class LanguageServiceAccessor {
 	 * @param file
 	 * @param serverId
 	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request
+	 * @deprecated will be removed soon
 	 */
-	public static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition) throws IOException {
+	@Deprecated
+	private static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition)
+			throws IOException {
+		return getLanguageServer(file, lsDefinition, null);
+	}
+
+	/**
+	 * Get the requested language server instance for the given file. Starts the language server if not already started.
+	 * @param file
+	 * @param serverId
+	 * @param capabilitesPredicate a predicate to check capabilities
+	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request
+	 */
+	public static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition,
+			Predicate<ServerCapabilities> capabilitiesPredicate)
+			throws IOException {
 		ProjectSpecificLanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition);
-		if (wrapper != null) {
+		if (wrapper != null && (capabilitiesPredicate == null
+				|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+				|| capabilitiesPredicate.test(wrapper.getServerCapabilities()))) {
 			wrapper.connect(file.getLocation(), null);
 			return wrapper.getServer();
 		}
 		return null;
 	}
+
 
 	/**
 	 *
@@ -133,7 +152,9 @@ public class LanguageServiceAccessor {
 	 * @throws IOException
 	 * @noreference This method is currently internal and should only be referenced for testing
 	 */
-	@NonNull public static Collection<ProjectSpecificLanguageServerWrapper> getLSWrappers(@NonNull IFile file, @NonNull Predicate<ServerCapabilities> request) throws IOException {
+	@NonNull
+	public static Collection<ProjectSpecificLanguageServerWrapper> getLSWrappers(@NonNull IFile file,
+			@NonNull Predicate<ServerCapabilities> request) throws IOException {
 		LinkedHashSet<ProjectSpecificLanguageServerWrapper> res = new LinkedHashSet<>();
 		IProject project = file.getProject();
 		if (project == null) {
@@ -184,8 +205,12 @@ public class LanguageServiceAccessor {
 	 * @param serverDefinition
 	 * @return
 	 * @throws IOException
+	 * @Deprecated will be made private soon
+	 * @noreference will be made private soon
 	 */
-	public static ProjectSpecificLanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project, @NonNull LanguageServerDefinition serverDefinition) throws IOException {
+	@Deprecated
+	public static ProjectSpecificLanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project,
+			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
 		ProjectSpecificLanguageServerWrapper wrapper = null;
 
 		synchronized(projectServers) {
@@ -207,7 +232,8 @@ public class LanguageServiceAccessor {
 		return wrapper;
 	}
 
-	private static @NonNull List<ProjectSpecificLanguageServerWrapper> getStartedLSWrappers(@NonNull IProject project) {
+	private static @NonNull List<ProjectSpecificLanguageServerWrapper> getStartedLSWrappers(
+			@NonNull IProject project) {
 		return projectServers.stream().filter(wrapper -> wrapper.project.equals(project)).collect(Collectors.toList());
 	}
 

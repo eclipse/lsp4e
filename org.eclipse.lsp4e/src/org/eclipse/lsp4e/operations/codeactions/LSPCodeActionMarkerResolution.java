@@ -27,14 +27,12 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.ProjectSpecificLanguageServerWrapper;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
-import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.graphics.Image;
@@ -112,12 +110,11 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				if (languageServerId != null) { // try to use same LS as the one that created the marker
 					LanguageServerDefinition definition = LanguageServersRegistry.getInstance().getDefinition(languageServerId);
 					if (definition != null) {
-						ProjectSpecificLanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapperForConnection(file.getProject(), definition);
-						if (wrapper != null) {
-							ServerCapabilities capabilites = wrapper.getServerCapabilities();
-							if (capabilites == null || Boolean.TRUE.equals(capabilites.getCodeActionProvider())) {
-								languageServers.add(wrapper.getServer());
-							}
+						LanguageServer server = LanguageServiceAccessor.getLanguageServer(file, definition,
+								serverCapabilities -> serverCapabilities == null
+										|| Boolean.TRUE.equals(serverCapabilities.getCodeActionProvider()));
+						if (server != null) {
+							languageServers.add(server);
 						}
 					}
 				}
