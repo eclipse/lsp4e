@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
@@ -90,7 +91,8 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		params.setContext(context);
 		Set<CompletableFuture<?>> runningFutures = new HashSet<>();
 		for (LSPDocumentInfo info : this.infos) {
-			final CompletableFuture<List<? extends Command>> codeActions = info.getLanguageClient().getTextDocumentService().codeAction(params);
+			final CompletableFuture<List<? extends Command>> codeActions = info.getInitializedLanguageClient()
+					.thenCompose(languageServer -> languageServer.getTextDocumentService().codeAction(params));
 			runningFutures.add(codeActions);
 			codeActions.whenComplete(new BiConsumer<List<? extends Command>, Throwable>() {
 				@Override
@@ -102,9 +104,10 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 							if (u != null) {
 								final MenuItem item = new MenuItem(menu, SWT.NONE, index);
 								item.setText(u.getMessage());
-								item.setImage(PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_DEC_FIELD_ERROR));
+								item.setImage(PlatformUI.getWorkbench().getSharedImages()
+										.getImage(ISharedImages.IMG_DEC_FIELD_ERROR));
 								item.setEnabled(false);
-							} else if(t != null) {
+							} else if (t != null) {
 								for (Command command : t) {
 									if (command != null) {
 										final MenuItem item = new MenuItem(menu, SWT.NONE, index);
@@ -115,7 +118,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 							}
 							if (menu.getItemCount() == 1) {
 								item.setText(Messages.codeActions_emptyMenu);
-							}else {
+							} else {
 								item.dispose();
 							}
 							return Status.OK_STATUS;

@@ -7,13 +7,11 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codelens;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -64,38 +62,34 @@ public class LSPCodeLensMenu extends ContributionItem implements IWorkbenchContr
 
 		item.setText(Messages.computing);
 		CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(info.getFileUri().toString()));;
-		final CompletableFuture<List<? extends CodeLens>> codeLens = info.getLanguageClient().getTextDocumentService().codeLens(param);
-		codeLens.whenComplete(new BiConsumer<List<? extends CodeLens>, Throwable>() {
-
-			@Override
-			public void accept(List<? extends CodeLens> t, Throwable u) {
-				UIJob job = new UIJob(menu.getDisplay(), Messages.updateCodelensMenu_job) {
-					@Override
-					public IStatus runInUIThread(IProgressMonitor monitor) {
-						if (u != null) {
-							// log?
-							item.setText(u.getMessage());
-						} else if (t != null){
-							for (CodeLens lens : t) {
-								if (lens != null && lens.getCommand() != null) {
-									final MenuItem item = new MenuItem(menu, SWT.NONE, index);
-									item.setText(lens.getCommand().getTitle());
-									item.setEnabled(false);
+		info.getInitializedLanguageClient()
+				.thenCompose(languageServer -> languageServer.getTextDocumentService().codeLens(param))
+				.whenComplete((t, u) -> {
+					UIJob job = new UIJob(menu.getDisplay(), Messages.updateCodelensMenu_job) {
+						@Override
+						public IStatus runInUIThread(IProgressMonitor monitor) {
+							if (u != null) {
+								// log?
+								item.setText(u.getMessage());
+							} else if (t != null) {
+								for (CodeLens lens : t) {
+									if (lens != null && lens.getCommand() != null) {
+										final MenuItem item = new MenuItem(menu, SWT.NONE, index);
+										item.setText(lens.getCommand().getTitle());
+										item.setEnabled(false);
+									}
 								}
 							}
+							if (menu.getItemCount() == 1) {
+								item.setText(Messages.codeLens_emptyMenu);
+							} else {
+								item.dispose();
+							}
+							return Status.OK_STATUS;
 						}
-						if (menu.getItemCount() == 1) {
-							item.setText(Messages.codeLens_emptyMenu);
-						}else {
-							item.dispose();
-						}
-						return Status.OK_STATUS;
-					}
-				};
-				job.schedule();
-			}
-
-		});
+					};
+					job.schedule();
+				});
 		super.fill(menu, index);
 	}
 

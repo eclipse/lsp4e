@@ -55,7 +55,7 @@ public class DocumentRevertAndCloseTest {
 		testFile.setLocalTimeStamp(0);
 
 		// Force LS to initialize and open file
-		LanguageServiceAccessor.getLanguageServers(testFile, capabilites -> Boolean.TRUE);
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE);
 		
 		viewer.getDocument().replace(0, 0, "Bye!");
 		((AbstractTextEditor)editor).doRevertToSaved();

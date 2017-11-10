@@ -9,13 +9,13 @@
  *   Lucas Bullen (Red Hat Inc.) - initial implementation
  *   Michał Niewrzał (Rogue Wave Software Inc.)
  *   Lucas Bullen (Red Hat Inc.) - Refactored for incomplete completion lists
+ *                               - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.completion;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -157,10 +157,10 @@ public class LSIncompleteCompletionProposal
 		if (capabilities != null) {
 			CompletionOptions options = capabilities.getCompletionProvider();
 			if (options != null && Boolean.TRUE.equals(options.getResolveProvider())) {
-				CompletableFuture<CompletionItem> resolvedItem = info.getLanguageClient().getTextDocumentService()
-						.resolveCompletionItem(item);
 				try {
-					updateCompletionItem(resolvedItem.get(500, TimeUnit.MILLISECONDS));
+					updateCompletionItem(info.getInitializedLanguageClient()
+							.thenCompose(ls -> ls.getTextDocumentService().resolveCompletionItem(item))
+							.get(500, TimeUnit.MILLISECONDS));
 				} catch (InterruptedException | ExecutionException | TimeoutException e) {
 					LanguageServerPlugin.logError(e);
 				}

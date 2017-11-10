@@ -17,8 +17,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -70,21 +73,28 @@ public class LanguageServiceAccessorTest {
 	@Test
 	public void testGetLanguageServerInvalidFile() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "not_associated_with_ls.abc", "");
-		Collection<LanguageServer> servers = LanguageServiceAccessor.getLanguageServers(testFile, capabilites -> Boolean.TRUE);
+		Collection<LanguageServer> servers = new ArrayList<>();
+		for (CompletableFuture<LanguageServer> future :LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE)){
+			servers.add(future.get(1, TimeUnit.SECONDS));
+		}
 		assertTrue(servers.isEmpty());
 	}
 
 	@Test
 	public void testLSAsExtension() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "shouldUseExtension.lspt", "");
-		LanguageServer info = LanguageServiceAccessor.getLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next();
+		LanguageServer info = LanguageServiceAccessor
+				.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next()
+				.get(1, TimeUnit.SECONDS);
 		assertNotNull(info);
 	}
 
 	@Test
 	public void testLSAsRunConfiguration() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "shouldUseRunConfiguration.lspt2", "");
-		LanguageServer info = LanguageServiceAccessor.getLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next();
+		LanguageServer info = LanguageServiceAccessor
+				.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next()
+				.get(1, TimeUnit.SECONDS);
 		assertNotNull(info);
 	}
 	
@@ -107,10 +117,18 @@ public class LanguageServiceAccessorTest {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 		IFile testFile2 = TestUtils.createUniqueTestFileMultiLS(project, "");
 		// wrap in HashSet as a workaround of https://github.com/eclipse/lsp4j/issues/106
-		Collection<LanguageServer> file1LanguageServers = LanguageServiceAccessor.getLanguageServers(testFile1, c -> Boolean.TRUE);
+		Collection<LanguageServer> file1LanguageServers = new ArrayList<>();
+		for (CompletableFuture<LanguageServer> future : LanguageServiceAccessor.getInitializedLanguageServers(testFile1,
+				capabilites -> Boolean.TRUE)) {
+			file1LanguageServers.add(future.get(1, TimeUnit.SECONDS));
+		}
 		assertEquals(1, file1LanguageServers.size());
 		LanguageServer file1LS = file1LanguageServers.iterator().next();
-		Collection<LanguageServer> file2LanguageServers = LanguageServiceAccessor.getLanguageServers(testFile2, c -> Boolean.TRUE);
+		Collection<LanguageServer> file2LanguageServers = new ArrayList<>();
+		for (CompletableFuture<LanguageServer> future : LanguageServiceAccessor.getInitializedLanguageServers(testFile2,
+				capabilites -> Boolean.TRUE)) {
+			file2LanguageServers.add(future.get(1, TimeUnit.SECONDS));
+		}
 		assertEquals(2, file2LanguageServers.size());
 		assertTrue(file2LanguageServers.contains(file1LS)); // LS from file1 is reused
 		assertEquals("Not right amount of language servers bound to project", 2, LanguageServiceAccessor.getLanguageServers(project, c -> Boolean.TRUE).size());

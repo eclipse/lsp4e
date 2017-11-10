@@ -60,7 +60,7 @@ public class DocumentDidChangeTest {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = TestUtils.getTextViewer(editor);
-		LanguageServiceAccessor.getLanguageServers(testFile, new Predicate<ServerCapabilities>() {
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile, new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
 				TextDocumentSyncKind syncKind = getDocumentSyncKind(t);
@@ -132,7 +132,7 @@ public class DocumentDidChangeTest {
 		IFile testFile = TestUtils.createUniqueTestFile(project, multiLineText);
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = TestUtils.getTextViewer(editor);
-		LanguageServiceAccessor.getLanguageServers(testFile, new Predicate<ServerCapabilities>() {
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile, new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
 				assertEquals(TextDocumentSyncKind.Incremental, getDocumentSyncKind(t));
@@ -168,7 +168,7 @@ public class DocumentDidChangeTest {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = TestUtils.getTextViewer(editor);
-		LanguageServiceAccessor.getLanguageServers(testFile, new Predicate<ServerCapabilities>() {
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile, new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
 				assertEquals(TextDocumentSyncKind.Full, getDocumentSyncKind(t));

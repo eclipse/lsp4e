@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.format;
 
@@ -71,13 +72,15 @@ public class LSPFormatter {
 					fullFormat ? info.getDocument().getLength() : textSelection.getOffset() + textSelection.getLength(),
 					info.getDocument());
 			params.setRange(new Range(start, end));
-			return info.getLanguageClient().getTextDocumentService().rangeFormatting(params);
+			return info.getInitializedLanguageClient()
+					.thenCompose(server -> server.getTextDocumentService().rangeFormatting(params));
 		}
 
 		DocumentFormattingParams params = new DocumentFormattingParams();
 		params.setTextDocument(docId);
 		params.setOptions(new FormattingOptions());
-		return info.getLanguageClient().getTextDocumentService().formatting(params);
+		return info.getInitializedLanguageClient()
+				.thenCompose(server -> server.getTextDocumentService().formatting(params));
 	}
 
 	public static boolean supportFormatting(ServerCapabilities capabilities) {

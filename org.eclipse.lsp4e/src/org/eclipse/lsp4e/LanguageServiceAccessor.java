@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -87,8 +89,18 @@ public class LanguageServiceAccessor {
 			return this.fileUri;
 		}
 
+		/**
+		 * Returns the language server, regardless of if it is initialized.
+		 *
+		 * @deprecated use {@link #getInitializedServer()} instead.
+		 */
+		@Deprecated
 		public @NonNull LanguageServer getLanguageClient() {
 			return this.server;
+		}
+
+		public CompletableFuture<LanguageServer> getInitializedLanguageClient() {
+			return this.wrapper.getInitializedServer();
 		}
 
 		public @Nullable ServerCapabilities getCapabilites() {
@@ -100,7 +112,14 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-	public static @NonNull Collection<LanguageServer> getLanguageServers(@NonNull IFile file, Predicate<ServerCapabilities> request) throws IOException {
+	/**
+	 * Returns the language servers, regardless of if they are initialized.
+	 *
+	 * @deprecated use {@link #getInitializedLanguageServers()} instead.
+	 */
+	@Deprecated
+	public static @NonNull Collection<LanguageServer> getLanguageServers(@NonNull IFile file,
+			Predicate<ServerCapabilities> request) throws IOException {
 		Collection<LanguageServerWrapper> wrappers = getLSWrappers(file, request);
 		wrappers.forEach(w -> {
 			try {
@@ -110,6 +129,19 @@ public class LanguageServiceAccessor {
 			}
 		});
 		return wrappers.stream().map(LanguageServerWrapper::getServer).collect(Collectors.toList());
+	}
+
+	public static @NonNull List<CompletableFuture<LanguageServer>> getInitializedLanguageServers(@NonNull IFile file,
+			Predicate<ServerCapabilities> request) throws IOException {
+		Collection<LanguageServerWrapper> wrappers = getLSWrappers(file, request);
+		wrappers.forEach(w -> {
+			try {
+				w.connect(file, null);
+			} catch (IOException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		});
+		return wrappers.stream().map(LanguageServerWrapper::getInitializedServer).collect(Collectors.toList());
 	}
 
 	/**
@@ -131,7 +163,9 @@ public class LanguageServiceAccessor {
 	 * @param serverId
 	 * @param capabilitesPredicate a predicate to check capabilities
 	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request
+	 * @deprecated use {@link #getInitializedLanguageServer()} instead.
 	 */
+	@Deprecated
 	public static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition,
 			Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
@@ -141,6 +175,27 @@ public class LanguageServiceAccessor {
 				|| capabilitiesPredicate.test(wrapper.getServerCapabilities()))) {
 			wrapper.connect(file, null);
 			return wrapper.getServer();
+		}
+		return null;
+	}
+
+	/**
+	 * Get the requested language server instance for the given file. Starts the language server if not already started.
+	 * @param file
+	 * @param serverId
+	 * @param capabilitesPredicate a predicate to check capabilities
+	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request
+	 */
+	public static CompletableFuture<LanguageServer> getInitializedLanguageServer(@NonNull IFile file,
+			@NonNull LanguageServerDefinition lsDefinition,
+			Predicate<ServerCapabilities> capabilitiesPredicate)
+			throws IOException {
+		LanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition);
+		if (wrapper != null && (capabilitiesPredicate == null
+				|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+				|| capabilitiesPredicate.test(wrapper.getServerCapabilities()))) {
+			wrapper.connect(file, null);
+			return wrapper.getInitializedServer();
 		}
 		return null;
 	}

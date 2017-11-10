@@ -87,8 +87,8 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 			try {
 				DocumentLinkParams params = new DocumentLinkParams(
 						new TextDocumentIdentifier(info.getFileUri().toString()));
-				CompletableFuture<List<DocumentLink>> documentLink = info.getLanguageClient().getTextDocumentService()
-						.documentLink(params);
+				CompletableFuture<List<DocumentLink>> documentLink = info.getInitializedLanguageClient()
+						.thenCompose(languageServer -> languageServer.getTextDocumentService().documentLink(params));
 				List<DocumentLink> links = documentLink.get(2, TimeUnit.SECONDS);
 				if (links == null || links.isEmpty()) {
 					continue;

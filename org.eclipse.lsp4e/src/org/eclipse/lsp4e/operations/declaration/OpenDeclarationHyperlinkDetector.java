@@ -8,10 +8,12 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Michał Niewrzał (Rogue Wave Software Inc.) - hyperlink range detection
+ *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.declaration;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -74,8 +76,18 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
 		for (@NonNull LSPDocumentInfo info : LanguageServiceAccessor.getLSPDocumentInfosFor(textViewer.getDocument(), capabilities -> Boolean.TRUE.equals(capabilities.getDefinitionProvider()))) {
 			try {
-				CompletableFuture<List<? extends Location>> documentHighlight = info.getLanguageClient().getTextDocumentService()
-						.definition(LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), region.getOffset(), info.getDocument()));
+				CompletableFuture<List<? extends Location>> documentHighlight = info.getInitializedLanguageClient().thenCompose(ls ->
+						{
+							try {
+								return ls.getTextDocumentService()
+										.definition(LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(),
+												region.getOffset(), info.getDocument()));
+							} catch (BadLocationException e) {
+								LanguageServerPlugin.logError(e);
+								return CompletableFuture.completedFuture(Collections.emptyList());
+							}
+						}
+				);
 				List<? extends Location> locations = documentHighlight.get(2, TimeUnit.SECONDS);
 				if (locations == null || locations.isEmpty()) {
 					continue;
@@ -89,7 +101,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 					hyperlinks.add(new LSBasedHyperlink(responseLocation, linkRegion));
 				}
 				return hyperlinks.toArray(new IHyperlink[hyperlinks.size()]);
-			} catch (BadLocationException | InterruptedException | ExecutionException | TimeoutException e) {
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}

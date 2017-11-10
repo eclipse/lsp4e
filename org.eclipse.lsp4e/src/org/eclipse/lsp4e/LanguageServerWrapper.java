@@ -429,8 +429,30 @@ public class LanguageServerWrapper {
 		return connectedDocuments.containsKey(location);
 	}
 
+	/**
+	 * Starts and returns the language server, regardless of if it is initialized.
+	 * If not in the UI Thread, will wait to return the initialized server.
+	 *
+	 * @deprecated use {@link #getInitializedServer()} instead.
+	 */
+	@Deprecated
 	@Nullable
 	public LanguageServer getServer() {
+		CompletableFuture<LanguageServer> languagServerFuture = getInitializedServer();
+		if (Display.getCurrent() != null) { // UI Thread
+			return this.languageServer;
+		} else {
+			return languagServerFuture.join();
+		}
+	}
+
+	/**
+	 * Starts the language server and returns a CompletableFuture waiting for the
+	 * server to be initialized. If done in the UI stream, a job will be created
+	 * displaying that the server is being initialized
+	 */
+	@NonNull
+	public CompletableFuture<LanguageServer> getInitializedServer() {
 		try {
 			start();
 		} catch (IOException ex) {
@@ -449,11 +471,10 @@ public class LanguageServerWrapper {
 				waitForInitialization.setSystem(false);
 				PlatformUI.getWorkbench().getProgressService().showInDialog(
 						PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), waitForInitialization);
-			} else {
-				this.initializeFuture.join();
 			}
+			return initializeFuture.thenApply(r -> this.languageServer);
 		}
-		return this.languageServer;
+		return CompletableFuture.completedFuture(this.languageServer);
 	}
 
 	/**
@@ -464,15 +485,10 @@ public class LanguageServerWrapper {
 	@Nullable
 	public ServerCapabilities getServerCapabilities() {
 		try {
-			start();
-			if (this.initializeFuture != null) {
-				this.initializeFuture.get(capabilitiesAlreadyRequested ? 0 : 1000, TimeUnit.MILLISECONDS);
-			}
+			getInitializedServer().get(10, TimeUnit.SECONDS);
 		} catch (TimeoutException e) {
-			if (System.currentTimeMillis() - initializeStartTime > 10000) {
-				LanguageServerPlugin.logError("LanguageServer not initialized after 10s", e); //$NON-NLS-1$
-			}
-		} catch (IOException | InterruptedException | ExecutionException e) {
+			LanguageServerPlugin.logError("LanguageServer not initialized after 10s", e); //$NON-NLS-1$
+		} catch (InterruptedException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		}
 		this.capabilitiesAlreadyRequested = true;

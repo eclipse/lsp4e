@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2017 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2017 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -9,6 +9,7 @@
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
  *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525602 - LSBasedHover must check if LS have codelens capability
+ *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
@@ -277,13 +278,15 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		final List<Hover> hoverResults = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
 		for (@NonNull
 		final LSPDocumentInfo info : docInfos) {
-			try {
-				CompletableFuture<Hover> hover = info.getLanguageClient().getTextDocumentService().hover(
-						LSPEclipseUtils.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument()));
-				requests.add(hover.thenAccept(hoverResults::add));
-			} catch (BadLocationException e) {
-				LanguageServerPlugin.logError(e);
-			}
+			info.getInitializedLanguageClient().thenAccept(languageServer -> {
+				try {
+					CompletableFuture<Hover> hover = languageServer.getTextDocumentService().hover(LSPEclipseUtils
+							.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument()));
+					requests.add(hover.thenAccept(hoverResults::add));
+				} catch (BadLocationException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			});
 		}
 		return hoverResults;
 	}
@@ -306,23 +309,22 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		for (@NonNull
 		final LSPDocumentInfo info : docInfos) {
 			CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(info.getFileUri().toString()));
-			CompletableFuture<List<? extends CodeLens>> codeLenses = info.getLanguageClient().getTextDocumentService()
-					.codeLens(param);
-
-			try {
-				int line = document.getLineOfOffset(offset);
-				int index = offset - document.getLineOffset(line);
-				requests.add(codeLenses.thenAccept(r -> {
-					for (CodeLens codeLens : r) {
-						if (codeLens == null)
-							continue;
-						if (isOffsetInCodeLensRange(codeLens, line, index))
-							codeLensResults.add(codeLens);
-					}
-				}));
-			} catch (BadLocationException e) {
-				LanguageServerPlugin.logError(e);
-			}
+			requests.add(info.getInitializedLanguageClient()
+					.thenCompose(languageServer -> languageServer.getTextDocumentService().codeLens(param))
+					.thenAccept(codeLenses -> {
+						for (CodeLens codeLens : codeLenses) {
+							if (codeLens == null)
+								continue;
+							try {
+								int line = document.getLineOfOffset(offset);
+								int index = offset - document.getLineOffset(line);
+								if (isOffsetInCodeLensRange(codeLens, line, index))
+									codeLensResults.add(codeLens);
+							} catch (BadLocationException e) {
+								LanguageServerPlugin.logError(e);
+							}
+						}
+					}));
 		}
 		return codeLensResults;
 	}

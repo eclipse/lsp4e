@@ -8,6 +8,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Lucas Bullen (Red Hat Inc.) - Bug 508472 - Outline to provide "Link with Editor"
+ *                              - Bug 517428 - Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
@@ -111,8 +112,8 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		}
 		lastError = null;
 		DocumentSymbolParams params = new DocumentSymbolParams(new TextDocumentIdentifier(info.getFileUri().toString()));
-		symbols = info.getLanguageClient().getTextDocumentService().documentSymbol(params);
-
+		symbols = info.getInitializedLanguageClient()
+				.thenCompose(languageServer -> languageServer.getTextDocumentService().documentSymbol(params));
 		symbols.thenAccept((List<? extends SymbolInformation> t) -> {
 			symbolsModel.update(t);
 

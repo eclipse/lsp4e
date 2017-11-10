@@ -57,7 +57,7 @@ public class DocumentDidSaveTest {
 		testFile.setLocalTimeStamp(0);
 
 		// Force LS to initialize and open file
-		LanguageServiceAccessor.getLanguageServers(testFile, capabilites -> Boolean.TRUE);
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE);
 		CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
 		MockLanguageSever.INSTANCE.setDidSaveCallback(didSaveExpectation);
 

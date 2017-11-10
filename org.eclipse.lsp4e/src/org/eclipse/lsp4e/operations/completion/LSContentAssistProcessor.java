@@ -120,17 +120,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 					offset, viewer.getDocument());
 			List<ICompletionProposal> lsProposals = Collections.synchronizedList(new ArrayList<>());
 			// starts requests to various LS
-			Stream<CompletableFuture<Void>> requests = applicableInfos.stream()
-					.map(info ->
-			info.getLanguageClient().getTextDocumentService().completion(param)
-					.thenAccept(items -> lsProposals.addAll(toProposals(offset, items, info))
-				)
-			);
-			// wait for them to complete
-			requests.forEach(future -> {
+			applicableInfos.parallelStream().forEach(info -> {
 				try {
-					future.get(); // TODO? timeout?
-				} catch (ExecutionException | InterruptedException ex) {
+					Either<List<CompletionItem>, CompletionList> items = info.getInitializedLanguageClient().get()
+							.getTextDocumentService().completion(param).get();
+					lsProposals.addAll(toProposals(offset, items, info));
+				} catch (InterruptedException | ExecutionException ex) {
 					LanguageServerPlugin.logError(ex);
 					// TODO: consider showing an error message as proposal?
 					LSContentAssistProcessor.this.errorMessage = ex.getMessage();
@@ -229,7 +224,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(
 					applicableInfos.get(0).getFileUri(), offset,
 					viewer.getDocument());
-			Stream<CompletableFuture<Void>> requests = applicableInfos.stream().map(info -> info.getLanguageClient()
+			Stream<CompletableFuture<Void>> requests = applicableInfos.stream()
+					.map(info -> info.getInitializedLanguageClient().thenCompose(languageServer -> languageServer
 					.getTextDocumentService().signatureHelp(param).thenAccept(signatureHelp -> {
 				for (SignatureInformation information : signatureHelp.getSignatures()) {
 					StringBuilder signature = new StringBuilder(information.getLabel());
@@ -238,7 +234,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 					}
 					contextInformations.add(new ContextInformation(information.getLabel(), signature.toString()));
 				}
-			}));
+			})));
 			// wait for them to complete
 			requests.forEach(future -> {
 				try {

@@ -8,7 +8,7 @@
  * Contributors:
  *  Michal Niewrzal (Rogue Wave Software Inc.) - initial implementation
  *  Angelo Zerr <angelo.zerr@gmail.com> - fix Bug 521020
- *  Lucas Bullen (Red Hat Inc.) - fix Bug 522737
+ *  Lucas Bullen (Red Hat Inc.) - fix Bug 522737, 517428
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.highlight;
 
@@ -148,10 +148,9 @@ public class HighlightReconcilingStrategy
 			for (LSPDocumentInfo info : infos) {
 				TextDocumentIdentifier identifier = new TextDocumentIdentifier(info.getFileUri().toString());
 				TextDocumentPositionParams params = new TextDocumentPositionParams(identifier, position);
-				request = info.getLanguageClient().getTextDocumentService().documentHighlight(params);
-				// Call the 'documentHighlight'.
+				request = info.getInitializedLanguageClient().thenCompose(
+						languageServer -> languageServer.getTextDocumentService().documentHighlight(params));
 				request.thenAccept(result -> {
-					// and then update the UI annotations.
 					updateAnnotations(result, sourceViewer.getAnnotationModel());
 				});
 			}

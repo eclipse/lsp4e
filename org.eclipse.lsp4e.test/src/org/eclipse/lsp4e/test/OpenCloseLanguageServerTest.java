@@ -53,7 +53,8 @@ public class OpenCloseLanguageServerTest {
 		// open and close the editor several times
 		for(int i = 0; i < 10; i++) {
 			IEditorPart editor = TestUtils.openEditor(testFile);
-			LanguageServiceAccessor.getLanguageServers(testFile, capabilities -> Boolean.TRUE).iterator().next();
+			LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilities -> Boolean.TRUE).iterator()
+					.next();
 			assertTrue("language server is started for iteration #" + i, new StartedDisplayHelper().waitForCondition(Display.getCurrent(), 5000, 300));
 
 			((AbstractTextEditor)editor).close(false);

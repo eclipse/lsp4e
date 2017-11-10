@@ -9,6 +9,7 @@
  *   Mickael Istria (Red Hat Inc.) - initial implementation
  *   Michał Niewrzał (Rogue Wave Software Inc.)
  *   Angelo Zerr <angelo.zerr@gmail.com> - fix Bug 526255
+ *   Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.references;
 
@@ -89,14 +90,15 @@ public class LSSearchQuery extends FileSearchQuery {
 			params.setContext(new ReferenceContext(true));
 			params.setTextDocument(new TextDocumentIdentifier(info.getFileUri().toString()));
 			params.setPosition(position);
-			references = info.getLanguageClient().getTextDocumentService().references(params);
-			// Loop for each LSP Location and convert it to Match search.
-			references.thenAccept(locs -> {
-				for (Location loc : locs) {
-					Match match = toMatch(loc);
-					result.addMatch(match);
-				}
-			});
+			info.getInitializedLanguageClient()
+					.thenCompose(languageServer -> languageServer.getTextDocumentService().references(params))
+					.thenAccept(locs -> {
+						// Loop for each LSP Location and convert it to Match search.
+						for (Location loc : locs) {
+							Match match = toMatch(loc);
+							result.addMatch(match);
+						}
+					});
 			return Status.OK_STATUS;
 		} catch (Exception ex) {
 			return new Status(IStatus.ERROR, LanguageServerPlugin.getDefault().getBundle().getSymbolicName(),

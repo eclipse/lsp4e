@@ -11,6 +11,7 @@
 package org.eclipse.lsp4e.operations.codeactions;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -60,17 +61,18 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 						.getDefinition(languageServerId);
 				if (file != null && definition != null) {
 					try {
-						LanguageServer server = LanguageServiceAccessor.getLanguageServer(file, definition,
-								serverCapabilities -> {
+						CompletableFuture<LanguageServer> languageServerFuture = LanguageServiceAccessor
+								.getInitializedLanguageServer(file, definition, serverCapabilities -> {
 									ExecuteCommandOptions provider = serverCapabilities.getExecuteCommandProvider();
 									return provider != null && provider.getCommands().contains(command.getCommand());
 								});
-						if (server != null) {
-							ExecuteCommandParams params = new ExecuteCommandParams();
-							params.setCommand(command.getCommand());
-							params.setArguments(command.getArguments());
-							server.getWorkspaceService().executeCommand(params);
-							return;
+						if (languageServerFuture != null) {
+							languageServerFuture.thenAccept(server -> {
+								ExecuteCommandParams params = new ExecuteCommandParams();
+								params.setCommand(command.getCommand());
+								params.setArguments(command.getArguments());
+								server.getWorkspaceService().executeCommand(params);
+							});
 						}
 					} catch (IOException e) {
 						// log and let the code fall through for LSPEclipseUtils to handle

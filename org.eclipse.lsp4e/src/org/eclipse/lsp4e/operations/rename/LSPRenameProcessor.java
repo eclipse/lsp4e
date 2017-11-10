@@ -7,6 +7,7 @@
  *
  *  Contributors:
  *  Angelo Zerr <angelo.zerr@gmail.com> - initial API and implementation
+ *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  */
 package org.eclipse.lsp4e.operations.rename;
 
@@ -91,8 +92,9 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 			params.setNewName(newName);
 			if (params.getNewName() != null) {
 				// TODO: how to manage ltk with CompletableFuture? Is 1000 ms is enough?
-				rename = info.getLanguageClient().getTextDocumentService().rename(params).get(1000,
-						TimeUnit.MILLISECONDS);
+				rename = info.getInitializedLanguageClient()
+						.thenCompose(langaugeServer -> langaugeServer.getTextDocumentService().rename(params))
+						.get(1000, TimeUnit.MILLISECONDS);
 			}
 		} catch (Exception e) {
 			status.addError(e.getMessage());

@@ -106,23 +106,25 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 			if (res != null && res.getType() == IResource.FILE) {
 				IFile file = (IFile)res;
 				String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
-				List<LanguageServer> languageServers = new ArrayList<>();
+				List<CompletableFuture<LanguageServer>> languageServerFutures = new ArrayList<>();
 				if (languageServerId != null) { // try to use same LS as the one that created the marker
 					LanguageServerDefinition definition = LanguageServersRegistry.getInstance().getDefinition(languageServerId);
 					if (definition != null) {
-						LanguageServer server = LanguageServiceAccessor.getLanguageServer(file, definition,
+						CompletableFuture<LanguageServer> serverFuture = LanguageServiceAccessor
+								.getInitializedLanguageServer(file, definition,
 								serverCapabilities -> serverCapabilities == null
 										|| Boolean.TRUE.equals(serverCapabilities.getCodeActionProvider()));
-						if (server != null) {
-							languageServers.add(server);
+						if (serverFuture != null) {
+							languageServerFutures.add(serverFuture);
 						}
 					}
 				}
-				if (languageServers.isEmpty()) { // if it's not there, try any other server
-					languageServers.addAll(LanguageServiceAccessor.getLanguageServers(file, capabilities -> Boolean.TRUE.equals(capabilities.getCodeActionProvider())));
+				if (languageServerFutures.isEmpty()) { // if it's not there, try any other server
+					languageServerFutures.addAll(LanguageServiceAccessor.getInitializedLanguageServers(file,
+							capabilities -> Boolean.TRUE.equals(capabilities.getCodeActionProvider())));
 				}
 				List<CompletableFuture<?>> futures = new ArrayList<>();
-				for (LanguageServer ls : languageServers) {
+				for (CompletableFuture<LanguageServer> lsf : languageServerFutures) {
 					marker.setAttribute(LSP_REMEDIATION, COMPUTING);
 					Diagnostic diagnostic = (Diagnostic)marker.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC);
 					CodeActionContext context = new CodeActionContext(Collections.singletonList(diagnostic));
@@ -130,7 +132,8 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					params.setContext(context);
 					params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(marker.getResource()).toString()));
 					params.setRange(diagnostic.getRange());
-					CompletableFuture<List<? extends Command>> codeAction = ls.getTextDocumentService().codeAction(params);
+					CompletableFuture<List<? extends Command>> codeAction = lsf
+							.thenCompose(ls -> ls.getTextDocumentService().codeAction(params));
 					futures.add(codeAction);
 					codeAction.thenAccept(actions -> {
 						try {

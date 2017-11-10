@@ -7,12 +7,12 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.symbols;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -21,7 +21,6 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.DocumentSymbolParams;
-import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
@@ -48,15 +47,14 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 			final Shell shell = HandlerUtil.getActiveShell(event);
 			DocumentSymbolParams params = new DocumentSymbolParams(
 					new TextDocumentIdentifier(info.getFileUri().toString()));
-			CompletableFuture<List<? extends SymbolInformation>> symbols = info.getLanguageClient()
-					.getTextDocumentService().documentSymbol(params);
-
-			symbols.thenAccept((List<? extends SymbolInformation> t) -> {
-				shell.getDisplay().asyncExec(() -> {
-					LSPSymbolInFileDialog dialog = new LSPSymbolInFileDialog(shell, textEditor, t);
-					dialog.open();
-				});
-			});
+			info.getInitializedLanguageClient()
+					.thenCompose(langaugeServer -> langaugeServer.getTextDocumentService().documentSymbol(params))
+					.thenAccept(t -> {
+						shell.getDisplay().asyncExec(() -> {
+							LSPSymbolInFileDialog dialog = new LSPSymbolInFileDialog(shell, textEditor, t);
+							dialog.open();
+						});
+					});
 		}
 		return null;
 	}
