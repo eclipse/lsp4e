@@ -38,7 +38,7 @@ public class LanguageClientImpl implements LanguageClient {
 	public final void connect(LanguageServer server, ProjectSpecificLanguageServerWrapper wrapper) {
 		this.server = server;
 		this.wrapper = wrapper;
-		this.diagnosticHandler = new LSPDiagnosticsToMarkers(wrapper.project, wrapper.serverDefinition.id);
+		this.diagnosticHandler = new LSPDiagnosticsToMarkers(wrapper.serverDefinition.id);
 	}
 
 	protected final LanguageServer getLanguageServer() {
@@ -67,7 +67,7 @@ public class LanguageClientImpl implements LanguageClient {
 
 	@Override
 	public final void logMessage(MessageParams message) {
-		ServerMessageHandler.logMessage(wrapper.project, wrapper.serverDefinition.label, message);
+		ServerMessageHandler.logMessage(null, wrapper.serverDefinition.label, message);
 	}
 
 	@Override

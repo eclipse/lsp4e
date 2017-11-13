@@ -40,12 +40,22 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	public static final String LSP_DIAGNOSTIC = "lspDiagnostic"; //$NON-NLS-1$
 	public static final String LANGUAGE_SERVER_ID = "languageServerId"; //$NON-NLS-1$
 	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
-	private final @NonNull IProject project;
 	private final @NonNull String languageServerId;
 
-	public LSPDiagnosticsToMarkers(@NonNull IProject project, @NonNull String serverId) {
-		this.project = project;
+	public LSPDiagnosticsToMarkers(@NonNull String serverId) {
 		this.languageServerId = serverId;
+	}
+
+	/**
+	 *
+	 * @param project
+	 * @param serverId
+	 *            ignored
+	 * @deprecated
+	 */
+	@Deprecated
+	public LSPDiagnosticsToMarkers(IProject project, @NonNull String serverId) {
+		this(serverId);
 	}
 
 	@Override
@@ -55,11 +65,12 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			String uri = diagnostics.getUri();
 			IResource resource = LSPEclipseUtils.findResourceFor(uri);
 			if (resource == null || !resource.exists()) {
-				resource = project;
+				return;
 			}
 			Set<IMarker> remainingMarkers = new HashSet<>(
 					Arrays.asList(resource.findMarkers(LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_ONE)));
-			remainingMarkers.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
+			remainingMarkers
+					.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
 			for (Diagnostic diagnostic : diagnostics.getDiagnostics()) {
 				IMarker associatedMarker = getExistingMarkerFor(resource, diagnostic, remainingMarkers);
 				if (associatedMarker == null) {

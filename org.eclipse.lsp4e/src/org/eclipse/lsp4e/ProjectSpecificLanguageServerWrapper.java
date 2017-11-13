@@ -16,8 +16,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -31,6 +33,8 @@ import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.IFileBufferListener;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -89,7 +93,7 @@ public class ProjectSpecificLanguageServerWrapper {
 		@Override
 		public void bufferDisposed(IFileBuffer buffer) {
 			Path filePath = new Path(buffer.getFileStore().toURI().getPath());
-			if (!isFromProject(filePath)) {
+			if (!isInWatchedProject(filePath)) {
 				return;
 			}
 			disconnect(filePath);
@@ -101,7 +105,7 @@ public class ProjectSpecificLanguageServerWrapper {
 				return;
 			}
 			Path filePath = new Path(buffer.getFileStore().toURI().getPath());
-			if (!isFromProject(filePath)) {
+			if (!isInWatchedProject(filePath)) {
 				return;
 			}
 
@@ -111,17 +115,20 @@ public class ProjectSpecificLanguageServerWrapper {
 			}
 		}
 
-		private boolean isFromProject(IPath path) {
-			if (project == null || project.getLocation() == null) {
-				return false;
+		private boolean isInWatchedProject(IPath path) {
+			for (@NonNull IProject watchedProject : allWatchedProjects) {
+				if (watchedProject.getLocation() != null && watchedProject.getLocation().isPrefixOf(path)) {
+					return true;
+				}
 			}
-			return project.getLocation().isPrefixOf(path);
+			return false;
 		}
 
 	};
 
 	public final @NonNull LanguageServerDefinition serverDefinition;
-	public final @NonNull IProject project;
+	private final @Nullable IProject initialProject;
+	private final @NonNull Set<@NonNull IProject> allWatchedProjects;
 
 	private final @NonNull StreamConnectionProvider lspStreamProvider;
 	private LanguageServer languageServer;
@@ -136,8 +143,13 @@ public class ProjectSpecificLanguageServerWrapper {
 	private long initializeStartTime;
 
 
-	public ProjectSpecificLanguageServerWrapper(@NonNull IProject project, @NonNull LanguageServerDefinition serverDefinition) {
-		this.project = project;
+	public ProjectSpecificLanguageServerWrapper(@Nullable IProject project,
+			@NonNull LanguageServerDefinition serverDefinition) {
+		this.initialProject = project;
+		this.allWatchedProjects = new HashSet<>();
+		if (initialProject != null) {
+			watchProject(initialProject);
+		}
 		this.serverDefinition = serverDefinition;
 		this.lspStreamProvider = serverDefinition.createConnectionProvider();
 		this.connectedDocuments = new HashMap<>();
@@ -168,8 +180,11 @@ public class ProjectSpecificLanguageServerWrapper {
 			LanguageClientImpl client = serverDefinition.createLanguageClient();
 			ExecutorService executorService = Executors.newCachedThreadPool();
 			final InitializeParams initParams = new InitializeParams();
-			initParams.setRootUri(LSPEclipseUtils.toUri(project).toString());
-			initParams.setRootPath(project.getLocation().toFile().getAbsolutePath());
+			if (this.initialProject != null) {
+				URI uri = LSPEclipseUtils.toUri(this.initialProject);
+				initParams.setRootUri(uri.toString());
+				initParams.setRootPath(uri.getPath());
+			}
 			Launcher<? extends LanguageServer> launcher = Launcher.createLauncher(client, serverDefinition.getServerInterface(),
 					this.lspStreamProvider.getInputStream(), this.lspStreamProvider.getOutputStream(), executorService,
 					consumer -> (message -> {
@@ -280,6 +295,45 @@ public class ProjectSpecificLanguageServerWrapper {
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
 	}
 
+	public void connect(@NonNull IFile file, IDocument document) throws IOException {
+		watchProject(file.getProject());
+		connect(file.getLocation(), document);
+	}
+
+	private void watchProject(IProject project) {
+		if (this.allWatchedProjects.contains(project)) {
+			return;
+		}
+		this.allWatchedProjects.add(project);
+		project.getWorkspace().addResourceChangeListener(event -> {
+			if (project.equals(event.getResource()) && (event.getDelta().getKind() == IResourceDelta.MOVED_FROM
+					|| event.getDelta().getKind() == IResourceDelta.REMOVED)) {
+				unwatchProject(project);
+			}
+		}, IResourceChangeEvent.POST_CHANGE);
+		// TODO send workspaceFolder notificiation if appropriate
+	}
+
+	private void unwatchProject(IProject project) {
+		this.allWatchedProjects.remove(project);
+		// TODO? disconnect resources?
+		// TODO send workspaceFolder notificiation if appropriate
+	}
+
+	/**
+	 *
+	 * @return whether this language server is currently watching given project
+	 * @since 0.5
+	 */
+	public boolean watches(IProject project) {
+		return this.allWatchedProjects.contains(project);
+	}
+
+	/**
+	 * To make public when we support non IFiles
+	 *
+	 * @noreference internal so far
+	 */
 	public void connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
 		final IPath thePath = Path.fromOSString(absolutePath.toFile().getAbsolutePath()); // should be useless
 		if (this.connectedDocuments.containsKey(thePath)) {
