@@ -309,7 +309,6 @@ public class LanguageServiceAccessor {
 			}
 			return res;
 		} else {
-			LanguageServerPlugin.logInfo("Non IFiles not supported yet"); //$NON-NLS-1$
 			//fileUri = "file://" + location.toFile().getAbsolutePath();
 			//TODO handle case of plain file (no IFile)
 		}
