@@ -18,7 +18,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 
 import org.eclipse.core.resources.IFile;
@@ -30,9 +29,9 @@ import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
-import org.eclipse.lsp4e.ProjectSpecificLanguageServerWrapper;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.PlatformUI;
 import org.junit.After;
@@ -92,10 +91,11 @@ public class LanguageServiceAccessorTest {
 	@Test
 	public void testLSAsExtensionForDifferentLanguageId() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "shouldUseExtension.lspt-different", "");		@NonNull
-		Collection<ProjectSpecificLanguageServerWrapper> lsWrappers = LanguageServiceAccessor.getLSWrappers(testFile, capabilites -> Boolean.TRUE);
+		Collection<LanguageServerWrapper> lsWrappers = LanguageServiceAccessor.getLSWrappers(testFile,
+				capabilites -> Boolean.TRUE);
 		
 		assertEquals(1, lsWrappers.size());
-		ProjectSpecificLanguageServerWrapper wrapper = lsWrappers.iterator().next();
+		LanguageServerWrapper wrapper = lsWrappers.iterator().next();
 		assertNotNull(wrapper);
 		
 		IContentType contentType = Platform.getContentTypeManager().getContentType("org.eclipse.lsp4e.test.content-type-different");
@@ -107,10 +107,10 @@ public class LanguageServiceAccessorTest {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 		IFile testFile2 = TestUtils.createUniqueTestFileMultiLS(project, "");
 		// wrap in HashSet as a workaround of https://github.com/eclipse/lsp4j/issues/106
-		Collection<LanguageServer> file1LanguageServers = new HashSet<>(LanguageServiceAccessor.getLanguageServers(testFile1, c -> Boolean.TRUE));
+		Collection<LanguageServer> file1LanguageServers = LanguageServiceAccessor.getLanguageServers(testFile1, c -> Boolean.TRUE);
 		assertEquals(1, file1LanguageServers.size());
 		LanguageServer file1LS = file1LanguageServers.iterator().next();
-		Collection<LanguageServer> file2LanguageServers = new HashSet<>(LanguageServiceAccessor.getLanguageServers(testFile2, c -> Boolean.TRUE)); // shou
+		Collection<LanguageServer> file2LanguageServers = LanguageServiceAccessor.getLanguageServers(testFile2, c -> Boolean.TRUE);
 		assertEquals(2, file2LanguageServers.size());
 		assertTrue(file2LanguageServers.contains(file1LS)); // LS from file1 is reused
 		assertEquals("Not right amount of language servers bound to project", 2, LanguageServiceAccessor.getLanguageServers(project, c -> Boolean.TRUE).size());
@@ -121,17 +121,19 @@ public class LanguageServiceAccessorTest {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 		IFile testFile2 = TestUtils.createUniqueTestFile(project, "lspt-different", "");
 
-		Collection<ProjectSpecificLanguageServerWrapper> wrappers1 = LanguageServiceAccessor.getLSWrappers(testFile1, c -> Boolean.TRUE);
+		Collection<LanguageServerWrapper> wrappers1 = LanguageServiceAccessor.getLSWrappers(testFile1,
+				c -> Boolean.TRUE);
 		assertEquals(1, wrappers1.size());
-		ProjectSpecificLanguageServerWrapper wrapper1 = wrappers1.iterator().next();
+		LanguageServerWrapper wrapper1 = wrappers1.iterator().next();
 		assertTrue(wrapper1.isActive());
 		
 		wrapper1.disconnect(testFile1.getFullPath());
 		assertFalse(wrapper1.isActive());
 		
-		Collection<ProjectSpecificLanguageServerWrapper> wrappers2 = LanguageServiceAccessor.getLSWrappers(testFile2, c -> Boolean.TRUE);
+		Collection<LanguageServerWrapper> wrappers2 = LanguageServiceAccessor.getLSWrappers(testFile2,
+				c -> Boolean.TRUE);
 		assertEquals(1, wrappers2.size());
-		ProjectSpecificLanguageServerWrapper wrapper2 = wrappers2.iterator().next();
+		LanguageServerWrapper wrapper2 = wrappers2.iterator().next();
 		assertTrue(wrapper2.isActive());
 		
 		// make sure the language server for testFile1 (which is unrelated to testFile2 is not started again)
@@ -144,8 +146,9 @@ public class LanguageServiceAccessorTest {
 	public void testLanguageServerHierarchy_moreSpecializedFirst() throws Exception {
 		// file with a content-type and a parent, each associated to one LS
 		IFile testFile = TestUtils.createUniqueTestFile(project, "lsptchild", "");
-		@NonNull Collection<ProjectSpecificLanguageServerWrapper> servers = LanguageServiceAccessor.getLSWrappers(testFile, c -> Boolean.TRUE);
-		Iterator<ProjectSpecificLanguageServerWrapper> iterator = servers.iterator();
+		@NonNull Collection<LanguageServerWrapper> servers = LanguageServiceAccessor.getLSWrappers(testFile,
+				c -> Boolean.TRUE);
+		Iterator<LanguageServerWrapper> iterator = servers.iterator();
 		assertEquals("org.eclipse.lsp4e.test.server2", iterator.next().serverDefinition.id);
 		assertEquals("org.eclipse.lsp4e.test.server", iterator.next().serverDefinition.id);
 	}
@@ -154,8 +157,9 @@ public class LanguageServiceAccessorTest {
 	public void testLanguageServerHierarchy_parentContentTypeUsed() throws Exception {
 		// file with a content-type whose parent (only) is associated to one LS
 		IFile testFile = TestUtils.createUniqueTestFile(project, "lsptchildNoLS", "");
-		@NonNull Collection<ProjectSpecificLanguageServerWrapper> servers = LanguageServiceAccessor.getLSWrappers(testFile, c -> Boolean.TRUE);
-		Iterator<ProjectSpecificLanguageServerWrapper> iterator = servers.iterator();
+		@NonNull Collection<LanguageServerWrapper> servers = LanguageServiceAccessor.getLSWrappers(testFile,
+				c -> Boolean.TRUE);
+		Iterator<LanguageServerWrapper> iterator = servers.iterator();
 		assertEquals("org.eclipse.lsp4e.test.server", iterator.next().serverDefinition.id);
 		assertFalse("Should only be a single LS", iterator.hasNext());
 	}

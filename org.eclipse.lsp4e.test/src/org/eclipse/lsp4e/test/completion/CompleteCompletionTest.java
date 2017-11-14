@@ -55,6 +55,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -103,6 +104,7 @@ public class CompleteCompletionTest {
 				return lsWrapperForConnection.isConnectedTo(fileLocation);
 			}
 		}.waitForCondition(Display.getCurrent(), 3000);
+		Assert.assertTrue(lsWrapperForConnection.isConnectedTo(fileLocation));
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(items.size(), proposals.length);

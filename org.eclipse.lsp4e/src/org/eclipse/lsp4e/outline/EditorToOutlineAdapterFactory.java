@@ -28,7 +28,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 	@Override
 	public <T> T getAdapter(Object adaptableObject, Class<T> adapterType) {
 		if (adapterType == IContentOutlinePage.class && adaptableObject instanceof IEditorPart &&
-				LanguageServersRegistry.canUseLanguageServer(((IEditorPart)adaptableObject).getEditorInput())) {
+				LanguageServersRegistry.getInstance().canUseLanguageServer(((IEditorPart) adaptableObject).getEditorInput())) {
 			IDocument document = LSPEclipseUtils.getDocument(((IEditorPart)adaptableObject).getEditorInput());
 			if (document != null) {
 				Collection<LSPDocumentInfo> info = LanguageServiceAccessor.getLSPDocumentInfosFor(

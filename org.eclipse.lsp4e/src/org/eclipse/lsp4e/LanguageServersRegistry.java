@@ -12,7 +12,10 @@
 package org.eclipse.lsp4e;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,12 +23,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.content.IContentType;
+import org.eclipse.core.runtime.content.IContentTypeManager;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -289,9 +294,8 @@ public class LanguageServersRegistry {
 		return null;
 	}
 
-	public static boolean canUseLanguageServer(IEditorInput editorInput) {
-		List<ContentTypeToLanguageServerDefinition> contentTypes = LanguageServersRegistry.getInstance().getContentTypeToLSPExtensions();
-		for (ContentTypeToLanguageServerDefinition contentType : contentTypes) {
+	public boolean canUseLanguageServer(IEditorInput editorInput) {
+		for (ContentTypeToLanguageServerDefinition contentType : getContentTypeToLSPExtensions()) {
 			if(contentType.getKey().isAssociatedWith(editorInput.getName())) return true;
 		}
 		return false;
@@ -312,6 +316,26 @@ public class LanguageServersRegistry {
 			this.languageId = languageId;
 		}
 
+	}
+
+	/**
+	 * @param file
+	 * @param serverDefinition
+	 * @return whether the given serverDefinition is suitable for the file
+	 * @throws CoreException
+	 * @throws IOException
+	 */
+	public boolean matches(@NonNull IFile file, @NonNull LanguageServerDefinition serverDefinition) throws IOException, CoreException {
+		IContentTypeManager manager = Platform.getContentTypeManager();
+		try (InputStream contents = file.getContents()) {
+			Collection<IContentType> fileContentTypes = Arrays.asList(manager.findContentTypeFor(contents, file.getName()));
+			for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
+				if (mapping.getValue().equals(serverDefinition) && fileContentTypes.contains(mapping.getKey())) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 }

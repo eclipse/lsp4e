@@ -43,7 +43,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
 
-	private final @NonNull ProjectSpecificLanguageServerWrapper languageServerWrapper;
+	private final @NonNull LanguageServerWrapper languageServerWrapper;
 	private final String fileUri;
 	private final TextDocumentSyncKind syncKind;
 	private int version = 0;
@@ -51,7 +51,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private long modificationStamp;
 	private @NonNull IDocument document;
 
-	public DocumentContentSynchronizer(@NonNull ProjectSpecificLanguageServerWrapper languageServerWrapper, @NonNull IDocument document,
+	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
+			@NonNull IDocument document,
 			@NonNull IPath filePath, TextDocumentSyncKind syncKind) {
 		this.languageServerWrapper = languageServerWrapper;
 		File file = filePath.toFile();

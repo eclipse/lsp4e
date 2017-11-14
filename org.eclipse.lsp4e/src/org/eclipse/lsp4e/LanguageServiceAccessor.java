@@ -44,7 +44,8 @@ import org.eclipse.lsp4j.services.LanguageServer;
 
 /**
  * The entry-point to retrieve a Language Server for a given resource/project.
- * Deals with instantiations and caching of underlying {@link ProjectSpecificLanguageServerWrapper}.
+ * Deals with instantiations and caching of underlying
+ * {@link LanguageServerWrapper}.
  *
  */
 public class LanguageServiceAccessor {
@@ -53,7 +54,7 @@ public class LanguageServiceAccessor {
 		// this class shouldn't be instantiated
 	}
 
-	private static Set<ProjectSpecificLanguageServerWrapper> startedServers = new HashSet<>();
+	private static Set<LanguageServerWrapper> startedServers = new HashSet<>();
 	private static Map<StreamConnectionProvider, LanguageServerDefinition> providersToLSDefinitions = new HashMap<>();
 
 	/**
@@ -63,10 +64,11 @@ public class LanguageServiceAccessor {
 
 		private final @NonNull URI fileUri;
 		private final @NonNull IDocument document;
-		private final @NonNull ProjectSpecificLanguageServerWrapper wrapper;
+		private final @NonNull LanguageServerWrapper wrapper;
 		private final @NonNull LanguageServer server;
 
-		private LSPDocumentInfo(@NonNull URI fileUri, @NonNull IDocument document, @NonNull ProjectSpecificLanguageServerWrapper wrapper, @NonNull LanguageServer server) {
+		private LSPDocumentInfo(@NonNull URI fileUri, @NonNull IDocument document,
+				@NonNull LanguageServerWrapper wrapper, @NonNull LanguageServer server) {
 			this.fileUri = fileUri;
 			this.document = document;
 			this.wrapper = wrapper;
@@ -99,7 +101,7 @@ public class LanguageServiceAccessor {
 	}
 
 	public static @NonNull Collection<LanguageServer> getLanguageServers(@NonNull IFile file, Predicate<ServerCapabilities> request) throws IOException {
-		Collection<ProjectSpecificLanguageServerWrapper> wrappers = getLSWrappers(file, request);
+		Collection<LanguageServerWrapper> wrappers = getLSWrappers(file, request);
 		wrappers.forEach(w -> {
 			try {
 				w.connect(file, null);
@@ -107,7 +109,7 @@ public class LanguageServiceAccessor {
 				LanguageServerPlugin.logError(e);
 			}
 		});
-		return wrappers.stream().map(ProjectSpecificLanguageServerWrapper::getServer).collect(Collectors.toList());
+		return wrappers.stream().map(LanguageServerWrapper::getServer).collect(Collectors.toList());
 	}
 
 	/**
@@ -153,9 +155,9 @@ public class LanguageServiceAccessor {
 	 * @noreference This method is currently internal and should only be referenced for testing
 	 */
 	@NonNull
-	public static Collection<ProjectSpecificLanguageServerWrapper> getLSWrappers(@NonNull IFile file,
+	public static Collection<LanguageServerWrapper> getLSWrappers(@NonNull IFile file,
 			@NonNull Predicate<ServerCapabilities> request) throws IOException {
-		LinkedHashSet<ProjectSpecificLanguageServerWrapper> res = new LinkedHashSet<>();
+		LinkedHashSet<LanguageServerWrapper> res = new LinkedHashSet<>();
 		IProject project = file.getProject();
 		if (project == null) {
 			return res;
@@ -211,10 +213,10 @@ public class LanguageServiceAccessor {
 	@Deprecated
 	public static ProjectSpecificLanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project,
 			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
-		ProjectSpecificLanguageServerWrapper wrapper = null;
+		LanguageServerWrapper wrapper = null;
 
 		synchronized(startedServers) {
-			for (ProjectSpecificLanguageServerWrapper startedWrapper : getStartedLSWrappers(project)) {
+			for (LanguageServerWrapper startedWrapper : getStartedLSWrappers(project)) {
 				if (startedWrapper.serverDefinition.equals(serverDefinition)) {
 					wrapper = startedWrapper;
 					break;
@@ -229,23 +231,29 @@ public class LanguageServiceAccessor {
 				startedServers.add(wrapper);
 			}
 		}
-		return wrapper;
+		return (ProjectSpecificLanguageServerWrapper) wrapper;
 	}
 
-	private static @NonNull List<ProjectSpecificLanguageServerWrapper> getStartedLSWrappers(
+	private static @NonNull List<LanguageServerWrapper> getStartedLSWrappers(
 			@NonNull IProject project) {
-		return startedServers.stream().filter(wrapper -> wrapper.watches(project))
+		return startedServers.stream().filter(wrapper -> wrapper.canOperate(project))
 				.collect(Collectors.toList());
+		// TODO multi-root: also return servers which support multi-root?
 	}
 
-	private static Collection<ProjectSpecificLanguageServerWrapper> getMatchingStartedWrappers(@NonNull IFile file,
+	private static Collection<LanguageServerWrapper> getMatchingStartedWrappers(@NonNull IFile file,
 	       @NonNull Predicate<ServerCapabilities> request) {
-		final IProject project = file.getProject();
-
 		synchronized(startedServers) {
 			return startedServers.stream()
-					.filter(wrapper -> wrapper.watches(project))
-				.filter(wrapper -> wrapper.isConnectedTo(file.getLocation()))
+					.filter(wrapper -> {
+						try {
+							return wrapper.isConnectedTo(file.getLocation()) ||
+								(LanguageServersRegistry.getInstance().matches(file, wrapper.serverDefinition) && wrapper.canOperate(file.getProject()));
+						} catch (IOException | CoreException e) {
+							LanguageServerPlugin.logError(e);
+							return false;
+						}
+					})
 				.filter(wrapper -> wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities()))
 				.collect(Collectors.toList());
 		}
@@ -260,7 +268,10 @@ public class LanguageServiceAccessor {
 	 */
 	@NonNull public static List<@NonNull LanguageServer> getLanguageServers(@NonNull IProject project, Predicate<ServerCapabilities> request) {
 		List<@NonNull LanguageServer> serverInfos = new ArrayList<>();
-		for (ProjectSpecificLanguageServerWrapper wrapper : startedServers) {
+		for (LanguageServerWrapper wrapper : startedServers) {
+			if (!wrapper.canOperate(project)) {
+				continue;
+			}
 			@Nullable LanguageServer server = wrapper.getServer();
 			if (server == null) {
 				continue;
@@ -285,7 +296,7 @@ public class LanguageServiceAccessor {
 			fileUri = LSPEclipseUtils.toUri(file);
 			List<LSPDocumentInfo> res = new ArrayList<>();
 			try {
-				for (ProjectSpecificLanguageServerWrapper wrapper : getLSWrappers(file, capabilityRequest)) {
+				for (LanguageServerWrapper wrapper : getLSWrappers(file, capabilityRequest)) {
 					wrapper.connect(file, document);
 					@Nullable
 					LanguageServer server = wrapper.getServer();

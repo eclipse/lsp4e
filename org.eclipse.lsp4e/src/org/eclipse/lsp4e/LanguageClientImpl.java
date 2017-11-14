@@ -33,9 +33,9 @@ public class LanguageClientImpl implements LanguageClient {
 	private LSPDiagnosticsToMarkers diagnosticHandler;
 
 	private LanguageServer server;
-	private ProjectSpecificLanguageServerWrapper wrapper;
+	private LanguageServerWrapper wrapper;
 
-	public final void connect(LanguageServer server, ProjectSpecificLanguageServerWrapper wrapper) {
+	public final void connect(LanguageServer server, LanguageServerWrapper wrapper) {
 		this.server = server;
 		this.wrapper = wrapper;
 		this.diagnosticHandler = new LSPDiagnosticsToMarkers(wrapper.serverDefinition.id);
