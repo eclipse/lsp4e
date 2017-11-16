@@ -63,6 +63,7 @@ import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
+import org.eclipse.lsp4j.InitializedParams;
 import org.eclipse.lsp4j.RangeFormattingCapabilities;
 import org.eclipse.lsp4j.ReferencesCapabilities;
 import org.eclipse.lsp4j.RenameCapabilities;
@@ -220,6 +221,7 @@ public class LanguageServerWrapper {
 				watchProject(initialProject, true);
 				return res;
 			});
+			initializeFuture.thenRun(() -> this.languageServer.initialized(new InitializedParams()));
 			initializeStartTime = System.currentTimeMillis();
 			final Map<IPath, IDocument> toReconnect = filesToReconnect;
 			initializeFuture.thenRun(() -> {
