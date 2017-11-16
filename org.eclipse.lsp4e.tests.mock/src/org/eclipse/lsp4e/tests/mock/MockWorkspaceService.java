@@ -16,6 +16,7 @@ import java.util.function.Function;
 
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
 import org.eclipse.lsp4j.DidChangeWatchedFilesParams;
+import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.services.WorkspaceService;
@@ -52,6 +53,12 @@ public class MockWorkspaceService implements WorkspaceService {
 
 	@Override
 	public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void didChangeWorkspaceFolders(DidChangeWorkspaceFoldersParams params) {
 		// TODO Auto-generated method stub
 
 	}

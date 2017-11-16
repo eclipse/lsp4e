@@ -47,6 +47,7 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.swt.custom.CaretEvent;
 import org.eclipse.swt.custom.CaretListener;
+import org.eclipse.swt.custom.StyledText;
 
 /**
  * {@link IReconcilingStrategy} implementation to Highlight Symbol (mark occurrences like).
@@ -101,12 +102,14 @@ public class HighlightReconcilingStrategy
 	@Override
 	public void initialReconcile() {
 		if (sourceViewer != null) {
-			sourceViewer.getTextWidget().getDisplay()
-					.asyncExec(() -> {
-						if (sourceViewer != null) {
-							collectHighlights(sourceViewer.getTextWidget().getCaretOffset());
-						}
-					});
+			final StyledText textWidget = sourceViewer.getTextWidget();
+			if (textWidget != null) {
+				textWidget.getDisplay().asyncExec(() -> {
+					if (!textWidget.isDisposed()) {
+						collectHighlights(textWidget.getCaretOffset());
+					}
+				});
+			}
 		}
 	}
 

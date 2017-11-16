@@ -56,6 +56,7 @@ import org.eclipse.lsp4j.CodeLensCapabilities;
 import org.eclipse.lsp4j.CompletionCapabilities;
 import org.eclipse.lsp4j.CompletionItemCapabilities;
 import org.eclipse.lsp4j.DefinitionCapabilities;
+import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
 import org.eclipse.lsp4j.DocumentHighlightCapabilities;
 import org.eclipse.lsp4j.DocumentLinkCapabilities;
 import org.eclipse.lsp4j.DocumentSymbolCapabilities;
@@ -63,10 +64,10 @@ import org.eclipse.lsp4j.ExecuteCommandCapabilities;
 import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
-import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.InitializedParams;
 import org.eclipse.lsp4j.RangeFormattingCapabilities;
 import org.eclipse.lsp4j.ReferencesCapabilities;
+import org.eclipse.lsp4j.RegistrationParams;
 import org.eclipse.lsp4j.RenameCapabilities;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelpCapabilities;
@@ -75,7 +76,9 @@ import org.eclipse.lsp4j.SynchronizationCapabilities;
 import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
+import org.eclipse.lsp4j.UnregistrationParams;
 import org.eclipse.lsp4j.WorkspaceClientCapabilities;
+import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -131,12 +134,13 @@ public class LanguageServerWrapper {
 	@NonNull protected Map<@NonNull IPath, @NonNull DocumentContentSynchronizer> connectedDocuments;
 
 	@NonNull protected final StreamConnectionProvider lspStreamProvider;
-	private LanguageServer languageServer;
-	private InitializeResult initializeResult;
 	private Future<?> launcherFuture;
-	private CompletableFuture<InitializeResult> initializeFuture;
+	private CompletableFuture<Void> initializeFuture;
+	private LanguageServer languageServer;
+	private ServerCapabilities serverCapabilities;
 	private boolean capabilitiesAlreadyRequested;
 	private long initializeStartTime;
+	private boolean supportWorkspaceFoldersCapability;
 
 	public LanguageServerWrapper(@Nullable IProject project, @NonNull LanguageServerDefinition serverDefinition) {
 		this.initialProject = project;
@@ -192,11 +196,11 @@ public class LanguageServerWrapper {
 			if (Platform.getProduct() != null) {
 				name = Platform.getProduct().getName();
 			}
-			WorkspaceClientCapabilities workspaceClientCapabilites = new WorkspaceClientCapabilities();
-			workspaceClientCapabilites.setApplyEdit(Boolean.TRUE);
-			workspaceClientCapabilites.setExecuteCommand(new ExecuteCommandCapabilities());
-			workspaceClientCapabilites.setSymbol(new SymbolCapabilities());
-			// TODO multi-root workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);
+			WorkspaceClientCapabilities workspaceClientCapabilities = new WorkspaceClientCapabilities();
+			workspaceClientCapabilities.setApplyEdit(Boolean.TRUE);
+			workspaceClientCapabilities.setExecuteCommand(new ExecuteCommandCapabilities(Boolean.TRUE));
+			workspaceClientCapabilities.setSymbol(new SymbolCapabilities());
+			workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);
 			TextDocumentClientCapabilities textDocumentClientCapabilities = new TextDocumentClientCapabilities();
 			textDocumentClientCapabilities.setCodeAction(new CodeActionCapabilities());
 			textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
@@ -213,20 +217,25 @@ public class LanguageServerWrapper {
 			textDocumentClientCapabilities.setRename(new RenameCapabilities());
 			textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
 			textDocumentClientCapabilities.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
-			initParams.setCapabilities(new ClientCapabilities(workspaceClientCapabilites, textDocumentClientCapabilities, null));
+			initParams.setCapabilities(
+					new ClientCapabilities(workspaceClientCapabilities, textDocumentClientCapabilities, null));
 			initParams.setClientName(name);
 			initParams.setInitializationOptions(
 					this.lspStreamProvider.getInitializationOptions(URI.create(initParams.getRootUri())));
 
-			initializeFuture = languageServer.initialize(initParams).thenApply(res -> {
-				initializeResult = res;
-				watchProject(initialProject, true);
-				return res;
-			});
-			initializeFuture.thenRun(() -> this.languageServer.initialized(new InitializedParams()));
+			initializeFuture = languageServer.initialize(initParams).thenAccept(res -> {
+				serverCapabilities = res.getCapabilities();
+				supportWorkspaceFoldersCapability = serverCapabilities != null
+						&& serverCapabilities.getWorkspace() != null
+						&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
+						&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
+			}).thenRun(() -> this.languageServer.initialized(new InitializedParams()));
 			initializeStartTime = System.currentTimeMillis();
 			final Map<IPath, IDocument> toReconnect = filesToReconnect;
 			initializeFuture.thenRun(() -> {
+				if (this.initialProject != null) {
+					watchProject(this.initialProject, true);
+				}
 				for (Entry<IPath, IDocument> fileToReconnect : toReconnect.entrySet()) {
 					try {
 						connect(fileToReconnect.getKey(), fileToReconnect.getValue());
@@ -274,7 +283,7 @@ public class LanguageServerWrapper {
 			this.initializeFuture.cancel(true);
 			this.initializeFuture = null;
 		}
-		this.initializeResult = null;
+		this.serverCapabilities = null;
 		this.capabilitiesAlreadyRequested = false;
 
 		if (this.languageServer != null) {
@@ -312,9 +321,9 @@ public class LanguageServerWrapper {
 		if (isInitializationRootProject && !this.allWatchedProjects.isEmpty()) {
 			return; // there can be only one root project
 		}
-		if (!isInitializationRootProject
-				&& true /* TODO !Boolean.TRUE.equals(getServerCapabilities().getWorkspaceFolders()) */) {
-			// TODO multi project and WorkspaceFolder notifications not supported
+		if (!isInitializationRootProject && !this.supportWorkspaceFoldersCapability) {
+			// multi project and WorkspaceFolder notifications not supported by this server
+			// instance
 			return;
 		}
 		this.allWatchedProjects.add(project);
@@ -324,16 +333,24 @@ public class LanguageServerWrapper {
 				unwatchProject(project);
 			}
 		}, IResourceChangeEvent.POST_CHANGE);
-		if (false /* TODO Boolean.TRUE.equals(getServerCapabilities().getWorkspaceFolders()) */) {
-			// TODO send workspaceFolder notificiation if appropriate
+		if (this.supportWorkspaceFoldersCapability) {
+			WorkspaceFoldersChangeEvent event = new WorkspaceFoldersChangeEvent();
+			event.getAdded().add(LSPEclipseUtils.toWorkspaceFolder(project));
+			DidChangeWorkspaceFoldersParams params = new DidChangeWorkspaceFoldersParams();
+			params.setEvent(event);
+			this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(params);
 		}
 	}
 
-	private void unwatchProject(IProject project) {
+	private void unwatchProject(@NonNull IProject project) {
 		this.allWatchedProjects.remove(project);
 		// TODO? disconnect resources?
-		if (false /* TODO Boolean.TRUE.equals(getServerCapabilities().getWorkspaceFolders()) */) {
-			// TODO send workspaceFolder notificiation if appropriate
+		if (this.supportWorkspaceFoldersCapability) {
+			WorkspaceFoldersChangeEvent event = new WorkspaceFoldersChangeEvent();
+			event.getRemoved().add(LSPEclipseUtils.toWorkspaceFolder(project));
+			DidChangeWorkspaceFoldersParams params = new DidChangeWorkspaceFoldersParams();
+			params.setEvent(event);
+			this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(params);
 		}
 	}
 
@@ -347,11 +364,7 @@ public class LanguageServerWrapper {
 		if (project.equals(this.initialProject) || this.allWatchedProjects.contains(project)) {
 			return true;
 		}
-		/*
-		 * TODO multi-root if (Boolean.TRUE.equals(getServerCapabilities().getWorkspaceFolders())) { try { start(); } catch (IOException e) { LanguageServerPlugin.logError(e); } this.initializeFuture.join();
-		 * // TODO improve making this method a CompletableFuture too if (this.allWatchedProjects.contains(project)) { return true; } }
-		 */
-		return false;
+		return this.supportWorkspaceFoldersCapability;
 	}
 
 	/**
@@ -381,7 +394,7 @@ public class LanguageServerWrapper {
 				return;
 			}
 			Either<TextDocumentSyncKind, TextDocumentSyncOptions> syncOptions = initializeFuture == null ? null
-					: initializeResult.getCapabilities().getTextDocumentSync();
+					: this.serverCapabilities.getTextDocumentSync();
 			TextDocumentSyncKind syncKind = null;
 			if (syncOptions != null) {
 				if (syncOptions.isRight()) {
@@ -463,8 +476,8 @@ public class LanguageServerWrapper {
 			LanguageServerPlugin.logError(e);
 		}
 		this.capabilitiesAlreadyRequested = true;
-		if (this.initializeResult != null) {
-			return this.initializeResult.getCapabilities();
+		if (this.serverCapabilities != null) {
+			return this.serverCapabilities;
 		} else {
 			return null;
 		}
@@ -482,6 +495,22 @@ public class LanguageServerWrapper {
 			}
 		}
 		return null;
+	}
+
+	void registerCapability(RegistrationParams params) {
+		params.getRegistrations().forEach(reg -> {
+			if ("workspace/didChangeWorkspaceFolders".equals(reg.getMethod())) { //$NON-NLS-1$
+				supportWorkspaceFoldersCapability = true;
+			}
+		});
+	}
+
+	void unregisterCapability(UnregistrationParams params) {
+		params.getUnregisterations().forEach(reg -> {
+			if ("workspace/didChangeWorkspaceFolders".equals(reg.getMethod())) { //$NON-NLS-1$
+				supportWorkspaceFoldersCapability = false;
+			}
+		});
 	}
 
 }

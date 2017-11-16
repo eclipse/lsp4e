@@ -163,4 +163,5 @@ public class LanguageServiceAccessorTest {
 		assertEquals("org.eclipse.lsp4e.test.server", iterator.next().serverDefinition.id);
 		assertFalse("Should only be a single LS", iterator.hasNext());
 	}
+
 }

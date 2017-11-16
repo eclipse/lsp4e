@@ -11,8 +11,11 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -24,7 +27,10 @@ import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.RegistrationParams;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
+import org.eclipse.lsp4j.UnregistrationParams;
+import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 
@@ -67,7 +73,7 @@ public class LanguageClientImpl implements LanguageClient {
 
 	@Override
 	public final void logMessage(MessageParams message) {
-		ServerMessageHandler.logMessage(null, wrapper.serverDefinition.label, message);
+		ServerMessageHandler.logMessage(wrapper, message);
 	}
 
 	@Override
@@ -89,5 +95,24 @@ public class LanguageClientImpl implements LanguageClient {
 				return new ApplyWorkspaceEditResponse(Boolean.FALSE);
 			}
 		});
+	}
+
+	@Override
+	public CompletableFuture<Void> registerCapability(RegistrationParams params) {
+		return CompletableFuture.runAsync(() -> wrapper.registerCapability(params));
+	}
+
+	@Override
+	public CompletableFuture<Void> unregisterCapability(UnregistrationParams params) {
+		return CompletableFuture.runAsync(() -> wrapper.unregisterCapability(params));
+	}
+
+	@Override
+	public CompletableFuture<List<WorkspaceFolder>> workspaceFolders() {
+		List<WorkspaceFolder> res = new ArrayList<>(wrapper.allWatchedProjects.size());
+		for (final IProject project : wrapper.allWatchedProjects) {
+			res.add(LSPEclipseUtils.toWorkspaceFolder(project));
+		}
+		return CompletableFuture.completedFuture(res);
 	}
 }

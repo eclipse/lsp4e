@@ -55,6 +55,8 @@ import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.WorkspaceFolder;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
 import org.eclipse.ltk.core.refactoring.DocumentChange;
 import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
@@ -482,5 +484,13 @@ public class LSPEclipseUtils {
 		}
 		final IPath location = buffer.getLocation();
 		return ResourcesPlugin.getWorkspace().getRoot().getFile(location);
+	}
+
+	@NonNull
+	public static WorkspaceFolder toWorkspaceFolder(@NonNull IProject project) {
+		WorkspaceFolder folder = new WorkspaceFolder();
+		folder.setUri(project.getLocationURI().toString());
+		folder.setName(project.getName());
+		return folder;
 	}
 }

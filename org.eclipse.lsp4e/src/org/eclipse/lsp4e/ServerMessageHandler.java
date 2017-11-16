@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.core.resources.IProject;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
@@ -67,8 +66,9 @@ public class ServerMessageHandler {
 
 	}
 
-	public static void logMessage(IProject project, String serverLabel, MessageParams params) {
-		MessageConsole console = findConsole(String.format(NAME_PATTERN, serverLabel, project.getName()));
+	public static void logMessage(LanguageServerWrapper wrapper, MessageParams params) {
+		MessageConsole console = findConsole(
+				String.format(NAME_PATTERN, wrapper.serverDefinition.label, wrapper.toString()));
 		console.newMessageStream().println(String.format("[%s]\t%s", params.getType(), params.getMessage())); //$NON-NLS-1$
 	}
 
