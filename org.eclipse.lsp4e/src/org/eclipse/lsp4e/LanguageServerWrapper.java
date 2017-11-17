@@ -13,6 +13,7 @@
 package org.eclipse.lsp4e;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -170,6 +171,7 @@ public class LanguageServerWrapper {
 			LanguageClientImpl client = serverDefinition.createLanguageClient();
 			ExecutorService executorService = Executors.newCachedThreadPool();
 			final InitializeParams initParams = new InitializeParams();
+			initParams.setProcessId(getCurrentProcessId());
 			if (this.initialProject != null) {
 				URI uri = LSPEclipseUtils.toUri(this.initialProject);
 				initParams.setRootUri(uri.toString());
@@ -237,6 +239,15 @@ public class LanguageServerWrapper {
 		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 			stop();
+		}
+	}
+
+	private Integer getCurrentProcessId() {
+		String segment = ManagementFactory.getRuntimeMXBean().getName().split("@")[0]; //$NON-NLS-1$
+		try {
+			return Integer.valueOf(segment);
+		} catch (NumberFormatException ex) {
+			return null;
 		}
 	}
 
