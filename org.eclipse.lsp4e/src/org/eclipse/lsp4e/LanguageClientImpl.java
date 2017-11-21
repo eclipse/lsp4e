@@ -63,7 +63,7 @@ public class LanguageClientImpl implements LanguageClient {
 
 	@Override
 	public final void showMessage(MessageParams messageParams) {
-		ServerMessageHandler.showMessage(messageParams);
+		ServerMessageHandler.showMessage(wrapper.serverDefinition.label, messageParams);
 	}
 
 	@Override
