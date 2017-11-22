@@ -107,7 +107,8 @@ public class LanguageServersRegistry {
 				return (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
 			} catch (CoreException e) {
 				StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
-				return null;
+				throw new RuntimeException(
+						"Exception occurred while creating an instance of the stream connection provider", e); //$NON-NLS-1$
 			}
 		}
 

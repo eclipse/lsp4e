@@ -133,7 +133,7 @@ public class LanguageServerWrapper {
 	@NonNull protected final Set<@NonNull IProject> allWatchedProjects;
 	@NonNull protected Map<@NonNull IPath, @NonNull DocumentContentSynchronizer> connectedDocuments;
 
-	@NonNull protected final StreamConnectionProvider lspStreamProvider;
+	protected StreamConnectionProvider lspStreamProvider;
 	private Future<?> launcherFuture;
 	private CompletableFuture<Void> initializeFuture;
 	private LanguageServer languageServer;
@@ -146,7 +146,6 @@ public class LanguageServerWrapper {
 		this.initialProject = project;
 		this.allWatchedProjects = new HashSet<>();
 		this.serverDefinition = serverDefinition;
-		this.lspStreamProvider = serverDefinition.createConnectionProvider();
 		this.connectedDocuments = new HashMap<>();
 	}
 
@@ -170,6 +169,7 @@ public class LanguageServerWrapper {
 			}
 		}
 		try {
+			this.lspStreamProvider = serverDefinition.createConnectionProvider();
 			this.lspStreamProvider.start();
 
 			LanguageClientImpl client = serverDefinition.createLanguageClient();

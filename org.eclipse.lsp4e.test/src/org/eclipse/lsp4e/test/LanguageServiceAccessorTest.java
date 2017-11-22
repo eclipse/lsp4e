@@ -11,9 +11,11 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.InvocationTargetException;
@@ -110,6 +112,14 @@ public class LanguageServiceAccessorTest {
 		
 		IContentType contentType = Platform.getContentTypeManager().getContentType("org.eclipse.lsp4e.test.content-type-different");
 		assertEquals("differentLanguageId", wrapper.getLanguageId(new IContentType[] {contentType}));
+	}
+
+	@Test
+	public void testGetLSWrappersInitializationFailed() throws Exception {
+		IFile testFile = TestUtils.createFile(project, "fileWithFailedServer.lsptWithException", "");
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile,
+				capabilites -> Boolean.TRUE);
+		assertThat(wrappers.size(), is(1));
 	}
 
 	@Test
