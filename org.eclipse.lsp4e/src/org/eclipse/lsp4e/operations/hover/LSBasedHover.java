@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,9 +57,13 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
+import org.eclipse.swt.browser.LocationEvent;
+import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.EditorsUI;
 
 /**
@@ -67,6 +73,26 @@ import org.eclipse.ui.editors.text.EditorsUI;
 public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage());
+
+	private static final LocationListener HYPER_LINK_LISTENER = new LocationListener() {
+
+		@Override
+		public void changing(LocationEvent event) {
+			try {
+				URL url = new URL(event.location);
+				PlatformUI.getWorkbench().getBrowserSupport().createBrowser(null).openURL(url);
+				event.doit = false;
+			} catch (MalformedURLException e) {
+				// do nothing
+			} catch (PartInitException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
+
+		@Override
+		public void changed(LocationEvent event) {
+		}
+	};
 
 	private static class FocusableBrowserInformationControl extends BrowserInformationControl {
 
@@ -80,6 +106,7 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 				@Override
 				public IInformationControl createInformationControl(Shell parent) {
 					BrowserInformationControl res = new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT, true);
+					res.addLocationListener(HYPER_LINK_LISTENER);
 					return res;
 				}
 			};
@@ -104,7 +131,8 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 			initiateHoverRequest(textViewer, hoverRegion.getOffset());
 		}
 		try {
-			CompletableFuture.allOf(this.requests.toArray(new CompletableFuture[this.requests.size()])).get(500, TimeUnit.MILLISECONDS);
+			CompletableFuture.allOf(this.requests.toArray(new CompletableFuture[this.requests.size()])).get(500,
+					TimeUnit.MILLISECONDS);
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
 		}
