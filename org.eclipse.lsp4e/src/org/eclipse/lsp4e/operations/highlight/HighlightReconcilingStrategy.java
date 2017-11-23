@@ -8,7 +8,7 @@
  * Contributors:
  *  Michal Niewrzal (Rogue Wave Software Inc.) - initial implementation
  *  Angelo Zerr <angelo.zerr@gmail.com> - fix Bug 521020
- *  Lucas Bullen (Red Hat Inc.) - fix Bug 522737, 517428
+ *  Lucas Bullen (Red Hat Inc.) - fix Bug 522737, 517428, 527426
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.highlight;
 
@@ -56,7 +56,7 @@ import org.eclipse.swt.custom.StyledText;
 public class HighlightReconcilingStrategy
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, CaretListener, IPreferenceChangeListener {
 
-	public static final String TOGGLE_HIGHLIGHT_PREFERENCE = "org.eclipse.lsp4e.toggle.highlight"; //$NON-NLS-1$
+	public static final String TOGGLE_HIGHLIGHT_PREFERENCE = "org.eclipse.ui.genericeditor.togglehighlight"; //$NON-NLS-1$
 
 	public static final String READ_ANNOTATION_TYPE = "org.eclipse.lsp4e.read"; //$NON-NLS-1$
 	public static final String WRITE_ANNOTATION_TYPE = "org.eclipse.lsp4e.write"; //$NON-NLS-1$

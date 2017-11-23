@@ -60,15 +60,6 @@
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
-            id="org.eclipse.lsp4e.togglehighlight"
-            name="%command.toggle.highlight.name">
-		   <state
-		         class="org.eclipse.ui.handlers.RegistryToggleState:true"
-		         id="org.eclipse.ui.commands.toggleState">
-		   </state>
-      </command>
-      <command
-            categoryId="org.eclipse.lsp4e.category"
             id="org.eclipse.lsp4e.togglelinkwitheditor"
             name="Toggle Link with Editor">
          <state
@@ -190,15 +181,6 @@
                   id="org.eclipse.lsp4e.codeActions">
             </dynamic>
          </menu>
-      </menuContribution>
-      <menuContribution
-            allPopups="false"
-            locationURI="toolbar:org.eclipse.ui.genericeditor.GenericEditor">
-         <command
-               commandId="org.eclipse.lsp4e.togglehighlight"
-               label="%command.toggle.highlight.label"
-               style="toggle">
-         </command>
       </menuContribution>
       <menuContribution
             allPopups="false"
@@ -326,13 +308,6 @@
             class="org.eclipse.lsp4e.DisableShortcutsWorkaround">
       </startup>
    </extension>
-   <extension
-         point="org.eclipse.ui.genericeditor.reconcilers">
-      <reconciler
-            class="org.eclipse.lsp4e.operations.highlight.HighlightReconciler"
-            contentType="org.eclipse.core.runtime.text">
-      </reconciler>
-   </extension>
    <extension point="org.eclipse.ui.editors.annotationTypes">
       <type name="org.eclipse.lsp4e.read"></type>
       <type name="org.eclipse.lsp4e.write"></type>
@@ -417,5 +392,12 @@
                refid="org.eclipse.e4.ui.css.theme.e4_dark">
          </themeid>
       </stylesheet>
+   </extension>
+   <extension
+         point="org.eclipse.ui.genericeditor.highlightReconcilers">
+      <highlightReconciler
+            class="org.eclipse.lsp4e.operations.highlight.HighlightReconciler"
+            contentType="org.eclipse.core.runtime.text">
+      </highlightReconciler>
    </extension>
 </plugin>
