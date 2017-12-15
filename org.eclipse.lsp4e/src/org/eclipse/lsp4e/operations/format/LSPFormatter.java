@@ -8,6 +8,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
+ *                              - [Bug 528848] Formatting Request should include FormattingOptions
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.format;
 
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -32,6 +34,8 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.ui.editors.text.EditorsUI;
+import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 public class LSPFormatter {
 
@@ -59,13 +63,16 @@ public class LSPFormatter {
 			ITextSelection textSelection) throws BadLocationException {
 		TextDocumentIdentifier docId = new TextDocumentIdentifier(info.getFileUri().toString());
 		ServerCapabilities capabilities = info.getCapabilites();
+		IPreferenceStore store = EditorsUI.getPreferenceStore();
+		int tabWidth = store.getInt(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);
+		boolean insertSpaces = store.getBoolean(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SPACES_FOR_TABS);
 		// use range formatting if standard formatting is not supported or text is selected
 		if (capabilities != null && Boolean.TRUE.equals(capabilities.getDocumentRangeFormattingProvider())
 				&& (capabilities.getDocumentFormattingProvider() == null
 						|| !capabilities.getDocumentFormattingProvider() || textSelection.getLength() != 0)) {
 			DocumentRangeFormattingParams params = new DocumentRangeFormattingParams();
 			params.setTextDocument(docId);
-			params.setOptions(new FormattingOptions());
+			params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
 			boolean fullFormat = textSelection.getLength() == 0;
 			Position start = LSPEclipseUtils.toPosition(fullFormat ? 0 : textSelection.getOffset(), info.getDocument());
 			Position end = LSPEclipseUtils.toPosition(
@@ -78,7 +85,7 @@ public class LSPFormatter {
 
 		DocumentFormattingParams params = new DocumentFormattingParams();
 		params.setTextDocument(docId);
-		params.setOptions(new FormattingOptions());
+		params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
 		return info.getInitializedLanguageClient()
 				.thenCompose(server -> server.getTextDocumentService().formatting(params));
 	}
