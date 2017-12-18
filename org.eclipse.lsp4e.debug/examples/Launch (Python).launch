@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.lsp4e.debug.launchType">
+<booleanAttribute key="org.eclipse.debug.ui.ATTR_LAUNCH_IN_BACKGROUND" value="false"/>
+<listAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_ARGS">
+<listEntry value="/home/jonah/.vscode/extensions/ms-python.python-0.9.0/out/client/debugger/Main.js"/>
+</listAttribute>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_CMD" value="/scratch/node/node-v6.11.0-linux-x64/bin/node"/>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_MODE" value="launch server"/>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_PARAM" value="{&#10;            &quot;name&quot;: &quot;Integrated Terminal/Console&quot;,&#10;            &quot;type&quot;: &quot;python&quot;,&#10;            &quot;request&quot;: &quot;launch&quot;,&#10;            &quot;stopOnEntry&quot;: true,&#10;            &quot;program&quot;: &quot;/scratch/debug/git/lsp4e/org.eclipse.lsp4e.debug/examples/hello.py&quot;,&#10;            &quot;cwd&quot;: &quot;&quot;,&#10;            &quot;console&quot;: &quot;integratedTerminal&quot;,&#10;            &quot;env&quot;: {}            &#10;}"/>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_SERVER_HOST" value="127.0.0.1"/>
+<intAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_SERVER_PORT" value="4711"/>
+</launchConfiguration>

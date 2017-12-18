@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+         point="org.eclipse.debug.core.launchConfigurationTypes">
+      <launchConfigurationType
+            delegate="org.eclipse.lsp4e.debug.launcher.DSPLaunchDelegate"
+            id="org.eclipse.lsp4e.debug.launchType"
+            modes="debug,run"
+            name="Debug Adapter Launcher"
+            public="true"
+            sourceLocatorId="org.eclipse.lsp4e.debug.sourceLocator"
+            sourcePathComputerId="org.eclipse.lsp4e.debug.sourcePathComputer">
+      </launchConfigurationType>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchConfigurationTabGroups">
+      <launchConfigurationTabGroup
+            class="org.eclipse.lsp4e.debug.launcher.DSPTabGroup"
+            description="Debug using the debug protocol"
+            id="org.eclipse.lsp4e.debug.tabGroup"
+            type="org.eclipse.lsp4e.debug.launchType">
+      </launchConfigurationTabGroup>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.launchConfigurationTypeImages">
+      <launchConfigurationTypeImage
+            configTypeID="org.eclipse.lsp4e.debug.launchType"
+            icon="icons/pda.gif"
+            id="org.eclipse.lsp4e.debug.typeImage">
+      </launchConfigurationTypeImage>
+   </extension>
+   <extension
+         point="org.eclipse.debug.ui.debugModelPresentations">
+      <debugModelPresentation
+            class="org.eclipse.lsp4e.debug.presentation.DSPDebugModelPresentation"
+            id="org.eclipse.lsp4e.debug.model">
+      </debugModelPresentation>
+   </extension>
+   <extension
+         point="org.eclipse.debug.core.sourceLocators">
+      <sourceLocator
+            class="org.eclipse.lsp4e.debug.sourcelookup.DSPSourceLookupDirector"
+            id="org.eclipse.lsp4e.debug.sourceLocator"
+            name="LSP4E Debug Source Locator">
+      </sourceLocator>
+   </extension>
+   <extension
+         point="org.eclipse.debug.core.sourcePathComputers">
+      <sourcePathComputer
+            class="org.eclipse.lsp4e.debug.sourcelookup.DSPSourcePathComputerDelegate"
+            id="org.eclipse.lsp4e.debug.sourcePathComputer">
+      </sourcePathComputer>
+   </extension>
+   <extension
+         point="org.eclipse.ui.editorActions">
+      <editorContribution
+            targetID="org.eclipse.ui.DefaultTextEditor"
+            id="org.eclipse.lsp4e.debug.textEditor.rulerActions">
+         <action
+               label="unusedlabel"
+               class="org.eclipse.debug.ui.actions.RulerToggleBreakpointActionDelegate"
+               style="push"
+               actionID="RulerDoubleClick"
+               id="org.eclipse.lsp4e.debug.textEditor.doubleClickBreakpointAction"/>
+      </editorContribution>
+      <editorContribution
+            targetID="org.eclipse.ui.genericeditor.GenericEditor"
+            id="org.eclipse.lsp4e.debug.genericEditor.rulerActions">
+         <action
+               label="unusedlabel"
+               class="org.eclipse.debug.ui.actions.RulerToggleBreakpointActionDelegate"
+               style="push"
+               actionID="RulerDoubleClick"
+               id="org.eclipse.lsp4e.debug.genericEditor.doubleClickBreakpointAction"/>
+      </editorContribution>
+   </extension>
+   <extension
+         point="org.eclipse.core.runtime.adapters">
+      <factory
+            class="org.eclipse.lsp4e.debug.breakpoints.DSPEditorAdapterFactory"
+            adaptableType="org.eclipse.ui.editors.text.TextEditor">
+			<adapter type="org.eclipse.debug.ui.actions.IToggleBreakpointsTarget"/>
+      </factory>
+   </extension>
+   <extension
+         id="org.eclipse.lsp4e.debug.breakpoints.markerType.lineBreakpoint"
+         name="LSP4E Debug Line Breakpoint Marker"
+         point="org.eclipse.core.resources.markers">
+      <super type="org.eclipse.debug.core.lineBreakpointMarker"/>
+      <persistent value="true"/>
+   </extension>
+   <extension
+         point="org.eclipse.debug.core.breakpoints">
+      <breakpoint
+            class="org.eclipse.lsp4e.debug.breakpoints.DSPLineBreakpoint"
+            name="LSP4E Debug Line Breakpoint"
+            markerType="org.eclipse.lsp4e.debug.breakpoints.markerType.lineBreakpoint"
+            id="org.eclipse.lsp4e.debug.breakpoints.lineBreakpoint"/>
+   </extension>
+</plugin>

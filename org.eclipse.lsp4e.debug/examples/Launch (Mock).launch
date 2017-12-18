@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.lsp4e.debug.launchType">
+<listAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_ARGS">
+<listEntry value="/home/jonah/.vscode/extensions/andreweinand.mock-debug-0.25.0/out/mockDebug.js"/>
+</listAttribute>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_CMD" value="/scratch/node/node-v6.11.0-linux-x64/bin/node"/>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_MODE" value="launch server"/>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_PARAM" value="{&#13;&#10;            &quot;type&quot;: &quot;mock&quot;,&#13;&#10;            &quot;request&quot;: &quot;launch&quot;,&#13;&#10;            &quot;name&quot;: &quot;Mock Debug&quot;,&#13;&#10;            &quot;program&quot;: &quot;/scratch/debug/git/lsp4e/org.eclipse.lsp4e.debug/examples/readme.md&quot;,&#13;&#10;            &quot;stopOnEntry&quot;: true,&#13;&#10;            &quot;trace&quot;: true&#13;&#10;}"/>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_SERVER_HOST" value="127.0.0.1"/>
+<intAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_SERVER_PORT" value="4711"/>
+</launchConfiguration>

@@ -1,0 +1,10 @@
+# Debugging options for the org.eclipse.lsp4e.debug plug-in
+
+org.eclipse.lsp4e.debug/debug= false
+
+# Tracing of data to/from the debug adapter at the IO level. 
+# This will trace the data to System.out as it is seen on the IO stream.
+org.eclipse.lsp4e.debug/trace/io= false
+# Tracing of data to/from the debug adapter at the message level.
+# This will trace parsed data, reformed into JSON-RPC 2.0 to System.out.
+org.eclipse.lsp4e.debug/trace/messages= false

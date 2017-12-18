@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.lsp4e.debug.launchType">
+<booleanAttribute key="org.eclipse.debug.ui.ATTR_LAUNCH_IN_BACKGROUND" value="false"/>
+<listAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_ARGS">
+<listEntry value="/home/jonah/.vscode/extensions/ms-vscode.cpptools-0.14.4/debugAdapters/OpenDebugAD7"/>
+</listAttribute>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_CMD" value="/bin/bash"/>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_MODE" value="launch server"/>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_PARAM" value="{&#13;&#10;       &quot;name&quot;: &quot;(gdb) Launch&quot;,&#10;      &quot;type&quot;: &quot;cppdbg&quot;,&#10;      &quot;request&quot;: &quot;launch&quot;,&#10;      &quot;program&quot;: &quot;/scratch/debug/git/lsp4e/org.eclipse.lsp4e.debug/examples/main&quot;,&#10;      &quot;args&quot;: [],&#10;      &quot;stopAtEntry&quot;: false,&#10;      &quot;cwd&quot;: &quot;/scratch/debug/git/lsp4e/org.eclipse.lsp4e.debug/examples&quot;,&#10;      &quot;environment&quot;: [],&#10;      &quot;externalConsole&quot;: true,&#10;      &quot;MIMode&quot;: &quot;gdb&quot;,&#10;      &quot;setupCommands&quot;: [&#10;        {&#10;            &quot;description&quot;: &quot;Enable pretty-printing for gdb&quot;,&#10;            &quot;text&quot;: &quot;-enable-pretty-printing&quot;,&#10;            &quot;ignoreFailures&quot;: true&#10;        }&#10;  ]&#10;}"/>
+<stringAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_SERVER_HOST" value="127.0.0.1"/>
+<intAttribute key="org.eclipse.lsp4e.debug.model.ATTR_DSP_SERVER_PORT" value="4711"/>
+</launchConfiguration>
