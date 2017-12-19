@@ -20,7 +20,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.BadLocationException;
@@ -66,6 +69,27 @@ public class LSIncompleteCompletionProposal
 		implements ICompletionProposal, ICompletionProposalExtension3, ICompletionProposalExtension4,
 		ICompletionProposalExtension5, ICompletionProposalExtension6, ICompletionProposalExtension7,
 		IContextInformation {
+
+	// Those variables should be defined in LSP4J and reused here whenever done there
+	// See https://github.com/eclipse/lsp4j/issues/149
+	/** The currently selected text or the empty string */
+	private static final String TM_SELECTED_TEXT = "TM_SELECTED_TEXT"; //$NON-NLS-1$
+	/** The contents of the current line */
+	private static final String TM_CURRENT_LINE = "TM_CURRENT_LINE"; //$NON-NLS-1$
+	/** The contents of the word under cursor or the empty string */
+	private static final String TM_CURRENT_WORD = "TM_CURRENT_WORD"; //$NON-NLS-1$
+	/** The zero-index based line number */
+	private static final String TM_LINE_INDEX = "TM_LINE_INDEX"; //$NON-NLS-1$
+	/** The one-index based line number */
+	private static final String TM_LINE_NUMBER = "TM_LINE_NUMBER"; //$NON-NLS-1$
+	/** The filename of the current document */
+	private static final String TM_FILENAME = "TM_FILENAME"; //$NON-NLS-1$
+	/** The filename of the current document without its extensions */
+	private static final String TM_FILENAME_BASE = "TM_FILENAME_BASE"; //$NON-NLS-1$
+	/** The directory of the current document */
+	private static final String TM_DIRECTORY = "TM_DIRECTORY"; //$NON-NLS-1$
+	/** The full file path of the current document */
+	private static final String TM_FILEPATH = "TM_FILEPATH"; //$NON-NLS-1$
 
 	protected CompletionItem item;
 	private int initialOffset = -1;
@@ -316,6 +340,12 @@ public class LSIncompleteCompletionProposal
 							defaultValue += insertText.charAt(currentOffset + length);
 							length++;
 						}
+						if (defaultValue.startsWith("$")) { //$NON-NLS-1$
+							String varValue = getVariableValue(defaultValue.substring(1));
+							if (varValue != null) {
+								defaultValue = varValue;
+							}
+						}
 						if (currentOffset + length < insertText.length() && insertText.charAt(currentOffset + length) == '}') {
 							length++;
 						}
@@ -394,6 +424,58 @@ public class LSIncompleteCompletionProposal
 			return insertionOffset + adjustment;
 		}
 		return insertionOffset;
+	}
+
+	private String getVariableValue(String variableName) {
+		switch (variableName) {
+		case TM_FILENAME_BASE:
+			IPath pathBase = Path.fromPortableString(info.getFileUri().getPath()).removeFileExtension();
+			String fileName = pathBase.lastSegment();
+			return fileName != null ? fileName : ""; //$NON-NLS-1$
+		case TM_FILENAME:
+			return Path.fromPortableString(info.getFileUri().getPath()).lastSegment();
+		case TM_FILEPATH:
+			IResource resource = LSPEclipseUtils.findResourceFor(info.getFileUri().toString());
+			if (resource != null)
+				return resource.getLocation().toString();
+			return ""; //$NON-NLS-1$
+		case TM_DIRECTORY:
+			IResource dirResource = LSPEclipseUtils.findResourceFor(info.getFileUri().toString());
+			if (dirResource != null && dirResource.getParent() != null)
+				return dirResource.getParent().getLocation().toString();
+			return ""; //$NON-NLS-1$
+		case TM_LINE_INDEX:
+			int lineIndex = item.getTextEdit().getRange().getStart().getLine();
+			return Integer.toString(lineIndex);
+		case TM_LINE_NUMBER:
+			int lineNumber = item.getTextEdit().getRange().getStart().getLine();
+			return Integer.toString(lineNumber + 1);
+		case TM_CURRENT_LINE:
+			int currentLineIndex = item.getTextEdit().getRange().getStart().getLine();
+			try {
+				IRegion lineInformation = info.getDocument().getLineInformation(currentLineIndex);
+				String line = info.getDocument().get(lineInformation.getOffset(), lineInformation.getLength());
+				return line;
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logWarning(e.getMessage(), e);
+				return ""; //$NON-NLS-1$
+			}
+		case TM_SELECTED_TEXT:
+			Range selectedRange = item.getTextEdit().getRange();
+			try {
+				int startOffset = LSPEclipseUtils.toOffset(selectedRange.getStart(), info.getDocument());
+				int endOffset = LSPEclipseUtils.toOffset(selectedRange.getEnd(), info.getDocument());
+				String selectedText = info.getDocument().get(startOffset, endOffset - startOffset);
+				return selectedText;
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logWarning(e.getMessage(), e);
+				return ""; //$NON-NLS-1$
+			}
+		case TM_CURRENT_WORD:
+			return ""; //$NON-NLS-1$
+		default:
+			return null;
+		}
 	}
 
 	protected String getInsertText() {

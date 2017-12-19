@@ -83,14 +83,14 @@ public class IncompleteCompletionTest {
 
 		IFile testFile = TestUtils.createUniqueTestFileOfUnknownType(project, "");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
-		
+
 		LanguageServerDefinition serverDefinition = LanguageServersRegistry.getInstance().getDefinition("org.eclipse.lsp4e.test.server");
 		assertNotNull(serverDefinition);
 		ProjectSpecificLanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor.getLSWrapperForConnection(testFile.getProject(), serverDefinition);
 		IPath fileLocation = testFile.getLocation();
 		// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
 		lsWrapperForConnection.connect(fileLocation, null);
-		
+
 		new DisplayHelper() {
 			@Override
 			protected boolean condition() {
@@ -176,7 +176,7 @@ public class IncompleteCompletionTest {
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
 		assertEquals(1, proposals.length);
-		
+
 		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
 		LSIncompleteCompletionProposal.apply(viewer.getDocument());
 		assertEquals(content + "1024M", viewer.getDocument().get());
@@ -329,7 +329,7 @@ public class IncompleteCompletionTest {
 		assertEquals(new Point(item.getInsertText().length(), 0),
 				LSIncompleteCompletionProposal.getSelection(viewer.getDocument()));
 	}
-	
+
 	@Test
 	public void testCompletionReplace() throws CoreException, InvocationTargetException {
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineInsertHere");
@@ -337,7 +337,7 @@ public class IncompleteCompletionTest {
 		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(
 			createCompletionItem("Inserted", CompletionItemKind.Text, new Range(new Position(1, 4), new Position(1, 4 + "InsertHere".length())))
 		)));
-		
+
 		int invokeOffset = viewer.getDocument().getLength() - "InsertHere".length();
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
 		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
@@ -414,6 +414,32 @@ public class IncompleteCompletionTest {
 		assertEquals(1, proposals.length);
 		((LSIncompleteCompletionProposal) proposals[0]).apply(viewer.getDocument());
 		assertEquals("foo and foo", viewer.getDocument().get());
+		// TODO check link edit groups
+	}
+
+	@Test
+	public void testVariableReplacement() throws PartInitException, InvocationTargetException, CoreException {
+		CompletionItem completionItem = createCompletionItem(
+				"${1:$TM_FILENAME_BASE} ${2:$TM_FILENAME} ${3:$TM_FILEPATH} ${4:$TM_DIRECTORY} ${5:$TM_LINE_INDEX} ${6:$TM_LINE_NUMBER} ${7:$TM_CURRENT_LINE} ${8:$TM_SELECTED_TEXT}",
+				CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
+		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+		MockLanguageSever.INSTANCE
+				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
+		String content = "line1\nline2\nline3";
+		IFile testFile = TestUtils.createUniqueTestFile(project, content);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+		int invokeOffset = 0;
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+		assertEquals(1, proposals.length);
+		((LSIncompleteCompletionProposal) proposals[0]).apply(viewer.getDocument());
+
+		int lineIndex = completionItem.getTextEdit().getRange().getStart().getLine();
+		String fileNameBase = testFile.getFullPath().removeFileExtension().lastSegment();
+		assertEquals(
+				String.format("%s %s %s %s %d %d %s %s%s", fileNameBase, testFile.getName(),
+						testFile.getLocation().toString(), testFile.getParent().getLocation().toString(), lineIndex,
+						lineIndex + 1, "line1", "l", content.substring(1)),
+				viewer.getDocument().get());
 		// TODO check link edit groups
 	}
 
