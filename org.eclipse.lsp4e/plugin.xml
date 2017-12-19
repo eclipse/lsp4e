@@ -400,4 +400,27 @@
             contentType="org.eclipse.core.runtime.text">
       </highlightReconciler>
    </extension>
+   <extension
+         point="org.eclipse.ui.workbench.texteditor.codeMiningProviders">
+      <codeMiningProvider
+            class="org.eclipse.lsp4e.operations.codelens.CodeLensProvider"
+            id="org.eclipse.lsp4e.codelens"
+            label="CodeLens">
+         <enabledWhen>
+            <with
+                  variable="editorInput">
+               <test
+                     property="org.eclipse.lsp4e.hasLanguageServer">
+               </test>
+            </with>
+         </enabledWhen>
+      </codeMiningProvider>
+   </extension>
+   <extension
+         point="org.eclipse.ui.genericeditor.reconcilers">
+      <reconciler
+            class="org.eclipse.jface.text.codemining.CodeMiningReconciler"
+            contentType="org.eclipse.core.runtime.text">
+      </reconciler>
+   </extension>
 </plugin>

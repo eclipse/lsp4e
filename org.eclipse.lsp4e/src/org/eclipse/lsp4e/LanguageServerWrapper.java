@@ -142,7 +142,8 @@ public class LanguageServerWrapper {
 	private long initializeStartTime;
 	private boolean supportWorkspaceFoldersCapability;
 
-	public LanguageServerWrapper(@Nullable IProject project, @NonNull LanguageServerDefinition serverDefinition) {
+	public LanguageServerWrapper(@Nullable IProject project, @NonNull LanguageServerDefinition serverDefinition)
+			throws IllegalStateException {
 		this.initialProject = project;
 		this.allWatchedProjects = new HashSet<>();
 		this.serverDefinition = serverDefinition;

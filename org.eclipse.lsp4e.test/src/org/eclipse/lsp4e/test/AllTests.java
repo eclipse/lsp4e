@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import org.eclipse.lsp4e.codelens.CodeLensTests;
 import org.eclipse.lsp4e.test.codeactions.CodeActionTests;
 import org.eclipse.lsp4e.test.completion.CompleteCompletionTest;
 import org.eclipse.lsp4e.test.completion.ContextInformationTest;
@@ -48,7 +47,6 @@ import org.junit.runners.Suite.SuiteClasses;
 	SymbolsModelTest.class,
 	LSPEclipseUtilsTest.class,
 	HoverTest.class,
-	CodeLensTests.class,
 	DefinitionTest.class,
 	DiagnosticsTest.class,
 	FindReferencesTest.class,

@@ -12,6 +12,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
+import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,7 +40,9 @@ import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ReferenceParams;
 import org.eclipse.lsp4j.RenameParams;
 import org.eclipse.lsp4j.SignatureHelp;
@@ -138,7 +142,15 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends CodeLens>> codeLens(CodeLensParams params) {
-		return CompletableFuture.completedFuture(mockCodeLenses);
+		if (mockCodeLenses != null) {
+			return CompletableFuture.completedFuture(mockCodeLenses);
+		}
+		File file = new File(URI.create(params.getTextDocument().getUri()));
+		if (file.exists() && file.length() > 100) {
+			return CompletableFuture.completedFuture(Collections.singletonList(new CodeLens(
+					new Range(new Position(1, 0), new Position(1, 1)), new Command("Hi, I'm a CodeLens", null), null)));
+		}
+		return CompletableFuture.completedFuture(Collections.emptyList());
 	}
 
 	@Override
@@ -250,7 +262,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockCompletionList = new CompletionList();
 		this.mockDefinitionLocations = Collections.emptyList();
 		this.mockHover = null;
-		this.mockCodeLenses = new ArrayList<CodeLens>();
+		this.mockCodeLenses = null;
 		this.mockReferences = null;
 		this.remoteProxies = new ArrayList<LanguageClient>();
 		this.mockCodeActions = new ArrayList<Command>();

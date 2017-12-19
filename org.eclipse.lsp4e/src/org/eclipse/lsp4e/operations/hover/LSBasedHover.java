@@ -46,14 +46,9 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
-import org.eclipse.lsp4j.CodeLens;
-import org.eclipse.lsp4j.CodeLensParams;
-import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.MarkedString;
-import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
@@ -115,7 +110,6 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 	private List<CompletableFuture<?>> requests;
 	private List<Hover> hoverResults;
-	private List<CodeLens> codeLensResults;
 	private IRegion lastRegion;
 	private ITextViewer textViewer;
 
@@ -144,17 +138,6 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 				.filter(Objects::nonNull)
 				.collect(Collectors.joining("\n\n")); //$NON-NLS-1$
 
-		}
-		if (!(this.codeLensResults == null || this.codeLensResults.isEmpty())) {
-			String codeLensResult = codeLensResults.stream()
-					.filter(Objects::nonNull)
-					.map(LSBasedHover::getCodeLensString)
-					.filter(Objects::nonNull)
-					.collect(Collectors.joining("\n\n")); //$NON-NLS-1$
-			if(!codeLensResult.isEmpty()) {
-				result += "\n\n"; //$NON-NLS-1$
-			}
-			result += codeLensResult;
 		}
 		if (result.isEmpty()) {
 			return null;
@@ -200,14 +183,6 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 				return ""; //$NON-NLS-1$
 			}
 		}).filter(((Predicate<String>)String::isEmpty).negate()).collect(Collectors.joining("\n\n")); //$NON-NLS-1$)
-	}
-
-	protected static @Nullable String getCodeLensString(@NonNull CodeLens codeLens) {
-		Command command = codeLens.getCommand();
-		if(command == null || command.getTitle().isEmpty()) {
-			return null;
-		}
-		return command.getTitle();
 	}
 
 	private static @NonNull String toHTMLrgb(RGB rgb) {
@@ -286,7 +261,6 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		final List<CompletableFuture<?>> requests = new ArrayList<>();
 		IDocument document = viewer.getDocument();
 		this.hoverResults = getHoverResults(document, offset, requests);
-		this.codeLensResults = getCodeLensResults(document, offset, requests);
 		this.requests = requests;
 	}
 
@@ -317,51 +291,6 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 			});
 		}
 		return hoverResults;
-	}
-
-	/**
-	 * Returns the list of codelens.
-	 *
-	 * @param document
-	 *            the document of text viewer.
-	 * @param offset
-	 *            the hovered offset.
-	 * @param requests
-	 * @return the list of codelens.
-	 */
-	private List<CodeLens> getCodeLensResults(@NonNull IDocument document, int offset,
-			List<CompletableFuture<?>> requests) {
-		List<@NonNull LSPDocumentInfo> docInfos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-				(capabilities) -> (capabilities.getCodeLensProvider() != null));
-		final List<CodeLens> codeLensResults = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
-		for (@NonNull
-		final LSPDocumentInfo info : docInfos) {
-			CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(info.getFileUri().toString()));
-			requests.add(info.getInitializedLanguageClient()
-					.thenCompose(languageServer -> languageServer.getTextDocumentService().codeLens(param))
-					.thenAccept(codeLenses -> {
-						for (CodeLens codeLens : codeLenses) {
-							if (codeLens == null)
-								continue;
-							try {
-								int line = document.getLineOfOffset(offset);
-								int index = offset - document.getLineOffset(line);
-								if (isOffsetInCodeLensRange(codeLens, line, index))
-									codeLensResults.add(codeLens);
-							} catch (BadLocationException e) {
-								LanguageServerPlugin.logError(e);
-							}
-						}
-					}));
-		}
-		return codeLensResults;
-	}
-
-	static private boolean isOffsetInCodeLensRange(CodeLens codeLens, int line, int index) {
-		Position start = codeLens.getRange().getStart();
-		Position end = codeLens.getRange().getEnd();
-		return (start.getLine() < line || (start.getLine() == line && start.getCharacter() <= index))
-				&& (end.getLine() > line || (end.getLine() == line && end.getCharacter() >= index));
 	}
 
 	@Override
