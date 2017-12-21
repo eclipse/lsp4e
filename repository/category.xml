@@ -4,6 +4,9 @@
    <bundle id="org.eclipse.lsp4e">
       <category name="Language Server Support for Eclipse"/>
    </bundle>
+   <bundle id="org.eclipse.lsp4e.debug">
+      <category name="Language Server Support for Eclipse"/>
+   </bundle>
 
    <category-def name="Sources and Tests" label="Sources and Tests"/>
    <bundle id="org.eclipse.lsp4e.source">
@@ -27,6 +30,12 @@
      <category name="deps"/>
    </bundle>
    <bundle id="org.eclipse.lsp4j.jsonrpc">
+     <category name="deps"/>
+   </bundle>
+   <bundle id="org.eclipse.lsp4j.debug">
+     <category name="deps"/>
+   </bundle>
+   <bundle id="org.eclipse.lsp4j.jsonrpc.debug">
      <category name="deps"/>
    </bundle>
    <bundle id="org.eclipse.xtext.xbase.lib">

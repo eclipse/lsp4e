@@ -21,6 +21,7 @@
 	<modules>
 		<module>target-platforms/target-platform-photon</module>
 		<module>org.eclipse.lsp4e</module>
+		<module>org.eclipse.lsp4e.debug</module>
 		<module>org.eclipse.lsp4e.tests.mock</module>
 		<module>org.eclipse.lsp4e.test</module>
 		<module>repository</module>
@@ -44,7 +45,7 @@
 						<artifact>
 							<groupId>${project.groupId}</groupId>
 							<artifactId>${target-config}</artifactId>
-							<version>${project.version}</version>
+							<version>0.6.0-SNAPSHOT</version>
 						</artifact>
 					</target>
 					<environments>
