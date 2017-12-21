@@ -15,7 +15,7 @@
 		<sonar.jacoco.reportPath>../target/jacoco.exec</sonar.jacoco.reportPath>
 		<tycho.scmUrl>scm:git:https://git.eclipse.org/r/p/lsp4e/lsp4e.git</tycho.scmUrl>
 		<ui.test.vmargs></ui.test.vmargs>
-		<target-config>target-platform-oxygen</target-config>
+		<target-config>target-platform-photon</target-config>
 	</properties>
 
 	<modules>
