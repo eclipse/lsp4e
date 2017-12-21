@@ -19,11 +19,11 @@
 	</properties>
 
 	<modules>
-		<module>target-platforms/target-platform-neon</module>
-		<module>target-platforms/target-platform-oxygen</module>
 		<module>target-platforms/target-platform-photon</module>
 		<module>org.eclipse.lsp4e</module>
 		<module>org.eclipse.lsp4e.tests.mock</module>
+		<module>org.eclipse.lsp4e.test</module>
+		<module>repository</module>
 	</modules>
 
 	<build>
@@ -149,59 +149,8 @@
 			</plugins>
 		</pluginManagement>
 	</build>
-	
+
 	<profiles>
-		<profile>
-			<id>regular</id>
-			<activation>
-				<property>
-					<name>target-config</name>
-					<value>!target-platform-neon</value>
-				</property>
-				<activeByDefault>true</activeByDefault>
-			</activation>
-			<modules>
-				<module>org.eclipse.lsp4e.test</module>
-				<module>repository</module>
-			</modules>
-		</profile>
-		
-		<profile>
-			<id>neon-target</id>
-			<activation>
-				<property>
-					<name>target-config</name>
-					<value>target-platform-neon</value>
-				</property>
-				<activeByDefault>false</activeByDefault>
-			</activation>
-			<properties>
-				<target-config>target-platform-neon</target-config>
-			</properties>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.eclipse.tycho</groupId>
-						<artifactId>target-platform-configuration</artifactId>
-						<version>${tycho-version}</version>
-						<configuration>
-							<includePackedArtifacts>true</includePackedArtifacts>
-							<dependency-resolution>
-								<optionalDependencies>ignore</optionalDependencies>
-								<extraRequirements>
-									<requirement>
-										<type>eclipse-plugin</type>
-										<id>org.eclipse.jdt.annotation</id>
-										<versionRange>2.1.0</versionRange>
-									</requirement>
-								</extraRequirements>
- 					       </dependency-resolution>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
-		
 		<profile>
 			<id>packAndSign</id>
 			<build>
