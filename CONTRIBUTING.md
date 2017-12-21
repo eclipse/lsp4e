@@ -46,6 +46,31 @@ $ mvn -Dtarget-config=target-platform-photon verify
 
 ## Import into Eclipse
 
+Prerequisites:
+
+1. You have installed _Eclipse for RCP and RAP Developers_ 4.7 or later. 
+   Other distributions that include PDE and reasonable Java support may also work.
+
+2. You have cloned the lsp4e repo into a local directory.
+
+In Eclipse:
+
+1. **File > Import > Existing Maven Projects**
+
+2. Click **Next**. 
+
+3. In the **Root Directory** chooser select the directory where you cloned the project,
+   and which contains pom.xml.
+
+4. All targets should be selected. Click **Finish**.
+
+5. At this point the Problems view should show on the order of 1000 errors.
+
+6. In the Project Explorer, select the file target-platform-photon.target. Open this
+   file with the target editor.
+
+7. Click the "Set as Target Platform" link on the top right.
+
 ## Contributing Changes
 
 When sending a pull request please squash your commits and set the commit message
