@@ -221,8 +221,10 @@ public class LanguageServerWrapper {
 			initParams.setCapabilities(
 					new ClientCapabilities(workspaceClientCapabilities, textDocumentClientCapabilities, null));
 			initParams.setClientName(name);
+			URI rootUri = URI.create(initParams.getRootUri());
 			initParams.setInitializationOptions(
-					this.lspStreamProvider.getInitializationOptions(URI.create(initParams.getRootUri())));
+					this.lspStreamProvider.getInitializationOptions(rootUri));
+			initParams.setTrace(this.lspStreamProvider.getTrace(rootUri));
 
 			initializeFuture = languageServer.initialize(initParams).thenAccept(res -> {
 				serverCapabilities = res.getCapabilities();

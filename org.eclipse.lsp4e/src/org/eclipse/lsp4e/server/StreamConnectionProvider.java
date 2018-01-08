@@ -42,10 +42,24 @@ public interface StreamConnectionProvider {
 	public OutputStream getOutputStream();
 
 	/**
-     * User provided initialization options.
-     */
+	 * User provided initialization options.
+	 */
 	public default Object getInitializationOptions(URI rootUri){
 		return null;
+	}
+
+	/**
+	 * Provides trace level to be set on language server initialization.<br>
+	 * Legal values: "off" | "messages" | "verbose".
+	 *
+	 * @param rootUri
+	 *            the workspace root URI.
+	 *
+	 * @return the initial trace level to set
+	 * @see "https://microsoft.github.io/language-server-protocol/specification#initialize"
+	 */
+	public default String getTrace(URI rootUri) {
+		return "off"; //$NON-NLS-1$
 	}
 
 	public void stop();
