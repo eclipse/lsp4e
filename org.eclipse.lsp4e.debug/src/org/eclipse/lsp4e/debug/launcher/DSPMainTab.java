@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Kichwa Coders Ltd. and others.
+ * Copyright (c) 2017, 2018 Kichwa Coders Ltd. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -42,6 +42,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 	private Text jsonText;
 
 	private Button launchDebugServer;
+	private Button monitorAdapterLauncherProcessCheckbox;
 	private Button connectDebugServer;
 	private Text serverHost;
 	private Text serverPort;
@@ -91,6 +92,14 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		debugArgsText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		debugArgsText.addModifyListener(e -> updateLaunchConfigurationDialog());
 
+		Composite filler = new Composite(group, SWT.NONE);
+		filler.setLayoutData(new GridData(0, 0));
+		monitorAdapterLauncherProcessCheckbox = new Button(group, SWT.CHECK);
+		GridData layoutData = new GridData(SWT.LEFT, SWT.DEFAULT, true, false);
+		monitorAdapterLauncherProcessCheckbox.setLayoutData(layoutData);
+		monitorAdapterLauncherProcessCheckbox.addSelectionListener(widgetSelectedAdapter(e -> updateLaunchConfigurationDialog()));
+		monitorAdapterLauncherProcessCheckbox.setText("Monitor Debug Adapter launcher process");
+
 		connectDebugServer = new Button(group, SWT.RADIO);
 		connectDebugServer.setText("Connect to &running Debug Server using the following arguments:");
 		connectDebugServer.addSelectionListener(widgetSelectedAdapter(e -> updateLaunchConfigurationDialog()));
@@ -138,6 +147,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		boolean launch = launchDebugServer.getSelection();
 		debugCommandText.setEnabled(launch);
 		debugArgsText.setEnabled(launch);
+		monitorAdapterLauncherProcessCheckbox.setEnabled(launch);
 		serverHost.setEnabled(!launch);
 		serverPort.setEnabled(!launch);
 
@@ -152,6 +162,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, DEFAULT_SERVER);
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_SERVER_PORT, DEFAULT_PORT);
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_PARAM, "");
+		configuration.setAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, false);
 	}
 
 	@Override
@@ -171,6 +182,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 				// TODO
 				debugArgsText.setText("TODO add support for list: " + debugArgsText.toString());
 			}
+			monitorAdapterLauncherProcessCheckbox.setSelection(configuration.getAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, false));
 			serverHost.setText(configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, DEFAULT_SERVER));
 			serverPort.setText(
 					Integer.toString(configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_PORT, DEFAULT_PORT)));
@@ -196,6 +208,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		} else {
 			configuration.setAttribute(DSPPlugin.ATTR_DSP_ARGS, Arrays.asList(arg));
 		}
+		configuration.setAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, monitorAdapterLauncherProcessCheckbox.getSelection());
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, getAttributeValueFrom(serverHost));
 		String portString = getAttributeValueFrom(serverPort);
 		int port = DEFAULT_PORT;

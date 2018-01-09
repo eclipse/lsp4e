@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Kichwa Coders Ltd. and others.
+ * Copyright (c) 2017, 2018 Kichwa Coders Ltd. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -13,6 +13,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,10 +24,15 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.debug.core.DebugException;
+import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.debug.core.IStreamListener;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
+import org.eclipse.debug.core.model.IProcess;
+import org.eclipse.debug.core.model.IStreamMonitor;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
 import org.eclipse.osgi.util.NLS;
@@ -81,10 +88,60 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 				ProcessBuilder processBuilder = new ProcessBuilder(command);
 				subMonitor
 						.subTask(NLS.bind("Launching debug adapter: {0}", "\"" + String.join("\" \"", command) + "\""));
-				Process process = processBuilder.start();
-				inputStream = process.getInputStream();
-				outputStream = process.getOutputStream();
-				cleanup = () -> process.destroy();
+				Process debugAdapterProcess = processBuilder.start();
+				if (launch.getLaunchConfiguration().getAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, false)) {
+					// Uglish workaround: should instead have a dedicated ProcessFactory reading process attribute rather than launch one
+					String initialCaptureOutput = launch.getAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT);
+					launch.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, Boolean.toString(true));
+					IProcess debugAdapterIProcess = DebugPlugin.newProcess(launch, debugAdapterProcess, "Debug Adapter");
+					launch.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, initialCaptureOutput);
+
+					List<Byte> bytes = Collections.synchronizedList(new LinkedList<>());
+					inputStream = new InputStream() {
+						@Override public int read() throws IOException {
+							while (debugAdapterProcess.isAlive()) {
+								if (!bytes.isEmpty()) {
+									return bytes.remove(0);
+								} else {
+									try {
+										Thread.sleep(50);
+									} catch (InterruptedException e) {
+										DSPPlugin.logError(e);
+									}
+								}
+							}
+							return -1;
+						}
+					};
+					debugAdapterIProcess.getStreamsProxy().getOutputStreamMonitor().addListener(new IStreamListener() {
+						@Override public void streamAppended(String text, IStreamMonitor monitor) {
+							try {
+								for (byte b : text.getBytes(launch.getAttribute(DebugPlugin.ATTR_CONSOLE_ENCODING))) {
+									bytes.add(Byte.valueOf(b));
+								}
+							} catch (IOException e) {
+								DSPPlugin.logError(e);
+							}
+						}
+					});
+					outputStream = new OutputStream() {
+						@Override public void write(int b) throws IOException {
+							debugAdapterIProcess.getStreamsProxy().write(new String(new byte[] { (byte)b }));
+						}
+					};
+					cleanup = () -> {
+						try {
+							debugAdapterIProcess.terminate();
+							debugAdapterProcess.destroy();
+						} catch (DebugException e) {
+							DSPPlugin.logError(e);
+						}
+					};
+				} else {
+					inputStream = debugAdapterProcess.getInputStream();
+					outputStream = debugAdapterProcess.getOutputStream();
+					cleanup = () -> debugAdapterProcess.destroy();
+				}
 			} else {
 				String server = configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, (String) null);
 

@@ -28,3 +28,4 @@ Export-Package: org.eclipse.lsp4e.debug;x-internal:=true,
  org.eclipse.lsp4e.debug.launcher,
  org.eclipse.lsp4e.debug.presentation;x-internal:=true,
  org.eclipse.lsp4e.debug.sourcelookup;x-internal:=true
+Automatic-Module-Name: org.eclipse.lsp4e.debug
