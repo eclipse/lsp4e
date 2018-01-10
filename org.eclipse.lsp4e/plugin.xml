@@ -370,6 +370,13 @@
             properties="extension,contentTypeId"
             type="java.lang.Object">
       </propertyTester>
+      <propertyTester
+            class="org.eclipse.lsp4e.HasLanguageServerPropertyTester"
+            id="org.eclipse.lsp4e.hasLanguageServerPropertyTester"
+            namespace="org.eclipse.lsp4e"
+            properties="hasLanguageServer"
+            type="java.lang.Object">
+      </propertyTester>
    </extension>
    <extension
          point="org.eclipse.ui.commandImages">
