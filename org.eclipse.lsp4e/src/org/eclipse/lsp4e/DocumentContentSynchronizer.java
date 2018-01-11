@@ -39,7 +39,6 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
-import org.eclipse.lsp4j.services.LanguageServer;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
 
@@ -88,10 +87,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		textDocument.setLanguageId(languageId);
 		textDocument.setVersion(++version);
-		LanguageServer ls = languageServerWrapper.getServer();
-		if (ls != null) {
-			ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument));
-		}
+		languageServerWrapper.getInitializedServer()
+				.thenAccept(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
 	}
 
 	@Override
@@ -101,10 +98,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			updateChangeEvent(event);
 		}
 		changeParams.getTextDocument().setVersion(++version);
-		LanguageServer ls = languageServerWrapper.getServer();
-		if (ls != null) {
-			ls.getTextDocumentService().didChange(changeParams);
-		}
+		languageServerWrapper.getInitializedServer()
+				.thenAccept(ls -> ls.getTextDocumentService().didChange(changeParams));
 	}
 
 	@Override
@@ -161,19 +156,13 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		this.modificationStamp = timestamp;
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri);
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
-		LanguageServer ls = languageServerWrapper.getServer();
-		if (ls != null) {
-			ls.getTextDocumentService().didSave(params);
-		}
+		languageServerWrapper.getInitializedServer().thenAccept(ls -> ls.getTextDocumentService().didSave(params));
 	}
 
 	public void documentClosed() {
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri);
 		DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
-		LanguageServer ls = languageServerWrapper.getServer();
-		if (ls != null) {
-			ls.getTextDocumentService().didClose(params);
-		}
+		languageServerWrapper.getInitializedServer().thenAccept(ls -> ls.getTextDocumentService().didClose(params));
 	}
 
 	/**
