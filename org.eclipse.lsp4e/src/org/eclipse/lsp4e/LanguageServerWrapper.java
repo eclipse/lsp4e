@@ -138,8 +138,6 @@ public class LanguageServerWrapper {
 	private CompletableFuture<Void> initializeFuture;
 	private LanguageServer languageServer;
 	private ServerCapabilities serverCapabilities;
-	private boolean capabilitiesAlreadyRequested;
-	private long initializeStartTime;
 	private boolean supportWorkspaceFoldersCapability;
 
 	public LanguageServerWrapper(@Nullable IProject project, @NonNull LanguageServerDefinition serverDefinition)
@@ -233,7 +231,6 @@ public class LanguageServerWrapper {
 						&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
 						&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
 			}).thenRun(() -> this.languageServer.initialized(new InitializedParams()));
-			initializeStartTime = System.currentTimeMillis();
 			final Map<IPath, IDocument> toReconnect = filesToReconnect;
 			initializeFuture.thenRun(() -> {
 				if (this.initialProject != null) {
@@ -287,7 +284,6 @@ public class LanguageServerWrapper {
 			this.initializeFuture = null;
 		}
 		this.serverCapabilities = null;
-		this.capabilitiesAlreadyRequested = false;
 
 		if (this.languageServer != null) {
 			try {
@@ -494,7 +490,6 @@ public class LanguageServerWrapper {
 		} catch (InterruptedException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		}
-		this.capabilitiesAlreadyRequested = true;
 		if (this.serverCapabilities != null) {
 			return this.serverCapabilities;
 		} else {
