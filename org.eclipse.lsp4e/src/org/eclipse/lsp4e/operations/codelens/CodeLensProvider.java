@@ -24,6 +24,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.CodeLensParams;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 
 public class CodeLensProvider extends AbstractCodeMiningProvider {
@@ -35,15 +36,17 @@ public class CodeLensProvider extends AbstractCodeMiningProvider {
 		final List<LSPCodeMining> codeLensResults = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
 		for (int i = 0; i < docInfos.size(); i++) {
 			final LSPDocumentInfo info = docInfos.get(i);
+			final ServerCapabilities capabilites = info.getCapabilites();
 			CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(info.getFileUri().toString()));
 			requests[i] = info.getInitializedLanguageClient()
 					.thenCompose(languageServer -> languageServer.getTextDocumentService().codeLens(param))
 					.thenAccept(codeLenses -> {
 						for (CodeLens codeLens : codeLenses) {
-							if (codeLens != null) {
+							if (codeLens != null && capabilites != null) {
 								try {
 									codeLensResults
-											.add(new LSPCodeMining(codeLens, document, info.getLanguageClient(), this));
+											.add(new LSPCodeMining(codeLens, document, info.getLanguageClient(),
+													capabilites.getCodeLensProvider(), this));
 								} catch (BadLocationException e) {
 									LanguageServerPlugin.logError(e);
 								}

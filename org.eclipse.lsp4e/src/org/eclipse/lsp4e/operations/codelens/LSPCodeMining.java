@@ -17,6 +17,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.codemining.AbstractCodeMining;
 import org.eclipse.lsp4j.CodeLens;
+import org.eclipse.lsp4j.CodeLensOptions;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.services.LanguageServer;
 
@@ -24,12 +25,14 @@ public class LSPCodeMining extends AbstractCodeMining {
 
 	private CodeLens codeLens;
 	private LanguageServer languageServer;
+	private CodeLensOptions codeLensOptions;
 
 	public LSPCodeMining(CodeLens codeLens, IDocument document, LanguageServer languageServer,
-			CodeLensProvider provider) throws BadLocationException {
+			CodeLensOptions codeLensOptions, CodeLensProvider provider) throws BadLocationException {
 		super(codeLens.getRange().getStart().getLine(), document, provider);
 		this.codeLens = codeLens;
 		this.languageServer = languageServer;
+		this.codeLensOptions = codeLensOptions;
 		setLabel(getCodeLensString(codeLens));
 	}
 
@@ -43,10 +46,13 @@ public class LSPCodeMining extends AbstractCodeMining {
 
 	@Override
 	protected CompletableFuture<Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
-		return languageServer.getTextDocumentService().resolveCodeLens(this.codeLens).thenAccept(codeLens -> {
-			this.codeLens = codeLens;
-			setLabel(getCodeLensString(codeLens));
-		});
+		if (this.codeLensOptions.isResolveProvider()) {
+			return languageServer.getTextDocumentService().resolveCodeLens(this.codeLens).thenAccept(codeLens -> {
+				this.codeLens = codeLens;
+				setLabel(getCodeLensString(codeLens));
+			});
+		}
+		return CompletableFuture.completedFuture(null);
 	}
 
 
