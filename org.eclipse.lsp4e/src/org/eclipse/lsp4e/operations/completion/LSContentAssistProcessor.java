@@ -65,7 +65,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private char[] contextTriggerChars;
 	private Pair<IDocument, Job> findInfoJob;
 	private String errorMessage;
-	private boolean isIncomplete = true;
+	private boolean isIncomplete = false;
 
 	public LSContentAssistProcessor() {
 	}
