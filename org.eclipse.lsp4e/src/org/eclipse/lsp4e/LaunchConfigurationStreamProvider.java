@@ -43,6 +43,7 @@ import org.eclipse.lsp4e.server.StreamConnectionProvider;
 public class LaunchConfigurationStreamProvider implements StreamConnectionProvider  {
 
 	private StreamProxyInputStream inputStream;
+	private StreamProxyInputStream errorStream;
 	private OutputStream outputStream;
 	private ILaunch launch;
 	private IProcess process;
@@ -170,6 +171,16 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 	}
 
 	@Override
+	public InputStream getErrorStream() {
+		if (this.errorStream == null) {
+			process = this.launch.getProcesses()[0];
+			this.errorStream = new StreamProxyInputStream(process);
+			process.getStreamsProxy().getErrorStreamMonitor().addListener(this.errorStream);
+		}
+		return this.errorStream;
+	}
+
+	@Override
 	public void stop() {
 		if (this.launch == null) {
 			return;
@@ -191,8 +202,16 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		} catch (IOException e) {
 			LanguageServerPlugin.logError(e);
 		}
+		try {
+			if (this.errorStream != null) {
+				this.errorStream.close();
+			}
+		} catch (IOException e) {
+			LanguageServerPlugin.logError(e);
+		}
 		this.inputStream = null;
 		this.outputStream = null;
+		this.errorStream = null;
 	}
 
 }

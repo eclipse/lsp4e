@@ -65,6 +65,12 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 	}
 
 	@Override
+	public @Nullable InputStream getErrorStream() {
+		Process p = process;
+		return p == null ? null : p.getErrorStream();
+	}
+
+	@Override
 	public @Nullable OutputStream getOutputStream() {
 		Process p = process;
 		return p == null ? null : p.getOutputStream();
@@ -112,8 +118,8 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 
 	@Override
 	public int hashCode() {
-        int result = Objects.hashCode(this.getCommands());
-        return result ^ Objects.hashCode(this.getWorkingDirectory());
+		int result = Objects.hashCode(this.getCommands());
+		return result ^ Objects.hashCode(this.getWorkingDirectory());
 	}
 
 }
