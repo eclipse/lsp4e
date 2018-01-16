@@ -10,11 +10,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
@@ -26,17 +28,19 @@ public class MockConnectionProvider implements StreamConnectionProvider {
 
 	private InputStream inputStream  ;
 	private OutputStream outputStream;
-	
+	private InputStream errorStream;
+
 	@Override
 	public void start() throws IOException {
 		PipedInputStream in = new PipedInputStream();
 		PipedOutputStream out = new PipedOutputStream();
 		PipedInputStream in2 = new PipedInputStream();
 		PipedOutputStream out2 = new PipedOutputStream();
-		
+		errorStream = new ByteArrayInputStream("Error output on console".getBytes(StandardCharsets.UTF_8));
+
 		in.connect(out2);
 		out.connect(in2);
-	
+
 		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageSever.INSTANCE, in2, out2);
 		inputStream = in;
 		outputStream = out;
@@ -52,6 +56,11 @@ public class MockConnectionProvider implements StreamConnectionProvider {
 	@Override
 	public OutputStream getOutputStream() {
 		return outputStream;
+	}
+
+	@Override
+	public InputStream getErrorStream() {
+		return errorStream;
 	}
 
 	@Override
