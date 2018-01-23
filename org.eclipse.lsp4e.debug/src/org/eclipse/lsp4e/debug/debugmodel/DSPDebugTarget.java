@@ -465,7 +465,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * Get a thread object without connecting to the debug adapter. This is for when
 	 * we get a thread before it is fully populated, so return a new thread in that
 	 * case and let it be populated later
-	 * 
+	 *
 	 * @param threadId
 	 * @return
 	 */
@@ -633,5 +633,9 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	@Override
 	public IDebugProtocolServer getDebugProtocolServer() {
 		return debugProtocolServer;
+	}
+
+	public Capabilities getCapabilities() {
+		return capabilities;
 	}
 }

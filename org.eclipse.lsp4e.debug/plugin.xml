@@ -82,6 +82,13 @@
             adaptableType="org.eclipse.ui.editors.text.TextEditor">
 			<adapter type="org.eclipse.debug.ui.actions.IToggleBreakpointsTarget"/>
       </factory>
+      <factory
+            adaptableType="org.eclipse.jface.text.TextSelection"
+            class="org.eclipse.lsp4e.debug.breakpoints.TextSelectionToIVariable">
+         <adapter
+               type="org.eclipse.debug.core.model.IVariable">
+         </adapter>
+      </factory>
    </extension>
    <extension
          id="org.eclipse.lsp4e.debug.breakpoints.markerType.lineBreakpoint"

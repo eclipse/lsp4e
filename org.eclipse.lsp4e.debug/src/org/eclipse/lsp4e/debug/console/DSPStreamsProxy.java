@@ -12,6 +12,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.debug.core.model.IStreamsProxy2;
 import org.eclipse.lsp4j.debug.EvaluateArguments;
+import org.eclipse.lsp4j.debug.EvaluateArgumentsContext;
 import org.eclipse.lsp4j.debug.EvaluateResponse;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
@@ -44,7 +45,7 @@ public class DSPStreamsProxy implements IStreamsProxy2 {
 		String trimmed = input.trim();
 		if (!trimmed.isEmpty()) {
 			EvaluateArguments args = new EvaluateArguments();
-			args.setContext("repl");
+			args.setContext(EvaluateArgumentsContext.REPL);
 			args.setExpression(trimmed);
 			// TODO args.setFrameId(0);
 			CompletableFuture<EvaluateResponse> future = debugProtocolServer.evaluate(args);

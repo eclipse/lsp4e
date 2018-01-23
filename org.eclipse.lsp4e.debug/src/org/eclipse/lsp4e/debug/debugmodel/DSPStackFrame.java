@@ -169,6 +169,10 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 		return stackFrame.getSource().getPath();
 	}
 
+	public Long getFrameId() {
+		return stackFrame.getId();
+	}
+
 	@Override
 	public String toString() {
 		return "StackFrame [depth=" + depth + ", line=" + stackFrame.getLine() + ", thread=" + thread + ", stackFrame="
