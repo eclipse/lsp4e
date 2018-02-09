@@ -9,7 +9,7 @@
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Miro Spoenemann (TypeFox) - extracted LanguageClientImpl
  *  Jan Koehnlein (TypeFox) - bug 521744
- *  Martin Lippert (Pivotal, Inc.) - bug 531030
+ *  Martin Lippert (Pivotal, Inc.) - bug 531030, 527902
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -239,6 +239,7 @@ public class LanguageServerWrapper {
 						&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
 						&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
 			}).thenRun(() -> this.languageServer.initialized(new InitializedParams()));
+
 			final Map<IPath, IDocument> toReconnect = filesToReconnect;
 			initializeFuture.thenRun(() -> {
 				if (this.initialProject != null) {
@@ -321,14 +322,14 @@ public class LanguageServerWrapper {
 		connect(file.getLocation(), document);
 	}
 
-	protected void watchProject(IProject project, boolean isInitializationRootProject) {
+	protected synchronized void watchProject(IProject project, boolean isInitializationRootProject) {
 		if (this.allWatchedProjects.contains(project)) {
 			return;
 		}
 		if (isInitializationRootProject && !this.allWatchedProjects.isEmpty()) {
 			return; // there can be only one root project
 		}
-		if (!isInitializationRootProject && !this.supportWorkspaceFoldersCapability) {
+		if (!isInitializationRootProject && !supportsWorkspaceFolderCapability()) {
 			// multi project and WorkspaceFolder notifications not supported by this server
 			// instance
 			return;
@@ -340,7 +341,7 @@ public class LanguageServerWrapper {
 				unwatchProject(project);
 			}
 		}, IResourceChangeEvent.POST_CHANGE);
-		if (this.supportWorkspaceFoldersCapability) {
+		if (supportsWorkspaceFolderCapability()) {
 			WorkspaceFoldersChangeEvent event = new WorkspaceFoldersChangeEvent();
 			event.getAdded().add(LSPEclipseUtils.toWorkspaceFolder(project));
 			DidChangeWorkspaceFoldersParams params = new DidChangeWorkspaceFoldersParams();
@@ -349,10 +350,10 @@ public class LanguageServerWrapper {
 		}
 	}
 
-	private void unwatchProject(@NonNull IProject project) {
+	private synchronized void unwatchProject(@NonNull IProject project) {
 		this.allWatchedProjects.remove(project);
 		// TODO? disconnect resources?
-		if (this.supportWorkspaceFoldersCapability) {
+		if (supportsWorkspaceFolderCapability()) {
 			WorkspaceFoldersChangeEvent event = new WorkspaceFoldersChangeEvent();
 			event.getRemoved().add(LSPEclipseUtils.toWorkspaceFolder(project));
 			DidChangeWorkspaceFoldersParams params = new DidChangeWorkspaceFoldersParams();
@@ -371,7 +372,25 @@ public class LanguageServerWrapper {
 		if (project.equals(this.initialProject) || this.allWatchedProjects.contains(project)) {
 			return true;
 		}
-		return this.supportWorkspaceFoldersCapability;
+
+		return supportsWorkspaceFolderCapability();
+	}
+
+	/**
+	 * @return true, if the server supports multi-root workspaces via workspace
+	 *         folders
+	 * @since 0.6
+	 */
+	private boolean supportsWorkspaceFolderCapability() {
+		if (this.initializeFuture != null) {
+			try {
+				this.initializeFuture.get(1, TimeUnit.SECONDS);
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
+				e.printStackTrace();
+			}
+		}
+
+		return supportWorkspaceFoldersCapability;
 	}
 
 	/**
@@ -510,11 +529,8 @@ public class LanguageServerWrapper {
 		} catch (InterruptedException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		}
-		if (this.serverCapabilities != null) {
-			return this.serverCapabilities;
-		} else {
-			return null;
-		}
+
+		return this.serverCapabilities;
 	}
 
 	/**
