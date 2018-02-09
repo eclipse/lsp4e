@@ -15,13 +15,13 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.jface.text.codemining.AbstractCodeMining;
+import org.eclipse.jface.text.codemining.LineHeaderCodeMining;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.CodeLensOptions;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.services.LanguageServer;
 
-public class LSPCodeMining extends AbstractCodeMining {
+public class LSPCodeMining extends LineHeaderCodeMining {
 
 	private CodeLens codeLens;
 	private LanguageServer languageServer;
