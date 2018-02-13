@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2017 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2018 Rogue Wave Software Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,6 +8,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Mickael Istria (Red Hat Inc.) - added test for Run config
+ *  Martin Lippert (Pivotal Inc.) - added tests for multi-root folders and wrapper re-use
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
@@ -37,7 +38,10 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServerMultiRootFolders;
+import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 import org.junit.After;
 import org.junit.Before;
@@ -142,6 +146,80 @@ public class LanguageServiceAccessorTest {
 		assertEquals(2, file2LanguageServers.size());
 		assertTrue(file2LanguageServers.contains(file1LS)); // LS from file1 is reused
 		assertEquals("Not right amount of language servers bound to project", 2, LanguageServiceAccessor.getLanguageServers(project, c -> Boolean.TRUE).size());
+	}
+
+	@Test
+	public void testCreateNewLSAfterInitialProjectGotDeleted() throws Exception {
+		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
+
+		TestUtils.openEditor(testFile1);
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile1, capabilities -> Boolean.TRUE).iterator()
+				.next();
+		new LSDisplayHelper(() -> MockLanguageSever.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
+				300);
+
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
+				c -> Boolean.TRUE);
+		LanguageServerWrapper wrapper1 = wrappers.iterator().next();
+		assertTrue(wrapper1.isActive());
+
+		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+		new LSDisplayHelper(() -> !MockLanguageSever.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
+				300);
+
+		project.delete(true, true, new NullProgressMonitor());
+
+		project = TestUtils.createProject("LanguageServiceAccessorTest2" + System.currentTimeMillis());
+		IFile testFile2 = TestUtils.createUniqueTestFile(project, "");
+
+		TestUtils.openEditor(testFile2);
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile2, capabilities -> Boolean.TRUE).iterator()
+				.next();
+		new LSDisplayHelper(() -> MockLanguageSever.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
+				300);
+
+		wrappers = LanguageServiceAccessor.getLSWrappers(testFile2, c -> Boolean.TRUE);
+		LanguageServerWrapper wrapper2 = wrappers.iterator().next();
+		assertTrue(wrapper2.isActive());
+
+		assertTrue(wrapper1 != wrapper2);
+	}
+
+	@Test
+	public void testReuseMultirootFolderLSAfterInitialProjectGotDeleted() throws Exception {
+		IFile testFile1 = TestUtils.createUniqueTestFile(project, "lsptWithMultiRoot", "");
+
+		TestUtils.openEditor(testFile1);
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile1, capabilities -> Boolean.TRUE).iterator()
+				.next();
+		new LSDisplayHelper(() -> MockLanguageServerMultiRootFolders.INSTANCE.isRunning())
+				.waitForCondition(Display.getCurrent(), 5000, 300);
+
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
+				c -> Boolean.TRUE);
+		LanguageServerWrapper wrapper1 = wrappers.iterator().next();
+		assertTrue(wrapper1.isActive());
+
+		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+		new LSDisplayHelper(() -> !MockLanguageServerMultiRootFolders.INSTANCE.isRunning())
+				.waitForCondition(Display.getCurrent(), 5000, 300);
+
+		project.delete(true, true, new NullProgressMonitor());
+
+		project = TestUtils.createProject("LanguageServiceAccessorTest2" + System.currentTimeMillis());
+		IFile testFile2 = TestUtils.createUniqueTestFile(project, "lsptWithMultiRoot", "");
+
+		TestUtils.openEditor(testFile2);
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile2, capabilities -> Boolean.TRUE).iterator()
+				.next();
+		new LSDisplayHelper(() -> MockLanguageServerMultiRootFolders.INSTANCE.isRunning())
+				.waitForCondition(Display.getCurrent(), 5000, 300);
+
+		wrappers = LanguageServiceAccessor.getLSWrappers(testFile2, c -> Boolean.TRUE);
+		LanguageServerWrapper wrapper2 = wrappers.iterator().next();
+		assertTrue(wrapper2.isActive());
+
+		assertTrue(wrapper1 == wrapper2);
 	}
 
 	@Test

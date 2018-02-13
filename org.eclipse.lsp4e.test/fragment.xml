@@ -18,6 +18,11 @@
             id="org.eclipse.lsp4e.test.server-with-exception"
             label="Test LS With Exception">
       </server>
+       <server
+            class="org.eclipse.lsp4e.test.MockConnectionProviderMultiRootFolders"
+            id="org.eclipse.lsp4e.test.server-with-multi-root-support"
+            label="Test LS With Multi-Root Support">
+      </server>
       <contentTypeMapping
             contentType="org.eclipse.lsp4e.test.content-type"
             id="org.eclipse.lsp4e.test.server">
@@ -47,6 +52,10 @@
             contentType="org.eclipse.lsp4e.test.content-type-server-with-exception"
             id="org.eclipse.lsp4e.test.server-with-exception">
       </contentTypeMapping>
+      <contentTypeMapping
+            contentType="org.eclipse.lsp4e.test.content-type-server-with-multi-root"
+            id="org.eclipse.lsp4e.test.server-with-multi-root-support">
+      </contentTypeMapping>
    </extension>
    <extension
          point="org.eclipse.core.contenttype.contentTypes">
@@ -71,11 +80,18 @@
             name="Test Content Type 2"
             priority="normal">
       </content-type>
-        <content-type
+      <content-type
             base-type="org.eclipse.core.runtime.text"
             file-extensions="lsptWithException"
             id="org.eclipse.lsp4e.test.content-type-server-with-exception"
             name="Test Content Type Server with Exception"
+            priority="normal">
+      </content-type>
+      <content-type
+            base-type="org.eclipse.core.runtime.text"
+            file-extensions="lsptWithMultiRoot"
+            id="org.eclipse.lsp4e.test.content-type-server-with-multi-root"
+            name="Test Content Type Server with Multi-Root Support"
             priority="normal">
       </content-type>
       <content-type
