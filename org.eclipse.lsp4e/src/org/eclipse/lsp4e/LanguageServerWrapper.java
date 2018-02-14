@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2018 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -9,6 +9,7 @@
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Miro Spoenemann (TypeFox) - extracted LanguageClientImpl
  *  Jan Koehnlein (TypeFox) - bug 521744
+ *  Martin Lippert (Pivotal, Inc.) - bug 531030
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -176,18 +177,25 @@ public class LanguageServerWrapper {
 			ExecutorService executorService = Executors.newCachedThreadPool();
 			final InitializeParams initParams = new InitializeParams();
 			initParams.setProcessId(getCurrentProcessId());
-			if (this.initialProject != null) {
-				URI uri = LSPEclipseUtils.toUri(this.initialProject);
-				initParams.setRootUri(uri.toString());
-				initParams.setRootPath(uri.getPath());
+
+			URI rootURI = null;
+			IProject project = this.initialProject;
+			if (project != null && project.exists()) {
+				rootURI = LSPEclipseUtils.toUri(this.initialProject);
+				initParams.setRootUri(rootURI.toString());
+				initParams.setRootPath(rootURI.getPath());
 			}
+
 			Launcher<? extends LanguageServer> launcher = Launcher.createLauncher(client, serverDefinition.getServerInterface(),
 					this.lspStreamProvider.getInputStream(), this.lspStreamProvider.getOutputStream(), executorService,
 					consumer -> (message -> {
 						consumer.consume(message);
 						logMessage(message);
-						this.lspStreamProvider.handleMessage(message, this.languageServer, URI.create(initParams.getRootUri()));
+
+						URI root = initParams.getRootUri() != null ? URI.create(initParams.getRootUri()) : null;
+						this.lspStreamProvider.handleMessage(message, this.languageServer, root);
 					}));
+
 			this.languageServer = launcher.getRemoteProxy();
 			client.connect(languageServer, this);
 			this.launcherFuture = launcher.startListening();
@@ -220,8 +228,7 @@ public class LanguageServerWrapper {
 			initParams.setCapabilities(
 					new ClientCapabilities(workspaceClientCapabilities, textDocumentClientCapabilities, null));
 			initParams.setClientName(name);
-			initParams.setInitializationOptions(
-					this.lspStreamProvider.getInitializationOptions(URI.create(initParams.getRootUri())));
+			initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
 
 			initializeFuture = languageServer.initialize(initParams).thenAccept(res -> {
 				serverCapabilities = res.getCapabilities();
