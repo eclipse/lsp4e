@@ -23,6 +23,11 @@
             id="org.eclipse.lsp4e.test.server-with-multi-root-support"
             label="Test LS With Multi-Root Support">
       </server>
+      <server
+            class="org.eclipse.lsp4e.test.MockConnectionProvider"
+            id="org.eclipse.lsp4e.test.server.disable"
+            label="Test LS Enablement">
+      </server>
       <contentTypeMapping
             contentType="org.eclipse.lsp4e.test.content-type"
             id="org.eclipse.lsp4e.test.server">
@@ -55,6 +60,14 @@
       <contentTypeMapping
             contentType="org.eclipse.lsp4e.test.content-type-server-with-multi-root"
             id="org.eclipse.lsp4e.test.server-with-multi-root-support">
+      </contentTypeMapping>
+      <contentTypeMapping
+            contentType="org.eclipse.lsp4e.test.content-type-enabled"
+            id="org.eclipse.lsp4e.test.server.disable">
+      </contentTypeMapping>
+      <contentTypeMapping
+            contentType="org.eclipse.lsp4e.test.content-type-disabled"
+            id="org.eclipse.lsp4e.test.server.disable">
       </contentTypeMapping>
    </extension>
    <extension
@@ -115,6 +128,20 @@
             file-extensions="lsptchildNoLS"
             id="org.eclipse.lsp4e.test.childContentTypeNpLS"
             name="lsptchild-no-ls"
+            priority="normal">
+      </content-type>
+      <content-type
+            base-type="org.eclipse.core.runtime.text"
+            file-extensions="lspt-disabled"
+            id="org.eclipse.lsp4e.test.content-type-disabled"
+            name="Test Content Type for disabled Language ID"
+            priority="normal">
+      </content-type>
+      <content-type
+            base-type="org.eclipse.core.runtime.text"
+            file-extensions="lspt-enabled"
+            id="org.eclipse.lsp4e.test.content-type-enabled"
+            name="Test Content Type for enabled Language ID"
             priority="normal">
       </content-type>
    </extension>

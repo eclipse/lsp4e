@@ -12,10 +12,8 @@
 package org.eclipse.lsp4e;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.content.IContentDescription;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -43,6 +42,8 @@ import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.ui.IEditorReference;
+import org.eclipse.ui.part.FileEditorInput;
 
 /**
  * The entry-point to retrieve a Language Server for a given resource/project.
@@ -144,6 +145,46 @@ public class LanguageServiceAccessor {
 		return wrappers.stream().map(LanguageServerWrapper::getInitializedServer).collect(Collectors.toList());
 	}
 
+	public static void disableLanguageServerContentType(
+			@NonNull ContentTypeToLanguageServerDefinition contentTypeToLSDefinition) {
+		Optional<LanguageServerWrapper> result = startedServers.stream()
+				.filter(server -> server.serverDefinition.equals(contentTypeToLSDefinition.getValue())).findFirst();
+		if (result.isPresent()) {
+			IContentType contentType = contentTypeToLSDefinition.getKey();
+			if (contentType != null) {
+				result.get().disconnectContentType(contentType);
+			}
+		}
+
+	}
+
+	public static void enableLanguageServerContentType(
+			@NonNull ContentTypeToLanguageServerDefinition contentTypeToLSDefinition,
+			@NonNull IEditorReference[] editors) {
+		for (IEditorReference editor : editors) {
+			try {
+				if (editor.getEditorInput() instanceof FileEditorInput) {
+					IFile editorFile = ((FileEditorInput) editor.getEditorInput()).getFile();
+					IContentType contentType = contentTypeToLSDefinition.getKey();
+					LanguageServerDefinition lsDefinition = contentTypeToLSDefinition.getValue();
+					IContentDescription contentDesc = editorFile.getContentDescription();
+					if (contentTypeToLSDefinition.isEnabled() && contentType != null && contentDesc != null
+							&& contentType.equals(contentDesc.getContentType())
+							&& lsDefinition != null) {
+						try {
+							getInitializedLanguageServer(editorFile, lsDefinition, capabilities -> true);
+						} catch (IOException e) {
+							LanguageServerPlugin.logError(e);
+						}
+					}
+				}
+			} catch (CoreException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
+
+	}
+
 	/**
 	 * Get the requested language server instance for the given file. Starts the language server if not already started.
 	 * @param file
@@ -223,13 +264,8 @@ public class LanguageServiceAccessor {
 		// look for running language servers via content-type
 		Queue<IContentType> contentTypes = new LinkedList<>();
 		Set<IContentType> addedContentTypes = new HashSet<>();
-		try (InputStream contents = file.getContents()) {
-			contentTypes.addAll(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, file.getName()))); //TODO consider using document as inputstream
-			addedContentTypes.addAll(contentTypes);
-		} catch (CoreException e) {
-			LanguageServerPlugin.logError(e);
-			return res;
-		}
+		contentTypes.addAll(LSPEclipseUtils.getFileContentTypes(file));
+		addedContentTypes.addAll(contentTypes);
 
 		while (!contentTypes.isEmpty()) {
 			IContentType contentType = contentTypes.poll();
@@ -237,7 +273,7 @@ public class LanguageServiceAccessor {
 				continue;
 			}
 			for (ContentTypeToLanguageServerDefinition mapping : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
-				if (mapping != null && mapping.getValue() != null) {
+				if (mapping != null && mapping.getValue() != null && mapping.isEnabled()) {
 					ProjectSpecificLanguageServerWrapper wrapper = getLSWrapperForConnection(project, mapping.getValue());
 					if (request == null
 						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
@@ -302,8 +338,10 @@ public class LanguageServiceAccessor {
 			return startedServers.stream()
 					.filter(wrapper -> {
 						try {
-							return wrapper.isConnectedTo(file.getLocation()) ||
-								(LanguageServersRegistry.getInstance().matches(file, wrapper.serverDefinition) && wrapper.canOperate(file.getProject()));
+							return wrapper.isConnectedTo(file.getLocation())
+									||
+									(LanguageServersRegistry.getInstance().matches(file, wrapper.serverDefinition)
+											&& wrapper.canOperate(file.getProject()));
 						} catch (IOException | CoreException e) {
 							LanguageServerPlugin.logError(e);
 							return false;

@@ -36,6 +36,7 @@ import org.junit.runners.Suite.SuiteClasses;
 @RunWith(Suite.class)
 @SuiteClasses({
 	LanguageServiceAccessorTest.class,
+	ContentTypeToLanguageServerDefinitionTest.class,
 	CompleteCompletionTest.class,
 	IncompleteCompletionTest.class,
 	ContextInformationTest.class,
@@ -53,7 +54,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	FormatTest.class,
 	CodeActionTests.class,
 	DocumentLinkTest.class,
-	OpenCloseLanguageServerTest.class,
+	RunningLanguageServerTest.class,
 	HighlightTest.class
 })
 public class AllTests {

@@ -17,7 +17,10 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.CheckStateChangedEvent;
+import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
+import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -36,8 +39,12 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Link;
+import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.preferences.IWorkbenchPreferenceContainer;
 
 public class LanguageServerPreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
@@ -45,10 +52,13 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 	private LanguageServersRegistry registry;
 	private List<ContentTypeToLSPLaunchConfigEntry> workingCopy;
 	private Button removeButton;
+	private CheckboxTableViewer checkboxViewer;
 	private TableViewer viewer;
 	private SelectionAdapter contentTypeLinkListener;
+	private List<ContentTypeToLanguageServerDefinition> changedDefinitions;
 
 	public LanguageServerPreferencePage() {
+
 		contentTypeLinkListener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -61,6 +71,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 
 	@Override
 	public void init(IWorkbench workbench) {
+		this.changedDefinitions = new ArrayList<>();
 		this.registry = LanguageServersRegistry.getInstance();
 	}
 
@@ -131,7 +142,8 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 			public void widgetSelected(SelectionEvent e) {
 				NewContentTypeLSPLaunchDialog dialog = new NewContentTypeLSPLaunchDialog(getShell());
 				if (dialog.open() == IDialogConstants.OK_ID) {
-					workingCopy.add(new ContentTypeToLSPLaunchConfigEntry(dialog.getContentType(), dialog.getLaunchConfiguration(), dialog.getLaunchMode()));
+					workingCopy.add(new ContentTypeToLSPLaunchConfigEntry(dialog.getContentType(),
+							dialog.getLaunchConfiguration(), dialog.getLaunchMode()));
 					viewer.refresh();
 				}
 				super.widgetSelected(e);
@@ -168,10 +180,21 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.TOP).grab(true, false).span(2, 1).hint(400, SWT.DEFAULT).applyTo(staticServersIntro);
 		staticServersIntro.setText(Messages.PreferencesPage_staticServers);
 		staticServersIntro.addSelectionListener(this.contentTypeLinkListener);
-		viewer = new TableViewer(res);
-		viewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		viewer.setContentProvider(new ArrayContentProvider());
-		TableViewerColumn contentTypeColumn = new TableViewerColumn(viewer, SWT.NONE);
+		checkboxViewer = CheckboxTableViewer.newCheckList(res, SWT.NONE);
+		checkboxViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		checkboxViewer.setContentProvider(new ArrayContentProvider());
+
+		TableViewerColumn enablementColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
+		enablementColumn.getColumn().setText(Messages.PreferencesPage_Enabled);
+		enablementColumn.getColumn().setWidth(70);
+		enablementColumn.setLabelProvider(new ColumnLabelProvider() {
+			@Override
+			public String getText(Object element) {
+				return null;
+			}
+		});
+
+		TableViewerColumn contentTypeColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
 		contentTypeColumn.getColumn().setText(Messages.PreferencesPage_contentType);
 		contentTypeColumn.getColumn().setWidth(200);
 		contentTypeColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -180,7 +203,8 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 				return ((ContentTypeToLanguageServerDefinition)element).getKey().getName();
 			}
 		});
-		TableViewerColumn launchConfigColumn = new TableViewerColumn(viewer, SWT.NONE);
+
+		TableViewerColumn launchConfigColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
 		launchConfigColumn.getColumn().setText(Messages.PreferencesPage_languageServer);
 		launchConfigColumn.getColumn().setWidth(300);
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -189,9 +213,30 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 				return ((ContentTypeToLanguageServerDefinition)element).getValue().label;
 			}
 		});
-		viewer.setInput(LanguageServersRegistry.getInstance().getContentTypeToLSPExtensions());
-		viewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
-		viewer.getTable().setHeaderVisible(true);
+
+		List<ContentTypeToLanguageServerDefinition> lsDefinitions = LanguageServersRegistry.getInstance()
+				.getContentTypeToLSPExtensions();
+
+		checkboxViewer.setInput(lsDefinitions);
+		checkboxViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
+		checkboxViewer.getTable().setHeaderVisible(true);
+
+		checkboxViewer
+				.setCheckedElements(lsDefinitions.stream().filter(lsDefinition -> lsDefinition.isEnabled()).toArray());
+
+		checkboxViewer.addCheckStateListener(new ICheckStateListener() {
+
+			@Override
+			public void checkStateChanged(CheckStateChangedEvent event) {
+				if (event.getElement() instanceof ContentTypeToLanguageServerDefinition) {
+					ContentTypeToLanguageServerDefinition lsDefinition = (ContentTypeToLanguageServerDefinition) event
+							.getElement();
+					lsDefinition.setEnabled(event.getChecked());
+					changedDefinitions.add(lsDefinition);
+				}
+
+			}
+		});
 	}
 
 	protected void updateButtons() {
@@ -201,7 +246,20 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 	@Override
 	public boolean performOk() {
 		this.registry.setAssociations(this.workingCopy);
+		EnableDisableLSJob enableDisableLSJob = new EnableDisableLSJob(changedDefinitions, getEditors());
+		enableDisableLSJob.schedule();
 		return super.performOk();
+	}
+
+	private IEditorReference[] getEditors() {
+		IWorkbenchWindow wWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		if (wWindow != null) {
+			IWorkbenchPage wPage = wWindow.getActivePage();
+			if (wPage != null) {
+				return wPage.getEditorReferences();
+			}
+		}
+		return null;
 	}
 
 }

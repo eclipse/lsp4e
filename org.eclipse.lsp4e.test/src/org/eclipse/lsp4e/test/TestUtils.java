@@ -21,8 +21,11 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
+import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
@@ -107,6 +110,24 @@ public class TestUtils {
 		IFile testFile = p.getFile(name);
 		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
 		return testFile;
+	}
+
+	public static ContentTypeToLanguageServerDefinition getDisabledLS() {
+		return LanguageServersRegistry.getInstance().getContentTypeToLSPExtensions().stream()
+				.filter(definition -> "org.eclipse.lsp4e.test.server.disable".equals(definition.getValue().id)
+						&& "org.eclipse.lsp4e.test.content-type-disabled".equals(definition.getKey().toString()))
+				.findFirst().get();
+	}
+
+	public static IEditorReference[] getEditors() {
+		IWorkbenchWindow wWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		if (wWindow != null) {
+			IWorkbenchPage wPage = wWindow.getActivePage();
+			if (wPage != null) {
+				return wPage.getEditorReferences();
+			}
+		}
+		return null;
 	}
 
 }

@@ -14,11 +14,14 @@
 package org.eclipse.lsp4e;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +43,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -492,5 +497,18 @@ public class LSPEclipseUtils {
 		folder.setUri(project.getLocationURI().toString());
 		folder.setName(project.getName());
 		return folder;
+	}
+
+	@NonNull
+	public static List<IContentType> getFileContentTypes(@NonNull IFile file) {
+		List<IContentType> contentTypes = new ArrayList<>();
+		try (InputStream contents = file.getContents()) {
+			// TODO consider using document as inputstream
+			contentTypes.addAll(
+					Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, file.getName())));
+		} catch (CoreException | IOException e) {
+			LanguageServerPlugin.logError(e);
+		}
+		return contentTypes;
 	}
 }

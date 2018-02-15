@@ -12,9 +12,6 @@
 package org.eclipse.lsp4e;
 
 import java.io.File;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,7 +19,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
@@ -72,12 +68,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		IWorkspace workspace= ResourcesPlugin.getWorkspace();
 		IFile ifile= workspace.getRoot().getFileForLocation(filePath);
 
-		List<IContentType> contentTypes = new ArrayList<>();
-		try (InputStream contents = ifile.getContents()) {
-			contentTypes.addAll(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, file.getName())));
-		} catch (Exception e) {
-			LanguageServerPlugin.logError(e);
-		}
+		List<IContentType> contentTypes = LSPEclipseUtils.getFileContentTypes(ifile);
 
 		String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
 

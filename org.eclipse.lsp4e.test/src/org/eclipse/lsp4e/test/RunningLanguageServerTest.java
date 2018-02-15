@@ -17,6 +17,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
+import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
 import org.eclipse.swt.widgets.Display;
@@ -26,11 +27,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- * checks if language servers get started and shutdown correctly if opening and closing the same file/editor
- * multiple times
- */
-public class OpenCloseLanguageServerTest {
+
+public class RunningLanguageServerTest {
 
 	private IProject project;
 
@@ -46,6 +44,10 @@ public class OpenCloseLanguageServerTest {
 		MockLanguageSever.INSTANCE.shutdown();
 	}
 	
+	/**
+	 * checks if language servers get started and shutdown correctly if opening and
+	 * closing the same file/editor multiple times
+	 */
 	@Test
 	public void testOpenCloseLanguageServer() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
@@ -62,6 +64,22 @@ public class OpenCloseLanguageServerTest {
 		}
 	}
 	
+	@Test
+	public void testDisabledLanguageServer() throws Exception {
+		IFile testFile = TestUtils.createUniqueTestFile(project, "lspt-disabled", "");
+
+		TestUtils.openEditor(testFile);
+		assertTrue("language server should not be started because it is disabled",
+				new StoppedDisplayHelper().waitForCondition(Display.getCurrent(), 5000, 300));
+
+		ContentTypeToLanguageServerDefinition lsDefinition = TestUtils.getDisabledLS();
+		lsDefinition.setEnabled(true);
+		LanguageServiceAccessor.enableLanguageServerContentType(lsDefinition, TestUtils.getEditors());
+
+		assertTrue("language server should be started",
+				new StartedDisplayHelper().waitForCondition(Display.getCurrent(), 5000, 300));
+	}
+
 	protected static class StartedDisplayHelper extends DisplayHelper {
 		@Override
 		protected boolean condition() {

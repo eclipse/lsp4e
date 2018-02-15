@@ -91,10 +91,12 @@ public class LanguageServersRegistry {
 		public Class<? extends LanguageServer> getServerInterface() {
 			return LanguageServer.class;
 		}
+
 	}
 
 	static class ExtensionLanguageServerDefinition extends LanguageServerDefinition {
 		private IConfigurationElement extension;
+		private StreamConnectionProvider provider;
 
 		public ExtensionLanguageServerDefinition(IConfigurationElement element) {
 			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE));
@@ -103,13 +105,16 @@ public class LanguageServersRegistry {
 
 		@Override
 		public StreamConnectionProvider createConnectionProvider() {
-			try {
-				return (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
-			} catch (CoreException e) {
-				StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
-				throw new RuntimeException(
-						"Exception occurred while creating an instance of the stream connection provider", e); //$NON-NLS-1$
+			if (provider == null) {
+				try {
+					provider = (StreamConnectionProvider) extension.createExecutableExtension(CLASS_ATTRIBUTE);
+				} catch (CoreException e) {
+					StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
+					throw new RuntimeException(
+							"Exception occurred while creating an instance of the stream connection provider", e); //$NON-NLS-1$
+				}
 			}
+			return provider;
 		}
 
 		@Override
@@ -142,6 +147,7 @@ public class LanguageServersRegistry {
 			}
 			return super.getServerInterface();
 		}
+
 	}
 
 	static class LaunchConfigurationLanguageServerDefinition extends LanguageServerDefinition {
@@ -259,12 +265,14 @@ public class LanguageServersRegistry {
 	}
 
 	public void registerAssociation(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {
-		ContentTypeToLSPLaunchConfigEntry mapping = new ContentTypeToLSPLaunchConfigEntry(contentType, launchConfig, launchMode);
+		ContentTypeToLSPLaunchConfigEntry mapping = new ContentTypeToLSPLaunchConfigEntry(contentType, launchConfig,
+				launchMode);
 		connections.add(mapping);
 		persistContentTypeToLaunchConfigurationMapping();
 	}
 
-	public void registerAssociation(@NonNull IContentType contentType, @NonNull LanguageServerDefinition serverDefinition, @Nullable String languageId) {
+	public void registerAssociation(@NonNull IContentType contentType,
+			@NonNull LanguageServerDefinition serverDefinition, @Nullable String languageId) {
 		if (languageId != null) {
 			serverDefinition.registerAssociation(contentType, languageId);
 		}
@@ -331,7 +339,8 @@ public class LanguageServersRegistry {
 		try (InputStream contents = file.getContents()) {
 			Collection<IContentType> fileContentTypes = Arrays.asList(manager.findContentTypeFor(contents, file.getName()));
 			for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
-				if (mapping.getValue().equals(serverDefinition) && fileContentTypes.contains(mapping.getKey())) {
+				if (mapping.isEnabled() && mapping.getValue().equals(serverDefinition)
+						&& fileContentTypes.contains(mapping.getKey())) {
 					return true;
 				}
 			}

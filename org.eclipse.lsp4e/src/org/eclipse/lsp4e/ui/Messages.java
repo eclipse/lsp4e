@@ -25,6 +25,7 @@ public class Messages extends NLS {
 	public static String PreferencesPage_Remove;
 	public static String PreferencesPage_contentType;
 	public static String PreferencesPage_languageServer;
+	public static String PreferencesPage_Enabled;
 	public static String NewContentTypeLSPLaunchDialog_associateContentType;
 	public static String NewContentTypeLSPLaunchDialog_withLSPLaunch;
 	public static String codeActions_description;
@@ -51,6 +52,7 @@ public class Messages extends NLS {
 	public static String LSSearchQuery_label;
 	public static String LSSearchQuery_singularReference;
 	public static String LSSearchQuery_pluralReferences;
+	public static String enableDisableLSJob;
 
 	static {
 		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$

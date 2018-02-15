@@ -35,6 +35,7 @@ import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
@@ -268,6 +269,31 @@ public class LanguageServiceAccessorTest {
 		Iterator<LanguageServerWrapper> iterator = servers.iterator();
 		assertEquals("org.eclipse.lsp4e.test.server", iterator.next().serverDefinition.id);
 		assertFalse("Should only be a single LS", iterator.hasNext());
+	}
+
+	@Test
+	public void testLanguageServerEnablement() throws Exception {
+		LanguageServerPlugin.getDefault().getPreferenceStore().setValue(
+				"org.eclipse.lsp4e.test.server.disable" + "/" + "org.eclipse.lsp4e.test.content-type-disabled",
+				"false");
+		IFile disabledFile = TestUtils.createUniqueTestFile(project, "lspt-disabled", "");
+		IFile enabledFile = TestUtils.createUniqueTestFile(project, "lspt-enabled", "");
+
+		LanguageServiceAccessor.getLSWrappers(disabledFile, capabilities -> true).stream().forEach(
+				wrapper -> assertFalse(wrapper.serverDefinition.id.equals("org.eclipse.lsp4e.test.server.disable")));
+		assertTrue(LanguageServiceAccessor.getLSWrappers(enabledFile, capabilities -> true).stream()
+				.filter(wrapper -> wrapper.serverDefinition.id.equals("org.eclipse.lsp4e.test.server.disable"))
+				.findFirst().isPresent());
+
+		LanguageServerPlugin.getDefault().getPreferenceStore().setValue(
+				"org.eclipse.lsp4e.test.server.disable" + "/" + "org.eclipse.lsp4e.test.content-type-disabled",
+				"true");
+		assertTrue(LanguageServiceAccessor.getLSWrappers(disabledFile, capabilities -> true).stream()
+				.filter(wrapper -> wrapper.serverDefinition.id.equals("org.eclipse.lsp4e.test.server.disable"))
+				.findFirst().isPresent());
+		assertTrue(LanguageServiceAccessor.getLSWrappers(enabledFile, capabilities -> true).stream()
+				.filter(wrapper -> wrapper.serverDefinition.id.equals("org.eclipse.lsp4e.test.server.disable"))
+				.findFirst().isPresent());
 	}
 
 }
