@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Red Hat Inc. and others.
+ * Copyright (c) 2017, 2018 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Martin Lippert (Pivotal Inc.) - bug 531167
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -28,7 +29,7 @@ public class HasLanguageServerPropertyTester extends PropertyTester {
 		}
 		if (file != null) {
 			try {
-				return !LanguageServiceAccessor.getInitializedLanguageServers(file, capabilities -> true).isEmpty();
+				return !LanguageServiceAccessor.getInitializedLanguageServers(file, null).isEmpty();
 			} catch (IOException e) {
 				LanguageServerPlugin.logError(e);
 			}

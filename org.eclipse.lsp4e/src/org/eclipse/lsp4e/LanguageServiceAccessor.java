@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2018 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -8,6 +8,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
+ *  Martin Lippert (Pivotal Inc.) - bug 531167
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -133,7 +134,7 @@ public class LanguageServiceAccessor {
 	}
 
 	public static @NonNull List<CompletableFuture<LanguageServer>> getInitializedLanguageServers(@NonNull IFile file,
-			Predicate<ServerCapabilities> request) throws IOException {
+			@Nullable Predicate<ServerCapabilities> request) throws IOException {
 		Collection<LanguageServerWrapper> wrappers = getLSWrappers(file, request);
 		wrappers.forEach(w -> {
 			try {
@@ -252,7 +253,7 @@ public class LanguageServiceAccessor {
 	 */
 	@NonNull
 	public static Collection<LanguageServerWrapper> getLSWrappers(@NonNull IFile file,
-			@NonNull Predicate<ServerCapabilities> request) throws IOException {
+			@Nullable Predicate<ServerCapabilities> request) throws IOException {
 		LinkedHashSet<LanguageServerWrapper> res = new LinkedHashSet<>();
 		IProject project = file.getProject();
 		if (project == null) {
@@ -333,7 +334,7 @@ public class LanguageServiceAccessor {
 	}
 
 	private static Collection<LanguageServerWrapper> getMatchingStartedWrappers(@NonNull IFile file,
-	       @NonNull Predicate<ServerCapabilities> request) {
+			@Nullable Predicate<ServerCapabilities> request) {
 		synchronized(startedServers) {
 			return startedServers.stream()
 					.filter(wrapper -> {
@@ -347,7 +348,8 @@ public class LanguageServiceAccessor {
 							return false;
 						}
 					})
-				.filter(wrapper -> wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities()))
+					.filter(wrapper -> request == null || (wrapper.getServerCapabilities() == null
+							|| request.test(wrapper.getServerCapabilities())))
 				.collect(Collectors.toList());
 		}
 	}
