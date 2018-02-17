@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Pivotal Inc. and others.
+ * Copyright (c) 2017, 2018 Pivotal Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,16 +10,21 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
@@ -51,48 +56,43 @@ public class RunningLanguageServerTest {
 	@Test
 	public void testOpenCloseLanguageServer() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		Display display = Display.getCurrent();
 		
 		// open and close the editor several times
 		for(int i = 0; i < 10; i++) {
 			IEditorPart editor = TestUtils.openEditor(testFile);
 			LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilities -> Boolean.TRUE).iterator()
 					.next();
-			assertTrue("language server is started for iteration #" + i, new StartedDisplayHelper().waitForCondition(Display.getCurrent(), 5000, 300));
+			assertTrue("language server is started for iteration #" + i,
+					new LSDisplayHelper(() -> MockLanguageSever.INSTANCE.isRunning()).waitForCondition(display, 5000));
 
 			((AbstractTextEditor)editor).close(false);
-			assertTrue("language server is closed for iteration #" + i, new StoppedDisplayHelper().waitForCondition(Display.getCurrent(), 5000, 300));
+			assertTrue("language server is closed for iteration #" + i,
+					new LSDisplayHelper(() -> !MockLanguageSever.INSTANCE.isRunning()).waitForCondition(display, 5000));
 		}
 	}
 	
 	@Test
 	public void testDisabledLanguageServer() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "lspt-disabled", "");
-
-		TestUtils.openEditor(testFile);
-		assertTrue("language server should not be started because it is disabled",
-				new StoppedDisplayHelper().waitForCondition(Display.getCurrent(), 5000, 300));
+		Display display = Display.getCurrent();
 
 		ContentTypeToLanguageServerDefinition lsDefinition = TestUtils.getDisabledLS();
+		lsDefinition.setEnabled(false);
+		LanguageServiceAccessor.disableLanguageServerContentType(lsDefinition);
+
+		TestUtils.openEditor(testFile);
+		List<CompletableFuture<LanguageServer>> initializedLanguageServers = LanguageServiceAccessor
+				.getInitializedLanguageServers(testFile, capabilities -> Boolean.TRUE);
+		assertNotNull(initializedLanguageServers);
+		assertEquals("language server should not be started because it is disabled", 0,
+				initializedLanguageServers.size());
+
 		lsDefinition.setEnabled(true);
 		LanguageServiceAccessor.enableLanguageServerContentType(lsDefinition, TestUtils.getEditors());
 
 		assertTrue("language server should be started",
-				new StartedDisplayHelper().waitForCondition(Display.getCurrent(), 5000, 300));
+				new LSDisplayHelper(() -> MockLanguageSever.INSTANCE.isRunning()).waitForCondition(display, 5000));
 	}
 
-	protected static class StartedDisplayHelper extends DisplayHelper {
-		@Override
-		protected boolean condition() {
-			return MockLanguageSever.INSTANCE.isRunning();
-		}
-	};
-
-	protected static class StoppedDisplayHelper extends DisplayHelper {
-		@Override
-		protected boolean condition() {
-			return !MockLanguageSever.INSTANCE.isRunning();
-		}
-	};
-
-	
 }
