@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2018 Rogue Wave Software Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Martin Lippert (Pivotal Inc.) - fixed instability
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
@@ -14,7 +15,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -23,9 +26,11 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.test.LSDisplayHelper;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.After;
@@ -65,9 +70,16 @@ public class DocumentDidSaveTest {
 		viewer.getDocument().replace(0, 0, "Hello");
 		editor.doSave(new NullProgressMonitor());
 
-		DidSaveTextDocumentParams lastChange = didSaveExpectation.get(1000, TimeUnit.MILLISECONDS);
-		assertNotNull(lastChange.getTextDocument());
-		assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
+		new LSDisplayHelper(() -> {
+			try {
+				DidSaveTextDocumentParams lastChange = didSaveExpectation.get(10, TimeUnit.MILLISECONDS);
+				assertNotNull(lastChange.getTextDocument());
+				assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
+				return true;
+			} catch (TimeoutException | InterruptedException | ExecutionException e) {
+				return false;
+			}
+		}).waitForCondition(Display.getCurrent(), 2000);
 
 		((AbstractTextEditor)editor).close(false);
 	}
