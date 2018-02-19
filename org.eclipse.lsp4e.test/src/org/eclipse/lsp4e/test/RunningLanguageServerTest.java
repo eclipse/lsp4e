@@ -78,7 +78,7 @@ public class RunningLanguageServerTest {
 		Display display = Display.getCurrent();
 
 		ContentTypeToLanguageServerDefinition lsDefinition = TestUtils.getDisabledLS();
-		lsDefinition.setEnabled(false);
+		lsDefinition.setUserEnabled(false);
 		LanguageServiceAccessor.disableLanguageServerContentType(lsDefinition);
 
 		TestUtils.openEditor(testFile);
@@ -88,7 +88,7 @@ public class RunningLanguageServerTest {
 		assertEquals("language server should not be started because it is disabled", 0,
 				initializedLanguageServers.size());
 
-		lsDefinition.setEnabled(true);
+		lsDefinition.setUserEnabled(true);
 		LanguageServiceAccessor.enableLanguageServerContentType(lsDefinition, TestUtils.getEditors());
 
 		assertTrue("language server should be started",

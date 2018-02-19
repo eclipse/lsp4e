@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.eclipse.core.expressions.ExpressionConverter;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -36,6 +37,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.lsp4e.enablement.EnablementTester;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IEditorInput;
@@ -66,6 +68,8 @@ public class LanguageServersRegistry {
 	private static final String CLIENT_IMPL_ATTRIBUTE = "clientImpl"; //$NON-NLS-1$
 	private static final String SERVER_INTERFACE_ATTRIBUTE = "serverInterface"; //$NON-NLS-1$
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
+	private static final String ENABLED_WHEN_ATTRIBUTE = "enabledWhen"; //$NON-NLS-1$
+	private static final String ENABLED_WHEN_DESC = "description"; //$NON-NLS-1$
 
 	public static abstract class LanguageServerDefinition {
 		public final @NonNull String id;
@@ -205,9 +209,26 @@ public class LanguageServersRegistry {
 				} else if (extension.getName().equals(MAPPING_ELEMENT)) {
 					IContentType contentType = Platform.getContentTypeManager().getContentType(extension.getAttribute(CONTENT_TYPE_ATTRIBUTE));
 					String languageId = extension.getAttribute(LANGUAGE_ID_ATTRIBUTE);
+					EnablementTester expression = null;
+					if (extension.getChildren(ENABLED_WHEN_ATTRIBUTE) != null) {
+						IConfigurationElement[] enabledWhenElements = extension.getChildren(ENABLED_WHEN_ATTRIBUTE);
+						if (enabledWhenElements.length == 1) {
+							IConfigurationElement enabledWhen = enabledWhenElements[0];
+							IConfigurationElement[] enabledWhenChildren = enabledWhen.getChildren();
+							if (enabledWhenChildren.length == 1) {
+								try {
+									String description = enabledWhen.getAttribute(ENABLED_WHEN_DESC);
+									expression = new EnablementTester(
+											ExpressionConverter.getDefault().perform(enabledWhenChildren[0]),
+											description);
+								} catch (CoreException e) {
 
+								}
+							}
+						}
+					}
 					if (contentType != null) {
-						contentTypes.add(new ContentTypeMapping(contentType, id, languageId));
+						contentTypes.add(new ContentTypeMapping(contentType, id, languageId, expression));
 					}
 				}
 			}
@@ -216,7 +237,7 @@ public class LanguageServersRegistry {
 		for (ContentTypeMapping mapping : contentTypes) {
 			LanguageServerDefinition lsDefinition = servers.get(mapping.id);
 			if (lsDefinition != null) {
-				registerAssociation(mapping.contentType, lsDefinition, mapping.languageId);
+				registerAssociation(mapping.contentType, lsDefinition, mapping.languageId, mapping.enablement);
 			} else {
 				LanguageServerPlugin.logWarning("server '" + mapping.id + "' not available", null); //$NON-NLS-1$ //$NON-NLS-2$
 			}
@@ -272,12 +293,13 @@ public class LanguageServersRegistry {
 	}
 
 	public void registerAssociation(@NonNull IContentType contentType,
-			@NonNull LanguageServerDefinition serverDefinition, @Nullable String languageId) {
+			@NonNull LanguageServerDefinition serverDefinition, @Nullable String languageId,
+			EnablementTester enablement) {
 		if (languageId != null) {
 			serverDefinition.registerAssociation(contentType, languageId);
 		}
 
-		connections.add(new ContentTypeToLanguageServerDefinition(contentType, serverDefinition));
+		connections.add(new ContentTypeToLanguageServerDefinition(contentType, serverDefinition, enablement));
 	}
 
 	public void setAssociations(List<ContentTypeToLSPLaunchConfigEntry> wc) {
@@ -318,11 +340,15 @@ public class LanguageServersRegistry {
 		@NonNull public final String id;
 		@NonNull public final IContentType contentType;
 		@Nullable public final String languageId;
+		@Nullable
+		public final EnablementTester enablement;
 
-		public ContentTypeMapping(@NonNull IContentType contentType, @NonNull String id, @Nullable String languageId) {
+		public ContentTypeMapping(@NonNull IContentType contentType, @NonNull String id, @Nullable String languageId,
+				@Nullable EnablementTester enablement) {
 			this.contentType = contentType;
 			this.id = id;
 			this.languageId = languageId;
+			this.enablement = enablement;
 		}
 
 	}

@@ -296,4 +296,15 @@ public class LanguageServiceAccessorTest {
 				.findFirst().isPresent());
 	}
 
+	@Test
+	public void testLanguageServerEnablementTester() throws Exception {
+		IFile file = TestUtils.createUniqueTestFile(project, "lspt-tester", "");
+		assertTrue(LanguageServiceAccessor.getLSWrappers(file, capabilities -> true).isEmpty());
+		MappingEnablementTester.enabled = true;
+		
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(file, capabilities -> true);
+		assertEquals(1, wrappers.size());
+		assertEquals("org.eclipse.lsp4e.test.server.disable", wrappers.iterator().next().serverDefinition.id);
+	}
+
 }

@@ -30,7 +30,7 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToLanguageServ
 
 	public ContentTypeToLSPLaunchConfigEntry(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig,
 			@NonNull Set<String> launchModes) {
-		super(contentType, new LaunchConfigurationLanguageServerDefinition(launchConfig, launchModes));
+		super(contentType, new LaunchConfigurationLanguageServerDefinition(launchConfig, launchModes), null);
 		this.launchConfiguration = launchConfig;
 		this.launchModes = Collections.unmodifiableSet(launchModes);
 	}

@@ -15,26 +15,44 @@ import java.util.AbstractMap.SimpleEntry;
 
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.enablement.EnablementTester;
 
 public class ContentTypeToLanguageServerDefinition extends SimpleEntry<IContentType, LanguageServerDefinition> {
 
 	private static final long serialVersionUID = 6002703726009331762L;
+	private EnablementTester enablement;
 
 	public ContentTypeToLanguageServerDefinition(@NonNull IContentType contentType,
-			@NonNull LanguageServerDefinition provider) {
+			@NonNull LanguageServerDefinition provider,
+			@Nullable EnablementTester enablement) {
 		super(contentType, provider);
+		this.enablement = enablement;
 	}
 
 	public boolean isEnabled() {
+		return isUserEnabled() && isExtensionEnabled();
+	}
+
+	public void setUserEnabled(boolean enabled) {
+		LanguageServerPlugin.getDefault().getPreferenceStore().setValue(getPreferencesKey(), String.valueOf(enabled));
+	}
+
+	public boolean isUserEnabled() {
 		if (LanguageServerPlugin.getDefault().getPreferenceStore().contains(getPreferencesKey())) {
 			return LanguageServerPlugin.getDefault().getPreferenceStore().getBoolean(getPreferencesKey());
 		}
 		return true;
 	}
 
-	public void setEnabled(boolean enabled) {
-		LanguageServerPlugin.getDefault().getPreferenceStore().setValue(getPreferencesKey(), String.valueOf(enabled));
+	public boolean isExtensionEnabled() {
+		return enablement != null ? enablement.evaluate() : true;
+
+	}
+
+	public EnablementTester getEnablementCondition() {
+		return enablement;
 	}
 
 	private String getPreferencesKey() {

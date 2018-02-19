@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.ui;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jface.action.Action;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.PreferencePage;
@@ -30,14 +31,17 @@ import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.lsp4e.ContentTypeToLSPLaunchConfigEntry;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.enablement.EnablementTester;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IWorkbench;
@@ -74,6 +78,15 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		this.changedDefinitions = new ArrayList<>();
 		this.registry = LanguageServersRegistry.getInstance();
 	}
+
+	@Override
+	public void setVisible(boolean visible) {
+		super.setVisible(visible);
+		if (visible) {
+			this.checkboxViewer.refresh();
+		}
+	}
+
 
 	@Override
 	protected Control createContents(Composite parent) {
@@ -214,25 +227,63 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 			}
 		});
 
-		List<ContentTypeToLanguageServerDefinition> lsDefinitions = LanguageServersRegistry.getInstance()
-				.getContentTypeToLSPExtensions();
 
-		checkboxViewer.setInput(lsDefinitions);
+		List<ContentTypeToLanguageServerDefinition> contentTypeToLanguageServerDefinitions = registry.getContentTypeToLSPExtensions();
+		if (contentTypeToLanguageServerDefinitions.stream()
+				.anyMatch(definition -> definition.getEnablementCondition() != null)) {
+
+			TableViewerColumn conditionColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
+			conditionColumn.getColumn().setText(Messages.PreferencesPage_enablementCondition);
+			conditionColumn.getColumn().setWidth(150);
+			conditionColumn.setLabelProvider(new ColumnLabelProvider() {
+				@Override
+				public String getText(Object element) {
+					EnablementTester tester = ((ContentTypeToLanguageServerDefinition) element)
+							.getEnablementCondition();
+
+					if(tester == null) {
+						// table does not support mnemonic
+						return Action.removeMnemonics(IDialogConstants.NO_LABEL);
+
+					}
+					String extensionStatus = ((ContentTypeToLanguageServerDefinition) element).isExtensionEnabled()
+							? Messages.PreferencePage_enablementCondition_true
+							: Messages.PreferencePage_enablementCondition_false;
+					return tester.getDescription() + " (" + extensionStatus + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+				}
+
+				@Override
+				public Color getBackground(Object element) {
+					EnablementTester tester = ((ContentTypeToLanguageServerDefinition) element)
+							.getEnablementCondition();
+					if (tester == null) {
+						return null;
+					}
+					Color red = Display.getDefault().getSystemColor(SWT.COLOR_RED);
+					Color green = Display.getDefault().getSystemColor(SWT.COLOR_GREEN);
+					return ((ContentTypeToLanguageServerDefinition) element).isExtensionEnabled() ? green : red;
+				}
+			});
+		}
+
+		checkboxViewer.setInput(contentTypeToLanguageServerDefinitions);
 		checkboxViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 		checkboxViewer.getTable().setHeaderVisible(true);
+		checkboxViewer.getTable().setLinesVisible(true);
 
-		checkboxViewer
-				.setCheckedElements(lsDefinitions.stream().filter(lsDefinition -> lsDefinition.isEnabled()).toArray());
+		this.checkboxViewer.setCheckedElements(
+				contentTypeToLanguageServerDefinitions.stream().filter(definition -> definition.isUserEnabled())
+						.toArray());
 
 		checkboxViewer.addCheckStateListener(new ICheckStateListener() {
 
 			@Override
 			public void checkStateChanged(CheckStateChangedEvent event) {
 				if (event.getElement() instanceof ContentTypeToLanguageServerDefinition) {
-					ContentTypeToLanguageServerDefinition lsDefinition = (ContentTypeToLanguageServerDefinition) event
+					ContentTypeToLanguageServerDefinition contentTypeToLanguageServerDefinition = (ContentTypeToLanguageServerDefinition) event
 							.getElement();
-					lsDefinition.setEnabled(event.getChecked());
-					changedDefinitions.add(lsDefinition);
+					contentTypeToLanguageServerDefinition.setUserEnabled(event.getChecked());
+					changedDefinitions.add(contentTypeToLanguageServerDefinition);
 				}
 
 			}

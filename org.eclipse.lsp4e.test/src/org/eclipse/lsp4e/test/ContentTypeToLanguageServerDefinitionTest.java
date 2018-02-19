@@ -38,7 +38,7 @@ public class ContentTypeToLanguageServerDefinitionTest {
 
 	@AfterClass
 	public static void cleanup() {
-		TestUtils.getDisabledLS().setEnabled(false);
+		TestUtils.getDisabledLS().setUserEnabled(false);
 	}
 
 	@Test
@@ -55,11 +55,11 @@ public class ContentTypeToLanguageServerDefinitionTest {
 	@Test
 	public void testDisableLanguageServerMapping() {
 		ContentTypeToLanguageServerDefinition lsDefinition = TestUtils.getDisabledLS();
-		lsDefinition.setEnabled(false);
+		lsDefinition.setUserEnabled(false);
 		assertFalse(lsDefinition.isEnabled());
 		assertTrue(LanguageServerPlugin.getDefault().getPreferenceStore().contains(DISABLED_SERVER_PREF));
 		assertFalse(LanguageServerPlugin.getDefault().getPreferenceStore().getBoolean(DISABLED_SERVER_PREF));
-		lsDefinition.setEnabled(true);
+		lsDefinition.setUserEnabled(true);
 		assertTrue(lsDefinition.isEnabled());
 		assertTrue(LanguageServerPlugin.getDefault().getPreferenceStore().contains(DISABLED_SERVER_PREF));
 		assertTrue(LanguageServerPlugin.getDefault().getPreferenceStore().getBoolean(DISABLED_SERVER_PREF));
