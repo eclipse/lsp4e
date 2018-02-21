@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2018 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -10,6 +10,7 @@
  *  Michał Niewrzał (Rogue Wave Software Inc.)
  *  Lucas Bullen (Red Hat Inc.) - Get IDocument from IEditorInput
  *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525400 - [rename] improve rename support with ltk UI
+ *  Remy Suen <remy.suen@gmail.com> - Bug 520052 - Rename assumes that workspace edits are in reverse order
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -23,6 +24,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -401,6 +403,21 @@ public class LSPEclipseUtils {
 	 */
 	private static void fillTextEdits(String uri, List<TextEdit> textEdits, CompositeChange change) {
 		IDocument document = LSPEclipseUtils.getDocument(LSPEclipseUtils.findResourceFor(uri));
+		// sort the edits so that the ones at the bottom of the document are first
+		// so that they can be applied from bottom to top
+		Collections.sort(textEdits, new Comparator<TextEdit>() {
+			@Override
+			public int compare(TextEdit o1, TextEdit o2) {
+				try {
+					int offset = LSPEclipseUtils.toOffset(o1.getRange().getStart(), document);
+					int offset2 = LSPEclipseUtils.toOffset(o2.getRange().getStart(), document);
+					return offset2 - offset;
+				} catch (BadLocationException e) {
+					LanguageServerPlugin.logError(e);
+					return 0;
+				}
+			}
+		});
 		for (TextEdit textEdit : textEdits) {
 			try {
 				int offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);

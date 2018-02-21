@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2018 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,12 +7,14 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Remy Suen <remy.suen@gmail.com> - Bug 520052 - Rename assumes that workspace edits are in reverse order
  *******************************************************************************/
 package org.eclipse.lsp4e.test.document;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.util.Collections;
+import java.util.LinkedList;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -71,6 +73,29 @@ public class LSPEclipseUtilsTest {
 			LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
 			Assert.assertEquals("insertHere", ((StyledText)editor.getAdapter(Control.class)).getText());
 			Assert.assertEquals("insertHere", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
+		} finally {
+			editor.close(false);
+			p.delete(true, new NullProgressMonitor());
+		}
+	}
+
+	@Test
+	public void testWorkspaceEditMultipleChanges() throws Exception {
+		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
+		IFile f = TestUtils.createFile(p, "dummy", "Here\nHere2");
+		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
+		try {
+			LinkedList<TextEdit> edits = new LinkedList<TextEdit>();
+			// order the TextEdits from the top of the document to the bottom
+			edits.add(new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "abc"));
+			edits.add(new TextEdit(new Range(new Position(1, 0), new Position(1, 0)), "abc"));
+			WorkspaceEdit workspaceEdit = new WorkspaceEdit(Collections.singletonMap(
+				LSPEclipseUtils.toUri(f).toString(), edits));
+			// they should be applied from bottom to top
+			LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
+			Assert.assertEquals("abcHere\nabcHere2", ((StyledText) editor.getAdapter(Control.class)).getText());
+			Assert.assertEquals("abcHere\nabcHere2",
+					editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
 		} finally {
 			editor.close(false);
 			p.delete(true, new NullProgressMonitor());
