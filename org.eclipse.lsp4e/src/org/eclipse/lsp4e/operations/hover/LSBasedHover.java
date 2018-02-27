@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2018 Red Hat Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -60,6 +60,8 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.EditorsUI;
+import org.eclipse.ui.intro.config.IIntroURL;
+import org.eclipse.ui.intro.config.IntroURLFactory;
 
 /**
  * LSP implementation of {@link org.eclipse.jface.text.ITextHover}
@@ -73,14 +75,27 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 		@Override
 		public void changing(LocationEvent event) {
-			try {
-				URL url = new URL(event.location);
-				PlatformUI.getWorkbench().getBrowserSupport().createBrowser(null).openURL(url);
+			if (!"about:blank".equals(event.location)) { //$NON-NLS-1$
+				IIntroURL introUrl = IntroURLFactory.createIntroURL(event.location);
+				if (introUrl != null) {
+					try {
+						if (!introUrl.execute()) {
+							LanguageServerPlugin.logWarning("Failed to execute IntroURL: " + event.location, null); // $NON-NLS-1$ //$NON-NLS-1$
+						}
+					} catch (Throwable t) {
+						LanguageServerPlugin.logWarning("Error executing IntroURL: " + event.location, t); // $NON-NLS-1$ //$NON-NLS-1$
+					}
+				} else {
+					try {
+						URL url = new URL(event.location);
+						PlatformUI.getWorkbench().getBrowserSupport().createBrowser(null).openURL(url);
+					} catch (MalformedURLException e) {
+						LanguageServerPlugin.logError(e);
+					} catch (PartInitException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				}
 				event.doit = false;
-			} catch (MalformedURLException e) {
-				// do nothing
-			} catch (PartInitException e) {
-				LanguageServerPlugin.logError(e);
 			}
 		}
 
@@ -100,7 +115,8 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 			return new IInformationControlCreator() {
 				@Override
 				public IInformationControl createInformationControl(Shell parent) {
-					BrowserInformationControl res = new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT, true);
+					BrowserInformationControl res = new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT,
+							true);
 					res.addLocationListener(HYPER_LINK_LISTENER);
 					return res;
 				}
