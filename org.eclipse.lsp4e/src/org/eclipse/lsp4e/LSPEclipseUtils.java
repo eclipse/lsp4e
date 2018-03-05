@@ -11,6 +11,7 @@
  *  Lucas Bullen (Red Hat Inc.) - Get IDocument from IEditorInput
  *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525400 - [rename] improve rename support with ltk UI
  *  Remy Suen <remy.suen@gmail.com> - Bug 520052 - Rename assumes that workspace edits are in reverse order
+ *  Martin Lippert (Pivotal Inc.) - bug 531452
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -56,6 +57,7 @@ import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
@@ -82,6 +84,8 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.browser.IWorkbenchBrowserSupport;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.intro.config.IIntroURL;
+import org.eclipse.ui.intro.config.IntroURLFactory;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -255,21 +259,38 @@ public class LSPEclipseUtils {
 	}
 
 	public static void openInEditor(Location location, IWorkbenchPage page) {
-		String uri = location.getUri();
+		open(location.getUri(), page, location.getRange());
+	}
 
+	public static void open(String uri, IWorkbenchPage page, Range optionalRange) {
 		if (uri.startsWith("file:")) { //$NON-NLS-1$
-			openFileLocationInEditor(location, page);
+			openFileLocationInEditor(uri, page, optionalRange);
+		} else if (uri.startsWith("http://org.eclipse.ui.intro")) { //$NON-NLS-1$
+			openIntroURL(uri);
 		} else if (uri.startsWith("http")) { //$NON-NLS-1$
-			openHttpLocationInBrowser(location, page);
+			openHttpLocationInBrowser(uri, page);
 		}
 	}
 
-	public static void openHttpLocationInBrowser(final Location location, IWorkbenchPage page) {
+	protected static void openIntroURL(final String uri) {
+		IIntroURL introUrl = IntroURLFactory.createIntroURL(uri);
+		if (introUrl != null) {
+			try {
+				if (!introUrl.execute()) {
+					LanguageServerPlugin.logWarning("Failed to execute IntroURL: " + uri, null); // $NON-NLS-1$ //$NON-NLS-1$
+				}
+			} catch (Throwable t) {
+				LanguageServerPlugin.logWarning("Error executing IntroURL: " + uri, t); // $NON-NLS-1$ //$NON-NLS-1$
+			}
+		}
+	}
+
+	protected static void openHttpLocationInBrowser(final String uri, IWorkbenchPage page) {
 		page.getWorkbenchWindow().getShell().getDisplay().asyncExec(new Runnable() {
 			@Override
 			public void run() {
 				try {
-					URL url = new URL(location.getUri());
+					URL url = new URL(uri);
 					IWorkbenchBrowserSupport browserSupport = page.getWorkbenchWindow().getWorkbench()
 							.getBrowserSupport();
 					browserSupport.createBrowser("lsp4e-symbols").openURL(url); //$NON-NLS-1$
@@ -281,17 +302,17 @@ public class LSPEclipseUtils {
 		});
 	}
 
-	public static void openFileLocationInEditor(Location location, IWorkbenchPage page) {
+	protected static void openFileLocationInEditor(String uri, IWorkbenchPage page, Range optionalRange) {
 		IEditorPart part = null;
 		IDocument targetDocument = null;
-		IResource targetResource = LSPEclipseUtils.findResourceFor(location.getUri());
+		IResource targetResource = LSPEclipseUtils.findResourceFor(uri);
 		try {
 			if (targetResource != null && targetResource.getType() == IResource.FILE) {
 				part = IDE.openEditor(page, (IFile) targetResource);
 				targetDocument = FileBuffers.getTextFileBufferManager()
 				        .getTextFileBuffer(targetResource.getFullPath(), LocationKind.IFILE).getDocument();
 			} else {
-				URI fileUri = URI.create(location.getUri()).normalize();
+				URI fileUri = URI.create(uri).normalize();
 				IFileStore fileStore =  EFS.getLocalFileSystem().getStore(fileUri);
 				IFileInfo fetchInfo = fileStore.fetchInfo();
 				if (!fetchInfo.isDirectory() && fetchInfo.exists()) {
@@ -305,10 +326,10 @@ public class LSPEclipseUtils {
 			LanguageServerPlugin.logError(e);
 		}
 		try {
-			if (part instanceof AbstractTextEditor) {
+			if (part instanceof AbstractTextEditor && optionalRange != null) {
 				AbstractTextEditor editor = (AbstractTextEditor) part;
-				int offset = LSPEclipseUtils.toOffset(location.getRange().getStart(), targetDocument);
-				int endOffset = LSPEclipseUtils.toOffset(location.getRange().getEnd(), targetDocument);
+				int offset = LSPEclipseUtils.toOffset(optionalRange.getStart(), targetDocument);
+				int endOffset = LSPEclipseUtils.toOffset(optionalRange.getEnd(), targetDocument);
 				editor.getSelectionProvider()
 				        .setSelection(new TextSelection(offset, endOffset > offset ? endOffset - offset : 0));
 			}

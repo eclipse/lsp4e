@@ -13,8 +13,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -57,11 +55,9 @@ import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.EditorsUI;
-import org.eclipse.ui.intro.config.IIntroURL;
-import org.eclipse.ui.intro.config.IntroURLFactory;
 
 /**
  * LSP implementation of {@link org.eclipse.jface.text.ITextHover}
@@ -76,25 +72,8 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		@Override
 		public void changing(LocationEvent event) {
 			if (!"about:blank".equals(event.location)) { //$NON-NLS-1$
-				IIntroURL introUrl = IntroURLFactory.createIntroURL(event.location);
-				if (introUrl != null) {
-					try {
-						if (!introUrl.execute()) {
-							LanguageServerPlugin.logWarning("Failed to execute IntroURL: " + event.location, null); // $NON-NLS-1$ //$NON-NLS-1$
-						}
-					} catch (Throwable t) {
-						LanguageServerPlugin.logWarning("Error executing IntroURL: " + event.location, t); // $NON-NLS-1$ //$NON-NLS-1$
-					}
-				} else {
-					try {
-						URL url = new URL(event.location);
-						PlatformUI.getWorkbench().getBrowserSupport().createBrowser(null).openURL(url);
-					} catch (MalformedURLException e) {
-						LanguageServerPlugin.logError(e);
-					} catch (PartInitException e) {
-						LanguageServerPlugin.logError(e);
-					}
-				}
+				IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+				LSPEclipseUtils.open(event.location, page, null);
 				event.doit = false;
 			}
 		}

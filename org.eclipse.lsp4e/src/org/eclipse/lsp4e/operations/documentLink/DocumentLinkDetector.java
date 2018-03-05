@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2017, 2018 Rogue Wave Software Inc. and others.
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
  * which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Martin Lippert (Pivotal Inc.) - bug 531452
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.documentLink;
 
@@ -17,8 +18,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IRegion;
@@ -35,9 +34,7 @@ import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.ide.IDE;
 
 public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 
@@ -68,15 +65,8 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 
 		@Override
 		public void open() {
-			IResource resource = LSPEclipseUtils.findResourceFor(uri);
-			if (resource != null && resource.getType() == IResource.FILE) {
-				IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-				try {
-					IDE.openEditor(page, (IFile) resource);
-				} catch (PartInitException e) {
-					LanguageServerPlugin.logError(e);
-				}
-			}
+			IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+			LSPEclipseUtils.open(uri, page, null);
 		}
 
 	}
