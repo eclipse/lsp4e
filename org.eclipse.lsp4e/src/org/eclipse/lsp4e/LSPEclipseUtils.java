@@ -11,7 +11,7 @@
  *  Lucas Bullen (Red Hat Inc.) - Get IDocument from IEditorInput
  *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525400 - [rename] improve rename support with ltk UI
  *  Remy Suen <remy.suen@gmail.com> - Bug 520052 - Rename assumes that workspace edits are in reverse order
- *  Martin Lippert (Pivotal Inc.) - bug 531452
+ *  Martin Lippert (Pivotal Inc.) - bug 531452, bug 532305
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -96,6 +96,8 @@ import com.google.gson.Gson;
  * Some utility methods to convert between Eclipse and LS-API types
  */
 public class LSPEclipseUtils {
+
+	private static final int MAX_BROWSER_NAME_LENGTH = 30;
 
 	private LSPEclipseUtils() {
 		// this class shouldn't be instantiated
@@ -291,10 +293,20 @@ public class LSPEclipseUtils {
 			public void run() {
 				try {
 					URL url = new URL(uri);
+
 					IWorkbenchBrowserSupport browserSupport = page.getWorkbenchWindow().getWorkbench()
 							.getBrowserSupport();
-					browserSupport.createBrowser("lsp4e-symbols").openURL(url); //$NON-NLS-1$
-					;
+
+					String browserName = uri;
+					if (browserName.length() > MAX_BROWSER_NAME_LENGTH) {
+						browserName = uri.substring(0, MAX_BROWSER_NAME_LENGTH - 1) + '\u2026';
+					}
+
+					browserSupport
+							.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR | IWorkbenchBrowserSupport.LOCATION_BAR
+									| IWorkbenchBrowserSupport.NAVIGATION_BAR, "lsp4e-symbols", browserName, uri) //$NON-NLS-1$
+							.openURL(url);
+
 				} catch (Exception e) {
 					LanguageServerPlugin.logError(e);
 				}
