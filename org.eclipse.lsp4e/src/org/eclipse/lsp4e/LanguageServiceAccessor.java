@@ -8,7 +8,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
- *  Martin Lippert (Pivotal Inc.) - bug 531167
+ *  Martin Lippert (Pivotal Inc.) - bug 531167, 531670
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -136,14 +136,15 @@ public class LanguageServiceAccessor {
 	public static @NonNull List<CompletableFuture<LanguageServer>> getInitializedLanguageServers(@NonNull IFile file,
 			@Nullable Predicate<ServerCapabilities> request) throws IOException {
 		Collection<LanguageServerWrapper> wrappers = getLSWrappers(file, request);
-		wrappers.forEach(w -> {
-			try {
-				w.connect(file, null);
-			} catch (IOException e) {
-				LanguageServerPlugin.logError(e);
-			}
-		});
-		return wrappers.stream().map(LanguageServerWrapper::getInitializedServer).collect(Collectors.toList());
+
+		return wrappers.stream().map(wrapper -> wrapper.getInitializedServer().thenApply((server) -> {
+				try {
+					wrapper.connect(file, null);
+				} catch (IOException e) {
+					LanguageServerPlugin.logError(e);
+				}
+				return server;
+		})).collect(Collectors.toList());
 	}
 
 	public static void disableLanguageServerContentType(
