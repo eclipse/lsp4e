@@ -121,11 +121,6 @@
             commandId="org.eclipse.lsp4e.symbolinworkspace">
       </handler>
       <handler
-            commandId="org.eclipse.lsp4e.togglehighlight">
-         <class
-               class="org.eclipse.lsp4e.operations.highlight.ToggleHighlight"></class>
-      </handler>
-      <handler
             commandId="org.eclipse.lsp4e.togglelinkwitheditor">
          <class
                class="org.eclipse.lsp4e.outline.ToggleLinkingHandler">
@@ -380,11 +375,6 @@
    </extension>
    <extension
          point="org.eclipse.ui.commandImages">
-      <image
-            commandId="org.eclipse.lsp4e.togglehighlight"
-            disabledIcon="icons/full/dtool16/mark_occurrences.png"
-            icon="icons/full/etool16/mark_occurrences.png">
-      </image>
       <image
             commandId="org.eclipse.lsp4e.togglelinkwitheditor"
             disabledIcon="icons/full/dlcl16/link_to_editor.png"
