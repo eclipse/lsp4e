@@ -15,7 +15,9 @@ import java.util.List;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.CheckStateChangedEvent;
@@ -30,8 +32,11 @@ import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.lsp4e.ContentTypeToLSPLaunchConfigEntry;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.LoggingStreamConnectionProviderProxy;
 import org.eclipse.lsp4e.enablement.EnablementTester;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -60,6 +65,9 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 	private TableViewer viewer;
 	private SelectionAdapter contentTypeLinkListener;
 	private List<ContentTypeToLanguageServerDefinition> changedDefinitions;
+
+	Button logToFileCheckbox;
+	Button logToStdErrCheckbox;
 
 	public LanguageServerPreferencePage() {
 
@@ -98,6 +106,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		intro.addSelectionListener(this.contentTypeLinkListener);
 
 		createStaticServersTable(res);
+		createLoggingContents(res);
 
 		Link manualServersIntro = new Link(res, SWT.WRAP);
 		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.TOP).grab(true, false).span(2, 1).hint(400, SWT.DEFAULT).applyTo(manualServersIntro);
@@ -290,6 +299,20 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		});
 	}
 
+	private void createLoggingContents(Composite res) {
+		logToFileCheckbox = new Button(res, SWT.CHECK);
+		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
+		logToFileCheckbox.setText(
+				NLS.bind(Messages.PreferencesPage_fileLogging, LoggingStreamConnectionProviderProxy.LOG_DIRECTORY));
+		logToFileCheckbox.setSelection(store.getBoolean(LoggingStreamConnectionProviderProxy.FILE_KEY));
+		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.TOP).grab(true, false).span(2, 1).hint(400, SWT.DEFAULT)
+				.applyTo(logToFileCheckbox);
+
+		logToStdErrCheckbox = new Button(res, SWT.CHECK);
+		logToStdErrCheckbox.setText(Messages.PreferencesPage_stdErrLogging);
+		logToStdErrCheckbox.setSelection(store.getBoolean(LoggingStreamConnectionProviderProxy.STDERR_KEY));
+	}
+
 	protected void updateButtons() {
 		this.removeButton.setEnabled(!this.viewer.getSelection().isEmpty());
 	}
@@ -299,6 +322,23 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		this.registry.setAssociations(this.workingCopy);
 		EnableDisableLSJob enableDisableLSJob = new EnableDisableLSJob(changedDefinitions, getEditors());
 		enableDisableLSJob.schedule();
+
+		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
+		if (logToStdErrCheckbox.getSelection() != store
+				.getBoolean(LoggingStreamConnectionProviderProxy.STDERR_KEY)
+				|| logToFileCheckbox.getSelection() != store
+						.getBoolean(LoggingStreamConnectionProviderProxy.FILE_KEY)) {
+			store.setValue(LoggingStreamConnectionProviderProxy.STDERR_KEY, logToStdErrCheckbox.getSelection());
+			store.setValue(LoggingStreamConnectionProviderProxy.FILE_KEY, logToFileCheckbox.getSelection());
+			MessageDialog dialog = new MessageDialog(getShell(), Messages.PreferencesPage_restartWarning_title, null,
+					Messages.PreferencesPage_restartWarning_message, MessageDialog.WARNING,
+					new String[] { IDialogConstants.NO_LABEL,
+							Messages.PreferencesPage_restartWarning_restart },
+					1);
+			if (dialog.open() == 1) {
+				PlatformUI.getWorkbench().restart();
+			}
+		}
 		return super.performOk();
 	}
 

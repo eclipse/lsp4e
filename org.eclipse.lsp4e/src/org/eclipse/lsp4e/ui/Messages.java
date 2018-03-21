@@ -29,6 +29,11 @@ public class Messages extends NLS {
 	public static String PreferencesPage_enablementCondition;
 	public static String PreferencePage_enablementCondition_true;
 	public static String PreferencePage_enablementCondition_false;
+	public static String PreferencesPage_fileLogging;
+	public static String PreferencesPage_stdErrLogging;
+	public static String PreferencesPage_restartWarning_title;
+	public static String PreferencesPage_restartWarning_message;
+	public static String PreferencesPage_restartWarning_restart;
 	public static String NewContentTypeLSPLaunchDialog_associateContentType;
 	public static String NewContentTypeLSPLaunchDialog_withLSPLaunch;
 	public static String codeActions_description;

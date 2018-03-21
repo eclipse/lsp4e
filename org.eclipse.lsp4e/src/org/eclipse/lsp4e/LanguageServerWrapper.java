@@ -170,7 +170,12 @@ public class LanguageServerWrapper {
 			}
 		}
 		try {
-			this.lspStreamProvider = serverDefinition.createConnectionProvider();
+			if (LoggingStreamConnectionProviderProxy.shouldLog()) {
+				this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
+						serverDefinition.createConnectionProvider(), serverDefinition.id);
+			} else {
+				this.lspStreamProvider = serverDefinition.createConnectionProvider();
+			}
 			this.lspStreamProvider.start();
 
 			LanguageClientImpl client = serverDefinition.createLanguageClient();
@@ -185,7 +190,6 @@ public class LanguageServerWrapper {
 				initParams.setRootUri(rootURI.toString());
 				initParams.setRootPath(rootURI.getPath());
 			}
-
 			Launcher<? extends LanguageServer> launcher = Launcher.createLauncher(client, serverDefinition.getServerInterface(),
 					this.lspStreamProvider.getInputStream(), this.lspStreamProvider.getOutputStream(), executorService,
 					consumer -> (message -> {
