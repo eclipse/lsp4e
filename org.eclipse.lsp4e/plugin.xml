@@ -395,6 +395,14 @@
       <highlightReconciler
             class="org.eclipse.lsp4e.operations.highlight.HighlightReconciler"
             contentType="org.eclipse.core.runtime.text">
+         <enabledWhen>
+            <with
+                  variable="editorInput">
+               <test
+                     property="org.eclipse.lsp4e.HasLanguageServer">
+               </test>
+            </with>
+         </enabledWhen>
       </highlightReconciler>
    </extension>
    <extension
