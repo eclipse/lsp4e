@@ -12,15 +12,20 @@ package org.eclipse.lsp4e.test.hover;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.lsp4e.operations.hover.LSBasedHover;
@@ -30,11 +35,19 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.browser.Browser;
+import org.eclipse.swt.browser.ProgressAdapter;
+import org.eclipse.swt.browser.ProgressEvent;
+import org.eclipse.swt.layout.RowLayout;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@SuppressWarnings("restriction")
 public class HoverTest {
 
 	private IProject project;
@@ -134,4 +147,76 @@ public class HoverTest {
 		index = hoverInfo.indexOf("HoverContent", index);
 		assertNotEquals("Hover content found only once", -1, index);
 	}
+
+	@Test
+	public void testIntroUrlLink() throws Exception {
+		Hover hoverResponse = new Hover(
+				Collections.singletonList(Either.forLeft(
+						"[My intro URL link](http://org.eclipse.ui.intro/execute?command=org.eclipse.ui.file.close)")),
+				new Range(new Position(0, 0), new Position(0, 10)));
+		MockLanguageSever.INSTANCE.setHover(hoverResponse);
+
+		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
+		ITextViewer viewer = TestUtils.openTextViewer(file);
+
+		String hoverContent = hover.getHoverInfo(viewer, new Region(0, 10));
+
+		LSBasedHover hoverManager = new LSBasedHover();
+
+		Display display = PlatformUI.getWorkbench().getDisplay();
+		final Shell shell = new Shell(display);
+		BrowserInformationControl wrapperControl = null, control = null;
+		try {
+			final RowLayout layout = new RowLayout(SWT.VERTICAL);
+			layout.fill = true;
+			shell.setLayout(layout);
+			shell.setSize(320, 200);
+			shell.open();
+
+			wrapperControl = (BrowserInformationControl) hoverManager.getHoverControlCreator()
+					.createInformationControl(shell);
+			control = (BrowserInformationControl) wrapperControl
+					.getInformationPresenterControlCreator().createInformationControl(shell);
+			Field f = BrowserInformationControl.class.getDeclaredField("fBrowser"); //
+			f.setAccessible(true);
+
+			Browser browser = (Browser) f.get(control);
+
+			AtomicBoolean completed = new AtomicBoolean(false);
+
+			browser.addProgressListener(new ProgressAdapter() {
+				@Override
+				public void completed(ProgressEvent event) {
+					browser.removeProgressListener(this);
+					browser.execute("document.getElementsByTagName('a')[0].click()");
+					while (display.readAndDispatch()) {
+					}
+					completed.set(true);
+				}
+			});
+
+			assertNotNull("Editor should be opened", viewer.getTextWidget());
+
+			browser.setText(hoverContent);
+
+			long maxTimestamp = System.currentTimeMillis() + 10000;
+			while (!completed.get() && System.currentTimeMillis() < maxTimestamp) {
+				display.readAndDispatch();
+			}
+
+			// Editor opened at the beginining is closed
+			assertNull("Editor should be closed", viewer.getTextWidget());
+		} finally {
+			if (control != null) {
+				control.dispose();
+			}
+			if (wrapperControl != null) {
+				wrapperControl.dispose();
+			}
+			shell.dispose();
+			while (display.readAndDispatch()) {
+			}
+		}
+	}
+
 }
