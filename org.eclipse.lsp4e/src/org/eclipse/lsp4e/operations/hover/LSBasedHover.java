@@ -50,10 +50,14 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
+import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.browser.LocationListener;
+import org.eclipse.swt.browser.ProgressListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
@@ -87,6 +91,30 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 		public FocusableBrowserInformationControl(Shell parent) {
 			super(parent, JFaceResources.DEFAULT_FONT, EditorsUI.getTooltipAffordanceString());
+		}
+
+		@Override
+		protected void createContent(Composite parent) {
+			super.createContent(parent);
+			Browser b = (Browser) (parent.getChildren()[0]);
+			b.addProgressListener(ProgressListener.completedAdapter(event -> {
+				if (getInput() == null)
+					return;
+				Browser browser = (Browser) event.getSource();
+				Point constraints = getSizeConstraints();
+				Point hint = computeSizeHint();
+
+				setSize(hint.x, hint.y);
+				browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"nowrap\""); //$NON-NLS-1$
+				Double width = Math.min(constraints.x, 20 + (Double) browser.evaluate("return document.body.scrollWidth;")); //$NON-NLS-1$
+
+				setSize(width.intValue(), 0);
+				browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"normal\""); //$NON-NLS-1$
+				Double height = Math.min(constraints.y, (Double) browser.evaluate("return document.body.scrollHeight;")); //$NON-NLS-1$
+
+				setSize(width.intValue(), height.intValue());
+			}));
+			b.setJavascriptEnabled(true);
 		}
 
 		@Override
