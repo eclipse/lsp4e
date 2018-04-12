@@ -142,6 +142,12 @@
             id="org.eclipse.lsp4e.preferences"
             name="%languageservers.preference.page">
       </page>
+      <page
+            category="org.eclipse.lsp4e.preferences"
+            class="org.eclipse.lsp4e.ui.LoggingPreferencePage"
+            id="org.eclipse.lsp4e.logging.preferences"
+            name="%languageservers.logging.preference.page">
+      </page>
    </extension>
    <extension
          point="org.eclipse.ui.menus">

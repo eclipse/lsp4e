@@ -29,8 +29,13 @@ public class Messages extends NLS {
 	public static String PreferencesPage_enablementCondition;
 	public static String PreferencePage_enablementCondition_true;
 	public static String PreferencePage_enablementCondition_false;
-	public static String PreferencesPage_fileLogging;
-	public static String PreferencesPage_stdErrLogging;
+	public static String PreferencePage_enablementCondition_enableAll;
+	public static String PreferencePage_enablementCondition_disableAll;
+	public static String PreferencesPage_logging_toFile_title;
+	public static String PreferencesPage_logging_toFile_description;
+	public static String PreferencesPage_logging_toConsole_title;
+	public static String PreferencesPage_logging_toConsole_description;
+	public static String preferencesPage_logging_info;
 	public static String PreferencesPage_restartWarning_title;
 	public static String PreferencesPage_restartWarning_message;
 	public static String PreferencesPage_restartWarning_restart;

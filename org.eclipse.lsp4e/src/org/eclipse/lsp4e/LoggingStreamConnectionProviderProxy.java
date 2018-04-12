@@ -28,13 +28,17 @@ import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.ui.console.ConsolePlugin;
+import org.eclipse.ui.console.IConsole;
+import org.eclipse.ui.console.IConsoleManager;
+import org.eclipse.ui.console.MessageConsole;
+import org.eclipse.ui.console.MessageConsoleStream;
 
 public class LoggingStreamConnectionProviderProxy implements StreamConnectionProvider {
-	private static final boolean DEFAULT_FILE_KEY_VALUE = true;
-	private static final boolean DEFAULT_STDERR_KEY_VALUE = false;
-	public static final String FILE_KEY = "logging.enabled"; //$NON-NLS-1$
-	public static final String STDERR_KEY = "stderr.logging.enabled"; //$NON-NLS-1$
 	public static final String LOG_DIRECTORY = "languageServers-log"; //$NON-NLS-1$
+
+	private static final String FILE_KEY = "file.logging.disabled"; //$NON-NLS-1$
+	private static final String STDERR_KEY = "stderr.logging.enabled"; //$NON-NLS-1$
 
 	private StreamConnectionProvider provider;
 	private InputStream inputStream;
@@ -44,7 +48,27 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	private File currentFile;
 	private File folder;
 	private boolean logToFile;
-	private boolean logToStderr;
+	private boolean logToConsole;
+
+	/**
+	 * Converts a language server ID to the preference ID for logging communications
+	 * to file from the language server
+	 *
+	 * @return language server's preference ID for file logging
+	 */
+	public static String lsToFileLoggingId(String serverId) {
+		return serverId + "." + FILE_KEY;//$NON-NLS-1$
+	}
+
+	/**
+	 * Converts a language server ID to the preference ID for logging communications
+	 * to console from the language server
+	 *
+	 * @return language server's preference ID for console logging
+	 */
+	public static String lsToConsoleLoggingId(String serverId) {
+		return serverId + "." + STDERR_KEY;//$NON-NLS-1$
+	}
 
 	/**
 	 * Returns whether currently created connections should be logged to file or the
@@ -52,39 +76,25 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	 *
 	 * @return If connections should be logged
 	 */
-	public static boolean shouldLog() {
+	public static boolean shouldLog(String serverId) {
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
-		return shouldLogToFile(store) || shouldLogToStdErr(store);
+		return !store.getBoolean(lsToFileLoggingId(serverId)) || store.getBoolean(lsToConsoleLoggingId(serverId));
 	}
 
-	private static boolean shouldLogToFile(IPreferenceStore store) {
-		if (store.contains(FILE_KEY)) {
-			return store.getBoolean(FILE_KEY);
-		}
-		return DEFAULT_FILE_KEY_VALUE;
-	}
-
-	public static boolean shouldLogToStdErr(IPreferenceStore store) {
-		if (store.contains(STDERR_KEY)) {
-			return store.getBoolean(STDERR_KEY);
-		}
-		return DEFAULT_STDERR_KEY_VALUE;
-	}
-
-	public LoggingStreamConnectionProviderProxy(StreamConnectionProvider provider, String logId) {
-		this.id = logId;
+	public LoggingStreamConnectionProviderProxy(StreamConnectionProvider provider, String serverId) {
+		this.id = serverId;
 		this.provider = provider;
 
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
-		logToFile = shouldLogToFile(store);
-		logToStderr = shouldLogToStdErr(store);
+		logToFile = !store.getBoolean(lsToFileLoggingId(serverId));
+		logToConsole = store.getBoolean(lsToConsoleLoggingId(serverId));
 		store.addPropertyChangeListener(new IPropertyChangeListener() {
 			@Override
 			public void propertyChange(PropertyChangeEvent event) {
 				if (event.getProperty().equals(FILE_KEY)) {
 					logToFile = (boolean) event.getNewValue();
 				} else if (event.getProperty().equals(STDERR_KEY)) {
-					logToStderr = (boolean) event.getNewValue();
+					logToConsole = (boolean) event.getNewValue();
 				}
 			}
 		});
@@ -102,11 +112,11 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 					int bytes = super.read(b, off, len);
 					byte[] payload = new byte[bytes];
 					System.arraycopy(b, off, payload, 0, bytes);
-					if (logToStderr) {
-						System.err.println(id + " to LSP4E:" + new String(payload)); //$NON-NLS-1$
+					if (logToConsole) {
+						logToConsole(id + " to LSP4E:" + new String(payload)); //$NON-NLS-1$
 					}
 					if (logToFile) {
-						log("\n" + id + " to LSP4E:" + new String(payload)); //$NON-NLS-1$ //$NON-NLS-2$
+						logToFile("\n" + id + " to LSP4E:" + new String(payload)); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 					return bytes;
 				}
@@ -127,11 +137,11 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 					int bytes = super.read(b, off, len);
 					byte[] payload = new byte[bytes];
 					System.arraycopy(b, off, payload, 0, bytes);
-					if (logToStderr) {
-						System.err.println(id + " to LSP4E:" + new String(payload)); //$NON-NLS-1$
+					if (logToConsole) {
+						logToConsole("Error from " + id + ":" + new String(payload)); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 					if (logToFile) {
-						log(new String("\n" + id + " to LSP4E:" + payload)); //$NON-NLS-1$ //$NON-NLS-2$
+						logToFile(new String("\nError from:" + id + ":" + payload)); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 					return bytes;
 				}
@@ -149,11 +159,11 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 			outputStream = new FilterOutputStream(provider.getOutputStream()) {
 				@Override
 				public void write(byte[] b) throws IOException {
-					if (logToStderr) {
-						System.err.println("LSP4E to " + id + ":" + new String(b)); //$NON-NLS-1$ //$NON-NLS-2$
+					if (logToConsole) {
+						logToConsole("LSP4E to " + id + ":" + new String(b)); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 					if (logToFile) {
-						log("\nLSP4E to " + id + ":" + new String(b)); //$NON-NLS-1$ //$NON-NLS-2$
+						logToFile("\nLSP4E to " + id + ":" + new String(b)); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 					super.write(b);
 				}
@@ -208,7 +218,28 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		}
 	}
 
-	private void log(String string) {
+	private void logToConsole(String string) {
+		if (consoleStream == null || consoleStream.isClosed()) {
+			consoleStream = findConsole().newMessageStream();
+		}
+		consoleStream.println(string);
+	}
+
+	private MessageConsoleStream consoleStream;
+	private MessageConsole findConsole() {
+		ConsolePlugin plugin = ConsolePlugin.getDefault();
+		IConsoleManager conMan = plugin.getConsoleManager();
+		IConsole[] existing = conMan.getConsoles();
+		for (int i = 0; i < existing.length; i++)
+			if (LanguageServerPlugin.PLUGIN_ID.equals(existing[i].getName()))
+				return (MessageConsole) existing[i];
+		// no console found, so create a new one
+		MessageConsole myConsole = new MessageConsole(LanguageServerPlugin.PLUGIN_ID, null);
+		conMan.addConsoles(new IConsole[] { myConsole });
+		return myConsole;
+	}
+
+	private void logToFile(String string) {
 		if (currentFile == null || !currentFile.exists() || !currentFile.isFile() || !currentFile.canWrite()) {
 			generateNewLogFile();
 			if (currentFile == null) {

@@ -170,7 +170,7 @@ public class LanguageServerWrapper {
 			}
 		}
 		try {
-			if (LoggingStreamConnectionProviderProxy.shouldLog()) {
+			if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
 				this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
 						serverDefinition.createConnectionProvider(), serverDefinition.id);
 			} else {
