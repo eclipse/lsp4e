@@ -46,6 +46,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.MarkedString;
+import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
@@ -186,26 +187,33 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 	}
 
 	protected static @Nullable String getHoverString(@NonNull Hover hover) {
-		List<Either<String, MarkedString>> contents = hover.getContents();
-		if (contents == null || contents.isEmpty()) {
-			return null;
-		}
-		return contents.stream().map(content -> {
-			if (content.isLeft()) {
-				return content.getLeft();
-			} else if (content.isRight()) {
-				MarkedString markedString = content.getRight();
-				// TODO this won't work fully until markup parser will support syntax highlighting but will help display
-				// strings with language tags, e.g. without it things after <?php tag aren't displayed
-				if (markedString.getLanguage() != null && !markedString.getLanguage().isEmpty()) {
-					return String.format("```%s\n%s\n```", markedString.getLanguage(), markedString.getValue()); //$NON-NLS-1$
-				} else {
-					return markedString.getValue();
-				}
-			} else {
-				return ""; //$NON-NLS-1$
+		Either<List<Either<String, MarkedString>>, MarkupContent> hoverContent = hover.getContents();
+		if (hoverContent.isLeft()) {
+			List<Either<String, MarkedString>> contents = hoverContent.getLeft();
+			if (contents == null || contents.isEmpty()) {
+				return null;
 			}
-		}).filter(((Predicate<String>)String::isEmpty).negate()).collect(Collectors.joining("\n\n")); //$NON-NLS-1$)
+			return contents.stream().map(content -> {
+				if (content.isLeft()) {
+					return content.getLeft();
+				} else if (content.isRight()) {
+					MarkedString markedString = content.getRight();
+					// TODO this won't work fully until markup parser will support syntax
+					// highlighting but will help display
+					// strings with language tags, e.g. without it things after <?php tag aren't
+					// displayed
+					if (markedString.getLanguage() != null && !markedString.getLanguage().isEmpty()) {
+						return String.format("```%s\n%s\n```", markedString.getLanguage(), markedString.getValue()); //$NON-NLS-1$
+					} else {
+						return markedString.getValue();
+					}
+				} else {
+					return ""; //$NON-NLS-1$
+				}
+			}).filter(((Predicate<String>) String::isEmpty).negate()).collect(Collectors.joining("\n\n")); //$NON-NLS-1$ )
+		} else {
+			return hoverContent.getRight().getValue();
+		}
 	}
 
 	private static @NonNull String toHTMLrgb(RGB rgb) {
