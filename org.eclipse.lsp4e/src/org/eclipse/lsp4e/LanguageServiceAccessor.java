@@ -9,6 +9,7 @@
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *  Martin Lippert (Pivotal Inc.) - bug 531167, 531670
+ *  Kris De Volder (Pivotal Inc.) - Get language servers by capability predicate.
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -60,6 +61,16 @@ public class LanguageServiceAccessor {
 
 	private static Set<LanguageServerWrapper> startedServers = new HashSet<>();
 	private static Map<StreamConnectionProvider, LanguageServerDefinition> providersToLSDefinitions = new HashMap<>();
+
+	/**
+	 * This is meant for test code to clear state that might have leaked from other
+	 * tests. It isn't meant to be used in production code.
+	 */
+	public static void clearStartedServers() {
+		synchronized (startedServers) {
+			startedServers.clear();
+		}
+	}
 
 	/**
 	 * A bean storing association of a Document/File with a language server.
@@ -375,6 +386,28 @@ public class LanguageServiceAccessor {
 			if ((request == null
 			    || wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 			    || request.test(wrapper.getServerCapabilities()))) {
+				serverInfos.add(server);
+			}
+		}
+		return serverInfos;
+	}
+
+	/**
+	 * Gets list of LS satisfying a capability predicate.
+	 *
+	 * @param request
+	 * @return list of Language Servers
+	 */
+	@NonNull
+	public static List<@NonNull LanguageServer> getLanguageServers(Predicate<ServerCapabilities> request) {
+		List<@NonNull LanguageServer> serverInfos = new ArrayList<>();
+		for (LanguageServerWrapper wrapper : startedServers) {
+			@Nullable
+			LanguageServer server = wrapper.getServer();
+			if (server == null) {
+				continue;
+			}
+			if (request == null || request.test(wrapper.getServerCapabilities())) {
 				serverInfos.add(server);
 			}
 		}

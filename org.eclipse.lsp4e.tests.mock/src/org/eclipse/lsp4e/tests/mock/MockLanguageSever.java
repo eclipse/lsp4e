@@ -8,7 +8,8 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Mickael Istria (Red Hat Inc.) - added support for delays
- *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
+ *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens.
+ *  Kris De Volder (Pivotal Inc.) - Provide test code access to Client proxy.
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
@@ -21,6 +22,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
+import org.eclipse.lsp4j.CodeLens;
+import org.eclipse.lsp4j.CodeLensOptions;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionOptions;
@@ -33,8 +36,6 @@ import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkOptions;
 import org.eclipse.lsp4j.Hover;
-import org.eclipse.lsp4j.CodeLens;
-import org.eclipse.lsp4j.CodeLensOptions;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
@@ -59,6 +60,8 @@ public final class MockLanguageSever implements LanguageServer {
 	private long delay = 0;
 	private boolean started;
 
+	private List<LanguageClient> remoteProxies = new ArrayList<>();
+
 	public static void reset() {
 		INSTANCE = new MockLanguageSever();
 	}
@@ -81,6 +84,7 @@ public final class MockLanguageSever implements LanguageServer {
 
 	public void addRemoteProxy(LanguageClient remoteProxy) {
 		this.textDocumentService.addRemoteProxy(remoteProxy);
+		this.remoteProxies.add(remoteProxy);
 		this.started = true;
 	}
 
@@ -110,6 +114,7 @@ public final class MockLanguageSever implements LanguageServer {
 					throw new RuntimeException(e);
 				}
 			}).thenApply(new Function<Void, U>() {
+				@Override
 				public U apply(Void v) {
 					return value;
 				}
@@ -224,6 +229,10 @@ public final class MockLanguageSever implements LanguageServer {
 
 	public boolean isRunning() {
 		return this.started;
+	}
+
+	public List<LanguageClient> getRemoteProxies() {
+		return remoteProxies;
 	}
 
 }

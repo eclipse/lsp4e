@@ -10,15 +10,18 @@
  *  Miro Spoenemann (TypeFox) - extracted LanguageClientImpl
  *  Jan Koehnlein (TypeFox) - bug 521744
  *  Martin Lippert (Pivotal, Inc.) - bug 531030, 527902
+ *  Kris De Volder (Pivotal, Inc.) - dynamic command registration
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -38,6 +41,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -63,12 +67,14 @@ import org.eclipse.lsp4j.DocumentHighlightCapabilities;
 import org.eclipse.lsp4j.DocumentLinkCapabilities;
 import org.eclipse.lsp4j.DocumentSymbolCapabilities;
 import org.eclipse.lsp4j.ExecuteCommandCapabilities;
+import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializedParams;
 import org.eclipse.lsp4j.RangeFormattingCapabilities;
 import org.eclipse.lsp4j.ReferencesCapabilities;
+import org.eclipse.lsp4j.Registration;
 import org.eclipse.lsp4j.RegistrationParams;
 import org.eclipse.lsp4j.RenameCapabilities;
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -81,6 +87,8 @@ import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.UnregistrationParams;
 import org.eclipse.lsp4j.WorkspaceClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
+import org.eclipse.lsp4j.WorkspaceFoldersOptions;
+import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -90,6 +98,9 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 public class LanguageServerWrapper {
 
@@ -140,7 +151,12 @@ public class LanguageServerWrapper {
 	private CompletableFuture<Void> initializeFuture;
 	private LanguageServer languageServer;
 	private ServerCapabilities serverCapabilities;
-	private boolean supportWorkspaceFoldersCapability;
+
+	/**
+	 * Map containing unregistration handlers for dynamic capability registrations.
+	 */
+	private @NonNull Map<@NonNull String, @NonNull Runnable> dynamicRegistrations = new HashMap<>();
+	private boolean initiallySupportsWorkspaceFolders = false;
 
 	public LanguageServerWrapper(@Nullable IProject project, @NonNull LanguageServerDefinition serverDefinition)
 			throws IllegalStateException {
@@ -238,10 +254,7 @@ public class LanguageServerWrapper {
 
 			initializeFuture = languageServer.initialize(initParams).thenAccept(res -> {
 				serverCapabilities = res.getCapabilities();
-				supportWorkspaceFoldersCapability = serverCapabilities != null
-						&& serverCapabilities.getWorkspace() != null
-						&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
-						&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
+				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
 			}).thenRun(() -> this.languageServer.initialized(new InitializedParams()));
 
 			final Map<IPath, IDocument> toReconnect = filesToReconnect;
@@ -262,6 +275,13 @@ public class LanguageServerWrapper {
 			LanguageServerPlugin.logError(ex);
 			stop();
 		}
+	}
+
+	private static boolean supportsWorkspaceFolders(ServerCapabilities serverCapabilities) {
+		return serverCapabilities != null
+				&& serverCapabilities.getWorkspace() != null
+				&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
+				&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
 	}
 
 	private Integer getCurrentProcessId() {
@@ -393,8 +413,7 @@ public class LanguageServerWrapper {
 				e.printStackTrace();
 			}
 		}
-
-		return supportWorkspaceFoldersCapability;
+		return initiallySupportsWorkspaceFolders || supportsWorkspaceFolders(serverCapabilities);
 	}
 
 	/**
@@ -554,17 +573,95 @@ public class LanguageServerWrapper {
 	void registerCapability(RegistrationParams params) {
 		params.getRegistrations().forEach(reg -> {
 			if ("workspace/didChangeWorkspaceFolders".equals(reg.getMethod())) { //$NON-NLS-1$
-				supportWorkspaceFoldersCapability = true;
+				Assert.isNotNull(serverCapabilities,
+						"Dynamic capability registration failed! Server not yet initialized?"); //$NON-NLS-1$
+				if (initiallySupportsWorkspaceFolders) {
+					// Can treat this as a NOP since nothing can disable it dynamically if it was
+					// enabled on initialization.
+				} else if (supportsWorkspaceFolders(serverCapabilities)) {
+					LanguageServerPlugin.logWarning(
+							"Dynamic registration of 'workspace/didChangeWorkspaceFolders' ignored. It was already enabled before", //$NON-NLS-1$
+							null);
+				} else {
+					addRegistration(reg, () -> setWorkspaceFoldersEnablement(false));
+					setWorkspaceFoldersEnablement(true);
+				}
+			} else if ("workspace/executeCommand".equals(reg.getMethod())) { //$NON-NLS-1$
+				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
+				ExecuteCommandOptions executeCommandOptions = gson.fromJson((JsonObject) reg.getRegisterOptions(),
+						ExecuteCommandOptions.class);
+				List<String> newCommands = executeCommandOptions.getCommands();
+				if (!newCommands.isEmpty()) {
+					addRegistration(reg, () -> unregisterCommands(newCommands));
+					registerCommands(newCommands);
+				}
 			}
 		});
 	}
 
+	private void addRegistration(@NonNull Registration reg, @NonNull Runnable unregistrationHandler) {
+		String regId = reg.getId();
+		synchronized (dynamicRegistrations) {
+			Assert.isLegal(!dynamicRegistrations.containsKey(regId), "Registration id is not unique"); //$NON-NLS-1$
+			dynamicRegistrations.put(regId, unregistrationHandler);
+		}
+	}
+
+	synchronized void setWorkspaceFoldersEnablement(boolean enable) {
+		if (serverCapabilities == null) {
+			this.serverCapabilities = new ServerCapabilities();
+		}
+		WorkspaceServerCapabilities workspace = serverCapabilities.getWorkspace();
+		if (workspace == null) {
+			serverCapabilities.setWorkspace(workspace = new WorkspaceServerCapabilities());
+		}
+		WorkspaceFoldersOptions folders = workspace.getWorkspaceFolders();
+		if (folders == null) {
+			workspace.setWorkspaceFolders(folders = new WorkspaceFoldersOptions());
+		}
+		folders.setSupported(enable);
+	}
+
+	synchronized void registerCommands(List<String> newCommands) {
+		ServerCapabilities caps = this.getServerCapabilities();
+		if (caps != null) {
+			ExecuteCommandOptions commandProvider = caps.getExecuteCommandProvider();
+			if (commandProvider == null) {
+				caps.setExecuteCommandProvider(commandProvider = new ExecuteCommandOptions(new ArrayList<>()));
+			}
+			List<String> existingCommands = commandProvider.getCommands();
+			for (String newCmd : newCommands) {
+				Assert.isLegal(!existingCommands.contains(newCmd), "Command already registered '" + newCmd + "'"); //$NON-NLS-1$ //$NON-NLS-2$
+				existingCommands.add(newCmd);
+			}
+		} else {
+			throw new IllegalStateException("Dynamic command registration failed! Server not yet initialized?"); //$NON-NLS-1$
+		}
+	}
+
 	void unregisterCapability(UnregistrationParams params) {
 		params.getUnregisterations().forEach(reg -> {
-			if ("workspace/didChangeWorkspaceFolders".equals(reg.getMethod())) { //$NON-NLS-1$
-				supportWorkspaceFoldersCapability = false;
+			String id = reg.getId();
+			Runnable unregistrator;
+			synchronized (dynamicRegistrations) {
+				unregistrator = dynamicRegistrations.get(id);
+				dynamicRegistrations.remove(id);
+			}
+			if (unregistrator != null) {
+				unregistrator.run();
 			}
 		});
+	}
+
+	void unregisterCommands(List<String> cmds) {
+		ServerCapabilities caps = this.getServerCapabilities();
+		if (caps != null) {
+			ExecuteCommandOptions commandProvider = caps.getExecuteCommandProvider();
+			if (commandProvider != null) {
+				List<String> existingCommands = commandProvider.getCommands();
+				existingCommands.removeAll(cmds);
+			}
+		}
 	}
 
 }

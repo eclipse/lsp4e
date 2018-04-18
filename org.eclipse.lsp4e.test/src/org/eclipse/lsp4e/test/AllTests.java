@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.test;
 
 import org.eclipse.lsp4e.test.codeactions.CodeActionTests;
+import org.eclipse.lsp4e.test.commands.DynamicRegistrationTest;
 import org.eclipse.lsp4e.test.completion.CompleteCompletionTest;
 import org.eclipse.lsp4e.test.completion.ContextInformationTest;
 import org.eclipse.lsp4e.test.completion.IncompleteCompletionTest;
@@ -55,7 +56,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	CodeActionTests.class,
 	DocumentLinkTest.class,
 	RunningLanguageServerTest.class,
-	HighlightTest.class
+	HighlightTest.class,
+	DynamicRegistrationTest.class
 })
 public class AllTests {
 
