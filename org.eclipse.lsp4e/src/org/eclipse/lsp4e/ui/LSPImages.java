@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
@@ -33,7 +34,7 @@ import org.osgi.framework.Bundle;
 
 public class LSPImages {
 
-	
+
 	private LSPImages() {
 		// this class shouldn't be instantiated
 	}
@@ -221,8 +222,9 @@ public class LSPImages {
 		String hexValue = null;
 
 		// TODO most probably can be extended for more cases
-		if (completionItem.getDocumentation().startsWith("#")) { //$NON-NLS-1$
-			hexValue = completionItem.getDocumentation();
+		String docString = LSPEclipseUtils.getDocString(completionItem.getDocumentation());
+		if (docString != null && docString.startsWith("#")) { //$NON-NLS-1$
+			hexValue = docString;
 		} else if (completionItem.getLabel().startsWith("#")) { //$NON-NLS-1$
 			hexValue = completionItem.getLabel();
 		}

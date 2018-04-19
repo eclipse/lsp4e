@@ -54,8 +54,10 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.RewriteSessionEditProcessor;
 import org.eclipse.jface.text.TextSelection;
+import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentEdit;
@@ -65,6 +67,7 @@ import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.WorkspaceFolder;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
 import org.eclipse.ltk.core.refactoring.DocumentChange;
@@ -126,6 +129,18 @@ public class LSPEclipseUtils {
 
 	public static int toOffset(Position position, IDocument document) throws BadLocationException {
 		return document.getLineInformation(position.getLine()).getOffset() + position.getCharacter();
+	}
+
+	public static CompletionParams toCompletionParams(URI fileUri, int offset, IDocument document)
+			throws BadLocationException {
+		Position start = toPosition(offset, document);
+		CompletionParams param = new CompletionParams();
+		param.setPosition(start);
+		param.setUri(fileUri.toString());
+		TextDocumentIdentifier id = new TextDocumentIdentifier();
+		id.setUri(fileUri.toString());
+		param.setTextDocument(id);
+		return param;
 	}
 
 	public static TextDocumentPositionParams toTextDocumentPosistionParams(URI fileUri, int offset, IDocument document)
@@ -560,5 +575,23 @@ public class LSPEclipseUtils {
 			LanguageServerPlugin.logError(e);
 		}
 		return contentTypes;
+	}
+
+	/**
+	 * Deprecated because any code that calls this probably needs to be changed
+	 * somehow to be properly aware of markdown content. This method simply returns
+	 * the doc string as a string, regardless of whether it is markdown or
+	 * plaintext.
+	 */
+	@Deprecated
+	public static String getDocString(Either<String, MarkupContent> documentation) {
+		if (documentation != null) {
+			if (documentation.isLeft()) {
+				return documentation.getLeft();
+			} else {
+				return documentation.getRight().getValue();
+			}
+		}
+		return null;
 	}
 }

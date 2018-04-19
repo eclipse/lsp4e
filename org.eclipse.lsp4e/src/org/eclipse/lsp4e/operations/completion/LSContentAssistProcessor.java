@@ -49,6 +49,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureInformation;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
@@ -115,7 +116,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 		List<ICompletionProposal> proposals = new ArrayList<>();
 		try {
-			TextDocumentPositionParams param = LSPEclipseUtils.toTextDocumentPosistionParams(
+			CompletionParams param = LSPEclipseUtils.toCompletionParams(
 					applicableInfos.get(0).getFileUri(),
 					offset, viewer.getDocument());
 			List<ICompletionProposal> lsProposals = Collections.synchronizedList(new ArrayList<>());
@@ -229,8 +230,9 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 					.getTextDocumentService().signatureHelp(param).thenAccept(signatureHelp -> {
 				for (SignatureInformation information : signatureHelp.getSignatures()) {
 					StringBuilder signature = new StringBuilder(information.getLabel());
-					if (information.getDocumentation() != null && !information.getDocumentation().isEmpty()) {
-						signature.append('\n').append(information.getDocumentation());
+					String docString = LSPEclipseUtils.getDocString(information.getDocumentation());
+					if (docString!=null && !docString.isEmpty()) {
+						signature.append('\n').append(docString);
 					}
 					contextInformations.add(new ContextInformation(information.getLabel(), signature.toString()));
 				}
