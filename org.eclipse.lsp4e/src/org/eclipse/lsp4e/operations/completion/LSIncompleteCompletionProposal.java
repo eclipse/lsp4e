@@ -199,7 +199,7 @@ public class LSIncompleteCompletionProposal
 			res.append("<br/>"); //$NON-NLS-1$
 		}
 		if (this.item.getDocumentation() != null) {
-			res.append("<p>" + this.item.getDocumentation() + "</p>"); //$NON-NLS-1$ //$NON-NLS-2$
+			res.append("<p>" + LSPEclipseUtils.getDocString(this.item.getDocumentation()) + "</p>"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 
 		return res.toString();

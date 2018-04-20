@@ -24,6 +24,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.IContextInformation;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
@@ -74,7 +75,8 @@ public class ContextInformationTest {
 		IContextInformation[] infos = contentAssistProcessor.computeContextInformation(viewer, 0);
 		assertEquals(1, infos.length);
 
-		String expected = new StringBuilder(information.getLabel()).append('\n').append(information.getDocumentation())
+		String expected = new StringBuilder(information.getLabel()).append('\n')
+				.append(LSPEclipseUtils.getDocString(information.getDocumentation()))
 				.toString();
 		assertEquals(expected, infos[0].getInformationDisplayString());
 	}
