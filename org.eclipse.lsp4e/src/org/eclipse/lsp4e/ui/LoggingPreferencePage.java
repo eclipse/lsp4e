@@ -52,8 +52,9 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.PlatformUI;
 
 public class LoggingPreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
+
 	private TableViewer languageServerViewer;
-	private TableViewer launchConfiguraitonViewer;
+	private TableViewer launchConfigurationViewer;
 	private Map<String, Boolean> serverDisableLoggingToFile = new HashMap<>();
 	private Map<String, Boolean> serverEnableLoggingToConsole = new HashMap<>();
 	private IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
@@ -101,11 +102,11 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 	}
 
 	private void createLaunchConfigurationServersTable(Composite res) {
-		launchConfiguraitonViewer = new TableViewer(res);
-		launchConfiguraitonViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		launchConfiguraitonViewer.setContentProvider(new ArrayContentProvider());
+		launchConfigurationViewer = new TableViewer(res);
+		launchConfigurationViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		launchConfigurationViewer.setContentProvider(new ArrayContentProvider());
 
-		TableViewerColumn launchConfigColumn = new TableViewerColumn(launchConfiguraitonViewer, SWT.NONE);
+		TableViewerColumn launchConfigColumn = new TableViewerColumn(launchConfigurationViewer, SWT.NONE);
 		launchConfigColumn.getColumn().setText(Messages.PreferencesPage_LaunchConfiguration);
 		launchConfigColumn.getColumn().setWidth(300);
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -114,9 +115,9 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 				return ((ContentTypeToLSPLaunchConfigEntry) element).getLaunchConfiguration().getName();
 			}
 		});
-		addLoggingColumnsToViewer(launchConfiguraitonViewer);
-		launchConfiguraitonViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		launchConfiguraitonViewer.getTable().setHeaderVisible(true);
+		addLoggingColumnsToViewer(launchConfigurationViewer);
+		launchConfigurationViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		launchConfigurationViewer.getTable().setHeaderVisible(true);
 		languageServerViewer.getTable().setLinesVisible(true);
 	}
 
@@ -188,7 +189,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			serverDisableLoggingToFile.forEach((s, b) -> serverDisableLoggingToFile.put(s, true));
 			hasLoggingBeenChanged = true;
 			languageServerViewer.refresh();
-			launchConfiguraitonViewer.refresh();
+			launchConfigurationViewer.refresh();
 		}));
 		Button enableFileLogging = new Button(loggingComposite, SWT.NONE);
 		enableFileLogging.setText(Messages.PreferencePage_enablementCondition_enableAll);
@@ -196,7 +197,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			serverDisableLoggingToFile.forEach((s, b) -> serverDisableLoggingToFile.put(s, false));
 			hasLoggingBeenChanged = true;
 			languageServerViewer.refresh();
-			launchConfiguraitonViewer.refresh();
+			launchConfigurationViewer.refresh();
 		}));
 
 		Label consoleLoggingLabel = new Label(loggingComposite, SWT.NONE);
@@ -207,7 +208,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			serverEnableLoggingToConsole.forEach((s, b) -> serverEnableLoggingToConsole.put(s, false));
 			hasLoggingBeenChanged = true;
 			languageServerViewer.refresh();
-			launchConfiguraitonViewer.refresh();
+			launchConfigurationViewer.refresh();
 		}));
 		Button enableConsoleLogging = new Button(loggingComposite, SWT.NONE);
 		enableConsoleLogging.setText(Messages.PreferencePage_enablementCondition_enableAll);
@@ -215,7 +216,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			serverEnableLoggingToConsole.forEach((s, b) -> serverEnableLoggingToConsole.put(s, true));
 			hasLoggingBeenChanged = true;
 			languageServerViewer.refresh();
-			launchConfiguraitonViewer.refresh();
+			launchConfigurationViewer.refresh();
 		}));
 	}
 
@@ -229,7 +230,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			serverEnableLoggingToConsole.put(s,
 					store.getBoolean(LoggingStreamConnectionProviderProxy.lsToConsoleLoggingId(s)));
 		});
-		launchConfiguraitonViewer.refresh();
+		launchConfigurationViewer.refresh();
 		languageServerViewer.refresh();
 		super.performDefaults();
 	}
@@ -278,8 +279,8 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			}
 		});
 
-		launchConfiguraitonViewer.setInput(contentTypeToLSPLaunchConfigEntries);
-		launchConfiguraitonViewer.refresh();
+		launchConfigurationViewer.setInput(contentTypeToLSPLaunchConfigEntries);
+		launchConfigurationViewer.refresh();
 
 		languageServerIDs.clear();
 		List<ContentTypeToLanguageServerDefinition> contentTypeToLanguageServerDefinitions = new ArrayList<>();
@@ -295,6 +296,6 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		});
 
 		languageServerViewer.setInput(contentTypeToLanguageServerDefinitions);
-		launchConfiguraitonViewer.refresh();
+		launchConfigurationViewer.refresh();
 	}
 }
