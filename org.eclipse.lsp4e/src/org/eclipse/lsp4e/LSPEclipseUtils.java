@@ -94,6 +94,7 @@ import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 /**
  * Some utility methods to convert between Eclipse and LS-API types
@@ -538,6 +539,12 @@ public class LSPEclipseUtils {
 			} else if (arg instanceof Map) {
 				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
 				TextEdit edit = gson.fromJson(gson.toJson(arg), TextEdit.class);
+				if (edit != null) {
+					currentEntry.value.add(edit);
+				}
+			} else if (arg instanceof JsonObject) {
+				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
+				TextEdit edit = gson.fromJson((JsonObject) arg, TextEdit.class);
 				if (edit != null) {
 					currentEntry.value.add(edit);
 				}
