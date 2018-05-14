@@ -20,6 +20,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
@@ -120,7 +121,7 @@ public class HighlightReconcilingStrategy
 
 	@Override
 	public void caretMoved(CaretEvent event) {
-		collectHighlights(event.caretOffset);
+		Job.createSystem("LSP4E Highlight", monitor -> collectHighlights(event.caretOffset)).schedule(); //$NON-NLS-1$
 	}
 
 	/**

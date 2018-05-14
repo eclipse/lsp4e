@@ -24,10 +24,10 @@ import org.eclipse.lsp4j.services.LanguageServer;
 public class LSPCodeMining extends LineHeaderCodeMining {
 
 	private CodeLens codeLens;
-	private LanguageServer languageServer;
+	private CompletableFuture<LanguageServer> languageServer;
 	private CodeLensOptions codeLensOptions;
 
-	public LSPCodeMining(CodeLens codeLens, IDocument document, LanguageServer languageServer,
+	public LSPCodeMining(CodeLens codeLens, IDocument document, CompletableFuture<LanguageServer> languageServer,
 			CodeLensOptions codeLensOptions, CodeLensProvider provider) throws BadLocationException {
 		super(codeLens.getRange().getStart().getLine(), document, provider);
 		this.codeLens = codeLens;
@@ -47,10 +47,11 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 	@Override
 	protected CompletableFuture<Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
 		if (this.codeLensOptions.isResolveProvider()) {
-			return languageServer.getTextDocumentService().resolveCodeLens(this.codeLens).thenAccept(codeLens -> {
-				this.codeLens = codeLens;
-				setLabel(getCodeLensString(codeLens));
-			});
+			return languageServer.thenCompose(ls -> ls.getTextDocumentService().resolveCodeLens(this.codeLens))
+					.thenAccept(codeLens -> {
+						this.codeLens = codeLens;
+						setLabel(getCodeLensString(codeLens));
+					});
 		}
 		return CompletableFuture.completedFuture(null);
 	}

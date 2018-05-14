@@ -45,7 +45,8 @@ public class CodeLensProvider extends AbstractCodeMiningProvider {
 							if (codeLens != null && capabilites != null) {
 								try {
 									codeLensResults
-											.add(new LSPCodeMining(codeLens, document, info.getLanguageClient(),
+											.add(new LSPCodeMining(codeLens, document,
+													info.getInitializedLanguageClient(),
 													capabilites.getCodeLensProvider(), this));
 								} catch (BadLocationException e) {
 									LanguageServerPlugin.logError(e);
