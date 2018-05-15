@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -80,14 +81,12 @@ public class LanguageServiceAccessor {
 		private final @NonNull URI fileUri;
 		private final @NonNull IDocument document;
 		private final @NonNull LanguageServerWrapper wrapper;
-		private final @NonNull LanguageServer server;
 
 		private LSPDocumentInfo(@NonNull URI fileUri, @NonNull IDocument document,
-				@NonNull LanguageServerWrapper wrapper, @NonNull LanguageServer server) {
+				@NonNull LanguageServerWrapper wrapper) {
 			this.fileUri = fileUri;
 			this.document = document;
 			this.wrapper = wrapper;
-			this.server = server;
 		}
 
 		public @NonNull IDocument getDocument() {
@@ -108,8 +107,13 @@ public class LanguageServiceAccessor {
 		 * @deprecated use {@link #getInitializedServer()} instead.
 		 */
 		@Deprecated
-		public @NonNull LanguageServer getLanguageClient() {
-			return this.server;
+		public LanguageServer getLanguageClient() {
+			try {
+				return this.wrapper.getInitializedServer().get();
+			} catch (InterruptedException | ExecutionException e) {
+				LanguageServerPlugin.logError(e);
+				return this.wrapper.getServer();
+			}
 		}
 
 		public CompletableFuture<LanguageServer> getInitializedLanguageClient() {
@@ -427,11 +431,7 @@ public class LanguageServiceAccessor {
 			try {
 				for (LanguageServerWrapper wrapper : getLSWrappers(file, capabilityRequest)) {
 					wrapper.connect(file, document);
-					@Nullable
-					LanguageServer server = wrapper.getServer();
-					if (server != null) {
-						res.add(new LSPDocumentInfo(fileUri, document, wrapper, server));
-					}
+					res.add(new LSPDocumentInfo(fileUri, document, wrapper));
 				}
 			} catch (final Exception e) {
 				LanguageServerPlugin.logError(e);
