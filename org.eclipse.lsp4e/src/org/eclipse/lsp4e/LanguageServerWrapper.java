@@ -9,7 +9,7 @@
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Miro Spoenemann (TypeFox) - extracted LanguageClientImpl
  *  Jan Koehnlein (TypeFox) - bug 521744
- *  Martin Lippert (Pivotal, Inc.) - bug 531030, 527902
+ *  Martin Lippert (Pivotal, Inc.) - bug 531030, 527902, 534637
  *  Kris De Volder (Pivotal, Inc.) - dynamic command registration
  *******************************************************************************/
 package org.eclipse.lsp4e;
@@ -317,6 +317,7 @@ public class LanguageServerWrapper {
 			this.initializeFuture = null;
 		}
 		this.serverCapabilities = null;
+		this.dynamicRegistrations.clear();
 
 		if (this.languageServer != null) {
 			try {
