@@ -12,11 +12,11 @@
 package org.eclipse.lsp4e;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +31,6 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.content.IContentType;
-import org.eclipse.core.runtime.content.IContentTypeManager;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -325,13 +324,6 @@ public class LanguageServersRegistry {
 		return null;
 	}
 
-	public boolean canUseLanguageServer(IEditorInput editorInput) {
-		for (ContentTypeToLanguageServerDefinition contentType : getContentTypeToLSPExtensions()) {
-			if(contentType.getKey().isAssociatedWith(editorInput.getName())) return true;
-		}
-		return false;
-	}
-
 	/**
 	 * internal class to capture content-type mappings for language servers
 	 */
@@ -361,17 +353,26 @@ public class LanguageServersRegistry {
 	 * @throws IOException
 	 */
 	public boolean matches(@NonNull IFile file, @NonNull LanguageServerDefinition serverDefinition) throws IOException, CoreException {
-		IContentTypeManager manager = Platform.getContentTypeManager();
-		try (InputStream contents = file.getContents()) {
-			Collection<IContentType> fileContentTypes = Arrays.asList(manager.findContentTypeFor(contents, file.getName()));
-			for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
-				if (mapping.isEnabled() && mapping.getValue().equals(serverDefinition)
-						&& fileContentTypes.contains(mapping.getKey())) {
-					return true;
-				}
+		return getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file)).contains(serverDefinition);
+	}
+
+	public boolean canUseLanguageServer(@NonNull IEditorInput editorInput) {
+		return !getAvailableLSFor(
+				Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(editorInput.getName()))).isEmpty();
+	}
+
+	public boolean canUseLanguageServer(@NonNull IFile file) {
+		return !getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file)).isEmpty();
+	}
+
+	private Set<LanguageServerDefinition> getAvailableLSFor(Collection<IContentType> contentTypes) {
+		Set<LanguageServerDefinition> res = new HashSet<>();
+		for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
+			if (mapping.isEnabled() && contentTypes.contains(mapping.getKey())) {
+				res.add(mapping.getValue());
 			}
 		}
-		return false;
+		return res;
 	}
 
 }
