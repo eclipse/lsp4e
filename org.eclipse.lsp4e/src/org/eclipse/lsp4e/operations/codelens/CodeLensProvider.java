@@ -30,32 +30,35 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 public class CodeLensProvider extends AbstractCodeMiningProvider {
 
 	private CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(@NonNull IDocument document) {
-		List<@NonNull LSPDocumentInfo> docInfos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-				(capabilities) -> (capabilities.getCodeLensProvider() != null));
-		final CompletableFuture<?>[] requests = new CompletableFuture<?>[docInfos.size()];
-		final List<LSPCodeMining> codeLensResults = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
-		for (int i = 0; i < docInfos.size(); i++) {
-			final LSPDocumentInfo info = docInfos.get(i);
-			final ServerCapabilities capabilites = info.getCapabilites();
-			CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(info.getFileUri().toString()));
-			requests[i] = info.getInitializedLanguageClient()
-					.thenCompose(languageServer -> languageServer.getTextDocumentService().codeLens(param))
-					.thenAccept(codeLenses -> {
-						for (CodeLens codeLens : codeLenses) {
-							if (codeLens != null && capabilites != null) {
-								try {
-									codeLensResults
-											.add(new LSPCodeMining(codeLens, document,
+		return CompletableFuture.supplyAsync(() -> {
+				List<@NonNull LSPDocumentInfo> docInfos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
+						(capabilities) -> (capabilities.getCodeLensProvider() != null));
+				final CompletableFuture<?>[] requests = new CompletableFuture<?>[docInfos.size()];
+				final List<LSPCodeMining> codeLensResults = Collections
+						.synchronizedList(new ArrayList<>(docInfos.size()));
+				for (int i = 0; i < docInfos.size(); i++) {
+					final LSPDocumentInfo info = docInfos.get(i);
+					final ServerCapabilities capabilites = info.getCapabilites();
+					CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(info.getFileUri().toString()));
+					requests[i] = info.getInitializedLanguageClient()
+							.thenCompose(languageServer -> languageServer.getTextDocumentService().codeLens(param))
+							.thenAccept(codeLenses -> {
+								for (CodeLens codeLens : codeLenses) {
+									if (codeLens != null && capabilites != null) {
+										try {
+											codeLensResults.add(new LSPCodeMining(codeLens, document,
 													info.getInitializedLanguageClient(),
-													capabilites.getCodeLensProvider(), this));
-								} catch (BadLocationException e) {
-									LanguageServerPlugin.logError(e);
+													capabilites.getCodeLensProvider(), CodeLensProvider.this));
+										} catch (BadLocationException e) {
+											LanguageServerPlugin.logError(e);
+										}
+									}
 								}
-							}
-						}
-					});
-		}
-		return CompletableFuture.allOf(requests).thenApply(theVoid -> codeLensResults);
+							});
+				}
+				CompletableFuture.allOf(requests).join();
+				return codeLensResults;
+		});
 	}
 
 	@Override
