@@ -139,7 +139,32 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 	@Override
 	public void start() throws IOException {
 		try {
-			launch = this.launchConfiguration.launch(this.launchModes.iterator().next(), new NullProgressMonitor());
+			this.launch = this.launchConfiguration.launch(this.launchModes.iterator().next(), new NullProgressMonitor(),
+					false);
+			long initialTimestamp = System.currentTimeMillis();
+			while (this.launch.getProcesses().length == 0 && System.currentTimeMillis() - initialTimestamp < 5000) {
+				try {
+					Thread.sleep(50);
+				} catch (InterruptedException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			}
+			if (this.launch.getProcesses().length > 0) {
+				this.process = this.launch.getProcesses()[0];
+				this.inputStream = new StreamProxyInputStream(process);
+				process.getStreamsProxy().getOutputStreamMonitor().addListener(this.inputStream);
+				// TODO: Ugly hack, find something better to retrieve stream!
+				try {
+					Method systemProcessGetter = RuntimeProcess.class.getDeclaredMethod("getSystemProcess"); //$NON-NLS-1$
+					systemProcessGetter.setAccessible(true);
+					Process systemProcess = (Process) systemProcessGetter.invoke(process);
+					this.outputStream = systemProcess.getOutputStream();
+				} catch (ReflectiveOperationException ex) {
+					LanguageServerPlugin.logError(ex);
+				}
+				this.errorStream = new StreamProxyInputStream(process);
+				process.getStreamsProxy().getErrorStreamMonitor().addListener(this.errorStream);
+			}
 		} catch (Exception e) {
 			LanguageServerPlugin.logError(e);
 		}
@@ -147,37 +172,16 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 
 	@Override
 	public InputStream getInputStream() {
-		if (this.inputStream == null) {
-			process = this.launch.getProcesses()[0];
-			this.inputStream = new StreamProxyInputStream(process);
-			process.getStreamsProxy().getOutputStreamMonitor().addListener(this.inputStream);
-		}
 		return this.inputStream;
 	}
 
 	@Override
 	public OutputStream getOutputStream() {
-		if (this.outputStream == null) {
-			try {
-				// TODO: Ugly hack, find something better to retrieve stream!
-				Method systemProcessGetter = RuntimeProcess.class.getDeclaredMethod("getSystemProcess"); //$NON-NLS-1$
-				systemProcessGetter.setAccessible(true);
-				Process systemProcess = (Process)systemProcessGetter.invoke(process);
-				this.outputStream = systemProcess.getOutputStream();
-			} catch (ReflectiveOperationException ex) {
-				LanguageServerPlugin.logError(ex);
-			}
-		}
 		return this.outputStream;
 	}
 
 	@Override
 	public InputStream getErrorStream() {
-		if (this.errorStream == null) {
-			process = this.launch.getProcesses()[0];
-			this.errorStream = new StreamProxyInputStream(process);
-			process.getStreamsProxy().getErrorStreamMonitor().addListener(this.errorStream);
-		}
 		return this.errorStream;
 	}
 
