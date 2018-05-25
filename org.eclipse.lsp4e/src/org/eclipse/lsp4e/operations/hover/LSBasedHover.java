@@ -103,16 +103,23 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 				if (getInput() == null)
 					return;
 				Browser browser = (Browser) event.getSource();
+				@Nullable
 				Point constraints = getSizeConstraints();
 				Point hint = computeSizeHint();
 
 				setSize(hint.x, hint.y);
 				browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"nowrap\""); //$NON-NLS-1$
-				Double width = Math.min(constraints.x, 20 + (Double) browser.evaluate("return document.body.scrollWidth;")); //$NON-NLS-1$
+				Double width = 20 + (Double) browser.evaluate("return document.body.scrollWidth;"); //$NON-NLS-1$
+				if (constraints != null && constraints.x < width) {
+					width = (double) constraints.x;
+				}
 
 				setSize(width.intValue(), 0);
 				browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"normal\""); //$NON-NLS-1$
-				Double height = Math.min(constraints.y, (Double) browser.evaluate("return document.body.scrollHeight;")); //$NON-NLS-1$
+				Double height = (Double) browser.evaluate("return document.body.scrollHeight;"); //$NON-NLS-1$
+				if (constraints != null && constraints.y < height) {
+					height = (double) constraints.y;
+				}
 
 				setSize(width.intValue(), height.intValue());
 			}));
