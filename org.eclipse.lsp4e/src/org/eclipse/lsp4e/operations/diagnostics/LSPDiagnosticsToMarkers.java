@@ -112,6 +112,13 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 					document.getLength());
 			int end = Math.min(LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document),
 					document.getLength());
+			if (start == end && document.getLength() > end) {
+				end++;
+				if (document.getLineOfOffset(end) != document.getLineOfOffset(start)) {
+					start--;
+					end--;
+				}
+			}
 
 			marker.setAttribute(IMarker.CHAR_START, start);
 			marker.setAttribute(IMarker.CHAR_END, end);
