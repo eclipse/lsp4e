@@ -441,22 +441,25 @@ public class LanguageServerWrapper {
 		}
 		final IDocument theDocument = document;
 		initializeFuture.thenRun(() -> {
-			if (this.connectedDocuments.containsKey(thePath)) {
-				return;
-			}
-			Either<TextDocumentSyncKind, TextDocumentSyncOptions> syncOptions = initializeFuture == null ? null
-					: this.serverCapabilities.getTextDocumentSync();
-			TextDocumentSyncKind syncKind = null;
-			if (syncOptions != null) {
-				if (syncOptions.isRight()) {
-					syncKind = syncOptions.getRight().getChange();
-				} else if (syncOptions.isLeft()) {
-					syncKind = syncOptions.getLeft();
+			synchronized (connectedDocuments) {
+				if (this.connectedDocuments.containsKey(thePath)) {
+					return;
 				}
+				Either<TextDocumentSyncKind, TextDocumentSyncOptions> syncOptions = initializeFuture == null ? null
+						: this.serverCapabilities.getTextDocumentSync();
+				TextDocumentSyncKind syncKind = null;
+				if (syncOptions != null) {
+					if (syncOptions.isRight()) {
+						syncKind = syncOptions.getRight().getChange();
+					} else if (syncOptions.isLeft()) {
+						syncKind = syncOptions.getLeft();
+					}
+				}
+				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, thePath,
+						syncKind);
+				theDocument.addDocumentListener(listener);
+				LanguageServerWrapper.this.connectedDocuments.put(thePath, listener);
 			}
-			DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, thePath, syncKind);
-			theDocument.addDocumentListener(listener);
-			LanguageServerWrapper.this.connectedDocuments.put(thePath, listener);
 		});
 	}
 
