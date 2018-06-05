@@ -38,7 +38,7 @@ import org.eclipse.ui.console.MessageConsoleStream;
 public class LoggingStreamConnectionProviderProxy implements StreamConnectionProvider {
 	public static final String LOG_DIRECTORY = "languageServers-log"; //$NON-NLS-1$
 
-	private static final String FILE_KEY = "file.logging.disabled"; //$NON-NLS-1$
+	private static final String FILE_KEY = "file.logging.enabled"; //$NON-NLS-1$
 	private static final String STDERR_KEY = "stderr.logging.enabled"; //$NON-NLS-1$
 
 	private StreamConnectionProvider provider;
@@ -79,7 +79,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	 */
 	public static boolean shouldLog(String serverId) {
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
-		return !store.getBoolean(lsToFileLoggingId(serverId)) || store.getBoolean(lsToConsoleLoggingId(serverId));
+		return store.getBoolean(lsToFileLoggingId(serverId)) || store.getBoolean(lsToConsoleLoggingId(serverId));
 	}
 
 	public LoggingStreamConnectionProviderProxy(StreamConnectionProvider provider, String serverId) {
@@ -87,7 +87,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		this.provider = provider;
 
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
-		logToFile = !store.getBoolean(lsToFileLoggingId(serverId));
+		logToFile = store.getBoolean(lsToFileLoggingId(serverId));
 		logToConsole = store.getBoolean(lsToConsoleLoggingId(serverId));
 		store.addPropertyChangeListener(new IPropertyChangeListener() {
 			@Override

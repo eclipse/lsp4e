@@ -56,7 +56,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 
 	private TableViewer languageServerViewer;
 	private TableViewer launchConfigurationViewer;
-	private Map<String, Boolean> serverDisableLoggingToFile = new HashMap<>();
+	private Map<String, Boolean> serverEnableLoggingToFile = new HashMap<>();
 	private Map<String, Boolean> serverEnableLoggingToConsole = new HashMap<>();
 	private IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
 	private boolean hasLoggingBeenChanged = false;
@@ -130,10 +130,10 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		logToFileColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				return serverDisableLoggingToFile
+				return serverEnableLoggingToFile
 						.getOrDefault(((ContentTypeToLanguageServerDefinition) element).getValue().id, false)
-								? Messages.PreferencePage_enablementCondition_false
-								: Messages.PreferencePage_enablementCondition_true;
+								? Messages.PreferencePage_enablementCondition_true
+								: Messages.PreferencePage_enablementCondition_false;
 			}
 		});
 
@@ -162,8 +162,8 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 				String key = ((ContentTypeToLanguageServerDefinition) ((StructuredSelection) event.getSelection())
 						.getFirstElement()).getValue().id;
 				if (cell.getColumnIndex() == addedColumnIndex) {
-					boolean newLogging = !serverDisableLoggingToFile.getOrDefault(key, false);
-					serverDisableLoggingToFile.put(key, newLogging);
+					boolean newLogging = !serverEnableLoggingToFile.getOrDefault(key, false);
+					serverEnableLoggingToFile.put(key, newLogging);
 				} else {
 					boolean newLogging = !serverEnableLoggingToConsole.getOrDefault(key, false);
 					serverEnableLoggingToConsole.put(key, newLogging);
@@ -187,7 +187,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		Button disableFileLogging = new Button(loggingComposite, SWT.NONE);
 		disableFileLogging.setText(Messages.PreferencePage_enablementCondition_disableAll);
 		disableFileLogging.addSelectionListener(widgetSelectedAdapter(e -> {
-			serverDisableLoggingToFile.forEach((s, b) -> serverDisableLoggingToFile.put(s, true));
+			serverEnableLoggingToFile.forEach((s, b) -> serverEnableLoggingToFile.put(s, false));
 			hasLoggingBeenChanged = true;
 			languageServerViewer.refresh();
 			launchConfigurationViewer.refresh();
@@ -195,7 +195,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		Button enableFileLogging = new Button(loggingComposite, SWT.NONE);
 		enableFileLogging.setText(Messages.PreferencePage_enablementCondition_enableAll);
 		enableFileLogging.addSelectionListener(widgetSelectedAdapter(e -> {
-			serverDisableLoggingToFile.forEach((s, b) -> serverDisableLoggingToFile.put(s, false));
+			serverEnableLoggingToFile.forEach((s, b) -> serverEnableLoggingToFile.put(s, true));
 			hasLoggingBeenChanged = true;
 			languageServerViewer.refresh();
 			launchConfigurationViewer.refresh();
@@ -223,8 +223,8 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 
 	@Override
 	protected void performDefaults() {
-		serverDisableLoggingToFile.forEach((s, b) -> {
-			serverDisableLoggingToFile.put(s,
+		serverEnableLoggingToFile.forEach((s, b) -> {
+			serverEnableLoggingToFile.put(s,
 					store.getBoolean(LoggingStreamConnectionProviderProxy.lsToFileLoggingId(s)));
 		});
 		serverEnableLoggingToConsole.forEach((s, b) -> {
@@ -237,7 +237,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 	}
 
 	private void applyLoggingEnablment() {
-		serverDisableLoggingToFile.forEach((s, b) -> {
+		serverEnableLoggingToFile.forEach((s, b) -> {
 			store.setValue(LoggingStreamConnectionProviderProxy.lsToFileLoggingId(s), b);
 		});
 		serverEnableLoggingToConsole.forEach((s, b) -> {
@@ -273,7 +273,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			String id = o.getValue().id;
 			if (languageServerIDs.add(id)) {
 				contentTypeToLSPLaunchConfigEntries.add(o);
-				serverDisableLoggingToFile.put(id, serverDisableLoggingToFile.getOrDefault(id,
+				serverEnableLoggingToFile.put(id, serverEnableLoggingToFile.getOrDefault(id,
 						store.getBoolean(LoggingStreamConnectionProviderProxy.lsToFileLoggingId(id))));
 				serverEnableLoggingToConsole.put(id, serverEnableLoggingToConsole.getOrDefault(id,
 						store.getBoolean(LoggingStreamConnectionProviderProxy.lsToConsoleLoggingId(id))));
@@ -289,7 +289,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			String id = o.getValue().id;
 			if (languageServerIDs.add(id)) {
 				contentTypeToLanguageServerDefinitions.add(o);
-				serverDisableLoggingToFile.put(id, serverDisableLoggingToFile.getOrDefault(id,
+				serverEnableLoggingToFile.put(id, serverEnableLoggingToFile.getOrDefault(id,
 						store.getBoolean(LoggingStreamConnectionProviderProxy.lsToFileLoggingId(id))));
 				serverEnableLoggingToConsole.put(id, serverEnableLoggingToConsole.getOrDefault(id,
 						store.getBoolean(LoggingStreamConnectionProviderProxy.lsToConsoleLoggingId(id))));
