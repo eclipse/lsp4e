@@ -103,8 +103,13 @@ public class TestUtils {
 		return createUniqueTestFile(p, "lsptunknown", content);
 	}
 
-	public static IFile createUniqueTestFile(IProject p, String extension, String content) throws CoreException {
-		return createFile(p, "test" + (System.currentTimeMillis()) + '.' + extension, content);
+	public static synchronized IFile createUniqueTestFile(IProject p, String extension, String content)
+			throws CoreException {
+		long fileNameSalt = System.currentTimeMillis();
+		while (p.getFile("test" + fileNameSalt + '.' + extension).exists()) {
+			fileNameSalt++;
+		}
+		return createFile(p, "test" + fileNameSalt + '.' + extension, content);
 	}
 
 	public static IFile createFile(IProject p, String name, String content) throws CoreException {

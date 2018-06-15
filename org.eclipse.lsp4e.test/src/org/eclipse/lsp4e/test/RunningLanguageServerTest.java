@@ -15,6 +15,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -49,7 +50,7 @@ public class RunningLanguageServerTest {
 		project.delete(true, true, new NullProgressMonitor());
 		MockLanguageSever.INSTANCE.shutdown();
 	}
-	
+
 	/**
 	 * checks if language servers get started and shutdown correctly if opening and
 	 * closing the same file/editor multiple times
@@ -58,7 +59,7 @@ public class RunningLanguageServerTest {
 	public void testOpenCloseLanguageServer() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		Display display = Display.getCurrent();
-		
+
 		// open and close the editor several times
 		for(int i = 0; i < 10; i++) {
 			IEditorPart editor = TestUtils.openEditor(testFile);
@@ -72,7 +73,7 @@ public class RunningLanguageServerTest {
 					new LSDisplayHelper(() -> !MockLanguageSever.INSTANCE.isRunning()).waitForCondition(display, 5000));
 		}
 	}
-	
+
 	@Test
 	public void testDisabledLanguageServer() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "lspt-disabled", "");
@@ -94,6 +95,20 @@ public class RunningLanguageServerTest {
 
 		assertTrue("language server should be started",
 				new LSDisplayHelper(() -> MockLanguageSever.INSTANCE.isRunning()).waitForCondition(display, 5000));
+	}
+
+	@Test
+	public void testBug535887DisabledWithMultipleOpenFiles() throws CoreException, InvocationTargetException {
+		ContentTypeToLanguageServerDefinition lsDefinition = TestUtils.getDisabledLS();
+		lsDefinition.setUserEnabled(true);
+		LanguageServiceAccessor.enableLanguageServerContentType(lsDefinition, TestUtils.getEditors());
+
+		IFile testFile1 = TestUtils.createUniqueTestFile(project, "lspt-disabled", "");
+		IFile testFile2 = TestUtils.createUniqueTestFile(project, "lspt-disabled", "");
+		TestUtils.openEditor(testFile1);
+		TestUtils.openEditor(testFile2);
+		lsDefinition.setUserEnabled(false);
+		LanguageServiceAccessor.disableLanguageServerContentType(lsDefinition);
 	}
 
 }
