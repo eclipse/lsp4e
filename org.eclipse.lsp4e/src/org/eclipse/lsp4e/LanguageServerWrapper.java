@@ -475,14 +475,18 @@ public class LanguageServerWrapper {
 	}
 
 	public void disconnectContentType(@NonNull IContentType contentType) {
+		List<IPath> pathsToDisconnect = new ArrayList<>();
 		for (IPath path : connectedDocuments.keySet()) {
 			IFile[] foundFiles = ResourcesPlugin.getWorkspace().getRoot().findFilesForLocationURI(path.toFile().toURI());
 			if(foundFiles.length != 0) {
 				if (LSPEclipseUtils.getFileContentTypes(foundFiles[0]).stream()
 						.anyMatch(foundContentType -> contentType.equals(foundContentType))) {
-					disconnect(path);
+					pathsToDisconnect.add(path);
 				}
 			}
+		}
+		for (IPath path : pathsToDisconnect) {
+			disconnect(path);
 		}
 	}
 
