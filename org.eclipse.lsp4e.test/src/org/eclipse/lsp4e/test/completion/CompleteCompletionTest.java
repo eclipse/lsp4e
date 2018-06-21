@@ -13,7 +13,9 @@ package org.eclipse.lsp4e.test.completion;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -25,20 +27,19 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ProjectSpecificLanguageServerWrapper;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
-import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
 import org.eclipse.lsp4j.CompletionItem;
@@ -55,29 +56,10 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
-public class CompleteCompletionTest {
-
-	private IProject project;
-	private LSContentAssistProcessor contentAssistProcessor;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("CompletionTest" + System.currentTimeMillis());
-		contentAssistProcessor = new LSContentAssistProcessor();
-	}
-
-	@After
-	public void tearDown() throws CoreException {
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
-		project.delete(true, true, new NullProgressMonitor());
-		MockLanguageSever.INSTANCE.shutdown();
-	}
-
+public class CompleteCompletionTest extends AbstractCompletionTest {
 	/*
 	 * This tests the not-so-official way to associate a LS to a file programmatically, and then to retrieve the LS
 	 * for the file independently of the content-types. Although doing it programatically isn't recommended, consuming
@@ -307,18 +289,6 @@ public class CompleteCompletionTest {
 		assertEquals(new Point(viewer.getDocument().getLength(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 	}
 
-	private CompletionItem createCompletionItem(String label, CompletionItemKind kind) {
-		return createCompletionItem(label, kind, new Range(new Position(0, 0), new Position(0, label.length())));
-	}
-
-	private CompletionItem createCompletionItem(String label, CompletionItemKind kind, Range range) {
-		CompletionItem item = new CompletionItem();
-		item.setLabel(label);
-		item.setKind(kind);
-		item.setTextEdit(new TextEdit(range, label));
-		return item;
-	}
-
 	@Test
 	public void testItemOrdering() throws Exception {
 		Range range = new Range(new Position(0, 0), new Position(0, 1));
@@ -441,6 +411,39 @@ public class CompleteCompletionTest {
 		lsCompletionProposal = (LSCompletionProposal) proposals[0];
 		lsCompletionProposal.apply(viewer, '\n', 0, 0);
 		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
+	}
+
+	@Test
+	public void testFilterNonmatchingCompletions() throws Exception {
+		List<CompletionItem> items = new ArrayList<>();
+		CompletionItem item = new CompletionItem("server.web");
+		item.setFilterText("server.web");
+		item.setTextEdit(new TextEdit(new Range(new Position(0, 0), new Position(0, 10)), item.getFilterText()));
+		items.add(item);
+		// 'soup' replacing the 'ver' in 'server' does not make sense when knowing that
+		// ver should have been a filter
+		item = new CompletionItem("soup");
+		item.setFilterText("soup");
+		item.setTextEdit(new TextEdit(new Range(new Position(0, 3), new Position(0, 7)), item.getFilterText()));
+		items.add(item);
+		items.add(new CompletionItem(": 1.0.1"));
+		items.add(new CompletionItem("s.Status"));
+
+		confirmCompletionResults(items, "server", 6, new String[] { "server.web", ": 1.0.1", "s.Status" });
+	}
+
+	@Test
+	public void testFilterNonmatchingCompletionsMovieOffset() throws Exception {
+		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "servers")).getDocument();
+		LSPDocumentInfo info = LanguageServiceAccessor
+				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
+						|| capabilities.getSignatureHelpProvider() != null)
+				.get(0);
+		// The completion ': 1.0.1' was given, then the user types a 's', which is used
+		// as a filter and removes the completion
+		LSCompletionProposal completionProposal = new LSCompletionProposal(new CompletionItem(": 1.0.1"), 0, info);
+		assertTrue(completionProposal.isValidFor(document, 6));
+		assertFalse(completionProposal.isValidFor(document, 7));
 	}
 
 }

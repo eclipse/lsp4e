@@ -22,10 +22,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
@@ -34,7 +32,6 @@ import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ProjectSpecificLanguageServerWrapper;
-import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
 import org.eclipse.lsp4e.operations.completion.LSIncompleteCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
@@ -48,29 +45,9 @@ import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
-public class IncompleteCompletionTest {
-
-	private IProject project;
-	private LSContentAssistProcessor contentAssistProcessor;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("CompletionTest" + System.currentTimeMillis());
-		contentAssistProcessor = new LSContentAssistProcessor();
-	}
-
-	@After
-	public void tearDown() throws CoreException {
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
-		project.delete(true, true, new NullProgressMonitor());
-		MockLanguageSever.INSTANCE.shutdown();
-	}
-
+public class IncompleteCompletionTest extends AbstractCompletionTest {
 	/*
 	 * This tests the not-so-official way to associate a LS to a file programmatically, and then to retrieve the LS
 	 * for the file independently of the content-types. Although doing it programatically isn't recommended, consuming
@@ -346,18 +323,6 @@ public class IncompleteCompletionTest {
 		assertEquals("line1\nlineInserted", viewer.getDocument().get());
 		assertEquals(new Point(viewer.getDocument().getLength(), 0),
 				LSIncompleteCompletionProposal.getSelection(viewer.getDocument()));
-	}
-
-	private CompletionItem createCompletionItem(String label, CompletionItemKind kind) {
-		return createCompletionItem(label, kind, new Range(new Position(0, 0), new Position(0, label.length())));
-	}
-
-	private CompletionItem createCompletionItem(String label, CompletionItemKind kind, Range range) {
-		CompletionItem item = new CompletionItem();
-		item.setLabel(label);
-		item.setKind(kind);
-		item.setTextEdit(new TextEdit(range, label));
-		return item;
 	}
 
 	@Test

@@ -73,22 +73,37 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	}
 
 	private Comparator<LSCompletionProposal> proposalConparoator = (o1, o2) -> {
-		if (o1.getBestOffset() < o2.getBestOffset()) {
-			return -1;
-		} else if (o1.getBestOffset() > o2.getBestOffset()) {
-			return +1;
-		} else if (o1.getNumberOfModifsBeforeOffset() < o2.getNumberOfModifsBeforeOffset()) {
-			return -1;
-		} else if (o1.getNumberOfModifsBeforeOffset() > o2.getNumberOfModifsBeforeOffset()) {
-			return +1;
-		} else {
-			String c1 = o1.getSortText();
-			String c2 = o2.getSortText();
-			if (c1 == null) {
+		try {
+			int docFilterLen1 = o1.getDocumentFilter().length();
+			int docFilterLen2 = o2.getDocumentFilter().length();
+			if (docFilterLen1 > docFilterLen2) {
 				return -1;
+			} else if (docFilterLen1 < docFilterLen2) {
+				return +1;
 			}
-			return c1.compareToIgnoreCase(c2);
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
 		}
+		if (o1.getRankCategory() < o2.getRankCategory()) {
+			return -1;
+		} else if (o1.getRankCategory() > o2.getRankCategory()) {
+			return +1;
+		}
+		if (o1.getRankCategory() < 5 && o2.getRankCategory() < 5) {
+			if (!(o1.getRankScore() == -1 && o2.getRankScore() == -1)) {
+				if (o2.getRankScore() == -1 || o1.getRankScore() < o2.getRankScore()) {
+					return -1;
+				} else if (o1.getRankScore() == -1 || o1.getRankScore() > o2.getRankScore()) {
+					return +1;
+				}
+			}
+		}
+		String c1 = o1.getSortText();
+		String c2 = o2.getSortText();
+		if (c1 == null) {
+			return -1;
+		}
+		return c1.compareToIgnoreCase(c2);
 	};
 
 	@Override

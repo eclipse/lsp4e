@@ -95,16 +95,98 @@ public class LSIncompleteCompletionProposal
 	protected CompletionItem item;
 	private int initialOffset = -1;
 	protected int bestOffset = -1;
+	protected int currentOffset = -1;
 	protected ITextViewer viewer;
 	private IRegion selection;
 	private LinkedPosition firstPosition;
 	private LSPDocumentInfo info;
+	private Integer rankCategory;
+	private Integer rankScore;
+	private String documentFilter;
+	private String documentFilterAddition = ""; //$NON-NLS-1$
 
 	public LSIncompleteCompletionProposal(@NonNull CompletionItem item, int offset, LSPDocumentInfo info) {
 		this.item = item;
 		this.info = info;
 		this.initialOffset = offset;
+		this.currentOffset = offset;
 		this.bestOffset = getPrefixCompletionStart(info.getDocument(), offset);
+	}
+
+	/**
+	 * See {@link CompletionProposalTools.getFilterFromDocument} for filter
+	 * generation logic
+	 *
+	 * @return The document filter for the given offset
+	 */
+	public String getDocumentFilter(int offset) throws BadLocationException {
+		if (documentFilter != null) {
+			if (offset != currentOffset) {
+				documentFilterAddition = info.getDocument().get(initialOffset, offset - initialOffset);
+				rankScore = null;
+				rankCategory = null;
+				currentOffset = offset;
+			}
+			return documentFilter + documentFilterAddition;
+		}
+		currentOffset = offset;
+		return getDocumentFilter();
+	}
+
+	/**
+	 * See {@link CompletionProposalTools.getFilterFromDocument} for filter
+	 * generation logic
+	 *
+	 * @return The document filter for the last given offset
+	 */
+	public String getDocumentFilter() throws BadLocationException {
+		if (documentFilter != null) {
+			return documentFilter + documentFilterAddition;
+		}
+		documentFilter = CompletionProposalTools.getFilterFromDocument(info.getDocument(), currentOffset,
+				getFilterString(), bestOffset);
+		documentFilterAddition = ""; //$NON-NLS-1$
+		return documentFilter;
+	}
+
+	/**
+	 * See {@link CompletionProposalTools.getScoreOfFilterMatch} for ranking logic
+	 *
+	 * @return The rank of the match between the document's filter and this
+	 *         completion's filter.
+	 */
+	public int getRankScore() {
+		if (rankScore != null)
+			return rankScore;
+		try {
+			rankScore = CompletionProposalTools.getScoreOfFilterMatch(getDocumentFilter(),
+					getFilterString());
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+			rankScore = -1;
+		}
+		return rankScore;
+	}
+
+	/**
+	 * See {@link CompletionProposalTools.getCategoryOfFilterMatch} for category
+	 * logic
+	 *
+	 * @return The category of the match between the document's filter and this
+	 *         completion's filter.
+	 */
+	public int getRankCategory() {
+		if (rankCategory != null) {
+			return rankCategory;
+		}
+		try {
+			rankCategory = CompletionProposalTools.getCategoryOfFilterMatch(getDocumentFilter(),
+					getFilterString());
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+			rankCategory = 5;
+		}
+		return rankCategory;
 	}
 
 	public int getBestOffset() {
@@ -125,14 +207,8 @@ public class LSIncompleteCompletionProposal
 		StyledString res = new StyledString(rawString);
 		if (offset > this.bestOffset) {
 			try {
-				String subString = document.get(this.bestOffset, offset - this.bestOffset);
-				if (item.getTextEdit() != null) {
-					int start = LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getStart(), document);
-					int end = offset;
-					subString = document.get(start, end - start);
-				}
+				String subString = getDocumentFilter(offset).toLowerCase();
 				int lastIndex = 0;
-				subString = subString.toLowerCase();
 				String lowerRawString = rawString.toLowerCase();
 				for (Character c : subString.toCharArray()) {
 					int index = lowerRawString.indexOf(c, lastIndex);
@@ -533,29 +609,10 @@ public class LSIncompleteCompletionProposal
 		return item.getLabel();
 	}
 
-	public int getNumberOfModifsBeforeOffset() {
-		if (this.item.getTextEdit() == null) {
-			// only insertion and offset is moved back in case document contains prefix
-			// of insertion, so no change done before offset
-			return 0;
+	public String getFilterString() {
+		if (item.getFilterText() != null && !item.getFilterText().isEmpty()) {
+			return item.getFilterText();
 		}
-		int res = 0;
-		try {
-			int startOffset = LSPEclipseUtils.toOffset(this.item.getTextEdit().getRange().getStart(), this.info.getDocument());
-			String insert = this.item.getTextEdit().getNewText();
-			String subDoc = this.info.getDocument().get(startOffset, Math.min(
-					startOffset + insert.length(),
-					this.info.getDocument().getLength() - startOffset));
-			for (int i = 0; i < subDoc.length() && i < insert.length(); i++) {
-				if (subDoc.charAt(i) != insert.charAt(i)) {
-					res++;
-				}
-			}
-		} catch (BadLocationException e) {
-			LanguageServerPlugin.logError(e);
-		}
-		return res;
-
+		return item.getLabel();
 	}
-
 }

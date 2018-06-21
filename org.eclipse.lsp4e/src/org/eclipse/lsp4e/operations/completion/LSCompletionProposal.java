@@ -56,26 +56,11 @@ public class LSCompletionProposal extends LSIncompleteCompletionProposal
 			return false;
 		}
 		try {
-			String subString = document.get(this.bestOffset, offset - this.bestOffset);
-			String insert = getInsertText();
-			if (item.getTextEdit() != null) {
-				int start = LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getStart(), document);
-				int end = offset;
-
-				subString = document.get(start, end - start);
-				insert = item.getTextEdit().getNewText();
-			}
-
-			int lastIndex = 0;
-			insert = insert.toLowerCase();
-			subString = subString.toLowerCase();
-			for (Character c : subString.toCharArray()) {
-				int index = insert.indexOf(c, lastIndex);
-				if (index < 0) {
-					return false;
-				} else {
-					lastIndex = index + 1;
-				}
+			String documentFilter = getDocumentFilter(offset);
+			if (!documentFilter.isEmpty()) {
+				return CompletionProposalTools.isSubstringFoundOrderedInString(documentFilter, getFilterString());
+			} else if (item.getTextEdit() != null) {
+				return offset == LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getStart(), document);
 			}
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);

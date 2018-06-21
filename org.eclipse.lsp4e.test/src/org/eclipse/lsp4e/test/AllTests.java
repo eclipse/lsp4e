@@ -15,6 +15,7 @@ package org.eclipse.lsp4e.test;
 import org.eclipse.lsp4e.test.codeactions.CodeActionTests;
 import org.eclipse.lsp4e.test.commands.DynamicRegistrationTest;
 import org.eclipse.lsp4e.test.completion.CompleteCompletionTest;
+import org.eclipse.lsp4e.test.completion.CompletionOrderingTests;
 import org.eclipse.lsp4e.test.completion.ContextInformationTest;
 import org.eclipse.lsp4e.test.completion.IncompleteCompletionTest;
 import org.eclipse.lsp4e.test.definition.DefinitionTest;
@@ -41,6 +42,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	ContentTypeToLanguageServerDefinitionTest.class,
 	CompleteCompletionTest.class,
 	IncompleteCompletionTest.class,
+	CompletionOrderingTests.class,
 	ContextInformationTest.class,
 	DocumentDidOpenTest.class,
 	DocumentDidChangeTest.class,
