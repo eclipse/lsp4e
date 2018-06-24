@@ -150,7 +150,7 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 		if (symbol.getName() != null) {
 			res.append(symbol.getName(), null);
 		}
-		if (showKind) {
+		if (showKind && symbol.getKind() != null) {
 			res.append(" :", null); //$NON-NLS-1$
 			res.append(symbol.getKind().toString(), StyledString.DECORATIONS_STYLER);
 		}
