@@ -53,6 +53,17 @@ public class CNFOutlinePage implements IContentOutlinePage {
 	private ITextEditor textEditor;
 	private StyledText styledText;
 
+	class OutlineInfo {
+
+		public final LSPDocumentInfo info;
+		public final ITextEditor textEditor;
+
+		public OutlineInfo(LSPDocumentInfo info, @Nullable ITextEditor textEditor) {
+			this.info = info;
+			this.textEditor = textEditor;
+		}
+	}
+
 	public CNFOutlinePage(LSPDocumentInfo info, @Nullable ITextEditor textEditor) {
 		this.preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 		this.textEditor = textEditor;
@@ -62,7 +73,7 @@ public class CNFOutlinePage implements IContentOutlinePage {
 	@Override
 	public void createControl(Composite parent) {
 		this.viewer = new CommonViewer(ID, parent, SWT.NONE);
-		this.viewer.setInput(info);
+		this.viewer.setInput(new OutlineInfo(info, textEditor));
 		if (textEditor != null) {
 			this.viewer.addOpenListener(event -> {
 				if (preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true))

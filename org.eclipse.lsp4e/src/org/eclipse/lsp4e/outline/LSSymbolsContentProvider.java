@@ -24,15 +24,21 @@ import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.text.DocumentEvent;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
+import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextSelection;
+import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.reconciler.AbstractReconciler;
+import org.eclipse.jface.text.reconciler.DirtyRegion;
+import org.eclipse.jface.text.reconciler.IReconcilingStrategy;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.StructuredViewer;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.outline.CNFOutlinePage.OutlineInfo;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
@@ -44,18 +50,91 @@ import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonContentProvider;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 
-public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeContentProvider, IDocumentListener, IResourceChangeListener {
+public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeContentProvider, IResourceChangeListener {
 
 	public static final Object COMPUTING = new Object();
 
+	interface IOutlineUpdater {
+		void install();
+
+		void uninstall();
+	}
+
+	class DocumentChangedOutlineUpdater implements IDocumentListener, IOutlineUpdater {
+
+		private final IDocument document;
+
+		@Override
+		public void install() {
+			document.addDocumentListener(this);
+			refreshTreeContentFromLS();
+		}
+
+		@Override
+		public void uninstall() {
+			document.removeDocumentListener(this);
+		}
+
+		DocumentChangedOutlineUpdater(IDocument document) {
+			this.document = document;
+		}
+
+		@Override
+		public void documentAboutToBeChanged(DocumentEvent event) {
+			// Do nothing
+		}
+
+		@Override
+		public void documentChanged(DocumentEvent event) {
+			refreshTreeContentFromLS();
+		}
+	}
+
+	class ReconcilerOutlineUpdater extends AbstractReconciler implements IOutlineUpdater {
+
+		private final ITextViewer textViewer;
+
+		ReconcilerOutlineUpdater(ITextViewer textViewer) {
+			this.textViewer = textViewer;
+			super.setIsIncrementalReconciler(false);
+			super.setIsAllowedToModifyDocument(false);
+		}
+
+		@Override
+		public void install() {
+			super.install(textViewer);
+		}
+
+		@Override
+		protected void initialProcess() {
+			refreshTreeContentFromLS();
+		}
+
+		@Override
+		protected void process(DirtyRegion dirtyRegion) {
+			refreshTreeContentFromLS();
+		}
+
+		@Override
+		protected void reconcilerDocumentChanged(IDocument newDocument) {
+			// Do nothing
+		}
+
+		@Override
+		public IReconcilingStrategy getReconcilingStrategy(String contentType) {
+			return null;
+		}
+	}
+
 	private TreeViewer viewer;
 	private Throwable lastError;
-	private LSPDocumentInfo info;
+	private OutlineInfo outlineInfo;
 
 	private SymbolsModel symbolsModel = new SymbolsModel();
 	private CompletableFuture<List<? extends SymbolInformation>> symbols;
 
 	private IResource resource;
+	private IOutlineUpdater outlineUpdater;
 
 	@Override
 	public void init(ICommonContentExtensionSite aConfig) {
@@ -64,11 +143,18 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	@Override
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		this.viewer = (TreeViewer) viewer;
-		this.info = (LSPDocumentInfo) newInput;
-		info.getDocument().addDocumentListener(this);
-		resource = LSPEclipseUtils.findResourceFor(info.getFileUri().toString());
+		this.outlineInfo = (OutlineInfo) newInput;
+		resource = LSPEclipseUtils.findResourceFor(outlineInfo.info.getFileUri().toString());
 		resource.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
-		refreshTreeContentFromLS();
+		if (outlineUpdater != null) {
+			outlineUpdater.uninstall();
+		}
+		ITextViewer textViewer = outlineInfo.textEditor == null ? null
+				: ((ITextViewer) outlineInfo.textEditor.getAdapter(ITextOperationTarget.class));
+		outlineUpdater = textViewer == null
+				? new DocumentChangedOutlineUpdater(outlineInfo.info.getDocument())
+				: new ReconcilerOutlineUpdater(textViewer);
+		outlineUpdater.install();
 	}
 
 	@Override
@@ -98,22 +184,14 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		return children != null && children.length > 0;
 	}
 
-	@Override
-	public void documentAboutToBeChanged(DocumentEvent event) {
-	}
-
-	@Override
-	public void documentChanged(DocumentEvent event) {
-		refreshTreeContentFromLS();
-	}
-
 	private void refreshTreeContentFromLS() {
 		if (symbols != null && !symbols.isDone()) {
 			symbols.cancel(true);
 		}
 		lastError = null;
-		DocumentSymbolParams params = new DocumentSymbolParams(new TextDocumentIdentifier(info.getFileUri().toString()));
-		symbols = info.getInitializedLanguageClient()
+		DocumentSymbolParams params = new DocumentSymbolParams(
+				new TextDocumentIdentifier(outlineInfo.info.getFileUri().toString()));
+		symbols = outlineInfo.info.getInitializedLanguageClient()
 				.thenCompose(languageServer -> languageServer.getTextDocumentService().documentSymbol(params));
 		symbols.thenAccept((List<? extends SymbolInformation> t) -> {
 			symbolsModel.update(t);
@@ -131,7 +209,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 				if (editorPart instanceof AbstractTextEditor) {
 					ITextSelection selection = (ITextSelection) ((AbstractTextEditor) editorPart).getSelectionProvider()
 							.getSelection();
-					CNFOutlinePage.refreshTreeSelection(viewer, selection.getOffset(), info.getDocument());
+					CNFOutlinePage.refreshTreeSelection(viewer, selection.getOffset(), outlineInfo.info.getDocument());
 				}
 			});
 		});
@@ -147,7 +225,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 	@Override
 	public void dispose() {
-		info.getDocument().removeDocumentListener(this);
+		outlineUpdater.uninstall();
 		resource.getWorkspace().removeResourceChangeListener(this);
 		ICommonContentProvider.super.dispose();
 	}
