@@ -51,6 +51,7 @@ public class CNFOutlinePage implements IContentOutlinePage {
 	private IEclipsePreferences preferences;
 	private LSPDocumentInfo info;
 	private ITextEditor textEditor;
+	private StyledText styledText;
 
 	public CNFOutlinePage(LSPDocumentInfo info, @Nullable ITextEditor textEditor) {
 		this.preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
@@ -67,7 +68,6 @@ public class CNFOutlinePage implements IContentOutlinePage {
 				if (preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true))
 					textEditor.setFocus();
 			});
-			final StyledText styledText;
 			if (textEditor instanceof AbstractTextEditor) {
 				AbstractTextEditor editor = (AbstractTextEditor) textEditor;
 				styledText = ((StyledText) editor.getAdapter(Control.class));
@@ -162,6 +162,9 @@ public class CNFOutlinePage implements IContentOutlinePage {
 	@Override
 	public void dispose() {
 		this.viewer.dispose();
+		if (styledText != null) {
+			styledText.removeCaretListener(selectByEditorCaretListener);
+		}
 	}
 
 	@Override
