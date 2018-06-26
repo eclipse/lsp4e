@@ -50,7 +50,7 @@ import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonContentProvider;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 
-public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeContentProvider, IResourceChangeListener {
+public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeContentProvider {
 
 	public static final Object COMPUTING = new Object();
 
@@ -126,15 +126,61 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		}
 	}
 
+	class ResourceChangeOutlineUpdater implements IResourceChangeListener, IOutlineUpdater {
+
+		private final IResource resource;
+
+		public ResourceChangeOutlineUpdater(IResource resource) {
+			this.resource = resource;
+		}
+
+		@Override
+		public void install() {
+			resource.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
+		}
+
+		@Override
+		public void uninstall() {
+			resource.getWorkspace().removeResourceChangeListener(this);
+		}
+
+		@Override
+		public void resourceChanged(IResourceChangeEvent event) {
+			if ((event.getDelta().getFlags() ^ IResourceDelta.MARKERS) != 0) {
+				try {
+					event.getDelta().accept(delta -> {
+						if (delta.getResource().equals(this.resource)) {
+							viewer.getControl().getDisplay().asyncExec(() -> {
+								if (!viewer.getControl().isDisposed() && viewer instanceof StructuredViewer) {
+									viewer.refresh(true);
+								}
+							});
+						}
+						return delta.getResource().getFullPath().isPrefixOf(this.resource.getFullPath());
+					});
+				} catch (CoreException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			}
+		}
+	}
+
 	private TreeViewer viewer;
 	private Throwable lastError;
 	private OutlineInfo outlineInfo;
 
 	private SymbolsModel symbolsModel = new SymbolsModel();
 	private CompletableFuture<List<? extends SymbolInformation>> symbols;
-
-	private IResource resource;
+	private final boolean refreshOnResourceChanged;
 	private IOutlineUpdater outlineUpdater;
+
+	public LSSymbolsContentProvider() {
+		this(false);
+	}
+
+	public LSSymbolsContentProvider(boolean refreshOnResourceChanged) {
+		this.refreshOnResourceChanged = refreshOnResourceChanged;
+	}
 
 	@Override
 	public void init(ICommonContentExtensionSite aConfig) {
@@ -144,17 +190,23 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		this.viewer = (TreeViewer) viewer;
 		this.outlineInfo = (OutlineInfo) newInput;
-		resource = LSPEclipseUtils.findResourceFor(outlineInfo.info.getFileUri().toString());
-		resource.getWorkspace().addResourceChangeListener(this, IResourceChangeEvent.POST_CHANGE);
 		if (outlineUpdater != null) {
 			outlineUpdater.uninstall();
 		}
+		outlineUpdater = createOutlineUpdater();
+		outlineUpdater.install();
+	}
+
+	private IOutlineUpdater createOutlineUpdater() {
+		if (refreshOnResourceChanged) {
+			IResource resource = LSPEclipseUtils.findResourceFor(outlineInfo.info.getFileUri().toString());
+			return new ResourceChangeOutlineUpdater(resource);
+		}
 		ITextViewer textViewer = outlineInfo.textEditor == null ? null
 				: ((ITextViewer) outlineInfo.textEditor.getAdapter(ITextOperationTarget.class));
-		outlineUpdater = textViewer == null
+		return textViewer == null
 				? new DocumentChangedOutlineUpdater(outlineInfo.info.getDocument())
 				: new ReconcilerOutlineUpdater(textViewer);
-		outlineUpdater.install();
 	}
 
 	@Override
@@ -226,28 +278,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	@Override
 	public void dispose() {
 		outlineUpdater.uninstall();
-		resource.getWorkspace().removeResourceChangeListener(this);
 		ICommonContentProvider.super.dispose();
-	}
-
-	@Override
-	public void resourceChanged(IResourceChangeEvent event) {
-		if ((event.getDelta().getFlags() ^ IResourceDelta.MARKERS) != 0) {
-			try {
-				event.getDelta().accept(delta -> {
-					if (delta.getResource().equals(this.resource)) {
-						viewer.getControl().getDisplay().asyncExec(() -> {
-							if (viewer instanceof StructuredViewer) {
-								viewer.refresh(true);
-							}
-						});
-					}
-					return delta.getResource().getFullPath().isPrefixOf(this.resource.getFullPath());
-				});
-			} catch (CoreException e) {
-				LanguageServerPlugin.logError(e);
-			}
-		}
 	}
 
 	@Override
