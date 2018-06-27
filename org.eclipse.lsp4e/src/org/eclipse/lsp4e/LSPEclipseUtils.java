@@ -545,13 +545,21 @@ public class LSPEclipseUtils {
 				}
 			} else if (arg instanceof JsonObject) {
 				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
-				TextEdit edit = gson.fromJson((JsonObject) arg, TextEdit.class);
-				if (edit != null) {
-					currentEntry.value.add(edit);
+				WorkspaceEdit wEdit = gson.fromJson((JsonObject) arg, WorkspaceEdit.class);
+				Map<String, List<TextEdit>> entries = wEdit.getChanges();
+				if (wEdit != null && !entries.isEmpty()) {
+					changes.putAll(entries);
+				} else {
+					TextEdit edit = gson.fromJson((JsonObject) arg, TextEdit.class);
+					if (edit != null && edit.getRange() != null) {
+						currentEntry.value.add(edit);
+					}
 				}
 			}
 		});
-		changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
+		if (!currentEntry.value.isEmpty()) {
+			changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
+		}
 		return res;
 	}
 

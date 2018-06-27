@@ -31,6 +31,7 @@ import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -51,7 +52,7 @@ public class CodeActionTests {
 	}
 
 	@Test
-	public void testCodeActions() throws CoreException {
+	public void testCodeActionsForTextEdit() throws CoreException {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile f = TestUtils.createUniqueTestFile(p, "error");
 		MockLanguageSever.INSTANCE.setCodeActions(Collections.singletonList(new Command(
@@ -68,45 +69,82 @@ public class CodeActionTests {
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		try {
-			new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					try {
-						return f.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO).length > 0;
-					} catch (CoreException e) {
-						return false;
-					}
-				}
-			}.waitForCondition(Display.getCurrent(), 2000);
-			final IMarker m = f.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO)[0];
-			Assert.assertEquals("error", m.getAttribute(IMarker.MESSAGE));
-			new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					return
-						IDE.getMarkerHelpRegistry().hasResolutions(m) &&
-						// need this 2nd condition because async introduces a dummy resolution that's not the one we want
-						IDE.getMarkerHelpRegistry().getResolutions(m)[0].getLabel().equals("fixme");
-				}
-			}.waitForCondition(Display.getCurrent(), 2000);
-			IDE.getMarkerHelpRegistry().getResolutions(m)[0].run(m);
-			new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					return "fixed".equals(editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
-				}
-			}.waitForCondition(Display.getCurrent(), 1000);
-			Assert.assertEquals("fixed", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
-			new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					return "fixed".equals(((StyledText)editor.getAdapter(Control.class)).getText());
-				}
-			}.waitForCondition(Display.getCurrent(), 1000);
-			Assert.assertEquals("fixed", ((StyledText)editor.getAdapter(Control.class)).getText());
+			IMarker m = assertDiagnostics(f, "error", "fixme");
+			assertResolution(editor, m, "fixed");
 		} finally {
 			editor.close(false);
 			p.delete(true, new NullProgressMonitor());
 		}
 	}
+
+	@Test
+	public void testCodeActionsForWorkspaceEdit() throws CoreException {
+		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
+		IFile f = TestUtils.createUniqueTestFile(p, "error");
+
+		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
+		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
+		MockLanguageSever.INSTANCE.setCodeActions(Collections.singletonList(new Command(
+				"fixme",
+				"edit",
+				Collections.singletonList(wEdit))
+			)
+		);
+		MockLanguageSever.INSTANCE.setDiagnostics(Collections.singletonList(
+				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
+		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
+		try {
+			IMarker m = assertDiagnostics(f, "error", "fixme");
+			assertResolution(editor, m, "fixed");
+		} finally {
+			editor.close(false);
+			p.delete(true, new NullProgressMonitor());
+		}
+	}
+
+	public static IMarker assertDiagnostics(IFile f, String markerMessage, String resolutionLabel) throws CoreException {
+		new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				try {
+					IMarker [] markers = f.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO);
+					// seems we need the second condition as the attributes aren't loaded immediately
+					return markers.length > 0 && markers[0].getAttribute(IMarker.MESSAGE) != null;
+				} catch (CoreException e) {
+					return false;
+				}
+			}
+		}.waitForCondition(Display.getCurrent(), 2000);
+		final IMarker m = f.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO)[0];
+		Assert.assertEquals(markerMessage, m.getAttribute(IMarker.MESSAGE));
+		new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return
+					IDE.getMarkerHelpRegistry().hasResolutions(m) &&
+					// need this 2nd condition because async introduces a dummy resolution that's not the one we want
+					IDE.getMarkerHelpRegistry().getResolutions(m)[0].getLabel().equals(resolutionLabel);
+			}
+		}.waitForCondition(Display.getCurrent(), 2000);
+		return m;
+	}
+
+	public static void assertResolution(AbstractTextEditor editor, IMarker m, String newText) {
+		IDE.getMarkerHelpRegistry().getResolutions(m)[0].run(m);
+		new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return newText.equals(editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
+			}
+		}.waitForCondition(Display.getCurrent(), 1000);
+		Assert.assertEquals(newText, editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
+		new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return newText.equals(((StyledText) editor.getAdapter(Control.class)).getText());
+			}
+		}.waitForCondition(Display.getCurrent(), 1000);
+		Assert.assertEquals(newText, ((StyledText) editor.getAdapter(Control.class)).getText());
+	}
+
 }
