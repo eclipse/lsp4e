@@ -6,7 +6,7 @@
          <meta.schema plugin="org.eclipse.lsp4e" id="languageServer" name="Language Server"/>
       </appinfo>
       <documentation>
-         [Enter description of this extension point.]
+         This extension point allows to define Language Servers and enable those on some content-types.
       </documentation>
    </annotation>
 

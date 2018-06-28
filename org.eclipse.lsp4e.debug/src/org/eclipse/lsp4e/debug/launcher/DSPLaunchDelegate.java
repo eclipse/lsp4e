@@ -15,6 +15,7 @@ import java.lang.reflect.Type;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +56,9 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		Type type = new TypeToken<Map<String, Object>>() {
 		}.getType();
 		Map<String, Object> dspParameters = gson.fromJson(dspParametersJson, type);
+		if (dspParameters == null) {
+			dspParameters = new HashMap<>();
+		}
 
 		// DSP supports run/debug as a simple flag to the debug server.
 		// See LaunchRequestArguments.noDebug

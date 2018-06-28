@@ -182,7 +182,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	private CompletableFuture<Void> initialize(Map<String, Object> dspParameters, IProgressMonitor monitor) {
 		InitializeRequestArguments arguments = new InitializeRequestArguments();
 		arguments.setClientID("lsp4e.debug");
-		arguments.setAdapterID((String) dspParameters.get("type"));
+		String adapterId = "adapterId";
+		if (dspParameters.containsKey("type") && dspParameters.get("type") instanceof String) {
+			adapterId = (String)dspParameters.get("type");
+		}
+		arguments.setAdapterID(adapterId);
 		arguments.setPathFormat("path");
 		arguments.setSupportsVariableType(true);
 		arguments.setSupportsVariablePaging(true);

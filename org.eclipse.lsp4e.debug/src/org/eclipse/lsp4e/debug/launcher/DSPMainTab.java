@@ -158,7 +158,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 	public void setDefaults(ILaunchConfigurationWorkingCopy configuration) {
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_MODE, DSPPlugin.DSP_MODE_LAUNCH);
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_CMD, "");
-		configuration.setAttribute(DSPPlugin.ATTR_DSP_ARGS, "");
+		configuration.setAttribute(DSPPlugin.ATTR_DSP_ARGS, Collections.emptyList());
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, DEFAULT_SERVER);
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_SERVER_PORT, DEFAULT_PORT);
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_PARAM, "");
@@ -179,8 +179,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 			} else if (args.size() == 1) {
 				debugArgsText.setText(args.get(0));
 			} else {
-				// TODO
-				debugArgsText.setText("TODO add support for list: " + debugArgsText.toString());
+				debugArgsText.setText(String.join(" ", args.toArray(new String[args.size()])));
 			}
 			monitorAdapterLauncherProcessCheckbox.setSelection(configuration.getAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, false));
 			serverHost.setText(configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, DEFAULT_SERVER));
@@ -206,7 +205,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		if (arg == null) {
 			configuration.setAttribute(DSPPlugin.ATTR_DSP_ARGS, (String) null);
 		} else {
-			configuration.setAttribute(DSPPlugin.ATTR_DSP_ARGS, Arrays.asList(arg));
+			configuration.setAttribute(DSPPlugin.ATTR_DSP_ARGS, Arrays.asList(arg.split("\\s+"))); //$NON-NLS-1$
 		}
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, monitorAdapterLauncherProcessCheckbox.getSelection());
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, getAttributeValueFrom(serverHost));
