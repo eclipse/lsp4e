@@ -29,6 +29,7 @@ import org.eclipse.lsp4j.debug.NextArguments;
 import org.eclipse.lsp4j.debug.PauseArguments;
 import org.eclipse.lsp4j.debug.StackFrame;
 import org.eclipse.lsp4j.debug.StackTraceArguments;
+import org.eclipse.lsp4j.debug.StepInArguments;
 import org.eclipse.lsp4j.debug.StepOutArguments;
 import org.eclipse.lsp4j.debug.Thread;
 
@@ -128,9 +129,9 @@ public class DSPThread extends DSPDebugElement implements IThread {
 		continued();
 		stepping = true;
 		fireResumeEvent(DebugEvent.STEP_INTO);
-		NextArguments arguments = new NextArguments();
+		StepInArguments arguments = new StepInArguments();
 		arguments.setThreadId(id);
-		getDebugProtocolServer().next(arguments).exceptionally(this::handleExceptionalResume);
+		getDebugProtocolServer().stepIn(arguments).exceptionally(this::handleExceptionalResume);
 	}
 
 	@Override
