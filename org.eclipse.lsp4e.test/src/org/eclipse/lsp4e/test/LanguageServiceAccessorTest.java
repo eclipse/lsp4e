@@ -34,6 +34,9 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.internal.core.IInternalDebugCoreConstants;
+import org.eclipse.debug.internal.core.Preferences;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.ITextViewer;
@@ -349,4 +352,47 @@ public class LanguageServiceAccessorTest {
 		assertEquals("org.eclipse.lsp4e.test.server.disable", wrappers.iterator().next().serverDefinition.id);
 	}
 
+	@Test
+	public void testStatusHandlerLSAsRunConfiguration() throws Exception {
+		// test which checks that status handler preferences is kept after the launch is
+		// done.
+		IFile testFile = TestUtils.createFile(project, "shouldUseRunConfiguration.lspt2", "");
+
+		// Test with default status handler (see DebugPlugin#getStatusHandler)
+		boolean oldStatusHandler = getStatusHandler();
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next()
+				.get(1, TimeUnit.SECONDS);
+		assertEquals(getStatusHandler(), oldStatusHandler);
+
+		// Test with status handler set to false
+		setStatusHandler(false);
+		oldStatusHandler = getStatusHandler();
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next()
+				.get(1, TimeUnit.SECONDS);
+		assertEquals(getStatusHandler(), false);
+
+		// Test with status handler set to true
+		setStatusHandler(true);
+		oldStatusHandler = getStatusHandler();
+		LanguageServiceAccessor
+				.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next()
+				.get(1, TimeUnit.SECONDS);
+		assertEquals(getStatusHandler(), true);
+	}
+
+	private static boolean getStatusHandler() {
+		return Platform.getPreferencesService().getBoolean(DebugPlugin.getUniqueIdentifier(),
+				IInternalDebugCoreConstants.PREF_ENABLE_STATUS_HANDLERS, true, null);
+	}
+
+	/**
+	 * Update the the status handler preferences
+	 *
+	 * @param enabled
+	 *            the status handler preferences
+	 */
+	private static void setStatusHandler(boolean enabled) {
+		Preferences.setBoolean(DebugPlugin.getUniqueIdentifier(),
+				IInternalDebugCoreConstants.PREF_ENABLE_STATUS_HANDLERS, enabled, null);
+	}
 }

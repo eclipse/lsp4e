@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
@@ -35,6 +36,8 @@ import org.eclipse.debug.core.IStreamListener;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.debug.core.model.IStreamMonitor;
 import org.eclipse.debug.core.model.RuntimeProcess;
+import org.eclipse.debug.internal.core.IInternalDebugCoreConstants;
+import org.eclipse.debug.internal.core.Preferences;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
 /**
@@ -138,6 +141,9 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 
 	@Override
 	public void start() throws IOException {
+		// Disable status handler to avoid starting launch in an UI Thread which freezes
+		// the IDE when Outline is displayed.
+		boolean statusHandlerToUpdate = disableStatusHandler();
 		try {
 			this.launch = this.launchConfiguration.launch(this.launchModes.iterator().next(), new NullProgressMonitor(),
 					false);
@@ -168,6 +174,37 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		} catch (Exception e) {
 			LanguageServerPlugin.logError(e);
 		}
+		finally {
+			if (statusHandlerToUpdate) {
+				setStatusHandler(true);
+			}
+		}
+	}
+
+	/**
+	 * Disable status handler while launch is done.
+	 *
+	 * @return true if the status handler preferences was <code>enabled</code> and
+	 *         <code>false</code> otherwise.
+	 */
+	private boolean disableStatusHandler() {
+		boolean enabled = Platform.getPreferencesService().getBoolean(DebugPlugin.getUniqueIdentifier(),
+				IInternalDebugCoreConstants.PREF_ENABLE_STATUS_HANDLERS, false, null);
+		if (enabled) {
+			setStatusHandler(false);
+		}
+		return enabled;
+	}
+
+	/**
+	 * Update the the status handler preferences
+	 *
+	 * @param enabled
+	 *            the status handler preferences
+	 */
+	private void setStatusHandler(boolean enabled) {
+		Preferences.setBoolean(DebugPlugin.getUniqueIdentifier(),
+				IInternalDebugCoreConstants.PREF_ENABLE_STATUS_HANDLERS, enabled, null);
 	}
 
 	@Override
