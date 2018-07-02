@@ -29,6 +29,7 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ISynchronizable;
+import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategy;
@@ -37,6 +38,11 @@ import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
 import org.eclipse.jface.text.source.IAnnotationModelExtension;
 import org.eclipse.jface.text.source.ISourceViewer;
+import org.eclipse.jface.viewers.IPostSelectionProvider;
+import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.ISelectionProvider;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
@@ -46,16 +52,15 @@ import org.eclipse.lsp4j.DocumentHighlightKind;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
-import org.eclipse.swt.custom.CaretEvent;
-import org.eclipse.swt.custom.CaretListener;
 import org.eclipse.swt.custom.StyledText;
 
 /**
- * {@link IReconcilingStrategy} implementation to Highlight Symbol (mark occurrences like).
+ * {@link IReconcilingStrategy} implementation to Highlight Symbol (mark
+ * occurrences like).
  *
  */
 public class HighlightReconcilingStrategy
-		implements IReconcilingStrategy, IReconcilingStrategyExtension, CaretListener, IPreferenceChangeListener {
+		implements IReconcilingStrategy, IReconcilingStrategyExtension, IPreferenceChangeListener {
 
 	public static final String TOGGLE_HIGHLIGHT_PREFERENCE = "org.eclipse.ui.genericeditor.togglehighlight"; //$NON-NLS-1$
 
@@ -69,11 +74,59 @@ public class HighlightReconcilingStrategy
 
 	private CompletableFuture<List<? extends DocumentHighlight>> request;
 	private List<LSPDocumentInfo> infos;
+	private Job highlightJob;
 
 	/**
 	 * Holds the current occurrence annotations.
 	 */
 	private Annotation[] fOccurrenceAnnotations = null;
+
+	class EditorSelectionChangedListener implements ISelectionChangedListener {
+
+		public void install(ISelectionProvider selectionProvider) {
+			if (selectionProvider == null)
+				return;
+
+			if (selectionProvider instanceof IPostSelectionProvider) {
+				IPostSelectionProvider provider = (IPostSelectionProvider) selectionProvider;
+				provider.addPostSelectionChangedListener(this);
+			} else {
+				selectionProvider.addSelectionChangedListener(this);
+			}
+		}
+
+		public void uninstall(ISelectionProvider selectionProvider) {
+			if (selectionProvider == null)
+				return;
+
+			if (selectionProvider instanceof IPostSelectionProvider) {
+				IPostSelectionProvider provider = (IPostSelectionProvider) selectionProvider;
+				provider.removePostSelectionChangedListener(this);
+			} else {
+				selectionProvider.removeSelectionChangedListener(this);
+			}
+		}
+
+		@Override
+		public void selectionChanged(SelectionChangedEvent event) {
+			updateHighlights(event.getSelection());
+		}
+	}
+
+	private void updateHighlights(ISelection selection) {
+		if (!(selection instanceof ITextSelection)) {
+			return;
+		}
+		ITextSelection textSelection = (ITextSelection) selection;
+		if (highlightJob != null) {
+			highlightJob.cancel();
+		}
+		highlightJob = Job.createSystem("LSP4E Highlight", //$NON-NLS-1$
+				monitor -> collectHighlights(textSelection.getOffset(), monitor));
+		highlightJob.schedule();
+	}
+
+	private EditorSelectionChangedListener editorSelectionChangedListener;
 
 	public void install(ITextViewer viewer) {
 		if (!(viewer instanceof ISourceViewer)) {
@@ -83,12 +136,13 @@ public class HighlightReconcilingStrategy
 		preferences.addPreferenceChangeListener(this);
 		this.enabled = preferences.getBoolean(TOGGLE_HIGHLIGHT_PREFERENCE, true);
 		this.sourceViewer = (ISourceViewer) viewer;
-		this.sourceViewer.getTextWidget().addCaretListener(this);
+		editorSelectionChangedListener = new EditorSelectionChangedListener();
+		editorSelectionChangedListener.install(sourceViewer.getSelectionProvider());
 	}
 
 	public void uninstall() {
 		if (sourceViewer != null) {
-			sourceViewer.getTextWidget().removeCaretListener(this);
+			editorSelectionChangedListener.uninstall(sourceViewer.getSelectionProvider());
 		}
 		IEclipsePreferences preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 		preferences.removePreferenceChangeListener(this);
@@ -103,11 +157,12 @@ public class HighlightReconcilingStrategy
 	@Override
 	public void initialReconcile() {
 		if (sourceViewer != null) {
+			ISelectionProvider selectionProvider = sourceViewer.getSelectionProvider();
 			final StyledText textWidget = sourceViewer.getTextWidget();
-			if (textWidget != null) {
+			if (textWidget != null && selectionProvider != null) {
 				textWidget.getDisplay().asyncExec(() -> {
 					if (!textWidget.isDisposed()) {
-						collectHighlights(textWidget.getCaretOffset());
+						updateHighlights(selectionProvider.getSelection());
 					}
 				});
 			}
@@ -119,19 +174,15 @@ public class HighlightReconcilingStrategy
 		this.document = document;
 	}
 
-	@Override
-	public void caretMoved(CaretEvent event) {
-		Job.createSystem("LSP4E Highlight", monitor -> collectHighlights(event.caretOffset)).schedule(); //$NON-NLS-1$
-	}
-
 	/**
 	 * Collect list of highlight for the given caret offset by consuming language
 	 * server 'documentHighligh't.
 	 *
 	 * @param caretOffset
+	 * @param monitor
 	 */
-	private void collectHighlights(int caretOffset) {
-		if (sourceViewer == null || !enabled) {
+	private void collectHighlights(int caretOffset, IProgressMonitor monitor) {
+		if (sourceViewer == null || !enabled || monitor.isCanceled()) {
 			return;
 		}
 		if (infos == null) {
@@ -152,7 +203,9 @@ public class HighlightReconcilingStrategy
 				request = info.getInitializedLanguageClient().thenCompose(
 						languageServer -> languageServer.getTextDocumentService().documentHighlight(params));
 				request.thenAccept(result -> {
-					updateAnnotations(result, sourceViewer.getAnnotationModel());
+					if (!monitor.isCanceled()) {
+						updateAnnotations(result, sourceViewer.getAnnotationModel());
+					}
 				});
 			}
 		} catch (BadLocationException e) {
