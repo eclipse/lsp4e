@@ -75,37 +75,37 @@ public class DynamicRegistrationTest {
 
 	@Test
 	public void testCommandRegistration() throws Exception {
-		@NonNull List<@NonNull LanguageServer> servers = LanguageServiceAccessor.getLanguageServers(c -> true);
+		@NonNull List<@NonNull LanguageServer> servers = LanguageServiceAccessor.getActiveLanguageServers(c -> true);
 		assertEquals(1, servers.size());
 
-		assertTrue(LanguageServiceAccessor.getLanguageServers(handlesCommand("test.command")).isEmpty());
+		assertTrue(LanguageServiceAccessor.getActiveLanguageServers(handlesCommand("test.command")).isEmpty());
 		
 		UUID registration = registerCommands("test.command", "test.command.2");
 		try {
-			assertEquals(1, LanguageServiceAccessor.getLanguageServers(handlesCommand("test.command")).size());
-			assertEquals(1, LanguageServiceAccessor.getLanguageServers(handlesCommand("test.command.2")).size());
+			assertEquals(1, LanguageServiceAccessor.getActiveLanguageServers(handlesCommand("test.command")).size());
+			assertEquals(1, LanguageServiceAccessor.getActiveLanguageServers(handlesCommand("test.command.2")).size());
 		} finally {
 			unregister(registration);
 		}
-		assertTrue(LanguageServiceAccessor.getLanguageServers(handlesCommand("test.command")).isEmpty());
-		assertTrue(LanguageServiceAccessor.getLanguageServers(handlesCommand("test.command.2")).isEmpty());
+		assertTrue(LanguageServiceAccessor.getActiveLanguageServers(handlesCommand("test.command")).isEmpty());
+		assertTrue(LanguageServiceAccessor.getActiveLanguageServers(handlesCommand("test.command.2")).isEmpty());
 	}
 
 	@Test
 	public void testWorkspaceFoldersRegistration() throws Exception {
-		@NonNull List<@NonNull LanguageServer> servers = LanguageServiceAccessor.getLanguageServers(c -> true);
+		@NonNull List<@NonNull LanguageServer> servers = LanguageServiceAccessor.getActiveLanguageServers(c -> true);
 		assertEquals(1, servers.size());
 
-		assertTrue(LanguageServiceAccessor.getLanguageServers(c -> hasWorkspaceFolderSupport(c)).isEmpty());
+		assertTrue(LanguageServiceAccessor.getActiveLanguageServers(c -> hasWorkspaceFolderSupport(c)).isEmpty());
 
 		UUID registration = registerWorkspaceFolders();
 		try {
-			assertEquals(1, LanguageServiceAccessor.getLanguageServers(c -> hasWorkspaceFolderSupport(c)).size());
+			assertEquals(1, LanguageServiceAccessor.getActiveLanguageServers(c -> hasWorkspaceFolderSupport(c)).size());
 		} finally {
 			unregister(registration);
 		}
-		assertTrue(LanguageServiceAccessor.getLanguageServers(c -> hasWorkspaceFolderSupport(c)).isEmpty());
-		assertEquals(1, LanguageServiceAccessor.getLanguageServers(c -> !hasWorkspaceFolderSupport(c)).size());
+		assertTrue(LanguageServiceAccessor.getActiveLanguageServers(c -> hasWorkspaceFolderSupport(c)).isEmpty());
+		assertEquals(1, LanguageServiceAccessor.getActiveLanguageServers(c -> !hasWorkspaceFolderSupport(c)).size());
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////

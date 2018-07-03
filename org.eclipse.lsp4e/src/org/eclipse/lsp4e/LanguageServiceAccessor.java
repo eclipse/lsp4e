@@ -9,7 +9,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
- *  Martin Lippert (Pivotal Inc.) - bug 531167, 531670
+ *  Martin Lippert (Pivotal Inc.) - bug 531167, 531670, 536258
  *  Kris De Volder (Pivotal Inc.) - Get language servers by capability predicate.
  *******************************************************************************/
 package org.eclipse.lsp4e;
@@ -398,22 +398,25 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
-	 * Gets list of LS satisfying a capability predicate.
+	 * Gets list of running LS satisfying a capability predicate. This does not
+	 * start any matching language servers, it returns the already running ones.
 	 *
 	 * @param request
 	 * @return list of Language Servers
 	 */
 	@NonNull
-	public static List<@NonNull LanguageServer> getLanguageServers(Predicate<ServerCapabilities> request) {
+	public static List<@NonNull LanguageServer> getActiveLanguageServers(Predicate<ServerCapabilities> request) {
 		List<@NonNull LanguageServer> serverInfos = new ArrayList<>();
 		for (LanguageServerWrapper wrapper : startedServers) {
-			@Nullable
-			LanguageServer server = wrapper.getServer();
-			if (server == null) {
-				continue;
-			}
-			if (request == null || request.test(wrapper.getServerCapabilities())) {
-				serverInfos.add(server);
+			if (wrapper.isActive()) {
+				@Nullable
+				LanguageServer server = wrapper.getServer();
+				if (server == null) {
+					continue;
+				}
+				if (request == null || request.test(wrapper.getServerCapabilities())) {
+					serverInfos.add(server);
+				}
 			}
 		}
 		return serverInfos;

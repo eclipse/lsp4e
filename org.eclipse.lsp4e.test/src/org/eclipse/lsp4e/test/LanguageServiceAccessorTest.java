@@ -9,7 +9,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Mickael Istria (Red Hat Inc.) - added test for Run config
- *  Martin Lippert (Pivotal Inc.) - added tests for multi-root folders and wrapper re-use
+ *  Martin Lippert (Pivotal Inc.) - added tests for multi-root folders, wrapper re-use, and more
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
@@ -24,6 +24,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -44,7 +45,9 @@ import org.eclipse.lsp4e.tests.mock.MockLanguageServerMultiRootFolders;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,6 +58,8 @@ public class LanguageServiceAccessorTest {
 
 	@Before
 	public void setUp() throws CoreException {
+		MockLanguageSever.reset();
+		LanguageServiceAccessor.clearStartedServers();
 		project = TestUtils.createProject("LanguageServiceAccessorTest" + System.currentTimeMillis());
 	}
 
@@ -62,6 +67,8 @@ public class LanguageServiceAccessorTest {
 	public void tearDown() throws CoreException {
 		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
 		project.delete(true, true, new NullProgressMonitor());
+		MockLanguageSever.reset();
+		LanguageServiceAccessor.clearStartedServers();
 	}
 
 	@Test
@@ -148,6 +155,40 @@ public class LanguageServiceAccessorTest {
 		assertEquals(2, file2LanguageServers.size());
 		assertTrue(file2LanguageServers.contains(file1LS)); // LS from file1 is reused
 		assertEquals("Not right amount of language servers bound to project", 2, LanguageServiceAccessor.getLanguageServers(project, c -> Boolean.TRUE).size());
+	}
+
+	@Test
+	public void testGetOnlyRunningLanguageServers() throws Exception {
+		Display display = Display.getCurrent();
+
+		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
+		IFile testFile2 = TestUtils.createUniqueTestFile(project, "lspt-different", "");
+
+		IEditorPart editor1 = TestUtils.openEditor(testFile1);
+		IEditorPart editor2 = TestUtils.openEditor(testFile2);
+
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile1, capabilities -> Boolean.TRUE).iterator()
+				.next();
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile2, capabilities -> Boolean.TRUE).iterator()
+				.next();
+
+		List<LanguageServer> runningServers = LanguageServiceAccessor.getActiveLanguageServers(capabilities -> Boolean.TRUE);
+		assertEquals(2, runningServers.size());
+
+		((AbstractTextEditor) editor1).close(false);
+		((AbstractTextEditor) editor2).close(false);
+		
+		new LSDisplayHelper(() -> LanguageServiceAccessor.getActiveLanguageServers(capabilities -> Boolean.TRUE).size() == 0)
+				.waitForCondition(display, 5000);
+		assertEquals(0, LanguageServiceAccessor.getActiveLanguageServers(capabilities -> Boolean.TRUE).size());
+
+		editor1 = TestUtils.openEditor(testFile1);
+		LanguageServiceAccessor.getInitializedLanguageServers(testFile1, capabilities -> Boolean.TRUE).iterator()
+				.next();
+
+		new LSDisplayHelper(() -> LanguageServiceAccessor.getActiveLanguageServers(capabilities -> Boolean.TRUE).size() == 1)
+				.waitForCondition(display, 5000);
+		assertEquals(1, LanguageServiceAccessor.getActiveLanguageServers(capabilities -> Boolean.TRUE).size());
 	}
 
 	@Test
