@@ -18,10 +18,16 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.ITextOperationTarget;
+import org.eclipse.jface.text.ITextSelection;
+import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.ITextViewerExtension5;
+import org.eclipse.jface.viewers.IPostSelectionProvider;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
@@ -30,9 +36,6 @@ import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.CaretEvent;
-import org.eclipse.swt.custom.CaretListener;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -51,7 +54,7 @@ public class CNFOutlinePage implements IContentOutlinePage {
 	private IEclipsePreferences preferences;
 	private LSPDocumentInfo info;
 	private ITextEditor textEditor;
-	private StyledText styledText;
+	private ITextViewer textEditorViewer;
 
 	class OutlineInfo {
 
@@ -81,9 +84,9 @@ public class CNFOutlinePage implements IContentOutlinePage {
 			});
 			if (textEditor instanceof AbstractTextEditor) {
 				AbstractTextEditor editor = (AbstractTextEditor) textEditor;
-				styledText = ((StyledText) editor.getAdapter(Control.class));
+				textEditorViewer = ((ITextViewer) editor.getAdapter(ITextOperationTarget.class));
 			} else {
-				styledText = null;
+				textEditorViewer = null;
 			}
 			this.viewer.addSelectionChangedListener(event -> {
 				if (preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true) && viewer.getTree().isFocusControl()
@@ -93,38 +96,65 @@ public class CNFOutlinePage implements IContentOutlinePage {
 						Range range = ((SymbolInformation) selection).getLocation().getRange();
 						try {
 							int startLineOffest = info.getDocument().getLineOffset(range.getStart().getLine());
-							if (styledText != null) {
-								styledText.removeCaretListener(selectByEditorCaretListener);
-							}
-							textEditor.selectAndReveal(startLineOffest + range.getStart().getCharacter(), 0);
-							if (styledText != null) {
-								styledText.addCaretListener(selectByEditorCaretListener);
-							}
+							textEditor.selectAndReveal(startLineOffest + range.getStart().getCharacter(),
+									range.getEnd().getCharacter() - range.getStart().getCharacter());
 						} catch (BadLocationException e) {
 							return;
 						}
 					}
 				}
 			});
-
-			if (styledText != null) {
-				styledText.addCaretListener(selectByEditorCaretListener);
+			if (textEditorViewer != null) {
+				editorSelectionChangedListener = new EditorSelectionChangedListener();
+				editorSelectionChangedListener.install(textEditorViewer.getSelectionProvider());
 			}
 		}
 	}
 
-	private CaretListener selectByEditorCaretListener = new CaretListener() {
+	class EditorSelectionChangedListener implements ISelectionChangedListener {
+
+		public void install(ISelectionProvider selectionProvider) {
+			if (selectionProvider == null)
+				return;
+
+			if (selectionProvider instanceof IPostSelectionProvider) {
+				IPostSelectionProvider provider = (IPostSelectionProvider) selectionProvider;
+				provider.addPostSelectionChangedListener(this);
+			} else {
+				selectionProvider.addSelectionChangedListener(this);
+			}
+		}
+
+		public void uninstall(ISelectionProvider selectionProvider) {
+			if (selectionProvider == null)
+				return;
+
+			if (selectionProvider instanceof IPostSelectionProvider) {
+				IPostSelectionProvider provider = (IPostSelectionProvider) selectionProvider;
+				provider.removePostSelectionChangedListener(this);
+			} else {
+				selectionProvider.removeSelectionChangedListener(this);
+			}
+		}
+
 		@Override
-		public void caretMoved(CaretEvent event) {
+		public void selectionChanged(SelectionChangedEvent event) {
+			ISelection selection = event.getSelection();
+			if (!(selection instanceof ITextSelection)) {
+				return;
+			}
+			ITextSelection textSelection = (ITextSelection) selection;
 			if (!preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true)) {
 				return;
 			}
 			int offset = viewer instanceof ITextViewerExtension5
-					? ((ITextViewerExtension5) viewer).widgetOffset2ModelOffset(event.caretOffset)
-					: event.caretOffset;
+					? ((ITextViewerExtension5) viewer).widgetOffset2ModelOffset(textSelection.getOffset())
+					: textSelection.getOffset();
 			refreshTreeSelection(viewer, offset, info.getDocument());
 		}
-	};
+	}
+
+	private EditorSelectionChangedListener editorSelectionChangedListener;
 
 	public static void refreshTreeSelection(TreeViewer viewer, int offset, IDocument document) {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) viewer.getContentProvider();
@@ -150,6 +180,11 @@ public class CNFOutlinePage implements IContentOutlinePage {
 			bestSymbol = nextChild;
 		}
 		if (bestSymbol != null) {
+			if (bestSymbol.equals(viewer.getStructuredSelection().getFirstElement())) {
+				// the symbol to select is the same than current selected symbol, don't select
+				// it.
+				return;
+			}
 			final int finalLevel = level;
 			final SymbolInformation finalBestSymbol = bestSymbol;
 			Display.getDefault().asyncExec(() -> {
@@ -173,8 +208,8 @@ public class CNFOutlinePage implements IContentOutlinePage {
 	@Override
 	public void dispose() {
 		this.viewer.dispose();
-		if (styledText != null) {
-			styledText.removeCaretListener(selectByEditorCaretListener);
+		if (textEditorViewer != null) {
+			editorSelectionChangedListener.uninstall(textEditorViewer.getSelectionProvider());
 		}
 	}
 
