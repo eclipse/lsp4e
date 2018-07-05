@@ -44,6 +44,7 @@ public class LSPImages {
 	private static final Map<java.awt.Color, Image> colorToImageCache = new HashMap<>();
 	private static final String ICONS_PATH = "$nl$/icons/full/"; //$NON-NLS-1$
 	private static final String OBJECT = ICONS_PATH + "obj16/"; // basic colors - size 16x16 //$NON-NLS-1$
+	private static final Image EMPTY_IMAGE = new Image(PlatformUI.getWorkbench().getDisplay(), 16, 16);
 
 	public static final String IMG_MODULE = "IMG_MODULE"; //$NON-NLS-1$
 	public static final String IMG_NAMESPACE = "IMG_NAMESPACE"; //$NON-NLS-1$
@@ -173,7 +174,8 @@ public class LSPImages {
 		case Variable:
 			return getImage(IMG_VARIABLE);
 		}
-		return null;
+		// when the SymbolKind is out the cases above
+		return EMPTY_IMAGE;
 	}
 
 	public static Image imageFromCompletionItem(CompletionItem completionItem) {
