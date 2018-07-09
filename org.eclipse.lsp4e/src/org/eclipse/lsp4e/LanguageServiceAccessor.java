@@ -372,32 +372,6 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
-	 * Gets list of LS initialized for given project.
-	 *
-	 * @param project
-	 * @param request
-	 * @return list of Language Servers
-	 */
-	@NonNull public static List<@NonNull LanguageServer> getLanguageServers(@NonNull IProject project, Predicate<ServerCapabilities> request) {
-		List<@NonNull LanguageServer> serverInfos = new ArrayList<>();
-		for (LanguageServerWrapper wrapper : startedServers) {
-			if (!wrapper.canOperate(project)) {
-				continue;
-			}
-			@Nullable LanguageServer server = wrapper.getServer();
-			if (server == null) {
-				continue;
-			}
-			if ((request == null
-			    || wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-			    || request.test(wrapper.getServerCapabilities()))) {
-				serverInfos.add(server);
-			}
-		}
-		return serverInfos;
-	}
-
-	/**
 	 * Gets list of running LS satisfying a capability predicate. This does not
 	 * start any matching language servers, it returns the already running ones.
 	 *
@@ -406,15 +380,45 @@ public class LanguageServiceAccessor {
 	 */
 	@NonNull
 	public static List<@NonNull LanguageServer> getActiveLanguageServers(Predicate<ServerCapabilities> request) {
+		return getLanguageServers(null, request, true);
+	}
+
+	/**
+	 * Gets list of LS initialized for given project.
+	 *
+	 * @param project
+	 * @param request
+	 * @return list of Language Servers
+	 */
+	@NonNull
+	public static List<@NonNull LanguageServer> getLanguageServers(@NonNull IProject project,
+			Predicate<ServerCapabilities> request) {
+		return getLanguageServers(project, request, false);
+	}
+
+	/**
+	 * Gets list of LS initialized for given project
+	 *
+	 * @param onlyActiveLS
+	 *            true if this method should return only the already running
+	 *            language servers, otherwise previously started language servers
+	 *            will be re-activated
+	 * @return list of Language Servers
+	 */
+	@NonNull
+	public static List<@NonNull LanguageServer> getLanguageServers(@Nullable IProject project,
+			Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
 		List<@NonNull LanguageServer> serverInfos = new ArrayList<>();
 		for (LanguageServerWrapper wrapper : startedServers) {
-			if (wrapper.isActive()) {
+			if ((!onlyActiveLS || wrapper.isActive()) && (project == null || wrapper.canOperate(project))) {
 				@Nullable
 				LanguageServer server = wrapper.getServer();
 				if (server == null) {
 					continue;
 				}
-				if (request == null || request.test(wrapper.getServerCapabilities())) {
+				if (request == null
+					|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+					|| request.test(wrapper.getServerCapabilities())) {
 					serverInfos.add(server);
 				}
 			}
