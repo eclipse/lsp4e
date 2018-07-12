@@ -8,6 +8,7 @@
  *  Contributors:
  *  Angelo Zerr <angelo.zerr@gmail.com> - initial API and implementation
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
+ *  Jan Koehnlein (TypeFox) - give user feedback on failures and no-ops
  */
 package org.eclipse.lsp4e.operations.rename;
 
@@ -26,6 +27,8 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.RenameParams;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.participants.CheckConditionsContext;
@@ -95,11 +98,26 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 				rename = info.getInitializedLanguageClient()
 						.thenCompose(langaugeServer -> langaugeServer.getTextDocumentService().rename(params))
 						.get(1000, TimeUnit.MILLISECONDS);
+				if (!status.hasError() && rename.getChanges().isEmpty()) {
+					status.addWarning(Messages.rename_empty_message);
+				}
 			}
 		} catch (Exception e) {
-			status.addError(e.getMessage());
+			handleError(e, status);
 		}
 		return status;
+	}
+
+	private WorkspaceEdit handleError(Throwable e, RefactoringStatus status) {
+		if (e.getCause() instanceof ResponseErrorException) {
+			ResponseError responseError = ((ResponseErrorException) e.getCause()).getResponseError();
+			String message = responseError.getMessage()
+					+ ((responseError.getData() instanceof String) ? (": " + responseError.getData()) : ""); //$NON-NLS-1$ //$NON-NLS-2$
+			status.addFatalError(message);
+		} else {
+			status.addFatalError(e.getMessage());
+		}
+		return null;
 	}
 
 	@Override

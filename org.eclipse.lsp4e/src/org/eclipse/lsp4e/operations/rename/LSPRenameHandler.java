@@ -9,6 +9,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525400 - [rename] improve rename support with ltk UI
+ *  Jan Koehnlein (TypeFox) - handle missing existing document gracefully
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.rename;
 
@@ -18,6 +19,7 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -42,23 +44,26 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
 		if (part instanceof AbstractTextEditor) {
-			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-				LSPEclipseUtils.getDocument((ITextEditor) part),
-				capabilities -> Boolean.TRUE.equals(capabilities.getRenameProvider()));
-			if (!infos.isEmpty()) {
-				// TODO consider better strategy to pick LS, or iterate over LS until one gives a good result
-				LSPDocumentInfo info = infos.iterator().next();
-				ISelection sel = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
-				if (sel instanceof TextSelection) {
-					int offset = ((TextSelection) sel).getOffset();
-					RefactoringProcessor processor = new LSPRenameProcessor(info, offset);
-					ProcessorBasedRefactoring refactoring = new ProcessorBasedRefactoring(processor);
-					LSPRenameRefactoringWizard wizard = new LSPRenameRefactoringWizard(refactoring);
-					RefactoringWizardOpenOperation operation = new RefactoringWizardOpenOperation(wizard);
-					try {
-						operation.run(part.getSite().getShell(), Messages.rename_title);
-					} catch (InterruptedException e1) {
-						LanguageServerPlugin.logError(e1);
+			IDocument document = LSPEclipseUtils.getDocument((ITextEditor) part);
+			if (document != null) {
+				Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
+						document, capabilities -> Boolean.TRUE.equals(capabilities.getRenameProvider()));
+				if (!infos.isEmpty()) {
+					// TODO consider better strategy to pick LS, or iterate over LS until one gives
+					// a good result
+					LSPDocumentInfo info = infos.iterator().next();
+					ISelection sel = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
+					if (sel instanceof TextSelection) {
+						int offset = ((TextSelection) sel).getOffset();
+						RefactoringProcessor processor = new LSPRenameProcessor(info, offset);
+						ProcessorBasedRefactoring refactoring = new ProcessorBasedRefactoring(processor);
+						LSPRenameRefactoringWizard wizard = new LSPRenameRefactoringWizard(refactoring);
+						RefactoringWizardOpenOperation operation = new RefactoringWizardOpenOperation(wizard);
+						try {
+							operation.run(part.getSite().getShell(), Messages.rename_title);
+						} catch (InterruptedException e1) {
+							LanguageServerPlugin.logError(e1);
+						}
 					}
 				}
 			}
@@ -70,11 +75,13 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 	public boolean isEnabled() {
 		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
 		if (part instanceof AbstractTextEditor) {
-			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-				LSPEclipseUtils.getDocument((ITextEditor) part),
-				capabilities ->	Boolean.TRUE.equals(capabilities.getRenameProvider()));
-			ISelection selection = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
-			return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
+			IDocument document = LSPEclipseUtils.getDocument((ITextEditor) part);
+			if (document != null) {
+				Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
+						capabilities -> Boolean.TRUE.equals(capabilities.getRenameProvider()));
+				ISelection selection = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
+				return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
+			}
 		}
 		return false;
 	}

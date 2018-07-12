@@ -9,6 +9,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525400 - [rename] improve rename support with ltk UI
+ *  Jan Koehnlein (TypeFox) add rename empty message
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
 
@@ -59,6 +60,7 @@ public class Messages extends NLS {
 	public static String rename_processor_name;
 	public static String rename_processor_required;
 	public static String serverEdit;
+	public static String rename_empty_message;
 	public static String completionError;
 	public static String linkWithEditor_label;
 	public static String linkWithEditor_description;
