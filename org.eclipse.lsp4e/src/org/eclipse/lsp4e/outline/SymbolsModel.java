@@ -88,13 +88,14 @@ public class SymbolsModel {
 
 	private boolean isIncluded(Location reference, Location included) {
 		return reference.getUri().equals(included.getUri())
+				&& !reference.equals(included)
 				&& isAfter(reference.getRange().getStart(), included.getRange().getStart())
 				&& isAfter(included.getRange().getEnd(), reference.getRange().getEnd());
 	}
 
 	private boolean isAfter(Position reference, Position included) {
 		return included.getLine() > reference.getLine()
-				|| (included.getLine() == reference.getLine() && included.getLine() > reference.getLine());
+				|| (included.getLine() == reference.getLine() && included.getCharacter() >= reference.getCharacter());
 	}
 
 	private void addChild(SymbolInformation parent, SymbolInformation child) {

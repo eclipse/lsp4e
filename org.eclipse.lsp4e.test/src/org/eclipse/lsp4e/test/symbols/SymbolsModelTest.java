@@ -56,7 +56,59 @@ public class SymbolsModelTest {
 		parent = symbolsModel.getParent(parent);
 		assertEquals(items.get(0), parent);
 	}
-	
+
+	/**
+	 * When a symbol and its child have matching starting points, ensure that the
+	 * child is marked as such and not a new parent
+	 */
+	@Test
+	public void testSymbolsMatchingStartingPositions() {
+		List<SymbolInformation> items = new ArrayList<>();
+		Range range = new Range(new Position(0, 0), new Position(10, 0));
+		items.add(createSymbolInformation("Namespace", SymbolKind.Namespace, range));
+
+		range = new Range(new Position(0, 0), new Position(9, 0));
+		items.add(createSymbolInformation("Class", SymbolKind.Class, range));
+
+		range = new Range(new Position(1, 0), new Position(8, 0));
+		items.add(createSymbolInformation("Method", SymbolKind.Method, range));
+
+		SymbolsModel symbolsModel = new SymbolsModel();
+		symbolsModel.update(items);
+
+		assertEquals(1, symbolsModel.getElements().length);
+		assertEquals(items.get(0), symbolsModel.getElements()[0]);
+		Object[] children = symbolsModel.getChildren(symbolsModel.getElements()[0]);
+		assertEquals(1, children.length);
+		assertEquals(items.get(1), children[0]);
+		children = symbolsModel.getChildren(children[0]);
+		assertEquals(1, children.length);
+		assertEquals(items.get(2), children[0]);
+
+		Object parent = symbolsModel.getParent(children[0]);
+		assertEquals(items.get(1), parent);
+		parent = symbolsModel.getParent(parent);
+		assertEquals(items.get(0), parent);
+	}
+
+	/**
+	 * Confirms that duplicate items do not become children of themselves
+	 */
+	@Test
+	public void testDuplicateSymbols() {
+		List<SymbolInformation> items = new ArrayList<>();
+		Range range = new Range(new Position(0, 0), new Position(0, 0));
+		items.add(createSymbolInformation("Duplicate", SymbolKind.Namespace, range));
+		items.add(createSymbolInformation("Duplicate", SymbolKind.Namespace, range));
+
+		SymbolsModel symbolsModel = new SymbolsModel();
+		symbolsModel.update(items);
+
+		assertEquals(2, symbolsModel.getElements().length);
+		assertEquals(0, symbolsModel.getChildren(symbolsModel.getElements()[0]).length);
+		assertEquals(0, symbolsModel.getChildren(symbolsModel.getElements()[1]).length);
+	}
+
 	@Test
 	public void testGetElementsEmptyResponse() {
 		List<SymbolInformation> items = new ArrayList<>();
@@ -66,7 +118,7 @@ public class SymbolsModelTest {
 
 		assertEquals(0, symbolsModel.getElements().length);
 	}
-	
+
 	@Test
 	public void testGetElementsNullResponse() {
 		SymbolsModel symbolsModel = new SymbolsModel();
@@ -74,7 +126,7 @@ public class SymbolsModelTest {
 
 		assertEquals(0, symbolsModel.getElements().length);
 	}
-	
+
 	@Test
 	public void testGetParentEmptyResponse() {
 		SymbolsModel symbolsModel = new SymbolsModel();
@@ -82,7 +134,7 @@ public class SymbolsModelTest {
 
 		assertEquals(null, symbolsModel.getParent(null));
 	}
-	
+
 	@Test
 	public void testGetParentNullResponse() {
 		SymbolsModel symbolsModel = new SymbolsModel();
