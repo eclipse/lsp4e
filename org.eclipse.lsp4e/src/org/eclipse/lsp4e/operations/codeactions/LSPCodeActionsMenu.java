@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -31,12 +32,19 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
+import org.eclipse.lsp4j.ExecuteCommandOptions;
+import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.ui.IEditorPart;
@@ -92,12 +100,12 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		params.setContext(context);
 		Set<CompletableFuture<?>> runningFutures = new HashSet<>();
 		for (LSPDocumentInfo info : this.infos) {
-			final CompletableFuture<List<? extends Command>> codeActions = info.getInitializedLanguageClient()
+			final CompletableFuture<List<Either<Command, CodeAction>>> codeActions = info.getInitializedLanguageClient()
 					.thenCompose(languageServer -> languageServer.getTextDocumentService().codeAction(params));
 			runningFutures.add(codeActions);
-			codeActions.whenComplete(new BiConsumer<List<? extends Command>, Throwable>() {
+			codeActions.whenComplete(new BiConsumer<List<Either<Command, CodeAction>>, Throwable>() {
 				@Override
-				public void accept(List<? extends Command> t, Throwable u) {
+				public void accept(List<Either<Command, CodeAction>> t, Throwable u) {
 					runningFutures.remove(codeActions);
 					UIJob job = new UIJob(menu.getDisplay(), Messages.updateCodeActions_menu) {
 						@Override
@@ -109,11 +117,27 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 										.getImage(ISharedImages.IMG_DEC_FIELD_ERROR));
 								item.setEnabled(false);
 							} else if (t != null) {
-								for (Command command : t) {
+								IResource resource = LSPEclipseUtils.findResourceFor(info.getFileUri().toString());
+								for (Either<Command, CodeAction> command : t) {
 									if (command != null) {
-										final MenuItem item = new MenuItem(menu, SWT.NONE, index);
-										item.setText(command.getTitle());
-										item.setEnabled(false);
+										if (command.isLeft()) {
+											final MenuItem item = new MenuItem(menu, SWT.NONE, index);
+											item.setText(command.getLeft().getTitle());
+											item.addSelectionListener(new SelectionAdapter() {
+												@Override
+												public void widgetSelected(SelectionEvent e) {
+													executeCommand(info, command.getLeft());
+												}
+											});
+										} else if (command.isRight()) {
+											CodeAction codeAction = command.getRight();
+											if (codeAction.getEdit() != null) {
+												LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit());
+											}
+											if (codeAction.getCommand() != null) {
+												executeCommand(info, codeAction.getCommand());
+											}
+										}
 									}
 								}
 							}
@@ -132,5 +156,19 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		}
 		super.fill(menu, index);
 	}
+
+	private void executeCommand(LSPDocumentInfo info, Command command) {
+		ServerCapabilities capabilities = info.getCapabilites();
+		if (capabilities != null) {
+			ExecuteCommandOptions provider = capabilities.getExecuteCommandProvider();
+			if (provider != null && provider.getCommands().contains(command.getCommand())) {
+				ExecuteCommandParams params = new ExecuteCommandParams();
+				params.setCommand(command.getCommand());
+				params.setArguments(command.getArguments());
+				info.getInitializedLanguageClient().thenAccept(ls -> ls.getWorkspaceService().executeCommand(params));
+				return;
+			}
+		}
+	};
 
 }

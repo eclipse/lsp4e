@@ -30,11 +30,13 @@ import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
@@ -86,14 +88,18 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		if (att == COMPUTING) {
 			return new IMarkerResolution[] { COMPUTING };
 		}
-		List<? extends Command> commands = (List<? extends Command>)att;
+		List<Either<Command, CodeAction>> commands = (List<Either<Command, CodeAction>>) att;
 		if (commands == null) {
-			return new CodeActionMarkerResolution[0];
+			return new IMarkerResolution[0];
 		}
 		List<IMarkerResolution> res = new ArrayList<>(commands.size());
-		for (Command command : commands) {
+		for (Either<Command, CodeAction> command : commands) {
 			if (command != null) {
-				res.add(new CodeActionMarkerResolution(command));
+				if (command.isLeft()) {
+					res.add(new CommandMarkerResolution(command.getLeft()));
+				} else {
+					res.add(new CodeActionMarkerResolution(command.getRight()));
+				}
 			}
 		}
 		return res.toArray(new IMarkerResolution[res.size()]);
@@ -133,7 +139,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					params.setContext(context);
 					params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(marker.getResource()).toString()));
 					params.setRange(diagnostic.getRange());
-					CompletableFuture<List<? extends Command>> codeAction = lsf
+					CompletableFuture<List<Either<Command, CodeAction>>> codeAction = lsf
 							.thenCompose(ls -> ls.getTextDocumentService().codeAction(params));
 					futures.add(codeAction);
 					codeAction.thenAccept(actions -> {

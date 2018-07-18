@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.CodeLensParams;
@@ -76,7 +77,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<LanguageClient> remoteProxies;
 	private Location mockReferences;
 	private List<Diagnostic> diagnostics;
-	private List<Command> mockCodeActions;
+	private List<Either<Command, CodeAction>> mockCodeActions;
 
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -138,7 +139,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<List<? extends Command>> codeAction(CodeActionParams params) {
+	public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
 		return CompletableFuture.completedFuture(this.mockCodeActions);
 	}
 
@@ -267,7 +268,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockCodeLenses = null;
 		this.mockReferences = null;
 		this.remoteProxies = new ArrayList<LanguageClient>();
-		this.mockCodeActions = new ArrayList<Command>();
+		this.mockCodeActions = new ArrayList<Either<Command, CodeAction>>();
 	}
 
 	public void setDiagnostics(List<Diagnostic> diagnostics) {
@@ -278,8 +279,8 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.remoteProxies.add(remoteProxy);
 	}
 
-	public void setCodeActions(List<Command> commands) {
-		this.mockCodeActions = commands;
+	public void setCodeActions(List<Either<Command, CodeAction>> codeActions) {
+		this.mockCodeActions = codeActions;
 	}
 
 	public void setSignatureHelp(SignatureHelp signatureHelp) {

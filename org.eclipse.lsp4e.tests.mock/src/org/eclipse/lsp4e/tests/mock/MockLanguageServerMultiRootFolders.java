@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
+import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.CodeLensOptions;
 import org.eclipse.lsp4j.Command;
@@ -48,6 +49,7 @@ import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -224,8 +226,8 @@ public final class MockLanguageServerMultiRootFolders implements LanguageServer 
 		this.textDocumentService.setDiagnostics(diagnostics);
 	}
 
-	public void setCodeActions(List<Command> commands) {
-		this.textDocumentService.setCodeActions(commands);
+	public void setCodeActions(List<Either<Command, CodeAction>> codeActions) {
+		this.textDocumentService.setCodeActions(codeActions);
 	}
 
 	public void setSignatureHelp(SignatureHelp signatureHelp) {
