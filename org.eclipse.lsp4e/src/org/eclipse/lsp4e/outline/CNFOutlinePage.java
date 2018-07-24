@@ -22,11 +22,13 @@ import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.ITextViewerExtension5;
+import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.IPostSelectionProvider;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
@@ -45,10 +47,11 @@ import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
-public class CNFOutlinePage implements IContentOutlinePage {
+public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListener {
 
 	public static final String ID = "org.eclipse.lsp4e.outline"; //$NON-NLS-1$
 	public static final String LINK_WITH_EDITOR_PREFERENCE = ID + ".linkWithEditor"; //$NON-NLS-1$
+	public static final String SHOW_KIND_PREFERENCE = ID + ".showKind"; //$NON-NLS-1$
 
 	private CommonViewer viewer;
 	private IEclipsePreferences preferences;
@@ -77,6 +80,7 @@ public class CNFOutlinePage implements IContentOutlinePage {
 	public void createControl(Composite parent) {
 		this.viewer = new CommonViewer(ID, parent, SWT.NONE);
 		this.viewer.setInput(new OutlineInfo(info, textEditor));
+		this.viewer.getLabelProvider().addListener(this);
 		if (textEditor != null) {
 			this.viewer.addOpenListener(event -> {
 				if (preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true))
@@ -245,6 +249,11 @@ public class CNFOutlinePage implements IContentOutlinePage {
 	@Override
 	public void setSelection(ISelection selection) {
 		this.viewer.setSelection(selection);
+	}
+
+	@Override
+	public void labelProviderChanged(LabelProviderChangedEvent event) {
+		this.viewer.refresh(true);
 	}
 
 }

@@ -18,13 +18,18 @@ import java.util.Map;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.IDecoration;
+import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -40,7 +45,8 @@ import org.eclipse.ui.internal.progress.ProgressManager;
 import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonLabelProvider;
 
-public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelProvider, IStyledLabelProvider {
+public class SymbolsLabelProvider extends LabelProvider
+		implements ICommonLabelProvider, IStyledLabelProvider, IPreferenceChangeListener {
 
 	private Map<Image, Image[]> overlays = new HashMap<>();
 
@@ -49,12 +55,21 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 	private boolean showKind;
 
 	public SymbolsLabelProvider() {
-		this(false, true);
+		this(false, InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
+				.getBoolean(CNFOutlinePage.SHOW_KIND_PREFERENCE, false));
 	}
 
 	public SymbolsLabelProvider(boolean showLocation, boolean showKind) {
 		this.showLocation = showLocation;
 		this.showKind = showKind;
+		InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID).addPreferenceChangeListener(this);
+
+	}
+
+	@Override
+	public void dispose() {
+		InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID).removePreferenceChangeListener(this);
+		super.dispose();
 	}
 
 	@Override
@@ -178,6 +193,18 @@ public class SymbolsLabelProvider extends LabelProvider implements ICommonLabelP
 
 	@Override
 	public void init(ICommonContentExtensionSite aConfig) {
+	}
+
+	@Override
+	public void preferenceChange(PreferenceChangeEvent event) {
+		if (event.getKey().equals(CNFOutlinePage.SHOW_KIND_PREFERENCE)) {
+			this.showKind = Boolean.valueOf(event.getNewValue().toString());
+			for (Object listener : this.getListeners()) {
+				if (listener instanceof ILabelProviderListener) {
+					((ILabelProviderListener) listener).labelProviderChanged(new LabelProviderChangedEvent(this));
+				}
+			}
+		}
 	}
 
 }

@@ -67,6 +67,15 @@
                id="org.eclipse.ui.commands.toggleState">
          </state>
       </command>
+      <command
+            categoryId="org.eclipse.lsp4e.category"
+            id="org.eclipse.lsp4e.showkindinoutline"
+            name="Show Kind in Outline">
+         <state
+               class="org.eclipse.ui.handlers.RegistryToggleState:true"
+               id="org.eclipse.ui.commands.toggleState">
+         </state>
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
@@ -124,6 +133,12 @@
             commandId="org.eclipse.lsp4e.togglelinkwitheditor">
          <class
                class="org.eclipse.lsp4e.outline.ToggleLinkingHandler">
+         </class>
+      </handler>
+      <handler
+            commandId="org.eclipse.lsp4e.showkindinoutline">
+         <class
+               class="org.eclipse.lsp4e.outline.ShowKindHandler">
          </class>
       </handler>
    </extension>
@@ -192,12 +207,44 @@
                style="toggle">
             <visibleWhen
                   checkEnabled="false">
-               <with
-                     variable="activeEditorId">
-                  <equals
-                        value="org.eclipse.ui.genericeditor.GenericEditor">
-                  </equals>
-               </with>
+               <and>
+	              <with variable="activePart">
+	                 <instanceof
+                           value="org.eclipse.ui.views.contentoutline.ContentOutline">
+                     </instanceof>
+	              </with>
+	              <with
+	                    variable="activePart">
+	                 <test
+	                       property="org.eclipse.lsp4e.hasCNFOutlinePage">
+	                 </test>
+	              </with>
+	           </and>
+            </visibleWhen>
+         </command>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="menu:org.eclipse.ui.views.ContentOutline">
+         <command
+               commandId="org.eclipse.lsp4e.showkindinoutline"
+               label="Show Kind"
+               style="toggle">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+	              <with variable="activePart">
+	                 <instanceof
+                           value="org.eclipse.ui.views.contentoutline.ContentOutline">
+                     </instanceof>
+	              </with>
+	              <with
+	                    variable="activePart">
+	                 <test
+	                       property="org.eclipse.lsp4e.hasCNFOutlinePage">
+	                 </test>
+	              </with>
+	           </and>
             </visibleWhen>
          </command>
       </menuContribution>
@@ -376,6 +423,13 @@
             id="org.eclipse.lsp4e.hasLanguageServerPropertyTester"
             namespace="org.eclipse.lsp4e"
             properties="hasLanguageServer"
+            type="java.lang.Object">
+      </propertyTester>
+      <propertyTester
+            class="org.eclipse.lsp4e.outline.HasCNFOutlinePage"
+            id="org.eclipse.lsp4e.hasCNFOutlinePage"
+            namespace="org.eclipse.lsp4e"
+            properties="hasCNFOutlinePage"
             type="java.lang.Object">
       </propertyTester>
    </extension>

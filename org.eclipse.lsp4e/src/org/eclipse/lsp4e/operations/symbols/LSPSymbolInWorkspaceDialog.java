@@ -24,12 +24,14 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.SymbolInformation;
@@ -50,7 +52,8 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		private BoldStylerProvider stylerProvider;
 
 		public InternalSymbolsLabelProvider(BoldStylerProvider stylerProvider) {
-			super(true, true);
+			super(true, InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
+					.getBoolean(CNFOutlinePage.SHOW_KIND_PREFERENCE, false));
 			this.stylerProvider = stylerProvider;
 		}
 
