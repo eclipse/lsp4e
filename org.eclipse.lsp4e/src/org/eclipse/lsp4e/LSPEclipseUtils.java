@@ -55,6 +55,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.RewriteSessionEditProcessor;
 import org.eclipse.jface.text.TextSelection;
+import org.eclipse.lsp4j.Color;
 import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Location;
@@ -73,6 +74,8 @@ import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
 import org.eclipse.ltk.core.refactoring.DocumentChange;
 import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
+import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.text.edits.MalformedTreeException;
 import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
@@ -609,5 +612,32 @@ public class LSPEclipseUtils {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Convert the given Eclipse <code>rgb</code> instance to a LSP {@link Color}
+	 * instance.
+	 *
+	 * @param rgb
+	 *            the rgb instance to convert
+	 * @return the given Eclipse <code>rgb</code> instance to a LSP {@link Color}
+	 *         instance.
+	 */
+	public static Color toColor(RGB rgb) {
+		return new Color(rgb.red / 255d, rgb.green / 255d, rgb.blue / 255d, 1);
+	}
+
+	/**
+	 * Convert the given LSP <code>color</code> instance to a Eclipse {@link RGBA}
+	 * instance.
+	 *
+	 * @param rgb
+	 *            the color instance to convert
+	 * @return the given LSP <code>color</code> instance to a Eclipse {@link RGBA}
+	 *         instance.
+	 */
+	public static RGBA toRGBA(Color color) {
+		return new RGBA((int) (color.getRed() * 255), (int) (color.getGreen() * 255), (int) (color.getBlue() * 255),
+				(int) color.getAlpha());
 	}
 }

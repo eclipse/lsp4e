@@ -61,6 +61,7 @@ import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.CodeActionCapabilities;
 import org.eclipse.lsp4j.CodeActionLiteralSupportCapabilities;
 import org.eclipse.lsp4j.CodeLensCapabilities;
+import org.eclipse.lsp4j.ColorProviderCapabilities;
 import org.eclipse.lsp4j.CompletionCapabilities;
 import org.eclipse.lsp4j.CompletionItemCapabilities;
 import org.eclipse.lsp4j.DefinitionCapabilities;
@@ -235,6 +236,7 @@ public class LanguageServerWrapper {
 			codeActionCapabilities.setCodeActionLiteralSupport(new CodeActionLiteralSupportCapabilities());
 			textDocumentClientCapabilities.setCodeAction(codeActionCapabilities);
 			textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
+			textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
 			textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(new CompletionItemCapabilities(Boolean.TRUE)));
 			textDocumentClientCapabilities.setDefinition(new DefinitionCapabilities());
 			textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
