@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
@@ -57,6 +58,7 @@ import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.browser.ProgressListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Composite;
@@ -64,6 +66,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.EditorsUI;
+import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 /**
  * LSP implementation of {@link org.eclipse.jface.text.ITextHover}
@@ -114,13 +117,18 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 					width = (double) constraints.x;
 				}
 
-				setSize(width.intValue(), 0);
+				setSize(width.intValue(), hint.y);
 				browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"normal\""); //$NON-NLS-1$
 				Double height = (Double) browser.evaluate("return document.body.scrollHeight;"); //$NON-NLS-1$
 				if (constraints != null && constraints.y < height) {
 					height = (double) constraints.y;
 				}
-
+				if (Platform.getPreferencesService().getBoolean(EditorsUI.PLUGIN_ID,
+						AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SHOW_TEXT_HOVER_AFFORDANCE, true,
+						null)) {
+					FontData[] fontDatas = JFaceResources.getDialogFont().getFontData();
+					height = fontDatas[0].getHeight() + height;
+				}
 				setSize(width.intValue(), height.intValue());
 			}));
 			b.setJavascriptEnabled(true);
