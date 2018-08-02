@@ -117,6 +117,10 @@ public class LanguageServiceAccessor {
 			}
 		}
 
+		public int getVersion() {
+			return wrapper.getVersion(LSPEclipseUtils.getFile(document));
+		}
+
 		public CompletableFuture<LanguageServer> getInitializedLanguageClient() {
 			return this.wrapper.getInitializedServer();
 		}

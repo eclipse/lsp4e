@@ -676,4 +676,14 @@ public class LanguageServerWrapper {
 		}
 	}
 
+	int getVersion(IFile file) {
+		if (file != null && file.getLocation() != null) {
+			DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(file.getLocation());
+			if (documentContentSynchronizer != null) {
+				return documentContentSynchronizer.getVersion();
+			}
+		}
+		return -1;
+	}
+
 }
