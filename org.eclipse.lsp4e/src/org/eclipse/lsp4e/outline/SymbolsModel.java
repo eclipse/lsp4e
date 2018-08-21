@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.outline;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -20,57 +21,68 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
 
+import org.eclipse.core.resources.IFile;
+import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
-import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class SymbolsModel {
 
-	private static final SymbolInformation ROOT = new SymbolInformation();
+	private static final SymbolInformation ROOT_SYMBOL_INFORMATION = new SymbolInformation();
 	private static final Object[] EMPTY = new Object[0];
 
 	private Map<SymbolInformation, List<SymbolInformation>> childrenMap = new HashMap<>();
+	private List<DocumentSymbol> rootSymbols = new ArrayList<>();
+	private Map<DocumentSymbol, DocumentSymbol> parent = new HashMap<>();
+	private IFile file;
 
-	public boolean update(List<? extends SymbolInformation> response) {
+	public static class DocumentSymbolWithFile {
+		public final DocumentSymbol symbol;
+		public final IFile file;
+
+		public DocumentSymbolWithFile(DocumentSymbol symbol, IFile file) {
+			this.symbol = symbol;
+			this.file = file;
+		}
+	}
+
+	public boolean update(List<Either<SymbolInformation, DocumentSymbol>> response) {
 		// TODO update model only on real change
 		childrenMap.clear();
+		rootSymbols.clear();
+		parent.clear();
 		if (response != null && !response.isEmpty()) {
-			Collections.sort(response, new Comparator<SymbolInformation>() {
-
-				@Override
-				public int compare(SymbolInformation o1, SymbolInformation o2) {
-					Range r1 = o1.getLocation().getRange();
-					Range r2 = o2.getLocation().getRange();
-
-					if (r1.getStart().getLine() == r2.getStart().getLine()) {
-						return Integer.compare(r1.getStart().getCharacter(), r2.getStart().getCharacter());
-					}
-
-					return Integer.compare(r1.getStart().getLine(), r2.getStart().getLine());
-				}
-			});
+			Collections.sort(response, Comparator.comparing(
+					either -> either.isLeft() ? either.getLeft().getLocation().getRange().getStart()
+							: either.getRight().getRange().getStart(),
+					// strange need to cast here, could be a JDT compiler issue
+					Comparator.comparingInt(pos -> ((Position) pos).getLine())
+							.thenComparingInt(pos -> ((Position) pos).getCharacter())));
 
 			Stack<SymbolInformation> parentStack = new Stack<>();
-			parentStack.push(ROOT);
+			parentStack.push(ROOT_SYMBOL_INFORMATION);
 			SymbolInformation previousSymbol = null;
-			for (int i = 0; i < response.size(); i++) {
-				SymbolInformation symbol = response.get(i);
-
-				if (isIncluded(previousSymbol, symbol)) {
-					parentStack.push(previousSymbol);
-					addChild(parentStack.peek(), symbol);
-				} else if (isIncluded(parentStack.peek(), symbol)) {
-					addChild(parentStack.peek(), symbol);
-				} else {
-					while (!isIncluded(parentStack.peek(), symbol)) {
-						parentStack.pop();
+			for (Either<SymbolInformation, DocumentSymbol> either : response) {
+				if (either.isLeft()) {
+					SymbolInformation symbol = either.getLeft();
+					if (isIncluded(previousSymbol, symbol)) {
+						parentStack.push(previousSymbol);
+						addChild(parentStack.peek(), symbol);
+					} else if (isIncluded(parentStack.peek(), symbol)) {
+						addChild(parentStack.peek(), symbol);
+					} else {
+						while (!isIncluded(parentStack.peek(), symbol)) {
+							parentStack.pop();
+						}
+						addChild(parentStack.peek(), symbol);
+						parentStack.push(symbol);
 					}
-					addChild(parentStack.peek(), symbol);
-					parentStack.push(symbol);
+					previousSymbol = symbol;
+				} else if (either.isRight()) {
+					either.getRight().getChildren().forEach(child -> parent.put(child, either.getRight()));
 				}
-
-				previousSymbol = symbol;
 			}
 		}
 		return true;
@@ -80,7 +92,7 @@ public class SymbolsModel {
 		if (parent == null || symbol == null) {
 			return false;
 		}
-		if (parent == ROOT) {
+		if (parent == ROOT_SYMBOL_INFORMATION) {
 			return true;
 		}
 		return isIncluded(parent.getLocation(), symbol.getLocation());
@@ -108,25 +120,43 @@ public class SymbolsModel {
 	}
 
 	public Object[] getElements() {
-		return getChildren(ROOT);
+		List<Object> res = new ArrayList<>();
+		res.addAll(Arrays.asList(getChildren(ROOT_SYMBOL_INFORMATION)));
+		rootSymbols.stream().map(symbol -> new DocumentSymbolWithFile(symbol, this.file)).forEach(res::add);
+		return res.toArray(new Object[res.size()]);
 	}
 
 	public Object[] getChildren(Object parentElement) {
-		if (parentElement != null && parentElement instanceof SymbolInformation) {
-			List<SymbolInformation> children = childrenMap.get(parentElement);
-			if (children != null) {
-				return children.toArray();
+		if (parentElement != null) {
+			if (parentElement instanceof SymbolInformation) {
+				List<SymbolInformation> children = childrenMap.get(parentElement);
+				if (children != null) {
+					return children.toArray();
+				}
+			} else if (parentElement instanceof DocumentSymbolWithFile) {
+				DocumentSymbolWithFile element = (DocumentSymbolWithFile) parentElement;
+				return element.symbol.getChildren().stream()
+						.map(symbol -> new DocumentSymbolWithFile(symbol, element.file)).toArray();
 			}
 		}
 		return EMPTY;
 	}
 
 	public Object getParent(Object element) {
-		Optional<SymbolInformation> result = childrenMap.keySet().stream().filter(parent -> {
-			List<SymbolInformation> children = childrenMap.get(parent);
-			return children == null ? false : children.contains(element);
-		}).findFirst();
-		return result.isPresent() ? result.get() : null;
+		if (element instanceof SymbolInformation) {
+			Optional<SymbolInformation> result = childrenMap.keySet().stream().filter(parent -> {
+				List<SymbolInformation> children = childrenMap.get(parent);
+				return children == null ? false : children.contains(element);
+			}).findFirst();
+			return result.isPresent() ? result.get() : null;
+		} else if (element instanceof DocumentSymbol) {
+			return parent.get(element);
+		}
+		return null;
+	}
+
+	public void setFile(IFile file) {
+		this.file = file;
 	}
 
 }

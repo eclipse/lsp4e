@@ -34,9 +34,14 @@ import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4j.DocumentSymbol;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.ISharedImages;
@@ -83,31 +88,55 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element instanceof Throwable) {
 			return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_ERROR_TSK);
 		}
-		SymbolInformation symbolInformation = (SymbolInformation) element;
-		Image res = LSPImages.imageFromSymbolKind(symbolInformation.getKind());
-		IResource resource = LSPEclipseUtils.findResourceFor(symbolInformation.getLocation().getUri());
-		if (resource != null) {
-			try {
-				int maxSeverity = getMaxSeverity(resource, symbolInformation);
-				if (maxSeverity > IMarker.SEVERITY_INFO) {
-					return getOverlay(res, maxSeverity);
+		if (element instanceof Either) {
+			element = ((Either<?, ?>) element).get();
+		}
+		Image res = null;
+		if (element instanceof SymbolInformation) {
+			res = LSPImages.imageFromSymbolKind(((SymbolInformation) element).getKind());
+		} else if (element instanceof DocumentSymbol) {
+			res = LSPImages.imageFromSymbolKind(((DocumentSymbol) element).getKind());
+		} else if (element instanceof DocumentSymbolWithFile) {
+			res = LSPImages.imageFromSymbolKind(((DocumentSymbolWithFile) element).symbol.getKind());
+		}
+		IResource file = null;
+		if (element instanceof SymbolInformation) {
+			file = LSPEclipseUtils.findResourceFor(((SymbolInformation) element).getLocation().getUri());
+		} else if (element instanceof DocumentSymbolWithFile) {
+			file = ((DocumentSymbolWithFile) element).file;
+		}
+		if (file != null) {
+			Range range = null;
+			if (element instanceof SymbolInformation) {
+				range = ((SymbolInformation) element).getLocation().getRange();
+			} else if (element instanceof DocumentSymbol) {
+				range = ((DocumentSymbol) element).getRange();
+			} else if (element instanceof DocumentSymbolWithFile) {
+				range = ((DocumentSymbolWithFile) element).symbol.getRange();
+			}
+			if (range != null) {
+				try {
+					int maxSeverity = getMaxSeverity(file, range);
+					if (maxSeverity > IMarker.SEVERITY_INFO) {
+						return getOverlay(res, maxSeverity);
+					}
+				} catch (CoreException | BadLocationException e) {
+					LanguageServerPlugin.logError(e);
 				}
-			} catch (CoreException | BadLocationException e) {
-				LanguageServerPlugin.logError(e);
 			}
 		}
 		return res;
 	}
 
-	protected int getMaxSeverity(IResource resource, SymbolInformation symbolInformation)
+	protected int getMaxSeverity(IResource resource, Range range)
 			throws CoreException, BadLocationException {
 		IDocument doc = LSPEclipseUtils.getDocument(resource);
 		int maxSeverity = -1;
 		for (IMarker marker : resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO)) {
 			int offset = marker.getAttribute(IMarker.CHAR_START, -1);
 			if (offset != -1
-					&& offset >= LSPEclipseUtils.toOffset(symbolInformation.getLocation().getRange().getStart(), doc)
-					&& offset <= LSPEclipseUtils.toOffset(symbolInformation.getLocation().getRange().getEnd(), doc)) {
+					&& offset >= LSPEclipseUtils.toOffset(range.getStart(), doc)
+					&& offset <= LSPEclipseUtils.toOffset(range.getEnd(), doc)) {
 				maxSeverity = Math.max(maxSeverity, marker.getAttribute(IMarker.SEVERITY, -1));
 			}
 		}
@@ -161,19 +190,35 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element == null){
 			return res;
 		}
-		SymbolInformation symbol = (SymbolInformation) element;
-		if (symbol.getName() != null) {
-			res.append(symbol.getName(), null);
+		if (element instanceof Either) {
+			element = ((Either<?, ?>) element).get();
 		}
-		if (showKind && symbol.getKind() != null) {
+		String name = null;
+		SymbolKind kind = null;
+		URI location = null;
+		if (element instanceof SymbolInformation) {
+			name = ((SymbolInformation) element).getName();
+			kind = ((SymbolInformation) element).getKind();
+			location = URI.create(((SymbolInformation) element).getLocation().getUri());
+		} else if (element instanceof DocumentSymbol) {
+			name = ((DocumentSymbol) element).getName();
+			kind = ((DocumentSymbol) element).getKind();
+		} else if (element instanceof DocumentSymbolWithFile) {
+			name = ((DocumentSymbolWithFile) element).symbol.getName();
+			kind = ((DocumentSymbolWithFile) element).symbol.getKind();
+			location = ((DocumentSymbolWithFile) element).file.getLocationURI();
+		}
+		if (name != null) {
+			res.append(name, null);
+		}
+		if (showKind && kind != null) {
 			res.append(" :", null); //$NON-NLS-1$
-			res.append(symbol.getKind().toString(), StyledString.DECORATIONS_STYLER);
+			res.append(kind.toString(), StyledString.DECORATIONS_STYLER);
 		}
 
-		if (showLocation) {
-			URI uri = URI.create(symbol.getLocation().getUri());
+		if (showLocation && location != null) {
 			res.append(' ');
-			res.append(uri.getPath(), StyledString.QUALIFIER_STYLER);
+			res.append(location.getPath(), StyledString.QUALIFIER_STYLER);
 		}
 		return res;
 	}

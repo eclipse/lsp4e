@@ -40,6 +40,7 @@ import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
 import org.eclipse.lsp4j.DocumentOnTypeFormattingParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
+import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.Location;
@@ -129,7 +130,8 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<List<? extends SymbolInformation>> documentSymbol(DocumentSymbolParams params) {
+	public CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> documentSymbol(
+			DocumentSymbolParams params) {
 		return CompletableFuture.completedFuture(null);
 	}
 

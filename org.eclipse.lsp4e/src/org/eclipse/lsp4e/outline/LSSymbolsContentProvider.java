@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
@@ -39,9 +40,11 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.outline.CNFOutlinePage.OutlineInfo;
+import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IMemento;
@@ -170,7 +173,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	private OutlineInfo outlineInfo;
 
 	private SymbolsModel symbolsModel = new SymbolsModel();
-	private CompletableFuture<List<? extends SymbolInformation>> symbols;
+	private CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> symbols;
 	private final boolean refreshOnResourceChanged;
 	private IOutlineUpdater outlineUpdater;
 
@@ -190,6 +193,8 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		this.viewer = (TreeViewer) viewer;
 		this.outlineInfo = (OutlineInfo) newInput;
+		this.symbolsModel
+				.setFile((IFile) LSPEclipseUtils.findResourceFor(this.outlineInfo.info.getFileUri().toString()));
 		if (outlineUpdater != null) {
 			outlineUpdater.uninstall();
 		}
@@ -245,7 +250,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 				new TextDocumentIdentifier(outlineInfo.info.getFileUri().toString()));
 		symbols = outlineInfo.info.getInitializedLanguageClient()
 				.thenCompose(languageServer -> languageServer.getTextDocumentService().documentSymbol(params));
-		symbols.thenAccept((List<? extends SymbolInformation> t) -> {
+		symbols.thenAccept((List<Either<SymbolInformation, DocumentSymbol>> t) -> {
 			symbolsModel.update(t);
 
 			viewer.getControl().getDisplay().asyncExec(() -> {

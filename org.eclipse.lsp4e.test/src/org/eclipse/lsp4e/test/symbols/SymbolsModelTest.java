@@ -18,11 +18,13 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.lsp4e.outline.SymbolsModel;
+import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.Test;
 
 public class SymbolsModelTest {
@@ -40,7 +42,9 @@ public class SymbolsModelTest {
 		items.add(createSymbolInformation("Method", SymbolKind.Method, range));
 
 		SymbolsModel symbolsModel = new SymbolsModel();
-		symbolsModel.update(items);
+		List<Either<SymbolInformation, DocumentSymbol>> eitherItems = new ArrayList<>(items.size());
+		items.forEach(item -> eitherItems.add(Either.forLeft(item)));
+		symbolsModel.update(eitherItems);
 
 		assertEquals(1, symbolsModel.getElements().length);
 		assertEquals(items.get(0), symbolsModel.getElements()[0]);
@@ -74,7 +78,9 @@ public class SymbolsModelTest {
 		items.add(createSymbolInformation("Method", SymbolKind.Method, range));
 
 		SymbolsModel symbolsModel = new SymbolsModel();
-		symbolsModel.update(items);
+		List<Either<SymbolInformation, DocumentSymbol>> eitherItems = new ArrayList<>(items.size());
+		items.forEach(item -> eitherItems.add(Either.forLeft(item)));
+		symbolsModel.update(eitherItems);
 
 		assertEquals(1, symbolsModel.getElements().length);
 		assertEquals(items.get(0), symbolsModel.getElements()[0]);
@@ -102,7 +108,9 @@ public class SymbolsModelTest {
 		items.add(createSymbolInformation("Duplicate", SymbolKind.Namespace, range));
 
 		SymbolsModel symbolsModel = new SymbolsModel();
-		symbolsModel.update(items);
+		List<Either<SymbolInformation, DocumentSymbol>> eitherItems = new ArrayList<>(items.size());
+		items.forEach(item -> eitherItems.add(Either.forLeft(item)));
+		symbolsModel.update(eitherItems);
 
 		assertEquals(2, symbolsModel.getElements().length);
 		assertEquals(0, symbolsModel.getChildren(symbolsModel.getElements()[0]).length);
@@ -114,7 +122,9 @@ public class SymbolsModelTest {
 		List<SymbolInformation> items = new ArrayList<>();
 
 		SymbolsModel symbolsModel = new SymbolsModel();
-		symbolsModel.update(items);
+		List<Either<SymbolInformation, DocumentSymbol>> eitherItems = new ArrayList<>(items.size());
+		items.forEach(item -> eitherItems.add(Either.forLeft(item)));
+		symbolsModel.update(eitherItems);
 
 		assertEquals(0, symbolsModel.getElements().length);
 	}

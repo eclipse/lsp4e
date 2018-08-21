@@ -11,11 +11,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.symbols;
 
+import java.net.URI;
 import java.util.List;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.PopupDialog;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -26,8 +28,11 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
-import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
+import org.eclipse.lsp4j.DocumentSymbol;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -57,14 +62,17 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 	}
 
 	private ITextEditor fTextEditor;
-	private List<? extends SymbolInformation> fSymbols;
+	private List<Either<SymbolInformation, DocumentSymbol>> fSymbols;
 
 	private FilteredTree fFilteredTree;
+	private @NonNull URI fileURI;
 
-	public LSPSymbolInFileDialog(Shell parentShell, ITextEditor textEditor, List<? extends SymbolInformation> symbols) {
+	public LSPSymbolInFileDialog(Shell parentShell, ITextEditor textEditor,
+			@NonNull URI fileURI, List<Either<SymbolInformation, DocumentSymbol>> t) {
 		super(parentShell, PopupDialog.INFOPOPUP_SHELLSTYLE, true, true, true, false, false, null, null);
 		this.fTextEditor = textEditor;
-		this.fSymbols = symbols;
+		this.fileURI = fileURI;
+		this.fSymbols = t;
 		create();
 
 	}
@@ -75,26 +83,33 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		TreeViewer viewer = fFilteredTree.getViewer();
 
 		viewer.setContentProvider(new SymbolsContentProvider());
+		IResource targetResource = LSPEclipseUtils.findResourceFor(this.fileURI.toString());
 		viewer.setLabelProvider(new SymbolsLabelProvider());
 		viewer.setUseHashlookup(true);
 		viewer.addSelectionChangedListener(event -> {
+			if (targetResource == null) {
+				return;
+			}
 			IStructuredSelection selection = (IStructuredSelection) event.getSelection();
 			if (selection.isEmpty()) {
 				return;
 			}
-			SymbolInformation symbolInformation = (SymbolInformation) selection.getFirstElement();
-			Location location = symbolInformation.getLocation();
-
-			IResource targetResource = LSPEclipseUtils.findResourceFor(location.getUri());
-			if (targetResource == null) {
-				return;
-			}
+			Object item = selection.getFirstElement();
 			IDocument targetDocument = FileBuffers.getTextFileBufferManager()
-			        .getTextFileBuffer(targetResource.getFullPath(), LocationKind.IFILE).getDocument();
-			if (targetDocument != null) {
+					.getTextFileBuffer(targetResource.getFullPath(), LocationKind.IFILE).getDocument();
+
+			Range range = null;
+			if (item instanceof SymbolInformation) {
+				range = ((SymbolInformation) item).getLocation().getRange();
+			} else if (item instanceof DocumentSymbol) {
+				range = ((DocumentSymbol) item).getRange();
+			} else if (item instanceof DocumentSymbolWithFile) {
+				range = ((DocumentSymbolWithFile) item).symbol.getRange();
+			}
+			if (targetDocument != null && range != null) {
 				try {
-					int offset = LSPEclipseUtils.toOffset(location.getRange().getStart(), targetDocument);
-					int endOffset = LSPEclipseUtils.toOffset(location.getRange().getEnd(), targetDocument);
+					int offset = LSPEclipseUtils.toOffset(range.getStart(), targetDocument);
+					int endOffset = LSPEclipseUtils.toOffset(range.getEnd(), targetDocument);
 					fTextEditor.selectAndReveal(offset, endOffset - offset);
 				} catch (BadLocationException e) {
 					LanguageServerPlugin.logError(e);

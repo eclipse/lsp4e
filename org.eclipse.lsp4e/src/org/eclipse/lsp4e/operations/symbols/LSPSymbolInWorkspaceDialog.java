@@ -34,6 +34,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -68,7 +69,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		}
 
 		@Override
-		protected int getMaxSeverity(IResource resource, SymbolInformation symbolInformation)
+		protected int getMaxSeverity(IResource resource, Range range)
 				throws CoreException, BadLocationException {
 			int maxSeverity = -1;
 			for (IMarker marker : resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO)) {

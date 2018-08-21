@@ -112,8 +112,9 @@ public class CodeActionTests {
 
 		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
 		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
-		MockLanguageSever.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(new CodeAction(
-				"fixme", "fix", Collections.emptyList(), wEdit, null))));
+		CodeAction codeAction = new CodeAction("fixme");
+		codeAction.setEdit(wEdit);
+		MockLanguageSever.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
 		MockLanguageSever.INSTANCE.setDiagnostics(Collections.singletonList(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
@@ -133,10 +134,9 @@ public class CodeActionTests {
 
 		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
 		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
-		MockLanguageSever.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(new CodeAction(
-				"fixme", "fix", Collections.emptyList(), null,
-				new Command("editCommand", "mockEditCommand", Collections.singletonList(wEdit))
-		))));
+		CodeAction codeAction = new CodeAction("fixme");
+		codeAction.setCommand(new Command("editCommand", "mockEditCommand", Collections.singletonList(wEdit)));
+		MockLanguageSever.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
 		MockLanguageSever.INSTANCE.setDiagnostics(Collections.singletonList(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
