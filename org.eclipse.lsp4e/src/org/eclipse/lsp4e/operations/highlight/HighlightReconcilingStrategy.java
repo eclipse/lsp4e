@@ -172,6 +172,7 @@ public class HighlightReconcilingStrategy
 	@Override
 	public void setDocument(IDocument document) {
 		this.document = document;
+		this.infos = null;
 	}
 
 	/**
