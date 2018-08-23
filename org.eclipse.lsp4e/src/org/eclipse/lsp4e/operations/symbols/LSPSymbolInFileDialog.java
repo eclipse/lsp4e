@@ -74,7 +74,6 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		this.fileURI = fileURI;
 		this.fSymbols = t;
 		create();
-
 	}
 
 	@Override
@@ -95,6 +94,9 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 				return;
 			}
 			Object item = selection.getFirstElement();
+			if (item instanceof Either<?, ?>) {
+				item = ((Either<?, ?>) item).get();
+			}
 			IDocument targetDocument = FileBuffers.getTextFileBufferManager()
 					.getTextFileBuffer(targetResource.getFullPath(), LocationKind.IFILE).getDocument();
 
