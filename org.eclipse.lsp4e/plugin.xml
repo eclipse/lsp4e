@@ -184,13 +184,6 @@
                style="push">
          </command>
          <menu
-               label="%codelens.menu.label">
-            <dynamic
-                  class="org.eclipse.lsp4e.operations.codelens.LSPCodeLensMenu"
-                  id="org.eclipse.lsp4e.codelens">
-            </dynamic>
-         </menu>
-         <menu
                label="%codeactions.menu.label">
             <dynamic
                   class="org.eclipse.lsp4e.operations.codeactions.LSPCodeActionsMenu"
