@@ -14,9 +14,11 @@ package org.eclipse.lsp4e.operations.diagnostics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -75,35 +77,38 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			if (resource == null || !resource.exists()) {
 				return;
 			}
-			Set<IMarker> remainingMarkers = new HashSet<>(
+			Set<IMarker> toDeleteMarkers = new HashSet<>(
 					Arrays.asList(resource.findMarkers(LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_ONE)));
-			remainingMarkers
+			toDeleteMarkers
 					.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
 			List<Diagnostic> newDiagnostics = new ArrayList<>();
+			Map<IMarker, Diagnostic> toUpdate = new HashMap<>();
 			for (Diagnostic diagnostic : diagnostics.getDiagnostics()) {
-				IMarker associatedMarker = getExistingMarkerFor(resource, diagnostic, remainingMarkers);
+				IMarker associatedMarker = getExistingMarkerFor(resource, diagnostic, toDeleteMarkers);
 				if (associatedMarker == null) {
 					newDiagnostics.add(diagnostic);
 				} else {
-					remainingMarkers.remove(associatedMarker);
+					toDeleteMarkers.remove(associatedMarker);
+					toUpdate.put(associatedMarker, diagnostic);
 				}
 			}
 			IWorkspaceRunnable runnable = new IWorkspaceRunnable() {
 				@Override
 				public void run(IProgressMonitor monitor) throws CoreException {
-					Iterator<IMarker> markerIterator = remainingMarkers.iterator();
 					for (Diagnostic diagnostic : newDiagnostics) {
-						IMarker marker;
-						if (markerIterator.hasNext()) {
-							marker = markerIterator.next();
-						} else {
-							marker = resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE);
-						}
+						IMarker marker = resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE);
 						updateMarker(resource, diagnostic, marker);
 					}
-					while (markerIterator.hasNext()) {
-						markerIterator.next().delete();
+					for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
+						updateMarker(resource, entry.getValue(), entry.getKey());
 					}
+					toDeleteMarkers.forEach(t -> {
+						try {
+							t.delete();
+						} catch (CoreException e) {
+							LanguageServerPlugin.logError(e);
+						}
+					});
 				}
 			};
 			ResourcesPlugin.getWorkspace().run(runnable, new NullProgressMonitor());
@@ -138,25 +143,17 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 					end--;
 				}
 			}
-			marker.setAttributes(
-					new String[] {
-							LSP_DIAGNOSTIC,
-							LANGUAGE_SERVER_ID,
-							IMarker.MESSAGE,
-							IMarker.SEVERITY,
-							IMarker.CHAR_START,
-							IMarker.CHAR_END,
-							IMarker.LINE_NUMBER
-					},
-					new Object[] {
-							diagnostic,
-							this.languageServerId,
-							diagnostic.getMessage(),
-							LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()),
-							start,
-							end,
-							document.getLineOfOffset(start) + 1
-					});
+			Map<String, Object> targetAttributes = new HashMap<>(7);
+			targetAttributes.put(LSP_DIAGNOSTIC, diagnostic);
+			targetAttributes.put(LANGUAGE_SERVER_ID, this.languageServerId);
+			targetAttributes.put(IMarker.MESSAGE, diagnostic.getMessage());
+			targetAttributes.put(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
+			targetAttributes.put(IMarker.CHAR_START, start);
+			targetAttributes.put(IMarker.CHAR_END, end);
+			targetAttributes.put(IMarker.LINE_NUMBER, document.getLineOfOffset(start) + 1);
+			if (!targetAttributes.equals(marker.getAttributes())) {
+				marker.setAttributes(targetAttributes);
+			}
 		} catch (CoreException | BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}
