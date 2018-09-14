@@ -98,7 +98,9 @@ import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 
 /**
  * Some utility methods to convert between Eclipse and LS-API types
@@ -546,6 +548,25 @@ public class LSPEclipseUtils {
 				if (edit != null) {
 					currentEntry.value.add(edit);
 				}
+			} else if (arg instanceof JsonPrimitive) {
+				JsonPrimitive json = (JsonPrimitive) arg;
+				if (json.isString()) {
+					changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
+					IResource resource = LSPEclipseUtils.findResourceFor(json.getAsString());
+					if (resource != null) {
+						currentEntry.key = resource;
+						currentEntry.value = new ArrayList<>();
+					}
+				}
+			} else if (arg instanceof JsonArray) {
+				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
+				JsonArray array = (JsonArray) arg;
+				array.forEach(elt -> {
+					TextEdit edit = gson.fromJson(gson.toJson(elt), TextEdit.class);
+					if (edit != null) {
+						currentEntry.value.add(edit);
+					}
+				});
 			} else if (arg instanceof JsonObject) {
 				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
 				WorkspaceEdit wEdit = gson.fromJson((JsonObject) arg, WorkspaceEdit.class);
