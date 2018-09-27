@@ -24,6 +24,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.TextSelection;
@@ -112,6 +113,18 @@ public class FormatTest {
 		assertEquals("MyFormattingOther Text Second", viewer.getDocument().get());
 
 		TestUtils.closeEditor(editor, false);
+	}
+
+	@Test
+	public void testNullFormatting()
+			throws CoreException, InvocationTargetException, InterruptedException, ExecutionException {
+		IDocument document = new Document("Formatting Other Text");
+		LSPFormatter formatter = new LSPFormatter();
+
+		// null is an acceptable response for no changes
+		formatter.applyEdits(document, null);
+
+		assertEquals("Formatting Other Text", document.get());
 	}
 
 }

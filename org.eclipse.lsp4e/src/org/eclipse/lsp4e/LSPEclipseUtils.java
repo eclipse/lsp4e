@@ -223,7 +223,7 @@ public class LSPEclipseUtils {
 	 *            list of LSP TextEdits
 	 */
 	public static void applyEdits(IDocument document, List<? extends TextEdit> edits) {
-		if (document == null || edits.isEmpty()) {
+		if (document == null || edits == null || edits.isEmpty()) {
 			return;
 		}
 
