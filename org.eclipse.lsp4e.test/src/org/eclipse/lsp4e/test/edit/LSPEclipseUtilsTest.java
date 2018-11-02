@@ -10,13 +10,21 @@
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Remy Suen <remy.suen@gmail.com> - Bug 520052 - Rename assumes that workspace edits are in reverse order
  *******************************************************************************/
-package org.eclipse.lsp4e.test.document;
+package org.eclipse.lsp4e.test.edit;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.LinkedList;
 
+import org.eclipse.core.internal.utils.FileUtil;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -28,11 +36,16 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.test.NoErrorLoggedRule;
 import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4j.CreateFile;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.RenameFile;
+import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.IEditorPart;
@@ -165,4 +178,36 @@ public class LSPEclipseUtilsTest {
 		Assume.assumeFalse(Platform.OS_WIN32.equals(Platform.getOS()));
 		Assert.assertEquals("file:///test%20with%20space", LSPEclipseUtils.toUri(new File("/test with space")).toString());
 	}
+
+	@Test
+	public void testResourceOperations() throws Exception {
+		IProject project = TestUtils.createProject("testResourceOperations");
+		IFile targetFile = project.getFile("some/folder/file.txt");
+		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(
+				Collections.singletonList(Either.forRight(new CreateFile(targetFile.getLocationURI().toString())))));
+		assertTrue(targetFile.exists());
+		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(Collections.singletonList(Either.forLeft(
+				new TextDocumentEdit(new VersionedTextDocumentIdentifier(targetFile.getLocationURI().toString(), 1),
+						Collections.singletonList(
+								new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "hello")))))));
+		assertEquals("hello", readContent(targetFile));
+		IFile otherFile = project.getFile("another/folder/file.lol");
+		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(Collections.singletonList(Either.forRight(
+				new RenameFile(targetFile.getLocationURI().toString(), otherFile.getLocationURI().toString())))));
+		assertFalse(targetFile.exists());
+		assertTrue(otherFile.exists());
+		assertEquals("hello", readContent(otherFile));
+	}
+
+	private String readContent(IFile targetFile) throws IOException, CoreException {
+		try (ByteArrayOutputStream stream = new ByteArrayOutputStream(
+				(int) targetFile.getLocation().toFile().length());
+				InputStream contentStream = targetFile.getContents();) {
+			FileUtil.transferStreams(contentStream, stream, targetFile.getFullPath().toString(),
+					new NullProgressMonitor());
+			// targetFile.getContents().transferTo(stream);
+			return new String(stream.toByteArray());
+		}
+	}
+
 }
