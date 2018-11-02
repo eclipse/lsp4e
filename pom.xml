@@ -15,11 +15,12 @@
 		<sonar.jacoco.reportPath>../target/jacoco.exec</sonar.jacoco.reportPath>
 		<tycho.scmUrl>scm:git:https://git.eclipse.org/r/p/lsp4e/lsp4e.git</tycho.scmUrl>
 		<ui.test.vmargs></ui.test.vmargs>
-		<target-config>target-platform-photon</target-config>
+		<target-config>target-platform-latest</target-config>
 	</properties>
 
 	<modules>
 		<module>target-platforms/target-platform-photon</module>
+		<module>target-platforms/target-platform-latest</module>
 		<module>org.eclipse.lsp4e</module>
 		<module>org.eclipse.lsp4e.debug</module>
 		<module>org.eclipse.lsp4e.tests.mock</module>
