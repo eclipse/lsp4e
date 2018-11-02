@@ -21,3 +21,4 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.lsp4e.tests.mock;bundle-version="0.6.0",
  org.eclipse.jface.text.tests,
  org.eclipse.jdt.annotation;bundle-version="[2.0.0,3.0.0)"
+Automatic-Module-Name: org.eclipse.lsp4e.test
