@@ -32,6 +32,7 @@ import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
+import org.eclipse.lsp4j.CodeActionOptions;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
@@ -128,7 +129,18 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				}
 				if (languageServerFutures.isEmpty()) { // if it's not there, try any other server
 					languageServerFutures.addAll(LanguageServiceAccessor.getInitializedLanguageServers(file,
-							capabilities -> Boolean.TRUE.equals(capabilities.getCodeActionProvider())));
+							capabilities -> {
+								Either<Boolean, CodeActionOptions> codeActionProvider = capabilities
+										.getCodeActionProvider();
+								if (codeActionProvider == null) {
+									return false;
+								} else if (codeActionProvider.isLeft()) {
+									return Boolean.TRUE.equals(codeActionProvider.getLeft());
+								} else if (codeActionProvider.isRight()) {
+									return true;
+								}
+								return false;
+							}));
 				}
 				List<CompletableFuture<?>> futures = new ArrayList<>();
 				for (CompletableFuture<LanguageServer> lsf : languageServerFutures) {
