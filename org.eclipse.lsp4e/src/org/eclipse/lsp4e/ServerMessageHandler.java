@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
@@ -31,6 +32,7 @@ import org.eclipse.ui.console.ConsolePlugin;
 import org.eclipse.ui.console.IConsole;
 import org.eclipse.ui.console.IConsoleManager;
 import org.eclipse.ui.console.MessageConsole;
+import org.eclipse.ui.console.MessageConsoleStream;
 
 @SuppressWarnings("restriction")
 public class ServerMessageHandler {
@@ -114,7 +116,21 @@ public class ServerMessageHandler {
 	public static void logMessage(LanguageServerWrapper wrapper, MessageParams params) {
 		MessageConsole console = findConsole(
 				String.format(NAME_PATTERN, wrapper.serverDefinition.label, wrapper.toString()));
-		console.newMessageStream().println(String.format("[%s]\t%s", params.getType(), params.getMessage())); //$NON-NLS-1$
+		if (console != null) {
+			StringBuilder log = new StringBuilder();
+			log.append('[');
+			log.append(params.getType().toString());
+			log.append(']');
+			log.append('\t');
+			log.append(params.getMessage());
+			MessageConsoleStream stream = console.newMessageStream();
+			stream.println(log.toString());
+			try {
+				stream.close();
+			} catch (IOException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
 	}
 
 	public static void showMessage(String title, MessageParams params) {
