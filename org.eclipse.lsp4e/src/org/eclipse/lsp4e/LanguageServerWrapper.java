@@ -60,6 +60,8 @@ import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.CodeActionCapabilities;
+import org.eclipse.lsp4j.CodeActionKind;
+import org.eclipse.lsp4j.CodeActionKindCapabilities;
 import org.eclipse.lsp4j.CodeActionLiteralSupportCapabilities;
 import org.eclipse.lsp4j.CodeLensCapabilities;
 import org.eclipse.lsp4j.ColorProviderCapabilities;
@@ -242,9 +244,16 @@ public class LanguageServerWrapper {
 			editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
 			workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
 			TextDocumentClientCapabilities textDocumentClientCapabilities = new TextDocumentClientCapabilities();
-			CodeActionCapabilities codeActionCapabilities = new CodeActionCapabilities();
-			codeActionCapabilities.setCodeActionLiteralSupport(new CodeActionLiteralSupportCapabilities());
-			textDocumentClientCapabilities.setCodeAction(codeActionCapabilities);
+			textDocumentClientCapabilities
+					.setCodeAction(
+							new CodeActionCapabilities(
+									new CodeActionLiteralSupportCapabilities(
+											new CodeActionKindCapabilities(Arrays.asList(new String[] {
+													CodeActionKind.QuickFix, CodeActionKind.Refactor,
+													CodeActionKind.RefactorExtract, CodeActionKind.RefactorInline,
+													CodeActionKind.RefactorRewrite, CodeActionKind.Source,
+													CodeActionKind.SourceOrganizeImports }))),
+							true));
 			textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
 			textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
 			textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(new CompletionItemCapabilities(Boolean.TRUE)));
