@@ -88,6 +88,8 @@ import org.eclipse.lsp4j.ResourceOperationKind;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelpCapabilities;
 import org.eclipse.lsp4j.SymbolCapabilities;
+import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.SymbolKindCapabilities;
 import org.eclipse.lsp4j.SynchronizationCapabilities;
 import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
@@ -260,7 +262,16 @@ public class LanguageServerWrapper {
 			textDocumentClientCapabilities.setDefinition(new DefinitionCapabilities());
 			textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
 			textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
-			textDocumentClientCapabilities.setDocumentSymbol(new DocumentSymbolCapabilities());
+			DocumentSymbolCapabilities documentSymbol = new DocumentSymbolCapabilities(true);
+			documentSymbol.setHierarchicalDocumentSymbolSupport(true);
+			documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(new SymbolKind[] { SymbolKind.Array,
+					SymbolKind.Boolean, SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor, SymbolKind.Enum,
+					SymbolKind.EnumMember, SymbolKind.Event, SymbolKind.Field, SymbolKind.File, SymbolKind.Function,
+					SymbolKind.Interface, SymbolKind.Key, SymbolKind.Method, SymbolKind.Module, SymbolKind.Namespace,
+					SymbolKind.Null, SymbolKind.Number, SymbolKind.Object, SymbolKind.Operator, SymbolKind.Package,
+					SymbolKind.Property, SymbolKind.String, SymbolKind.Struct, SymbolKind.TypeParameter,
+					SymbolKind.Variable })));
+			textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
 			textDocumentClientCapabilities.setFormatting(new FormattingCapabilities());
 			textDocumentClientCapabilities.setHover(new HoverCapabilities());
 			textDocumentClientCapabilities.setOnTypeFormatting(null); // TODO
