@@ -35,6 +35,7 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.swt.SWT;
@@ -96,12 +97,15 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 				if (preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true) && viewer.getTree().isFocusControl()
 						&& viewer.getSelection() != null) {
 					Object selection = ((TreeSelection) viewer.getSelection()).getFirstElement();
-					if (selection != null && selection instanceof SymbolInformation) {
-						Range range = ((SymbolInformation) selection).getLocation().getRange();
+					Range range = getRangeSelection(selection);
+					if (range != null) {
 						try {
-							int startLineOffest = info.getDocument().getLineOffset(range.getStart().getLine());
-							textEditor.selectAndReveal(startLineOffest + range.getStart().getCharacter(),
-									range.getEnd().getCharacter() - range.getStart().getCharacter());
+							int startOffset = info.getDocument().getLineOffset(range.getStart().getLine())
+									+ range.getStart().getCharacter();
+							int endOffset = info.getDocument().getLineOffset(range.getEnd().getLine())
+									+ range.getEnd().getCharacter();
+							textEditor.selectAndReveal(startOffset,
+									endOffset - startOffset);
 						} catch (BadLocationException e) {
 							return;
 						}
@@ -113,6 +117,26 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 				editorSelectionChangedListener.install(textEditorViewer.getSelectionProvider());
 			}
 		}
+	}
+
+	/**
+	 * Returns the range of the given selection and null otherwise.
+	 *
+	 * @param selection
+	 *            the selected symbol.
+	 * @return the range of the given selection and null otherwise.
+	 */
+	private Range getRangeSelection(Object selection) {
+		if (selection == null) {
+			return null;
+		}
+		if (selection instanceof SymbolInformation) {
+			return ((SymbolInformation) selection).getLocation().getRange();
+		}
+		if (selection instanceof DocumentSymbolWithFile) {
+			return ((DocumentSymbolWithFile) selection).symbol.getSelectionRange();
+		}
+		return null;
 	}
 
 	class EditorSelectionChangedListener implements ISelectionChangedListener {

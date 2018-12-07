@@ -81,7 +81,7 @@ public class SymbolsModel {
 					}
 					previousSymbol = symbol;
 				} else if (either.isRight()) {
-					either.getRight().getChildren().forEach(child -> parent.put(child, either.getRight()));
+					rootSymbols.add(either.getRight());
 				}
 			}
 		}

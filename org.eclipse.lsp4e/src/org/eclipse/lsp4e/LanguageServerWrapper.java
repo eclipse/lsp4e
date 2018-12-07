@@ -262,7 +262,7 @@ public class LanguageServerWrapper {
 			textDocumentClientCapabilities.setDefinition(new DefinitionCapabilities());
 			textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
 			textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
-			DocumentSymbolCapabilities documentSymbol = new DocumentSymbolCapabilities(true);
+			DocumentSymbolCapabilities documentSymbol = new DocumentSymbolCapabilities();
 			documentSymbol.setHierarchicalDocumentSymbolSupport(true);
 			documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(new SymbolKind[] { SymbolKind.Array,
 					SymbolKind.Boolean, SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor, SymbolKind.Enum,

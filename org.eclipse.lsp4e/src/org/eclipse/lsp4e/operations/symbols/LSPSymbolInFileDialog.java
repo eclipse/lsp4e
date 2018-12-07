@@ -47,6 +47,14 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 		@Override
 		public Object[] getChildren(Object parentElement) {
+			if (parentElement instanceof Either<?, ?>) {
+				Either<SymbolInformation, DocumentSymbol> either = (Either<SymbolInformation, DocumentSymbol>) parentElement;
+				if (either.isRight()) {
+					return getChildren(either.getRight());
+				}
+			} else if (parentElement instanceof DocumentSymbol) {
+				return ((DocumentSymbol) parentElement).getChildren().toArray();
+			}
 			return null;
 		}
 
@@ -57,6 +65,14 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 		@Override
 		public boolean hasChildren(Object element) {
+			if (element instanceof Either<?, ?>) {
+				Either<SymbolInformation, DocumentSymbol> either = (Either<SymbolInformation, DocumentSymbol>) element;
+				if (either.isRight()) {
+					return hasChildren(either.getRight());
+				}
+			} else if (element instanceof DocumentSymbol) {
+				return !((DocumentSymbol) element).getChildren().isEmpty();
+			}
 			return false;
 		}
 	}
@@ -104,9 +120,9 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 			if (item instanceof SymbolInformation) {
 				range = ((SymbolInformation) item).getLocation().getRange();
 			} else if (item instanceof DocumentSymbol) {
-				range = ((DocumentSymbol) item).getRange();
+				range = ((DocumentSymbol) item).getSelectionRange();
 			} else if (item instanceof DocumentSymbolWithFile) {
-				range = ((DocumentSymbolWithFile) item).symbol.getRange();
+				range = ((DocumentSymbolWithFile) item).symbol.getSelectionRange();
 			}
 			if (targetDocument != null && range != null) {
 				try {
