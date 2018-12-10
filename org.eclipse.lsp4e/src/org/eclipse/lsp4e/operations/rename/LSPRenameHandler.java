@@ -28,6 +28,9 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4j.RenameOptions;
+import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ltk.core.refactoring.participants.ProcessorBasedRefactoring;
 import org.eclipse.ltk.core.refactoring.participants.RefactoringProcessor;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
@@ -47,7 +50,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 			IDocument document = LSPEclipseUtils.getDocument((ITextEditor) part);
 			if (document != null) {
 				Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-						document, capabilities -> Boolean.TRUE.equals(capabilities.getRenameProvider()));
+						document, capabilities -> isRenameProvider(capabilities));
 				if (!infos.isEmpty()) {
 					// TODO consider better strategy to pick LS, or iterate over LS until one gives
 					// a good result
@@ -71,6 +74,23 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 		return null;
 	}
 
+	private static boolean isRenameProvider(ServerCapabilities serverCapabilities) {
+		if (serverCapabilities == null) {
+			return false;
+		}
+		Either<Boolean, RenameOptions> renameProvider = serverCapabilities.getRenameProvider();
+		if (renameProvider == null) {
+			return false;
+		}
+		if (renameProvider.isLeft()) {
+			return renameProvider.getLeft() != null && renameProvider.getLeft();
+		}
+		if (renameProvider.isRight()) {
+			return renameProvider.getRight() != null;
+		}
+		return false;
+	}
+
 	@Override
 	public boolean isEnabled() {
 		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
@@ -78,7 +98,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 			IDocument document = LSPEclipseUtils.getDocument((ITextEditor) part);
 			if (document != null) {
 				Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-						capabilities -> Boolean.TRUE.equals(capabilities.getRenameProvider()));
+						capabilities -> isRenameProvider(capabilities));
 				ISelection selection = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
 				return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
 			}

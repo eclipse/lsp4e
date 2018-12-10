@@ -31,6 +31,7 @@ import org.eclipse.lsp4e.test.format.FormatTest;
 import org.eclipse.lsp4e.test.highlight.HighlightTest;
 import org.eclipse.lsp4e.test.hover.HoverTest;
 import org.eclipse.lsp4e.test.references.FindReferencesTest;
+import org.eclipse.lsp4e.test.rename.RenameTest;
 import org.eclipse.lsp4e.test.symbols.SymbolsModelTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -60,7 +61,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DocumentLinkTest.class,
 	RunningLanguageServerTest.class,
 	HighlightTest.class,
-	DynamicRegistrationTest.class
+		DynamicRegistrationTest.class, RenameTest.class
 })
 public class AllTests {
 

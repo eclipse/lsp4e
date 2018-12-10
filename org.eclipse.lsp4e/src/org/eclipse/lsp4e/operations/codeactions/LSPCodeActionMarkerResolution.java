@@ -22,6 +22,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -36,6 +37,7 @@ import org.eclipse.lsp4j.CodeActionOptions;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -120,8 +122,8 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					if (definition != null) {
 						CompletableFuture<LanguageServer> serverFuture = LanguageServiceAccessor
 								.getInitializedLanguageServer(file, definition,
-								serverCapabilities -> serverCapabilities == null
-										|| Boolean.TRUE.equals(serverCapabilities.getCodeActionProvider()));
+										serverCapabilities -> serverCapabilities == null
+												|| providesCodeActions(serverCapabilities));
 						if (serverFuture != null) {
 							languageServerFutures.add(serverFuture);
 						}
@@ -166,6 +168,20 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()])).get(300, TimeUnit.MILLISECONDS);
 			}
 		}
+	}
+
+	static boolean providesCodeActions(@NonNull ServerCapabilities serverCapabilities) {
+		Either<Boolean, CodeActionOptions> codeActionProvider = serverCapabilities.getCodeActionProvider();
+		if (codeActionProvider == null) {
+			return false;
+		}
+		if (codeActionProvider.isLeft()) {
+			return codeActionProvider.getLeft() != null && codeActionProvider.getLeft();
+		}
+		if (codeActionProvider.isRight()) {
+			return codeActionProvider.getRight() != null;
+		}
+		return false;
 	}
 
 	@Override

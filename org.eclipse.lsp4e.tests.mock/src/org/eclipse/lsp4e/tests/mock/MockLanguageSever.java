@@ -105,6 +105,7 @@ public final class MockLanguageSever implements LanguageServer {
 		capabilities.setDocumentLinkProvider(new DocumentLinkOptions());
 		capabilities.setSignatureHelpProvider(new SignatureHelpOptions());
 		capabilities.setDocumentHighlightProvider(Boolean.TRUE);
+		capabilities.setRenameProvider(Boolean.TRUE);
 		initializeResult.setCapabilities(capabilities);
 	}
 

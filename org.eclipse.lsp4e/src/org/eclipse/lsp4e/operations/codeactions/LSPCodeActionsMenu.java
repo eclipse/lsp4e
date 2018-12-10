@@ -71,7 +71,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 			}
 			infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					document,
-					(capabilities) -> Boolean.TRUE.equals(capabilities.getCodeActionProvider()));
+					capabilities -> LSPCodeActionMarkerResolution.providesCodeActions(capabilities));
 			ITextSelection selection = (ITextSelection) textEditor.getSelectionProvider().getSelection();
 			try {
 				this.range = new Range(
