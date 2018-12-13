@@ -85,6 +85,8 @@ import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
 import org.eclipse.ltk.core.refactoring.TextChange;
 import org.eclipse.ltk.core.refactoring.TextFileChange;
 import org.eclipse.ltk.core.refactoring.resource.DeleteResourceChange;
+import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
+import org.eclipse.mylyn.wikitext.parser.MarkupParser;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.text.edits.MalformedTreeException;
@@ -118,7 +120,11 @@ import com.google.gson.JsonPrimitive;
  */
 public class LSPEclipseUtils {
 
+	private static final String HTML = "html"; //$NON-NLS-1$
+	private static final String MARKDOWN = "markdown"; //$NON-NLS-1$
+	private static final String MD = "md"; //$NON-NLS-1$
 	private static final int MAX_BROWSER_NAME_LENGTH = 30;
+	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage());
 
 	private LSPEclipseUtils() {
 		// this class shouldn't be instantiated
@@ -756,6 +762,38 @@ public class LSPEclipseUtils {
 			}
 		}
 		return null;
+	}
+
+	public static String getHtmlDocString(Either<String, MarkupContent> documentation) {
+		if (documentation.isLeft()) {
+			return htmlParagraph(documentation.getLeft());
+		} else if (documentation.isRight()) {
+			MarkupContent markupContent = documentation.getRight();
+			if (markupContent.getValue() != null) {
+				if (MARKDOWN.equalsIgnoreCase(markupContent.getKind())
+						|| MD.equalsIgnoreCase(markupContent.getKind())) {
+					try {
+						return MARKDOWN_PARSER.parseToHtml(markupContent.getValue());
+					} catch (Exception e) {
+						LanguageServerPlugin.logError(e);
+						return htmlParagraph(markupContent.getValue());
+					}
+				} else if (HTML.equalsIgnoreCase(markupContent.getKind())) {
+					return markupContent.getValue();
+				} else {
+					return htmlParagraph(markupContent.getValue());
+				}
+			}
+		}
+		return null;
+	}
+
+	private static String htmlParagraph(String text) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("<p>"); //$NON-NLS-1$
+		sb.append(text);
+		sb.append("</p>"); //$NON-NLS-1$
+		return sb.toString();
 	}
 
 	/**

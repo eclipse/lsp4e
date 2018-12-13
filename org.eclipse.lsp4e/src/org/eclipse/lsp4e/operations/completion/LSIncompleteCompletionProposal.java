@@ -26,6 +26,8 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.internal.text.html.BrowserInformationControl;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DefaultInformationControl;
@@ -51,6 +53,7 @@ import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.operations.hover.LSBasedHover;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionOptions;
@@ -66,6 +69,7 @@ import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
 
 import com.google.common.collect.ImmutableList;
 
+@SuppressWarnings("restriction")
 public class LSIncompleteCompletionProposal
 		implements ICompletionProposal, ICompletionProposalExtension3, ICompletionProposalExtension4,
 		ICompletionProposalExtension5, ICompletionProposalExtension6, ICompletionProposalExtension7,
@@ -246,8 +250,26 @@ public class LSIncompleteCompletionProposal
 	public IInformationControlCreator getInformationControlCreator() {
 		return new AbstractReusableInformationControlCreator() {
 			@Override
-			public IInformationControl doCreateInformationControl(Shell shell) {
-				return new DefaultInformationControl(shell, true);
+			protected IInformationControl doCreateInformationControl(Shell parent) {
+				if (BrowserInformationControl.isAvailable(parent)) {
+					return new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT,
+							false) {
+						@Override
+						public IInformationControlCreator getInformationPresenterControlCreator() {
+							return new IInformationControlCreator() {
+								@Override
+								public IInformationControl createInformationControl(Shell parent) {
+									BrowserInformationControl res = new BrowserInformationControl(parent,
+											JFaceResources.DEFAULT_FONT, true);
+									return res;
+								}
+							};
+						}
+
+					};
+				} else {
+					return new DefaultInformationControl(parent);
+				}
 			}
 		};
 	}
@@ -276,10 +298,13 @@ public class LSIncompleteCompletionProposal
 			res.append("<br/>"); //$NON-NLS-1$
 		}
 		if (this.item.getDocumentation() != null) {
-			res.append("<p>" + LSPEclipseUtils.getDocString(this.item.getDocumentation()) + "</p>"); //$NON-NLS-1$ //$NON-NLS-2$
+			String htmlDocString = LSPEclipseUtils.getHtmlDocString(this.item.getDocumentation());
+			if (htmlDocString != null) {
+				res.append(htmlDocString);
+			}
 		}
 
-		return res.toString();
+		return LSBasedHover.styleHtml(res.toString());
 	}
 
 	private void updateCompletionItem(CompletionItem resolvedItem) {

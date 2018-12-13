@@ -156,6 +156,27 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 	public LSBasedHover() {
 	}
 
+	public static String styleHtml(String html) {
+		// put CSS styling to match Eclipse style
+		ColorRegistry colorRegistry = JFaceResources.getColorRegistry();
+		Color foreground = colorRegistry.get("org.eclipse.ui.workbench.HOVER_FOREGROUND"); //$NON-NLS-1$
+		Color background = colorRegistry.get("org.eclipse.ui.workbench.HOVER_BACKGROUND"); //$NON-NLS-1$
+		String style = "<style TYPE='text/css'>html { " + //$NON-NLS-1$
+				"font-family: " + JFaceResources.getDefaultFontDescriptor().getFontData()[0].getName() + "; " + //$NON-NLS-1$ //$NON-NLS-2$
+				"font-size: " + Integer.toString(JFaceResources.getDefaultFontDescriptor().getFontData()[0].getHeight()) //$NON-NLS-1$
+				+ "pt; " + //$NON-NLS-1$
+				(background != null ? "background-color: " + toHTMLrgb(background.getRGB()) + "; " : "") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				(foreground != null ? "color: " + toHTMLrgb(foreground.getRGB()) + "; " : "") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				" }</style>"; //$NON-NLS-1$
+
+		int headIndex = html.indexOf("<head>"); //$NON-NLS-1$
+		StringBuilder builder = new StringBuilder(html.length() + style.length());
+		builder.append(html.substring(0, headIndex + "<head>".length())); //$NON-NLS-1$
+		builder.append(style);
+		builder.append(html.substring(headIndex + "<head>".length())); //$NON-NLS-1$
+		return builder.toString();
+	}
+
 	@Override
 	public String getHoverInfo(ITextViewer textViewer, IRegion hoverRegion) {
 		if (textViewer == null || hoverRegion == null) {
@@ -183,23 +204,7 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 			return null;
 		}
 		result = MARKDOWN_PARSER.parseToHtml(result);
-		// put CSS styling to match Eclipse style
-		ColorRegistry colorRegistry =  JFaceResources.getColorRegistry();
-		Color foreground= colorRegistry.get("org.eclipse.ui.workbench.HOVER_FOREGROUND"); //$NON-NLS-1$
-		Color background= colorRegistry.get("org.eclipse.ui.workbench.HOVER_BACKGROUND"); //$NON-NLS-1$
-		String style = "<style TYPE='text/css'>html { " + //$NON-NLS-1$
-				"font-family: " + JFaceResources.getDefaultFontDescriptor().getFontData()[0].getName() + "; " + //$NON-NLS-1$ //$NON-NLS-2$
-				"font-size: " + Integer.toString(JFaceResources.getDefaultFontDescriptor().getFontData()[0].getHeight()) + "pt; " + //$NON-NLS-1$ //$NON-NLS-2$
-				(background != null ? "background-color: " + toHTMLrgb(background.getRGB()) + "; " : "") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				(foreground != null ? "color: " + toHTMLrgb(foreground.getRGB()) + "; " : "") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				" }</style>"; //$NON-NLS-1$
-
-		int headIndex = result.indexOf("<head>"); //$NON-NLS-1$
-		StringBuilder builder = new StringBuilder(result.length() + style.length());
-		builder.append(result.substring(0, headIndex + "<head>".length())); //$NON-NLS-1$
-		builder.append(style);
-		builder.append(result.substring(headIndex + "<head>".length())); //$NON-NLS-1$
-		return builder.toString();
+		return styleHtml(result);
 	}
 
 	protected static @Nullable String getHoverString(@NonNull Hover hover) {
