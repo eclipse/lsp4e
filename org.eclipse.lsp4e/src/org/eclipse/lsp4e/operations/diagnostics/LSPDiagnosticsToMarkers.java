@@ -95,20 +95,22 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			IWorkspaceRunnable runnable = new IWorkspaceRunnable() {
 				@Override
 				public void run(IProgressMonitor monitor) throws CoreException {
-					for (Diagnostic diagnostic : newDiagnostics) {
-						IMarker marker = resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE);
-						updateMarker(resource, diagnostic, marker);
-					}
-					for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
-						updateMarker(resource, entry.getValue(), entry.getKey());
-					}
-					toDeleteMarkers.forEach(t -> {
-						try {
-							t.delete();
-						} catch (CoreException e) {
-							LanguageServerPlugin.logError(e);
+					if (resource.exists()) {
+						for (Diagnostic diagnostic : newDiagnostics) {
+							IMarker marker = resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE);
+							updateMarker(resource, diagnostic, marker);
 						}
-					});
+						for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
+							updateMarker(resource, entry.getValue(), entry.getKey());
+						}
+						toDeleteMarkers.forEach(t -> {
+							try {
+								t.delete();
+							} catch (CoreException e) {
+								LanguageServerPlugin.logError(e);
+							}
+						});
+					}
 				}
 			};
 			ResourcesPlugin.getWorkspace().run(runnable, new NullProgressMonitor());
