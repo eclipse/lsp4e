@@ -19,10 +19,12 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTab;
 import org.eclipse.jface.layout.GridDataFactory;
+import org.eclipse.lsp4e.debug.DSPImages;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -241,6 +243,16 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 	@Override
 	public String getName() {
 		return "Debug Adapter";
+	}
+
+	@Override
+	public String getId() {
+		return "org.eclipse.lsp4e.debug.launcher.DSPMainTab";
+	}
+
+	@Override
+	public Image getImage() {
+		return DSPImages.get(DSPImages.IMG_VIEW_DEBUGGER_TAB);
 	}
 
 	@Override
