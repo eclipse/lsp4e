@@ -13,6 +13,8 @@ import org.eclipse.debug.core.sourcelookup.ISourceLookupParticipant;
 
 public class DSPSourceLookupDirector extends AbstractSourceLookupDirector {
 
+	public static final String ID = "org.eclipse.lsp4e.debug.sourceLocator";
+
 	@Override
 	public void initializeParticipants() {
 		addParticipants(new ISourceLookupParticipant[] { new DSPSourceLookupParticipant() });

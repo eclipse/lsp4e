@@ -8,18 +8,23 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.presentation;
 
+import java.net.URI;
+
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.debug.core.model.IDisconnect;
 import org.eclipse.debug.core.model.ILineBreakpoint;
 import org.eclipse.debug.core.model.ITerminate;
 import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.internal.ui.DebugUIPlugin;
 import org.eclipse.debug.ui.IDebugModelPresentation;
+import org.eclipse.debug.ui.ISourcePresentation;
 import org.eclipse.debug.ui.IValueDetailListener;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.IFontProvider;
@@ -31,8 +36,14 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorDescriptor;
 import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorRegistry;
+import org.eclipse.ui.IFileEditorInput;
+import org.eclipse.ui.IURIEditorInput;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.FileStoreEditorInput;
+import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.FileEditorInput;
 
 public class DSPDebugModelPresentation extends LabelProvider implements IDebugModelPresentation, IFontProvider {
@@ -111,6 +122,10 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 		if (element instanceof ILineBreakpoint) {
 			return new FileEditorInput((IFile) ((ILineBreakpoint) element).getMarker().getResource());
 		}
+		if (element instanceof IFile) {
+			return new FileEditorInput((IFile) element);
+		}
+
 		IFileStore fileStore = EFS.getLocalFileSystem().getStore(new Path(element.toString()));
 		IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 		IFile[] files = root.findFilesForLocationURI(fileStore.toURI());
@@ -126,8 +141,49 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 
 	@Override
 	public String getEditorId(IEditorInput input, Object element) {
-		// return EditorsUI.DEFAULT_TEXT_EDITOR_ID;
-		return "org.eclipse.ui.genericeditor.GenericEditor";
+		String id = null;
+		if (input != null) {
+			IEditorDescriptor descriptor = null;
+			if (input instanceof IFileEditorInput) {
+				IFileEditorInput fileEditorInput = (IFileEditorInput) input;
+				IFile file = fileEditorInput.getFile();
+				descriptor = IDE.getDefaultEditor(file);
+			} else if (input instanceof IURIEditorInput) {
+				IURIEditorInput uriEditorInput = (IURIEditorInput) input;
+				URI uri = uriEditorInput.getURI();
+				try {
+					IFileStore fileStore = EFS.getStore(uri);
+					id = WorkaroundForBug516470.getEditorId(fileStore, false);
+				} catch (CoreException e) {
+					// fallback to default case
+				}
+			}
+			if (id == null) {
+				if (descriptor == null) {
+					IEditorRegistry registry = PlatformUI.getWorkbench().getEditorRegistry();
+					descriptor = registry.getDefaultEditor(input.getName());
+				}
+
+				id = "org.eclipse.ui.genericeditor.GenericEditor";
+				if (descriptor != null) {
+					id = descriptor.getId();
+				}
+			}
+
+			if (id == null && element instanceof ILineBreakpoint) {
+				// There is no associated editor ID for this breakpoint, see if an alternative
+				// can be supplied from an adapter.
+				ISourcePresentation sourcePres = Platform.getAdapterManager().getAdapter(element,
+						ISourcePresentation.class);
+				if (sourcePres != null) {
+					String lid = sourcePres.getEditorId(input, element);
+					if (lid != null) {
+						id = lid;
+					}
+				}
+			}
+		}
+		return id;
 	}
 
 	@Override
