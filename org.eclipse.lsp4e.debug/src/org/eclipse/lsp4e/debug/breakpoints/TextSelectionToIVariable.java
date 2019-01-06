@@ -31,7 +31,8 @@ import org.eclipse.lsp4j.debug.EvaluateResponse;
 
 public class TextSelectionToIVariable implements IAdapterFactory {
 
-	@Override public <T> T getAdapter(Object adaptableObject, Class<T> adapterType) {
+	@Override
+	public <T> T getAdapter(Object adaptableObject, Class<T> adapterType) {
 		if (!(adaptableObject instanceof TextSelection)) {
 			return null;
 		}
@@ -42,7 +43,8 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 		return (T) getVariableFor(selection);
 	}
 
-	@Override public Class<?>[] getAdapterList() {
+	@Override
+	public Class<?>[] getAdapterList() {
 		return new Class<?>[] { IVariable.class };
 	}
 
@@ -61,14 +63,15 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 				variableName = findVariableName(document, selection.getOffset());
 			}
 
-
 			if (Boolean.TRUE.equals(frame.getDebugTarget().getCapabilities().getSupportsEvaluateForHovers())) {
 				EvaluateArguments args = new EvaluateArguments();
 				args.setContext(EvaluateArgumentsContext.HOVER);
 				args.setFrameId(frame.getFrameId());
 				args.setExpression(variableName);
 				try {
-					EvaluateResponse res = frame.getDebugProtocolServer().evaluate(args).get(); // ok to call get as it should be a different thread.
+					EvaluateResponse res = frame.getDebugProtocolServer().evaluate(args).get(); // ok to call get as it
+																								// should be a different
+																								// thread.
 					return new DSPVariable(getFrame(), res.getVariablesReference(), variableName, res.getResult());
 				} catch (InterruptedException | ExecutionException e) {
 					DSPPlugin.logError(e);
@@ -107,7 +110,8 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 			while (startOffset - 1 >= 0 && Character.isJavaIdentifierPart(document.getChar(startOffset - 1)))
 				startOffset--;
 			int endOffset = offset;
-			while (endOffset + 1 < document.getLength() && Character.isJavaIdentifierPart(document.getChar(endOffset + 1)))
+			while (endOffset + 1 < document.getLength()
+					&& Character.isJavaIdentifierPart(document.getChar(endOffset + 1)))
 				endOffset++;
 			return document.get(startOffset, endOffset - startOffset + 1);
 		} catch (BadLocationException ex) {
@@ -129,7 +133,8 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 			Method documentMethod = TextSelection.class.getDeclaredMethod("getDocument"); //$NON-NLS-1$
 			documentMethod.setAccessible(true);
 			return (IDocument) documentMethod.invoke(sel);
-		} catch (NoSuchMethodException | IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
+		} catch (NoSuchMethodException | IllegalArgumentException | IllegalAccessException
+				| InvocationTargetException e) {
 			DSPPlugin.logError(e);
 			return null;
 		}

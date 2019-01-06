@@ -76,8 +76,7 @@ public class DSPPlugin extends AbstractUIPlugin {
 	/**
 	 * Utility method to log errors.
 	 *
-	 * @param thr
-	 *            The exception through which we noticed the error
+	 * @param thr The exception through which we noticed the error
 	 */
 	public static void logError(final Throwable thr) {
 		logError(thr.getMessage(), thr);
@@ -86,10 +85,8 @@ public class DSPPlugin extends AbstractUIPlugin {
 	/**
 	 * Utility method to log errors.
 	 *
-	 * @param message
-	 *            User comprehensible message
-	 * @param thr
-	 *            The exception through which we noticed the error
+	 * @param message User comprehensible message
+	 * @param thr     The exception through which we noticed the error
 	 */
 	public static void logError(final String message, final Throwable thr) {
 		log(IStatus.ERROR, message, thr);
@@ -107,10 +104,8 @@ public class DSPPlugin extends AbstractUIPlugin {
 	/**
 	 * Utility method to log warnings for this plug-in.
 	 *
-	 * @param message
-	 *            User comprehensible message
-	 * @param thr
-	 *            The exception through which we noticed the warning
+	 * @param message User comprehensible message
+	 * @param thr     The exception through which we noticed the warning
 	 */
 	public static void logWarning(final String message, final Throwable thr) {
 		log(IStatus.WARNING, message, thr);

@@ -84,8 +84,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 	/**
 	 * Returns whether this target can install the given breakpoint.
 	 *
-	 * @param breakpoint
-	 *            breakpoint to consider
+	 * @param breakpoint breakpoint to consider
 	 * @return whether this target can install the given breakpoint
 	 */
 	public boolean supportsBreakpoint(IBreakpoint breakpoint) {
@@ -202,7 +201,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 				if (Objects.equals(name, source.getName()) && Objects.equals(path, source.getPath())) {
 					List<SourceBreakpoint> bps = entry.getValue();
 					for (Iterator<SourceBreakpoint> iterator = bps.iterator(); iterator.hasNext();) {
-						SourceBreakpoint sourceBreakpoint = (SourceBreakpoint) iterator.next();
+						SourceBreakpoint sourceBreakpoint = iterator.next();
 						if (Objects.equals(lineNumber, sourceBreakpoint.getLine())) {
 							iterator.remove();
 						}

@@ -184,7 +184,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		arguments.setClientID("lsp4e.debug");
 		String adapterId = "adapterId";
 		if (dspParameters.containsKey("type") && dspParameters.get("type") instanceof String) {
-			adapterId = (String)dspParameters.get("type");
+			adapterId = (String) dspParameters.get("type");
 		}
 		arguments.setAdapterID(adapterId);
 		arguments.setPathFormat("path");
@@ -261,12 +261,9 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * Throws a debug exception with a status code of
 	 * <code>TARGET_REQUEST_FAILED</code>.
 	 *
-	 * @param message
-	 *            exception message
-	 * @param e
-	 *            underlying exception or <code>null</code>
-	 * @throws DebugException
-	 *             if a problem is encountered
+	 * @param message exception message
+	 * @param e       underlying exception or <code>null</code>
+	 * @throws DebugException if a problem is encountered
 	 */
 	@Override
 	protected void requestFailed(String message, Throwable e) throws DebugException {

@@ -97,7 +97,8 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		monitorAdapterLauncherProcessCheckbox = new Button(group, SWT.CHECK);
 		GridData layoutData = new GridData(SWT.LEFT, SWT.DEFAULT, true, false);
 		monitorAdapterLauncherProcessCheckbox.setLayoutData(layoutData);
-		monitorAdapterLauncherProcessCheckbox.addSelectionListener(widgetSelectedAdapter(e -> updateLaunchConfigurationDialog()));
+		monitorAdapterLauncherProcessCheckbox
+				.addSelectionListener(widgetSelectedAdapter(e -> updateLaunchConfigurationDialog()));
 		monitorAdapterLauncherProcessCheckbox.setText("Monitor Debug Adapter launcher process");
 
 		connectDebugServer = new Button(group, SWT.RADIO);
@@ -181,7 +182,8 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 			} else {
 				debugArgsText.setText(String.join(" ", args.toArray(new String[args.size()])));
 			}
-			monitorAdapterLauncherProcessCheckbox.setSelection(configuration.getAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, false));
+			monitorAdapterLauncherProcessCheckbox
+					.setSelection(configuration.getAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, false));
 			serverHost.setText(configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, DEFAULT_SERVER));
 			serverPort.setText(
 					Integer.toString(configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_PORT, DEFAULT_PORT)));
@@ -207,7 +209,8 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		} else {
 			configuration.setAttribute(DSPPlugin.ATTR_DSP_ARGS, Arrays.asList(arg.split("\\s+"))); //$NON-NLS-1$
 		}
-		configuration.setAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, monitorAdapterLauncherProcessCheckbox.getSelection());
+		configuration.setAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER,
+				monitorAdapterLauncherProcessCheckbox.getSelection());
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, getAttributeValueFrom(serverHost));
 		String portString = getAttributeValueFrom(serverPort);
 		int port = DEFAULT_PORT;

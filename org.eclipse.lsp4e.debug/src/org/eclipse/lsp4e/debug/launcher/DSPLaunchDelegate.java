@@ -95,15 +95,18 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 						.subTask(NLS.bind("Launching debug adapter: {0}", "\"" + String.join("\" \"", command) + "\""));
 				Process debugAdapterProcess = processBuilder.start();
 				if (launch.getLaunchConfiguration().getAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, false)) {
-					// Uglish workaround: should instead have a dedicated ProcessFactory reading process attribute rather than launch one
+					// Uglish workaround: should instead have a dedicated ProcessFactory reading
+					// process attribute rather than launch one
 					String initialCaptureOutput = launch.getAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT);
 					launch.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, Boolean.toString(true));
-					IProcess debugAdapterIProcess = DebugPlugin.newProcess(launch, debugAdapterProcess, "Debug Adapter");
+					IProcess debugAdapterIProcess = DebugPlugin.newProcess(launch, debugAdapterProcess,
+							"Debug Adapter");
 					launch.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, initialCaptureOutput);
 
 					List<Byte> bytes = Collections.synchronizedList(new LinkedList<>());
 					inputStream = new InputStream() {
-						@Override public int read() throws IOException {
+						@Override
+						public int read() throws IOException {
 							while (debugAdapterProcess.isAlive()) {
 								if (!bytes.isEmpty()) {
 									return bytes.remove(0);
@@ -119,7 +122,8 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 						}
 					};
 					debugAdapterIProcess.getStreamsProxy().getOutputStreamMonitor().addListener(new IStreamListener() {
-						@Override public void streamAppended(String text, IStreamMonitor monitor) {
+						@Override
+						public void streamAppended(String text, IStreamMonitor monitor) {
 							try {
 								for (byte b : text.getBytes(launch.getAttribute(DebugPlugin.ATTR_CONSOLE_ENCODING))) {
 									bytes.add(Byte.valueOf(b));
@@ -130,8 +134,9 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 						}
 					});
 					outputStream = new OutputStream() {
-						@Override public void write(int b) throws IOException {
-							debugAdapterIProcess.getStreamsProxy().write(new String(new byte[] { (byte)b }));
+						@Override
+						public void write(int b) throws IOException {
+							debugAdapterIProcess.getStreamsProxy().write(new String(new byte[] { (byte) b }));
 						}
 					};
 					cleanup = () -> {
@@ -187,10 +192,8 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	 * Throws an exception with a new status containing the given message and
 	 * optional exception.
 	 *
-	 * @param message
-	 *            error message
-	 * @param e
-	 *            underlying exception
+	 * @param message error message
+	 * @param e       underlying exception
 	 * @throws CoreException
 	 */
 	private void abort(String message, Throwable e) throws CoreException {
