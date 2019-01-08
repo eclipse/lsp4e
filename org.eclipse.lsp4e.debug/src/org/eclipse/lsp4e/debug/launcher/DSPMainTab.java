@@ -29,6 +29,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
@@ -50,6 +51,20 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 	private Text serverHost;
 	private Text serverPort;
 
+	private boolean allowCustomSettingsCheckbox;
+	private Button customDebugAdapterCheckbox;
+	private Group debugAdapterSettingsGroup;
+	private Composite launchParametersGroup;
+	private Button customLaunchParametersCheckbox;
+
+	public DSPMainTab() {
+		this(false);
+	}
+
+	public DSPMainTab(boolean allowCustomSettingsCheckbox) {
+		this.allowCustomSettingsCheckbox = allowCustomSettingsCheckbox;
+	}
+
 	@Override
 	public void createControl(Composite parent) {
 		Composite comp = new Composite(parent, SWT.NONE);
@@ -65,76 +80,91 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 	}
 
 	private void createDebugAdapterComponent(Composite parent) {
-		Group group = new Group(parent, SWT.NONE);
-		group.setText("Debug Adapter Settings");
-		group.setLayout(new GridLayout(2, false));
-		group.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+		if (allowCustomSettingsCheckbox) {
+			customDebugAdapterCheckbox = new Button(parent, SWT.CHECK);
+			customDebugAdapterCheckbox.setText("Override defaults and launch with these debug adapters settings.");
+			customDebugAdapterCheckbox.setLayoutData(GridDataFactory.fillDefaults().span(1, 1).create());
+			customDebugAdapterCheckbox
+					.addSelectionListener(widgetSelectedAdapter(e -> updateLaunchConfigurationDialog()));
+		}
 
-		Label debugText = new Label(group, SWT.NONE);
-		debugText.setText(
-				"We launch specific debug adapters using these settings. In future this could be handled by an extension point.");
+		debugAdapterSettingsGroup = new Group(parent, SWT.NONE);
+		debugAdapterSettingsGroup.setText("Debug Adapter Settings");
+		debugAdapterSettingsGroup.setLayout(new GridLayout(2, false));
+		debugAdapterSettingsGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+
+		Label debugText = new Label(debugAdapterSettingsGroup, SWT.NONE);
+		debugText.setText("Launch specific debug adapters using these settings.");
 		debugText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).create());
 
-		launchDebugServer = new Button(group, SWT.RADIO);
+		launchDebugServer = new Button(debugAdapterSettingsGroup, SWT.RADIO);
 		launchDebugServer.setText("&Launch a Debug Server using the following arguments:");
 		launchDebugServer.addSelectionListener(widgetSelectedAdapter(e -> updateLaunchConfigurationDialog()));
 		launchDebugServer.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).create());
 		launchDebugServer.setSelection(true);
 
-		Label programLabel = new Label(group, SWT.NONE);
+		Label programLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
 		programLabel.setText("&Command:");
 		programLabel.setLayoutData(new GridData(GridData.BEGINNING));
-		debugCommandText = new Text(group, SWT.SINGLE | SWT.BORDER);
+		debugCommandText = new Text(debugAdapterSettingsGroup, SWT.SINGLE | SWT.BORDER);
 		debugCommandText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		debugCommandText.addModifyListener(e -> updateLaunchConfigurationDialog());
-		Label argsLabel = new Label(group, SWT.NONE);
+		Label argsLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
 		argsLabel.setText("&Arguments:");
 		argsLabel.setLayoutData(new GridData(GridData.BEGINNING));
 
-		debugArgsText = new Text(group, SWT.SINGLE | SWT.BORDER);
+		debugArgsText = new Text(debugAdapterSettingsGroup, SWT.SINGLE | SWT.BORDER);
 		debugArgsText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		debugArgsText.addModifyListener(e -> updateLaunchConfigurationDialog());
 
-		Composite filler = new Composite(group, SWT.NONE);
+		Composite filler = new Composite(debugAdapterSettingsGroup, SWT.NONE);
 		filler.setLayoutData(new GridData(0, 0));
-		monitorAdapterLauncherProcessCheckbox = new Button(group, SWT.CHECK);
+		monitorAdapterLauncherProcessCheckbox = new Button(debugAdapterSettingsGroup, SWT.CHECK);
 		GridData layoutData = new GridData(SWT.LEFT, SWT.DEFAULT, true, false);
 		monitorAdapterLauncherProcessCheckbox.setLayoutData(layoutData);
 		monitorAdapterLauncherProcessCheckbox
 				.addSelectionListener(widgetSelectedAdapter(e -> updateLaunchConfigurationDialog()));
 		monitorAdapterLauncherProcessCheckbox.setText("Monitor Debug Adapter launcher process");
 
-		connectDebugServer = new Button(group, SWT.RADIO);
+		connectDebugServer = new Button(debugAdapterSettingsGroup, SWT.RADIO);
 		connectDebugServer.setText("Connect to &running Debug Server using the following arguments:");
 		connectDebugServer.addSelectionListener(widgetSelectedAdapter(e -> updateLaunchConfigurationDialog()));
 		connectDebugServer.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).create());
 
-		Label serverHostLabel = new Label(group, SWT.NONE);
+		Label serverHostLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
 		serverHostLabel.setText("Server &Host:");
 		serverHostLabel.setLayoutData(new GridData(GridData.BEGINNING));
-		serverHost = new Text(group, SWT.SINGLE | SWT.BORDER);
+		serverHost = new Text(debugAdapterSettingsGroup, SWT.SINGLE | SWT.BORDER);
 		serverHost.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		serverHost.addModifyListener(e -> updateLaunchConfigurationDialog());
 
-		Label serverPortLabel = new Label(group, SWT.NONE);
+		Label serverPortLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
 		serverPortLabel.setText("Server &Port:");
 		serverPortLabel.setLayoutData(new GridData(GridData.BEGINNING));
-		serverPort = new Text(group, SWT.SINGLE | SWT.BORDER);
+		serverPort = new Text(debugAdapterSettingsGroup, SWT.SINGLE | SWT.BORDER);
 		serverPort.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		serverPort.addModifyListener(e -> updateLaunchConfigurationDialog());
 
 	}
 
 	private void createDebugJSonComponent(Composite parent) {
-		Composite comp = new Group(parent, SWT.NONE);
-		comp.setLayout(new GridLayout());
-		comp.setLayoutData(new GridData(GridData.FILL_BOTH));
+		if (allowCustomSettingsCheckbox) {
+			customLaunchParametersCheckbox = new Button(parent, SWT.CHECK);
+			customLaunchParametersCheckbox.setText("Enable additional Json settings for this launch.");
+			customLaunchParametersCheckbox.setLayoutData(GridDataFactory.fillDefaults().span(1, 1).create());
+			customLaunchParametersCheckbox
+					.addSelectionListener(widgetSelectedAdapter(e -> updateLaunchConfigurationDialog()));
+		}
 
-		Label jsonLabel = new Label(comp, SWT.NONE);
+		launchParametersGroup = new Group(parent, SWT.NONE);
+		launchParametersGroup.setLayout(new GridLayout());
+		launchParametersGroup.setLayoutData(new GridData(GridData.FILL_BOTH));
+
+		Label jsonLabel = new Label(launchParametersGroup, SWT.NONE);
 		jsonLabel.setText("Launch &Parameters (Json):");
 		jsonLabel.setLayoutData(new GridData(GridData.BEGINNING));
 
-		jsonText = new Text(comp, SWT.MULTI | SWT.WRAP | SWT.BORDER | SWT.V_SCROLL);
+		jsonText = new Text(launchParametersGroup, SWT.MULTI | SWT.WRAP | SWT.BORDER | SWT.V_SCROLL);
 		jsonText.setLayoutData(new GridData(GridData.FILL_BOTH));
 		jsonText.addModifyListener(new ModifyListener() {
 
@@ -146,20 +176,42 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 
 	}
 
+	private void setEnabled(Composite composite, boolean enabled) {
+		for (Control control : composite.getChildren()) {
+			if (control instanceof Composite) {
+				setEnabled((Composite) control, enabled);
+			} else {
+				control.setEnabled(enabled);
+			}
+		}
+		composite.setEnabled(enabled);
+	}
+
 	@Override
 	protected void updateLaunchConfigurationDialog() {
+		boolean enableDebugAdapterSettings = customDebugAdapterCheckbox == null
+				|| customDebugAdapterCheckbox.getSelection();
 		boolean launch = launchDebugServer.getSelection();
-		debugCommandText.setEnabled(launch);
-		debugArgsText.setEnabled(launch);
-		monitorAdapterLauncherProcessCheckbox.setEnabled(launch);
-		serverHost.setEnabled(!launch);
-		serverPort.setEnabled(!launch);
+
+		setEnabled(debugAdapterSettingsGroup, enableDebugAdapterSettings);
+		debugCommandText.setEnabled(launch && enableDebugAdapterSettings);
+		debugArgsText.setEnabled(launch && enableDebugAdapterSettings);
+		monitorAdapterLauncherProcessCheckbox.setEnabled(launch && enableDebugAdapterSettings);
+		serverHost.setEnabled(!launch && enableDebugAdapterSettings);
+		serverPort.setEnabled(!launch && enableDebugAdapterSettings);
+
+		boolean enableLaunchParameterSettings = customLaunchParametersCheckbox == null
+				|| customLaunchParametersCheckbox.getSelection();
+		setEnabled(launchParametersGroup, enableLaunchParameterSettings);
 
 		super.updateLaunchConfigurationDialog();
 	}
 
 	@Override
 	public void setDefaults(ILaunchConfigurationWorkingCopy configuration) {
+		configuration.setAttribute(DSPPlugin.ATTR_CUSTOM_DEBUG_ADAPTER, false);
+		configuration.setAttribute(DSPPlugin.ATTR_CUSTOM_LAUNCH_PARAMS, false);
+
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_MODE, DSPPlugin.DSP_MODE_LAUNCH);
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_CMD, "");
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_ARGS, Collections.emptyList());
@@ -172,6 +224,13 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 	@Override
 	public void initializeFrom(ILaunchConfiguration configuration) {
 		try {
+			if (allowCustomSettingsCheckbox) {
+				customDebugAdapterCheckbox
+						.setSelection(configuration.getAttribute(DSPPlugin.ATTR_CUSTOM_DEBUG_ADAPTER, false));
+				customLaunchParametersCheckbox
+						.setSelection(configuration.getAttribute(DSPPlugin.ATTR_CUSTOM_LAUNCH_PARAMS, false));
+			}
+
 			boolean launch = DSPPlugin.DSP_MODE_LAUNCH
 					.equals(configuration.getAttribute(DSPPlugin.ATTR_DSP_MODE, DSPPlugin.DSP_MODE_LAUNCH));
 			launchDebugServer.setSelection(launch);
@@ -199,6 +258,12 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 
 	@Override
 	public void performApply(ILaunchConfigurationWorkingCopy configuration) {
+		if (allowCustomSettingsCheckbox) {
+			configuration.setAttribute(DSPPlugin.ATTR_CUSTOM_DEBUG_ADAPTER, customDebugAdapterCheckbox.getSelection());
+			configuration.setAttribute(DSPPlugin.ATTR_CUSTOM_LAUNCH_PARAMS,
+					customLaunchParametersCheckbox.getSelection());
+		}
+
 		boolean launch = launchDebugServer.getSelection();
 		if (launch) {
 			configuration.setAttribute(DSPPlugin.ATTR_DSP_MODE, DSPPlugin.DSP_MODE_LAUNCH);
@@ -259,27 +324,38 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 	public boolean isValid(ILaunchConfiguration launchConfig) {
 		setErrorMessage(null);
 		setMessage(null);
-		boolean launch = launchDebugServer.getSelection();
-		if (launch) {
-			if (getAttributeValueFrom(debugCommandText) == null) {
-				setMessage("Specify a debug adapter command");
-				return false;
-			}
-		} else {
-			if (getAttributeValueFrom(serverHost) == null) {
-				setMessage("Specify a server host");
-				return false;
-			}
 
-			try {
-				int port = Integer.parseInt(getAttributeValueFrom(serverPort));
-				if (port < 1 || port > 65535) {
-					throw new NumberFormatException();
+		boolean enableDebugAdapterSettings = customDebugAdapterCheckbox == null
+				|| customDebugAdapterCheckbox.getSelection();
+		if (enableDebugAdapterSettings) {
+			boolean launch = launchDebugServer.getSelection();
+			if (launch) {
+				if (getAttributeValueFrom(debugCommandText) == null) {
+					setMessage("Specify a debug adapter command");
+					return false;
 				}
-			} catch (NumberFormatException e) {
-				setMessage("Specify a port as an integer in the range 1-65535");
-				return false;
+			} else {
+				if (getAttributeValueFrom(serverHost) == null) {
+					setMessage("Specify a server host");
+					return false;
+				}
+
+				try {
+					int port = Integer.parseInt(getAttributeValueFrom(serverPort));
+					if (port < 1 || port > 65535) {
+						throw new NumberFormatException();
+					}
+				} catch (NumberFormatException e) {
+					setMessage("Specify a port as an integer in the range 1-65535");
+					return false;
+				}
 			}
+		}
+
+		boolean enableLaunchParameterSettings = customLaunchParametersCheckbox == null
+				|| customLaunchParametersCheckbox.getSelection();
+		if (enableLaunchParameterSettings) {
+			// We don't check anything here yet. It would be good to check JSON is valid.
 		}
 
 		return true;

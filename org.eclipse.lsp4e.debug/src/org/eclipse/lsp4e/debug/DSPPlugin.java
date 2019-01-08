@@ -43,8 +43,12 @@ public class DSPPlugin extends AbstractUIPlugin {
 	public static final String ATTR_DSP_SERVER_HOST = ID_DSP_DEBUG_MODEL + ".ATTR_DSP_SERVER_HOST";
 	/** Integer */
 	public static final String ATTR_DSP_SERVER_PORT = ID_DSP_DEBUG_MODEL + ".ATTR_DSP_SERVER_PORT";
-
+	/** Boolean */
 	public static final String ATTR_DSP_MONITOR_DEBUG_ADAPTER = ID_DSP_DEBUG_MODEL + ".ATTR_DSP_MONITOR_ADAPTER";
+	/** Boolean */
+	public static final String ATTR_CUSTOM_DEBUG_ADAPTER = ID_DSP_DEBUG_MODEL + ".ATTR_CUSTOM_DEBUG_ADAPTER";
+	/** Boolean */
+	public static final String ATTR_CUSTOM_LAUNCH_PARAMS = ID_DSP_DEBUG_MODEL + ".ATTR_CUSTOM_LAUNCH_PARAMS";
 
 	// The shared instance
 	private static DSPPlugin plugin;
