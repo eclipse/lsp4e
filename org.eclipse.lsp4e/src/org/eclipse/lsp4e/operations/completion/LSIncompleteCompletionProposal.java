@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2019 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -50,6 +50,7 @@ import org.eclipse.jface.text.link.LinkedModeUI;
 import org.eclipse.jface.text.link.LinkedPosition;
 import org.eclipse.jface.text.link.LinkedPositionGroup;
 import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
@@ -62,9 +63,12 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.TextStyle;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
 
 import com.google.common.collect.ImmutableList;
@@ -95,6 +99,14 @@ public class LSIncompleteCompletionProposal
 	private static final String TM_DIRECTORY = "TM_DIRECTORY"; //$NON-NLS-1$
 	/** The full file path of the current document */
 	private static final String TM_FILEPATH = "TM_FILEPATH"; //$NON-NLS-1$
+
+	private static final Styler DEPRECATE = new Styler() {
+		@Override
+		public void applyStyles(TextStyle textStyle) {
+			textStyle.strikeout = true;
+			textStyle.foreground = PlatformUI.getWorkbench().getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY);
+		};
+	};
 
 	protected CompletionItem item;
 	private int initialOffset = -1;
@@ -205,10 +217,16 @@ public class LSIncompleteCompletionProposal
 		return this.item;
 	}
 
+	private boolean isDeprecated() {
+		return item.getDeprecated() != null && item.getDeprecated().booleanValue();
+	}
+
 	@Override
 	public StyledString getStyledDisplayString(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {
 		String rawString = getDisplayString();
-		StyledString res = new StyledString(rawString);
+		StyledString res = isDeprecated()
+				? new StyledString(rawString, DEPRECATE)
+				: new StyledString(rawString);
 		if (offset > this.bestOffset) {
 			try {
 				String subString = getDocumentFilter(offset).toLowerCase();
@@ -219,7 +237,17 @@ public class LSIncompleteCompletionProposal
 					if (index < 0) {
 						return res;
 					} else {
-						res.setStyle(index, 1, boldStylerProvider.getBoldStyler());
+						res.setStyle(index, 1, new Styler() {
+
+							@Override
+							public void applyStyles(TextStyle textStyle) {
+								if (isDeprecated()) {
+									DEPRECATE.applyStyles(textStyle);
+								}
+								boldStylerProvider.getBoldStyler().applyStyles(textStyle);
+							}
+
+						});
 						lastIndex = index + 1;
 					}
 				}
@@ -237,6 +265,9 @@ public class LSIncompleteCompletionProposal
 
 	@Override
 	public StyledString getStyledDisplayString() {
+		if (item.getDeprecated() == Boolean.TRUE) {
+			return new StyledString(getDisplayString(), DEPRECATE);
+		}
 		return new StyledString(getDisplayString());
 	}
 

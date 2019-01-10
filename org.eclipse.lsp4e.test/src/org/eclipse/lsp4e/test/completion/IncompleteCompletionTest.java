@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2019 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.test.completion;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -26,8 +27,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
+import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
@@ -42,6 +45,7 @@ import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PartInitException;
@@ -101,6 +105,44 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		LSIncompleteCompletionProposal.apply(viewer.getDocument());
 		assertEquals(new Point("FirstClass".length(), 0),
 				LSIncompleteCompletionProposal.getSelection(viewer.getDocument()));
+	}
+
+	@Test
+	public void testDeprecatedCompletion() throws Exception {
+		BoldStylerProvider boldStyleProvider = null;
+		try {
+			List<CompletionItem> items = new ArrayList<>();
+			CompletionItem completionItem = createCompletionItem("FirstClass", CompletionItemKind.Class);
+			completionItem.setDeprecated(true);
+			items.add(completionItem);
+			MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+
+			String content = "First";
+			ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
+
+			ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer,
+					content.length());
+			assertEquals(1, proposals.length);
+			LSIncompleteCompletionProposal proposal = (LSIncompleteCompletionProposal) proposals[0];
+
+			StyledString simpleStyledStr = proposal.getStyledDisplayString();
+			assertEquals("FirstClass", simpleStyledStr.getString());
+			assertEquals(1, simpleStyledStr.getStyleRanges().length);
+			StyleRange styleRange = simpleStyledStr.getStyleRanges()[0];
+			assertTrue(styleRange.strikeout);
+
+			boldStyleProvider = new BoldStylerProvider(
+					Display.getDefault().getActiveShell().getFont());
+			StyledString styledStr = proposal.getStyledDisplayString(viewer.getDocument(), 4, boldStyleProvider);
+			assertTrue(styledStr.getStyleRanges().length > 1);
+			for (StyleRange sr : styledStr.getStyleRanges()) {
+				assertTrue(sr.strikeout);
+			}
+		} finally {
+			if (boldStyleProvider != null) {
+				boldStyleProvider.dispose();
+			}
+		}
 	}
 
 	@Test
