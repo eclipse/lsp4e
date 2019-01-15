@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2019 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -21,6 +21,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.LinkedList;
 
@@ -41,6 +44,7 @@ import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.RenameFile;
+import org.eclipse.lsp4j.ResourceOperation;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
@@ -54,6 +58,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -112,6 +117,28 @@ public class LSPEclipseUtilsTest {
 					editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
 		} finally {
 			editor.close(false);
+			p.delete(true, new NullProgressMonitor());
+		}
+	}
+
+	@Test
+	public void testWorkspaceEdit_CreateAndPopulateFile() throws Exception {
+		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
+		IFile file = p.getFile("test-file.test");
+		try {
+			LinkedList<Either<TextDocumentEdit, ResourceOperation>> edits = new LinkedList<>();
+			// order the TextEdits from the top of the document to the bottom
+			String uri = file.getLocation().toFile().toURI().toString();
+			edits.add(Either.forRight(new CreateFile(uri)));
+			edits.add(Either.forLeft(
+					new TextDocumentEdit(new VersionedTextDocumentIdentifier(uri, null), Collections.singletonList(
+							new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "abcHere\nabcHere2")))));
+			WorkspaceEdit workspaceEdit = new WorkspaceEdit(edits);
+			// they should be applied from bottom to top
+			LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
+			assertTrue(file.exists());
+			assertEquals("abcHere\nabcHere2", new String(Files.readAllBytes(file.getLocation().toFile().toPath())));
+		} finally {
 			p.delete(true, new NullProgressMonitor());
 		}
 	}
@@ -197,6 +224,48 @@ public class LSPEclipseUtilsTest {
 		assertFalse(targetFile.exists());
 		assertTrue(otherFile.exists());
 		assertEquals("hello", readContent(otherFile));
+	}
+
+	@Ignore
+	@Test
+	public void createExternalFile() throws Exception {
+		Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
+		Path filePath = tempDir.resolve("metadata.test");
+		try {
+			assertFalse(Files.exists(filePath));
+			WorkspaceEdit we = new WorkspaceEdit(
+					Collections.singletonList(Either.forRight(new CreateFile(filePath.toUri().toString()))));
+			LSPEclipseUtils.applyWorkspaceEdit(we);
+			assertTrue(Files.exists(filePath));
+		} finally {
+			if (Files.exists(filePath)) {
+				Files.delete(filePath);
+			}
+		}
+	}
+
+	@Ignore
+	@Test
+	public void editExternalFile() throws Exception {
+		Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
+		Path filePath = tempDir.resolve("metadata.test");
+		try {
+			Files.createFile(filePath);
+			TextEdit te = new TextEdit();
+			te.setRange(new Range(new Position(0, 0), new Position(0, 0)));
+			te.setNewText("abc\ndef");
+			TextDocumentEdit docEdit = new TextDocumentEdit(
+					new VersionedTextDocumentIdentifier(filePath.toUri().toString(), null),
+					Collections.singletonList(te));
+			WorkspaceEdit we = new WorkspaceEdit(Collections.singletonList(Either.forLeft(docEdit)));
+			LSPEclipseUtils.applyWorkspaceEdit(we);
+			assertTrue(Files.exists(filePath));
+			assertEquals("abc\ndef", new String(Files.readAllBytes(filePath)));
+		} finally {
+			if (Files.exists(filePath)) {
+				Files.delete(filePath);
+			}
+		}
 	}
 
 	private String readContent(IFile targetFile) throws IOException, CoreException {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2019 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -13,6 +13,7 @@
  *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525400 - [rename] improve rename support with ltk UI
  *  Remy Suen <remy.suen@gmail.com> - Bug 520052 - Rename assumes that workspace edits are in reverse order
  *  Martin Lippert (Pivotal Inc.) - bug 531452, bug 532305
+ *  Alex Boyko (Pivotal Inc.) - bug 543435 (WorkspaceEdit apply handling)
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.filebuffers.FileBuffers;
-import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBufferManager;
 import org.eclipse.core.filebuffers.LocationKind;
@@ -59,6 +59,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.RewriteSessionEditProcessor;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4e.refactoring.CreateFileChange;
+import org.eclipse.lsp4e.refactoring.LSPTextChange;
 import org.eclipse.lsp4j.Color;
 import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.CreateFile;
@@ -82,8 +83,6 @@ import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
 import org.eclipse.ltk.core.refactoring.DocumentChange;
 import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
-import org.eclipse.ltk.core.refactoring.TextChange;
-import org.eclipse.ltk.core.refactoring.TextFileChange;
 import org.eclipse.ltk.core.refactoring.resource.DeleteResourceChange;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
@@ -474,7 +473,7 @@ public class LSPEclipseUtils {
 					VersionedTextDocumentIdentifier id = edit.getTextDocument();
 					String uri = id.getUri();
 					List<TextEdit> textEdits = edit.getEdits();
-					fillTextEdits(uri, textEdits, change);
+					change.addAll(toChanges(uri, textEdits));
 				} else if (action.isRight()) {
 					ResourceOperation resourceOperation = action.getRight();
 					if (resourceOperation instanceof CreateFile) {
@@ -494,8 +493,8 @@ public class LSPEclipseUtils {
 												new Range(new Position(0, 0),
 														LSPEclipseUtils.toPosition(document.getLength() - 1, document)),
 												""); //$NON-NLS-1$
-										fillTextEdits(createOperation.getUri(), Collections.singletonList(edit),
-												change);
+										change.add(new LSPTextChange("Initial Content", //$NON-NLS-1$
+												LSPEclipseUtils.getFileHandle(createOperation.getUri()), edit));
 									} catch (BadLocationException e) {
 										LanguageServerPlugin.logError(e);
 									}
@@ -566,7 +565,7 @@ public class LSPEclipseUtils {
 				for (java.util.Map.Entry<String, List<TextEdit>> edit : changes.entrySet()) {
 					String uri = edit.getKey();
 					List<TextEdit> textEdits = edit.getValue();
-					fillTextEdits(uri, textEdits, change);
+					change.addAll(toChanges(uri, textEdits));
 				}
 			}
 		}
@@ -584,36 +583,11 @@ public class LSPEclipseUtils {
 	 * @param change
 	 *            ltk change to update
 	 */
-	private static void fillTextEdits(String uri, List<TextEdit> textEdits, CompositeChange change) {
+	private static LSPTextChange[] toChanges(String uri, List<TextEdit> textEdits) {
 		IFile file = LSPEclipseUtils.getFileHandle(uri);
-		if (!file.exists()) {
-			throw new IllegalArgumentException("Expected existing file."); //$NON-NLS-1$
-		}
-		IDocument document = null;
-		IFileBuffer buffer = FileBuffers.getTextFileBufferManager().getFileBuffer(file.getFullPath(),
-				LocationKind.IFILE);
-		document = getDocument(file);
-		// sort the edits so that the ones at the bottom of the document are first
-		// so that they can be applied from bottom to top
 		Collections.sort(textEdits, Comparator.comparing(edit -> edit.getRange().getStart(),
 				Comparator.comparingInt(Position::getLine).thenComparingInt(Position::getCharacter).reversed()));
-		for (TextEdit textEdit : textEdits) {
-			try {
-				int offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
-				int length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
-				TextChange textChange = null;
-				if (buffer != null) {
-					textChange = new DocumentChange("Change in document " + uri, document); //$NON-NLS-1$
-				} else {
-					textChange = new TextFileChange("Change in file " + file.getName(), file); //$NON-NLS-1$
-				}
-				textChange.initializeValidationData(new NullProgressMonitor());
-				textChange.setEdit(new ReplaceEdit(offset, length, textEdit.getNewText()));
-				change.add(textChange);
-			} catch (BadLocationException e) {
-				LanguageServerPlugin.logError(e);
-			}
-		}
+		return textEdits.stream().map(te -> new LSPTextChange("LSP Text Edit", file, te)).toArray(LSPTextChange[]::new); //$NON-NLS-1$
 	}
 
 	public static URI toUri(IPath absolutePath) {
