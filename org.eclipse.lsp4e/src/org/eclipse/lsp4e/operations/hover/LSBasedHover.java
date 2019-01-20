@@ -157,6 +157,9 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 	}
 
 	public static String styleHtml(String html) {
+		if (html == null || html.isEmpty()) {
+			return html;
+		}
 		// put CSS styling to match Eclipse style
 		ColorRegistry colorRegistry = JFaceResources.getColorRegistry();
 		Color foreground = colorRegistry.get("org.eclipse.ui.workbench.HOVER_FOREGROUND"); //$NON-NLS-1$

@@ -25,7 +25,9 @@ import java.util.List;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
@@ -34,6 +36,7 @@ import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ProjectSpecificLanguageServerWrapper;
 import org.eclipse.lsp4e.operations.completion.LSIncompleteCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -464,4 +467,15 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		assertEquals(2 * items.size(), proposals.length);
 	}
 
+	@Test
+	public void testAdditionalInformation() throws Exception {
+		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();
+		LSPDocumentInfo info = LanguageServiceAccessor
+				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
+						|| capabilities.getSignatureHelpProvider() != null)
+				.get(0);
+		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(
+				new CompletionItem("blah"), 0, info);
+		completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
+	}
 }
