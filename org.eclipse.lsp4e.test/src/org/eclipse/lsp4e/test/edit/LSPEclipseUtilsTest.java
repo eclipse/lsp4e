@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 
@@ -199,7 +200,31 @@ public class LSPEclipseUtilsTest {
 			if (project != null) { project.delete(true, new NullProgressMonitor()); }
 		}
 	}
-	
+
+	@Test
+	public void testTextEditInsertSameOffset() throws Exception {
+		IProject project = null;
+		IEditorPart editor = null;
+		try {
+			project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
+			IFile file = TestUtils.createUniqueTestFile(project, "");
+			editor = TestUtils.openEditor(file);
+			ITextViewer viewer = TestUtils.getTextViewer(editor);
+			TextEdit[] edits = new TextEdit[] {
+					new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), " throws "),
+					new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "Exception") };
+			IDocument document = viewer.getDocument();
+			LSPEclipseUtils.applyEdits(document, Arrays.asList(edits));
+			Assert.assertEquals(" throws Exception", document.get());
+		} finally {
+			TestUtils.closeEditor(editor, false);
+			if (project != null) {
+				project.delete(true, new NullProgressMonitor());
+			}
+		}
+
+	}
+
 	@Test
 	public void testURICreationUnix() {
 		Assume.assumeFalse(Platform.OS_WIN32.equals(Platform.getOS()));
