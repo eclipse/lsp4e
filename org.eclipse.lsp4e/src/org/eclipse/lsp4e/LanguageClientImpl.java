@@ -74,7 +74,7 @@ public class LanguageClientImpl implements LanguageClient {
 
 	@Override
 	public final void logMessage(MessageParams message) {
-		ServerMessageHandler.logMessage(wrapper, message);
+		CompletableFuture.runAsync(() -> ServerMessageHandler.logMessage(wrapper, message));
 	}
 
 	@Override
