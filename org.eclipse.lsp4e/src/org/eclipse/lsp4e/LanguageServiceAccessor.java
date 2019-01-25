@@ -265,12 +265,14 @@ public class LanguageServiceAccessor {
 
 
 	/**
+	 * TODO we need a similar method for generic IDocument (enabling non-IFiles)
 	 *
 	 * @param file
 	 * @param request
 	 * @return
 	 * @throws IOException
-	 * @noreference This method is currently internal and should only be referenced for testing
+	 * @noreference This method is currently internal and should only be referenced
+	 *              for testing
 	 */
 	@NonNull
 	public static Collection<LanguageServerWrapper> getLSWrappers(@NonNull IFile file,
@@ -436,9 +438,8 @@ public class LanguageServiceAccessor {
 
 	@NonNull public static List<@NonNull LSPDocumentInfo> getLSPDocumentInfosFor(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> capabilityRequest) {
 		final IFile file = LSPEclipseUtils.getFile(document);
-		URI fileUri = null;
 		if (file != null && file.exists()) {
-			fileUri = LSPEclipseUtils.toUri(file);
+			URI fileUri = LSPEclipseUtils.toUri(file);
 			List<LSPDocumentInfo> res = new ArrayList<>();
 			try {
 				for (LanguageServerWrapper wrapper : getLSWrappers(file, capabilityRequest)) {
@@ -456,4 +457,34 @@ public class LanguageServiceAccessor {
 		return Collections.emptyList();
 	}
 
+	@NonNull
+	public static CompletableFuture<List<@NonNull LanguageServer>> getLanguageServers(IDocument document,
+			Predicate<ServerCapabilities> filter) {
+		final IFile file = LSPEclipseUtils.getFile(document);
+		if (file != null && file.exists()) {
+			final List<CompletableFuture<?>> serverRequests = Collections.synchronizedList(new ArrayList<>());
+			final List<@NonNull LanguageServer> res = Collections.synchronizedList(new ArrayList<>());
+			try {
+				for (LanguageServerWrapper wrapper : getLSWrappers(file, null)) {
+					wrapper.connect(file, document);
+					serverRequests.add(wrapper.getInitializedServer().thenAccept(server -> {
+						if (filter == null || filter.test(wrapper.getServerCapabilities())) {
+							res.add(server);
+						}
+					}));
+				}
+				return CompletableFuture
+						.allOf(serverRequests.toArray(new CompletableFuture[serverRequests.size()]))
+						.thenApply(theVoid -> res);
+			} catch (final Exception e) {
+				LanguageServerPlugin.logError(e);
+			}
+		} else {
+			//fileUri = "file://" + location.toFile().getAbsolutePath();
+			//TODO handle case of plain file (no IFile)
+		}
+		return CompletableFuture.completedFuture(Collections.emptyList());
+
+
+	}
 }

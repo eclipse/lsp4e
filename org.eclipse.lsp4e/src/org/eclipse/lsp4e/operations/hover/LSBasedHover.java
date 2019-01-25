@@ -14,8 +14,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -25,7 +23,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
@@ -45,28 +42,15 @@ import org.eclipse.jface.text.Region;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.MarkedString;
 import org.eclipse.lsp4j.MarkupContent;
-import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
-import org.eclipse.swt.browser.Browser;
-import org.eclipse.swt.browser.LocationEvent;
-import org.eclipse.swt.browser.LocationListener;
-import org.eclipse.swt.browser.ProgressListener;
 import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.FontData;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
-import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.editors.text.EditorsUI;
-import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 /**
  * LSP implementation of {@link org.eclipse.jface.text.ITextHover}
@@ -76,84 +60,13 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
 	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage());
 
-	private static final LocationListener HYPER_LINK_LISTENER = new LocationListener() {
 
-		@Override
-		public void changing(LocationEvent event) {
-			if (!"about:blank".equals(event.location)) { //$NON-NLS-1$
-				IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-				LSPEclipseUtils.open(event.location, page, null);
-				event.doit = false;
-			}
-		}
-
-		@Override
-		public void changed(LocationEvent event) {
-		}
-	};
-
-	private static class FocusableBrowserInformationControl extends BrowserInformationControl {
-
-		public FocusableBrowserInformationControl(Shell parent) {
-			super(parent, JFaceResources.DEFAULT_FONT, EditorsUI.getTooltipAffordanceString());
-		}
-
-		@Override
-		protected void createContent(Composite parent) {
-			super.createContent(parent);
-			Browser b = (Browser) (parent.getChildren()[0]);
-			b.addProgressListener(ProgressListener.completedAdapter(event -> {
-				if (getInput() == null)
-					return;
-				Browser browser = (Browser) event.getSource();
-				@Nullable
-				Point constraints = getSizeConstraints();
-				Point hint = computeSizeHint();
-
-				setSize(hint.x, hint.y);
-				browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"nowrap\""); //$NON-NLS-1$
-				Double width = 20 + (Double) browser.evaluate("return document.body.scrollWidth;"); //$NON-NLS-1$
-				if (constraints != null && constraints.x < width) {
-					width = (double) constraints.x;
-				}
-
-				setSize(width.intValue(), hint.y);
-				browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"normal\""); //$NON-NLS-1$
-				Double height = (Double) browser.evaluate("return document.body.scrollHeight;"); //$NON-NLS-1$
-				if (constraints != null && constraints.y < height) {
-					height = (double) constraints.y;
-				}
-				if (Platform.getPreferencesService().getBoolean(EditorsUI.PLUGIN_ID,
-						AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SHOW_TEXT_HOVER_AFFORDANCE, true,
-						null)) {
-					FontData[] fontDatas = JFaceResources.getDialogFont().getFontData();
-					height = fontDatas[0].getHeight() + height;
-				}
-				setSize(width.intValue(), height.intValue());
-			}));
-			b.setJavascriptEnabled(true);
-		}
-
-		@Override
-		public IInformationControlCreator getInformationPresenterControlCreator() {
-			return new IInformationControlCreator() {
-				@Override
-				public IInformationControl createInformationControl(Shell parent) {
-					BrowserInformationControl res = new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT,
-							true);
-					res.addLocationListener(HYPER_LINK_LISTENER);
-					return res;
-				}
-			};
-		}
-	}
-
-	private List<CompletableFuture<?>> requests;
-	private List<Hover> hoverResults;
 	private IRegion lastRegion;
-	private ITextViewer textViewer;
+	private ITextViewer lastViewer;
+	private CompletableFuture<List<Hover>> request;
 
 	public LSBasedHover() {
+
 	}
 
 	public static String styleHtml(String html) {
@@ -185,29 +98,22 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		if (textViewer == null || hoverRegion == null) {
 			return null;
 		}
-		if (!(hoverRegion.equals(this.lastRegion) && textViewer.equals(this.textViewer) && this.requests != null)) {
+		if (this.request == null || !textViewer.equals(this.lastViewer) || !hoverRegion.equals(this.lastRegion)) {
 			initiateHoverRequest(textViewer, hoverRegion.getOffset());
 		}
 		try {
-			CompletableFuture.allOf(this.requests.toArray(new CompletableFuture[this.requests.size()])).get(500,
-					TimeUnit.MILLISECONDS);
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
-			LanguageServerPlugin.logError(e);
-		}
-		String result = ""; //$NON-NLS-1$
-		if (!(this.hoverResults == null || this.hoverResults.isEmpty())) {
-			result += hoverResults.stream()
+			String result = request.get(500, TimeUnit.MILLISECONDS).stream()
 				.filter(Objects::nonNull)
 				.map(LSBasedHover::getHoverString)
 				.filter(Objects::nonNull)
 				.collect(Collectors.joining("\n\n")); //$NON-NLS-1$
-
+			if (!result.isEmpty()) {
+				return styleHtml(MARKDOWN_PARSER.parseToHtml(result));
+			}
+		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			LanguageServerPlugin.logError(e);
 		}
-		if (result.isEmpty()) {
-			return null;
-		}
-		result = MARKDOWN_PARSER.parseToHtml(result);
-		return styleHtml(result);
+		return null;
 	}
 
 	protected static @Nullable String getHoverString(@NonNull Hover hover) {
@@ -262,40 +168,39 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		if (textViewer == null) {
 			return null;
 		}
-		IRegion res = null;
-		initiateHoverRequest(textViewer, offset);
+		if (this.request == null || this.lastRegion == null || !textViewer.equals(this.lastViewer)
+				|| offset < this.lastRegion.getOffset() || offset > lastRegion.getOffset() + lastRegion.getLength()) {
+			initiateHoverRequest(textViewer, offset);
+		}
 		try {
-			CompletableFuture.allOf(this.requests.toArray(new CompletableFuture[this.requests.size()])).get(800, TimeUnit.MILLISECONDS);
+			final IDocument document = textViewer.getDocument();
+			boolean[] oneHoverAtLeast = new boolean[] { false };
+			int[] regionStartOffset = new int[] { 0 };
+			int[] regionEndOffset = new int[] { document.getLength() };
+			this.request.get(500, TimeUnit.MILLISECONDS).stream()
+				.filter(Objects::nonNull)
+				.map(Hover::getRange)
+				.filter(Objects::nonNull)
+				.forEach(range -> {
+					try {
+							regionStartOffset[0] = Math.max(regionStartOffset[0],
+									LSPEclipseUtils.toOffset(range.getStart(), document));
+							regionEndOffset[0] = Math.min(regionEndOffset[0],
+									LSPEclipseUtils.toOffset(range.getEnd(), document));
+						oneHoverAtLeast[0] = true;
+					} catch (BadLocationException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				});
+			if (oneHoverAtLeast[0]) {
+				this.lastRegion = new Region(regionStartOffset[0], regionEndOffset[0] - regionStartOffset[0]);
+				return this.lastRegion;
+			}
 		} catch (InterruptedException | ExecutionException | TimeoutException e1) {
 			LanguageServerPlugin.logError(e1);
 		}
-		final IDocument document = textViewer.getDocument();
-		if (!this.hoverResults.isEmpty()) {
-			res = new Region(0, document.getLength());
-			for (Hover hover : this.hoverResults) {
-				int rangeOffset = offset;
-				int rangeLength = 0;
-				if (hover != null && hover.getRange() != null) {
-					try {
-						Range range = hover.getRange();
-						rangeOffset = LSPEclipseUtils.toOffset(range.getStart(), document);
-						rangeLength = LSPEclipseUtils.toOffset(range.getEnd(), document) - rangeOffset;
-					} catch (BadLocationException e) {
-						LanguageServerPlugin.logError(e);
-						res = new Region(offset, 1);
-					}
-				}
-				res = new Region(
-						Math.max(res.getOffset(), rangeOffset),
-						Math.min(res.getLength(), rangeLength));
-			}
-		} else {
-			res = new Region(offset, 1);
-		}
-
-		this.lastRegion = res;
-		this.textViewer = textViewer;
-		return res;
+		this.lastRegion = new Region(offset, 0);
+		return this.lastRegion;
 	}
 
 	/**
@@ -308,44 +213,20 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 	 *            the hovered offset.
 	 */
 	private void initiateHoverRequest(@NonNull ITextViewer viewer, int offset) {
-		this.textViewer = viewer;
-		// use intermediary variables to make the lists specific to the request
-		// if we directly add/remove from members, we may have thread related issues
-		// such as some
-		// results from a previous request leaking in the new hover.
-		final List<CompletableFuture<?>> requests = new ArrayList<>();
-		IDocument document = viewer.getDocument();
-		this.hoverResults = getHoverResults(document, offset, requests);
-		this.requests = requests;
-	}
-
-	/**
-	 * Returns the list of hover.
-	 *
-	 * @param document
-	 *            the document of text viewer.
-	 * @param offset
-	 *            the hovered offset.
-	 * @param requests
-	 * @return the list of hover.
-	 */
-	private List<Hover> getHoverResults(@NonNull IDocument document, int offset, List<CompletableFuture<?>> requests) {
-		List<@NonNull LSPDocumentInfo> docInfos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-				(capabilities) -> Boolean.TRUE.equals(capabilities.getHoverProvider()));
-		final List<Hover> hoverResults = Collections.synchronizedList(new ArrayList<>(docInfos.size()));
-		for (@NonNull
-		final LSPDocumentInfo info : docInfos) {
-			info.getInitializedLanguageClient().thenAccept(languageServer -> {
-				try {
-					CompletableFuture<Hover> hover = languageServer.getTextDocumentService().hover(LSPEclipseUtils
-							.toTextDocumentPosistionParams(info.getFileUri(), offset, info.getDocument()));
-					requests.add(hover.thenAccept(hoverResults::add));
-				} catch (BadLocationException e) {
-					LanguageServerPlugin.logError(e);
-				}
-			});
-		}
-		return hoverResults;
+		final IDocument document = viewer.getDocument();
+		this.lastViewer = viewer;
+		this.request = LanguageServiceAccessor
+			.getLanguageServers(document, capabilities -> Boolean.TRUE.equals(capabilities.getHoverProvider()))
+			.thenApply(languageServers ->
+				languageServers.stream()
+					.map(languageServer -> {
+						try {
+							return languageServer.getTextDocumentService().hover(LSPEclipseUtils.toTextDocumentPosistionParams(offset, document)).get();
+						} catch (InterruptedException | ExecutionException | BadLocationException e) {
+								LanguageServerPlugin.logError(e);
+								return null;
+						}
+						}).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 
 	@Override

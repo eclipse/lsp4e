@@ -166,6 +166,16 @@ public class LSPEclipseUtils {
 		return param;
 	}
 
+	/**
+	 * @param fileUri
+	 * @param offset
+	 * @param document
+	 * @return
+	 * @throws BadLocationException
+	 * @deprecated Use {@link #toTextDocumentPosistionParams(int, IDocument)}
+	 *             instead
+	 */
+	@Deprecated
 	public static TextDocumentPositionParams toTextDocumentPosistionParams(URI fileUri, int offset, IDocument document)
 			throws BadLocationException {
 		Position start = toPosition(offset, document);
@@ -176,6 +186,33 @@ public class LSPEclipseUtils {
 		id.setUri(fileUri.toString());
 		param.setTextDocument(id);
 		return param;
+	}
+
+	public static TextDocumentPositionParams toTextDocumentPosistionParams(int offset, IDocument document)
+			throws BadLocationException {
+		URI uri = toUri(document);
+		Position start = toPosition(offset, document);
+		TextDocumentPositionParams param = new TextDocumentPositionParams();
+		param.setPosition(start);
+		param.setUri(uri.toString());
+		TextDocumentIdentifier id = new TextDocumentIdentifier();
+		id.setUri(uri.toString());
+		param.setTextDocument(id);
+		return param;
+	}
+
+	static URI toUri(IDocument document) {
+		IFile file = getFile(document);
+		if (file != null) {
+			return LSPEclipseUtils.toUri(file);
+		} else {
+			ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
+			;
+			if (buffer != null) {
+				return buffer.getLocation().toFile().toURI();
+			}
+		}
+		return null;
 	}
 
 	public static int toEclipseMarkerSeverity(DiagnosticSeverity lspSeverity) {
