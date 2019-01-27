@@ -11,24 +11,28 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.refactoring;
 
+import java.net.URI;
+
 import org.eclipse.core.filebuffers.FileBuffers;
-import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBufferManager;
 import org.eclipse.core.filebuffers.LocationKind;
+import org.eclipse.core.filesystem.EFS;
+import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.DocumentChange;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
@@ -42,40 +46,58 @@ import org.eclipse.text.edits.UndoEdit;
 @SuppressWarnings("restriction")
 public class LSPTextChange extends TextChange {
 
-	private IFile file;
-	private TextEdit textEdit;
+	private @NonNull URI fileUri;
+	private @NonNull TextEdit textEdit;
 
-	private TextChange delegate;
-
+	private Either<IFile, IFileStore> file;
 	private int fAcquireCount;
 	private ITextFileBuffer fBuffer;
 
-	public LSPTextChange(String name, IFile file, TextEdit textEdit) {
+	private TextChange delegate;
+
+	public LSPTextChange(@NonNull String name, @NonNull URI fileUri, @NonNull TextEdit textEdit) {
 		super(name);
-		this.file = file;
+		this.fileUri = fileUri;
 		this.textEdit = textEdit;
 	}
 
 	@Override
 	protected IDocument acquireDocument(IProgressMonitor pm) throws CoreException {
-		if (!file.exists()) {
-			throw new IllegalArgumentException("Expected existing file."); //$NON-NLS-1$
-		}
 		fAcquireCount++;
-		if (fAcquireCount > 1)
+		if (fAcquireCount > 1) {
 			return fBuffer.getDocument();
+		}
+
+		IFile iFile = LSPEclipseUtils.getFileHandle(this.fileUri.toString());
+		if (iFile != null) {
+			this.file = Either.forLeft(iFile);
+		} else {
+			this.file = Either.forRight(EFS.getStore(this.fileUri));
+		}
 
 		ITextFileBufferManager manager = FileBuffers.getTextFileBufferManager();
-		IPath path = file.getFullPath();
-		manager.connect(path, LocationKind.IFILE, pm);
-		fBuffer = manager.getTextFileBuffer(path, LocationKind.IFILE);
-		IDocument result = fBuffer.getDocument();
-		return result;
+		if (this.file.isLeft()) {
+			this.fBuffer = manager.getTextFileBuffer(this.file.getLeft().getFullPath(), LocationKind.IFILE);
+		} else {
+			this.fBuffer = manager.getFileStoreTextFileBuffer(this.file.getRight());
+		}
+		if (this.fBuffer != null) {
+			fAcquireCount++; // allows to mark open editor dirty instead of saving
+		} else {
+			if (this.file.isLeft()) {
+				manager.connect(this.file.getLeft().getFullPath(), LocationKind.IFILE, pm);
+				this.fBuffer = manager.getTextFileBuffer(this.file.getLeft().getFullPath(), LocationKind.IFILE);
+			} else {
+				manager.connectFileStore(this.file.getRight(), pm);
+				this.fBuffer = manager.getFileStoreTextFileBuffer(this.file.getRight());
+			}
+		}
+		return fBuffer.getDocument();
 	}
 
 	@Override
 	protected void commit(IDocument document, IProgressMonitor pm) throws CoreException {
-
+		this.fBuffer.commit(pm, true);
 	}
 
 	@Override
@@ -83,7 +105,12 @@ public class LSPTextChange extends TextChange {
 		Assert.isTrue(fAcquireCount > 0);
 		if (fAcquireCount == 1) {
 			ITextFileBufferManager manager = FileBuffers.getTextFileBufferManager();
-			manager.disconnect(file.getFullPath(), LocationKind.IFILE, pm);
+			this.fBuffer.commit(pm, true);
+			if (this.file.isLeft()) {
+				manager.disconnect(this.file.getLeft().getFullPath(), LocationKind.IFILE, pm);
+			} else {
+				manager.disconnectFileStore(this.file.getRight(), pm);
+			}
 		}
 		fAcquireCount--;
 	}
@@ -114,17 +141,23 @@ public class LSPTextChange extends TextChange {
 		IDocument document = null;
 
 		try {
-			IFileBuffer buffer = FileBuffers.getTextFileBufferManager().getFileBuffer(file.getFullPath(),
-					LocationKind.IFILE);
-
 			document = acquireDocument(SubMonitor.convert(pm, 1));
 
-			int offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
-			int length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
-			if (buffer != null) {
-				delegate = new DocumentChange("Change in document " + file, document); //$NON-NLS-1$
+			int offset = 0;
+			int length = document.getLength();
+			if (textEdit.getRange() != null) {
+				offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
+				length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
+			}
+			if (this.file.isRight()) {
+				delegate = new DocumentChange("Change in document " + fileUri.getPath(), document); //$NON-NLS-1$
 			} else {
-				delegate = new TextFileChange("Change in file " + file.getName(), file); //$NON-NLS-1$
+				delegate = new TextFileChange("Change in file " + this.file.getLeft().getName(), this.file.getLeft()) { //$NON-NLS-1$
+					@Override
+					protected boolean needsSaving() {
+						return fAcquireCount == 1;
+					}
+				};
 			}
 			delegate.initializeValidationData(new NullProgressMonitor());
 			delegate.setEdit(new ReplaceEdit(offset, length, textEdit.getNewText()));

@@ -59,6 +59,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.RewriteSessionEditProcessor;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4e.refactoring.CreateFileChange;
+import org.eclipse.lsp4e.refactoring.DeleteExternalFile;
 import org.eclipse.lsp4e.refactoring.LSPTextChange;
 import org.eclipse.lsp4j.Color;
 import org.eclipse.lsp4j.CompletionParams;
@@ -508,39 +509,27 @@ public class LSPEclipseUtils {
 				if (action.isLeft()) {
 					TextDocumentEdit edit = action.getLeft();
 					VersionedTextDocumentIdentifier id = edit.getTextDocument();
-					String uri = id.getUri();
+					URI uri = URI.create(id.getUri());
 					List<TextEdit> textEdits = edit.getEdits();
 					change.addAll(toChanges(uri, textEdits));
 				} else if (action.isRight()) {
 					ResourceOperation resourceOperation = action.getRight();
 					if (resourceOperation instanceof CreateFile) {
 						CreateFile createOperation = (CreateFile) resourceOperation;
-						IFile targetFile = LSPEclipseUtils.getFileHandle(createOperation.getUri());
-						if (targetFile == null) {
-							// TODO log
-							return;
-						}
-						if (targetFile.exists()) {
-							if (createOperation.getOptions().getOverwrite() || !createOperation.getOptions().getIgnoreIfExists()) {
-								final IDocument document = LSPEclipseUtils
-										.getDocument(LSPEclipseUtils.findResourceFor(createOperation.getUri()));
-								if (document != null) {
-									try {
-										TextEdit edit = new TextEdit(
-												new Range(new Position(0, 0),
-														LSPEclipseUtils.toPosition(document.getLength() - 1, document)),
-												""); //$NON-NLS-1$
-										change.add(new LSPTextChange("Initial Content", //$NON-NLS-1$
-												LSPEclipseUtils.getFileHandle(createOperation.getUri()), edit));
-									} catch (BadLocationException e) {
-										LanguageServerPlugin.logError(e);
-									}
+						URI targetURI = URI.create(createOperation.getUri());
+						File targetFile = new File(targetURI);
+						if (targetFile.exists() && createOperation.getOptions() != null) {
+							if (!createOperation.getOptions().getIgnoreIfExists()) {
+								if (createOperation.getOptions().getOverwrite()) {
+									TextEdit edit = new TextEdit(null, ""); //$NON-NLS-1$
+									change.add(new LSPTextChange("Overwrite", //$NON-NLS-1$
+											targetURI, edit));
+								} else {
+									// TODO? Log, warn user...?
 								}
-							} else {
-								return;
 							}
 						} else {
-							CreateFileChange operation = new CreateFileChange(targetFile.getFullPath(), "", null); //$NON-NLS-1$
+							CreateFileChange operation = new CreateFileChange(targetURI, "", null); //$NON-NLS-1$
 							change.add(operation);
 						}
 					} else if (resourceOperation instanceof DeleteFile) {
@@ -557,41 +546,38 @@ public class LSPEclipseUtils {
 						URI newURI = URI.create(((RenameFile) resourceOperation).getNewUri());
 						IFile oldFile = LSPEclipseUtils.getFileHandle(oldURI.toString());
 						IFile newFile = LSPEclipseUtils.getFileHandle(newURI.toString());
-						if (oldFile != null) {
-							if (newFile == null) {
-								LanguageServerPlugin.logWarning(
-										"target file " + newURI.toString() + " cannot be created in workspace.", null); //$NON-NLS-1$ //$NON-NLS-2$
+						DeleteResourceChange removeNewFile = null;
+						if (newFile != null && newFile.exists()) {
+							if (((RenameFile) resourceOperation).getOptions().getOverwrite()) {
+								removeNewFile = new DeleteResourceChange(newFile.getFullPath(), true);
+							} else if (((RenameFile) resourceOperation).getOptions().getIgnoreIfExists()) {
 								return;
 							}
-							DeleteResourceChange removeNewFile = null;
-							if (newFile.exists()) {
-								if (((RenameFile) resourceOperation).getOptions().getOverwrite()) {
-									removeNewFile = new DeleteResourceChange(newFile.getFullPath(),
-											true);
-								} else if (((RenameFile) resourceOperation).getOptions().getIgnoreIfExists()) {
-									return;
-								}
-							}
+						}
+						String content = ""; //$NON-NLS-1$
+						String encoding = null;
+						if (oldFile != null && oldFile.exists()) {
 							try (ByteArrayOutputStream stream = new ByteArrayOutputStream(
 									(int) oldFile.getLocation().toFile().length());
 									InputStream inputStream = oldFile.getContents();) {
-								FileUtil.transferStreams(inputStream, stream, newFile.getLocation().toString(), null);
-								// inputStream.transferTo(stream);
-								CreateFileChange createFileChange = new CreateFileChange(newFile.getFullPath(),
-										new String(stream.toByteArray()), oldFile.getCharset());
-								DeleteResourceChange removeOldFile = new DeleteResourceChange(oldFile.getFullPath(),
-										true);
-								if (removeNewFile != null) {
-									change.add(removeNewFile);
-								}
-								change.add(createFileChange);
-								change.add(removeOldFile);
-							} catch (Exception ex) {
-								LanguageServerPlugin.logError(ex);
+								FileUtil.transferStreams(inputStream, stream, newURI.toString(), null);
+								content = new String(stream.toByteArray());
+								encoding = oldFile.getCharset();
+							} catch (IOException | CoreException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
 							}
+						}
+						CreateFileChange createFileChange = new CreateFileChange(newURI, content, encoding);
+						change.add(createFileChange);
+						if (removeNewFile != null) {
+							change.add(removeNewFile);
+						}
+						if (oldFile != null) {
+							DeleteResourceChange removeOldFile = new DeleteResourceChange(oldFile.getFullPath(), true);
+							change.add(removeOldFile);
 						} else {
-							LanguageServerPlugin.logWarning(
-									"Source file " + oldURI.toString() + " is missing.", null); //$NON-NLS-1$ //$NON-NLS-2$
+							change.add(new DeleteExternalFile(new File(oldURI)));
 						}
 					}
 				}
@@ -600,7 +586,7 @@ public class LSPEclipseUtils {
 			Map<String, List<TextEdit>> changes = wsEdit.getChanges();
 			if (changes != null) {
 				for (java.util.Map.Entry<String, List<TextEdit>> edit : changes.entrySet()) {
-					String uri = edit.getKey();
+					URI uri = URI.create(edit.getKey());
 					List<TextEdit> textEdits = edit.getValue();
 					change.addAll(toChanges(uri, textEdits));
 				}
@@ -620,11 +606,11 @@ public class LSPEclipseUtils {
 	 * @param change
 	 *            ltk change to update
 	 */
-	private static LSPTextChange[] toChanges(String uri, List<TextEdit> textEdits) {
-		IFile file = LSPEclipseUtils.getFileHandle(uri);
+	private static LSPTextChange[] toChanges(URI uri, List<TextEdit> textEdits) {
 		Collections.sort(textEdits, Comparator.comparing(edit -> edit.getRange().getStart(),
 				Comparator.comparingInt(Position::getLine).thenComparingInt(Position::getCharacter).reversed()));
-		return textEdits.stream().map(te -> new LSPTextChange("LSP Text Edit", file, te)).toArray(LSPTextChange[]::new); //$NON-NLS-1$
+		return textEdits.stream().map(te -> new LSPTextChange("LSP Text Edit", uri, te)) //$NON-NLS-1$
+				.toArray(LSPTextChange[]::new);
 	}
 
 	public static URI toUri(IPath absolutePath) {

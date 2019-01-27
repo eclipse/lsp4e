@@ -22,12 +22,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.internal.utils.FileUtil;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -56,10 +55,10 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -251,45 +250,55 @@ public class LSPEclipseUtilsTest {
 		assertEquals("hello", readContent(otherFile));
 	}
 
-	@Ignore
 	@Test
 	public void createExternalFile() throws Exception {
-		Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
-		Path filePath = tempDir.resolve("metadata.test");
+		File file = File.createTempFile(getClass() + "editExternalFile", ".whatever");
+		file.delete();
 		try {
-			assertFalse(Files.exists(filePath));
+			assertFalse(file.exists());
 			WorkspaceEdit we = new WorkspaceEdit(
-					Collections.singletonList(Either.forRight(new CreateFile(filePath.toUri().toString()))));
+					Collections.singletonList(Either.forRight(new CreateFile(file.toURI().toString()))));
 			LSPEclipseUtils.applyWorkspaceEdit(we);
-			assertTrue(Files.exists(filePath));
+			assertTrue(file.isFile());
 		} finally {
-			if (Files.exists(filePath)) {
-				Files.delete(filePath);
+			if (file.isFile()) {
+				Files.delete(file.toPath());
 			}
 		}
 	}
 
-	@Ignore
 	@Test
 	public void editExternalFile() throws Exception {
-		Path tempDir = Paths.get(System.getProperty("java.io.tmpdir"));
-		Path filePath = tempDir.resolve("metadata.test");
+		File file = File.createTempFile(getClass() + "editExternalFile", ".whatever");
 		try {
-			Files.createFile(filePath);
 			TextEdit te = new TextEdit();
 			te.setRange(new Range(new Position(0, 0), new Position(0, 0)));
 			te.setNewText("abc\ndef");
 			TextDocumentEdit docEdit = new TextDocumentEdit(
-					new VersionedTextDocumentIdentifier(filePath.toUri().toString(), null),
+					new VersionedTextDocumentIdentifier(file.toURI().toString(), null),
 					Collections.singletonList(te));
 			WorkspaceEdit we = new WorkspaceEdit(Collections.singletonList(Either.forLeft(docEdit)));
 			LSPEclipseUtils.applyWorkspaceEdit(we);
-			assertTrue(Files.exists(filePath));
-			assertEquals("abc\ndef", new String(Files.readAllBytes(filePath)));
+			assertTrue(file.isFile());
+			assertEquals("abc\ndef", new String(Files.readAllBytes(file.toPath())));
 		} finally {
-			if (Files.exists(filePath)) {
-				Files.delete(filePath);
-			}
+			Files.deleteIfExists(file.toPath());
+		}
+	}
+
+	@Test
+	public void renameExternalFile() throws Exception {
+		File oldFile = File.createTempFile(getClass() + "editExternalFile", ".whatever");
+		File newFile = new File(oldFile.getAbsolutePath() + "_renamed");
+		try {
+			WorkspaceEdit we = new WorkspaceEdit(Collections.singletonList(
+					Either.forRight(new RenameFile(oldFile.toURI().toString(), newFile.toURI().toString()))));
+			LSPEclipseUtils.applyWorkspaceEdit(we);
+			assertFalse(oldFile.isFile());
+			assertTrue(newFile.isFile());
+		} finally {
+			Files.deleteIfExists(oldFile.toPath());
+			Files.deleteIfExists(newFile.toPath());
 		}
 	}
 
@@ -304,4 +313,40 @@ public class LSPEclipseUtilsTest {
 		}
 	}
 
+	@Test
+	public void testTextEditDoesntAutomaticallySaveOpenResourceFiles() throws Exception {
+		IProject project = TestUtils.createProject("testTextEditDoesntAutomaticallySaveOpenFiles");
+		IFile targetFile = project.getFile("blah.txt");
+		targetFile.create(new ByteArrayInputStream("".getBytes()), true, null);
+		IEditorPart editor = IDE.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(),
+				targetFile,
+				"org.eclipse.ui.genericeditor.GenericEditor");
+		TextEdit te = new TextEdit();
+		te.setRange(new Range(new Position(0, 0), new Position(0, 0)));
+		te.setNewText("abc\ndef");
+		TextDocumentEdit docEdit = new TextDocumentEdit(
+				new VersionedTextDocumentIdentifier(LSPEclipseUtils.toUri(targetFile).toString(), null),
+				Collections.singletonList(te));
+		WorkspaceEdit we = new WorkspaceEdit(Collections.singletonList(Either.forLeft(docEdit)));
+		LSPEclipseUtils.applyWorkspaceEdit(we);
+		assertEquals("abc\ndef", ((StyledText) ((AbstractTextEditor) editor).getAdapter(Control.class)).getText());
+		assertTrue(editor.isDirty());
+	}
+
+	@Test
+	public void testTextEditDoesntAutomaticallySaveOpenExternalFiles() throws Exception {
+		File file = File.createTempFile("testTextEditDoesntAutomaticallySaveOpenExternalFiles", ".whatever");
+		IEditorPart editor = IDE.openInternalEditorOnFileStore(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+		TextEdit te = new TextEdit();
+		te.setRange(new Range(new Position(0, 0), new Position(0, 0)));
+		te.setNewText("abc\ndef");
+		TextDocumentEdit docEdit = new TextDocumentEdit(
+				new VersionedTextDocumentIdentifier(file.toURI().toString(), null),
+				Collections.singletonList(te));
+		WorkspaceEdit we = new WorkspaceEdit(Collections.singletonList(Either.forLeft(docEdit)));
+		LSPEclipseUtils.applyWorkspaceEdit(we);
+		assertEquals("abc\ndef", ((StyledText) ((AbstractTextEditor) editor).getAdapter(Control.class)).getText());
+		assertTrue(editor.isDirty());
+	}
 }
