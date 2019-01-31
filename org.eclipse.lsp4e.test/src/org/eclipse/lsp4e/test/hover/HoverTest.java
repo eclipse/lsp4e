@@ -14,7 +14,6 @@ package org.eclipse.lsp4e.test.hover;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
@@ -29,6 +28,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
+import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.operations.hover.LSBasedHover;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
@@ -182,6 +182,7 @@ public class HoverTest {
 			f.setAccessible(true);
 
 			Browser browser = (Browser) f.get(control);
+			browser.setJavascriptEnabled(true);
 
 			AtomicBoolean completed = new AtomicBoolean(false);
 
@@ -190,8 +191,6 @@ public class HoverTest {
 				public void completed(ProgressEvent event) {
 					browser.removeProgressListener(this);
 					browser.execute("document.getElementsByTagName('a')[0].click()");
-					while (display.readAndDispatch()) {
-					}
 					completed.set(true);
 				}
 			});
@@ -200,13 +199,12 @@ public class HoverTest {
 
 			browser.setText(hoverContent);
 
-			long maxTimestamp = System.currentTimeMillis() + 10000;
-			while (!completed.get() && System.currentTimeMillis() < maxTimestamp) {
-				display.readAndDispatch();
-			}
-
-			// Editor opened at the beginining is closed
-			assertNull("Editor should be closed", viewer.getTextWidget());
+			assertTrue("action didn't close editor", new DisplayHelper() {
+				@Override
+				protected boolean condition() {
+					return completed.get() && (viewer.getTextWidget() == null || viewer.getTextWidget().isDisposed());
+				}
+			}.waitForCondition(browser.getDisplay(), 10000));
 		} finally {
 			if (control != null) {
 				control.dispose();
@@ -215,8 +213,6 @@ public class HoverTest {
 				wrapperControl.dispose();
 			}
 			shell.dispose();
-			while (display.readAndDispatch()) {
-			}
 		}
 	}
 
