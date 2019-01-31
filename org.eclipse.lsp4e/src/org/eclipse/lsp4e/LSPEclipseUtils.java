@@ -202,13 +202,12 @@ public class LSPEclipseUtils {
 		return param;
 	}
 
-	static URI toUri(IDocument document) {
+	public static URI toUri(IDocument document) {
 		IFile file = getFile(document);
 		if (file != null) {
 			return LSPEclipseUtils.toUri(file);
 		} else {
 			ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
-			;
 			if (buffer != null) {
 				return buffer.getLocation().toFile().toURI();
 			}
@@ -718,8 +717,12 @@ public class LSPEclipseUtils {
 		if (buffer == null) {
 			return null;
 		}
-		final IPath location = buffer.getLocation();
-		return ResourcesPlugin.getWorkspace().getRoot().getFile(location);
+		IFile res = ResourcesPlugin.getWorkspace().getRoot().getFile(buffer.getLocation());
+		if (res != null && res.exists()) {
+			return res;
+		} else {
+			return null;
+		}
 	}
 
 	@NonNull
@@ -738,6 +741,23 @@ public class LSPEclipseUtils {
 			contentTypes.addAll(
 					Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, file.getName())));
 		} catch (CoreException | IOException e) {
+			LanguageServerPlugin.logError(e);
+		}
+		return contentTypes;
+	}
+
+	@NonNull
+	public static List<IContentType> getDocumentContentTypes(@NonNull IDocument document) {
+		List<IContentType> contentTypes = new ArrayList<>();
+		URI uri = LSPEclipseUtils.toUri(document);
+		if (uri == null) {
+			return Collections.emptyList();
+		}
+		String fileName = new File(uri).getName();
+		try (InputStream contents = new DocumentInputStream(document)) {
+			contentTypes
+					.addAll(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, fileName)));
+		} catch (IOException e) {
 			LanguageServerPlugin.logError(e);
 		}
 		return contentTypes;

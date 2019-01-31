@@ -718,4 +718,18 @@ public class LanguageServerWrapper {
 		return -1;
 	}
 
+	public boolean canOperate(@NonNull IDocument document) {
+		if (this.isConnectedTo(new Path(LSPEclipseUtils.toUri(document).getPath()))) {
+			return true;
+		}
+		if (this.initialProject == null && this.connectedDocuments.isEmpty()) {
+			return true;
+		}
+		IFile file = LSPEclipseUtils.getFile(document);
+		if (file != null && file.exists() && canOperate(file.getProject())) {
+			return true;
+		}
+		return supportsWorkspaceFolderCapability();
+	}
+
 }

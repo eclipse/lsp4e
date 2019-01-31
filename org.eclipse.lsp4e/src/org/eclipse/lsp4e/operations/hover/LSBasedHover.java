@@ -217,11 +217,13 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		this.lastViewer = viewer;
 		this.request = LanguageServiceAccessor
 			.getLanguageServers(document, capabilities -> Boolean.TRUE.equals(capabilities.getHoverProvider()))
-			.thenApply(languageServers ->
+				.thenApplyAsync(languageServers -> // Async is very important here, otherwise the LS Client thread is in
+													// deadlock and doesn't read bytes from LS
 				languageServers.stream()
 					.map(languageServer -> {
 						try {
-							return languageServer.getTextDocumentService().hover(LSPEclipseUtils.toTextDocumentPosistionParams(offset, document)).get();
+								return languageServer.getTextDocumentService()
+										.hover(LSPEclipseUtils.toTextDocumentPosistionParams(offset, document)).get();
 						} catch (InterruptedException | ExecutionException | BadLocationException e) {
 								LanguageServerPlugin.logError(e);
 								return null;

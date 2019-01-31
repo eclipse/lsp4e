@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.content.IContentDescription;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
@@ -314,6 +316,63 @@ public class LanguageServiceAccessor {
 		return res;
 	}
 
+	@NonNull
+	private static Collection<LanguageServerWrapper> getLSWrappers(@NonNull IDocument document) throws IOException {
+		LinkedHashSet<LanguageServerWrapper> res = new LinkedHashSet<>();
+		IFile file = LSPEclipseUtils.getFile(document);
+		IPath path = new Path(LSPEclipseUtils.toUri(document).getPath());
+
+		// look for running language servers via content-type
+		Queue<IContentType> contentTypes = new LinkedList<>();
+		Set<IContentType> processedContentTypes = new HashSet<>();
+		contentTypes.addAll(LSPEclipseUtils.getDocumentContentTypes(document));
+
+		synchronized (startedServers) {
+			// already started compatible servers that fit request
+			res.addAll(startedServers.stream()
+					.filter(wrapper -> {
+						try {
+							return wrapper.isConnectedTo(path) || LanguageServersRegistry.getInstance().matches(document, wrapper.serverDefinition);
+						} catch (Exception e) {
+							LanguageServerPlugin.logError(e);
+							return false;
+						}
+					})
+					.filter(wrapper -> wrapper.canOperate(document))
+					.collect(Collectors.toList()));
+
+			while (!contentTypes.isEmpty()) {
+				IContentType contentType = contentTypes.poll();
+				if (contentType == null || processedContentTypes.contains(contentType)) {
+					continue;
+				}
+				for (ContentTypeToLanguageServerDefinition mapping : LanguageServersRegistry.getInstance()
+						.findProviderFor(contentType)) {
+					if (mapping == null || !mapping.isEnabled()) {
+						continue;
+					}
+					LanguageServerDefinition serverDefinition = mapping.getValue();
+					if (serverDefinition == null) {
+						continue;
+					}
+					if (startedServers.stream().anyMatch(wrapper -> wrapper.serverDefinition.equals(serverDefinition)
+							&& wrapper.canOperate(document))) {
+						// we already checked a compatible LS with this definition
+						continue;
+					}
+					LanguageServerWrapper wrapper = new LanguageServerWrapper(file != null ? file.getProject() : null,
+							serverDefinition);
+					startedServers.add(wrapper);
+					res.add(wrapper);
+				}
+				if (contentType.getBaseType() != null) {
+					contentTypes.add(contentType.getBaseType());
+				}
+				processedContentTypes.add(contentType);
+			}
+			return res;
+		}
+	}
 
 	/**
 	 * Return existing {@link ProjectSpecificLanguageServerWrapper} for the given connection. If not found,
@@ -457,31 +516,36 @@ public class LanguageServiceAccessor {
 		return Collections.emptyList();
 	}
 
+	/**
+	 *
+	 * @param document
+	 * @param filter
+	 * @return
+	 * @since 0.9
+	 */
 	@NonNull
-	public static CompletableFuture<List<@NonNull LanguageServer>> getLanguageServers(IDocument document,
+	public static CompletableFuture<List<@NonNull LanguageServer>> getLanguageServers(@NonNull IDocument document,
 			Predicate<ServerCapabilities> filter) {
-		final IFile file = LSPEclipseUtils.getFile(document);
-		if (file != null && file.exists()) {
-			final List<CompletableFuture<?>> serverRequests = Collections.synchronizedList(new ArrayList<>());
-			final List<@NonNull LanguageServer> res = Collections.synchronizedList(new ArrayList<>());
-			try {
-				for (LanguageServerWrapper wrapper : getLSWrappers(file, null)) {
-					wrapper.connect(file, document);
-					serverRequests.add(wrapper.getInitializedServer().thenAccept(server -> {
-						if (filter == null || filter.test(wrapper.getServerCapabilities())) {
-							res.add(server);
+		final IPath path = new Path(LSPEclipseUtils.toUri(document).getPath());
+		final List<CompletableFuture<?>> serverRequests = new ArrayList<>();
+		final List<@NonNull LanguageServer> res = Collections.synchronizedList(new ArrayList<>());
+		try {
+			for (final LanguageServerWrapper wrapper : getLSWrappers(document)) {
+				serverRequests.add(wrapper.getInitializedServer().thenAccept(server -> {
+					if (server != null && (filter == null || filter.test(wrapper.getServerCapabilities()))) {
+						try {
+							wrapper.connect(path, document);
+						} catch (IOException ex) {
+							LanguageServerPlugin.logError(ex);
 						}
-					}));
-				}
-				return CompletableFuture
-						.allOf(serverRequests.toArray(new CompletableFuture[serverRequests.size()]))
-						.thenApply(theVoid -> res);
-			} catch (final Exception e) {
-				LanguageServerPlugin.logError(e);
+						res.add(server);
+					}
+				}));
 			}
-		} else {
-			//fileUri = "file://" + location.toFile().getAbsolutePath();
-			//TODO handle case of plain file (no IFile)
+			return CompletableFuture.allOf(serverRequests.toArray(new CompletableFuture[serverRequests.size()]))
+					.thenApply(theVoid -> res);
+		} catch (final Exception e) {
+			LanguageServerPlugin.logError(e);
 		}
 		return CompletableFuture.completedFuture(Collections.emptyList());
 

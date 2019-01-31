@@ -33,18 +33,19 @@ public class MockConnectionProvider implements StreamConnectionProvider {
 
 	@Override
 	public void start() throws IOException {
-		PipedInputStream in = new PipedInputStream();
-		PipedOutputStream out = new PipedOutputStream();
-		PipedInputStream in2 = new PipedInputStream();
-		PipedOutputStream out2 = new PipedOutputStream();
+		PipedInputStream clientInput = new PipedInputStream();
+		PipedOutputStream clientOutput = new PipedOutputStream();
+		PipedInputStream serverInput = new PipedInputStream();
+		PipedOutputStream serverOutput = new PipedOutputStream();
 		errorStream = new ByteArrayInputStream("Error output on console".getBytes(StandardCharsets.UTF_8));
 
-		in.connect(out2);
-		out.connect(in2);
+		clientInput.connect(serverOutput);
+		clientOutput.connect(serverInput);
 
-		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageSever.INSTANCE, in2, out2);
-		inputStream = in;
-		outputStream = out;
+		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageSever.INSTANCE, serverInput,
+				serverOutput);
+		inputStream = clientInput;
+		outputStream = clientOutput;
 		l.startListening();
 		MockLanguageSever.INSTANCE.addRemoteProxy(l.getRemoteProxy());
 	}

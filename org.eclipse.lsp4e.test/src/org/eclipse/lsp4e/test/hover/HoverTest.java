@@ -16,11 +16,15 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -44,7 +48,9 @@ import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -130,6 +136,23 @@ public class HoverTest {
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 
 		assertEquals(null, hover.getHoverInfo(viewer, new Region(0, 10)));
+	}
+
+	@Test
+	public void testHoverOnExternalFile()
+			throws CoreException, InvocationTargetException, IOException, InterruptedException {
+		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("blah")),
+				new Range(new Position(0, 0), new Position(0, 0)));
+		MockLanguageSever.INSTANCE.setHover(hoverResponse);
+
+		File file = File.createTempFile("testHoverOnExternalfile", ".lspt");
+		try {
+			ITextViewer viewer = TestUtils.getTextViewer(IDE.openInternalEditorOnFileStore(
+					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
+			Assert.assertTrue(hover.getHoverInfo(viewer, new Region(0, 0)).contains("blah"));
+		} finally {
+			Files.deleteIfExists(file.toPath());
+		}
 	}
 
 	@Test

@@ -37,6 +37,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.enablement.EnablementTester;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -355,6 +356,18 @@ public class LanguageServersRegistry {
 	 */
 	public boolean matches(@NonNull IFile file, @NonNull LanguageServerDefinition serverDefinition) throws IOException, CoreException {
 		return getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file)).contains(serverDefinition);
+	}
+
+	/**
+	 * @param document
+	 * @param serverDefinition
+	 * @return whether the given serverDefinition is suitable for the file
+	 * @throws CoreException
+	 * @throws IOException
+	 */
+	public boolean matches(@NonNull IDocument document, @NonNull LanguageServerDefinition serverDefinition)
+			throws IOException, CoreException {
+		return getAvailableLSFor(LSPEclipseUtils.getDocumentContentTypes(document)).contains(serverDefinition);
 	}
 
 	public boolean canUseLanguageServer(@NonNull IEditorInput editorInput) {
