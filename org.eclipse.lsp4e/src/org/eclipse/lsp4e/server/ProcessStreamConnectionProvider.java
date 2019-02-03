@@ -110,17 +110,13 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 			return false;
 		}
 		ProcessStreamConnectionProvider other = (ProcessStreamConnectionProvider) obj;
-		if (getCommands().size() != other.getCommands().size()) {
-			return false;
-		}
-		return this.getCommands().containsAll(other.getCommands())
-				&& this.getWorkingDirectory().equals(other.getWorkingDirectory());
+		return Objects.equals(this.getCommands(), other.getCommands())
+				&& Objects.equals(this.getWorkingDirectory(), other.getWorkingDirectory());
 	}
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hashCode(this.getCommands());
-		return result ^ Objects.hashCode(this.getWorkingDirectory());
+		return Objects.hash(this.getCommands(), this.getWorkingDirectory());
 	}
 
 }
