@@ -14,9 +14,12 @@ package org.eclipse.lsp4e.test.documentLink;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -31,6 +34,8 @@ import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -75,7 +80,27 @@ public class DocumentLinkTest {
 		assertEquals(1, hyperlinks.length);
 		assertEquals("file://test0", hyperlinks[0].getHyperlinkText());
 	}
+
+	@Test
+	public void testDocumentLinkExternalFile() throws Exception {
+		List<DocumentLink> links = new ArrayList<>();
+		links.add(new DocumentLink(new Range(new Position(0, 9), new Position(0, 15)), "file://test0"));
+		MockLanguageSever.INSTANCE.setDocumentLinks(links);
+
+		File file = File.createTempFile("testDocumentLinkExternalFile", ".lspt");
+		try {
+			ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(
+					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+			ITextViewer viewer = TestUtils.getTextViewer(editor);
 	
+			IHyperlink[] hyperlinks = documentLinkDetector.detectHyperlinks(viewer, new Region(13, 0), true);
+			assertEquals(1, hyperlinks.length);
+			assertEquals("file://test0", hyperlinks[0].getHyperlinkText());
+		} finally {
+			Files.deleteIfExists(file.toPath());
+		}
+	}
+
 	@Test
 	public void testDocumentLinkWrongRegion() throws Exception {
 		List<DocumentLink> links = new ArrayList<>();

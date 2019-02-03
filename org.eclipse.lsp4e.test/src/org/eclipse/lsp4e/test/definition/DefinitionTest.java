@@ -13,10 +13,13 @@ package org.eclipse.lsp4e.test.definition;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -31,6 +34,8 @@ import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,6 +69,24 @@ public class DefinitionTest {
 		IHyperlink[] hyperlinks = hyperlinkDetector.detectHyperlinks(viewer, new Region(1, 0), true);
 		assertEquals(1, hyperlinks.length);		
 		// TODO add location check
+	}
+
+	@Test
+	public void testDefinitionOneLocationExternalFile() throws Exception {
+		Location location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
+		MockLanguageSever.INSTANCE.setDefinition(Collections.singletonList(location));
+
+		File file = File.createTempFile("testDocumentLinkExternalFile", ".lspt");
+		try {
+			ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(
+					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+			ITextViewer viewer = TestUtils.getTextViewer(editor);
+
+			IHyperlink[] hyperlinks = hyperlinkDetector.detectHyperlinks(viewer, new Region(0, 0), true);
+			assertEquals(1, hyperlinks.length);
+		} finally {
+			Files.deleteIfExists(file.toPath());
+		}
 	}
 	
 	@Test
