@@ -37,6 +37,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.NoErrorLoggedRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4j.CreateFile;
@@ -64,8 +65,8 @@ import org.junit.Test;
 
 public class LSPEclipseUtilsTest {
 
-	@Rule
-	public NoErrorLoggedRule rule = new NoErrorLoggedRule(LanguageServerPlugin.getDefault().getLog());
+	@Rule public NoErrorLoggedRule rule = new NoErrorLoggedRule(LanguageServerPlugin.getDefault().getLog());
+	@Rule public AllCleanRule clear = new AllCleanRule();
 
 	@Test
 	public void testOpenInEditorExternalFile() throws Exception {

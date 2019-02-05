@@ -12,7 +12,6 @@
 package org.eclipse.lsp4e.test.commands;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -23,12 +22,12 @@ import java.util.function.Predicate;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.Registration;
 import org.eclipse.lsp4j.RegistrationParams;
@@ -39,9 +38,8 @@ import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
-import org.eclipse.ui.PlatformUI;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import com.google.gson.Gson;
@@ -51,26 +49,19 @@ public class DynamicRegistrationTest {
 	private static final String WORKSPACE_EXECUTE_COMMAND = "workspace/executeCommand";
 	private static final String WORKSPACE_DID_CHANGE_FOLDERS = "workspace/didChangeWorkspaceFolders";
 
+	@Rule public AllCleanRule clear = new AllCleanRule();
+
 	private IProject project;
 
 	@Before
 	public void setUp() throws Exception {
-		MockLanguageSever.reset();
-		LanguageServiceAccessor.clearStartedServers();
 		project = TestUtils.createProject("CommandRegistrationTest" + System.currentTimeMillis());
 		IFile testFile = TestUtils.createFile(project, "shouldUseExtension.lspt", "");
 
 		// Make sure mock language server is created...
-		LanguageServer info = LanguageServiceAccessor
-				.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next()
-				.get(1, TimeUnit.SECONDS);
-		assertNotNull(info);
-	}
-
-	@After
-	public void tearDown() throws CoreException {
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
-		project.delete(true, true, new NullProgressMonitor());
+		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), null).get(1,
+				TimeUnit.SECONDS);
+		getMockClient();
 	}
 
 	@Test
@@ -140,7 +131,7 @@ public class DynamicRegistrationTest {
 	}
 
 	private LanguageClient getMockClient() {
-		List<LanguageClient> proxies = MockLanguageSever.INSTANCE.getRemoteProxies();
+		List<LanguageClient> proxies = MockLanguageServer.INSTANCE.getRemoteProxies();
 		assertEquals(1, proxies.size());
 		return proxies.get(0);
 	}

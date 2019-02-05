@@ -22,9 +22,10 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.NoErrorLoggedRule;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
@@ -47,17 +48,13 @@ import org.junit.Test;
 public class CodeActionTests {
 	
 	@Rule public NoErrorLoggedRule rule = new NoErrorLoggedRule(LanguageServerPlugin.getDefault().getLog());
-
-	@Before
-	public void setUp() throws CoreException {
-		MockLanguageSever.reset();
-	}
-
+	@Rule public AllCleanRule clear = new AllCleanRule();
+	
 	@Test
 	public void testCodeActionsClientCommandForTextEdit() throws CoreException {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile f = TestUtils.createUniqueTestFile(p, "error");
-		MockLanguageSever.INSTANCE.setCodeActions(Collections.singletonList(Either.forLeft(new Command(
+		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forLeft(new Command(
 				"fixme",
 				"edit",
 				Collections.singletonList(
@@ -67,7 +64,7 @@ public class CodeActionTests {
 				)
 			)
 		));
-		MockLanguageSever.INSTANCE.setDiagnostics(Collections.singletonList(
+		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		try {
@@ -86,14 +83,14 @@ public class CodeActionTests {
 
 		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
 		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
-		MockLanguageSever.INSTANCE.setCodeActions(Collections
+		MockLanguageServer.INSTANCE.setCodeActions(Collections
 				.singletonList(Either.forLeft(new Command(
 				"fixme",
 				"edit",
 				Collections.singletonList(wEdit))
 			)
 		));
-		MockLanguageSever.INSTANCE.setDiagnostics(Collections.singletonList(
+		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		try {
@@ -114,8 +111,8 @@ public class CodeActionTests {
 		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
 		CodeAction codeAction = new CodeAction("fixme");
 		codeAction.setEdit(wEdit);
-		MockLanguageSever.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
-		MockLanguageSever.INSTANCE.setDiagnostics(Collections.singletonList(
+		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
+		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		try {
@@ -136,8 +133,8 @@ public class CodeActionTests {
 		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
 		CodeAction codeAction = new CodeAction("fixme");
 		codeAction.setCommand(new Command("editCommand", "mockEditCommand", Collections.singletonList(wEdit)));
-		MockLanguageSever.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
-		MockLanguageSever.INSTANCE.setDiagnostics(Collections.singletonList(
+		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
+		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		try {

@@ -106,7 +106,8 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 				.filter(Objects::nonNull)
 				.map(LSBasedHover::getHoverString)
 				.filter(Objects::nonNull)
-				.collect(Collectors.joining("\n\n")); //$NON-NLS-1$
+				.collect(Collectors.joining("\n\n")) //$NON-NLS-1$
+				.trim();
 			if (!result.isEmpty()) {
 				return styleHtml(MARKDOWN_PARSER.parseToHtml(result));
 			}

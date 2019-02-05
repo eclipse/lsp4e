@@ -33,18 +33,18 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.navigator.CommonViewer;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
@@ -54,55 +54,58 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	public static final String LINK_WITH_EDITOR_PREFERENCE = ID + ".linkWithEditor"; //$NON-NLS-1$
 	public static final String SHOW_KIND_PREFERENCE = ID + ".showKind"; //$NON-NLS-1$
 
-	private CommonViewer viewer;
-	private IEclipsePreferences preferences;
-	private LSPDocumentInfo info;
-	private ITextEditor textEditor;
-	private ITextViewer textEditorViewer;
+	private CommonViewer outlineViewer;
+	private final IEclipsePreferences preferences;
+	private final ITextEditor textEditor;
+	private final ITextViewer textEditorViewer;
+	private final IDocument document;
+	private final LanguageServer languageServer;
 
 	class OutlineInfo {
 
-		public final LSPDocumentInfo info;
 		public final ITextEditor textEditor;
+		public final LanguageServer languageServer;
+		public final IDocument document;
 
-		public OutlineInfo(LSPDocumentInfo info, @Nullable ITextEditor textEditor) {
-			this.info = info;
+		public OutlineInfo(IDocument document, LanguageServer languageServer, @Nullable ITextEditor textEditor) {
+			this.document = document;
+			this.languageServer = languageServer;
 			this.textEditor = textEditor;
 		}
 	}
 
-	public CNFOutlinePage(LSPDocumentInfo info, @Nullable ITextEditor textEditor) {
+	public CNFOutlinePage(IDocument document, LanguageServer languageServer, @Nullable ITextEditor textEditor) {
 		this.preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 		this.textEditor = textEditor;
-		this.info = info;
+		if (textEditor != null) {
+			this.textEditorViewer = ((ITextViewer) textEditor.getAdapter(ITextOperationTarget.class));
+		} else {
+			this.textEditorViewer = null;
+		}
+		this.document = LSPEclipseUtils.getDocument(textEditor);
+		this.languageServer = languageServer;
 	}
 
 	@Override
 	public void createControl(Composite parent) {
-		this.viewer = new CommonViewer(ID, parent, SWT.NONE);
-		this.viewer.setInput(new OutlineInfo(info, textEditor));
-		this.viewer.getLabelProvider().addListener(this);
+		this.outlineViewer = new CommonViewer(ID, parent, SWT.NONE);
+		this.outlineViewer.setInput(new OutlineInfo(this.document, this.languageServer, this.textEditor));
+		this.outlineViewer.getLabelProvider().addListener(this);
 		if (textEditor != null) {
-			this.viewer.addOpenListener(event -> {
+			this.outlineViewer.addOpenListener(event -> {
 				if (preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true))
 					textEditor.setFocus();
 			});
-			if (textEditor instanceof AbstractTextEditor) {
-				AbstractTextEditor editor = (AbstractTextEditor) textEditor;
-				textEditorViewer = ((ITextViewer) editor.getAdapter(ITextOperationTarget.class));
-			} else {
-				textEditorViewer = null;
-			}
-			this.viewer.addSelectionChangedListener(event -> {
-				if (preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true) && viewer.getTree().isFocusControl()
-						&& viewer.getSelection() != null) {
-					Object selection = ((TreeSelection) viewer.getSelection()).getFirstElement();
+			this.outlineViewer.addSelectionChangedListener(event -> {
+				if (preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true)
+						&& outlineViewer.getTree().isFocusControl() && outlineViewer.getSelection() != null) {
+					Object selection = ((TreeSelection) outlineViewer.getSelection()).getFirstElement();
 					Range range = getRangeSelection(selection);
 					if (range != null) {
 						try {
-							int startOffset = info.getDocument().getLineOffset(range.getStart().getLine())
+							int startOffset = document.getLineOffset(range.getStart().getLine())
 									+ range.getStart().getCharacter();
-							int endOffset = info.getDocument().getLineOffset(range.getEnd().getLine())
+							int endOffset = document.getLineOffset(range.getEnd().getLine())
 									+ range.getEnd().getCharacter();
 							textEditor.selectAndReveal(startOffset,
 									endOffset - startOffset);
@@ -175,10 +178,10 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 			if (!preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true)) {
 				return;
 			}
-			int offset = viewer instanceof ITextViewerExtension5
-					? ((ITextViewerExtension5) viewer).widgetOffset2ModelOffset(textSelection.getOffset())
+			int offset = outlineViewer instanceof ITextViewerExtension5
+					? ((ITextViewerExtension5) outlineViewer).widgetOffset2ModelOffset(textSelection.getOffset())
 					: textSelection.getOffset();
-			refreshTreeSelection(viewer, offset, info.getDocument());
+			refreshTreeSelection(outlineViewer, offset, document);
 		}
 	}
 
@@ -235,7 +238,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 
 	@Override
 	public void dispose() {
-		this.viewer.dispose();
+		this.outlineViewer.dispose();
 		if (textEditorViewer != null) {
 			editorSelectionChangedListener.uninstall(textEditorViewer.getSelectionProvider());
 		}
@@ -243,7 +246,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 
 	@Override
 	public Control getControl() {
-		return this.viewer.getControl();
+		return this.outlineViewer.getControl();
 	}
 
 	@Override
@@ -252,32 +255,32 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 
 	@Override
 	public void setFocus() {
-		this.viewer.getTree().setFocus();
+		this.outlineViewer.getTree().setFocus();
 	}
 
 	@Override
 	public void addSelectionChangedListener(ISelectionChangedListener listener) {
-		this.viewer.addSelectionChangedListener(listener);
+		this.outlineViewer.addSelectionChangedListener(listener);
 	}
 
 	@Override
 	public ISelection getSelection() {
-		return this.viewer.getSelection();
+		return this.outlineViewer.getSelection();
 	}
 
 	@Override
 	public void removeSelectionChangedListener(ISelectionChangedListener listener) {
-		this.viewer.removeSelectionChangedListener(listener);
+		this.outlineViewer.removeSelectionChangedListener(listener);
 	}
 
 	@Override
 	public void setSelection(ISelection selection) {
-		this.viewer.setSelection(selection);
+		this.outlineViewer.setSelection(selection);
 	}
 
 	@Override
 	public void labelProviderChanged(LabelProviderChangedEvent event) {
-		this.viewer.refresh(true);
+		this.outlineViewer.refresh(true);
 	}
 
 }

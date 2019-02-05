@@ -10,7 +10,6 @@
  */
 package org.eclipse.lsp4e.operations.color;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -57,11 +56,11 @@ public class ColorInformationMining extends LineContentCodeMining {
 
 		private final TextDocumentIdentifier textDocumentIdentifier;
 		private final ColorInformation colorInformation;
-		private final CompletableFuture<LanguageServer> languageServer;
+		private final LanguageServer languageServer;
 		private final IDocument document;
 
 		public UpdateColorWithDialog(TextDocumentIdentifier textDocumentIdentifier, ColorInformation colorInformation,
-				CompletableFuture<LanguageServer> languageServer, IDocument document) {
+				LanguageServer languageServer, IDocument document) {
 			this.textDocumentIdentifier = textDocumentIdentifier;
 			this.colorInformation = colorInformation;
 			this.languageServer = languageServer;
@@ -82,27 +81,26 @@ public class ColorInformationMining extends LineContentCodeMining {
 				// get LSP color presentation list for the picked color
 				ColorPresentationParams params = new ColorPresentationParams(textDocumentIdentifier,
 						LSPEclipseUtils.toColor(rgb), colorInformation.getRange());
-				this.languageServer.thenCompose(
-						ls -> ls.getTextDocumentService().colorPresentation(params).thenAccept(presentations -> {
-							if (presentations.isEmpty()) {
-								return;
-							}
-							// As ColorDialog cannot be customized (to choose the color presentation (rgb,
-							// hexa, ....) we pick the first color presentation.
-							try {
-								TextEdit textEdit = presentations.get(0).getTextEdit();
-								LSPEclipseUtils.applyEdit(textEdit, document);
-							} catch (BadLocationException e) {
-								LanguageServerPlugin.logError(e);
-							}
-						}));
+				this.languageServer.getTextDocumentService().colorPresentation(params).thenAccept(presentations -> {
+					if (presentations.isEmpty()) {
+						return;
+					}
+					// As ColorDialog cannot be customized (to choose the color presentation (rgb,
+					// hexa, ....) we pick the first color presentation.
+					try {
+						TextEdit textEdit = presentations.get(0).getTextEdit();
+						LSPEclipseUtils.applyEdit(textEdit, document);
+					} catch (BadLocationException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				});
 			}
 		}
 
 	}
 
 	public ColorInformationMining(ColorInformation colorInformation, @NonNull IDocument document,
-			TextDocumentIdentifier textDocumentIdentifier, CompletableFuture<LanguageServer> languageServer,
+			TextDocumentIdentifier textDocumentIdentifier, LanguageServer languageServer,
 			DocumentColorProvider colorProvider) throws BadLocationException {
 		super(toPosition(colorInformation.getRange(), document), colorProvider,
 				new UpdateColorWithDialog(textDocumentIdentifier, colorInformation, languageServer, document));

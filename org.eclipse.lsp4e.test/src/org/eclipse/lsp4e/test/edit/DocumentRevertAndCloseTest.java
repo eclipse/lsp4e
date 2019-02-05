@@ -16,36 +16,31 @@ import static org.junit.Assert.assertTrue;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class DocumentRevertAndCloseTest {
 
+	@Rule public AllCleanRule clear = new AllCleanRule();
 	private IProject project;
 
 	@Before
 	public void setUp() throws CoreException {
-		MockLanguageSever.reset();
 		project =  TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
 	}
 
-	@After
-	public void tearDown() throws CoreException {
-		project.delete(true, true, new NullProgressMonitor());
-		MockLanguageSever.INSTANCE.shutdown();
-	}
-	
 	@Test
 	public void testShutdownLsp() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "Hello!");
@@ -56,7 +51,7 @@ public class DocumentRevertAndCloseTest {
 		testFile.setLocalTimeStamp(0);
 
 		// Force LS to initialize and open file
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE);
+		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), capabilites -> Boolean.TRUE);
 		
 		viewer.getDocument().replace(0, 0, "Bye!");
 		((AbstractTextEditor)editor).doRevertToSaved();
@@ -66,7 +61,7 @@ public class DocumentRevertAndCloseTest {
 		assertTrue(new DisplayHelper() {
 			@Override
 			protected boolean condition() {
-				return !MockLanguageSever.INSTANCE.isRunning();
+				return !MockLanguageServer.INSTANCE.isRunning();
 			}
 			
 		}.waitForCondition(display, 3000));

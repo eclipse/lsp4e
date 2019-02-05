@@ -21,7 +21,9 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -34,6 +36,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.ReferenceContext;
 import org.eclipse.lsp4j.ReferenceParams;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.search.internal.ui.text.FileMatch;
 import org.eclipse.search.internal.ui.text.FileSearchQuery;
@@ -49,8 +52,9 @@ import org.eclipse.search.ui.text.Match;
  */
 public class LSSearchQuery extends FileSearchQuery {
 
+	private final @NonNull IDocument document;
+	private final @NonNull LanguageServer languageServer;
 	private final Position position;
-	private final LSPDocumentInfo info;
 	private final String filename;
 
 	private LSSearchResult result;
@@ -66,12 +70,13 @@ public class LSSearchQuery extends FileSearchQuery {
 	 * @param info
 	 * @throws BadLocationException
 	 */
-	public LSSearchQuery(int offset, LSPDocumentInfo info) throws BadLocationException {
+	public LSSearchQuery(@NonNull IDocument document, int offset, @NonNull LanguageServer languageServer)
+			throws BadLocationException {
 		super("", false, false, null); //$NON-NLS-1$
-		this.position = LSPEclipseUtils.toPosition(offset, info.getDocument());
-		this.info = info;
-		IResource resource = LSPEclipseUtils.findResourceFor(info.getFileUri().toString());
-		this.filename = resource != null ? resource.getName() : info.getFileUri().toString();
+		this.document = document;
+		this.languageServer = languageServer;
+		this.position = LSPEclipseUtils.toPosition(offset, document);
+		this.filename = Path.fromPortableString(LSPEclipseUtils.toUri(document).getPath()).lastSegment();
 	}
 
 	@Override
@@ -88,10 +93,9 @@ public class LSSearchQuery extends FileSearchQuery {
 			// Execute LSP "references" service
 			ReferenceParams params = new ReferenceParams();
 			params.setContext(new ReferenceContext(true));
-			params.setTextDocument(new TextDocumentIdentifier(info.getFileUri().toString()));
+			params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString()));
 			params.setPosition(position);
-			info.getInitializedLanguageClient()
-					.thenCompose(languageServer -> languageServer.getTextDocumentService().references(params))
+			languageServer.getTextDocumentService().references(params)
 					.thenAccept(locs -> {
 						// Loop for each LSP Location and convert it to Match search.
 						for (Location loc : locs) {

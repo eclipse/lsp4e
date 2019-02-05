@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.source.Annotation;
@@ -33,34 +32,30 @@ import org.eclipse.jface.text.source.IAnnotationModel;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.operations.highlight.HighlightReconcilingStrategy;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentHighlightKind;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.swt.widgets.Display;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
 
 public class HighlightTest {
 
+	@Rule public AllCleanRule clear = new AllCleanRule();
 	private IProject project;
 
 	@Before
 	public void setUp() throws CoreException {
 		project = TestUtils.createProject("HighlightTest" + System.currentTimeMillis());
-	}
-
-	@After
-	public void tearDown() throws CoreException {
-		project.delete(true, true, new NullProgressMonitor());
-		MockLanguageSever.INSTANCE.shutdown();
 	}
 
 	@Test
@@ -74,7 +69,7 @@ public class HighlightTest {
 				new DocumentHighlight(new Range(new Position(0, 7), new Position(0, 12)), DocumentHighlightKind.Write));
 		highlights.add(
 				new DocumentHighlight(new Range(new Position(0, 13), new Position(0, 17)), DocumentHighlightKind.Text));
-		MockLanguageSever.INSTANCE.setDocumentHighlights(highlights);
+		MockLanguageServer.INSTANCE.setDocumentHighlights(highlights);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "  READ WRITE TEXT");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
@@ -127,7 +122,7 @@ public class HighlightTest {
 
 		List<DocumentHighlight> highlights = Collections.singletonList(
 				new DocumentHighlight(new Range(new Position(0, 2), new Position(0, 6)), DocumentHighlightKind.Read));
-		MockLanguageSever.INSTANCE.setDocumentHighlights(highlights);
+		MockLanguageServer.INSTANCE.setDocumentHighlights(highlights);
 
 		if (!(viewer instanceof ISourceViewer)) {
 			Assert.fail();

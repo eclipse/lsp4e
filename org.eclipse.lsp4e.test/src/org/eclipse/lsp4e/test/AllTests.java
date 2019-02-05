@@ -61,7 +61,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	DocumentLinkTest.class,
 	RunningLanguageServerTest.class,
 	HighlightTest.class,
-		DynamicRegistrationTest.class, RenameTest.class
+	DynamicRegistrationTest.class,
+	RenameTest.class
 })
 public class AllTests {
 

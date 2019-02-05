@@ -23,25 +23,26 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.operations.declaration.OpenDeclarationHyperlinkDetector;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class DefinitionTest {
 
+	@Rule public AllCleanRule clear = new AllCleanRule();
 	private IProject project;
 	private OpenDeclarationHyperlinkDetector hyperlinkDetector;
 
@@ -51,17 +52,10 @@ public class DefinitionTest {
 		hyperlinkDetector = new OpenDeclarationHyperlinkDetector();
 	}
 
-	@After
-	public void tearDown() throws CoreException {
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
-		project.delete(true, true, new NullProgressMonitor());
-		MockLanguageSever.INSTANCE.shutdown();
-	}
-
 	@Test
 	public void testDefinitionOneLocation() throws Exception {
 		Location location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
-		MockLanguageSever.INSTANCE.setDefinition(Collections.singletonList(location));
+		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(location));
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
@@ -74,7 +68,7 @@ public class DefinitionTest {
 	@Test
 	public void testDefinitionOneLocationExternalFile() throws Exception {
 		Location location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
-		MockLanguageSever.INSTANCE.setDefinition(Collections.singletonList(location));
+		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(location));
 
 		File file = File.createTempFile("testDocumentLinkExternalFile", ".lspt");
 		try {
@@ -95,7 +89,7 @@ public class DefinitionTest {
 		locations.add(new Location("file://test0", new Range(new Position(0, 0), new Position(0, 10))));
 		locations.add(new Location("file://test1", new Range(new Position(1, 0), new Position(1, 10))));
 		locations.add(new Location("file://test2", new Range(new Position(2, 0), new Position(2, 10))));
-		MockLanguageSever.INSTANCE.setDefinition(locations);
+		MockLanguageServer.INSTANCE.setDefinition(locations);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
@@ -107,7 +101,7 @@ public class DefinitionTest {
 
 	@Test
 	public void testDefinitionNoLocations() throws Exception {
-		MockLanguageSever.INSTANCE.setDefinition(null);
+		MockLanguageServer.INSTANCE.setDefinition(null);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
@@ -118,7 +112,7 @@ public class DefinitionTest {
 	
 	@Test
 	public void testDefinitionEmptyLocations() throws Exception {
-		MockLanguageSever.INSTANCE.setDefinition(Collections.emptyList());
+		MockLanguageServer.INSTANCE.setDefinition(Collections.emptyList());
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);

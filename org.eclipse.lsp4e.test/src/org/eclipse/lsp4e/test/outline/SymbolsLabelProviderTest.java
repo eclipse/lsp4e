@@ -14,15 +14,18 @@ package org.eclipse.lsp4e.test.outline;
 import static org.junit.Assert.assertEquals;
 
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.SymbolKind;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class SymbolsLabelProviderTest {
 
+	@Rule public AllCleanRule clear = new AllCleanRule();
 	private static final Location LOCATION = new Location("path/to/foo", new Range(new Position(0,0), new Position(1,1)));
 	
 	@Test

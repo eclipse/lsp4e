@@ -22,13 +22,17 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.ui.IEditorPart;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class DocumentDidCloseTest {
+
+	@Rule public AllCleanRule clear = new AllCleanRule();
 
 	@Test
 	public void testClose() throws Exception {
@@ -38,10 +42,10 @@ public class DocumentDidCloseTest {
 		IEditorPart editor = TestUtils.openEditor(testFile);
 
 		// Force LS to initialize and open file
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE);
+		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), capabilites -> Boolean.TRUE);
 
 		CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
-		MockLanguageSever.INSTANCE.setDidCloseCallback(didCloseExpectation);
+		MockLanguageServer.INSTANCE.setDidCloseCallback(didCloseExpectation);
 
 		TestUtils.closeEditor(editor, false);
 
@@ -51,7 +55,7 @@ public class DocumentDidCloseTest {
 
 		project.delete(true, true, new NullProgressMonitor());
 		
-		MockLanguageSever.INSTANCE.shutdown();
+		MockLanguageServer.reset();
 	}
 
 }

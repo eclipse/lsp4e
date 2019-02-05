@@ -12,14 +12,20 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
-import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.runtime.IAdapterFactory;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
@@ -32,14 +38,23 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 				LanguageServersRegistry.getInstance().canUseLanguageServer(((IEditorPart) adaptableObject).getEditorInput())) {
 			IDocument document = LSPEclipseUtils.getDocument(((IEditorPart)adaptableObject).getEditorInput());
 			if (document != null) {
-				Collection<LSPDocumentInfo> info = LanguageServiceAccessor.getLSPDocumentInfosFor(
-						document, capabilities -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
-				if (!info.isEmpty()) {
+				CompletableFuture<List<@NonNull LanguageServer>> languageServers = LanguageServiceAccessor
+						.getLanguageServers(document,
+								capabilities -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
+				List<@NonNull LanguageServer> servers = Collections.emptyList();
+				try {
+					servers = languageServers.get(50, TimeUnit.MILLISECONDS);
+				} catch (TimeoutException | InterruptedException | ExecutionException e) {
+					// nothing
+				}
+				if (!servers.isEmpty()) {
+					LanguageServer languageServer = servers.get(0); // TODO consider other strategies (select,
+																	// merge...?)
 					ITextEditor textEditor = null;
 					if(adaptableObject instanceof ITextEditor) {
 						textEditor = (ITextEditor)adaptableObject;
 					}
-					return (T)new CNFOutlinePage(info.iterator().next(), textEditor);
+					return (T) new CNFOutlinePage(document, languageServer, textEditor);
 				}
 			}
 		}

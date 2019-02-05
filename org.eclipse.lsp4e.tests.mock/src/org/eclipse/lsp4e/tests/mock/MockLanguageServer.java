@@ -53,9 +53,9 @@ import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.WorkspaceService;
 
-public final class MockLanguageSever implements LanguageServer {
+public final class MockLanguageServer implements LanguageServer {
 
-	public static MockLanguageSever INSTANCE = new MockLanguageSever();
+	public static MockLanguageServer INSTANCE = new MockLanguageServer();
 
 	private MockTextDocumentService textDocumentService = new MockTextDocumentService(this::buildMaybeDelayedFuture);
 	private MockWorkspaceService workspaceService = new MockWorkspaceService(this::buildMaybeDelayedFuture);
@@ -66,10 +66,10 @@ public final class MockLanguageSever implements LanguageServer {
 	private List<LanguageClient> remoteProxies = new ArrayList<>();
 
 	public static void reset() {
-		INSTANCE = new MockLanguageSever();
+		INSTANCE = new MockLanguageServer();
 	}
 
-	private MockLanguageSever() {
+	private MockLanguageServer() {
 		resetInitializeResult();
 	}
 
@@ -79,9 +79,9 @@ public final class MockLanguageSever implements LanguageServer {
 	 * @throws InterruptedException 
 	 */
 	public static void main(String[] args) throws InterruptedException, ExecutionException {
-		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageSever.INSTANCE, System.in, System.out);
+		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageServer.INSTANCE, System.in, System.out);
 		Future<?> f = l.startListening();
-		MockLanguageSever.INSTANCE.addRemoteProxy(l.getRemoteProxy());
+		MockLanguageServer.INSTANCE.addRemoteProxy(l.getRemoteProxy());
 		f.get();
 	}
 
@@ -201,9 +201,6 @@ public final class MockLanguageSever implements LanguageServer {
 	@Override
 	public CompletableFuture<Object> shutdown() {
 		this.started = false;
-		this.delay = 0;
-		resetInitializeResult();
-		this.textDocumentService.reset();
 		return CompletableFuture.completedFuture(Collections.emptySet());
 	}
 

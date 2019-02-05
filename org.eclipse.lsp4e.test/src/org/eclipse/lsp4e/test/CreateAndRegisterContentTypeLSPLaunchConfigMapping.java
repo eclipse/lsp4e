@@ -34,7 +34,7 @@ import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LaunchConfigurationStreamProvider;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.ui.IStartup;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -71,8 +71,8 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 				}
 				workingCopy.setAttribute(IExternalToolConstants.ATTR_LOCATION, new File(System.getProperty("java.home"),"bin/java" + exe).getAbsolutePath());
 				workingCopy.setAttribute(IExternalToolConstants.ATTR_TOOL_ARGUMENTS, "-cp " +
-						getClassPath(MockLanguageSever.class) + " " +
-						MockLanguageSever.class.getName());
+						getClassPath(MockLanguageServer.class) + " " +
+						MockLanguageServer.class.getName());
 				mockServerLauch = workingCopy.doSave();
 				registry.registerAssociation(contentTypeManager.getContentType("org.eclipse.lsp4e.test.content-type2"),
 						LaunchConfigurationStreamProvider.findLaunchConfiguration(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE, mockServerLauch.getName()),

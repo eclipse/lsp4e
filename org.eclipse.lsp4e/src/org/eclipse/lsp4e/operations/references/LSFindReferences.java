@@ -13,26 +13,25 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.references;
 
-import java.util.Collection;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
-import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.search.ui.NewSearchUI;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
@@ -44,38 +43,52 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		if (part instanceof ITextEditor) {
-			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-					LSPEclipseUtils.getDocument((ITextEditor)part),
-					capabilities -> Boolean.TRUE.equals(capabilities.getReferencesProvider()));
-			if (!infos.isEmpty()) {
-				// TODO consider better way to choose the actual LS to use
-				LSPDocumentInfo info = infos.iterator().next();
-				ISelection sel = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
-
-				if (sel instanceof TextSelection) {
-					try {
-						int offset = ((TextSelection) sel).getOffset();
-						LSSearchQuery query = new LSSearchQuery(offset, info);
-						NewSearchUI.runQueryInBackground(query);
-					} catch (BadLocationException e) {
-						LanguageServerPlugin.logError(e);
-					}
-				}
-			}
+		if (! (part instanceof ITextEditor)) {
+			return null;
 		}
+		ITextEditor editor = (ITextEditor)part;
+		IDocument document = LSPEclipseUtils.getDocument(editor);
+		if (document == null) {
+			return null;
+		}
+		ISelection sel = editor.getSelectionProvider().getSelection();
+		if (!(sel instanceof ITextSelection)) {
+			return null;
+		}
+		int offset = ((ITextSelection) sel).getOffset();
+		LanguageServiceAccessor.getLanguageServers(document, capabilities -> Boolean.TRUE.equals(capabilities.getReferencesProvider())).thenAcceptAsync(languageServers -> {
+			if (languageServers.isEmpty()) {
+				return;
+			}
+			LanguageServer ls = languageServers.get(0);
+			try {
+				LSSearchQuery query = new LSSearchQuery(document, offset, ls);
+				HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		});
 		return null;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
-		if (part instanceof ITextEditor) {
-			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-				LSPEclipseUtils.getDocument((ITextEditor) part),
-				capabilities -> Boolean.TRUE.equals(capabilities.getReferencesProvider()));
-			ISelection selection = ((ITextEditor) part).getSelectionProvider().getSelection();
-			return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
+		IEditorPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
+		if (!(part instanceof ITextEditor)) {
+			return false;
+		}
+		ITextEditor editor = (ITextEditor) part;
+		ISelection selection = editor.getSelectionProvider().getSelection();
+		if (selection.isEmpty() || !(selection instanceof ITextSelection)) {
+			return false;
+		}
+		try {
+			return !LanguageServiceAccessor
+					.getLanguageServers(LSPEclipseUtils.getDocument(editor),
+							capability -> Boolean.TRUE.equals(capability.getReferencesProvider()))
+					.get(50, TimeUnit.MILLISECONDS).isEmpty();
+		} catch (TimeoutException | InterruptedException | java.util.concurrent.ExecutionException e) {
+			LanguageServerPlugin.logError(e);
 		}
 		return false;
 	}

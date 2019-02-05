@@ -16,14 +16,18 @@ import static org.junit.Assert.assertTrue;
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.texteditor.ITextEditor;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class RenameTest {
+
+	@Rule public AllCleanRule clear = new AllCleanRule();
 
 	@Test
 	public void testRenameHandled() throws Exception {

@@ -23,7 +23,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.operations.completion.LSIncompleteCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.CompletionList;
@@ -160,7 +160,8 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 				.get(0);
 
 		CompletionItem completionItem = createCompletionItem("test", CompletionItemKind.Class, range);
-		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(completionItem, 0, info);
+		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+				completionItem, info.getLanguageClient());
 		// Blank input ''
 		assertEquals("", completionProposal.getDocumentFilter());
 		assertEquals(0, completionProposal.getRankScore());
@@ -176,7 +177,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 
 		document.set("prefix:pnd");
 		completionItem = createCompletionItem("append", CompletionItemKind.Class);
-		completionProposal = new LSIncompleteCompletionProposal(completionItem, 7, info);
+		completionProposal = new LSIncompleteCompletionProposal(document, 7, completionItem, info.getLanguageClient());
 		// Blank input 'prefix:'
 		assertEquals("", completionProposal.getDocumentFilter());
 		assertEquals(0, completionProposal.getRankScore());
@@ -236,7 +237,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 		for (int i = 0; i < size; i++) {
 			items.add(createCompletionItem(randomString(), CompletionItemKind.Class, range));
 		}
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, items));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, items));
 
 		long startTimeControl = System.currentTimeMillis();
 		contentAssistProcessor.computeCompletionProposals(viewer, 0);

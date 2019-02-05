@@ -11,6 +11,7 @@ package org.eclipse.lsp4e.operations.codelens;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -20,46 +21,32 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.codemining.AbstractCodeMiningProvider;
 import org.eclipse.jface.text.codemining.ICodeMining;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
-import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.CodeLensParams;
-import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 
 public class CodeLensProvider extends AbstractCodeMiningProvider {
 
 	private CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(@NonNull IDocument document) {
-		return CompletableFuture.supplyAsync(() -> {
-				List<@NonNull LSPDocumentInfo> docInfos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-						(capabilities) -> (capabilities.getCodeLensProvider() != null));
-				final CompletableFuture<?>[] requests = new CompletableFuture<?>[docInfos.size()];
-				final List<LSPCodeMining> codeLensResults = Collections
-						.synchronizedList(new ArrayList<>(docInfos.size()));
-				for (int i = 0; i < docInfos.size(); i++) {
-					final LSPDocumentInfo info = docInfos.get(i);
-					final ServerCapabilities capabilites = info.getCapabilites();
-					CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(info.getFileUri().toString()));
-					requests[i] = info.getInitializedLanguageClient()
-							.thenCompose(languageServer -> languageServer.getTextDocumentService().codeLens(param))
-							.thenAccept(codeLenses -> {
-								for (CodeLens codeLens : codeLenses) {
-									if (codeLens != null && capabilites != null) {
-										try {
-											codeLensResults.add(new LSPCodeMining(codeLens, document,
-													info.getInitializedLanguageClient(),
-													capabilites.getCodeLensProvider(), CodeLensProvider.this));
-										} catch (BadLocationException e) {
-											LanguageServerPlugin.logError(e);
-										}
+		CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString()));
+		List<LSPCodeMining> codeLensResults = Collections.synchronizedList(new ArrayList<>());
+		return LanguageServiceAccessor
+				.getLanguageServers(document, capabilities -> capabilities.getCodeLensProvider() != null)
+				.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
+						.map(languageServer -> languageServer.getTextDocumentService().codeLens(param)
+								.thenAccept(codeLenses -> codeLenses.stream().filter(Objects::nonNull).map(codeLens -> {
+									try {
+										return new LSPCodeMining(codeLens, document, languageServer,
+												CodeLensProvider.this);
+									} catch (BadLocationException e) {
+										LanguageServerPlugin.logError(e);
+										return null;
 									}
-								}
-							});
-				}
-				CompletableFuture.allOf(requests).join();
-				return codeLensResults;
-		});
+								}).filter(Objects::nonNull).forEach(codeLensResults::add)))
+						.toArray(CompletableFuture[]::new)))
+				.thenApply(theVoid -> codeLensResults);
 	}
 
 	@Override

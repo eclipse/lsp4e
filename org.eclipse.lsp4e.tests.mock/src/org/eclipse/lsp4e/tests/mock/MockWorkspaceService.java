@@ -34,7 +34,7 @@ public class MockWorkspaceService implements WorkspaceService {
 	 * Use this method to get a future that will wait specified delay before returning
 	 * value
 	 * @param value the value that will be returned by the future
-	 * @return a future that completes to value, after delay from {@link MockLanguageSever#delay}
+	 * @return a future that completes to value, after delay from {@link MockLanguageServer#delay}
 	 */
 	private <U> CompletableFuture<U> futureFactory(U value) {
 		return ((Function<U, CompletableFuture<U>>)this._futureFactory).apply(value);

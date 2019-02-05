@@ -20,7 +20,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -44,34 +47,29 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServerMultiRootFolders;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
-import org.junit.After;
+import org.eclipse.ui.texteditor.ITextEditor;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class LanguageServiceAccessorTest {
 
+	@Rule public AllCleanRule clear = new AllCleanRule();
 	private IProject project;
 
 	@Before
 	public void setUp() throws CoreException {
-		MockLanguageSever.reset();
-		LanguageServiceAccessor.clearStartedServers();
 		project = TestUtils.createProject("LanguageServiceAccessorTest" + System.currentTimeMillis());
-	}
-
-	@After
-	public void tearDown() throws CoreException {
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
-		project.delete(true, true, new NullProgressMonitor());
-		MockLanguageSever.reset();
-		LanguageServiceAccessor.clearStartedServers();
 	}
 
 	@Test
@@ -201,7 +199,7 @@ public class LanguageServiceAccessorTest {
 		TestUtils.openEditor(testFile1);
 		LanguageServiceAccessor.getInitializedLanguageServers(testFile1, capabilities -> Boolean.TRUE).iterator()
 				.next();
-		new LSDisplayHelper(() -> MockLanguageSever.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
+		new LSDisplayHelper(() -> MockLanguageServer.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
 				300);
 
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
@@ -210,7 +208,7 @@ public class LanguageServiceAccessorTest {
 		assertTrue(wrapper1.isActive());
 
 		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
-		new LSDisplayHelper(() -> !MockLanguageSever.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
+		new LSDisplayHelper(() -> !MockLanguageServer.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
 				300);
 
 		project.delete(true, true, new NullProgressMonitor());
@@ -221,7 +219,7 @@ public class LanguageServiceAccessorTest {
 		TestUtils.openEditor(testFile2);
 		LanguageServiceAccessor.getInitializedLanguageServers(testFile2, capabilities -> Boolean.TRUE).iterator()
 				.next();
-		new LSDisplayHelper(() -> MockLanguageSever.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
+		new LSDisplayHelper(() -> MockLanguageServer.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
 				300);
 
 		wrappers = LanguageServiceAccessor.getLSWrappers(testFile2, c -> Boolean.TRUE);
@@ -378,6 +376,27 @@ public class LanguageServiceAccessorTest {
 				.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next()
 				.get(1, TimeUnit.SECONDS);
 		assertEquals(getStatusHandler(), true);
+	}
+
+	@Test
+	public void testLSforExternalThenLocalFile() throws Exception {
+		File local = File.createTempFile("testLSforExternalThenLocalFile", ".lspt");
+		try {
+			ITextEditor editor = (ITextEditor) IDE.openEditorOnFileStore(
+					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(local.toURI()));
+			Assert.assertEquals(1, LanguageServiceAccessor.getLanguageServers(
+					TestUtils.getTextViewer(editor).getDocument(), ServerCapabilities::getHoverProvider).get().size());
+			PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+			// opening another file should either reuse the LS or spawn another one, but not
+			// both
+			Assert.assertEquals(1,
+					LanguageServiceAccessor.getLanguageServers(
+							TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument(),
+							ServerCapabilities::getHoverProvider).get().size());
+		} finally {
+			Files.deleteIfExists(local.toPath());
+		}
+
 	}
 
 	private static boolean getStatusHandler() {

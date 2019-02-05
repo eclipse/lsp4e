@@ -119,9 +119,6 @@ public class LanguageServerWrapper {
 			@Override
 			public void bufferDisposed(IFileBuffer buffer) {
 				Path filePath = new Path(buffer.getFileStore().toURI().getPath());
-				if (!isInWatchedProject(filePath)) {
-					return;
-				}
 				disconnect(filePath);
 			}
 
@@ -131,23 +128,10 @@ public class LanguageServerWrapper {
 					return;
 				}
 				Path filePath = new Path(buffer.getFileStore().toURI().getPath());
-				if (!isInWatchedProject(filePath)) {
-					return;
-				}
-
 				DocumentContentSynchronizer documentListener = connectedDocuments.get(filePath);
 				if (documentListener != null && documentListener.getModificationStamp() < buffer.getModificationStamp()) {
 					documentListener.documentSaved(buffer.getModificationStamp());
 				}
-			}
-
-			private boolean isInWatchedProject(IPath path) {
-				for (@NonNull IProject watchedProject : allWatchedProjects) {
-					if (watchedProject.getLocation() != null && watchedProject.getLocation().isPrefixOf(path)) {
-						return true;
-					}
-				}
-				return false;
 			}
 
 		};
@@ -347,7 +331,7 @@ public class LanguageServerWrapper {
 		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
 	}
 
-	private synchronized void stop() {
+	synchronized void stop() {
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
 			this.initializeFuture = null;
@@ -381,6 +365,15 @@ public class LanguageServerWrapper {
 	public void connect(@NonNull IFile file, IDocument document) throws IOException {
 		watchProject(file.getProject(), false);
 		connect(file.getLocation(), document);
+	}
+
+	public void connect(IDocument document) throws IOException {
+		IFile file = LSPEclipseUtils.getFile(document);
+		if (file != null && file.exists()) {
+			connect(file, document);
+		} else {
+			connect(new Path(LSPEclipseUtils.toUri(document).getPath()), document);
+		}
 	}
 
 	protected synchronized void watchProject(IProject project, boolean isInitializationRootProject) {

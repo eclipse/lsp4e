@@ -17,23 +17,21 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.codemining.LineHeaderCodeMining;
+import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.CodeLens;
-import org.eclipse.lsp4j.CodeLensOptions;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 public class LSPCodeMining extends LineHeaderCodeMining {
 
 	private CodeLens codeLens;
-	private CompletableFuture<LanguageServer> languageServer;
-	private CodeLensOptions codeLensOptions;
+	private LanguageServer languageServer;
 
-	public LSPCodeMining(CodeLens codeLens, IDocument document, CompletableFuture<LanguageServer> languageServer,
-			CodeLensOptions codeLensOptions, CodeLensProvider provider) throws BadLocationException {
+	public LSPCodeMining(CodeLens codeLens, IDocument document, LanguageServer languageServer,
+			CodeLensProvider provider) throws BadLocationException {
 		super(codeLens.getRange().getStart().getLine(), document, provider);
 		this.codeLens = codeLens;
 		this.languageServer = languageServer;
-		this.codeLensOptions = codeLensOptions;
 		setLabel(getCodeLensString(codeLens));
 	}
 
@@ -47,15 +45,14 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 
 	@Override
 	protected CompletableFuture<Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
-		if (this.codeLensOptions.isResolveProvider()) {
-			return languageServer.thenCompose(ls -> ls.getTextDocumentService().resolveCodeLens(this.codeLens))
-					.thenAccept(codeLens -> {
-						this.codeLens = codeLens;
-						setLabel(getCodeLensString(codeLens));
-					});
+		if (!LanguageServiceAccessor.checkCapability(languageServer,
+				capabilites -> capabilites.getCodeLensProvider().isResolveProvider())) {
+			return CompletableFuture.completedFuture(null);
 		}
-		return CompletableFuture.completedFuture(null);
+		return languageServer.getTextDocumentService().resolveCodeLens(this.codeLens).thenAccept(resolvedCodeLens -> {
+			codeLens = resolvedCodeLens;
+			setLabel(getCodeLensString(resolvedCodeLens));
+		});
 	}
-
 
 }

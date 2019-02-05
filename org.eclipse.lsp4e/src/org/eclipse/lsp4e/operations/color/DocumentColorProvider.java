@@ -15,6 +15,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -24,10 +25,9 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.codemining.AbstractCodeMiningProvider;
 import org.eclipse.jface.text.codemining.ICodeMining;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
-import org.eclipse.lsp4j.ColorInformation;
 import org.eclipse.lsp4j.DocumentColorParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
@@ -49,40 +49,27 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 	}
 
 	private CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(@NonNull IDocument document) {
-		return CompletableFuture.supplyAsync(() -> {
-			List<@NonNull LSPDocumentInfo> docInfos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-					(capabilities) -> (capabilities.getColorProvider() != null
-							&& ((capabilities.getColorProvider().getLeft() != null
-									&& capabilities.getColorProvider().getLeft())
-									|| capabilities.getColorProvider().getRight() != null)));
-			final CompletableFuture<?>[] requests = new CompletableFuture<?>[docInfos.size()];
-			final List<ColorInformationMining> colorResults = Collections
-					.synchronizedList(new ArrayList<>(docInfos.size()));
-			for (int i = 0; i < docInfos.size(); i++) {
-				final LSPDocumentInfo info = docInfos.get(i);
-				final ServerCapabilities capabilites = info.getCapabilites();
-				final TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(
-						info.getFileUri().toString());
-				DocumentColorParams param = new DocumentColorParams(textDocumentIdentifier);
-				requests[i] = info.getInitializedLanguageClient()
-						.thenCompose(languageServer -> languageServer.getTextDocumentService().documentColor(param))
-						.thenAccept(colors -> {
-							for (ColorInformation color : colors) {
-								if (color != null && capabilites != null) {
-									try {
-										colorResults.add(new ColorInformationMining(color, document,
-												textDocumentIdentifier, info.getInitializedLanguageClient(),
-												DocumentColorProvider.this));
-									} catch (BadLocationException e) {
-										LanguageServerPlugin.logError(e);
-									}
-								}
-							}
-						});
-			}
-			CompletableFuture.allOf(requests).join();
-			return colorResults;
-		});
+		TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(
+				LSPEclipseUtils.toUri(document).toString());
+		DocumentColorParams param = new DocumentColorParams(textDocumentIdentifier);
+		final List<ColorInformationMining> colorResults = Collections.synchronizedList(new ArrayList<>());
+		return LanguageServiceAccessor.getLanguageServers(document, DocumentColorProvider::isColorProvider)
+				.thenApplyAsync(languageServers -> {
+					return CompletableFuture.allOf(languageServers.stream().map(languageServer -> languageServer
+							.getTextDocumentService().documentColor(param)
+							.thenAccept(colors -> colors.stream().filter(Objects::nonNull)
+									.map(color -> {
+										try {
+											return new ColorInformationMining(color, document, textDocumentIdentifier,
+													languageServer, DocumentColorProvider.this);
+										} catch (BadLocationException e) {
+											LanguageServerPlugin.logError(e);
+											return null;
+										}
+									}).filter(Objects::nonNull)
+									.forEach(colorResults::add)))
+							.toArray(CompletableFuture[]::new));
+				}).thenApply(theVoid -> colorResults);
 	}
 
 	@Override
@@ -113,6 +100,12 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 	public void dispose() {
 		colorTable.values().forEach(color -> color.dispose());
 		super.dispose();
+	}
+
+	private static boolean isColorProvider(ServerCapabilities capabilities) {
+		return capabilities.getColorProvider() != null
+				&& ((capabilities.getColorProvider().getLeft() != null && capabilities.getColorProvider().getLeft())
+						|| capabilities.getColorProvider().getRight() != null);
 	}
 
 }

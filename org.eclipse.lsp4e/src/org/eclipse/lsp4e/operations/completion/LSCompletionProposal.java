@@ -22,15 +22,16 @@ import org.eclipse.jface.text.contentassist.ICompletionProposalExtension;
 import org.eclipse.jface.text.contentassist.ICompletionProposalExtension2;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.CompletionItem;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.SWT;
 
 public class LSCompletionProposal extends LSIncompleteCompletionProposal
 		implements ICompletionProposalExtension, ICompletionProposalExtension2 {
 
-	public LSCompletionProposal(@NonNull CompletionItem item, int offset, LSPDocumentInfo info) {
-		super(item, offset, info);
+	public LSCompletionProposal(IDocument document, int offset, @NonNull CompletionItem item,
+			LanguageServer languageServer) {
+		super(document, offset, item, languageServer);
 	}
 
 	@Override

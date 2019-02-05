@@ -22,16 +22,15 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 
@@ -39,16 +38,11 @@ public class RunningLanguageServerTest {
 
 	private IProject project;
 
+	@Rule public AllCleanRule clear = new AllCleanRule();
+
 	@Before
 	public void setUp() throws CoreException {
-		MockLanguageSever.reset();
 		project =  TestUtils.createProject("StartStopServerTest"+System.currentTimeMillis());
-	}
-
-	@After
-	public void tearDown() throws CoreException {
-		project.delete(true, true, new NullProgressMonitor());
-		MockLanguageSever.INSTANCE.shutdown();
 	}
 
 	/**
@@ -66,11 +60,11 @@ public class RunningLanguageServerTest {
 			LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilities -> Boolean.TRUE).iterator()
 					.next();
 			assertTrue("language server is started for iteration #" + i,
-					new LSDisplayHelper(() -> MockLanguageSever.INSTANCE.isRunning()).waitForCondition(display, 5000));
+					new LSDisplayHelper(() -> MockLanguageServer.INSTANCE.isRunning()).waitForCondition(display, 5000));
 
 			((AbstractTextEditor)editor).close(false);
 			assertTrue("language server is closed for iteration #" + i,
-					new LSDisplayHelper(() -> !MockLanguageSever.INSTANCE.isRunning()).waitForCondition(display, 5000));
+					new LSDisplayHelper(() -> !MockLanguageServer.INSTANCE.isRunning()).waitForCondition(display, 5000));
 		}
 	}
 
@@ -94,7 +88,7 @@ public class RunningLanguageServerTest {
 		LanguageServiceAccessor.enableLanguageServerContentType(lsDefinition, TestUtils.getEditors());
 
 		assertTrue("language server should be started",
-				new LSDisplayHelper(() -> MockLanguageSever.INSTANCE.isRunning()).waitForCondition(display, 5000));
+				new LSDisplayHelper(() -> MockLanguageServer.INSTANCE.isRunning()).waitForCondition(display, 5000));
 	}
 
 	@Test

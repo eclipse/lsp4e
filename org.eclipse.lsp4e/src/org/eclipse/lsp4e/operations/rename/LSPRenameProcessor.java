@@ -20,15 +20,17 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.RenameParams;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.participants.CheckConditionsContext;
@@ -44,15 +46,17 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 
 	private static final String ID = "org.eclipse.lsp4e.operations.rename"; //$NON-NLS-1$
 
-	private final LSPDocumentInfo info;
+	private final IDocument document;
+	private final LanguageServer languageServer;
 	private final int offset;
 
 	private String newName;
 
 	private WorkspaceEdit rename;
 
-	public LSPRenameProcessor(LSPDocumentInfo info, int offset) {
-		this.info = info;
+	public LSPRenameProcessor(@NonNull IDocument document, LanguageServer languageServer, int offset) {
+		this.document = document;
+		this.languageServer = languageServer;
 		this.offset = offset;
 	}
 
@@ -88,16 +92,14 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 		RefactoringStatus status = new RefactoringStatus();
 		try {
 			RenameParams params = new RenameParams();
-			params.setPosition(LSPEclipseUtils.toPosition(offset, info.getDocument()));
+			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
 			TextDocumentIdentifier identifier = new TextDocumentIdentifier();
-			identifier.setUri(info.getFileUri().toString());
+			identifier.setUri(LSPEclipseUtils.toUri(document).toString());
 			params.setTextDocument(identifier);
 			params.setNewName(newName);
 			if (params.getNewName() != null) {
 				// TODO: how to manage ltk with CompletableFuture? Is 1000 ms is enough?
-				rename = info.getInitializedLanguageClient()
-						.thenCompose(langaugeServer -> langaugeServer.getTextDocumentService().rename(params))
-						.get(1000, TimeUnit.MILLISECONDS);
+				rename = languageServer.getTextDocumentService().rename(params).get(1000, TimeUnit.MILLISECONDS);
 				if (!status.hasError() && rename.getChanges().isEmpty()) {
 					status.addWarning(Messages.rename_empty_message);
 				}

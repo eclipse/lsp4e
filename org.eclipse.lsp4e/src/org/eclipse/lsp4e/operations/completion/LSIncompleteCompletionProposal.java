@@ -21,7 +21,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Path;
@@ -53,16 +52,15 @@ import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.hover.LSBasedHover;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.CompletionItem;
-import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -79,6 +77,7 @@ public class LSIncompleteCompletionProposal
 		ICompletionProposalExtension5, ICompletionProposalExtension6, ICompletionProposalExtension7,
 		IContextInformation {
 
+	private static final int RESOLVE_TIMEOUT = 500;
 	// Those variables should be defined in LSP4J and reused here whenever done there
 	// See https://github.com/eclipse/lsp4j/issues/149
 	/** The currently selected text or the empty string */
@@ -108,25 +107,29 @@ public class LSIncompleteCompletionProposal
 		};
 	};
 
-	protected CompletionItem item;
+	final protected CompletionItem item;
 	private int initialOffset = -1;
 	protected int bestOffset = -1;
 	protected int currentOffset = -1;
 	protected ITextViewer viewer;
+	final private IDocument document;
 	private IRegion selection;
 	private LinkedPosition firstPosition;
-	private LSPDocumentInfo info;
+	// private LSPDocumentInfo info;
 	private Integer rankCategory;
 	private Integer rankScore;
 	private String documentFilter;
 	private String documentFilterAddition = ""; //$NON-NLS-1$
+	private LanguageServer languageServer;
 
-	public LSIncompleteCompletionProposal(@NonNull CompletionItem item, int offset, LSPDocumentInfo info) {
+	public LSIncompleteCompletionProposal(@NonNull IDocument document, int offset, @NonNull CompletionItem item,
+			LanguageServer languageServer) {
 		this.item = item;
-		this.info = info;
+		this.document = document;
+		this.languageServer = languageServer;
 		this.initialOffset = offset;
 		this.currentOffset = offset;
-		this.bestOffset = getPrefixCompletionStart(info.getDocument(), offset);
+		this.bestOffset = getPrefixCompletionStart(document, offset);
 	}
 
 	/**
@@ -138,7 +141,7 @@ public class LSIncompleteCompletionProposal
 	public String getDocumentFilter(int offset) throws BadLocationException {
 		if (documentFilter != null) {
 			if (offset != currentOffset) {
-				documentFilterAddition = info.getDocument().get(initialOffset, offset - initialOffset);
+				documentFilterAddition = document.get(initialOffset, offset - initialOffset);
 				rankScore = null;
 				rankCategory = null;
 				currentOffset = offset;
@@ -159,7 +162,7 @@ public class LSIncompleteCompletionProposal
 		if (documentFilter != null) {
 			return documentFilter + documentFilterAddition;
 		}
-		documentFilter = CompletionProposalTools.getFilterFromDocument(info.getDocument(), currentOffset,
+		documentFilter = CompletionProposalTools.getFilterFromDocument(document, currentOffset,
 				getFilterString(), bestOffset);
 		documentFilterAddition = ""; //$NON-NLS-1$
 		return documentFilter;
@@ -210,7 +213,7 @@ public class LSIncompleteCompletionProposal
 	}
 
 	public void updateOffset(int offset) {
-		this.bestOffset = getPrefixCompletionStart(info.getDocument(), offset);
+		this.bestOffset = getPrefixCompletionStart(document, offset);
 	}
 
 	public CompletionItem getItem() {
@@ -307,17 +310,13 @@ public class LSIncompleteCompletionProposal
 
 	@Override
 	public Object getAdditionalProposalInfo(IProgressMonitor monitor) {
-		ServerCapabilities capabilities = info.getCapabilites();
-		if (capabilities != null) {
-			CompletionOptions options = capabilities.getCompletionProvider();
-			if (options != null && Boolean.TRUE.equals(options.getResolveProvider())) {
-				try {
-					updateCompletionItem(info.getInitializedLanguageClient()
-							.thenCompose(ls -> ls.getTextDocumentService().resolveCompletionItem(item))
-							.get(500, TimeUnit.MILLISECONDS));
-				} catch (InterruptedException | ExecutionException | TimeoutException e) {
-					LanguageServerPlugin.logError(e);
-				}
+		if (LanguageServiceAccessor.checkCapability(languageServer,
+				capability -> Boolean.TRUE.equals(capability.getCompletionProvider().getResolveProvider()))) {
+			try {
+				languageServer.getTextDocumentService().resolveCompletionItem(item).thenAcceptAsync(this::updateCompletionItem)
+						.get(RESOLVE_TIMEOUT, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
+				LanguageServerPlugin.logError(e);
 			}
 		}
 
@@ -562,21 +561,15 @@ public class LSIncompleteCompletionProposal
 	private String getVariableValue(String variableName) {
 		switch (variableName) {
 		case TM_FILENAME_BASE:
-			IPath pathBase = Path.fromPortableString(info.getFileUri().getPath()).removeFileExtension();
+			IPath pathBase = Path.fromPortableString(LSPEclipseUtils.toUri(document).getPath()).removeFileExtension();
 			String fileName = pathBase.lastSegment();
 			return fileName != null ? fileName : ""; //$NON-NLS-1$
 		case TM_FILENAME:
-			return Path.fromPortableString(info.getFileUri().getPath()).lastSegment();
+			return Path.fromPortableString(LSPEclipseUtils.toUri(document).getPath()).lastSegment();
 		case TM_FILEPATH:
-			IResource resource = LSPEclipseUtils.findResourceFor(info.getFileUri().toString());
-			if (resource != null)
-				return resource.getLocation().toString();
-			return ""; //$NON-NLS-1$
+			return LSPEclipseUtils.toUri(document).getPath();
 		case TM_DIRECTORY:
-			IResource dirResource = LSPEclipseUtils.findResourceFor(info.getFileUri().toString());
-			if (dirResource != null && dirResource.getParent() != null)
-				return dirResource.getParent().getLocation().toString();
-			return ""; //$NON-NLS-1$
+			return Path.fromPortableString(LSPEclipseUtils.toUri(document).getPath()).removeLastSegments(1).toString();
 		case TM_LINE_INDEX:
 			int lineIndex = item.getTextEdit().getRange().getStart().getLine();
 			return Integer.toString(lineIndex);
@@ -586,8 +579,8 @@ public class LSIncompleteCompletionProposal
 		case TM_CURRENT_LINE:
 			int currentLineIndex = item.getTextEdit().getRange().getStart().getLine();
 			try {
-				IRegion lineInformation = info.getDocument().getLineInformation(currentLineIndex);
-				String line = info.getDocument().get(lineInformation.getOffset(), lineInformation.getLength());
+				IRegion lineInformation = document.getLineInformation(currentLineIndex);
+				String line = document.get(lineInformation.getOffset(), lineInformation.getLength());
 				return line;
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logWarning(e.getMessage(), e);
@@ -596,9 +589,9 @@ public class LSIncompleteCompletionProposal
 		case TM_SELECTED_TEXT:
 			Range selectedRange = item.getTextEdit().getRange();
 			try {
-				int startOffset = LSPEclipseUtils.toOffset(selectedRange.getStart(), info.getDocument());
-				int endOffset = LSPEclipseUtils.toOffset(selectedRange.getEnd(), info.getDocument());
-				String selectedText = info.getDocument().get(startOffset, endOffset - startOffset);
+				int startOffset = LSPEclipseUtils.toOffset(selectedRange.getStart(), document);
+				int endOffset = LSPEclipseUtils.toOffset(selectedRange.getEnd(), document);
+				String selectedText = document.get(startOffset, endOffset - startOffset);
 				return selectedText;
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logWarning(e.getMessage(), e);

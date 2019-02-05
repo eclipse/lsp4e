@@ -20,7 +20,7 @@ import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
@@ -42,12 +42,12 @@ public class MockConnectionProvider implements StreamConnectionProvider {
 		clientInput.connect(serverOutput);
 		clientOutput.connect(serverInput);
 
-		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageSever.INSTANCE, serverInput,
+		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageServer.INSTANCE, serverInput,
 				serverOutput);
 		inputStream = clientInput;
 		outputStream = clientOutput;
 		l.startListening();
-		MockLanguageSever.INSTANCE.addRemoteProxy(l.getRemoteProxy());
+		MockLanguageServer.INSTANCE.addRemoteProxy(l.getRemoteProxy());
 	}
 
 	@Override

@@ -15,6 +15,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -22,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -33,14 +35,14 @@ import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
-import org.eclipse.lsp4e.ProjectSpecificLanguageServerWrapper;
 import org.eclipse.lsp4e.operations.completion.LSIncompleteCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.CompletionList;
@@ -52,6 +54,9 @@ import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Test;
 
 public class IncompleteCompletionTest extends AbstractCompletionTest {
@@ -64,14 +69,15 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	public void testAssistForUnknownButConnectedType() throws CoreException, InvocationTargetException, IOException, InterruptedException {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		IFile testFile = TestUtils.createUniqueTestFileOfUnknownType(project, "");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 
 		LanguageServerDefinition serverDefinition = LanguageServersRegistry.getInstance().getDefinition("org.eclipse.lsp4e.test.server");
 		assertNotNull(serverDefinition);
-		ProjectSpecificLanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor.getLSWrapperForConnection(testFile.getProject(), serverDefinition);
+		LanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor
+				.getLSWrapperForConnection(testFile.getProject(), serverDefinition);
 		IPath fileLocation = testFile.getLocation();
 		// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
 		lsWrapperForConnection.connect(fileLocation, null);
@@ -96,7 +102,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	public void testNoPrefix() throws CoreException, InvocationTargetException {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
@@ -115,10 +121,10 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		BoldStylerProvider boldStyleProvider = null;
 		try {
 			List<CompletionItem> items = new ArrayList<>();
-			CompletionItem completionItem = createCompletionItem("FirstClass", CompletionItemKind.Class);
+			CompletionItem completionItem = createCompletionItem("FirstClassDeprecated", CompletionItemKind.Class);
 			completionItem.setDeprecated(true);
 			items.add(completionItem);
-			MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+			MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 			String content = "First";
 			ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
@@ -129,7 +135,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 			LSIncompleteCompletionProposal proposal = (LSIncompleteCompletionProposal) proposals[0];
 
 			StyledString simpleStyledStr = proposal.getStyledDisplayString();
-			assertEquals("FirstClass", simpleStyledStr.getString());
+			assertEquals("FirstClassDeprecated", simpleStyledStr.getString());
 			assertEquals(1, simpleStyledStr.getStyleRanges().length);
 			StyleRange styleRange = simpleStyledStr.getStyleRanges()[0];
 			assertTrue(styleRange.strikeout);
@@ -153,7 +159,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
 		items.add(createCompletionItem("SecondClass", CompletionItemKind.Class));
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		String content = "First";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
@@ -171,7 +177,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	public void testPrefixCaseSensitivity() throws CoreException, InvocationTargetException {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		String content = "FIRST";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
@@ -192,7 +198,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		item.setKind(CompletionItemKind.Value);
 		item.setTextEdit(new TextEdit(new Range(new Position(2, 10), new Position(2, 10)), "1024M"));
 		CompletionList completionList = new CompletionList(true, Collections.singletonList(item));
-		MockLanguageSever.INSTANCE.setCompletionList(completionList);
+		MockLanguageServer.INSTANCE.setCompletionList(completionList);
 
 		String content = "applications:\n" + "- name: hello\n" + "  memory: ";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
@@ -223,7 +229,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 		item.setAdditionalTextEdits(additionalTextEdits);
 		items.add(item);
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		String content = "this <> is <> the main <> content of the file";
 		IFile testFile = TestUtils.createUniqueTestFile(project, content);
@@ -255,7 +261,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 		item.setAdditionalTextEdits(additionalTextEdits);
 
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(item)));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(item)));
 
 		String content = "this <> is <> the main <> content of the file";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
@@ -274,7 +280,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		Range range = new Range(new Position(0, 0), new Position(0, 5));
 		List<CompletionItem> items = Collections
 				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		String content = "First";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
@@ -292,7 +298,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		Range range = new Range(new Position(0, 0), new Position(0, 20));
 		List<CompletionItem> items = Collections
 				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		String content = "FirstNotMatchedLabel";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
@@ -309,7 +315,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		Range range = new Range(new Position(0, 0), new Position(0, 22));
 		List<CompletionItem> items = Collections
 				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		String content = "FirstNotMatchedLabel";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,content));
@@ -334,7 +340,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		item.setKind(CompletionItemKind.Function);
 		item.setInsertText("strncasecmp()");
 
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(item)));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(item)));
 
 		String content = "str";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
@@ -357,7 +363,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	public void testCompletionReplace() throws CoreException, InvocationTargetException {
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineInsertHere");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(
 			createCompletionItem("Inserted", CompletionItemKind.Text, new Range(new Position(1, 4), new Position(1, 4 + "InsertHere".length())))
 		)));
 
@@ -381,7 +387,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 			createCompletionItem("CB", CompletionItemKind.Class, range),
 			createCompletionItem("CC", CompletionItemKind.Class, range),
 		});
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		String content = "B";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,content));
@@ -402,7 +408,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	public void testBasicSnippet() throws PartInitException, InvocationTargetException, CoreException {
 		CompletionItem completionItem = createCompletionItem("$1 and ${2:foo}", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
-		MockLanguageSever.INSTANCE
+		MockLanguageServer.INSTANCE
 				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,""));
 		int invokeOffset = 0;
@@ -417,7 +423,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	public void testDuplicateVariable() throws PartInitException, InvocationTargetException, CoreException {
 		CompletionItem completionItem = createCompletionItem("${1:foo} and ${1:foo}", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
-		MockLanguageSever.INSTANCE
+		MockLanguageServer.INSTANCE
 				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,""));
 		int invokeOffset = 0;
@@ -434,7 +440,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 				"${1:$TM_FILENAME_BASE} ${2:$TM_FILENAME} ${3:$TM_FILEPATH} ${4:$TM_DIRECTORY} ${5:$TM_LINE_INDEX} ${6:$TM_LINE_NUMBER} ${7:$TM_CURRENT_LINE} ${8:$TM_SELECTED_TEXT}",
 				CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
-		MockLanguageSever.INSTANCE
+		MockLanguageServer.INSTANCE
 				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
 		String content = "line1\nline2\nline3";
 		IFile testFile = TestUtils.createUniqueTestFile(project, content);
@@ -458,7 +464,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	public void testMultipleLS() throws Exception {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(true, items));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
@@ -468,14 +474,34 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
+	public void testCompletionExternalFile() throws Exception {
+		List<CompletionItem> items = new ArrayList<>();
+		items.add(createCompletionItem("FirstClassExternal", CompletionItemKind.Class));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
+
+		File file = File.createTempFile("testCompletionExternalFile", ".lspt");
+		try {
+			ITextEditor editor = (ITextEditor) IDE.openEditorOnFileStore(
+					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+			ITextViewer viewer = TestUtils.getTextViewer(editor);
+			ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
+			assertEquals(1, proposals.length);
+			proposals[0].apply(viewer.getDocument());
+			assertEquals("FirstClassExternal", viewer.getDocument().get());
+		} finally {
+			file.delete();
+		}
+	}
+
+	@Test
 	public void testAdditionalInformation() throws Exception {
 		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();
 		LSPDocumentInfo info = LanguageServiceAccessor
 				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
 						|| capabilities.getSignatureHelpProvider() != null)
 				.get(0);
-		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(
-				new CompletionItem("blah"), 0, info);
+		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+				new CompletionItem("blah"), info.getLanguageClient());
 		completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 	}
 }

@@ -22,11 +22,11 @@ import java.util.function.Predicate;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -34,12 +34,13 @@ import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class DocumentDidChangeTest {
 
+	@Rule public AllCleanRule clear = new AllCleanRule();
 	private IProject project;
 
 	@Before
@@ -47,21 +48,15 @@ public class DocumentDidChangeTest {
 		project =  TestUtils.createProject("DocumentDidChangeTest"+System.currentTimeMillis());
 	}
 
-	@After
-	public void tearDown() throws CoreException {
-		project.delete(true, true, new NullProgressMonitor());
-		MockLanguageSever.INSTANCE.shutdown();
-	}
-	
 	@Test
 	public void testIncrementalSync() throws Exception {
-		MockLanguageSever.INSTANCE.getInitializeResult().getCapabilities()
+		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
 				.setTextDocumentSync(TextDocumentSyncKind.Incremental);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = TestUtils.getTextViewer(editor);
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile, new Predicate<ServerCapabilities>() {
+		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
 				TextDocumentSyncKind syncKind = getDocumentSyncKind(t);
@@ -72,7 +67,7 @@ public class DocumentDidChangeTest {
 
 		// Test initial insert
 		CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageSever.INSTANCE.setDidChangeCallback(didChangeExpectation);
+		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 		viewer.getDocument().replace(0, 0, "Hello");
 		DidChangeTextDocumentParams lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
 		assertNotNull(lastChange.getContentChanges());
@@ -89,7 +84,7 @@ public class DocumentDidChangeTest {
 
 		// Test additional insert
 		didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageSever.INSTANCE.setDidChangeCallback(didChangeExpectation);
+		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 		viewer.getDocument().replace(5, 0, " ");
 		lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
 		assertNotNull(lastChange.getContentChanges());
@@ -106,7 +101,7 @@ public class DocumentDidChangeTest {
 
 		// test replace
 		didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageSever.INSTANCE.setDidChangeCallback(didChangeExpectation);
+		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 		viewer.getDocument().replace(0, 5, "Hallo");
 		lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
 		assertNotNull(lastChange.getContentChanges());
@@ -126,14 +121,14 @@ public class DocumentDidChangeTest {
 
 	@Test
 	public void testIncrementalSync_deleteLastLine() throws Exception {
-		MockLanguageSever.INSTANCE.getInitializeResult().getCapabilities()
+		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
 				.setTextDocumentSync(TextDocumentSyncKind.Incremental);
 
 		String multiLineText = "line1\nline2\nline3\n";
 		IFile testFile = TestUtils.createUniqueTestFile(project, multiLineText);
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = TestUtils.getTextViewer(editor);
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile, new Predicate<ServerCapabilities>() {
+		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
 				assertEquals(TextDocumentSyncKind.Incremental, getDocumentSyncKind(t));
@@ -143,7 +138,7 @@ public class DocumentDidChangeTest {
 
 		// Test initial insert
 		CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageSever.INSTANCE.setDidChangeCallback(didChangeExpectation);
+		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 		viewer.getDocument().replace("line1\nline2\n".length(), "line3\n".length(), "");
 		DidChangeTextDocumentParams lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
 		assertNotNull(lastChange.getContentChanges());
@@ -163,13 +158,13 @@ public class DocumentDidChangeTest {
 
 	@Test
 	public void testFullSync() throws Exception {
-		MockLanguageSever.INSTANCE.getInitializeResult().getCapabilities()
+		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
 				.setTextDocumentSync(TextDocumentSyncKind.Full);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = TestUtils.getTextViewer(editor);
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile, new Predicate<ServerCapabilities>() {
+		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
 				assertEquals(TextDocumentSyncKind.Full, getDocumentSyncKind(t));
@@ -178,7 +173,7 @@ public class DocumentDidChangeTest {
 		});
 		// Test initial insert
 		CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageSever.INSTANCE.setDidChangeCallback(didChangeExpectation);
+		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 		String text = "Hello";
 		viewer.getDocument().replace(0, 0, text);
 		DidChangeTextDocumentParams lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
@@ -189,7 +184,7 @@ public class DocumentDidChangeTest {
 
 		// Test additional insert
 		didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageSever.INSTANCE.setDidChangeCallback(didChangeExpectation);
+		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 		viewer.getDocument().replace(5, 0, " World");
 		lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
 		assertNotNull(lastChange.getContentChanges());

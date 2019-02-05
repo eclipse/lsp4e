@@ -46,7 +46,6 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentHighlightKind;
 import org.eclipse.lsp4j.Position;
@@ -72,8 +71,7 @@ public class HighlightReconcilingStrategy
 	private ISourceViewer sourceViewer;
 	private IDocument document;
 
-	private CompletableFuture<List<? extends DocumentHighlight>> request;
-	private List<LSPDocumentInfo> infos;
+	private CompletableFuture<?> request;
 	private Job highlightJob;
 
 	/**
@@ -172,7 +170,6 @@ public class HighlightReconcilingStrategy
 	@Override
 	public void setDocument(IDocument document) {
 		this.document = document;
-		this.infos = null;
 	}
 
 	/**
@@ -186,32 +183,26 @@ public class HighlightReconcilingStrategy
 		if (sourceViewer == null || !enabled || monitor.isCanceled()) {
 			return;
 		}
-		if (infos == null) {
-			infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-					capabilities -> Boolean.TRUE.equals(capabilities.getDocumentHighlightProvider()));
-		}
-		if (infos.isEmpty()) {
-			// The language server has not the highlight capability.
-			return;
-		}
-		// Cancel the last call of 'documentHighlight'.
 		cancel();
+		Position position;
 		try {
-			Position position = LSPEclipseUtils.toPosition(caretOffset, document);
-			for (LSPDocumentInfo info : infos) {
-				TextDocumentIdentifier identifier = new TextDocumentIdentifier(info.getFileUri().toString());
-				TextDocumentPositionParams params = new TextDocumentPositionParams(identifier, position);
-				request = info.getInitializedLanguageClient().thenCompose(
-						languageServer -> languageServer.getTextDocumentService().documentHighlight(params));
-				request.thenAccept(result -> {
-					if (!monitor.isCanceled()) {
-						updateAnnotations(result, sourceViewer.getAnnotationModel());
-					}
-				});
-			}
+			position = LSPEclipseUtils.toPosition(caretOffset, document);
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
+			return;
 		}
+		TextDocumentIdentifier identifier = new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString());
+		TextDocumentPositionParams params = new TextDocumentPositionParams(identifier, position);
+		request = LanguageServiceAccessor.getLanguageServers(document,
+				capabilities -> Boolean.TRUE.equals(capabilities.getDocumentHighlightProvider()))
+				.thenAcceptAsync(languageServers ->
+				CompletableFuture.allOf(languageServers.stream()
+						.map(languageServer -> languageServer.getTextDocumentService().documentHighlight(params))
+						.map(request -> request.thenAccept(result -> {
+							if (!monitor.isCanceled()) {
+								updateAnnotations(result, sourceViewer.getAnnotationModel());
+							}
+						})).toArray(CompletableFuture[]::new)));
 	}
 
 	/**
@@ -279,7 +270,6 @@ public class HighlightReconcilingStrategy
 	}
 
 	void removeOccurrenceAnnotations() {
-
 		IAnnotationModel annotationModel = sourceViewer.getAnnotationModel();
 		if (annotationModel == null || fOccurrenceAnnotations == null)
 			return;

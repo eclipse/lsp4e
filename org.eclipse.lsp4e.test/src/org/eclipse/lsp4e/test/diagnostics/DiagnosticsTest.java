@@ -29,11 +29,11 @@ import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Position;
@@ -41,12 +41,13 @@ import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.texteditor.MarkerUtilities;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class DiagnosticsTest {
 
+	@Rule public AllCleanRule clear = new AllCleanRule();
 	private IProject project;
 	private LSPDiagnosticsToMarkers diagnosticsToMarkers;
 
@@ -54,12 +55,6 @@ public class DiagnosticsTest {
 	public void setUp() throws CoreException {
 		project = TestUtils.createProject("DiagnoticsTest" + System.currentTimeMillis());
 		diagnosticsToMarkers = new LSPDiagnosticsToMarkers("dummy");
-	}
-
-	@After
-	public void tearDown() throws CoreException {
-		project.delete(true, true, new NullProgressMonitor());
-		MockLanguageSever.INSTANCE.shutdown();
 	}
 
 	@Test
@@ -128,7 +123,7 @@ public class DiagnosticsTest {
 		String content = "Diagnostic Other Text";
 		IFile file = TestUtils.createUniqueTestFileMultiLS(project, content);
 		Range range = new Range(new Position(1, 0), new Position(1, 0));
-		MockLanguageSever.INSTANCE.setDiagnostics(Collections.singletonList(
+		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
 				createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1")));
 		IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO);
 		assertEquals("no marker should be shown at file initialization", 0, markers.length);

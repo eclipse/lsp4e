@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
@@ -22,8 +23,10 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
@@ -134,6 +137,15 @@ public class TestUtils {
 			}
 		}
 		return null;
+	}
+
+	public void waitForLanguageServerNotRunning(MockLanguageServer server) {
+		assertTrue(new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return !server.isRunning();
+			}
+		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 1000));
 	}
 
 }

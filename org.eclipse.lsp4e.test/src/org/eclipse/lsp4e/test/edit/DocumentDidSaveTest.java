@@ -27,30 +27,26 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.LSDisplayHelper;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class DocumentDidSaveTest {
 
+	@Rule public AllCleanRule clear = new AllCleanRule();
 	private IProject project;
 
 	@Before
 	public void setUp() throws CoreException {
 		project =  TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
-	}
-
-	@After
-	public void tearDown() throws CoreException {
-		project.delete(true, true, new NullProgressMonitor());
-		MockLanguageSever.INSTANCE.shutdown();
 	}
 
 	@Test
@@ -63,9 +59,9 @@ public class DocumentDidSaveTest {
 		testFile.setLocalTimeStamp(0);
 
 		// Force LS to initialize and open file
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE);
+		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), capabilites -> Boolean.TRUE);
 		CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
-		MockLanguageSever.INSTANCE.setDidSaveCallback(didSaveExpectation);
+		MockLanguageServer.INSTANCE.setDidSaveCallback(didSaveExpectation);
 
 		// simulate change in file
 		viewer.getDocument().replace(0, 0, "Hello");

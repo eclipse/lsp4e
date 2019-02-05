@@ -19,12 +19,12 @@ import java.util.List;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
+import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageSever;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.CompletionList;
@@ -32,11 +32,12 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
-import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 
 public abstract class AbstractCompletionTest {
+	
+	@Rule public AllCleanRule clear = new AllCleanRule();
 	protected IProject project;
 	protected LSContentAssistProcessor contentAssistProcessor;
 
@@ -44,13 +45,6 @@ public abstract class AbstractCompletionTest {
 	public void setUp() throws CoreException {
 		project = TestUtils.createProject("CompletionTest" + System.currentTimeMillis());
 		contentAssistProcessor = new LSContentAssistProcessor();
-	}
-
-	@After
-	public void tearDown() throws CoreException {
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
-		project.delete(true, true, new NullProgressMonitor());
-		MockLanguageSever.INSTANCE.shutdown();
 	}
 
 	protected CompletionItem createCompletionItem(String label, CompletionItemKind kind) {
@@ -79,7 +73,7 @@ public abstract class AbstractCompletionTest {
 			Integer cursorIndexInContent, String[] expectedOrder)
 			throws PartInitException, InvocationTargetException, CoreException {
 
-		MockLanguageSever.INSTANCE.setCompletionList(new CompletionList(false, completions));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, completions));
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer,

@@ -67,12 +67,15 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 	}
 
 	@Override
-	public void setup(IDocument document, IPath location, LocationKind locationKind) {
+	public void setup(final IDocument document, IPath location, LocationKind locationKind) {
+		if (document == null) {
+			return;
+		}
 		Job job = new Job("Initialize Language Servers for " + location.toFile().getName()) { //$NON-NLS-1$
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				// connect to LS so they start receiving notifications and pushing diagnostics
-				LanguageServiceAccessor.getLSPDocumentInfosFor(document, capabilities -> Boolean.TRUE);
+				LanguageServiceAccessor.getLanguageServers(document, capabilities -> true);
 				return Status.OK_STATUS;
 			}
 		};
