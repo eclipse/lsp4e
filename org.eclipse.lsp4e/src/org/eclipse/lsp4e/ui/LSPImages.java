@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2019 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -136,6 +136,9 @@ public class LSPImages {
 	}
 
 	public static Image imageFromSymbolKind(SymbolKind kind) {
+		if (kind == null) {
+			return EMPTY_IMAGE;
+		}
 		switch (kind) {
 		case Array:
 			return getImage(IMG_ARRAY);
@@ -173,9 +176,10 @@ public class LSPImages {
 			return getImage(IMG_STRING);
 		case Variable:
 			return getImage(IMG_VARIABLE);
+		default:
+			// when the SymbolKind is out the cases above
+			return EMPTY_IMAGE;
 		}
-		// when the SymbolKind is out the cases above
-		return EMPTY_IMAGE;
 	}
 
 	public static Image imageFromCompletionItem(CompletionItem completionItem) {
