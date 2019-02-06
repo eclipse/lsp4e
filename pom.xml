@@ -6,7 +6,7 @@
 	<packaging>pom</packaging>
 	
 	<prerequisites>
-		<maven>3.1.1</maven>
+		<maven>3.3.9</maven>
 	</prerequisites>
 	
 	<properties>
@@ -121,7 +121,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.2</version>
+				<version>0.8.3</version>
 				<executions>
 					<execution>
 						<goals><goal>prepare-agent</goal></goals>
@@ -192,7 +192,7 @@
 					<plugin>
 						<groupId>org.eclipse.cbi.maven.plugins</groupId>
 						<artifactId>eclipse-jarsigner-plugin</artifactId>
-						<version>1.1.3</version>
+						<version>1.1.5</version>
 						<executions>
 							<execution>
 								<id>sign</id>
