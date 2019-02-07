@@ -58,6 +58,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.RewriteSessionEditProcessor;
 import org.eclipse.jface.text.TextSelection;
+import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.lsp4e.refactoring.CreateFileChange;
 import org.eclipse.lsp4e.refactoring.DeleteExternalFile;
 import org.eclipse.lsp4e.refactoring.LSPTextChange;
@@ -478,12 +479,12 @@ public class LSPEclipseUtils {
 			LanguageServerPlugin.logError(e);
 		}
 		try {
-			if (part instanceof AbstractTextEditor && optionalRange != null) {
-				AbstractTextEditor editor = (AbstractTextEditor) part;
+			if (part != null && part.getEditorSite() != null && part.getEditorSite().getSelectionProvider() != null && optionalRange != null) {
+				ISelectionProvider selectionProvider = part.getEditorSite().getSelectionProvider();
+
 				int offset = LSPEclipseUtils.toOffset(optionalRange.getStart(), targetDocument);
 				int endOffset = LSPEclipseUtils.toOffset(optionalRange.getEnd(), targetDocument);
-				editor.getSelectionProvider()
-				        .setSelection(new TextSelection(offset, endOffset > offset ? endOffset - offset : 0));
+				selectionProvider.setSelection(new TextSelection(offset, endOffset > offset ? endOffset - offset : 0));
 			}
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
