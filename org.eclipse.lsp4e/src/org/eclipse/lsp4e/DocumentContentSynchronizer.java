@@ -13,13 +13,11 @@
 package org.eclipse.lsp4e;
 
 import java.io.File;
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IWorkspace;
-import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
@@ -40,41 +38,39 @@ import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 final class DocumentContentSynchronizer implements IDocumentListener {
 
 	private final @NonNull LanguageServerWrapper languageServerWrapper;
-	private final String fileUri;
+	private final @NonNull IDocument document;
+	private final @NonNull URI fileUri;
 	private final TextDocumentSyncKind syncKind;
+
 	private int version = 0;
 	private final DidChangeTextDocumentParams changeParams;
 	private long modificationStamp;
-	private @NonNull IDocument document;
+
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
 			@NonNull IDocument document,
-			@NonNull IPath filePath, TextDocumentSyncKind syncKind) {
+			TextDocumentSyncKind syncKind) {
 		this.languageServerWrapper = languageServerWrapper;
-		File file = filePath.toFile();
-		this.fileUri = LSPEclipseUtils.toUri(file).toString();
-		this.modificationStamp = file.lastModified();
+		this.fileUri = LSPEclipseUtils.toUri(document);
+		this.modificationStamp = new File(fileUri).lastModified();
 		this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
 
 		// Initialize change params to avoid it during text typing
 		this.changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(), Collections.singletonList(new TextDocumentContentChangeEvent()));
-		this.changeParams.getTextDocument().setUri(fileUri);
+		this.changeParams.getTextDocument().setUri(fileUri.toString());
 
 		this.document = document;
 		// add a document buffer
 		TextDocumentItem textDocument = new TextDocumentItem();
-		textDocument.setUri(fileUri);
+		textDocument.setUri(fileUri.toString());
 		textDocument.setText(document.get());
 
-		IWorkspace workspace= ResourcesPlugin.getWorkspace();
-		IFile ifile= workspace.getRoot().getFileForLocation(filePath);
-
-		List<IContentType> contentTypes = LSPEclipseUtils.getFileContentTypes(ifile);
+		List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(this.document);
 
 		String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
 
 		if (languageId == null) {
-			languageId = filePath.getFileExtension();
+			languageId = Path.fromPortableString(this.fileUri.getPath()).getFileExtension();
 		}
 
 		textDocument.setLanguageId(languageId);
@@ -146,13 +142,13 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 	public void documentSaved(long timestamp) {
 		this.modificationStamp = timestamp;
-		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri);
+		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
 		languageServerWrapper.getInitializedServer().thenAccept(ls -> ls.getTextDocumentService().didSave(params));
 	}
 
 	public void documentClosed() {
-		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri);
+		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
 		DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
 		languageServerWrapper.getInitializedServer().thenAccept(ls -> ls.getTextDocumentService().didClose(params));
 	}

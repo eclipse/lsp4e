@@ -15,10 +15,13 @@ package org.eclipse.lsp4e.test.edit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -33,7 +36,8 @@ import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,7 +49,7 @@ public class DocumentDidChangeTest {
 
 	@Before
 	public void setUp() throws CoreException {
-		project =  TestUtils.createProject("DocumentDidChangeTest"+System.currentTimeMillis());
+		project = TestUtils.createProject("DocumentDidChangeTest"+System.currentTimeMillis());
 	}
 
 	@Test
@@ -115,8 +119,6 @@ public class DocumentDidChangeTest {
 		assertEquals(5, range.getEnd().getCharacter());
 		assertEquals(Integer.valueOf(5), change0.getRangeLength());
 		assertEquals("Hallo", change0.getText());
-
-		((AbstractTextEditor)editor).close(false);
 	}
 
 	@Test
@@ -152,8 +154,6 @@ public class DocumentDidChangeTest {
 		assertEquals(0, range.getEnd().getCharacter());
 		assertEquals(Integer.valueOf(6), change0.getRangeLength());
 		assertEquals("", change0.getText());
-
-		((AbstractTextEditor)editor).close(false);
 	}
 
 	@Test
@@ -191,9 +191,49 @@ public class DocumentDidChangeTest {
 		assertEquals(1, lastChange.getContentChanges().size());
 		change0 = lastChange.getContentChanges().get(0);
 		assertEquals("Hello World", change0.getText());
-		
-		((AbstractTextEditor)editor).close(false);
 	}
+
+	@Test
+	public void testFullSyncExternalFile() throws Exception {
+		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
+				.setTextDocumentSync(TextDocumentSyncKind.Full);
+
+		File file = File.createTempFile("testFullSyncExternalFile", ".lspt");
+		try {
+			IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+			ITextViewer viewer = TestUtils.getTextViewer(editor);
+			LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
+				@Override
+				public boolean test(ServerCapabilities t) {
+					assertEquals(TextDocumentSyncKind.Full, getDocumentSyncKind(t));
+					return true;
+				}
+			});
+			// Test initial insert
+			CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
+			MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
+			String text = "Hello";
+			viewer.getDocument().replace(0, 0, text);
+			DidChangeTextDocumentParams lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+			assertNotNull(lastChange.getContentChanges());
+			assertEquals(1, lastChange.getContentChanges().size());
+			TextDocumentContentChangeEvent change0 = lastChange.getContentChanges().get(0);
+			assertEquals(text, change0.getText());
+	
+			// Test additional insert
+			didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
+			MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
+			viewer.getDocument().replace(5, 0, " World");
+			lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+			assertNotNull(lastChange.getContentChanges());
+			assertEquals(1, lastChange.getContentChanges().size());
+			change0 = lastChange.getContentChanges().get(0);
+			assertEquals("Hello World", change0.getText());
+		} finally {
+			Files.deleteIfExists(file.toPath());
+		}
+	}
+
 
 	private TextDocumentSyncKind getDocumentSyncKind(ServerCapabilities t) {
 		TextDocumentSyncKind syncKind = null;

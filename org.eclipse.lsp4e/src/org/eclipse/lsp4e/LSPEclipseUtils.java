@@ -209,7 +209,7 @@ public class LSPEclipseUtils {
 		} else {
 			ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
 			if (buffer != null) {
-				return buffer.getLocation().toFile().toURI();
+				return LSPEclipseUtils.toUri(buffer.getLocation().toFile());
 			}
 		}
 		return null;
@@ -360,6 +360,46 @@ public class LSPEclipseUtils {
 		return document;
 	}
 
+	@Nullable
+	private static IDocument getDocument(URI uri) {
+		if (uri == null) {
+			return null;
+		}
+		IResource resource = findResourceFor(uri.toString());
+		if (resource != null) {
+			return getDocument(resource);
+		}
+		if (!new File(uri).isFile()) {
+			return null;
+		}
+
+		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+		IDocument document = null;
+		IFileStore store = null;
+		try {
+			store = EFS.getStore(uri);
+		} catch (CoreException e) {
+			LanguageServerPlugin.logError(e);
+			return null;
+		}
+		ITextFileBuffer buffer = bufferManager.getFileStoreTextFileBuffer(store);
+		if (buffer != null) {
+			document = buffer.getDocument();
+		} else {
+			try {
+				bufferManager.connectFileStore(store, new NullProgressMonitor());
+			} catch (CoreException e) {
+				LanguageServerPlugin.logError(e);
+				return document;
+			}
+			buffer = bufferManager.getFileStoreTextFileBuffer(store);
+			if (buffer != null) {
+				document = buffer.getDocument();
+			}
+		}
+		return document;
+	}
+
 	public static void openInEditor(Location location, IWorkbenchPage page) {
 		open(location.getUri(), page, location.getRange());
 	}
@@ -471,7 +511,12 @@ public class LSPEclipseUtils {
 			return getDocument(ResourcesPlugin.getWorkspace().getRoot().getFile(pathEditorInput.getPath()));
 		}else if(editorInput instanceof IURIEditorInput) {
 			IURIEditorInput uriEditorInput = (IURIEditorInput)editorInput;
-			return getDocument(findResourceFor(uriEditorInput.getURI().toString()));
+			IResource resource = findResourceFor(uriEditorInput.getURI().toString());
+			if (resource != null) {
+				return getDocument(resource);
+			} else {
+				return getDocument(uriEditorInput.getURI());
+			}
 		}
 		return null;
 	}

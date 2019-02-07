@@ -14,12 +14,14 @@ package org.eclipse.lsp4e.test.edit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
@@ -27,6 +29,8 @@ import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,14 +52,31 @@ public class DocumentDidCloseTest {
 		MockLanguageServer.INSTANCE.setDidCloseCallback(didCloseExpectation);
 
 		TestUtils.closeEditor(editor, false);
-
 		DidCloseTextDocumentParams lastChange = didCloseExpectation.get(1000, TimeUnit.MILLISECONDS);
 		assertNotNull(lastChange.getTextDocument());
 		assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
+	}
 
-		project.delete(true, true, new NullProgressMonitor());
-		
-		MockLanguageServer.reset();
+	@Test
+	public void testCloseExternalFile() throws Exception {
+		File testFile = File.createTempFile("testCloseExternalFile", ".lspt");
+		try {
+			IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(testFile.toURI()));
+	
+			// Force LS to initialize and open file
+			LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(editor.getEditorInput()), capabilites -> Boolean.TRUE);
+	
+			CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
+			MockLanguageServer.INSTANCE.setDidCloseCallback(didCloseExpectation);
+	
+			TestUtils.closeEditor(editor, false);
+	
+			DidCloseTextDocumentParams lastChange = didCloseExpectation.get(1000, TimeUnit.MILLISECONDS);
+			assertNotNull(lastChange.getTextDocument());
+			assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
+		} finally {
+			Files.deleteIfExists(testFile.toPath());
+		}
 	}
 
 }

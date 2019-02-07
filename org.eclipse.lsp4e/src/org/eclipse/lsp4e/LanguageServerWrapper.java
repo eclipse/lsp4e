@@ -15,6 +15,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.URI;
@@ -200,6 +201,8 @@ public class LanguageServerWrapper {
 				rootURI = LSPEclipseUtils.toUri(this.initialProject);
 				initParams.setRootUri(rootURI.toString());
 				initParams.setRootPath(rootURI.getPath());
+			} else {
+				initParams.setRootUri(LSPEclipseUtils.toUri(new File("/")).toString()); //$NON-NLS-1$
 			}
 			Launcher<? extends LanguageServer> launcher = Launcher.createLauncher(client, serverDefinition.getServerInterface(),
 					this.lspStreamProvider.getInputStream(), this.lspStreamProvider.getOutputStream(), executorService,
@@ -483,8 +486,7 @@ public class LanguageServerWrapper {
 						syncKind = syncOptions.getLeft();
 					}
 				}
-				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, thePath,
-						syncKind);
+				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(thePath, listener);
 			}
