@@ -1,11 +1,12 @@
-/**
- *  Copyright (c) 2018 Angelo ZERR.
- *  All rights reserved. This program and the accompanying materials
- *  are made available under the terms of the Eclipse Public License v1.0
- *  which accompanies this distribution, and is available at
- *  http://www.eclipse.org/legal/epl-v10.html
+/*******************************************************************************
+ * Copyright (c) 2018 Angelo Zerr and others.
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
  *
- *  Contributors:
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
  *  Angelo Zerr <angelo.zerr@gmail.com> - [code mining] Support 'textDocument/documentColor' with CodeMining - Bug 533322
  */
 package org.eclipse.lsp4e.operations.color;
@@ -81,7 +82,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 				// get LSP color presentation list for the picked color
 				ColorPresentationParams params = new ColorPresentationParams(textDocumentIdentifier,
 						LSPEclipseUtils.toColor(rgb), colorInformation.getRange());
-				this.languageServer.getTextDocumentService().colorPresentation(params).thenAccept(presentations -> {
+				this.languageServer.getTextDocumentService().colorPresentation(params).thenAcceptAsync(presentations -> {
 					if (presentations.isEmpty()) {
 						return;
 					}

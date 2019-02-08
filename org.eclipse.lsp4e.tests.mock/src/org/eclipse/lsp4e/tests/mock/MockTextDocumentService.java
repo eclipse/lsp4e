@@ -25,6 +25,7 @@ import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.CodeLensParams;
+import org.eclipse.lsp4j.ColorInformation;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
@@ -34,6 +35,7 @@ import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.lsp4j.DocumentColorParams;
 import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentLink;
@@ -79,6 +81,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private Location mockReferences;
 	private List<Diagnostic> diagnostics;
 	private List<Either<Command, CodeAction>> mockCodeActions;
+	private List<ColorInformation> mockDocumentColors;
 
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -219,6 +222,11 @@ public class MockTextDocumentService implements TextDocumentService {
 		}
 	}
 
+	@Override
+	public CompletableFuture<List<ColorInformation>> documentColor(DocumentColorParams params) {
+		return CompletableFuture.completedFuture(this.mockDocumentColors);
+	}
+
 	public void setMockCompletionList(CompletionList completionList) {
 		this.mockCompletionList = completionList;
 	}
@@ -291,5 +299,9 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
 		this.mockDocumentHighlights = documentHighlights;
+	}
+
+	public void setDocumentColors(List<ColorInformation> colors) {
+		this.mockDocumentColors = colors;
 	}
 }

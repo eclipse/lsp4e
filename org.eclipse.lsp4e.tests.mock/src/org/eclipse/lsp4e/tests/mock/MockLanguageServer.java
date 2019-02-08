@@ -106,6 +106,7 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setSignatureHelpProvider(new SignatureHelpOptions());
 		capabilities.setDocumentHighlightProvider(Boolean.TRUE);
 		capabilities.setRenameProvider(Boolean.TRUE);
+		capabilities.setColorProvider(Boolean.TRUE);
 		initializeResult.setCapabilities(capabilities);
 	}
 
