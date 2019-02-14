@@ -14,11 +14,15 @@ package org.eclipse.lsp4e.test.diagnostics;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.IntSupplier;
 
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -29,18 +33,27 @@ import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.color.ColorTest;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.MarkerUtilities;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -152,6 +165,41 @@ public class DiagnosticsTest {
 		confirmResourceChanges(file, pos1Info1, 1);
 		// Nothing has changed (0 resource changes)
 		confirmResourceChanges(file, pos1Info1, 0);
+	}
+
+	@Test
+	public void testDiagnosticsOnExternalFile() throws Exception {
+		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(new Diagnostic(new Range(new Position(0, 0), new Position(0, 1)), "This is a warning", DiagnosticSeverity.Warning, null)));
+		File file = File.createTempFile("testDiagnosticsOnExternalFile", ".lspt");
+		Font font = null;
+		try {
+			try (
+				FileOutputStream out = new FileOutputStream(file);
+			) {
+				out.write('a');
+			}
+			ITextViewer viewer = TestUtils.getTextViewer(IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
+			StyledText widget = viewer.getTextWidget();
+			FontData biggerFont = new FontData(); // bigger font to keep color intact in some pixe (not altered by anti-aliasing)
+			biggerFont.setHeight(40);
+			biggerFont.setLocale(widget.getFont().getFontData()[0].getLocale());
+			biggerFont.setName(widget.getFont().getFontData()[0].getName());
+			biggerFont.setStyle(widget.getFont().getFontData()[0].getStyle());
+			font = new Font(widget.getDisplay(), biggerFont);
+			widget.setFont(font);
+			RGB warningColor = new RGB(244, 200, 45); // from org.eclipse.ui.editors/plugin.xml/extension[@point='org.eclipse.ui.editors.markerAnnotationSpecification']/specification[@annotationType="org.eclipse.ui.workbench.texteditor.warning"]@colorPreferenceValue
+			Assert.assertTrue(new DisplayHelper() {
+				@Override
+				protected boolean condition() {
+					return ColorTest.containsColor(widget, warningColor);
+				}
+			}.waitForCondition(widget.getDisplay(), 3000));
+		} finally {
+			Files.deleteIfExists(file.toPath());
+			if (font != null) {
+				font.dispose();
+			}
+		}
 	}
 
 	private class MarkerRedrawCountListener implements IResourceChangeListener, IntSupplier {

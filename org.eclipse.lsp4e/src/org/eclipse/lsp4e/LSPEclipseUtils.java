@@ -32,6 +32,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
@@ -97,16 +99,19 @@ import org.eclipse.text.undo.DocumentUndoManagerRegistry;
 import org.eclipse.text.undo.IDocumentUndoManager;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IFileEditorInput;
 import org.eclipse.ui.IPathEditorInput;
 import org.eclipse.ui.IURIEditorInput;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.browser.IWorkbenchBrowserSupport;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.intro.config.IIntroURL;
 import org.eclipse.ui.intro.config.IntroURLFactory;
+import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -884,5 +889,39 @@ public class LSPEclipseUtils {
 	public static RGBA toRGBA(Color color) {
 		return new RGBA((int) (color.getRed() * 255), (int) (color.getGreen() * 255), (int) (color.getBlue() * 255),
 				(int) color.getAlpha());
+	}
+
+	public static Set<IEditorReference> findOpenEditorsFor(URI uri) {
+		if (uri == null) {
+			return Collections.emptySet();
+		}
+		return Arrays.stream(PlatformUI.getWorkbench().getWorkbenchWindows())
+			.map(IWorkbenchWindow::getPages)
+			.flatMap(Arrays::stream)
+			.map(IWorkbenchPage::getEditorReferences)
+			.flatMap(Arrays::stream)
+			.filter(ref -> {
+				try {
+					return uri.equals(LSPEclipseUtils.toUri(ref.getEditorInput()));
+				} catch (PartInitException e) {
+					LanguageServerPlugin.logError(e);
+					return false;
+				}
+			})
+			.collect(Collectors.toSet());
+	}
+
+	private static URI toUri(IEditorInput editorInput) {
+		if (editorInput instanceof FileEditorInput) {
+			return LSPEclipseUtils.toUri(((FileEditorInput) editorInput).getFile());
+		}
+		if (editorInput instanceof IURIEditorInput) {
+			return LSPEclipseUtils.toUri(Path.fromPortableString((((IURIEditorInput) editorInput).getURI()).getPath()));
+		}
+		return null;
+	}
+
+	public static URI toUri(String uri) {
+		return LSPEclipseUtils.toUri(Path.fromPortableString(URI.create(uri).getPath()));
 	}
 }

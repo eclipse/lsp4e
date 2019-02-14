@@ -90,7 +90,7 @@ public class ColorTest {
 	 * @param expectedRGB
 	 * @return
 	 */
-	protected static boolean containsColor(Control widget, RGB expectedRGB) {
+	public static boolean containsColor(Control widget, RGB expectedRGB) {
 		if (widget.getSize().x == 0) {
 			return false;
 		}

@@ -19,6 +19,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -349,5 +350,21 @@ public class LSPEclipseUtilsTest {
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertEquals("abc\ndef", ((StyledText) ((AbstractTextEditor) editor).getAdapter(Control.class)).getText());
 		assertTrue(editor.isDirty());
+	}
+
+	@Test
+	public void testGetOpenEditorExternalFile() throws Exception {
+		File file = File.createTempFile("testDiagnosticsOnExternalFile", ".lspt");
+		try {
+			try (
+				FileOutputStream out = new FileOutputStream(file);
+			) {
+				out.write('a');
+			}
+			IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+			Assert.assertNotEquals(Collections.emptySet(), LSPEclipseUtils.findOpenEditorsFor(file.toURI()));
+		} finally {
+			Files.deleteIfExists(file.toPath());
+		}
 	}
 }

@@ -39,6 +39,12 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.Position;
+import org.eclipse.jface.text.source.Annotation;
+import org.eclipse.jface.text.source.IAnnotationModel;
+import org.eclipse.jface.text.source.IAnnotationModelExtension;
+import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.Diagnostic;
@@ -71,52 +77,89 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	@Override
 	public void accept(PublishDiagnosticsParams diagnostics) {
 		try {
-			// fix issue with file:/// vs file:/
 			String uri = diagnostics.getUri();
 			IResource resource = LSPEclipseUtils.findResourceFor(uri);
-			if (resource == null || !resource.exists()) {
-				return;
+			if (resource != null && resource.exists()) {
+				updateMarkers(diagnostics, resource);
+			} else {
+				LSPEclipseUtils.findOpenEditorsFor(LSPEclipseUtils.toUri(uri)).stream()
+					.map(reference -> reference.getEditor(true))
+					.filter(Objects::nonNull)
+					.map(editor -> editor.getAdapter(ITextViewer.class))
+					.filter(Objects::nonNull)
+					.filter(ISourceViewer.class::isInstance)
+					.map(ISourceViewer.class::cast)
+					.forEach(sourceViewer -> updateEditorAnnotations(sourceViewer, diagnostics));
 			}
-			Set<IMarker> toDeleteMarkers = new HashSet<>(
-					Arrays.asList(resource.findMarkers(LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_ONE)));
-			toDeleteMarkers
-					.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
-			List<Diagnostic> newDiagnostics = new ArrayList<>();
-			Map<IMarker, Diagnostic> toUpdate = new HashMap<>();
-			for (Diagnostic diagnostic : diagnostics.getDiagnostics()) {
-				IMarker associatedMarker = getExistingMarkerFor(resource, diagnostic, toDeleteMarkers);
-				if (associatedMarker == null) {
-					newDiagnostics.add(diagnostic);
-				} else {
-					toDeleteMarkers.remove(associatedMarker);
-					toUpdate.put(associatedMarker, diagnostic);
-				}
-			}
-			IWorkspaceRunnable runnable = new IWorkspaceRunnable() {
-				@Override
-				public void run(IProgressMonitor monitor) throws CoreException {
-					if (resource.exists()) {
-						for (Diagnostic diagnostic : newDiagnostics) {
-							IMarker marker = resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE);
-							updateMarker(resource, diagnostic, marker);
-						}
-						for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
-							updateMarker(resource, entry.getValue(), entry.getKey());
-						}
-						toDeleteMarkers.forEach(t -> {
-							try {
-								t.delete();
-							} catch (CoreException e) {
-								LanguageServerPlugin.logError(e);
-							}
-						});
-					}
-				}
-			};
-			ResourcesPlugin.getWorkspace().run(runnable, new NullProgressMonitor());
 		} catch (CoreException ex) {
 			LanguageServerPlugin.logError(ex);
 		}
+	}
+
+	private void updateEditorAnnotations(@NonNull ISourceViewer sourceViewer, PublishDiagnosticsParams diagnostics) {
+		IAnnotationModel annotationModel = sourceViewer.getAnnotationModel();
+		if (annotationModel == null) {
+			return;
+		}
+		if (annotationModel instanceof IAnnotationModelExtension) {
+			Set<Annotation> toRemove = new HashSet<>();
+			annotationModel.getAnnotationIterator().forEachRemaining(annotation -> {
+				if (annotation instanceof DiagnosticAnnotation) {
+					toRemove.add(annotation);
+				}
+			});
+			Map<Annotation, Position> toAdd = new HashMap<>(diagnostics.getDiagnostics().size(), 1.f);
+			diagnostics.getDiagnostics().forEach(diagnostic -> {
+				try {
+					int startOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), sourceViewer.getDocument());
+					int endOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), sourceViewer.getDocument());
+					toAdd.put(new DiagnosticAnnotation(diagnostic), new Position(startOffset, endOffset - startOffset));
+				} catch (BadLocationException ex) {
+					LanguageServerPlugin.logError(ex);
+				}
+			});
+			((IAnnotationModelExtension)annotationModel).replaceAnnotations(toRemove.toArray(new Annotation[toRemove.size()]), toAdd);
+		}
+	}
+
+	private void updateMarkers(PublishDiagnosticsParams diagnostics, IResource resource) throws CoreException {
+		Set<IMarker> toDeleteMarkers = new HashSet<>(
+				Arrays.asList(resource.findMarkers(LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_ONE)));
+		toDeleteMarkers
+				.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
+		List<Diagnostic> newDiagnostics = new ArrayList<>();
+		Map<IMarker, Diagnostic> toUpdate = new HashMap<>();
+		for (Diagnostic diagnostic : diagnostics.getDiagnostics()) {
+			IMarker associatedMarker = getExistingMarkerFor(resource, diagnostic, toDeleteMarkers);
+			if (associatedMarker == null) {
+				newDiagnostics.add(diagnostic);
+			} else {
+				toDeleteMarkers.remove(associatedMarker);
+				toUpdate.put(associatedMarker, diagnostic);
+			}
+		}
+		IWorkspaceRunnable runnable = new IWorkspaceRunnable() {
+			@Override
+			public void run(IProgressMonitor monitor) throws CoreException {
+				if (resource.exists()) {
+					for (Diagnostic diagnostic : newDiagnostics) {
+						IMarker marker = resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE);
+						updateMarker(resource, diagnostic, marker);
+					}
+					for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
+						updateMarker(resource, entry.getValue(), entry.getKey());
+					}
+					toDeleteMarkers.forEach(t -> {
+						try {
+							t.delete();
+						} catch (CoreException e) {
+							LanguageServerPlugin.logError(e);
+						}
+					});
+				}
+			}
+		};
+		ResourcesPlugin.getWorkspace().run(runnable, new NullProgressMonitor());
 	}
 
 	protected void updateMarker(IResource resource, Diagnostic diagnostic, IMarker marker) {
