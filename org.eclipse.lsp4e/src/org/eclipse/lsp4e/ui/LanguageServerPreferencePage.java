@@ -19,14 +19,10 @@ import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.viewers.ArrayContentProvider;
-import org.eclipse.jface.viewers.CheckStateChangedEvent;
 import org.eclipse.jface.viewers.CheckboxTableViewer;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.lsp4e.ContentTypeToLSPLaunchConfigEntry;
@@ -87,7 +83,6 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 			this.checkboxViewer.refresh();
 		}
 	}
-
 
 	@Override
 	protected Control createContents(Composite parent) {
@@ -178,12 +173,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 				}
 			}
 		});
-		viewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
-			public void selectionChanged(SelectionChangedEvent event) {
-				updateButtons();
-			}
-		});
+		viewer.addSelectionChangedListener(event -> updateButtons());
 		viewer.setInput(workingCopy);
 		updateButtons();
 		return res;
@@ -273,19 +263,14 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		checkboxViewer.getTable().setLinesVisible(true);
 
 		this.checkboxViewer.setCheckedElements(contentTypeToLanguageServerDefinitions.stream()
-				.filter(definition -> definition.isUserEnabled()).toArray());
+				.filter(ContentTypeToLanguageServerDefinition::isUserEnabled).toArray());
 
-		checkboxViewer.addCheckStateListener(new ICheckStateListener() {
-
-			@Override
-			public void checkStateChanged(CheckStateChangedEvent event) {
-				if (event.getElement() instanceof ContentTypeToLanguageServerDefinition) {
-					ContentTypeToLanguageServerDefinition contentTypeToLanguageServerDefinition = (ContentTypeToLanguageServerDefinition) event
-							.getElement();
-					contentTypeToLanguageServerDefinition.setUserEnabled(event.getChecked());
-					changedDefinitions.add(contentTypeToLanguageServerDefinition);
-				}
-
+		checkboxViewer.addCheckStateListener(event -> {
+			if (event.getElement() instanceof ContentTypeToLanguageServerDefinition) {
+				ContentTypeToLanguageServerDefinition contentTypeToLanguageServerDefinition = (ContentTypeToLanguageServerDefinition) event
+						.getElement();
+				contentTypeToLanguageServerDefinition.setUserEnabled(event.getChecked());
+				changedDefinitions.add(contentTypeToLanguageServerDefinition);
 			}
 		});
 	}

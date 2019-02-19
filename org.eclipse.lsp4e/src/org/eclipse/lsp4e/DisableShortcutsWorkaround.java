@@ -59,7 +59,7 @@ public class DisableShortcutsWorkaround implements IStartup {
 					}
 					else {
 						Collection<?> conflicts = service.getConflictsFor(binding.getTriggerSequence());
-						if (conflicts == null || conflicts.size() == 0) {
+						if (conflicts == null || conflicts.isEmpty()) {
 							newBindings.add(binding);
 						}
 					}
@@ -69,15 +69,12 @@ public class DisableShortcutsWorkaround implements IStartup {
 				}
 			}
 
-			PlatformUI.getWorkbench().getDisplay().asyncExec(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						service.savePreferences(service.getActiveScheme(),
-								newBindings.toArray(new Binding[newBindings.size()]));
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
+			PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
+				try {
+					service.savePreferences(service.getActiveScheme(),
+							newBindings.toArray(new Binding[newBindings.size()]));
+				} catch (IOException e) {
+					LanguageServerPlugin.logError(e);
 				}
 			});
 		}

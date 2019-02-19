@@ -12,12 +12,16 @@
 package org.eclipse.lsp4e.refactoring;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
@@ -36,6 +40,7 @@ public class DeleteExternalFile extends Change {
 
 	@Override
 	public void initializeValidationData(IProgressMonitor pm) {
+		// nothing to do yet, comment requested by sonar
 	}
 
 	@Override
@@ -45,7 +50,12 @@ public class DeleteExternalFile extends Change {
 
 	@Override
 	public Change perform(IProgressMonitor pm) throws CoreException {
-		this.file.delete();
+		try {
+			Files.delete(this.file.toPath());
+		} catch (IOException e) {
+			LanguageServerPlugin.logError(e);
+			throw new CoreException(new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, e.getMessage(), e));
+		}
 		return null;
 	}
 

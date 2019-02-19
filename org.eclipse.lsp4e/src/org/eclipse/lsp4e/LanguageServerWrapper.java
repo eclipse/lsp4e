@@ -117,30 +117,34 @@ import com.google.gson.JsonObject;
 public class LanguageServerWrapper {
 
 	private IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
-			@Override
-			public void bufferDisposed(IFileBuffer buffer) {
-				Path filePath = new Path(buffer.getFileStore().toURI().getPath());
-				disconnect(filePath);
+		@Override
+		public void bufferDisposed(IFileBuffer buffer) {
+			Path filePath = new Path(buffer.getFileStore().toURI().getPath());
+			disconnect(filePath);
+		}
+
+		@Override
+		public void dirtyStateChanged(IFileBuffer buffer, boolean isDirty) {
+			if (isDirty) {
+				return;
 			}
-
-			@Override
-			public void dirtyStateChanged(IFileBuffer buffer, boolean isDirty) {
-				if (isDirty) {
-					return;
-				}
-				Path filePath = new Path(buffer.getFileStore().toURI().getPath());
-				DocumentContentSynchronizer documentListener = connectedDocuments.get(filePath);
-				if (documentListener != null && documentListener.getModificationStamp() < buffer.getModificationStamp()) {
-					documentListener.documentSaved(buffer.getModificationStamp());
-				}
+			Path filePath = new Path(buffer.getFileStore().toURI().getPath());
+			DocumentContentSynchronizer documentListener = connectedDocuments.get(filePath);
+			if (documentListener != null && documentListener.getModificationStamp() < buffer.getModificationStamp()) {
+				documentListener.documentSaved(buffer.getModificationStamp());
 			}
+		}
 
-		};
+	};
 
-	@NonNull public final LanguageServerDefinition serverDefinition;
-	@Nullable protected final IProject initialProject;
-	@NonNull protected final Set<@NonNull IProject> allWatchedProjects;
-	@NonNull protected Map<@NonNull IPath, @NonNull DocumentContentSynchronizer> connectedDocuments;
+	@NonNull
+	public final LanguageServerDefinition serverDefinition;
+	@Nullable
+	protected final IProject initialProject;
+	@NonNull
+	protected final Set<@NonNull IProject> allWatchedProjects;
+	@NonNull
+	protected Map<@NonNull IPath, @NonNull DocumentContentSynchronizer> connectedDocuments;
 
 	protected StreamConnectionProvider lspStreamProvider;
 	private Future<?> launcherFuture;
@@ -162,8 +166,8 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Starts a language server and triggers initialization. If language server is started and active, does nothing. If
-	 * language server is inactive, restart it.
+	 * Starts a language server and triggers initialization. If language server is
+	 * started and active, does nothing. If language server is inactive, restart it.
 	 *
 	 * @throws IOException
 	 */
@@ -203,9 +207,9 @@ public class LanguageServerWrapper {
 			} else {
 				initParams.setRootUri(LSPEclipseUtils.toUri(new File("/")).toString()); //$NON-NLS-1$
 			}
-			Launcher<? extends LanguageServer> launcher = Launcher.createLauncher(client, serverDefinition.getServerInterface(),
-					this.lspStreamProvider.getInputStream(), this.lspStreamProvider.getOutputStream(), executorService,
-					consumer -> (message -> {
+			Launcher<? extends LanguageServer> launcher = Launcher.createLauncher(client,
+					serverDefinition.getServerInterface(), this.lspStreamProvider.getInputStream(),
+					this.lspStreamProvider.getOutputStream(), executorService, consumer -> (message -> {
 						consumer.consume(message);
 						logMessage(message);
 						URI root = initParams.getRootUri() != null ? URI.create(initParams.getRootUri()) : null;
@@ -228,7 +232,7 @@ public class LanguageServerWrapper {
 			WorkspaceEditCapabilities editCapabilities = new WorkspaceEditCapabilities();
 			editCapabilities.setDocumentChanges(Boolean.TRUE);
 			editCapabilities.setResourceOperations(Arrays.asList(ResourceOperationKind.Create,
-					ResourceOperationKind.Delete, ResourceOperationKind.Rename ));
+					ResourceOperationKind.Delete, ResourceOperationKind.Rename));
 			editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
 			workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
 			TextDocumentClientCapabilities textDocumentClientCapabilities = new TextDocumentClientCapabilities();
@@ -236,27 +240,27 @@ public class LanguageServerWrapper {
 					.setCodeAction(
 							new CodeActionCapabilities(
 									new CodeActionLiteralSupportCapabilities(
-											new CodeActionKindCapabilities(Arrays.asList(
-													CodeActionKind.QuickFix, CodeActionKind.Refactor,
-													CodeActionKind.RefactorExtract, CodeActionKind.RefactorInline,
-													CodeActionKind.RefactorRewrite, CodeActionKind.Source,
-													CodeActionKind.SourceOrganizeImports))),
-							true));
+											new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix,
+													CodeActionKind.Refactor, CodeActionKind.RefactorExtract,
+													CodeActionKind.RefactorInline, CodeActionKind.RefactorRewrite,
+													CodeActionKind.Source, CodeActionKind.SourceOrganizeImports))),
+									true));
 			textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
 			textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
-			textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(new CompletionItemCapabilities(Boolean.TRUE)));
+			textDocumentClientCapabilities
+					.setCompletion(new CompletionCapabilities(new CompletionItemCapabilities(Boolean.TRUE)));
 			textDocumentClientCapabilities.setDefinition(new DefinitionCapabilities());
 			textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
 			textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
 			DocumentSymbolCapabilities documentSymbol = new DocumentSymbolCapabilities();
 			documentSymbol.setHierarchicalDocumentSymbolSupport(true);
-			documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.Array,
-					SymbolKind.Boolean, SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor, SymbolKind.Enum,
+			documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.Array, SymbolKind.Boolean,
+					SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor, SymbolKind.Enum,
 					SymbolKind.EnumMember, SymbolKind.Event, SymbolKind.Field, SymbolKind.File, SymbolKind.Function,
 					SymbolKind.Interface, SymbolKind.Key, SymbolKind.Method, SymbolKind.Module, SymbolKind.Namespace,
 					SymbolKind.Null, SymbolKind.Number, SymbolKind.Object, SymbolKind.Operator, SymbolKind.Package,
 					SymbolKind.Property, SymbolKind.String, SymbolKind.Struct, SymbolKind.TypeParameter,
-					SymbolKind.Variable )));
+					SymbolKind.Variable)));
 			textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
 			textDocumentClientCapabilities.setFormatting(new FormattingCapabilities());
 			textDocumentClientCapabilities.setHover(new HoverCapabilities());
@@ -265,13 +269,13 @@ public class LanguageServerWrapper {
 			textDocumentClientCapabilities.setReferences(new ReferencesCapabilities());
 			textDocumentClientCapabilities.setRename(new RenameCapabilities());
 			textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
-			textDocumentClientCapabilities.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
+			textDocumentClientCapabilities
+					.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
 			initParams.setCapabilities(
 					new ClientCapabilities(workspaceClientCapabilities, textDocumentClientCapabilities, null));
 			initParams.setClientName(name);
 
-			initParams.setInitializationOptions(
-					this.lspStreamProvider.getInitializationOptions(rootURI));
+			initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
 			initParams.setTrace(this.lspStreamProvider.getTrace(rootURI));
 
 			initializeFuture = languageServer.initialize(initParams).thenAccept(res -> {
@@ -300,8 +304,7 @@ public class LanguageServerWrapper {
 	}
 
 	private static boolean supportsWorkspaceFolders(ServerCapabilities serverCapabilities) {
-		return serverCapabilities != null
-				&& serverCapabilities.getWorkspace() != null
+		return serverCapabilities != null && serverCapabilities.getWorkspace() != null
 				&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
 				&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
 	}
@@ -317,8 +320,8 @@ public class LanguageServerWrapper {
 
 	private void logMessage(Message message) {
 		if (message instanceof ResponseMessage && ((ResponseMessage) message).getError() != null
-				&& ((ResponseMessage) message).getId() == Integer
-						.toString(ResponseErrorCode.RequestCancelled.getValue())) {
+				&& ((ResponseMessage) message).getId()
+						.equals(Integer.toString(ResponseErrorCode.RequestCancelled.getValue()))) {
 			ResponseMessage responseMessage = (ResponseMessage) message;
 			LanguageServerPlugin.logError(new ResponseErrorException(responseMessage.getError()));
 		} else if (LanguageServerPlugin.DEBUG) {
@@ -419,7 +422,8 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Check whether this LS is suitable for provided project. Starts the LS if not already started.
+	 * Check whether this LS is suitable for provided project. Starts the LS if not
+	 * already started.
 	 *
 	 * @return whether this language server can operate on the given project
 	 * @since 0.5
@@ -509,10 +513,11 @@ public class LanguageServerWrapper {
 	public void disconnectContentType(@NonNull IContentType contentType) {
 		List<IPath> pathsToDisconnect = new ArrayList<>();
 		for (IPath path : connectedDocuments.keySet()) {
-			IFile[] foundFiles = ResourcesPlugin.getWorkspace().getRoot().findFilesForLocationURI(path.toFile().toURI());
-			if(foundFiles.length != 0 && LSPEclipseUtils.getFileContentTypes(foundFiles[0]).stream()
-					.anyMatch(contentType::equals)) {
-					pathsToDisconnect.add(path);
+			IFile[] foundFiles = ResourcesPlugin.getWorkspace().getRoot()
+					.findFilesForLocationURI(path.toFile().toURI());
+			if (foundFiles.length != 0
+					&& LSPEclipseUtils.getFileContentTypes(foundFiles[0]).stream().anyMatch(contentType::equals)) {
+				pathsToDisconnect.add(path);
 			}
 		}
 		for (IPath path : pathsToDisconnect) {
@@ -580,7 +585,8 @@ public class LanguageServerWrapper {
 	/**
 	 * Warning: this is a long running operation
 	 *
-	 * @return the server capabilities, or null if initialization job didn't complete
+	 * @return the server capabilities, or null if initialization job didn't
+	 *         complete
 	 */
 	@Nullable
 	public ServerCapabilities getServerCapabilities() {
@@ -599,7 +605,8 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * @return The language ID that this wrapper is dealing with if defined in the content type mapping for the language server
+	 * @return The language ID that this wrapper is dealing with if defined in the
+	 *         content type mapping for the language server
 	 */
 	@Nullable
 	public String getLanguageId(IContentType[] contentTypes) {

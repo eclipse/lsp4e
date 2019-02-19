@@ -34,11 +34,9 @@ import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.DecoratingLabelProvider;
 import org.eclipse.jface.viewers.ISelection;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
-import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
@@ -56,10 +54,10 @@ import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
 
 public class NewContentTypeLSPLaunchDialog extends Dialog {
-	
+
 	////
 	// copied from ContentTypesPreferencePage
-	
+
 	private static class ContentTypesLabelProvider extends LabelProvider {
 		@Override
 		public String getText(Object element) {
@@ -111,14 +109,14 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 	protected IContentType contentType;
 	protected ILaunchConfiguration launchConfig;
 	protected Set<String> launchMode;
-	
+
 	//
 	////
 
 	protected NewContentTypeLSPLaunchDialog(Shell parentShell) {
 		super(parentShell);
 	}
-	
+
 	@Override
 	protected Control createDialogArea(Composite parent) {
 		Composite res = (Composite)super.createDialogArea(parent);
@@ -133,19 +131,16 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		contentTypesViewer.setLabelProvider(new ContentTypesLabelProvider());
 		contentTypesViewer.setComparator(new ViewerComparator());
 		contentTypesViewer.setInput(Platform.getContentTypeManager());
-		contentTypesViewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
-			public void selectionChanged(SelectionChangedEvent event) {
-				IContentType newContentType = null;
-				if (event.getSelection() instanceof IStructuredSelection) {
-					IStructuredSelection sel = (IStructuredSelection)event.getSelection();
-					if (sel.size() == 1 && sel.getFirstElement() instanceof IContentType) {
-						newContentType = (IContentType)sel.getFirstElement();
-					}
+		contentTypesViewer.addSelectionChangedListener(event -> {
+			IContentType newContentType = null;
+			if (event.getSelection() instanceof IStructuredSelection) {
+				IStructuredSelection sel = (IStructuredSelection)event.getSelection();
+				if (sel.size() == 1 && sel.getFirstElement() instanceof IContentType) {
+					newContentType = (IContentType)sel.getFirstElement();
 				}
-				contentType = newContentType;
-				updateButtons();
 			}
+			contentType = newContentType;
+			updateButtons();
 		});
 		// copied from LaunchConfigurationDialog : todo use LaunchConfigurationFilteredTree
 		FilteredTree launchersFilteredTree = new FilteredTree(res, SWT.BORDER, new PatternFilter(), true);
@@ -173,20 +168,17 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 				return res.toString();
 			}
 		});
-		launchConfigViewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
-			public void selectionChanged(SelectionChangedEvent event) {
-				ILaunchConfiguration newLaunchConfig = null;
-				if (event.getSelection() instanceof IStructuredSelection) {
-					IStructuredSelection sel = (IStructuredSelection)event.getSelection();
-					if (sel.size() == 1 && sel.getFirstElement() instanceof ILaunchConfiguration) {
-						newLaunchConfig = (ILaunchConfiguration)sel.getFirstElement();
-					}
+		launchConfigViewer.addSelectionChangedListener(event -> {
+			ILaunchConfiguration newLaunchConfig = null;
+			if (event.getSelection() instanceof IStructuredSelection) {
+				IStructuredSelection sel = (IStructuredSelection)event.getSelection();
+				if (sel.size() == 1 && sel.getFirstElement() instanceof ILaunchConfiguration) {
+					newLaunchConfig = (ILaunchConfiguration)sel.getFirstElement();
 				}
-				launchConfig = newLaunchConfig;
-				updateLaunchModes(launchModeViewer);
-				updateButtons();
 			}
+			launchConfig = newLaunchConfig;
+			updateLaunchModes(launchModeViewer);
+			updateButtons();
 		});
 		launchModeViewer.addSelectionChangedListener(event -> {
 			ISelection sel = event.getSelection();
@@ -199,7 +191,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		});
 		return res;
 	}
-	
+
 	@Override
 	protected Control createContents(Composite parent) {
 		Control res = super.createContents(parent);
@@ -214,14 +206,14 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 	public ILaunchConfiguration getLaunchConfiguration() {
 		return this.launchConfig;
 	}
-	
+
 	private void updateButtons() {
 		getButton(OK).setEnabled(contentType != null && launchConfig != null && launchMode != null);
 	}
 
 	private void updateLaunchModes(ComboViewer launchModeViewer) {
 		if (launchConfig == null) {
-			launchModeViewer.setInput(Collections.EMPTY_LIST);
+			launchModeViewer.setInput(Collections.emptyList());
 		} else {
 			Set<Set<String>> modes = null;
 			try {

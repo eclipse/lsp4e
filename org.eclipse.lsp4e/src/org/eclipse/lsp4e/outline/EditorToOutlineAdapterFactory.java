@@ -23,6 +23,7 @@ import org.eclipse.core.runtime.IAdapterFactory;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -44,17 +45,19 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 				List<@NonNull LanguageServer> servers = Collections.emptyList();
 				try {
 					servers = languageServers.get(50, TimeUnit.MILLISECONDS);
-				} catch (TimeoutException | InterruptedException | ExecutionException e) {
-					// nothing
+				} catch (TimeoutException | ExecutionException e) {
+					LanguageServerPlugin.logError(e);
+				} catch (InterruptedException e) {
+					LanguageServerPlugin.logError(e);
+					Thread.currentThread().interrupt();
 				}
 				if (!servers.isEmpty()) {
-					LanguageServer languageServer = servers.get(0); // TODO consider other strategies (select,
-																	// merge...?)
+					LanguageServer languageServer = servers.get(0); // TODO consider other strategies (select, merge...?)
 					ITextEditor textEditor = null;
 					if(adaptableObject instanceof ITextEditor) {
 						textEditor = (ITextEditor)adaptableObject;
 					}
-					return (T) new CNFOutlinePage(document, languageServer, textEditor);
+					return (T) new CNFOutlinePage(languageServer, textEditor);
 				}
 			}
 		}

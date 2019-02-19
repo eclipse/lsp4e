@@ -74,7 +74,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 		}
 	}
 
-	public CNFOutlinePage(IDocument document, LanguageServer languageServer, @Nullable ITextEditor textEditor) {
+	public CNFOutlinePage(LanguageServer languageServer, @Nullable ITextEditor textEditor) {
 		this.preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 		this.textEditor = textEditor;
 		if (textEditor != null) {
@@ -249,6 +249,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 
 	@Override
 	public void setActionBars(IActionBars actionBars) {
+		// nothing to do yet, comment requested by sonar
 	}
 
 	@Override

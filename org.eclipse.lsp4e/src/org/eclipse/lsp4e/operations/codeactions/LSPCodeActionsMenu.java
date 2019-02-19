@@ -17,9 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 
-import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -69,13 +67,11 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 			if (document == null) {
 				return;
 			}
-			infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-					document,
-					capabilities -> LSPCodeActionMarkerResolution.providesCodeActions(capabilities));
+			infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
+					LSPCodeActionMarkerResolution::providesCodeActions);
 			ITextSelection selection = (ITextSelection) textEditor.getSelectionProvider().getSelection();
 			try {
-				this.range = new Range(
-						LSPEclipseUtils.toPosition(selection.getOffset(), document),
+				this.range = new Range(LSPEclipseUtils.toPosition(selection.getOffset(), document),
 						LSPEclipseUtils.toPosition(selection.getOffset() + selection.getLength(), document));
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logError(e);
@@ -87,7 +83,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 	public void fill(final Menu menu, int index) {
 		final MenuItem item = new MenuItem(menu, SWT.NONE, index);
 		item.setEnabled(false);
-		if (infos.isEmpty()){
+		if (infos.isEmpty()) {
 			item.setText(Messages.notImplemented);
 			return;
 		}
@@ -103,55 +99,50 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 			final CompletableFuture<List<Either<Command, CodeAction>>> codeActions = info.getInitializedLanguageClient()
 					.thenCompose(languageServer -> languageServer.getTextDocumentService().codeAction(params));
 			runningFutures.add(codeActions);
-			codeActions.whenComplete(new BiConsumer<List<Either<Command, CodeAction>>, Throwable>() {
-				@Override
-				public void accept(List<Either<Command, CodeAction>> t, Throwable u) {
-					runningFutures.remove(codeActions);
-					UIJob job = new UIJob(menu.getDisplay(), Messages.updateCodeActions_menu) {
-						@Override
-						public IStatus runInUIThread(IProgressMonitor monitor) {
-							if (u != null) {
-								final MenuItem item = new MenuItem(menu, SWT.NONE, index);
-								item.setText(u.getMessage());
-								item.setImage(PlatformUI.getWorkbench().getSharedImages()
-										.getImage(ISharedImages.IMG_DEC_FIELD_ERROR));
-								item.setEnabled(false);
-							} else if (t != null) {
-								IResource resource = LSPEclipseUtils.findResourceFor(info.getFileUri().toString());
-								for (Either<Command, CodeAction> command : t) {
-									if (command != null) {
-										if (command.isLeft()) {
-											final MenuItem item = new MenuItem(menu, SWT.NONE, index);
-											item.setText(command.getLeft().getTitle());
-											item.addSelectionListener(new SelectionAdapter() {
-												@Override
-												public void widgetSelected(SelectionEvent e) {
-													executeCommand(info, command.getLeft());
-												}
-											});
-										} else if (command.isRight()) {
-											CodeAction codeAction = command.getRight();
-											if (codeAction.getEdit() != null) {
-												LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit());
+			codeActions.whenComplete((t, u) -> {
+				runningFutures.remove(codeActions);
+				UIJob job = new UIJob(menu.getDisplay(), Messages.updateCodeActions_menu) {
+					@Override
+					public IStatus runInUIThread(IProgressMonitor monitor) {
+						if (u != null) {
+							final MenuItem item = new MenuItem(menu, SWT.NONE, index);
+							item.setText(u.getMessage());
+							item.setImage(PlatformUI.getWorkbench().getSharedImages()
+									.getImage(ISharedImages.IMG_DEC_FIELD_ERROR));
+							item.setEnabled(false);
+						} else if (t != null) {
+							for (Either<Command, CodeAction> command : t) {
+								if (command != null) {
+									if (command.isLeft()) {
+										final MenuItem item = new MenuItem(menu, SWT.NONE, index);
+										item.setText(command.getLeft().getTitle());
+										item.addSelectionListener(new SelectionAdapter() {
+											@Override
+											public void widgetSelected(SelectionEvent e) {
+												executeCommand(info, command.getLeft());
 											}
-											if (codeAction.getCommand() != null) {
-												executeCommand(info, codeAction.getCommand());
-											}
+										});
+									} else if (command.isRight()) {
+										CodeAction codeAction = command.getRight();
+										if (codeAction.getEdit() != null) {
+											LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit());
+										}
+										if (codeAction.getCommand() != null) {
+											executeCommand(info, codeAction.getCommand());
 										}
 									}
 								}
 							}
-							if (menu.getItemCount() == 1) {
-								item.setText(Messages.codeActions_emptyMenu);
-							} else {
-								item.dispose();
-							}
-							return Status.OK_STATUS;
 						}
-					};
-					job.schedule();
-				}
-
+						if (menu.getItemCount() == 1) {
+							item.setText(Messages.codeActions_emptyMenu);
+						} else {
+							item.dispose();
+						}
+						return Status.OK_STATUS;
+					}
+				};
+				job.schedule();
 			});
 		}
 		super.fill(menu, index);
@@ -166,9 +157,8 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 				params.setCommand(command.getCommand());
 				params.setArguments(command.getArguments());
 				info.getInitializedLanguageClient().thenAccept(ls -> ls.getWorkspaceService().executeCommand(params));
-				return;
 			}
 		}
-	};
+	}
 
 }

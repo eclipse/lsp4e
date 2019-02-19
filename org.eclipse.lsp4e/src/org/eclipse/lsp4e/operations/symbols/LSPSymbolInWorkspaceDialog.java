@@ -69,8 +69,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		}
 
 		@Override
-		protected int getMaxSeverity(IResource resource, Range range)
-				throws CoreException, BadLocationException {
+		protected int getMaxSeverity(IResource resource, Range range) throws CoreException, BadLocationException {
 			int maxSeverity = -1;
 			for (IMarker marker : resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO)) {
 				int offset = marker.getAttribute(IMarker.CHAR_START, -1);
@@ -124,7 +123,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	@Override
 	protected void fillContentProvider(AbstractContentProvider contentProvider, ItemsFilter itemsFilter,
-	        IProgressMonitor monitor) throws CoreException {
+			IProgressMonitor monitor) throws CoreException {
 		if (itemsFilter.getPattern().isEmpty()) {
 			return;
 		}
@@ -144,8 +143,11 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 						contentProvider.add(item, itemsFilter);
 					}
 				}
-			} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			} catch (ExecutionException | TimeoutException e) {
 				LanguageServerPlugin.logError(e);
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+				Thread.currentThread().interrupt();
 			}
 		}
 	}
@@ -158,13 +160,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	@Override
 	protected Comparator<SymbolInformation> getItemsComparator() {
-		return new Comparator<SymbolInformation>() {
-
-			@Override
-			public int compare(SymbolInformation o1, SymbolInformation o2) {
-				return o1.getName().compareToIgnoreCase(o2.getName());
-			}
-		};
+		return (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName());
 	}
 
 	@Override
@@ -174,8 +170,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	@Override
 	protected IDialogSettings getDialogSettings() {
-		IDialogSettings settings = LanguageServerPlugin.getDefault().getDialogSettings()
-		        .getSection(DIALOG_SETTINGS);
+		IDialogSettings settings = LanguageServerPlugin.getDefault().getDialogSettings().getSection(DIALOG_SETTINGS);
 		if (settings == null) {
 			settings = LanguageServerPlugin.getDefault().getDialogSettings().addNewSection(DIALOG_SETTINGS);
 		}
