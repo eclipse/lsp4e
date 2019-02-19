@@ -11,9 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import org.eclipse.core.filebuffers.IDocumentSetupParticipant;
 import org.eclipse.core.filebuffers.IDocumentSetupParticipantExtension;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
@@ -24,7 +21,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 
 /**
@@ -32,30 +28,6 @@ import org.eclipse.jface.text.IDocument;
  *
  */
 public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumentSetupParticipant, IDocumentSetupParticipantExtension {
-
-	private static final class DocumentInputStream extends InputStream {
-		private int index = 0;
-		private IDocument document;
-
-		DocumentInputStream(IDocument document) {
-			this.document = document;
-		}
-
-		@Override
-		public int read() throws IOException {
-			if (index < document.getLength()) {
-				try {
-					char res = document.getChar(index);
-					index++;
-					return res;
-				} catch (BadLocationException e) {
-					throw new IOException(e);
-				}
-			}
-			return -1;
-		}
-
-	}
 
 	@Override
 	public void setup(IDocument document) {

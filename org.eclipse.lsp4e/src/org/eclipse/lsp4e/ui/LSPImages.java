@@ -221,8 +221,9 @@ public class LSPImages {
 			return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FILE);
 		case Reference:
 			return getImage(IMG_REFERENCE);
+		default:
+			return null;
 		}
-		return null;
 	}
 
 	private static Image getImageForColor(CompletionItem completionItem) {

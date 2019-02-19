@@ -201,9 +201,11 @@ public class LSPEclipseUtils {
 		Position start = toPosition(offset, document);
 		TextDocumentPositionParams param = new TextDocumentPositionParams();
 		param.setPosition(start);
-		param.setUri(uri.toString());
 		TextDocumentIdentifier id = new TextDocumentIdentifier();
-		id.setUri(uri.toString());
+		if (uri != null) {
+			param.setUri(uri.toString());
+			id.setUri(uri.toString());
+		}
 		param.setTextDocument(id);
 		return param;
 	}
@@ -427,35 +429,32 @@ public class LSPEclipseUtils {
 				if (!introUrl.execute()) {
 					LanguageServerPlugin.logWarning("Failed to execute IntroURL: " + uri, null); // $NON-NLS-1$ //$NON-NLS-1$
 				}
-			} catch (Throwable t) {
+			} catch (Exception t) {
 				LanguageServerPlugin.logWarning("Error executing IntroURL: " + uri, t); // $NON-NLS-1$ //$NON-NLS-1$
 			}
 		}
 	}
 
 	protected static void openHttpLocationInBrowser(final String uri, IWorkbenchPage page) {
-		page.getWorkbenchWindow().getShell().getDisplay().asyncExec(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					URL url = new URL(uri);
+		page.getWorkbenchWindow().getShell().getDisplay().asyncExec(() -> {
+			try {
+				URL url = new URL(uri);
 
-					IWorkbenchBrowserSupport browserSupport = page.getWorkbenchWindow().getWorkbench()
-							.getBrowserSupport();
+				IWorkbenchBrowserSupport browserSupport = page.getWorkbenchWindow().getWorkbench()
+						.getBrowserSupport();
 
-					String browserName = uri;
-					if (browserName.length() > MAX_BROWSER_NAME_LENGTH) {
-						browserName = uri.substring(0, MAX_BROWSER_NAME_LENGTH - 1) + '\u2026';
-					}
-
-					browserSupport
-							.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR | IWorkbenchBrowserSupport.LOCATION_BAR
-									| IWorkbenchBrowserSupport.NAVIGATION_BAR, "lsp4e-symbols", browserName, uri) //$NON-NLS-1$
-							.openURL(url);
-
-				} catch (Exception e) {
-					LanguageServerPlugin.logError(e);
+				String browserName = uri;
+				if (browserName.length() > MAX_BROWSER_NAME_LENGTH) {
+					browserName = uri.substring(0, MAX_BROWSER_NAME_LENGTH - 1) + '\u2026';
 				}
+
+				browserSupport
+						.createBrowser(IWorkbenchBrowserSupport.AS_EDITOR | IWorkbenchBrowserSupport.LOCATION_BAR
+								| IWorkbenchBrowserSupport.NAVIGATION_BAR, "lsp4e-symbols", browserName, uri) //$NON-NLS-1$
+						.openURL(url);
+
+			} catch (Exception e) {
+				LanguageServerPlugin.logError(e);
 			}
 		});
 	}
@@ -614,8 +613,7 @@ public class LSPEclipseUtils {
 								content = new String(stream.toByteArray());
 								encoding = oldFile.getCharset();
 							} catch (IOException | CoreException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
+								LanguageServerPlugin.logError(e);
 							}
 						}
 						CreateFileChange createFileChange = new CreateFileChange(newURI, content, encoding);
@@ -819,6 +817,8 @@ public class LSPEclipseUtils {
 	 * somehow to be properly aware of markdown content. This method simply returns
 	 * the doc string as a string, regardless of whether it is markdown or
 	 * plaintext.
+	 *
+	 * @deprecated
 	 */
 	@Deprecated
 	public static String getDocString(Either<String, MarkupContent> documentation) {

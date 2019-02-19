@@ -66,7 +66,7 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 	private CompletableFuture<List<Hover>> request;
 
 	public LSBasedHover() {
-
+		// nothing to init yet, comment requested by sonar
 	}
 
 	public static String styleHtml(String html) {
@@ -111,8 +111,11 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 			if (!result.isEmpty()) {
 				return styleHtml(MARKDOWN_PARSER.parseToHtml(result));
 			}
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+		} catch (ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
 		}
 		return null;
 	}
@@ -197,8 +200,11 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 				this.lastRegion = new Region(regionStartOffset[0], regionEndOffset[0] - regionStartOffset[0]);
 				return this.lastRegion;
 			}
-		} catch (InterruptedException | ExecutionException | TimeoutException e1) {
+		} catch (ExecutionException | TimeoutException e1) {
 			LanguageServerPlugin.logError(e1);
+		} catch (InterruptedException e1) {
+			LanguageServerPlugin.logError(e1);
+			Thread.currentThread().interrupt();
 		}
 		this.lastRegion = new Region(offset, 0);
 		return this.lastRegion;
@@ -225,11 +231,15 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 						try {
 								return languageServer.getTextDocumentService()
 										.hover(LSPEclipseUtils.toTextDocumentPosistionParams(offset, document)).get();
-						} catch (InterruptedException | ExecutionException | BadLocationException e) {
-								LanguageServerPlugin.logError(e);
-								return null;
+						} catch (ExecutionException | BadLocationException e) {
+							LanguageServerPlugin.logError(e);
+							return null;
+						} catch (InterruptedException e) {
+							LanguageServerPlugin.logError(e);
+							Thread.currentThread().interrupt();
+							return null;
 						}
-						}).filter(Objects::nonNull).collect(Collectors.toList()));
+					}).filter(Objects::nonNull).collect(Collectors.toList()));
 	}
 
 	@Override

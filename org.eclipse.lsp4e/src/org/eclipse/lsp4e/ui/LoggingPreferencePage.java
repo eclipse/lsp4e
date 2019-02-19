@@ -27,8 +27,6 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
@@ -150,26 +148,23 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			}
 		});
 
-		viewer.addDoubleClickListener(new IDoubleClickListener() {
-			@Override
-			public void doubleClick(DoubleClickEvent event) {
-				hasLoggingBeenChanged = true;
-				Point relativeCursorLocation = Display.getCurrent().getFocusControl().toControl(new Point(
-						MouseInfo.getPointerInfo().getLocation().x, MouseInfo.getPointerInfo().getLocation().y));
-				ViewerCell cell = ((TableViewer) event.getSource()).getCell(relativeCursorLocation);
-				if (cell == null || cell.getColumnIndex() > addedColumnIndex + 1)
-					return;
-				String key = ((ContentTypeToLanguageServerDefinition) ((StructuredSelection) event.getSelection())
-						.getFirstElement()).getValue().id;
-				if (cell.getColumnIndex() == addedColumnIndex) {
-					boolean newLogging = !serverEnableLoggingToFile.getOrDefault(key, false);
-					serverEnableLoggingToFile.put(key, newLogging);
-				} else {
-					boolean newLogging = !serverEnableLoggingToConsole.getOrDefault(key, false);
-					serverEnableLoggingToConsole.put(key, newLogging);
-				}
-				viewer.refresh();
+		viewer.addDoubleClickListener(event -> {
+			hasLoggingBeenChanged = true;
+			Point relativeCursorLocation = Display.getCurrent().getFocusControl().toControl(new Point(
+					MouseInfo.getPointerInfo().getLocation().x, MouseInfo.getPointerInfo().getLocation().y));
+			ViewerCell cell = ((TableViewer) event.getSource()).getCell(relativeCursorLocation);
+			if (cell == null || cell.getColumnIndex() > addedColumnIndex + 1)
+				return;
+			String key = ((ContentTypeToLanguageServerDefinition) ((StructuredSelection) event.getSelection())
+					.getFirstElement()).getValue().id;
+			if (cell.getColumnIndex() == addedColumnIndex) {
+				boolean newLogging = !serverEnableLoggingToFile.getOrDefault(key, false);
+				serverEnableLoggingToFile.put(key, newLogging);
+			} else {
+				boolean newLogging = !serverEnableLoggingToConsole.getOrDefault(key, false);
+				serverEnableLoggingToConsole.put(key, newLogging);
 			}
+			viewer.refresh();
 		});
 	}
 
@@ -237,12 +232,8 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 	}
 
 	private void applyLoggingEnablment() {
-		serverEnableLoggingToFile.forEach((s, b) -> {
-			store.setValue(LoggingStreamConnectionProviderProxy.lsToFileLoggingId(s), b);
-		});
-		serverEnableLoggingToConsole.forEach((s, b) -> {
-			store.setValue(LoggingStreamConnectionProviderProxy.lsToConsoleLoggingId(s), b);
-		});
+		serverEnableLoggingToFile.forEach((s, b) -> store.setValue(LoggingStreamConnectionProviderProxy.lsToFileLoggingId(s), b));
+		serverEnableLoggingToConsole.forEach((s, b) -> store.setValue(LoggingStreamConnectionProviderProxy.lsToConsoleLoggingId(s), b));
 		hasLoggingBeenChanged = false;
 	}
 

@@ -662,7 +662,8 @@ public class LanguageServerWrapper {
 		}
 		WorkspaceServerCapabilities workspace = serverCapabilities.getWorkspace();
 		if (workspace == null) {
-			serverCapabilities.setWorkspace(workspace = new WorkspaceServerCapabilities());
+			workspace = new WorkspaceServerCapabilities();
+			serverCapabilities.setWorkspace(workspace);
 		}
 		WorkspaceFoldersOptions folders = workspace.getWorkspaceFolders();
 		if (folders == null) {

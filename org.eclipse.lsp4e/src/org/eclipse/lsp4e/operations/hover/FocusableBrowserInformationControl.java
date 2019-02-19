@@ -15,7 +15,6 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.resource.JFaceResources;
-import org.eclipse.jface.text.IInformationControl;
 import org.eclipse.jface.text.IInformationControlCreator;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.swt.browser.Browser;
@@ -46,6 +45,7 @@ class FocusableBrowserInformationControl extends BrowserInformationControl {
 
 		@Override
 		public void changed(LocationEvent event) {
+			// comment requested by sonar
 		}
 	};
 
@@ -91,14 +91,11 @@ class FocusableBrowserInformationControl extends BrowserInformationControl {
 
 	@Override
 	public IInformationControlCreator getInformationPresenterControlCreator() {
-		return new IInformationControlCreator() {
-			@Override
-			public IInformationControl createInformationControl(Shell parent) {
-				BrowserInformationControl res = new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT,
-						true);
-				res.addLocationListener(HYPER_LINK_LISTENER);
-				return res;
-			}
+		return parent -> {
+			BrowserInformationControl res = new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT,
+					true);
+			res.addLocationListener(HYPER_LINK_LISTENER);
+			return res;
 		};
 	}
 }

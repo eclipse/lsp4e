@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.documentLink;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +29,7 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.ui.IWorkbenchPage;
@@ -82,11 +84,15 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 								.map(future -> {
 									try {
 										return future.get(2, TimeUnit.SECONDS);
-									} catch (InterruptedException | ExecutionException | TimeoutException e) {
+									} catch (ExecutionException | TimeoutException e) {
 										LanguageServerPlugin.logError(e);
 										return null;
+									} catch (InterruptedException e) {
+										LanguageServerPlugin.logError(e);
+										Thread.currentThread().interrupt();
+										return null;
 									}
-								}).filter(Objects::nonNull).flatMap(links -> links.stream()).map(link -> {
+								}).filter(Objects::nonNull).flatMap(List<DocumentLink>::stream).map(link -> {
 									try {
 										int start = LSPEclipseUtils.toOffset(link.getRange().getStart(),
 												textViewer.getDocument());

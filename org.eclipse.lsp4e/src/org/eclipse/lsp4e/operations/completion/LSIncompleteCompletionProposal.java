@@ -286,20 +286,11 @@ public class LSIncompleteCompletionProposal
 			@Override
 			protected IInformationControl doCreateInformationControl(Shell parent) {
 				if (BrowserInformationControl.isAvailable(parent)) {
-					return new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT,
-							false) {
+					return new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT, false) {
 						@Override
 						public IInformationControlCreator getInformationPresenterControlCreator() {
-							return new IInformationControlCreator() {
-								@Override
-								public IInformationControl createInformationControl(Shell parent) {
-									BrowserInformationControl res = new BrowserInformationControl(parent,
-											JFaceResources.DEFAULT_FONT, true);
-									return res;
-								}
-							};
+							return parent1 -> new BrowserInformationControl(parent1, JFaceResources.DEFAULT_FONT, true);
 						}
-
 					};
 				} else {
 					return new DefaultInformationControl(parent);
@@ -315,8 +306,11 @@ public class LSIncompleteCompletionProposal
 			try {
 				languageServer.getTextDocumentService().resolveCompletionItem(item).thenAcceptAsync(this::updateCompletionItem)
 						.get(RESOLVE_TIMEOUT, TimeUnit.MILLISECONDS);
-			} catch (InterruptedException | ExecutionException | TimeoutException e) {
+			} catch (ExecutionException | TimeoutException e) {
 				LanguageServerPlugin.logError(e);
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+				Thread.currentThread().interrupt();
 			}
 		}
 

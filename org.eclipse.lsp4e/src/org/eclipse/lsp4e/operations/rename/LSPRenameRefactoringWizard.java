@@ -17,8 +17,6 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizard;
 import org.eclipse.ltk.ui.refactoring.UserInputWizardPage;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -74,12 +72,7 @@ public class LSPRenameRefactoringWizard extends RefactoringWizard {
 			this.nameText.setText("newName"); //$NON-NLS-1$
 			this.nameText.setFont(composite.getFont());
 			this.nameText.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false));
-			this.nameText.addModifyListener(new ModifyListener() {
-				@Override
-				public void modifyText(ModifyEvent e) {
-					validatePage();
-				}
-			});
+			this.nameText.addModifyListener(e -> validatePage());
 			this.nameText.selectAll();
 			this.setControl(composite);
 			validatePage();

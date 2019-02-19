@@ -73,6 +73,8 @@ public class SymbolInformationPropertyTester extends PropertyTester {
 				IContentTypeManager contentTypeManager = Platform.getContentTypeManager();
 				IContentType contentType = contentTypeManager.findContentTypeFor(uri);
 				return contentType != null && contentType.getId().equals(expectedValue.toString());
+			default:
+				return false;
 			}
 		}
 		return false;
