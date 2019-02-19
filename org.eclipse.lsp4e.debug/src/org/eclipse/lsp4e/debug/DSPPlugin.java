@@ -131,7 +131,7 @@ public class DSPPlugin extends AbstractUIPlugin {
 				message += " - response error formatting exception " + e.getMessage();
 			}
 		}
-		getDefault().getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, 0, message, thr));
+		getDefault().getLog().log(new Status(severity, PLUGIN_ID, 0, message, thr));
 	}
 
 }

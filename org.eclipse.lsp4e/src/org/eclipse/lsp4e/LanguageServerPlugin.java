@@ -21,7 +21,7 @@ import org.osgi.framework.BundleContext;
 
 public class LanguageServerPlugin extends AbstractUIPlugin {
 
-	public static final String PLUGIN_ID = "org.eclipse.lsp4e"; //$NON-NLS-1$ ;
+	public static final String PLUGIN_ID = "org.eclipse.lsp4e"; //$NON-NLS-1$
 
 	public static final boolean DEBUG = Boolean.parseBoolean(Platform.getDebugOption("org.eclipse.lsp4e/debug")); //$NON-NLS-1$
 

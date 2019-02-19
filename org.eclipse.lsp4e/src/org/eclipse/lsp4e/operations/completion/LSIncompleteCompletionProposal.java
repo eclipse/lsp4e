@@ -268,7 +268,7 @@ public class LSIncompleteCompletionProposal
 
 	@Override
 	public StyledString getStyledDisplayString() {
-		if (item.getDeprecated() == Boolean.TRUE) {
+		if (Boolean.TRUE.equals(item.getDeprecated())) {
 			return new StyledString(getDisplayString(), DEPRECATE);
 		}
 		return new StyledString(getDisplayString());

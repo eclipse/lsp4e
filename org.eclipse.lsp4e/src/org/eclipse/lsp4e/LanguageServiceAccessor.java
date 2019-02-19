@@ -114,8 +114,12 @@ public class LanguageServiceAccessor {
 		public LanguageServer getLanguageClient() {
 			try {
 				return this.wrapper.getInitializedServer().get();
-			} catch (InterruptedException | ExecutionException e) {
+			} catch (ExecutionException e) {
 				LanguageServerPlugin.logError(e);
+				return this.wrapper.getServer();
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+				Thread.currentThread().interrupt();
 				return this.wrapper.getServer();
 			}
 		}
@@ -301,7 +305,7 @@ public class LanguageServiceAccessor {
 	}
 
 	@NonNull
-	private static Collection<LanguageServerWrapper> getLSWrappers(@NonNull IDocument document) throws IOException {
+	private static Collection<LanguageServerWrapper> getLSWrappers(@NonNull IDocument document) {
 		LinkedHashSet<LanguageServerWrapper> res = new LinkedHashSet<>();
 		IFile file = LSPEclipseUtils.getFile(document);
 		URI uri = LSPEclipseUtils.toUri(document);

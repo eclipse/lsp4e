@@ -83,6 +83,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 					Thread.sleep(5, 0);
 				} catch (InterruptedException e) {
 					LanguageServerPlugin.logError(e);
+					Thread.currentThread().interrupt();
 				}
 			}
 			return queue.poll();
@@ -153,6 +154,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 					Thread.sleep(50);
 				} catch (InterruptedException e) {
 					LanguageServerPlugin.logError(e);
+					Thread.currentThread().interrupt();
 				}
 			}
 			if (this.launch.getProcesses().length > 0) {
