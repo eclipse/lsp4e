@@ -247,20 +247,18 @@ public class LSPImages {
 			return null;
 		}
 
-		Image image = colorToImageCache.get(decodedColor);
-		if (image == null) {
+		return colorToImageCache.computeIfAbsent(decodedColor, key -> {
 			// TODO most probably some scaling should be done for HIDPI
-			image = new Image(Display.getDefault(), 16, 16);
+			Image image = new Image(Display.getDefault(), 16, 16);
 			GC gc = new GC(image);
-			Color color = new Color(Display.getDefault(), decodedColor.getRed(), decodedColor.getGreen(),
-					decodedColor.getBlue(), decodedColor.getAlpha());
+			Color color = new Color(Display.getDefault(), key.getRed(), key.getGreen(),
+					key.getBlue(), key.getAlpha());
 			gc.setBackground(color);
 			gc.fillRectangle(0, 0, 16, 16);
 			color.dispose();
 			gc.dispose();
-			colorToImageCache.put(decodedColor, image);
-		}
-		return image;
+			return image;
+		});
 	}
 
 }

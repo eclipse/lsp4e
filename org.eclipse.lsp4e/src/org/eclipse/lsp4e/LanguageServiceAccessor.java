@@ -395,9 +395,7 @@ public class LanguageServiceAccessor {
 				wrapper.start();
 			}
 
-			if (wrapper != null) {
-				startedServers.add(wrapper);
-			}
+			startedServers.add(wrapper);
 		}
 		return wrapper;
 	}

@@ -24,8 +24,6 @@ import java.nio.file.StandardOpenOption;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.util.IPropertyChangeListener;
-import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -89,14 +87,11 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
 		logToFile = store.getBoolean(lsToFileLoggingId(serverId));
 		logToConsole = store.getBoolean(lsToConsoleLoggingId(serverId));
-		store.addPropertyChangeListener(new IPropertyChangeListener() {
-			@Override
-			public void propertyChange(PropertyChangeEvent event) {
-				if (event.getProperty().equals(FILE_KEY)) {
-					logToFile = (boolean) event.getNewValue();
-				} else if (event.getProperty().equals(STDERR_KEY)) {
-					logToConsole = (boolean) event.getNewValue();
-				}
+		store.addPropertyChangeListener(event -> {
+			if (event.getProperty().equals(FILE_KEY)) {
+				logToFile = (boolean) event.getNewValue();
+			} else if (event.getProperty().equals(STDERR_KEY)) {
+				logToConsole = (boolean) event.getNewValue();
 			}
 		});
 	}
@@ -142,7 +137,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 						logToConsole("Error from " + id + ":" + new String(payload)); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 					if (logToFile) {
-						logToFile(new String("\nError from:" + id + ":" + payload)); //$NON-NLS-1$ //$NON-NLS-2$
+						logToFile("\nError from:" + id + ":" + payload); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 					return bytes;
 				}
@@ -215,7 +210,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 				errorStream = null;
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
 	}
 
@@ -250,22 +245,21 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		try {
 			Files.write(currentFile.toPath(), string.getBytes(), StandardOpenOption.APPEND);
 		} catch (IOException e) {
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
-		return;
 	}
 
 	private void generateNewLogFile() {
-		File folder = getFolder();
-		if (folder == null) {
+		File logFolder = getFolder();
+		if (logFolder == null) {
 			return;
 		}
-		currentFile = new File(folder, id + ".log"); //$NON-NLS-1$
+		currentFile = new File(logFolder, id + ".log"); //$NON-NLS-1$
 		try {
 			currentFile.createNewFile();
 		} catch (IOException e) {
 			currentFile = null;
-			e.printStackTrace();
+			LanguageServerPlugin.logError(e);
 		}
 	}
 
@@ -277,8 +271,9 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		if (root == null) {
 			return null;
 		}
-		File folder = new File(root.addTrailingSeparator().toPortableString() + LOG_DIRECTORY);
-		if (folder != null && (folder.exists() || folder.mkdirs()) && folder.isDirectory() && folder.canWrite()) {
+		File logFolder = new File(root.addTrailingSeparator().toPortableString() + LOG_DIRECTORY);
+		if ((logFolder.exists() || logFolder.mkdirs()) && logFolder.isDirectory() && logFolder.canWrite()) {
+			folder = logFolder;
 			return folder;
 		}
 		return null;

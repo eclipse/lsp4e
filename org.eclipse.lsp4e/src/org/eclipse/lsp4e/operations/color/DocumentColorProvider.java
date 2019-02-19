@@ -89,12 +89,7 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 	 * @return the color from the given rgba.
 	 */
 	public Color getColor(RGBA rgba, Display display) {
-		Color color = colorTable.get(rgba);
-		if (color == null) {
-			color = new Color(display, rgba);
-			colorTable.put(rgba, color);
-		}
-		return color;
+		return colorTable.computeIfAbsent(rgba, key ->	new Color(display, rgba));
 	}
 
 	@Override

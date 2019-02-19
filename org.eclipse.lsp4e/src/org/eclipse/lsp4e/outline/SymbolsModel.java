@@ -111,11 +111,7 @@ public class SymbolsModel {
 	}
 
 	private void addChild(SymbolInformation parent, SymbolInformation child) {
-		List<SymbolInformation> children = childrenMap.get(parent);
-		if (children == null) {
-			children = new ArrayList<>();
-			childrenMap.put(parent, children);
-		}
+		List<SymbolInformation> children = childrenMap.computeIfAbsent(parent, key -> new ArrayList<>());
 		children.add(child);
 	}
 
