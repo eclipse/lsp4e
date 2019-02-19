@@ -154,8 +154,7 @@ public class LanguageServerWrapper {
 	private @NonNull Map<@NonNull String, @NonNull Runnable> dynamicRegistrations = new HashMap<>();
 	private boolean initiallySupportsWorkspaceFolders = false;
 
-	public LanguageServerWrapper(@Nullable IProject project, @NonNull LanguageServerDefinition serverDefinition)
-			throws IllegalStateException {
+	public LanguageServerWrapper(@Nullable IProject project, @NonNull LanguageServerDefinition serverDefinition) {
 		this.initialProject = project;
 		this.allWatchedProjects = new HashSet<>();
 		this.serverDefinition = serverDefinition;
@@ -228,8 +227,8 @@ public class LanguageServerWrapper {
 			workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);
 			WorkspaceEditCapabilities editCapabilities = new WorkspaceEditCapabilities();
 			editCapabilities.setDocumentChanges(Boolean.TRUE);
-			editCapabilities.setResourceOperations(Arrays.asList(new String[] { ResourceOperationKind.Create,
-					ResourceOperationKind.Delete, ResourceOperationKind.Rename }));
+			editCapabilities.setResourceOperations(Arrays.asList(ResourceOperationKind.Create,
+					ResourceOperationKind.Delete, ResourceOperationKind.Rename ));
 			editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
 			workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
 			TextDocumentClientCapabilities textDocumentClientCapabilities = new TextDocumentClientCapabilities();
@@ -237,11 +236,11 @@ public class LanguageServerWrapper {
 					.setCodeAction(
 							new CodeActionCapabilities(
 									new CodeActionLiteralSupportCapabilities(
-											new CodeActionKindCapabilities(Arrays.asList(new String[] {
+											new CodeActionKindCapabilities(Arrays.asList(
 													CodeActionKind.QuickFix, CodeActionKind.Refactor,
 													CodeActionKind.RefactorExtract, CodeActionKind.RefactorInline,
 													CodeActionKind.RefactorRewrite, CodeActionKind.Source,
-													CodeActionKind.SourceOrganizeImports }))),
+													CodeActionKind.SourceOrganizeImports))),
 							true));
 			textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
 			textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
@@ -251,13 +250,13 @@ public class LanguageServerWrapper {
 			textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
 			DocumentSymbolCapabilities documentSymbol = new DocumentSymbolCapabilities();
 			documentSymbol.setHierarchicalDocumentSymbolSupport(true);
-			documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(new SymbolKind[] { SymbolKind.Array,
+			documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.Array,
 					SymbolKind.Boolean, SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor, SymbolKind.Enum,
 					SymbolKind.EnumMember, SymbolKind.Event, SymbolKind.Field, SymbolKind.File, SymbolKind.Function,
 					SymbolKind.Interface, SymbolKind.Key, SymbolKind.Method, SymbolKind.Module, SymbolKind.Namespace,
 					SymbolKind.Null, SymbolKind.Number, SymbolKind.Object, SymbolKind.Operator, SymbolKind.Package,
 					SymbolKind.Property, SymbolKind.String, SymbolKind.Struct, SymbolKind.TypeParameter,
-					SymbolKind.Variable })));
+					SymbolKind.Variable )));
 			textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
 			textDocumentClientCapabilities.setFormatting(new FormattingCapabilities());
 			textDocumentClientCapabilities.setHover(new HoverCapabilities());
@@ -442,8 +441,11 @@ public class LanguageServerWrapper {
 		if (this.initializeFuture != null) {
 			try {
 				this.initializeFuture.get(1, TimeUnit.SECONDS);
-			} catch (InterruptedException | ExecutionException | TimeoutException e) {
-				e.printStackTrace();
+			} catch (ExecutionException | TimeoutException e) {
+				LanguageServerPlugin.logError(e);
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+				Thread.currentThread().interrupt();
 			}
 		}
 		return initiallySupportsWorkspaceFolders || supportsWorkspaceFolders(serverCapabilities);
@@ -508,11 +510,9 @@ public class LanguageServerWrapper {
 		List<IPath> pathsToDisconnect = new ArrayList<>();
 		for (IPath path : connectedDocuments.keySet()) {
 			IFile[] foundFiles = ResourcesPlugin.getWorkspace().getRoot().findFilesForLocationURI(path.toFile().toURI());
-			if(foundFiles.length != 0) {
-				if (LSPEclipseUtils.getFileContentTypes(foundFiles[0]).stream()
-						.anyMatch(foundContentType -> contentType.equals(foundContentType))) {
+			if(foundFiles.length != 0 && LSPEclipseUtils.getFileContentTypes(foundFiles[0]).stream()
+					.anyMatch(contentType::equals)) {
 					pathsToDisconnect.add(path);
-				}
 			}
 		}
 		for (IPath path : pathsToDisconnect) {
@@ -588,8 +588,11 @@ public class LanguageServerWrapper {
 			getInitializedServer().get(10, TimeUnit.SECONDS);
 		} catch (TimeoutException e) {
 			LanguageServerPlugin.logError("LanguageServer not initialized after 10s", e); //$NON-NLS-1$
-		} catch (InterruptedException | ExecutionException e) {
+		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
 		}
 
 		return this.serverCapabilities;
@@ -656,7 +659,8 @@ public class LanguageServerWrapper {
 		}
 		WorkspaceFoldersOptions folders = workspace.getWorkspaceFolders();
 		if (folders == null) {
-			workspace.setWorkspaceFolders(folders = new WorkspaceFoldersOptions());
+			folders = new WorkspaceFoldersOptions();
+			workspace.setWorkspaceFolders(folders);
 		}
 		folders.setSupported(enable);
 	}
@@ -666,7 +670,8 @@ public class LanguageServerWrapper {
 		if (caps != null) {
 			ExecuteCommandOptions commandProvider = caps.getExecuteCommandProvider();
 			if (commandProvider == null) {
-				caps.setExecuteCommandProvider(commandProvider = new ExecuteCommandOptions(new ArrayList<>()));
+				commandProvider = new ExecuteCommandOptions(new ArrayList<>());
+				caps.setExecuteCommandProvider(commandProvider);
 			}
 			List<String> existingCommands = commandProvider.getCommands();
 			for (String newCmd : newCommands) {

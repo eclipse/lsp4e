@@ -91,13 +91,11 @@ public class LSPFoldingReconcilingStrategy
 			if (!isCollapsed()) {
 				// working with rectangle, so line height
 				FontMetrics metrics = gc.getFontMetrics();
-				if (metrics != null) {
+				if (metrics != null && ((rectangle.height / metrics.getHeight()) <= 1)) {
 					// do not draw annotations that only span one line and
 					// mark them as not visible
-					if ((rectangle.height / metrics.getHeight()) <= 1) {
-						visible = false;
-						return;
-					}
+					visible = false;
+					return;
 				}
 			}
 			visible = true;
@@ -142,10 +140,10 @@ public class LSPFoldingReconcilingStrategy
 
 				// these are what are passed off to the annotation model to
 				// actually create and maintain the annotations
-				List<Annotation> modifications = new ArrayList<Annotation>();
-				List<FoldingAnnotation> deletions = new ArrayList<FoldingAnnotation>();
-				List<FoldingAnnotation> existing = new ArrayList<FoldingAnnotation>();
-				Map<Annotation, Position> additions = new HashMap<Annotation, Position>();
+				List<Annotation> modifications = new ArrayList<>();
+				List<FoldingAnnotation> deletions = new ArrayList<>();
+				List<FoldingAnnotation> existing = new ArrayList<>();
+				Map<Annotation, Position> additions = new HashMap<>();
 
 				// find and mark all folding annotations with length 0 for deletion
 				markInvalidAnnotationsForDeletion(deletions, existing);

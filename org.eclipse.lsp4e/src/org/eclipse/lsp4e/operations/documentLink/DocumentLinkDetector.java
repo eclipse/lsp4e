@@ -107,8 +107,12 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 							return res;
 						}
 					}).get(2, TimeUnit.SECONDS);
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+		} catch (ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
+			return null;
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
 			return null;
 		}
 	}

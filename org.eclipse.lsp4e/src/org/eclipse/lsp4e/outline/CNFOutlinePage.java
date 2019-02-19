@@ -197,12 +197,10 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 			for (Object object : objects) {
 				SymbolInformation symbol = object instanceof SymbolInformation ? (SymbolInformation) object
 						: Adapters.adapt(object, SymbolInformation.class);
-				if (symbol != null) {
-					if (isOffsetInSymbolRange(offset, symbol, document)) {
-						nextChild = symbol;
-						objects = contentProvider.getChildren(symbol);
-						break;
-					}
+				if (symbol != null && isOffsetInSymbolRange(offset, symbol, document)) {
+					nextChild = symbol;
+					objects = contentProvider.getChildren(symbol);
+					break;
 				}
 			}
 			if (nextChild == null)
