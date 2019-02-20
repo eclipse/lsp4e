@@ -34,7 +34,6 @@ import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubProgressMonitor;
@@ -56,7 +55,6 @@ public class CreateFileChange extends ResourceChange {
 	private String fEncoding;
 	private boolean fExplicitEncoding;
 	private long fStampToRestore;
-	private List<IFolder> foldersToCreate;
 
 	public CreateFileChange(URI uri, String source, String encoding) {
 		this(uri, source, encoding, IResource.NULL_STAMP);
@@ -101,17 +99,17 @@ public class CreateFileChange extends ResourceChange {
 	}
 
 	@Override
-	public Change perform(IProgressMonitor pm) throws CoreException, OperationCanceledException {
+	public Change perform(IProgressMonitor pm) throws CoreException {
+		pm.beginTask(NLS.bind(Messages.edit_CreateFile, uri), 3);
 
-		InputStream is= null;
-		try {
-			pm.beginTask(NLS.bind(Messages.edit_CreateFile, uri), 3);
+		initializeEncoding();
 
-			initializeEncoding();
+		try (InputStream is= new ByteArrayInputStream(fSource.getBytes(fEncoding))) {
+
 			IFile ifile = LSPEclipseUtils.getFileHandle(this.uri.toString());
 
 			if (ifile != null) {
-				foldersToCreate = new ArrayList<>();
+				List<IFolder> foldersToCreate = new ArrayList<>();
 				IContainer parent = ifile.getParent();
 				while (!parent.exists() && parent.getType() == IResource.FOLDER) {
 					foldersToCreate.add((IFolder) parent);
@@ -121,7 +119,7 @@ public class CreateFileChange extends ResourceChange {
 				for (IFolder folder : foldersToCreate) {
 					folder.create(true, false, pm);
 				}
-				is = new ByteArrayInputStream(fSource.getBytes(fEncoding));
+
 				ifile.create(is, false, new SubProgressMonitor(pm, 1));
 				if (fStampToRestore != IResource.NULL_STAMP) {
 					ifile.revertModificationStamp(fStampToRestore);
@@ -145,20 +143,15 @@ public class CreateFileChange extends ResourceChange {
 			} else {
 				File file = new File(this.uri);
 				Files.createDirectories(file.getParentFile().toPath());
-				file.createNewFile();
+				if (!file.createNewFile()) {
+					throw new IOException(String.format("Failed to create file '%s'",file.toString())); //$NON-NLS-1$
+				}
 			}
 		} catch (Exception e) {
 			LanguageServerPlugin.logError(e);
+			throw new CoreException(new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, e.getMessage(), e));
 		} finally {
-			try {
-				if (is != null)
-					is.close();
-			} catch (IOException ioe) {
-				throw new CoreException(
-						new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, ioe.getMessage(), ioe));
-			} finally {
-				pm.done();
-			}
+			pm.done();
 		}
 		return null;
 	}

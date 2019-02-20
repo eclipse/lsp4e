@@ -223,7 +223,7 @@ public class LanguageServersRegistry {
 											ExpressionConverter.getDefault().perform(enabledWhenChildren[0]),
 											description);
 								} catch (CoreException e) {
-
+									LanguageServerPlugin.logWarning(e.getMessage(), e);
 								}
 							}
 						}

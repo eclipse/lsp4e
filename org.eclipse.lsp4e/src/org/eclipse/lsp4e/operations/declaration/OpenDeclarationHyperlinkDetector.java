@@ -166,6 +166,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 			end = pos;
 
 		} catch (BadLocationException x) {
+			LanguageServerPlugin.logWarning(x.getMessage(), x);
 		}
 
 		if (start >= -1 && end > -1) {
