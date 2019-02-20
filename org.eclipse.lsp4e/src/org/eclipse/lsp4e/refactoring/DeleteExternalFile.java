@@ -18,7 +18,6 @@ import java.nio.file.Files;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -44,7 +43,7 @@ public class DeleteExternalFile extends Change {
 	}
 
 	@Override
-	public RefactoringStatus isValid(IProgressMonitor pm) throws CoreException, OperationCanceledException {
+	public RefactoringStatus isValid(IProgressMonitor pm) throws CoreException {
 		return RefactoringStatus.create(Status.OK_STATUS);
 	}
 

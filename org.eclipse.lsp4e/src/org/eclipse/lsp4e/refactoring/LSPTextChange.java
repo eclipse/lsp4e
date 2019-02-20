@@ -24,7 +24,6 @@ import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.jdt.annotation.NonNull;
@@ -122,11 +121,11 @@ public class LSPTextChange extends TextChange {
 
 	@Override
 	public void initializeValidationData(IProgressMonitor pm) {
-
+		// nothing to do yet, comment requested by sonar
 	}
 
 	@Override
-	public RefactoringStatus isValid(IProgressMonitor pm) throws CoreException, OperationCanceledException {
+	public RefactoringStatus isValid(IProgressMonitor pm) throws CoreException {
 		return RefactoringStatus.create(Status.OK_STATUS);
 	}
 

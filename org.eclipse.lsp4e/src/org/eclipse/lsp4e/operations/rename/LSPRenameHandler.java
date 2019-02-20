@@ -73,6 +73,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 						operation.run(part.getSite().getShell(), Messages.rename_title);
 					} catch (InterruptedException e1) {
 						LanguageServerPlugin.logError(e1);
+						Thread.currentThread().interrupt();
 					}
 				});
 	}
@@ -111,8 +112,12 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 		try {
 			return !LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
 					.get(100, TimeUnit.MILLISECONDS).isEmpty();
-		} catch (InterruptedException | java.util.concurrent.ExecutionException | TimeoutException e) {
+		} catch (java.util.concurrent.ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
+			return false;
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
 			return false;
 		}
 	}

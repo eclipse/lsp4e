@@ -60,6 +60,7 @@ public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessS
 			socketThread.join();
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
 		}
 
 		if (socket == null) {

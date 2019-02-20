@@ -94,28 +94,38 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 								.map(future -> {
 									try {
 										return future.get(2, TimeUnit.SECONDS);
-									} catch (InterruptedException | ExecutionException | TimeoutException e) {
+									} catch (ExecutionException | TimeoutException e) {
 										LanguageServerPlugin.logError(e);
 										return null;
+									} catch (InterruptedException e) {
+										LanguageServerPlugin.logError(e);
+										Thread.currentThread().interrupt();
+										return null;
 									}
-								}).filter(Objects::nonNull).flatMap(locations -> locations.stream())
-								.map(location -> new LSBasedHyperlink(location, linkRegion))
-								.filter(Objects::nonNull).toArray(IHyperlink[]::new);
+								}).filter(Objects::nonNull) //
+								.flatMap(locations -> locations.stream()) //
+								.map(location -> new LSBasedHyperlink(location, linkRegion)) //
+								.filter(Objects::nonNull) //
+								.toArray(IHyperlink[]::new);
 						if (res.length == 0) {
 							return null;
 						} else {
 							return res;
 						}
 					}).get(2, TimeUnit.SECONDS);
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+		} catch (ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
+			return null;
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
 			return null;
 		}
 	}
 
 	/**
-	 * This method is only a workaround for missing range value (which can be
-	 * used to highlight hyperlink) in LSP 'definition' response.
+	 * This method is only a workaround for missing range value (which can be used
+	 * to highlight hyperlink) in LSP 'definition' response.
 	 *
 	 * Should be removed when protocol will be updated
 	 * (https://github.com/Microsoft/language-server-protocol/issues/3)

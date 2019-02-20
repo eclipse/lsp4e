@@ -162,7 +162,7 @@ public class LSPFoldingReconcilingStrategy
 
 				// be sure projection has not been disabled
 				if (projectionAnnotationModel != null) {
-					if (existing.size() > 0) {
+					if (!existing.isEmpty()) {
 						deletions.addAll(existing);
 					}
 					// send the calculated updates to the annotations to the
@@ -243,7 +243,7 @@ public class LSPFoldingReconcilingStrategy
 		int startOffset = document.getLineOffset(line);
 		int endOffset = document.getLineOffset(endLineNumber) + document.getLineLength(endLineNumber);
 		Position newPos = new Position(startOffset, endOffset - startOffset);
-		if (existing.size() > 0) {
+		if (!existing.isEmpty()) {
 			FoldingAnnotation existingAnnotation = existing.remove(existing.size() - 1);
 			updateAnnotations(existingAnnotation, newPos, modifications, deletions);
 		} else {

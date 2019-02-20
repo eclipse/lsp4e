@@ -377,6 +377,7 @@ public class LanguageServiceAccessor {
 	 * @throws IOException
 	 * @Deprecated will be made private soon
 	 * @noreference will be made private soon
+	 * @deprecated
 	 */
 	@Deprecated
 	public static LanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project,

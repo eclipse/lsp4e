@@ -11,12 +11,15 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -55,14 +58,11 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 
 		@Override
 		public void run(IMarker marker) {
-			// TODO Auto-generated method stub
 			// join on Future?
-
 		}
 
 		@Override
 		public String getLabel() {
-			// TODO Auto-generated method stub
 			return Messages.computing;
 		}
 
@@ -84,8 +84,12 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		try {
 			checkMarkerResoultion(marker);
 			att = marker.getAttribute(LSP_REMEDIATION);
-		} catch (Exception e) {
+		} catch (IOException | CoreException | ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
+			return new IMarkerResolution[0];
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
 			return new IMarkerResolution[0];
 		}
 		if (att == COMPUTING) {
@@ -108,10 +112,8 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		return res.toArray(new IMarkerResolution[res.size()]);
 	}
 
-	private void checkMarkerResoultion(IMarker marker) throws Exception {
-		if (marker.getAttribute(LSP_REMEDIATION) != null) {
-			return;
-		} else {
+	private void checkMarkerResoultion(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException, TimeoutException {
+		if (marker.getAttribute(LSP_REMEDIATION) == null) {
 			IResource res = marker.getResource();
 			if (res != null && res.getType() == IResource.FILE) {
 				IFile file = (IFile)res;

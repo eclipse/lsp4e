@@ -93,6 +93,7 @@ public class LanguageClientImpl implements LanguageClient {
 				return new ApplyWorkspaceEditResponse(true);
 			} catch (InterruptedException e) {
 				LanguageServerPlugin.logError(e);
+				Thread.currentThread().interrupt();
 				return new ApplyWorkspaceEditResponse(Boolean.FALSE);
 			}
 		});

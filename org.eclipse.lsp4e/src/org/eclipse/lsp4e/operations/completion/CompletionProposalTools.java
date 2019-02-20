@@ -16,6 +16,10 @@ import org.eclipse.jface.text.IDocument;
 
 public final class CompletionProposalTools {
 
+	private CompletionProposalTools() {
+		// to avoid instances, requested by sonar
+	}
+
 	/**
 	 * The portion of the document leading up to the cursor that is being used as a
 	 * filter for requesting completion assist

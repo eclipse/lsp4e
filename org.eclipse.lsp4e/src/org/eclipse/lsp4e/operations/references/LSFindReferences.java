@@ -87,8 +87,11 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 					.getLanguageServers(LSPEclipseUtils.getDocument(editor),
 							capability -> Boolean.TRUE.equals(capability.getReferencesProvider()))
 					.get(50, TimeUnit.MILLISECONDS).isEmpty();
-		} catch (TimeoutException | InterruptedException | java.util.concurrent.ExecutionException e) {
+		} catch (TimeoutException | java.util.concurrent.ExecutionException e) {
 			LanguageServerPlugin.logError(e);
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
 		}
 		return false;
 	}

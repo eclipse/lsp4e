@@ -94,7 +94,7 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 
 	@Override
 	public void dispose() {
-		colorTable.values().forEach(color -> color.dispose());
+		colorTable.values().forEach(Color::dispose);
 		super.dispose();
 	}
 

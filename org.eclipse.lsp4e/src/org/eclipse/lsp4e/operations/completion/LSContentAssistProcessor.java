@@ -94,8 +94,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 											.addAll(toProposals(document, offset, completion, languageServer))))
 							.toArray(CompletableFuture[]::new)))
 					.get(COMPLETION_TIMEOUT, TimeUnit.MILLISECONDS);
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+		} catch (ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
+			return new ICompletionProposal[] { createErrorProposal(offset, e) };
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
 			return new ICompletionProposal[] { createErrorProposal(offset, e) };
 		}
 		LSCompletionProposal[] completeProposals = new LSCompletionProposal[proposals.size()];
@@ -215,8 +219,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 									.forEach(contextInformations::add)))
 							.toArray(CompletableFuture[]::new)))
 					.get(COMPLETION_TIMEOUT, TimeUnit.MILLISECONDS);
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
+		} catch (ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
+			return new IContextInformation[] { /* TODO? show error in context information */ };
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		}
 		return contextInformations.toArray(new IContextInformation[0]);
@@ -240,8 +248,11 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			initiateLanguageServers(LSPEclipseUtils.getDocument(textEditor));
 			try {
 				this.completionLanguageServersFuture.get(TRIGGERS_TIMEOUT, TimeUnit.MILLISECONDS);
-			} catch (InterruptedException | OperationCanceledException | TimeoutException | ExecutionException e) {
+			} catch (OperationCanceledException | TimeoutException | ExecutionException e) {
 				LanguageServerPlugin.logError(e);
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+				Thread.currentThread().interrupt();
 			}
 		}
 		return completionTriggerChars;
@@ -276,8 +287,11 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			initiateLanguageServers(LSPEclipseUtils.getDocument(textEditor));
 			try {
 				this.contextInformationLanguageServersFuture.get(TRIGGERS_TIMEOUT, TimeUnit.MILLISECONDS);
-			} catch (InterruptedException | OperationCanceledException | TimeoutException | ExecutionException e) {
+			} catch (OperationCanceledException | TimeoutException | ExecutionException e) {
 				LanguageServerPlugin.logError(e);
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+				Thread.currentThread().interrupt();
 			}
 		}
 		return contextTriggerChars;
