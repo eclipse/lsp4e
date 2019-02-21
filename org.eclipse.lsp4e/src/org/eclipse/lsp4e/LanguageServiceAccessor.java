@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2019 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -195,19 +195,6 @@ public class LanguageServiceAccessor {
 			}
 		}
 
-	}
-
-	/**
-	 * Get the requested language server instance for the given file. Starts the language server if not already started.
-	 * @param file
-	 * @param serverId
-	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request
-	 * @deprecated will be removed soon
-	 */
-	@Deprecated
-	private static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition)
-			throws IOException {
-		return getLanguageServer(file, lsDefinition, null);
 	}
 
 	/**
