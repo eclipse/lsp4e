@@ -108,11 +108,14 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 					int bytes = super.read(b, off, len);
 					byte[] payload = new byte[bytes];
 					System.arraycopy(b, off, payload, 0, bytes);
-					if (logToConsole) {
-						logToConsole(id + " to LSP4E:" + new String(payload)); //$NON-NLS-1$
-					}
-					if (logToFile) {
-						logToFile("\n" + id + " to LSP4E:" + new String(payload)); //$NON-NLS-1$ //$NON-NLS-2$
+					if (logToConsole || logToFile) {
+						String s = "\n[t=" + System.currentTimeMillis() + "] " + id + " to LSP4E:\n" + new String(payload); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+						if (logToConsole) {
+							logToConsole(s);
+						}
+						if (logToFile) {
+							logToFile(s);
+						}
 					}
 					return bytes;
 				}
@@ -133,11 +136,14 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 					int bytes = super.read(b, off, len);
 					byte[] payload = new byte[bytes];
 					System.arraycopy(b, off, payload, 0, bytes);
-					if (logToConsole) {
-						logToConsole("Error from " + id + ":" + new String(payload)); //$NON-NLS-1$ //$NON-NLS-2$
-					}
-					if (logToFile) {
-						logToFile("\nError from:" + id + ":" + payload); //$NON-NLS-1$ //$NON-NLS-2$
+					if (logToConsole || logToFile) {
+						String s = "\n[t=" + System.currentTimeMillis() + "] Error from " + id + ":\n" + new String(payload); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+						if (logToConsole) {
+							logToConsole(s);
+						}
+						if (logToFile) {
+							logToFile(s);
+						}
 					}
 					return bytes;
 				}
@@ -155,11 +161,14 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 			outputStream = new FilterOutputStream(provider.getOutputStream()) {
 				@Override
 				public void write(byte[] b) throws IOException {
-					if (logToConsole) {
-						logToConsole("LSP4E to " + id + ":" + new String(b)); //$NON-NLS-1$ //$NON-NLS-2$
-					}
-					if (logToFile) {
-						logToFile("\nLSP4E to " + id + ":" + new String(b)); //$NON-NLS-1$ //$NON-NLS-2$
+					if (logToConsole || logToFile) {
+						String s = "\n[t=" + System.currentTimeMillis() + "] LSP4E to " + id + ":\n" + new String(b);  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+						if (logToConsole) {
+							logToConsole(s);
+						}
+						if (logToFile) {
+							logToFile(s);
+						}
 					}
 					super.write(b);
 				}
