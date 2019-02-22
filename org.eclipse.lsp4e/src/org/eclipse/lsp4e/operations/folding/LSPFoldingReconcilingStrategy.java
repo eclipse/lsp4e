@@ -133,10 +133,10 @@ public class LSPFoldingReconcilingStrategy
 		for (LSPDocumentInfo info : infos) {
 			TextDocumentIdentifier identifier = new TextDocumentIdentifier(info.getFileUri().toString());
 			FoldingRangeRequestParams params = new FoldingRangeRequestParams(identifier);
-			request = info.getInitializedLanguageClient().thenCompose(languageServer -> {
+			request = info.getInitializedLanguageClient().thenComposeAsync(languageServer -> {
 				return languageServer.getTextDocumentService().foldingRange(params);
 			});
-			request.thenAccept(result -> {
+			request.thenAcceptAsync(result -> {
 
 				// these are what are passed off to the annotation model to
 				// actually create and maintain the annotations

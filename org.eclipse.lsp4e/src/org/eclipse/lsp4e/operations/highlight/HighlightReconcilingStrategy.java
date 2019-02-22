@@ -198,7 +198,7 @@ public class HighlightReconcilingStrategy
 				.thenAcceptAsync(languageServers ->
 				CompletableFuture.allOf(languageServers.stream()
 						.map(languageServer -> languageServer.getTextDocumentService().documentHighlight(params))
-						.map(request -> request.thenAccept(result -> {
+						.map(request -> request.thenAcceptAsync(result -> {
 							if (!monitor.isCanceled()) {
 								updateAnnotations(result, sourceViewer.getAnnotationModel());
 							}

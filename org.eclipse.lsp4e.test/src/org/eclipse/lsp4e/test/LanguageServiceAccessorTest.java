@@ -43,6 +43,7 @@ import org.eclipse.debug.internal.core.Preferences;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
@@ -358,23 +359,19 @@ public class LanguageServiceAccessorTest {
 
 		// Test with default status handler (see DebugPlugin#getStatusHandler)
 		boolean oldStatusHandler = getStatusHandler();
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next()
-				.get(1, TimeUnit.SECONDS);
+		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), null).get(1, TimeUnit.SECONDS);
 		assertEquals(getStatusHandler(), oldStatusHandler);
 
 		// Test with status handler set to false
 		setStatusHandler(false);
 		oldStatusHandler = getStatusHandler();
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next()
-				.get(1, TimeUnit.SECONDS);
+		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), null).get(1, TimeUnit.SECONDS);
 		assertEquals(getStatusHandler(), false);
 
 		// Test with status handler set to true
 		setStatusHandler(true);
 		oldStatusHandler = getStatusHandler();
-		LanguageServiceAccessor
-				.getInitializedLanguageServers(testFile, capabilites -> Boolean.TRUE).iterator().next()
-				.get(1, TimeUnit.SECONDS);
+		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), null).get(1, TimeUnit.SECONDS);
 		assertEquals(getStatusHandler(), true);
 	}
 

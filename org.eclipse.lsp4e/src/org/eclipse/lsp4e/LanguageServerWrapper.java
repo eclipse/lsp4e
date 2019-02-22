@@ -278,13 +278,15 @@ public class LanguageServerWrapper {
 			initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
 			initParams.setTrace(this.lspStreamProvider.getTrace(rootURI));
 
+			// no then...Async future here as we want this chain of operation to be sequential and
+			// "atomic"-ish
 			initializeFuture = languageServer.initialize(initParams).thenAccept(res -> {
 				serverCapabilities = res.getCapabilities();
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
 			}).thenRun(() -> this.languageServer.initialized(new InitializedParams()));
 
 			final Map<IPath, IDocument> toReconnect = filesToReconnect;
-			initializeFuture.thenRun(() -> {
+			initializeFuture.thenRunAsync(() -> {
 				if (this.initialProject != null) {
 					watchProject(this.initialProject, true);
 				}
@@ -477,7 +479,7 @@ public class LanguageServerWrapper {
 			return;
 		}
 		final IDocument theDocument = document;
-		initializeFuture.thenRun(() -> {
+		initializeFuture.thenRunAsync(() -> {
 			synchronized (connectedDocuments) {
 				if (this.connectedDocuments.containsKey(thePath)) {
 					return;

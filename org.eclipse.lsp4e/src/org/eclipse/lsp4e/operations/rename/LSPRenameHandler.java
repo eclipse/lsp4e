@@ -58,7 +58,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 			return null;
 		}
 		return LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
-				.thenAccept(languageServers -> {
+				.thenAcceptAsync(languageServers -> {
 					if (languageServers.isEmpty()) {
 						return;
 					}

@@ -251,7 +251,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		DocumentSymbolParams params = new DocumentSymbolParams(
 				new TextDocumentIdentifier(LSPEclipseUtils.toUri(outlineInfo.document).toString()));
 		symbols = outlineInfo.languageServer.getTextDocumentService().documentSymbol(params);
-		symbols.thenAccept(t -> {
+		symbols.thenAcceptAsync(t -> {
 			symbolsModel.update(t);
 
 			viewer.getControl().getDisplay().asyncExec(() -> {

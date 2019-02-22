@@ -90,7 +90,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			this.completionLanguageServersFuture
 					.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
 							.map(languageServer -> languageServer.getTextDocumentService().completion(param)
-									.thenAccept(completion -> proposals
+									.thenAcceptAsync(completion -> proposals
 											.addAll(toProposals(document, offset, completion, languageServer))))
 							.toArray(CompletableFuture[]::new)))
 					.get(COMPLETION_TIMEOUT, TimeUnit.MILLISECONDS);
@@ -214,7 +214,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			contextInformationLanguageServersFuture
 					.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
 							.map(languageServer -> languageServer.getTextDocumentService().signatureHelp(param))
-							.map(signatureHelpFuture -> signatureHelpFuture.thenAccept(signatureHelp -> signatureHelp
+							.map(signatureHelpFuture -> signatureHelpFuture.thenAcceptAsync(signatureHelp -> signatureHelp
 									.getSignatures().stream().map(LSContentAssistProcessor::toContextInformation)
 									.forEach(contextInformations::add)))
 							.toArray(CompletableFuture[]::new)))

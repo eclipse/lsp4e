@@ -146,7 +146,7 @@ public class LanguageServiceAccessor {
 			@Nullable Predicate<ServerCapabilities> request) throws IOException {
 		synchronized (startedServers) {
 			Collection<LanguageServerWrapper> wrappers = getLSWrappers(file, request);
-			return wrappers.stream().map(wrapper -> wrapper.getInitializedServer().thenApply((server) -> {
+			return wrappers.stream().map(wrapper -> wrapper.getInitializedServer().thenApplyAsync((server) -> {
 				try {
 					wrapper.connect(file, null);
 				} catch (IOException e) {
@@ -513,7 +513,7 @@ public class LanguageServiceAccessor {
 		final List<@NonNull LanguageServer> res = Collections.synchronizedList(new ArrayList<>());
 		try {
 			for (final LanguageServerWrapper wrapper : getLSWrappers(document)) {
-				serverRequests.add(wrapper.getInitializedServer().thenAccept(server -> {
+				serverRequests.add(wrapper.getInitializedServer().thenAcceptAsync(server -> {
 					if (server != null && (filter == null || filter.test(wrapper.getServerCapabilities()))) {
 						try {
 							wrapper.connect(path, document);

@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -139,30 +138,30 @@ public class HighlightTest {
 		// emulate cursor move
 		viewer.getTextWidget().setCaretOffset(1);
 
-		new DisplayHelper() {
+		Assert.assertTrue(new DisplayHelper() {
 			@Override
 			protected boolean condition() {
-				Iterator<Annotation> iterator = sourceViewer.getAnnotationModel().getAnnotationIterator();
-				final AtomicInteger sum = new AtomicInteger(0);
-				iterator.forEachRemaining(element -> sum.incrementAndGet());
-				return sum.get() == 2;
+				IAnnotationModel annotationModel = sourceViewer.getAnnotationModel();
+				Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
+				annotationModel.getAnnotationIterator().forEachRemaining(ann -> annotations.put(model.getPosition(ann), ann));
+				if (annotations.size() != 2) {
+					return false;
+				}
+				{
+					Annotation annotation = annotations.get(new org.eclipse.jface.text.Position(2, 4));
+					if (annotation == null || !HighlightReconcilingStrategy.READ_ANNOTATION_TYPE.equals(annotation.getType())) {
+						return false;
+					}
+				}
+				{
+					Annotation annotation = annotations.get(fakeAnnotationPosition);
+					if (annotation == null || !fakeAnnotationType.equals(annotation.getType())) {
+						return false;
+					}
+				}
+				return true;
 			}
-		}.waitForCondition(Display.getCurrent(), 3000);
-
-		Iterator<Annotation> iterator = model.getAnnotationIterator();
-		Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
-		while (iterator.hasNext()) {
-			Annotation annotation = iterator.next();
-			annotations.put(model.getPosition(annotation), annotation);
-		}
-
-		Annotation annotation = annotations.get(new org.eclipse.jface.text.Position(2, 4));
-		Assert.assertNotNull(annotation);
-		assertEquals(HighlightReconcilingStrategy.READ_ANNOTATION_TYPE, annotation.getType());
-
-		annotation = annotations.get(fakeAnnotationPosition);
-		Assert.assertNotNull(annotation);
-		assertEquals(fakeAnnotationType, annotation.getType());
+		}.waitForCondition(Display.getCurrent(), 3000));
 	}
 
 	private void checkGenericEditorVersion() {

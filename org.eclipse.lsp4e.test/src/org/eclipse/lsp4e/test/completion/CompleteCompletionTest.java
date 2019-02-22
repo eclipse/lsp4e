@@ -181,8 +181,12 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		String content = "First";
 		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
-		assertArrayEquals(new char[] { 'a', 'b' },
-				contentAssistProcessor.getCompletionProposalAutoActivationCharacters());
+		assertTrue(new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return Arrays.equals(new char[]{ 'a', 'b'}, contentAssistProcessor.getCompletionProposalAutoActivationCharacters());
+			}
+		}.waitForCondition(Display.getDefault(), 3000));
 	}
 
 	@Test

@@ -97,7 +97,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		Set<CompletableFuture<?>> runningFutures = new HashSet<>();
 		for (LSPDocumentInfo info : this.infos) {
 			final CompletableFuture<List<Either<Command, CodeAction>>> codeActions = info.getInitializedLanguageClient()
-					.thenCompose(languageServer -> languageServer.getTextDocumentService().codeAction(params));
+					.thenComposeAsync(languageServer -> languageServer.getTextDocumentService().codeAction(params));
 			runningFutures.add(codeActions);
 			codeActions.whenComplete((t, u) -> {
 				runningFutures.remove(codeActions);
@@ -156,7 +156,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 				ExecuteCommandParams params = new ExecuteCommandParams();
 				params.setCommand(command.getCommand());
 				params.setArguments(command.getArguments());
-				info.getInitializedLanguageClient().thenAccept(ls -> ls.getWorkspaceService().executeCommand(params));
+				info.getInitializedLanguageClient().thenAcceptAsync(ls -> ls.getWorkspaceService().executeCommand(params));
 			}
 		}
 	}

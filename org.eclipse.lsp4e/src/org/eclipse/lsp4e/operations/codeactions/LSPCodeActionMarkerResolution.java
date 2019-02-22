@@ -156,9 +156,9 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(marker.getResource()).toString()));
 					params.setRange(diagnostic.getRange());
 					CompletableFuture<List<Either<Command, CodeAction>>> codeAction = lsf
-							.thenCompose(ls -> ls.getTextDocumentService().codeAction(params));
+							.thenComposeAsync(ls -> ls.getTextDocumentService().codeAction(params));
 					futures.add(codeAction);
-					codeAction.thenAccept(actions -> {
+					codeAction.thenAcceptAsync(actions -> {
 						try {
 							marker.setAttribute(LSP_REMEDIATION, actions);
 						} catch (CoreException e) {

@@ -76,7 +76,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		textDocument.setLanguageId(languageId);
 		textDocument.setVersion(++version);
 		languageServerWrapper.getInitializedServer()
-				.thenAccept(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
+				.thenAcceptAsync(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
 	}
 
 	@Override
@@ -87,7 +87,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 		changeParams.getTextDocument().setVersion(++version);
 		languageServerWrapper.getInitializedServer()
-				.thenAccept(ls -> ls.getTextDocumentService().didChange(changeParams));
+				.thenAcceptAsync(ls -> ls.getTextDocumentService().didChange(changeParams));
 	}
 
 	@Override
@@ -144,13 +144,13 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		this.modificationStamp = timestamp;
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
-		languageServerWrapper.getInitializedServer().thenAccept(ls -> ls.getTextDocumentService().didSave(params));
+		languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didSave(params));
 	}
 
 	public void documentClosed() {
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
 		DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
-		languageServerWrapper.getInitializedServer().thenAccept(ls -> ls.getTextDocumentService().didClose(params));
+		languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
 	}
 
 	/**

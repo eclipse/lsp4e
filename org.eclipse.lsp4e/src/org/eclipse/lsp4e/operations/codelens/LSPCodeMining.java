@@ -49,7 +49,7 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 				capabilites -> capabilites.getCodeLensProvider().isResolveProvider())) {
 			return CompletableFuture.completedFuture(null);
 		}
-		return languageServer.getTextDocumentService().resolveCodeLens(this.codeLens).thenAccept(resolvedCodeLens -> {
+		return languageServer.getTextDocumentService().resolveCodeLens(this.codeLens).thenAcceptAsync(resolvedCodeLens -> {
 			codeLens = resolvedCodeLens;
 			setLabel(getCodeLensString(resolvedCodeLens));
 		});

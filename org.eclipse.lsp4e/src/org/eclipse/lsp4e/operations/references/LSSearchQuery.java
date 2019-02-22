@@ -96,7 +96,7 @@ public class LSSearchQuery extends FileSearchQuery {
 			params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString()));
 			params.setPosition(position);
 			languageServer.getTextDocumentService().references(params)
-					.thenAccept(locs -> {
+					.thenAcceptAsync(locs -> {
 						// Loop for each LSP Location and convert it to Match search.
 						for (Location loc : locs) {
 							Match match = toMatch(loc);

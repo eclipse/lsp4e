@@ -58,7 +58,7 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 				.thenComposeAsync(languageServers -> {
 					return CompletableFuture.allOf(languageServers.stream().map(languageServer -> languageServer
 							.getTextDocumentService().documentColor(param)
-							.thenAccept(colors -> colors.stream().filter(Objects::nonNull)
+							.thenAcceptAsync(colors -> colors.stream().filter(Objects::nonNull)
 									.map(color -> {
 										try {
 											return new ColorInformationMining(color, document, textDocumentIdentifier,
@@ -70,7 +70,7 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 									}).filter(Objects::nonNull)
 									.forEach(colorResults::add)))
 							.toArray(CompletableFuture[]::new));
-				}).thenApply(theVoid -> colorResults);
+				}).thenApplyAsync(theVoid -> colorResults);
 	}
 
 	@Override

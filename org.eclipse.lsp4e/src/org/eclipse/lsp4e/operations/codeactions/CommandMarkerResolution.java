@@ -76,7 +76,7 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 								return provider != null && provider.getCommands().contains(command.getCommand());
 							});
 					if (languageServerFuture != null) {
-						languageServerFuture.thenAccept(server -> {
+						languageServerFuture.thenAcceptAsync(server -> {
 							ExecuteCommandParams params = new ExecuteCommandParams();
 							params.setCommand(command.getCommand());
 							params.setArguments(command.getArguments());

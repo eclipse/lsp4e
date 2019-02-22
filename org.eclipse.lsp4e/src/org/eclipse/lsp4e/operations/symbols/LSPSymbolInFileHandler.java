@@ -49,8 +49,8 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 			DocumentSymbolParams params = new DocumentSymbolParams(
 					new TextDocumentIdentifier(info.getFileUri().toString()));
 			info.getInitializedLanguageClient()
-					.thenCompose(langaugeServer -> langaugeServer.getTextDocumentService().documentSymbol(params))
-					.thenAccept(t -> {
+					.thenComposeAsync(langaugeServer -> langaugeServer.getTextDocumentService().documentSymbol(params))
+					.thenAcceptAsync(t -> {
 						shell.getDisplay().asyncExec(() -> {
 							LSPSymbolInFileDialog dialog = new LSPSymbolInFileDialog(shell, textEditor,
 									info.getFileUri(), t);

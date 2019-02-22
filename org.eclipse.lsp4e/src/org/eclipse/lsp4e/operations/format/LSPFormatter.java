@@ -81,14 +81,14 @@ public class LSPFormatter {
 					info.getDocument());
 			params.setRange(new Range(start, end));
 			return info.getInitializedLanguageClient()
-					.thenCompose(server -> server.getTextDocumentService().rangeFormatting(params));
+					.thenComposeAsync(server -> server.getTextDocumentService().rangeFormatting(params));
 		}
 
 		DocumentFormattingParams params = new DocumentFormattingParams();
 		params.setTextDocument(docId);
 		params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
 		return info.getInitializedLanguageClient()
-				.thenCompose(server -> server.getTextDocumentService().formatting(params));
+				.thenComposeAsync(server -> server.getTextDocumentService().formatting(params));
 	}
 
 	public static boolean supportFormatting(ServerCapabilities capabilities) {
