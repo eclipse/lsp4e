@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2018 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2017, 2019 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.documentLink;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -73,7 +74,11 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 	@Override
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
 		final IDocument document = textViewer.getDocument();
-		final DocumentLinkParams params = new DocumentLinkParams(new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString()));
+		URI uri = LSPEclipseUtils.toUri(document);
+		if (uri == null) {
+			return null;
+		}
+		final DocumentLinkParams params = new DocumentLinkParams(new TextDocumentIdentifier(uri.toString()));
 		try {
 			return LanguageServiceAccessor
 					.getLanguageServers(textViewer.getDocument(),

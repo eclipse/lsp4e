@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2019 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.declaration;
 
+import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -75,8 +76,12 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 		final IDocument document = textViewer.getDocument();
 		TextDocumentPositionParams params;
 		try {
+			URI uri = LSPEclipseUtils.toUri(document);
+			if (uri == null) {
+				return null;
+			}
 			params = new TextDocumentPositionParams(
-					new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString()),
+					new TextDocumentIdentifier(uri.toString()),
 					LSPEclipseUtils.toPosition(region.getOffset(), document));
 		} catch (BadLocationException e1) {
 			LanguageServerPlugin.logError(e1);
