@@ -29,47 +29,10 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.ui.Messages;
-import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PlatformUI;
 
 public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector {
-
-	public static class LSBasedHyperlink implements IHyperlink {
-
-		private Location location;
-		private IRegion highlightRegion;
-
-		public LSBasedHyperlink(Location response, IRegion highlightRegion) {
-			this.location = response;
-			this.highlightRegion = highlightRegion;
-		}
-
-		@Override
-		public IRegion getHyperlinkRegion() {
-			return this.highlightRegion;
-		}
-
-		@Override
-		public String getTypeLabel() {
-			return Messages.hyperlinkLabel;
-		}
-
-		@Override
-		public String getHyperlinkText() {
-			return Messages.hyperlinkLabel;
-		}
-
-		@Override
-		public void open() {
-			IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-			LSPEclipseUtils.openInEditor(location, page);
-		}
-
-	}
 
 	@Override
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
@@ -108,8 +71,13 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 										return null;
 									}
 								}).filter(Objects::nonNull) //
-								.flatMap(locations -> locations.stream()) //
-								.map(location -> new LSBasedHyperlink(location, linkRegion)) //
+								.flatMap(locations -> {
+									if (locations.isLeft()) {
+										return locations.getLeft().stream().map(location -> new LSBasedHyperlink(location, linkRegion));
+									} else {
+										return locations.getRight().stream().map(locationLink -> new LSBasedHyperlink(locationLink, linkRegion));
+									}
+								}) //
 								.filter(Objects::nonNull) //
 								.toArray(IHyperlink[]::new);
 						if (res.length == 0) {

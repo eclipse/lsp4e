@@ -70,6 +70,7 @@ import org.eclipse.lsp4j.CreateFile;
 import org.eclipse.lsp4j.DeleteFile;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
@@ -410,6 +411,11 @@ public class LSPEclipseUtils {
 
 	public static void openInEditor(Location location, IWorkbenchPage page) {
 		open(location.getUri(), page, location.getRange());
+	}
+
+	public static void openInEditor(LocationLink link, IWorkbenchPage page) {
+		open(link.getTargetUri(), page, link.getTargetSelectionRange());
+
 	}
 
 	public static void open(String uri, IWorkbenchPage page, Range optionalRange) {
@@ -924,4 +930,5 @@ public class LSPEclipseUtils {
 	public static URI toUri(String uri) {
 		return LSPEclipseUtils.toUri(Path.fromPortableString(URI.create(uri).getPath()));
 	}
+
 }
