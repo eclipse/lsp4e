@@ -108,7 +108,7 @@ public class LanguageServiceAccessor {
 		/**
 		 * Returns the language server, regardless of if it is initialized.
 		 *
-		 * @deprecated use {@link #getInitializedServer()} instead.
+		 * @deprecated use {@link #getInitializedLanguageClient()} instead.
 		 */
 		@Deprecated
 		public LanguageServer getLanguageClient() {
@@ -203,7 +203,7 @@ public class LanguageServiceAccessor {
 	 * @param serverId
 	 * @param capabilitesPredicate a predicate to check capabilities
 	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request
-	 * @deprecated use {@link #getInitializedLanguageServer()} instead.
+	 * @deprecated use {@link #getInitializedLanguageServer(IFile, LanguageServerDefinition, Predicate)} instead.
 	 */
 	@Deprecated
 	public static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition,
