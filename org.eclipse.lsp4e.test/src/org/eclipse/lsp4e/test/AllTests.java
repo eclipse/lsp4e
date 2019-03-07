@@ -33,6 +33,7 @@ import org.eclipse.lsp4e.test.highlight.HighlightTest;
 import org.eclipse.lsp4e.test.hover.HoverTest;
 import org.eclipse.lsp4e.test.outline.SymbolsLabelProviderTest;
 import org.eclipse.lsp4e.test.references.FindReferencesTest;
+import org.eclipse.lsp4e.test.rename.LSPTextChangeTest;
 import org.eclipse.lsp4e.test.rename.RenameTest;
 import org.eclipse.lsp4e.test.symbols.SymbolsModelTest;
 import org.junit.runner.RunWith;
@@ -64,6 +65,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	RunningLanguageServerTest.class,
 	HighlightTest.class,
 	DynamicRegistrationTest.class,
+	LSPTextChangeTest.class,
 	RenameTest.class, 
 	SymbolsLabelProviderTest.class,
 	ColorTest.class

@@ -78,7 +78,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 				});
 	}
 
-	private static boolean isRenameProvider(ServerCapabilities serverCapabilities) {
+	public static boolean isRenameProvider(ServerCapabilities serverCapabilities) {
 		if (serverCapabilities == null) {
 			return false;
 		}

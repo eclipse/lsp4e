@@ -131,7 +131,14 @@ public class LSPTextChange extends TextChange {
 
 	@Override
 	public Object getModifiedElement() {
-		return delegate.getModifiedElement();
+		IFile file = LSPEclipseUtils.getFileHandle(this.fileUri.toString());
+		if (file != null) {
+			return file;
+		}
+		if (this.fBuffer != null) {
+			return this.fBuffer.getDocument();
+		}
+		return null;
 	}
 
 	@Override

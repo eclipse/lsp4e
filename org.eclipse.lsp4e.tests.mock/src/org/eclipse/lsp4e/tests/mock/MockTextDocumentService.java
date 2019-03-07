@@ -83,6 +83,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<Diagnostic> diagnostics;
 	private List<Either<Command, CodeAction>> mockCodeActions;
 	private List<ColorInformation> mockDocumentColors;
+	private WorkspaceEdit mockRenameEdit;
 
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -185,7 +186,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<WorkspaceEdit> rename(RenameParams params) {
-		return CompletableFuture.completedFuture(null);
+		return CompletableFuture.completedFuture(mockRenameEdit);
 	}
 
 	@Override
@@ -281,6 +282,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockReferences = null;
 		this.remoteProxies = new ArrayList<LanguageClient>();
 		this.mockCodeActions = new ArrayList<Either<Command, CodeAction>>();
+		this.mockRenameEdit = null;
 	}
 
 	public void setDiagnostics(List<Diagnostic> diagnostics) {
@@ -305,5 +307,9 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void setDocumentColors(List<ColorInformation> colors) {
 		this.mockDocumentColors = colors;
+	}
+
+	public void setRenameEdit(WorkspaceEdit edit) {
+		this.mockRenameEdit = edit;
 	}
 }
