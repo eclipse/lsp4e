@@ -47,7 +47,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	/**
 	 * Structured arguments for the
 	 * {@link DSPLaunchDelegate#launch(DSPLaunchDelegateLaunchBuilder) method.
-	 * 
+	 *
 	 * Use this class to simplify calling the launch method and make the source code
 	 * of consumers a little easier to read.
 	 */
@@ -85,7 +85,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		/**
 		 * Construct a builder using the normal arguments to
 		 * {@link ILaunchConfigurationDelegate#launch(ILaunchConfiguration, String, ILaunch, IProgressMonitor)}
-		 * 
+		 *
 		 * @param configuration
 		 * @param mode
 		 * @param launch
@@ -284,6 +284,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 									try {
 										Thread.sleep(50);
 									} catch (InterruptedException e) {
+										Thread.currentThread().interrupt();
 										DSPPlugin.logError(e);
 									}
 								}

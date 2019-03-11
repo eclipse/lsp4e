@@ -458,7 +458,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			DSPPlugin.logError(e);
 			return new DSPThread[0];
 		} catch (InterruptedException e) {
-			java.lang.Thread.interrupted();
+			java.lang.Thread.currentThread().interrupt();
 			return new DSPThread[0];
 		}
 	}
@@ -598,7 +598,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				// to be told too early that the process is ready
 				java.lang.Thread.sleep(1000);
 			} catch (InterruptedException e) {
-				java.lang.Thread.interrupted();
+				java.lang.Thread.currentThread().interrupt();
 			}
 			RunInTerminalResponse response = new RunInTerminalResponse();
 			// TODO, no standard way of getting ID. Can via reflection and/or custom

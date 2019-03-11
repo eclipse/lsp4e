@@ -48,7 +48,7 @@ abstract public class DSPDebugElement extends DebugElement {
 
 	/**
 	 * Returns the breakpoint manager
-	 * 
+	 *
 	 * @return the breakpoint manager
 	 */
 	protected IBreakpointManager getBreakpointManager() {
@@ -58,7 +58,7 @@ abstract public class DSPDebugElement extends DebugElement {
 	/**
 	 * TODO: This method was created for the prototyping work. It needs to be
 	 * replaced now.
-	 * 
+	 *
 	 * Gets the response from the debug command and prints some debug info
 	 *
 	 * @param future
@@ -67,7 +67,10 @@ abstract public class DSPDebugElement extends DebugElement {
 	static <T> T complete(CompletableFuture<T> future) throws DebugException {
 		try {
 			return future.get();
-		} catch (InterruptedException | ExecutionException e) {
+		} catch (ExecutionException e) {
+			throw newTargetRequestFailedException("Failed to get result from target", e);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 			throw newTargetRequestFailedException("Failed to get result from target", e);
 		}
 	}
@@ -112,7 +115,7 @@ abstract public class DSPDebugElement extends DebugElement {
 	/**
 	 * Return the error message for the current element, or <code>null</code> if
 	 * none.
-	 * 
+	 *
 	 * @return error message to display to the user
 	 */
 	public String getErrorMessage() {

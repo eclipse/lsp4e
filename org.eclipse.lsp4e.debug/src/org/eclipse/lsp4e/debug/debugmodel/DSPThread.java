@@ -59,7 +59,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 	/**
 	 * Update properties of the thread. The ID can't be changed, so the passed in
 	 * thread should match.
-	 * 
+	 *
 	 * @param thread
 	 * @throws DebugException
 	 */
@@ -261,7 +261,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 			}
 			throw newTargetRequestFailedException(e.getMessage(), e);
 		} catch (InterruptedException e) {
-			java.lang.Thread.interrupted();
+			java.lang.Thread.currentThread().interrupt();
 			return new DSPStackFrame[0];
 		}
 	}

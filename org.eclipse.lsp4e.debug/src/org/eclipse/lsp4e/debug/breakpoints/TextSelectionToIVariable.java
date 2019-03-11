@@ -73,10 +73,15 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 																								// should be a different
 																								// thread.
 					return new DSPVariable(getFrame(), res.getVariablesReference(), variableName, res.getResult());
-				} catch (InterruptedException | ExecutionException e) {
+				} catch (ExecutionException e) {
+					DSPPlugin.logError(e);
+					// will fail back by looking by looking up in current frame
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
 					DSPPlugin.logError(e);
 					// will fail back by looking by looking up in current frame
 				}
+
 			}
 
 			try {
