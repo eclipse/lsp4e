@@ -52,9 +52,8 @@ public class CodeLensProvider extends AbstractCodeMiningProvider {
 	@Override
 	public CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(ITextViewer viewer,
 			IProgressMonitor monitor) {
-		return provideCodeMinings(viewer.getDocument());
+		IDocument document = viewer.getDocument();
+		return document != null ? provideCodeMinings(document) : null;
 	}
-
-
 
 }
