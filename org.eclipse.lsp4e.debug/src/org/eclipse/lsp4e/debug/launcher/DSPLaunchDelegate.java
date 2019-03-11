@@ -31,10 +31,8 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
-import org.eclipse.debug.core.IStreamListener;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
 import org.eclipse.debug.core.model.IProcess;
-import org.eclipse.debug.core.model.IStreamMonitor;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
 import org.eclipse.osgi.util.NLS;
@@ -293,17 +291,14 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 						}
 					};
 					DSPLaunchDelegateLaunchBuilder finalBuilder = builder;
-					debugAdapterIProcess.getStreamsProxy().getOutputStreamMonitor().addListener(new IStreamListener() {
-						@Override
-						public void streamAppended(String text, IStreamMonitor monitor) {
-							try {
-								for (byte b : text.getBytes(
-										finalBuilder.launch.getAttribute(DebugPlugin.ATTR_CONSOLE_ENCODING))) {
-									bytes.add(Byte.valueOf(b));
-								}
-							} catch (IOException e) {
-								DSPPlugin.logError(e);
+					debugAdapterIProcess.getStreamsProxy().getOutputStreamMonitor().addListener((text, monitor) -> {
+						try {
+							for (byte b : text
+									.getBytes(finalBuilder.launch.getAttribute(DebugPlugin.ATTR_CONSOLE_ENCODING))) {
+								bytes.add(Byte.valueOf(b));
 							}
+						} catch (IOException e) {
+							DSPPlugin.logError(e);
 						}
 					});
 					outputStream = new OutputStream() {

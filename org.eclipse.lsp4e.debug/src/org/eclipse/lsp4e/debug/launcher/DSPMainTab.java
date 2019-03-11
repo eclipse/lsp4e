@@ -22,8 +22,6 @@ import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.lsp4e.debug.DSPImages;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.ModifyEvent;
-import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -166,13 +164,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 
 		jsonText = new Text(launchParametersGroup, SWT.MULTI | SWT.WRAP | SWT.BORDER | SWT.V_SCROLL);
 		jsonText.setLayoutData(new GridData(GridData.FILL_BOTH));
-		jsonText.addModifyListener(new ModifyListener() {
-
-			@Override
-			public void modifyText(ModifyEvent e) {
-				updateLaunchConfigurationDialog();
-			}
-		});
+		jsonText.addModifyListener(e -> updateLaunchConfigurationDialog());
 
 	}
 

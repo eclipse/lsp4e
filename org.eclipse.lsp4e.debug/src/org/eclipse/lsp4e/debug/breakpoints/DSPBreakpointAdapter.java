@@ -32,12 +32,11 @@ public class DSPBreakpointAdapter implements IToggleBreakpointsTarget {
 					.getBreakpoints(DSPPlugin.ID_DSP_DEBUG_MODEL);
 			for (int i = 0; i < breakpoints.length; i++) {
 				IBreakpoint breakpoint = breakpoints[i];
-				if (breakpoint instanceof ILineBreakpoint && resource.equals(breakpoint.getMarker().getResource())) {
-					if (((ILineBreakpoint) breakpoint).getLineNumber() == (lineNumber + 1)) {
-						// remove
-						breakpoint.delete();
-						return;
-					}
+				if (breakpoint instanceof ILineBreakpoint && resource.equals(breakpoint.getMarker().getResource())
+						&& ((ILineBreakpoint) breakpoint).getLineNumber() == (lineNumber + 1)) {
+					// remove
+					breakpoint.delete();
+					return;
 				}
 			}
 			// create line breakpoint (doc line numbers start at 0)

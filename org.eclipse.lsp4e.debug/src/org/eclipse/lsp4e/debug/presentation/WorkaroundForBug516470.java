@@ -26,6 +26,10 @@ import org.eclipse.ui.internal.ide.registry.UnassociatedEditorStrategyRegistry;
  */
 public class WorkaroundForBug516470 {
 
+	private WorkaroundForBug516470() {
+		// private constructor to avoid instances, requested by sonar
+	}
+
 	/**
 	 * Returns an editor id appropriate for opening the given file store.
 	 * <p>

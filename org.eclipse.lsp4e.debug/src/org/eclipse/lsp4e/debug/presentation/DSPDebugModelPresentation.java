@@ -64,10 +64,8 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 				if (((ITerminate) element).isTerminated()) {
 					label.insert(0, "<terminated>");
 				}
-			} else if (element instanceof IDisconnect) {
-				if (((IDisconnect) element).isDisconnected()) {
-					label.insert(0, "<disconnected>");
-				}
+			} else if (element instanceof IDisconnect && ((IDisconnect) element).isDisconnected()) {
+				label.insert(0, "<disconnected>");
 			}
 		} else {
 			// Use default TODO should the entire default be copied here?

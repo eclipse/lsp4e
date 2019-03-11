@@ -19,10 +19,9 @@ public class DSPEditorAdapterFactory implements IAdapterFactory {
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T> T getAdapter(Object adaptableObject, Class<T> adapterType) {
-		if (adapterType == IToggleBreakpointsTarget.class) {
-			if (adaptableObject instanceof ExtensionBasedTextEditor || adaptableObject instanceof TextEditor) {
-				return (T) new DSPBreakpointAdapter();
-			}
+		if (adapterType == IToggleBreakpointsTarget.class
+				&& (adaptableObject instanceof ExtensionBasedTextEditor || adaptableObject instanceof TextEditor)) {
+			return (T) new DSPBreakpointAdapter();
 		}
 		return null;
 	}

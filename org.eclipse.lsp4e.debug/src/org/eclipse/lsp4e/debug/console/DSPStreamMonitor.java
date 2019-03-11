@@ -16,7 +16,7 @@ import org.eclipse.debug.core.model.IFlushableStreamMonitor;
 public class DSPStreamMonitor implements IFlushableStreamMonitor {
 
 	private ListenerList<IStreamListener> listeners = new ListenerList<>();
-	private StringBuffer stream = new StringBuffer();
+	private StringBuilder stream = new StringBuilder();
 	private boolean buffer;
 
 	@Override
@@ -35,10 +35,8 @@ public class DSPStreamMonitor implements IFlushableStreamMonitor {
 	}
 
 	public void append(String text) {
-		if (buffer) {
-			if (text != null) {
-				stream.append(text);
-			}
+		if (buffer && text != null) {
+			stream.append(text);
 		}
 		notifyAppend(text);
 	}
@@ -48,9 +46,7 @@ public class DSPStreamMonitor implements IFlushableStreamMonitor {
 			return;
 		}
 		for (IStreamListener listener : listeners) {
-			SafeRunner.run(() -> {
-				listener.streamAppended(text, this);
-			});
+			SafeRunner.run(() -> listener.streamAppended(text, this));
 		}
 	}
 

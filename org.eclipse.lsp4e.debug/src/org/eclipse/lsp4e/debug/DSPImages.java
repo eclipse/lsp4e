@@ -22,6 +22,10 @@ import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.graphics.Image;
 
 public class DSPImages {
+	private DSPImages() {
+		// private constructor to avoid instances, requested by sonar
+	}
+
 	private static final String NAME_PREFIX = DSPPlugin.PLUGIN_ID + '.';
 	private static final int NAME_PREFIX_LENGTH = NAME_PREFIX.length();
 

@@ -19,10 +19,8 @@ public class AbsolutePathSourceContainer extends AbstractSourceContainer impleme
 
 	@Override
 	public Object[] findSourceElements(String name) throws CoreException {
-		if (name != null) {
-			if (Paths.get(name).isAbsolute()) {
-				return new Object[] { name };
-			}
+		if (name != null && Paths.get(name).isAbsolute()) {
+			return new Object[] { name };
 		}
 		return new Object[0];
 	}
