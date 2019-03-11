@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codelens;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,23 +31,29 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 public class CodeLensProvider extends AbstractCodeMiningProvider {
 
 	private CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(@NonNull IDocument document) {
-		CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString()));
-		List<LSPCodeMining> codeLensResults = Collections.synchronizedList(new ArrayList<>());
-		return LanguageServiceAccessor
-				.getLanguageServers(document, capabilities -> capabilities.getCodeLensProvider() != null)
-				.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
-						.map(languageServer -> languageServer.getTextDocumentService().codeLens(param)
-								.thenAcceptAsync(codeLenses -> codeLenses.stream().filter(Objects::nonNull).map(codeLens -> {
-									try {
-										return new LSPCodeMining(codeLens, document, languageServer,
-												CodeLensProvider.this);
-									} catch (BadLocationException e) {
-										LanguageServerPlugin.logError(e);
-										return null;
-									}
-								}).filter(Objects::nonNull).forEach(codeLensResults::add)))
-						.toArray(CompletableFuture[]::new)))
-				.thenApplyAsync(theVoid -> codeLensResults);
+		URI docURI = LSPEclipseUtils.toUri(document);
+		if (docURI != null) {
+			CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(docURI.toString()));
+			List<LSPCodeMining> codeLensResults = Collections.synchronizedList(new ArrayList<>());
+			return LanguageServiceAccessor
+					.getLanguageServers(document, capabilities -> capabilities.getCodeLensProvider() != null)
+					.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
+							.map(languageServer -> languageServer.getTextDocumentService().codeLens(param)
+									.thenAcceptAsync(codeLenses -> codeLenses.stream().filter(Objects::nonNull).map(codeLens -> {
+										try {
+											return new LSPCodeMining(codeLens, document, languageServer,
+													CodeLensProvider.this);
+										} catch (BadLocationException e) {
+											LanguageServerPlugin.logError(e);
+											return null;
+										}
+									}).filter(Objects::nonNull).forEach(codeLensResults::add)))
+							.toArray(CompletableFuture[]::new)))
+					.thenApplyAsync(theVoid -> codeLensResults);
+		}
+		else {
+			return null;
+		}
 	}
 
 	@Override

@@ -11,6 +11,7 @@
  */
 package org.eclipse.lsp4e.operations.color;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,33 +51,41 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 	}
 
 	private CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(@NonNull IDocument document) {
-		TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(
-				LSPEclipseUtils.toUri(document).toString());
-		DocumentColorParams param = new DocumentColorParams(textDocumentIdentifier);
-		final List<ColorInformationMining> colorResults = Collections.synchronizedList(new ArrayList<>());
-		return LanguageServiceAccessor.getLanguageServers(document, DocumentColorProvider::isColorProvider)
-				.thenComposeAsync(languageServers -> {
-					return CompletableFuture.allOf(languageServers.stream().map(languageServer -> languageServer
-							.getTextDocumentService().documentColor(param)
-							.thenAcceptAsync(colors -> colors.stream().filter(Objects::nonNull)
-									.map(color -> {
-										try {
-											return new ColorInformationMining(color, document, textDocumentIdentifier,
-													languageServer, DocumentColorProvider.this);
-										} catch (BadLocationException e) {
-											LanguageServerPlugin.logError(e);
-											return null;
-										}
-									}).filter(Objects::nonNull)
-									.forEach(colorResults::add)))
-							.toArray(CompletableFuture[]::new));
-				}).thenApplyAsync(theVoid -> colorResults);
+		URI docURI = LSPEclipseUtils.toUri(document);
+
+		if (docURI != null) {
+			TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(
+					docURI.toString());
+			DocumentColorParams param = new DocumentColorParams(textDocumentIdentifier);
+			final List<ColorInformationMining> colorResults = Collections.synchronizedList(new ArrayList<>());
+			return LanguageServiceAccessor.getLanguageServers(document, DocumentColorProvider::isColorProvider)
+					.thenComposeAsync(languageServers -> {
+						return CompletableFuture.allOf(languageServers.stream().map(languageServer -> languageServer
+								.getTextDocumentService().documentColor(param)
+								.thenAcceptAsync(colors -> colors.stream().filter(Objects::nonNull)
+										.map(color -> {
+											try {
+												return new ColorInformationMining(color, document, textDocumentIdentifier,
+														languageServer, DocumentColorProvider.this);
+											} catch (BadLocationException e) {
+												LanguageServerPlugin.logError(e);
+												return null;
+											}
+										}).filter(Objects::nonNull)
+										.forEach(colorResults::add)))
+								.toArray(CompletableFuture[]::new));
+					}).thenApplyAsync(theVoid -> colorResults);
+		}
+		else {
+			return null;
+		}
 	}
 
 	@Override
 	public CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(ITextViewer viewer,
 			IProgressMonitor monitor) {
-		return provideCodeMinings(viewer.getDocument());
+		IDocument document = viewer.getDocument();
+		return document != null ? provideCodeMinings(document) : null;
 	}
 
 	/**
