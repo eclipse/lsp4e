@@ -33,6 +33,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ltk.core.refactoring.participants.ProcessorBasedRefactoring;
 import org.eclipse.ltk.core.refactoring.participants.RefactoringProcessor;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
@@ -57,6 +58,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 		if (document == null) {
 			return null;
 		}
+		Shell shell = part.getSite().getShell();
 		return LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
 				.thenAcceptAsync(languageServers -> {
 					if (languageServers.isEmpty()) {
@@ -69,12 +71,14 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 					ProcessorBasedRefactoring refactoring = new ProcessorBasedRefactoring(processor);
 					LSPRenameRefactoringWizard wizard = new LSPRenameRefactoringWizard(refactoring);
 					RefactoringWizardOpenOperation operation = new RefactoringWizardOpenOperation(wizard);
-					try {
-						operation.run(part.getSite().getShell(), Messages.rename_title);
-					} catch (InterruptedException e1) {
-						LanguageServerPlugin.logError(e1);
-						Thread.currentThread().interrupt();
-					}
+					shell.getDisplay().asyncExec(() -> {
+						try {
+							operation.run(shell, Messages.rename_title);
+						} catch (InterruptedException e1) {
+							LanguageServerPlugin.logError(e1);
+							Thread.currentThread().interrupt();
+						}
+					});
 				});
 	}
 
