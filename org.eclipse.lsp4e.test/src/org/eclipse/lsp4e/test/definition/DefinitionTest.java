@@ -36,6 +36,7 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -119,5 +120,19 @@ public class DefinitionTest {
 
 		IHyperlink[] hyperlinks = hyperlinkDetector.detectHyperlinks(viewer, new Region(1, 0), true);
 		assertEquals(true, hyperlinks == null);
+	}
+
+	@Test
+	public void testReturnsPromptly() throws Exception {
+		Location location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
+		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(location));
+
+		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
+		ITextViewer viewer = TestUtils.openTextViewer(file);
+
+		long duration = System.currentTimeMillis();
+		hyperlinkDetector.detectHyperlinks(viewer, new Region(1, 0), true);
+		duration = System.currentTimeMillis() - duration;
+		Assert.assertTrue(duration < 500);
 	}
 }
