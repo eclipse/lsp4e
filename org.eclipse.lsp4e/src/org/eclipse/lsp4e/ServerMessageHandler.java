@@ -45,8 +45,8 @@ public class ServerMessageHandler {
 
 	private static class LSPNotification extends AbstractUiNotification {
 
-		final private String label;
-		final private MessageParams messageParams;
+		private final String label;
+		private final MessageParams messageParams;
 
 		public LSPNotification(String label, MessageParams messageParams) {
 			super("lsp.notification"); //$NON-NLS-1$

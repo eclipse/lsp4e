@@ -72,7 +72,7 @@ public class LanguageServiceAccessor {
 	 */
 	public static void clearStartedServers() {
 		synchronized (startedServers) {
-			startedServers.forEach(wrapper -> wrapper.stop());
+			startedServers.forEach(LanguageServerWrapper::stop);
 			startedServers.clear();
 		}
 	}
@@ -146,7 +146,7 @@ public class LanguageServiceAccessor {
 			@Nullable Predicate<ServerCapabilities> request) throws IOException {
 		synchronized (startedServers) {
 			Collection<LanguageServerWrapper> wrappers = getLSWrappers(file, request);
-			return wrappers.stream().map(wrapper -> wrapper.getInitializedServer().thenApplyAsync((server) -> {
+			return wrappers.stream().map(wrapper -> wrapper.getInitializedServer().thenApplyAsync(server -> {
 				try {
 					wrapper.connect(file, null);
 				} catch (IOException e) {
@@ -397,22 +397,14 @@ public class LanguageServiceAccessor {
 
 	private static Collection<LanguageServerWrapper> getMatchingStartedWrappers(@NonNull IFile file,
 			@Nullable Predicate<ServerCapabilities> request) {
-		synchronized(startedServers) {
-			return startedServers.stream()
-					.filter(wrapper -> {
-						try {
-							return wrapper.isConnectedTo(file.getLocation())
-									||
-									(LanguageServersRegistry.getInstance().matches(file, wrapper.serverDefinition)
-											&& wrapper.canOperate(file.getProject()));
-						} catch (IOException | CoreException e) {
-							LanguageServerPlugin.logError(e);
-							return false;
-						}
-					})
-					.filter(wrapper -> request == null || (wrapper.getServerCapabilities() == null
-							|| request.test(wrapper.getServerCapabilities())))
-				.collect(Collectors.toList());
+		synchronized (startedServers) {
+			return startedServers.stream().filter(wrapper -> {
+				return wrapper.isConnectedTo(file.getLocation())
+						|| (LanguageServersRegistry.getInstance().matches(file, wrapper.serverDefinition)
+								&& wrapper.canOperate(file.getProject()));
+			}).filter(wrapper -> request == null
+					|| (wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities())))
+					.collect(Collectors.toList());
 		}
 	}
 

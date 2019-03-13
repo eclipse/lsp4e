@@ -29,7 +29,7 @@ public class TraceOutputStream extends FilterOutputStream {
 	}
 
 	@Override
-	public void write(byte b[], int off, int len) throws IOException {
+	public void write(byte[] b, int off, int len) throws IOException {
 		trace.write(b, off, len);
 		trace.flush();
 		out.write(b, off, len);

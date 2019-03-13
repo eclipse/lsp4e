@@ -46,7 +46,8 @@ public class LSPFormatter {
 
 	public CompletableFuture<List<? extends TextEdit>> requestFormatting(@NonNull IDocument document,
 			@NonNull ITextSelection textSelection) {
-		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document, capabilities -> supportFormatting(capabilities));
+		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
+				LSPFormatter::supportFormatting);
 		if (infos.isEmpty()) {
 			return CompletableFuture.completedFuture(Collections.emptyList());
 		}

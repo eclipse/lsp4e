@@ -24,7 +24,7 @@ import org.eclipse.debug.core.model.DebugElement;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
 
-abstract public class DSPDebugElement extends DebugElement {
+public abstract class DSPDebugElement extends DebugElement {
 
 	private String errorMessage;
 

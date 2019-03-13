@@ -77,7 +77,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 			this.server = other.server;
 			this.port = other.port;
 
-			this.dspParameters = new HashMap<String, Object>(other.dspParameters);
+			this.dspParameters = new HashMap<>(other.dspParameters);
 		}
 
 		/**
@@ -209,7 +209,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		// Make a copy so we can modify locally as needed.
 		builder = new DSPLaunchDelegateLaunchBuilder(builder);
 		SubMonitor subMonitor = SubMonitor.convert(builder.monitor, 100);
-		builder.dspParameters = new HashMap<String, Object>(builder.dspParameters);
+		builder.dspParameters = new HashMap<>(builder.dspParameters);
 
 		boolean customDebugAdapter = builder.configuration.getAttribute(DSPPlugin.ATTR_CUSTOM_DEBUG_ADAPTER, false);
 		boolean customLaunchParameters = builder.configuration.getAttribute(DSPPlugin.ATTR_CUSTOM_LAUNCH_PARAMS, false);
@@ -318,7 +318,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 				} else {
 					inputStream = debugAdapterProcess.getInputStream();
 					outputStream = debugAdapterProcess.getOutputStream();
-					cleanup = () -> debugAdapterProcess.destroy();
+					cleanup = debugAdapterProcess::destroy;
 				}
 			} else {
 

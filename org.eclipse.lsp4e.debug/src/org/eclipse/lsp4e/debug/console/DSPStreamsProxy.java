@@ -57,7 +57,7 @@ public class DSPStreamsProxy implements IStreamsProxy2 {
 					outputStream.append(result);
 				}
 			}).exceptionally((t) -> {
-				if (t.getCause() != null && t.getCause() instanceof ResponseErrorException) {
+				if (t.getCause() instanceof ResponseErrorException) {
 					ResponseErrorException exception = (ResponseErrorException) t.getCause();
 					ResponseError error = exception.getResponseError();
 					errorStream.append(error.getMessage() + System.lineSeparator());

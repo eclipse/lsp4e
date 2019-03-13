@@ -101,7 +101,7 @@ public class LSPImages {
 		declareRegistryImage(IMG_REFERENCE, OBJECT + "reference.png"); //$NON-NLS-1$
 	}
 
-	private final static void declareRegistryImage(String key, String path) {
+	private static final void declareRegistryImage(String key, String path) {
 		ImageDescriptor desc = ImageDescriptor.getMissingImageDescriptor();
 		Bundle bundle = Platform.getBundle(LanguageServerPlugin.PLUGIN_ID);
 		URL url = null;

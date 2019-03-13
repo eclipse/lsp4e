@@ -57,7 +57,7 @@ public class LSPFormatHandler extends AbstractHandler {
 		if (part instanceof ITextEditor) {
 			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument((ITextEditor) part),
-					(capabilities) -> LSPFormatter.supportFormatting(capabilities));
+					LSPFormatter::supportFormatting);
 			ISelection selection = ((ITextEditor) part).getSelectionProvider().getSelection();
 			return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
 		}

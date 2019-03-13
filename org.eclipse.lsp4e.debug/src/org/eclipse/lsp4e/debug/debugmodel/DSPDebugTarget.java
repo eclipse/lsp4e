@@ -94,7 +94,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	/**
 	 * Once we have received initialized event, this member will be "done" as a flag
 	 */
-	private CompletableFuture<Void> initialized = new CompletableFuture<Void>();
+	private CompletableFuture<Void> initialized = new CompletableFuture<>();
 
 	/**
 	 * The cached set of current threads. This should generally not be directly
@@ -123,7 +123,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	private Map<String, Object> dspParameters;
 
 	public DSPDebugTarget(ILaunch launch, Runnable processCleanup, InputStream in, OutputStream out,
-			Map<String, Object> dspParameters) throws CoreException {
+			Map<String, Object> dspParameters) {
 		super(null);
 		this.in = in;
 		this.out = out;
@@ -315,7 +315,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				source = getThread(body.getThreadId());
 			}
 			if (source == null || body.getAllThreadsContinued() == null || body.getAllThreadsContinued()) {
-				Arrays.asList(getThreads()).forEach(t -> t.continued());
+				Arrays.asList(getThreads()).forEach(DSPThread::continued);
 			}
 			if (source != null) {
 				source.fireResumeEvent(DebugEvent.CLIENT_REQUEST);

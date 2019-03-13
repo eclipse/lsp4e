@@ -30,7 +30,7 @@ public class TraceInputStream extends FilterInputStream {
 	}
 
 	@Override
-	public int read(byte b[], int off, int len) throws IOException {
+	public int read(byte[] b, int off, int len) throws IOException {
 		int n = in.read(b, off, len);
 		trace.write(b, off, n);
 		trace.flush();

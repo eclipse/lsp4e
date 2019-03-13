@@ -11,15 +11,16 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Stack;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.lsp4j.DocumentSymbol;
@@ -61,7 +62,7 @@ public class SymbolsModel {
 					Comparator.comparingInt(pos -> ((Position) pos).getLine())
 							.thenComparingInt(pos -> ((Position) pos).getCharacter())));
 
-			Stack<SymbolInformation> parentStack = new Stack<>();
+			Deque<SymbolInformation> parentStack = new ArrayDeque<>();
 			parentStack.push(ROOT_SYMBOL_INFORMATION);
 			SymbolInformation previousSymbol = null;
 			for (Either<SymbolInformation, DocumentSymbol> either : response) {

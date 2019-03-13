@@ -64,7 +64,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 	/**
 	 * Initialize the manager and send all platform breakpoints to the debug
 	 * adapter.
-	 * 
+	 *
 	 * @return the completeable future to signify when the breakpoints are all sent.
 	 */
 	public CompletableFuture<Void> initialize() {
@@ -219,7 +219,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 
 			Source source = entry.getKey();
 			List<SourceBreakpoint> bps = entry.getValue();
-			Long[] lines = bps.stream().map(sb -> sb.getLine()).toArray(Long[]::new);
+			Long[] lines = bps.stream().map(SourceBreakpoint::getLine).toArray(Long[]::new);
 			SourceBreakpoint[] sourceBps = bps.toArray(new SourceBreakpoint[bps.size()]);
 
 			SetBreakpointsArguments arguments = new SetBreakpointsArguments();

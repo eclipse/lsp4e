@@ -229,7 +229,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 			connectDebugServer.setSelection(!launch);
 			debugCommandText.setText(configuration.getAttribute(DSPPlugin.ATTR_DSP_CMD, ""));
 			List<String> args = configuration.getAttribute(DSPPlugin.ATTR_DSP_ARGS, Collections.emptyList());
-			if (args.size() == 0) {
+			if (args.isEmpty()) {
 				debugArgsText.setText("");
 			} else if (args.size() == 1) {
 				debugArgsText.setText(args.get(0));

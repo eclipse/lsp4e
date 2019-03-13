@@ -107,12 +107,12 @@ public class LSIncompleteCompletionProposal
 		};
 	};
 
-	final protected CompletionItem item;
+	protected final CompletionItem item;
 	private int initialOffset = -1;
 	protected int bestOffset = -1;
 	protected int currentOffset = -1;
 	protected ITextViewer viewer;
-	final private IDocument document;
+	private final IDocument document;
 	private IRegion selection;
 	private LinkedPosition firstPosition;
 	// private LSPDocumentInfo info;

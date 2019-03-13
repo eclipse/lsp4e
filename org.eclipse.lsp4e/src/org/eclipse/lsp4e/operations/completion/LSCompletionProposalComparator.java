@@ -37,13 +37,12 @@ final class LSCompletionProposalComparator implements Comparator<LSCompletionPro
 		} else if (o1.getRankCategory() > o2.getRankCategory()) {
 			return +1;
 		}
-		if (o1.getRankCategory() < 5 && o2.getRankCategory() < 5) {
-			if (!(o1.getRankScore() == -1 && o2.getRankScore() == -1)) {
-				if (o2.getRankScore() == -1 || o1.getRankScore() < o2.getRankScore()) {
-					return -1;
-				} else if (o1.getRankScore() == -1 || o1.getRankScore() > o2.getRankScore()) {
-					return +1;
-				}
+		if ((o1.getRankCategory() < 5 && o2.getRankCategory() < 5)
+				&& (!(o1.getRankScore() == -1 && o2.getRankScore() == -1))) {
+			if (o2.getRankScore() == -1 || o1.getRankScore() < o2.getRankScore()) {
+				return -1;
+			} else if (o1.getRankScore() == -1 || o1.getRankScore() > o2.getRankScore()) {
+				return +1;
 			}
 		}
 		String c1 = o1.getSortText();

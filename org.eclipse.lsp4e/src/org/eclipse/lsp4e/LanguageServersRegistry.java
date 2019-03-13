@@ -72,7 +72,7 @@ public class LanguageServersRegistry {
 	private static final String ENABLED_WHEN_ATTRIBUTE = "enabledWhen"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_DESC = "description"; //$NON-NLS-1$
 
-	public static abstract class LanguageServerDefinition {
+	public abstract static class LanguageServerDefinition {
 		public final @NonNull String id;
 		public final @NonNull String label;
 		public final @NonNull Map<IContentType, String> langugeIdMappings;
@@ -351,10 +351,8 @@ public class LanguageServersRegistry {
 	 * @param file
 	 * @param serverDefinition
 	 * @return whether the given serverDefinition is suitable for the file
-	 * @throws CoreException
-	 * @throws IOException
 	 */
-	public boolean matches(@NonNull IFile file, @NonNull LanguageServerDefinition serverDefinition) throws IOException, CoreException {
+	public boolean matches(@NonNull IFile file, @NonNull LanguageServerDefinition serverDefinition) {
 		return getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file)).contains(serverDefinition);
 	}
 
@@ -362,11 +360,8 @@ public class LanguageServersRegistry {
 	 * @param document
 	 * @param serverDefinition
 	 * @return whether the given serverDefinition is suitable for the file
-	 * @throws CoreException
-	 * @throws IOException
 	 */
-	public boolean matches(@NonNull IDocument document, @NonNull LanguageServerDefinition serverDefinition)
-			throws IOException, CoreException {
+	public boolean matches(@NonNull IDocument document, @NonNull LanguageServerDefinition serverDefinition) {
 		return getAvailableLSFor(LSPEclipseUtils.getDocumentContentTypes(document)).contains(serverDefinition);
 	}
 

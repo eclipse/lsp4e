@@ -77,9 +77,7 @@ public class WorkaroundForBug516470 {
 					is.close();
 				}
 			}
-		} catch (CoreException ex) {
-			// continue without content type
-		} catch (IOException ex) {
+		} catch (CoreException | IOException ex) {
 			// continue without content type
 		}
 
