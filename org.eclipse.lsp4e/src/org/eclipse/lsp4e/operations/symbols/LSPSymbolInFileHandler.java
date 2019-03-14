@@ -50,13 +50,11 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 					new TextDocumentIdentifier(info.getFileUri().toString()));
 			info.getInitializedLanguageClient()
 					.thenComposeAsync(langaugeServer -> langaugeServer.getTextDocumentService().documentSymbol(params))
-					.thenAcceptAsync(t -> {
-						shell.getDisplay().asyncExec(() -> {
-							LSPSymbolInFileDialog dialog = new LSPSymbolInFileDialog(shell, textEditor,
-									info.getFileUri(), t);
-							dialog.open();
-						});
-					});
+					.thenAcceptAsync(t -> shell.getDisplay().asyncExec(() -> {
+						LSPSymbolInFileDialog dialog = new LSPSymbolInFileDialog(shell, textEditor,
+								info.getFileUri(), t);
+						dialog.open();
+					}));
 		}
 		return null;
 	}
@@ -67,7 +65,7 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 		if (part instanceof ITextEditor) {
 			List<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument((ITextEditor) part),
-					(capabilities) -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
+					capabilities -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
 			return !infos.isEmpty();
 		}
 		return false;

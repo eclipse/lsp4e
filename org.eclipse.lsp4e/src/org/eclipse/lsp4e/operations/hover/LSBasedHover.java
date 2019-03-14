@@ -58,6 +58,9 @@ import org.eclipse.swt.widgets.Shell;
  */
 public class LSBasedHover implements ITextHover, ITextHoverExtension {
 
+	private static final String HEAD = "<head>"; //$NON-NLS-1$
+
+
 	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage());
 
 
@@ -85,11 +88,11 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 				(foreground != null ? "color: " + toHTMLrgb(foreground.getRGB()) + "; " : "") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				" }</style>"; //$NON-NLS-1$
 
-		int headIndex = html.indexOf("<head>"); //$NON-NLS-1$
+		int headIndex = html.indexOf(HEAD);
 		StringBuilder builder = new StringBuilder(html.length() + style.length());
-		builder.append(html.substring(0, headIndex + "<head>".length())); //$NON-NLS-1$
+		builder.append(html.substring(0, headIndex + HEAD.length()));
 		builder.append(style);
-		builder.append(html.substring(headIndex + "<head>".length())); //$NON-NLS-1$
+		builder.append(html.substring(headIndex + HEAD.length()));
 		return builder.toString();
 	}
 
@@ -137,7 +140,7 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 					// strings with language tags, e.g. without it things after <?php tag aren't
 					// displayed
 					if (markedString.getLanguage() != null && !markedString.getLanguage().isEmpty()) {
-						return String.format("```%s\n%s\n```", markedString.getLanguage(), markedString.getValue()); //$NON-NLS-1$
+						return String.format("```%s%n%s%n```", markedString.getLanguage(), markedString.getValue()); //$NON-NLS-1$
 					} else {
 						return markedString.getValue();
 					}

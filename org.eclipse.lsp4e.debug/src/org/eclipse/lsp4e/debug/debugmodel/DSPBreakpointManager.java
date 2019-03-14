@@ -88,10 +88,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 	 * @return whether this target can install the given breakpoint
 	 */
 	public boolean supportsBreakpoint(IBreakpoint breakpoint) {
-		if (breakpoint instanceof ILineBreakpoint) {
-			return true;
-		}
-		return false;
+		return breakpoint instanceof ILineBreakpoint;
 	}
 
 	/**
@@ -126,8 +123,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 					sendBreakpoints();
 				}
 			} catch (CoreException e) {
-				// TODO
-				e.printStackTrace();
+				DSPPlugin.logError(e);
 			}
 		}
 	}

@@ -80,7 +80,6 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 	private ITextEditor fTextEditor;
 	private List<Either<SymbolInformation, DocumentSymbol>> fSymbols;
 
-	private FilteredTree fFilteredTree;
 	private @NonNull URI fileURI;
 
 	public LSPSymbolInFileDialog(Shell parentShell, ITextEditor textEditor,
@@ -94,8 +93,8 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 	@Override
 	protected Control createDialogArea(Composite parent) {
-		fFilteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true);
-		TreeViewer viewer = fFilteredTree.getViewer();
+		FilteredTree filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true);
+		TreeViewer viewer = filteredTree.getViewer();
 
 		viewer.setContentProvider(new SymbolsContentProvider());
 		IResource targetResource = LSPEclipseUtils.findResourceFor(this.fileURI.toString());
@@ -136,7 +135,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		});
 
 		viewer.setInput(fSymbols);
-		return fFilteredTree;
+		return filteredTree;
 	}
 
 	@Override

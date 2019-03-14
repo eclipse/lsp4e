@@ -43,9 +43,8 @@ public class LSPFormatHandler extends AbstractHandler {
 			final Shell shell = textEditor.getSite().getShell();
 			ISelection selection = HandlerUtil.getCurrentSelection(event);
 			if (document != null && selection instanceof ITextSelection) {
-				formatter.requestFormatting(document, (ITextSelection) selection).thenAcceptAsync(edits -> {
-					shell.getDisplay().asyncExec(() -> formatter.applyEdits(document, edits));
-				});
+				formatter.requestFormatting(document, (ITextSelection) selection).thenAcceptAsync(
+						edits -> shell.getDisplay().asyncExec(() -> formatter.applyEdits(document, edits)));
 			}
 		}
 		return null;

@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.runtime.CoreException;
@@ -148,7 +148,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			}
 			// TODO this Function copied from createClientLauncher so that I can replace
 			// threadpool, so make this wrapper more accessible
-			Function<MessageConsumer, MessageConsumer> wrapper = consumer -> {
+			UnaryOperator<MessageConsumer> wrapper = consumer -> {
 				MessageConsumer result = consumer;
 				if (traceMessages != null) {
 					result = message -> {
@@ -203,7 +203,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				}).thenRun(() -> {
 					process = new DSPProcess(this);
 					launch.addProcess(process);
-				}).thenCompose((v) -> {
+				}).thenCompose(v -> {
 					monitor.worked(10);
 					if ("launch".equals(dspParameters.getOrDefault("request", "launch"))) {
 						monitor.subTask("Launching program");
@@ -215,13 +215,13 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				}).thenCombineAsync(initialized, (v1, v2) -> {
 					monitor.worked(10);
 					return (Void) null;
-				}).thenCompose((v) -> {
+				}).thenCompose(v -> {
 					monitor.worked(10);
 					monitor.subTask("Sending breakpoints");
 					breakpointManager = new DSPBreakpointManager(getBreakpointManager(), getDebugProtocolServer(),
 							capabilities);
 					return breakpointManager.initialize();
-				}).thenCompose((v) -> {
+				}).thenCompose(v -> {
 					monitor.worked(30);
 					monitor.subTask("Sending configuration done");
 					if (Boolean.TRUE.equals(capabilities.getSupportsConfigurationDoneRequest())) {
@@ -507,11 +507,9 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		if (process != null) {
 			DSPStreamsProxy dspStreamsProxy = process.getStreamsProxy();
 			String output = args.getOutput();
-			if (args.getCategory() == null || OutputEventArgumentsCategory.CONSOLE.equals(args.getCategory())) {
+			if (args.getCategory() == null || OutputEventArgumentsCategory.CONSOLE.equals(args.getCategory())
+					|| OutputEventArgumentsCategory.STDOUT.equals(args.getCategory())) {
 				// TODO put this data in a different region with a different colour
-				dspStreamsProxy.getOutputStreamMonitor().append(output);
-				outputted = true;
-			} else if (OutputEventArgumentsCategory.STDOUT.equals(args.getCategory())) {
 				dspStreamsProxy.getOutputStreamMonitor().append(output);
 				outputted = true;
 			} else if (OutputEventArgumentsCategory.STDERR.equals(args.getCategory())) {

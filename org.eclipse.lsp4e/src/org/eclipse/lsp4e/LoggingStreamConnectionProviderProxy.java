@@ -265,7 +265,9 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		}
 		currentFile = new File(logFolder, id + ".log"); //$NON-NLS-1$
 		try {
-			currentFile.createNewFile();
+			if (!currentFile.createNewFile()) {
+				throw new IOException(String.format("Failed to create file %s", currentFile.toString())); //$NON-NLS-1$
+			}
 		} catch (IOException e) {
 			currentFile = null;
 			LanguageServerPlugin.logError(e);

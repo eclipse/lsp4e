@@ -210,9 +210,9 @@ public class LanguageServiceAccessor {
 			Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
 		LanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition);
-		if (wrapper != null && (capabilitiesPredicate == null
+		if (capabilitiesPredicate == null
 				|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-				|| capabilitiesPredicate.test(wrapper.getServerCapabilities()))) {
+				|| capabilitiesPredicate.test(wrapper.getServerCapabilities())) {
 			wrapper.connect(file, null);
 			return wrapper.getServer();
 		}
@@ -231,9 +231,9 @@ public class LanguageServiceAccessor {
 			Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
 		LanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition);
-		if (wrapper != null && (capabilitiesPredicate == null
+		if (capabilitiesPredicate == null
 				|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-				|| capabilitiesPredicate.test(wrapper.getServerCapabilities()))) {
+				|| capabilitiesPredicate.test(wrapper.getServerCapabilities())) {
 			wrapper.connect(file, null);
 			return wrapper.getInitializedServer();
 		}
@@ -398,11 +398,9 @@ public class LanguageServiceAccessor {
 	private static Collection<LanguageServerWrapper> getMatchingStartedWrappers(@NonNull IFile file,
 			@Nullable Predicate<ServerCapabilities> request) {
 		synchronized (startedServers) {
-			return startedServers.stream().filter(wrapper -> {
-				return wrapper.isConnectedTo(file.getLocation())
-						|| (LanguageServersRegistry.getInstance().matches(file, wrapper.serverDefinition)
-								&& wrapper.canOperate(file.getProject()));
-			}).filter(wrapper -> request == null
+			return startedServers.stream().filter(wrapper -> wrapper.isConnectedTo(file.getLocation())
+					|| (LanguageServersRegistry.getInstance().matches(file, wrapper.serverDefinition)
+							&& wrapper.canOperate(file.getProject()))).filter(wrapper -> request == null
 					|| (wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities())))
 					.collect(Collectors.toList());
 		}

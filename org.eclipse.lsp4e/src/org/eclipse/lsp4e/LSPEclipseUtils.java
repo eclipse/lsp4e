@@ -127,6 +127,8 @@ import com.google.gson.JsonPrimitive;
  */
 public class LSPEclipseUtils {
 
+	private static final String FILE = "file:"; //$NON-NLS-1$
+	private static final String FILE_SLASH = "file:/"; //$NON-NLS-1$
 	private static final String HTML = "html"; //$NON-NLS-1$
 	private static final String MARKDOWN = "markdown"; //$NON-NLS-1$
 	private static final String MD = "md"; //$NON-NLS-1$
@@ -240,12 +242,12 @@ public class LSPEclipseUtils {
 	}
 
 	public static IFile getFileHandle(@Nullable String uri) {
-		if (uri == null || uri.isEmpty() || !uri.startsWith("file:")) { //$NON-NLS-1$
+		if (uri == null || uri.isEmpty() || !uri.startsWith(FILE)) {
 			return null;
 		}
 
-		String convertedUri = uri.replace("file:///", "file:/"); //$NON-NLS-1$//$NON-NLS-2$
-		convertedUri = convertedUri.replace("file://", "file:/"); //$NON-NLS-1$//$NON-NLS-2$
+		String convertedUri = uri.replace("file:///", FILE_SLASH); //$NON-NLS-1$
+		convertedUri = convertedUri.replace("file://", FILE_SLASH); //$NON-NLS-1$
 		IPath path = Path.fromOSString(new File(URI.create(convertedUri)).getAbsolutePath());
 		IProject project = null;
 		for (IProject aProject : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
@@ -267,12 +269,12 @@ public class LSPEclipseUtils {
 
 	@Nullable
 	public static IResource findResourceFor(@Nullable String uri) {
-		if (uri == null || uri.isEmpty() || !uri.startsWith("file:")) { //$NON-NLS-1$
+		if (uri == null || uri.isEmpty() || !uri.startsWith(FILE)) {
 			return null;
 		}
 
-		String convertedUri = uri.replace("file:///", "file:/"); //$NON-NLS-1$//$NON-NLS-2$
-		convertedUri = convertedUri.replace("file://", "file:/"); //$NON-NLS-1$//$NON-NLS-2$
+		String convertedUri = uri.replace("file:///", FILE_SLASH); //$NON-NLS-1$
+		convertedUri = convertedUri.replace("file://", FILE_SLASH); //$NON-NLS-1$
 		IPath path = Path.fromOSString(new File(URI.create(convertedUri)).getAbsolutePath());
 		IProject project = null;
 		for (IProject aProject : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
@@ -419,7 +421,7 @@ public class LSPEclipseUtils {
 	}
 
 	public static void open(String uri, IWorkbenchPage page, Range optionalRange) {
-		if (uri.startsWith("file:")) { //$NON-NLS-1$
+		if (uri.startsWith(FILE)) {
 			openFileLocationInEditor(uri, page, optionalRange);
 		} else if (uri.startsWith("http://org.eclipse.ui.intro")) { //$NON-NLS-1$
 			openIntroURL(uri);

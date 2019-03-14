@@ -59,22 +59,20 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 			DocumentColorParams param = new DocumentColorParams(textDocumentIdentifier);
 			final List<ColorInformationMining> colorResults = Collections.synchronizedList(new ArrayList<>());
 			return LanguageServiceAccessor.getLanguageServers(document, DocumentColorProvider::isColorProvider)
-					.thenComposeAsync(languageServers -> {
-						return CompletableFuture.allOf(languageServers.stream().map(languageServer -> languageServer
-								.getTextDocumentService().documentColor(param)
-								.thenAcceptAsync(colors -> colors.stream().filter(Objects::nonNull)
-										.map(color -> {
-											try {
-												return new ColorInformationMining(color, document, textDocumentIdentifier,
-														languageServer, DocumentColorProvider.this);
-											} catch (BadLocationException e) {
-												LanguageServerPlugin.logError(e);
-												return null;
-											}
-										}).filter(Objects::nonNull)
-										.forEach(colorResults::add)))
-								.toArray(CompletableFuture[]::new));
-					}).thenApplyAsync(theVoid -> colorResults);
+					.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream().map(languageServer -> languageServer
+							.getTextDocumentService().documentColor(param)
+							.thenAcceptAsync(colors -> colors.stream().filter(Objects::nonNull)
+									.map(color -> {
+										try {
+											return new ColorInformationMining(color, document, textDocumentIdentifier,
+													languageServer, DocumentColorProvider.this);
+										} catch (BadLocationException e) {
+											LanguageServerPlugin.logError(e);
+											return null;
+										}
+									}).filter(Objects::nonNull)
+									.forEach(colorResults::add)))
+							.toArray(CompletableFuture[]::new))).thenApplyAsync(theVoid -> colorResults);
 		}
 		else {
 			return null;

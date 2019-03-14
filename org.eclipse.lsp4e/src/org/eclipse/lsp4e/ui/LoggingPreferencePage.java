@@ -218,14 +218,10 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 
 	@Override
 	protected void performDefaults() {
-		serverEnableLoggingToFile.forEach((s, b) -> {
-			serverEnableLoggingToFile.put(s,
-					store.getBoolean(LoggingStreamConnectionProviderProxy.lsToFileLoggingId(s)));
-		});
-		serverEnableLoggingToConsole.forEach((s, b) -> {
-			serverEnableLoggingToConsole.put(s,
-					store.getBoolean(LoggingStreamConnectionProviderProxy.lsToConsoleLoggingId(s)));
-		});
+		serverEnableLoggingToFile.forEach((s, b) -> serverEnableLoggingToFile.put(s,
+				store.getBoolean(LoggingStreamConnectionProviderProxy.lsToFileLoggingId(s))));
+		serverEnableLoggingToConsole.forEach((s, b) -> serverEnableLoggingToConsole.put(s,
+				store.getBoolean(LoggingStreamConnectionProviderProxy.lsToConsoleLoggingId(s))));
 		launchConfigurationViewer.refresh();
 		languageServerViewer.refresh();
 		super.performDefaults();

@@ -81,7 +81,7 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 		if (part instanceof ITextEditor) {
 			List<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument((ITextEditor) part),
-					(capabilities) -> Boolean.TRUE.equals(capabilities.getWorkspaceSymbolProvider()));
+					capabilities -> Boolean.TRUE.equals(capabilities.getWorkspaceSymbolProvider()));
 			return !infos.isEmpty();
 		}
 		return false;
