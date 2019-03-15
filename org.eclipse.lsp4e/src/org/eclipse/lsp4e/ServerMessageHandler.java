@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +31,7 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.console.ConsolePlugin;
 import org.eclipse.ui.console.IConsole;
+import org.eclipse.ui.console.IConsoleConstants;
 import org.eclipse.ui.console.IConsoleManager;
 import org.eclipse.ui.console.MessageConsole;
 import org.eclipse.ui.console.MessageConsoleStream;
@@ -154,7 +156,9 @@ public class ServerMessageHandler {
 			}
 		}
 		// no console found, so create a new one
-		MessageConsole myConsole = new MessageConsole(name, null);
+		// use UTF-8 in message console instead of system encoding
+		MessageConsole myConsole = new MessageConsole(name, IConsoleConstants.MESSAGE_CONSOLE_TYPE, null,
+				StandardCharsets.UTF_8.name(), true);
 		conMan.addConsoles(new IConsole[] { myConsole });
 		return myConsole;
 	}
