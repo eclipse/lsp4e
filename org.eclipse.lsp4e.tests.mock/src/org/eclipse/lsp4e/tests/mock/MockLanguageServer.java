@@ -75,8 +75,9 @@ public final class MockLanguageServer implements LanguageServer {
 
 	/**
 	 * Starts the language server on stdin/stdout
-	 * @throws ExecutionException 
-	 * @throws InterruptedException 
+	 *
+	 * @throws ExecutionException
+	 * @throws InterruptedException
 	 */
 	public static void main(String[] args) throws InterruptedException, ExecutionException {
 		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageServer.INSTANCE, System.in, System.out);
@@ -107,6 +108,7 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setDocumentHighlightProvider(Boolean.TRUE);
 		capabilities.setRenameProvider(Boolean.TRUE);
 		capabilities.setColorProvider(Boolean.TRUE);
+		capabilities.setDocumentSymbolProvider(Boolean.TRUE);
 		initializeResult.setCapabilities(capabilities);
 	}
 
