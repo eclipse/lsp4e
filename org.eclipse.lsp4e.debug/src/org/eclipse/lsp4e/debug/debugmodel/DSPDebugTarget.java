@@ -326,7 +326,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	@Override
 	public void stopped(StoppedEventArguments body) {
 		threadPool.execute(() -> {
-			DSPDebugElement source = null;
+			DSPThread source = null;
 			if (body.getThreadId() != null) {
 				source = getThread(body.getThreadId());
 			}
@@ -338,13 +338,14 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			}
 
 			if (source != null) {
+				source.stopped();
 				source.fireSuspendEvent(calcDetail(body.getReason()));
 			}
 		});
 	}
 
 	private int calcDetail(String reason) {
-		if (reason.equals("breakpoint")) { //$NON-NLS-1$
+		if (reason.equals("breakpoint") || reason.equals("entry") || reason.equals("exception")) { //$NON-NLS-1$
 			return DebugEvent.BREAKPOINT;
 		} else if (reason.equals("step")) { //$NON-NLS-1$
 			return DebugEvent.STEP_OVER;

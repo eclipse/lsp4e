@@ -58,6 +58,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	@Override
 	public void suspend() throws DebugException {
+		getThread().suspend();
 	}
 
 	@Override
@@ -72,7 +73,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	@Override
 	public boolean canSuspend() {
-		return false;
+		return getThread().canSuspend();
 	}
 
 	@Override
@@ -82,6 +83,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	@Override
 	public void stepReturn() throws DebugException {
+		getThread().stepReturn();
 	}
 
 	@Override
@@ -91,16 +93,17 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	@Override
 	public void stepInto() throws DebugException {
+		getThread().stepInto();
 	}
 
 	@Override
 	public boolean isStepping() {
-		return false;
+		return getThread().isStepping();
 	}
 
 	@Override
 	public boolean canStepReturn() {
-		return false;
+		return getThread().canStepReturn();
 	}
 
 	@Override
@@ -110,7 +113,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	@Override
 	public boolean canStepInto() {
-		return false;
+		return getThread().canStepInto();
 	}
 
 	@Override
