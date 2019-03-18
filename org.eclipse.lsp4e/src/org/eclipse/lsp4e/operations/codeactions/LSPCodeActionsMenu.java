@@ -124,12 +124,19 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 										});
 									} else if (command.isRight()) {
 										CodeAction codeAction = command.getRight();
-										if (codeAction.getEdit() != null) {
-											LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit());
-										}
-										if (codeAction.getCommand() != null) {
-											executeCommand(info, codeAction.getCommand());
-										}
+										final MenuItem item = new MenuItem(menu, SWT.NONE, index);
+										item.setText(codeAction.getTitle());
+										item.addSelectionListener(new SelectionAdapter() {
+											@Override
+											public void widgetSelected(SelectionEvent e) {
+												if (codeAction.getEdit() != null) {
+													LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit());
+												}
+												if (codeAction.getCommand() != null) {
+													executeCommand(info, codeAction.getCommand());
+												}
+											}
+										});
 									}
 								}
 							}
@@ -156,7 +163,8 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 				ExecuteCommandParams params = new ExecuteCommandParams();
 				params.setCommand(command.getCommand());
 				params.setArguments(command.getArguments());
-				info.getInitializedLanguageClient().thenAcceptAsync(ls -> ls.getWorkspaceService().executeCommand(params));
+				info.getInitializedLanguageClient()
+						.thenAcceptAsync(ls -> ls.getWorkspaceService().executeCommand(params));
 			}
 		}
 	}
