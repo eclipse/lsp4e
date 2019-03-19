@@ -387,7 +387,7 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
-		assertEquals(2 * items.size(), proposals.length);
+		assertEquals(2 * (long)(items.size()), proposals.length);
 	}
 	
 	@Test
