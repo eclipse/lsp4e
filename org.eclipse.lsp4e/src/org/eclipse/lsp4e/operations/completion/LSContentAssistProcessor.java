@@ -117,7 +117,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	}
 
 	private CompletionProposal createErrorProposal(int offset, Exception ex) {
-		return new CompletionProposal("", offset, 0, offset, null, Messages.completionError, null, ex.getMessage()); //$NON-NLS-1$
+		return new CompletionProposal("", offset, 0, 0, null, Messages.completionError, null, ex.getMessage()); //$NON-NLS-1$
 	}
 
 	private void initiateLanguageServers(@NonNull IDocument document) {
