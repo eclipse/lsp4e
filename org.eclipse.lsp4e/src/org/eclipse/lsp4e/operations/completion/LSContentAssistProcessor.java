@@ -59,7 +59,7 @@ import com.google.common.base.Strings;
 public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	private static final long TRIGGERS_TIMEOUT = 50;
-	private static final long COMPLETION_TIMEOUT = 1000;
+	private static final long CONTEXT_INFORMATION_TIMEOUT = 1000;
 	private IDocument currentDocument;
 	private String errorMessage;
 	private CompletableFuture<List<@NonNull LanguageServer>> completionLanguageServersFuture;
@@ -93,8 +93,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 									.thenAcceptAsync(completion -> proposals
 											.addAll(toProposals(document, offset, completion, languageServer))))
 							.toArray(CompletableFuture[]::new)))
-					.get(COMPLETION_TIMEOUT, TimeUnit.MILLISECONDS);
-		} catch (ExecutionException | TimeoutException e) {
+					.get();
+		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 			return new ICompletionProposal[] { createErrorProposal(offset, e) };
 		} catch (InterruptedException e) {
@@ -218,7 +218,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 									.getSignatures().stream().map(LSContentAssistProcessor::toContextInformation)
 									.forEach(contextInformations::add)))
 							.toArray(CompletableFuture[]::new)))
-					.get(COMPLETION_TIMEOUT, TimeUnit.MILLISECONDS);
+					.get(CONTEXT_INFORMATION_TIMEOUT, TimeUnit.MILLISECONDS);
 		} catch (ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
 			return new IContextInformation[] { /* TODO? show error in context information */ };
