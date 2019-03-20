@@ -44,8 +44,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	private OutputStream outputStream;
 	private InputStream errorStream;
 	private String id;
-	private File currentFile;
-	private File folder;
+	private final File logFile;
 	private boolean logToFile;
 	private boolean logToConsole;
 
@@ -94,6 +93,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 				logToConsole = (boolean) event.getNewValue();
 			}
 		});
+		this.logFile = getLogFile();
 	}
 
 	@Override
@@ -245,48 +245,42 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	}
 
 	private void logToFile(String string) {
-		if (currentFile == null || !currentFile.exists() || !currentFile.isFile() || !currentFile.canWrite()) {
-			generateNewLogFile();
-			if (currentFile == null) {
-				return;
-			}
-		}
-		try {
-			Files.write(currentFile.toPath(), string.getBytes(), StandardOpenOption.APPEND);
-		} catch (IOException e) {
-			LanguageServerPlugin.logError(e);
-		}
-	}
-
-	private void generateNewLogFile() {
-		File logFolder = getFolder();
-		if (logFolder == null) {
+		if (logFile == null) {
 			return;
 		}
-		currentFile = new File(logFolder, id + ".log"); //$NON-NLS-1$
-		try {
-			if (!currentFile.createNewFile()) {
-				throw new IOException(String.format("Failed to create file %s", currentFile.toString())); //$NON-NLS-1$
+		if (!logFile.exists()) {
+			try {
+				if (!logFile.createNewFile()) {
+					throw new IOException(String.format("Failed to create file %s", logFile.toString())); //$NON-NLS-1$
+				}
+			} catch (IOException e) {
+				LanguageServerPlugin.logError(e);
 			}
+		}
+		try {
+			Files.write(logFile.toPath(), string.getBytes(), StandardOpenOption.APPEND);
 		} catch (IOException e) {
-			currentFile = null;
 			LanguageServerPlugin.logError(e);
 		}
 	}
 
-	private File getFolder() {
-		if (folder != null && folder.exists() && folder.isDirectory() && folder.canWrite()) {
-			return folder;
+	private File getLogFile() {
+		if (logFile != null) {
+			return logFile;
 		}
 		IPath root = ResourcesPlugin.getWorkspace().getRoot().getLocation();
 		if (root == null) {
 			return null;
 		}
 		File logFolder = new File(root.addTrailingSeparator().toPortableString() + LOG_DIRECTORY);
-		if ((logFolder.exists() || logFolder.mkdirs()) && logFolder.isDirectory() && logFolder.canWrite()) {
-			folder = logFolder;
-			return folder;
+		if (!(logFolder.exists() || logFolder.mkdirs()) || !logFolder.isDirectory() || !logFolder.canWrite()) {
+			return null;
 		}
-		return null;
+		File file = new File(logFolder, id + ".log"); //$NON-NLS-1$
+		if (file.exists() && !(file.isFile() && file.canWrite())) {
+			return null;
+		}
+		return file;
 	}
+
 }
