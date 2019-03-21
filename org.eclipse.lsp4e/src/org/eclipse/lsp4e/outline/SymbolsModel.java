@@ -132,6 +132,9 @@ public class SymbolsModel {
 				}
 			} else if (parentElement instanceof DocumentSymbolWithFile) {
 				DocumentSymbolWithFile element = (DocumentSymbolWithFile) parentElement;
+				if(element.symbol.getChildren() == null) {
+					return EMPTY;
+				}
 				return element.symbol.getChildren().stream()
 						.map(symbol -> new DocumentSymbolWithFile(symbol, element.file)).toArray();
 			}
