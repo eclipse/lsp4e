@@ -10,6 +10,10 @@
 	<version>0.9.1-SNAPSHOT</version>
 	<packaging>eclipse-test-plugin</packaging>
 
+	<properties>
+		<os-jvm-flags /> <!-- for the default case -->
+	</properties>
+
 	<build>
 		<plugins>
 			<plugin>
@@ -36,10 +40,23 @@
 					<testClass>org.eclipse.lsp4e.test.AllTests</testClass>
 					<useUIHarness>true</useUIHarness>
 					<useUIThread>true</useUIThread>
-					<argLine>${tycho.testArgLine} ${ui.test.vmargs}</argLine>
+					<argLine>${tycho.testArgLine} ${ui.test.vmargs} ${os-jvm-flags}</argLine>
 				</configuration>
 			</plugin>
 		</plugins>
 	</build>
 
+	<profiles>
+		<profile>
+			<id>macosx-jvm-flags</id>
+		<activation>
+			<os>
+				<family>mac</family>
+			</os>
+		</activation>
+		<properties>
+			<os-jvm-flags>-XstartOnFirstThread</os-jvm-flags>
+		</properties>
+		</profile>
+	</profiles>
 </project>
