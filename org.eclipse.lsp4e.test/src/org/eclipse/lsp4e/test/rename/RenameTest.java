@@ -59,7 +59,6 @@ import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
-import org.eclipse.ui.intro.IIntroPart;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Rule;
 import org.junit.Test;
@@ -70,7 +69,6 @@ public class RenameTest {
 
 	@Test
 	public void testRenameHandlerEnablement() throws Exception {
-		closeIntro();
 		IProject project = TestUtils.createProject("blah");
 		IFile file = TestUtils.createUniqueTestFile(project, "old");
 		ITextEditor editor = (ITextEditor) TestUtils.openEditor(file);
@@ -78,13 +76,6 @@ public class RenameTest {
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
 		assertTrue(command.isEnabled() && command.isHandled());
-	}
-
-	private static void closeIntro() {
-		IIntroPart intro = PlatformUI.getWorkbench().getIntroManager().getIntro();
-		if (intro != null) {
-			PlatformUI.getWorkbench().getIntroManager().closeIntro(intro);
-		}
 	}
 
 	@Test
@@ -167,7 +158,6 @@ public class RenameTest {
 
 	@Test
 	public void testRenameHandlerExecution() throws Exception {
-		closeIntro();
 		IProject project = TestUtils.createProject("blah");
 		IFile file = TestUtils.createUniqueTestFile(project, "old");
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));

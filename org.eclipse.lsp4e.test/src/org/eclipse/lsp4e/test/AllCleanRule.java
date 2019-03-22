@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.intro.IIntroPart;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
@@ -25,6 +26,10 @@ public class AllCleanRule extends TestWatcher {
 	@Override
 	protected void starting(Description description) {
 		super.starting(description);
+		IIntroPart intro = PlatformUI.getWorkbench().getIntroManager().getIntro();
+		if (intro != null) {
+			PlatformUI.getWorkbench().getIntroManager().closeIntro(intro);
+		}
 		clear();
 	}
 	

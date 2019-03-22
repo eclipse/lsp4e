@@ -28,6 +28,7 @@ import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Before;
 import org.junit.Rule;
@@ -103,6 +104,17 @@ public class RunningLanguageServerTest {
 		TestUtils.openEditor(testFile2);
 		lsDefinition.setUserEnabled(false);
 		LanguageServiceAccessor.disableLanguageServerContentType(lsDefinition);
+	}
+
+	@Test
+	public void testDelayedStopDoesntCauseFreeze() throws Exception {
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		IWorkbenchPage page = editor.getSite().getPage();
+		MockLanguageServer.INSTANCE.setTimeToProceedQueries(10000);
+		long before = System.currentTimeMillis();
+		page.closeEditor(editor, false);
+		assertTrue(System.currentTimeMillis() - before < 1000);
 	}
 
 }

@@ -346,21 +346,28 @@ public class LanguageServerWrapper {
 		this.serverCapabilities = null;
 		this.dynamicRegistrations.clear();
 
-		if (this.languageServer != null) {
-			try {
-				CompletableFuture<Object> shutdown = this.languageServer.shutdown();
-				shutdown.get(5000, TimeUnit.MILLISECONDS);
-			} catch (Exception ex) {
-				// most likely closed externally
+		final Future<?> serverFuture = this.launcherFuture;
+		final StreamConnectionProvider provider = this.lspStreamProvider;
+		Runnable stopFutureAndProvider = () -> {
+			if (serverFuture != null) {
+				serverFuture.cancel(true);
 			}
+			if (provider != null) {
+				provider.stop();
+			}
+		};
+		if (this.languageServer != null) {
+			CompletableFuture<Object> shutdown = this.languageServer.shutdown();
+			shutdown.thenRun(stopFutureAndProvider);
+			shutdown.exceptionally(t -> {
+				stopFutureAndProvider.run();
+				return null;
+			});
+		} else {
+			stopFutureAndProvider.run();
 		}
-		if (this.launcherFuture != null) {
-			this.launcherFuture.cancel(true);
-			this.launcherFuture = null;
-		}
-		if (this.lspStreamProvider != null) {
-			this.lspStreamProvider.stop();
-		}
+		this.launcherFuture = null;
+		this.lspStreamProvider = null;
 		while (!this.connectedDocuments.isEmpty()) {
 			disconnect(this.connectedDocuments.keySet().iterator().next());
 		}
