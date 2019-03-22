@@ -54,27 +54,28 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 		URI docURI = LSPEclipseUtils.toUri(document);
 
 		if (docURI != null) {
-			TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(
-					docURI.toString());
+			TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(docURI.toString());
 			DocumentColorParams param = new DocumentColorParams(textDocumentIdentifier);
 			final List<ColorInformationMining> colorResults = Collections.synchronizedList(new ArrayList<>());
 			return LanguageServiceAccessor.getLanguageServers(document, DocumentColorProvider::isColorProvider)
-					.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream().map(languageServer -> languageServer
-							.getTextDocumentService().documentColor(param)
-							.thenAcceptAsync(colors -> colors.stream().filter(Objects::nonNull)
-									.map(color -> {
-										try {
-											return new ColorInformationMining(color, document, textDocumentIdentifier,
-													languageServer, DocumentColorProvider.this);
-										} catch (BadLocationException e) {
-											LanguageServerPlugin.logError(e);
-											return null;
+					.thenComposeAsync(languageServers -> CompletableFuture
+							.allOf(languageServers.stream().map(languageServer -> languageServer
+									.getTextDocumentService().documentColor(param).thenAcceptAsync(colors -> {
+										if (colors != null) {
+											colors.stream().filter(Objects::nonNull).map(color -> {
+												try {
+													return new ColorInformationMining(color, document,
+															textDocumentIdentifier, languageServer,
+															DocumentColorProvider.this);
+												} catch (BadLocationException e) {
+													LanguageServerPlugin.logError(e);
+													return null;
+												}
+											}).filter(Objects::nonNull).forEach(colorResults::add);
 										}
-									}).filter(Objects::nonNull)
-									.forEach(colorResults::add)))
-							.toArray(CompletableFuture[]::new))).thenApplyAsync(theVoid -> colorResults);
-		}
-		else {
+									})).toArray(CompletableFuture[]::new)))
+					.thenApplyAsync(theVoid -> colorResults);
+		} else {
 			return null;
 		}
 	}
@@ -90,13 +91,13 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 	 * Returns the color from the given rgba.
 	 *
 	 * @param rgba
-	 *                    the rgba declaration
+	 *            the rgba declaration
 	 * @param display
-	 *                    the display to use to create a color instance
+	 *            the display to use to create a color instance
 	 * @return the color from the given rgba.
 	 */
 	public Color getColor(RGBA rgba, Display display) {
-		return colorTable.computeIfAbsent(rgba, key ->	new Color(display, rgba));
+		return colorTable.computeIfAbsent(rgba, key -> new Color(display, rgba));
 	}
 
 	@Override
