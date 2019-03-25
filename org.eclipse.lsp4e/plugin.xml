@@ -481,7 +481,7 @@
             label="CodeLens">
          <enabledWhen>
             <with
-                  variable="editorInput">
+                  variable="viewer">
                <test
                      property="org.eclipse.lsp4e.hasLanguageServer">
                </test>
@@ -494,7 +494,7 @@
             label="Color">
          <enabledWhen>
             <with
-                  variable="editorInput">
+                  variable="viewer">
                <test
                      property="org.eclipse.lsp4e.hasLanguageServer">
                </test>
