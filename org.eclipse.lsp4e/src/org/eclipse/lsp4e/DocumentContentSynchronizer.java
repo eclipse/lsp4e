@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2019 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -43,9 +43,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private final TextDocumentSyncKind syncKind;
 
 	private int version = 0;
-	private final DidChangeTextDocumentParams changeParams;
+	private DidChangeTextDocumentParams changeParams;
 	private long modificationStamp;
-
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
 			@NonNull IDocument document,
@@ -54,10 +53,6 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		this.fileUri = LSPEclipseUtils.toUri(document);
 		this.modificationStamp = new File(fileUri).lastModified();
 		this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
-
-		// Initialize change params to avoid it during text typing
-		this.changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(), Collections.singletonList(new TextDocumentContentChangeEvent()));
-		this.changeParams.getTextDocument().setUri(fileUri.toString());
 
 		this.document = document;
 		// add a document buffer
@@ -83,11 +78,17 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	public void documentChanged(DocumentEvent event) {
 		checkEvent(event);
 		if (syncKind == TextDocumentSyncKind.Full) {
-			updateChangeEvent(event);
+			createChangeEvent(event);
 		}
-		changeParams.getTextDocument().setVersion(++version);
-		languageServerWrapper.getInitializedServer()
-				.thenAcceptAsync(ls -> ls.getTextDocumentService().didChange(changeParams));
+
+		if (changeParams != null) {
+			final DidChangeTextDocumentParams changeParamsToSend = changeParams;
+			changeParams = null;
+
+			changeParamsToSend.getTextDocument().setVersion(++version);
+			languageServerWrapper.getInitializedServer()
+					.thenAcceptAsync(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
+		}
 	}
 
 	@Override
@@ -96,7 +97,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		if (syncKind == TextDocumentSyncKind.Incremental) {
 			// this really needs to happen before event gets actually
 			// applied, to properly compute positions
-			updateChangeEvent(event);
+			createChangeEvent(event);
 		}
 	}
 
@@ -108,7 +109,10 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	 *            Eclipse {@link DocumentEvent}
 	 * @return true if change event is ready to be sent
 	 */
-	private boolean updateChangeEvent(DocumentEvent event) {
+	private boolean createChangeEvent(DocumentEvent event) {
+		changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(), Collections.singletonList(new TextDocumentContentChangeEvent()));
+		changeParams.getTextDocument().setUri(fileUri.toString());
+
 		IDocument document = event.getDocument();
 		TextDocumentContentChangeEvent changeEvent = null;
 		TextDocumentSyncKind syncKind = getTextDocumentSyncKind();
