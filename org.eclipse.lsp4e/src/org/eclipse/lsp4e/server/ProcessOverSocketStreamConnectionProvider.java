@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2019 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -8,6 +8,7 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 545950 - Specifying the directory in ProcessStreamConnectionProvider should not be mandatory
  *******************************************************************************/
 package org.eclipse.lsp4e.server;
 
@@ -31,6 +32,11 @@ public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessS
 	private Socket socket;
 	private InputStream inputStream;
 	private OutputStream outputStream;
+
+	public ProcessOverSocketStreamConnectionProvider(List<String> commands, int port) {
+		super(commands);
+		this.port = port;
+	}
 
 	public ProcessOverSocketStreamConnectionProvider(List<String> commands, String workingDir, int port) {
 		super(commands, workingDir);

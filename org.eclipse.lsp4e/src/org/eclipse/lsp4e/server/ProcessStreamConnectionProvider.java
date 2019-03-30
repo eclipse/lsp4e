@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2019 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -8,6 +8,7 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 545950 - Specifying the directory in ProcessStreamConnectionProvider should not be mandatory
  *******************************************************************************/
 package org.eclipse.lsp4e.server;
 
@@ -28,9 +29,13 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 
 	private @Nullable Process process;
 	private List<String> commands;
-	private String workingDir;
+	private @Nullable String workingDir;
 
 	public ProcessStreamConnectionProvider() {
+	}
+
+	public ProcessStreamConnectionProvider(List<String> commands) {
+		this.commands = commands;
 	}
 
 	public ProcessStreamConnectionProvider(List<String> commands, String workingDir) {
@@ -40,7 +45,7 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 
 	@Override
 	public void start() throws IOException {
-		if (this.workingDir == null || this.commands == null || this.commands.isEmpty() || this.commands.stream().anyMatch(Objects::isNull)) {
+		if (this.commands == null || this.commands.isEmpty() || this.commands.stream().anyMatch(Objects::isNull)) {
 			throw new IOException("Unable to start language server: " + this.toString()); //$NON-NLS-1$
 		}
 
@@ -54,7 +59,9 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 
 	protected ProcessBuilder createProcessBuilder() {
 		ProcessBuilder builder = new ProcessBuilder(getCommands());
-		builder.directory(new File(getWorkingDirectory()));
+		if (getWorkingDirectory() != null) {
+			builder.directory(new File(getWorkingDirectory()));
+		}
 		builder.redirectError(ProcessBuilder.Redirect.INHERIT);
 		return builder;
 	}
@@ -93,7 +100,7 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 		this.commands = commands;
 	}
 
-	protected String getWorkingDirectory() {
+	protected @Nullable String getWorkingDirectory() {
 		return workingDir;
 	}
 
