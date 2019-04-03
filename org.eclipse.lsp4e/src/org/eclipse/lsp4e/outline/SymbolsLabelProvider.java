@@ -199,7 +199,11 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element instanceof SymbolInformation) {
 			name = ((SymbolInformation) element).getName();
 			kind = ((SymbolInformation) element).getKind();
-			location = URI.create(((SymbolInformation) element).getLocation().getUri());
+			try {
+				location = URI.create(((SymbolInformation) element).getLocation().getUri());
+			} catch (IllegalArgumentException e) {
+				LanguageServerPlugin.logError("Invalid URI: " + ((SymbolInformation) element).getLocation().getUri(), e); //$NON-NLS-1$
+			}
 		} else if (element instanceof DocumentSymbol) {
 			name = ((DocumentSymbol) element).getName();
 			kind = ((DocumentSymbol) element).getKind();
