@@ -525,7 +525,7 @@ public class LanguageServiceAccessor {
 	}
 
 	public static boolean checkCapability(LanguageServer languageServer, Predicate<ServerCapabilities> condition) {
-		return startedServers.stream().filter(wrapper -> wrapper.getServer() == languageServer)
+		return startedServers.stream().filter(wrapper -> wrapper.isActive() && wrapper.getServer() == languageServer)
 				.anyMatch(wrapper -> condition.test(wrapper.getServerCapabilities()));
 	}
 }
