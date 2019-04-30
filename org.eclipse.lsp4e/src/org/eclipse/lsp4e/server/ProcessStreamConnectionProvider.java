@@ -9,6 +9,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 545950 - Specifying the directory in ProcessStreamConnectionProvider should not be mandatory
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 508812 - Improve error and logging handling
  *******************************************************************************/
 package org.eclipse.lsp4e.server;
 
@@ -124,6 +125,12 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.getCommands(), this.getWorkingDirectory());
+	}
+
+	@Override
+	public String toString() {
+		return "ProcessStreamConnectionProvider [commands=" + this.getCommands() + ", workingDir=" //$NON-NLS-1$//$NON-NLS-2$
+				+ this.getWorkingDirectory() + "]"; //$NON-NLS-1$
 	}
 
 }
