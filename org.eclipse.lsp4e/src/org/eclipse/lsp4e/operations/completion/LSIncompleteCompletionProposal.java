@@ -69,8 +69,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
 
-import com.google.common.collect.ImmutableList;
-
 @SuppressWarnings("restriction")
 public class LSIncompleteCompletionProposal
 		implements ICompletionProposal, ICompletionProposalExtension3, ICompletionProposalExtension4,
@@ -496,10 +494,10 @@ public class LSIncompleteCompletionProposal
 			textEdit.setNewText(insertText); // insertText now has placeholder removed
 			List<TextEdit> additionalEdits = item.getAdditionalTextEdits();
 			if (additionalEdits != null && !additionalEdits.isEmpty()) {
-				ImmutableList.Builder<TextEdit> allEdits = ImmutableList.builder();
+				List<TextEdit> allEdits = new ArrayList<>();
 				allEdits.add(textEdit);
 				allEdits.addAll(additionalEdits);
-				LSPEclipseUtils.applyEdits(document, allEdits.build());
+				LSPEclipseUtils.applyEdits(document, allEdits);
 			} else {
 				LSPEclipseUtils.applyEdit(textEdit, document);
 			}
