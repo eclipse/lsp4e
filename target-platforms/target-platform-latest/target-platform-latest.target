@@ -5,7 +5,7 @@
 <unit id="config.a.jre.javase" version="0.0.0"/>
 <unit id="org.eclipse.sdk.ide" version="0.0.0"/>
 <unit id="org.eclipse.jface.text.tests" version="0.0.0"/>
-<repository location="https://download.eclipse.org/eclipse/updates/4.11/R-4.11-201903070500/"/>
+<repository location="https://download.eclipse.org/eclipse/updates/4.12-I-builds/I20190508-1800/"/>
 </location>
 <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">
 <unit id="org.eclipse.mylyn.commons.notifications.feature.group" version="0.0.0"/>
@@ -22,7 +22,7 @@
 <unit id="org.eclipse.lsp4j.jsonrpc" version="0.0.0"/>
 <unit id="org.eclipse.lsp4j.debug" version="0.0.0"/>
 <unit id="org.eclipse.lsp4j.jsonrpc.debug" version="0.0.0"/>
-<repository location="http://download.eclipse.org/lsp4j/updates/releases/0.7.0/"/>
+<repository location="http://download.eclipse.org/lsp4j/updates/releases/0.7.1/"/>
 <!--repository location="http://services.typefox.io/open-source/jenkins/job/lsp4j/job/master/lastStableBuild/artifact/build/p2-repository/"/-->
 </location>
 <location includeAllPlatforms="false" includeConfigurePhase="true" includeMode="planner" includeSource="true" type="InstallableUnit">

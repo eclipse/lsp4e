@@ -70,6 +70,7 @@ public class Messages extends NLS {
 	public static String LSSearchQuery_pluralReferences;
 	public static String enableDisableLSJob;
 	public static String edit_CreateFile;
+	public static String workspaceSymbols;
 
 	static {
 		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$

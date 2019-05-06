@@ -509,4 +509,10 @@
             contentType="org.eclipse.core.runtime.text">
       </reconciler>
    </extension>
+   <extension
+         point="org.eclipse.ui.quickAccess">
+      <computer
+            class="org.eclipse.lsp4e.operations.symbols.WorkspaceSymbolsQuickAccessProvider"
+            name="Workspace Symbols"/>
+   </extension>
 </plugin>
