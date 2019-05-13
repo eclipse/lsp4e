@@ -377,7 +377,6 @@ public class LanguageServerWrapper {
 	}
 
 	public void connect(@NonNull IFile file, IDocument document) throws IOException {
-		watchProject(file.getProject(), false);
 		connect(file.getLocation(), document);
 	}
 
@@ -469,8 +468,14 @@ public class LanguageServerWrapper {
 	 *
 	 * @noreference internal so far
 	 */
-	public void connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
+	private void connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
 		final IPath thePath = Path.fromOSString(absolutePath.toFile().getAbsolutePath()); // should be useless
+
+		IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(thePath);
+		if (file.exists()) {
+			watchProject(file.getProject(), false);
+		}
+
 		if (this.connectedDocuments.containsKey(thePath)) {
 			return;
 		}
@@ -479,8 +484,8 @@ public class LanguageServerWrapper {
 			return;
 		}
 		if (document == null) {
-			IFile file = (IFile) LSPEclipseUtils.findResourceFor(thePath.toFile().toURI().toString());
-			document = LSPEclipseUtils.getDocument(file);
+			IFile docFile = (IFile) LSPEclipseUtils.findResourceFor(thePath.toFile().toURI().toString());
+			document = LSPEclipseUtils.getDocument(docFile);
 		}
 		if (document == null) {
 			return;

@@ -80,7 +80,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 				.getLSWrapperForConnection(testFile.getProject(), serverDefinition);
 		IPath fileLocation = testFile.getLocation();
 		// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
-		lsWrapperForConnection.connect(fileLocation, null);
+		lsWrapperForConnection.connect(testFile, null);
 
 		new DisplayHelper() {
 			@Override

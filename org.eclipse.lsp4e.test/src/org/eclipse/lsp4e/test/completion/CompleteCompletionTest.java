@@ -73,15 +73,15 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 
 		IFile testFile = TestUtils.createUniqueTestFileOfUnknownType(project, "");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
-		
+
 		LanguageServerDefinition serverDefinition = LanguageServersRegistry.getInstance().getDefinition("org.eclipse.lsp4e.test.server");
 		assertNotNull(serverDefinition);
 		LanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor
 				.getLSWrapperForConnection(testFile.getProject(), serverDefinition);
 		IPath fileLocation = testFile.getLocation();
 		// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
-		lsWrapperForConnection.connect(fileLocation, null);
-		
+		lsWrapperForConnection.connect(testFile, null);
+
 		new DisplayHelper() {
 			@Override
 			protected boolean condition() {
@@ -164,7 +164,7 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
 		assertEquals(1, proposals.length);
-		
+
 		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
 		lsCompletionProposal.apply(viewer, '\n', 0, content.length());
 		assertEquals(content + "1024M", viewer.getDocument().get());
@@ -192,9 +192,9 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 	@Test
 	public void testTriggerCharsNullList() throws CoreException, InvocationTargetException {
 		MockLanguageServer.INSTANCE.setCompletionTriggerChars(null);
-		
+
 		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "First"));
-		
+
 		assertArrayEquals(new char[0], contentAssistProcessor.getCompletionProposalAutoActivationCharacters());
 	}
 
@@ -389,7 +389,7 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(2 * (long)(items.size()), proposals.length);
 	}
-	
+
 	@Test
 	public void testReopeningFileAndReusingContentAssist() throws CoreException, InvocationTargetException {
 		List<CompletionItem> items = new ArrayList<>();

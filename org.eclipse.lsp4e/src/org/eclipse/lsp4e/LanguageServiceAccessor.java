@@ -506,7 +506,7 @@ public class LanguageServiceAccessor {
 				serverRequests.add(wrapper.getInitializedServer().thenAcceptAsync(server -> {
 					if (server != null && (filter == null || filter.test(wrapper.getServerCapabilities()))) {
 						try {
-							wrapper.connect(path, document);
+							wrapper.connect(document);
 						} catch (IOException ex) {
 							LanguageServerPlugin.logError(ex);
 						}

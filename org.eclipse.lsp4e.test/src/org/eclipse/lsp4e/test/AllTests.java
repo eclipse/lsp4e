@@ -70,6 +70,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	RenameTest.class,
 	SymbolsLabelProviderTest.class,
 	EditorToOutlineAdapterFactoryTest.class,
+	LanguageServerWrapperTest.class,
 	ColorTest.class
 })
 public class AllTests {
