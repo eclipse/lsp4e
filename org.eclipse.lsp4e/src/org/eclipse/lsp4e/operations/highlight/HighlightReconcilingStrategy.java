@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.core.runtime.ICoreRunnable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -120,7 +121,7 @@ public class HighlightReconcilingStrategy
 			highlightJob.cancel();
 		}
 		highlightJob = Job.createSystem("LSP4E Highlight", //$NON-NLS-1$
-				monitor -> collectHighlights(textSelection.getOffset(), monitor));
+				(ICoreRunnable)(monitor -> collectHighlights(textSelection.getOffset(), monitor)));
 		highlightJob.schedule();
 	}
 

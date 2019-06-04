@@ -10,8 +10,10 @@
  */
 package org.eclipse.lsp4e.operations.folding;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,10 +33,11 @@ import org.eclipse.jface.text.source.projection.IProjectionListener;
 import org.eclipse.jface.text.source.projection.ProjectionAnnotation;
 import org.eclipse.jface.text.source.projection.ProjectionAnnotationModel;
 import org.eclipse.jface.text.source.projection.ProjectionViewer;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.FoldingRangeRequestParams;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.swt.graphics.FontMetrics;
 import org.eclipse.swt.graphics.GC;
@@ -51,7 +54,6 @@ public class LSPFoldingReconcilingStrategy
 
 	private IDocument document;
 	private ProjectionAnnotationModel projectionAnnotationModel;
-	private List<LSPDocumentInfo> infos;
 	private CompletableFuture<List<FoldingRange>> request;
 	private ProjectionViewer viewer;
 
@@ -117,69 +119,62 @@ public class LSPFoldingReconcilingStrategy
 			return;
 		}
 
-		if (infos == null) {
-			infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-					capabilities -> (capabilities.getFoldingRangeProvider() != null
-							&& ((capabilities.getFoldingRangeProvider().getLeft() != null
-									&& capabilities.getFoldingRangeProvider().getLeft())
-									|| capabilities.getFoldingRangeProvider().getRight() != null)));
-		}
-		if (infos.isEmpty()) {
-			// The language server has not the foldingRange capability.
+		URI uri = LSPEclipseUtils.toUri(document);
+		if (uri == null) {
 			return;
 		}
-		// Cancel the last call of 'foldingRanges'.
-		cancel();
-		for (LSPDocumentInfo info : infos) {
-			TextDocumentIdentifier identifier = new TextDocumentIdentifier(info.getFileUri().toString());
-			FoldingRangeRequestParams params = new FoldingRangeRequestParams(identifier);
-			request = info.getInitializedLanguageClient().thenComposeAsync(languageServer -> languageServer.getTextDocumentService().foldingRange(params));
-			request.thenAcceptAsync(result -> {
-
-				// these are what are passed off to the annotation model to
-				// actually create and maintain the annotations
-				List<Annotation> modifications = new ArrayList<>();
-				List<FoldingAnnotation> deletions = new ArrayList<>();
-				List<FoldingAnnotation> existing = new ArrayList<>();
-				Map<Annotation, Position> additions = new HashMap<>();
-
-				// find and mark all folding annotations with length 0 for deletion
-				markInvalidAnnotationsForDeletion(deletions, existing);
-
-				try {
-					if (result != null) {
-						Collections.sort(result, (f1, f2) -> f2.getEndLine() - f1.getEndLine());
-						for (FoldingRange foldingRange : result) {
-							updateAnnotation(modifications, deletions, existing, additions, foldingRange.getStartLine(),
-									foldingRange.getEndLine());
-						}
-					}
-				} catch (BadLocationException e) {
-					// should never occur
-				}
-
-				// be sure projection has not been disabled
-				if (projectionAnnotationModel != null) {
-					if (!existing.isEmpty()) {
-						deletions.addAll(existing);
-					}
-					// send the calculated updates to the annotations to the
-					// annotation model
-					projectionAnnotationModel.modifyAnnotations(deletions.toArray(new Annotation[1]), additions,
-							modifications.toArray(new Annotation[0]));
-				}
+		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri.toString());
+		FoldingRangeRequestParams params = new FoldingRangeRequestParams(identifier);
+		LanguageServiceAccessor.getLanguageServers(document, LSPFoldingReconcilingStrategy::canFold).thenAcceptAsync(servers -> {
+			if (servers.isEmpty()) {
+				return;
+			}
+			servers.stream().forEach(server -> {
+				server.getTextDocumentService().foldingRange(params).thenAcceptAsync(this::applyFolding);
 			});
+		});
+	}
+
+	private void applyFolding(List<FoldingRange> ranges) {
+		// these are what are passed off to the annotation model to
+		// actually create and maintain the annotations
+		List<Annotation> modifications = new ArrayList<>();
+		List<FoldingAnnotation> deletions = new ArrayList<>();
+		List<FoldingAnnotation> existing = new ArrayList<>();
+		Map<Annotation, Position> additions = new HashMap<>();
+
+		// find and mark all folding annotations with length 0 for deletion
+		markInvalidAnnotationsForDeletion(deletions, existing);
+
+		try {
+			if (ranges != null) {
+				Collections.sort(ranges, Comparator.comparing(FoldingRange::getEndLine));
+				for (FoldingRange foldingRange : ranges) {
+					updateAnnotation(modifications, deletions, existing, additions, foldingRange.getStartLine(),
+							foldingRange.getEndLine());
+				}
+			}
+		} catch (BadLocationException e) {
+			// should never occur
+		}
+
+		// be sure projection has not been disabled
+		if (projectionAnnotationModel != null) {
+			if (!existing.isEmpty()) {
+				deletions.addAll(existing);
+			}
+			// send the calculated updates to the annotations to the
+			// annotation model
+			projectionAnnotationModel.modifyAnnotations(deletions.toArray(new Annotation[1]), additions,
+					modifications.toArray(new Annotation[0]));
 		}
 	}
 
-	/**
-	 * Cancel the last call of 'foldingRanges'.
-	 */
-	private void cancel() {
-		if (request != null && !request.isDone()) {
-			request.cancel(true);
-			request = null;
-		}
+	private static boolean canFold(ServerCapabilities capabilities) {
+		return capabilities.getFoldingRangeProvider() != null
+				&& ((capabilities.getFoldingRangeProvider().getLeft() != null
+						&& capabilities.getFoldingRangeProvider().getLeft())
+						|| capabilities.getFoldingRangeProvider().getRight() != null);
 	}
 
 	public void install(ProjectionViewer viewer) {
@@ -203,7 +198,6 @@ public class LSPFoldingReconcilingStrategy
 	@Override
 	public void setDocument(IDocument document) {
 		this.document = document;
-		this.infos = null;
 	}
 
 	@Override
