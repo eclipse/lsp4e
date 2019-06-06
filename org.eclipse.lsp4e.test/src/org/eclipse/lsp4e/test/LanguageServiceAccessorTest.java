@@ -13,11 +13,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -134,7 +132,7 @@ public class LanguageServiceAccessorTest {
 		IFile testFile = TestUtils.createFile(project, "fileWithFailedServer.lsptWithException", "");
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile,
 				capabilites -> Boolean.TRUE);
-		assertThat(wrappers.size(), is(1));
+		assertEquals(1, wrappers.size());
 	}
 
 	@Test
@@ -393,7 +391,17 @@ public class LanguageServiceAccessorTest {
 		} finally {
 			Files.deleteIfExists(local.toPath());
 		}
+	}
 
+	@Test
+	public void testSingletonLS() throws Exception {
+		IFile testFile1 = TestUtils.createFile(project, "shouldUseSingletonLS.lsp-singletonLS", "");
+		IProject project2 = TestUtils.createProject("project2");
+		IFile testFile2 = TestUtils.createFile(project2, "shouldUseSingletonLS2.lsp-singletonLS", "");
+		@NonNull CompletableFuture<List<@NonNull LanguageServer>> languageServers = LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile1), cap -> true);
+		@NonNull CompletableFuture<List<@NonNull LanguageServer>> languageServers2 = LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile2), cap -> true);
+		Assert.assertEquals(1, languageServers.get().size());
+		Assert.assertEquals(languageServers.get(), languageServers2.get());
 	}
 
 	private static boolean getStatusHandler() {

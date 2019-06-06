@@ -65,6 +65,7 @@ public class LanguageServersRegistry {
 	private static final String MAPPING_ELEMENT = "contentTypeMapping"; //$NON-NLS-1$
 
 	private static final String ID_ATTRIBUTE = "id"; //$NON-NLS-1$
+	private static final String SINGLETON_ATTRIBUTE = "singleton"; //$NON-NLS-1$
 	private static final String CONTENT_TYPE_ATTRIBUTE = "contentType"; //$NON-NLS-1$
 	private static final String LANGUAGE_ID_ATTRIBUTE = "languageId"; //$NON-NLS-1$
 	private static final String CLASS_ATTRIBUTE = "class"; //$NON-NLS-1$
@@ -77,11 +78,13 @@ public class LanguageServersRegistry {
 	public abstract static class LanguageServerDefinition {
 		public final @NonNull String id;
 		public final @NonNull String label;
+		public final boolean isSingleton;
 		public final @NonNull Map<IContentType, String> langugeIdMappings;
 
-		public LanguageServerDefinition(@NonNull String id, @NonNull String label) {
+		public LanguageServerDefinition(@NonNull String id, @NonNull String label, boolean isSingleton) {
 			this.id = id;
 			this.label = label;
+			this.isSingleton = isSingleton;
 			this.langugeIdMappings = new ConcurrentHashMap<>();
 		}
 
@@ -106,7 +109,7 @@ public class LanguageServersRegistry {
 		private StreamConnectionProvider provider;
 
 		public ExtensionLanguageServerDefinition(IConfigurationElement element) {
-			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE));
+			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE), Boolean.parseBoolean(element.getAttribute(SINGLETON_ATTRIBUTE)));
 			this.extension = element;
 		}
 
@@ -163,7 +166,7 @@ public class LanguageServersRegistry {
 
 		public LaunchConfigurationLanguageServerDefinition(ILaunchConfiguration launchConfiguration,
 				Set<String> launchModes) {
-			super(launchConfiguration.getName(), launchConfiguration.getName());
+			super(launchConfiguration.getName(), launchConfiguration.getName(), false);
 			this.launchConfiguration = launchConfiguration;
 			this.launchModes = launchModes;
 		}

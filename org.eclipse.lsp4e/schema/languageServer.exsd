@@ -96,6 +96,14 @@
                </appinfo>
             </annotation>
          </attribute>
+         <attribute name="singleton" type="boolean">
+            <annotation>
+               <documentation>
+                  Whether a single instance of this language server should be instantiated and reused for all supported files. Sort of warkaround for https://github.com/Microsoft/language-server-protocol/issues/674
+Since 0.10
+               </documentation>
+            </annotation>
+         </attribute>
       </complexType>
    </element>
 

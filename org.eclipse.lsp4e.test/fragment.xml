@@ -79,6 +79,16 @@
                   </test>
             </enabledWhen>
       </contentTypeMapping>
+      <server
+            class="org.eclipse.lsp4e.test.MockConnectionProvider"
+            id="org.eclipse.lsp4e.test.singletonLS"
+            label="Singleton LS"
+            singleton="true">
+      </server>
+      <contentTypeMapping
+            contentType="org.eclipse.lsp4e.test.singleton-ls-content-type"
+            id="org.eclipse.lsp4e.test.singletonLS">
+      </contentTypeMapping>
    </extension>
    <extension
          point="org.eclipse.core.contenttype.contentTypes">
@@ -159,6 +169,12 @@
             file-extensions="lspt-tester"
             id="org.eclipse.lsp4e.test.content-type-with-tester"
             name="Test Content Type for disabled Language ID with enablement tester"
+            priority="normal">
+      </content-type>
+      <content-type
+            file-extensions="lsp-singletonLS"
+            id="org.eclipse.lsp4e.test.singleton-ls-content-type"
+            name="Test Content-Type associated with Singleton LS"
             priority="normal">
       </content-type>
    </extension>

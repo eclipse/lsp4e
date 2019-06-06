@@ -441,7 +441,7 @@ public class LanguageServerWrapper {
 			return true;
 		}
 
-		return supportsWorkspaceFolderCapability();
+		return serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
 	}
 
 	/**
@@ -751,7 +751,7 @@ public class LanguageServerWrapper {
 		if (file != null && file.exists() && canOperate(file.getProject())) {
 			return true;
 		}
-		return supportsWorkspaceFolderCapability();
+		return serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
 	}
 
 }
