@@ -35,7 +35,7 @@ public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer
 		if (usedLanguageServers.isEmpty()) {
 			return new QuickAccessElement[0];
 		}
-		WorkspaceSymbolParams params = new WorkspaceSymbolParams(); // see https://github.com/Microsoft/language-server-protocol/issues/740
+		WorkspaceSymbolParams params = new WorkspaceSymbolParams(""); // see https://github.com/Microsoft/language-server-protocol/issues/740 //$NON-NLS-1$
 		List<QuickAccessElement> res = Collections.synchronizedList(new ArrayList<>());
 		CompletableFuture.allOf(usedLanguageServers.stream().map(ls ->
 			ls.getWorkspaceService().symbol(params).thenAcceptAsync(symbols ->
