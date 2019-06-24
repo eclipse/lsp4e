@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.eclipse.lsp4e</groupId>
 	<artifactId>parent</artifactId>
-	<version>0.10.0-SNAPSHOT</version>
+	<version>0.11.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	
 	<prerequisites>
@@ -19,7 +19,6 @@
 	</properties>
 
 	<modules>
-		<module>target-platforms/target-platform-photon</module>
 		<module>target-platforms/target-platform-latest</module>
 		<module>org.eclipse.lsp4e</module>
 		<module>org.eclipse.lsp4e.debug</module>
@@ -46,7 +45,7 @@
 						<artifact>
 							<groupId>${project.groupId}</groupId>
 							<artifactId>${target-config}</artifactId>
-							<version>0.10.0-SNAPSHOT</version>
+							<version>0.11.0-SNAPSHOT</version>
 						</artifact>
 					</target>
 					<environments>
@@ -151,7 +150,9 @@
 					</dependencies>
 					<configuration>
 						<timestampProvider>jgit</timestampProvider>
-						<jgit.ignore>pom.xml</jgit.ignore>
+						<jgit.ignore>
+							pom.xml
+						</jgit.ignore>
 					</configuration>
 				</plugin>
 				<plugin>
