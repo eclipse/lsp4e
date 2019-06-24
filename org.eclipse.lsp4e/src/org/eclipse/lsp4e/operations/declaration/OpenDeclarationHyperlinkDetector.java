@@ -34,6 +34,7 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 
@@ -71,7 +72,23 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 								} else if (locations.isLeft()) {
 									allLinks.addAll(locations.getLeft().stream().filter(Objects::nonNull).map(location -> new LSBasedHyperlink(location, linkRegion)).collect(Collectors.toList()));
 								} else {
-									allLinks.addAll(locations.getRight().stream().filter(Objects::nonNull).map(locationLink -> new LSBasedHyperlink(locationLink, linkRegion)).collect(Collectors.toList()));
+									allLinks.addAll(
+											locations.getRight().stream().filter(Objects::nonNull).map(locationLink -> {
+												IRegion selectionRegion = linkRegion;
+												Range originSelectionRange = locationLink.getOriginSelectionRange();
+												if (originSelectionRange != null) {
+													try {
+														int offset = LSPEclipseUtils
+																.toOffset(originSelectionRange.getStart(), document);
+														int endOffset = LSPEclipseUtils
+																.toOffset(originSelectionRange.getEnd(), document);
+														selectionRegion = new Region(offset, endOffset - offset);
+													} catch (BadLocationException e) {
+														LanguageServerPlugin.logError(e.getMessage(), e);
+													}
+												}
+												return new LSBasedHyperlink(locationLink, selectionRegion);
+											}).collect(Collectors.toList()));
 								}
 							})
 						).toArray(CompletableFuture[]::new)).thenApply(theVoid -> allLinks);
