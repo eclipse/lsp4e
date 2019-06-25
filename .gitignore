@@ -1,2 +1,3 @@
 target/
 .settings/de.loskutov.anyedit.AnyEditTools.prefs
+.polyglot.build.properties
