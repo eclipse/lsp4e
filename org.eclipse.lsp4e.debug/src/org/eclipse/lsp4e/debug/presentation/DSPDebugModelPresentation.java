@@ -151,7 +151,7 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 				URI uri = uriEditorInput.getURI();
 				try {
 					IFileStore fileStore = EFS.getStore(uri);
-					id = WorkaroundForBug516470.getEditorId(fileStore, false);
+					id = IDE.getEditorDescriptorForFileStore(fileStore, false).getId();
 				} catch (CoreException e) {
 					// fallback to default case
 				}
