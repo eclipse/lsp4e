@@ -41,6 +41,7 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureHelpOptions;
@@ -99,6 +100,7 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setCompletionProvider(completionProvider);
 		capabilities.setHoverProvider(true);
 		capabilities.setDefinitionProvider(true);
+		capabilities.setTypeDefinitionProvider(Boolean.TRUE);
 		capabilities.setReferencesProvider(true);
 		capabilities.setDocumentFormattingProvider(true);
 		capabilities.setCodeActionProvider(Boolean.TRUE);
@@ -229,6 +231,10 @@ public final class MockLanguageServer implements LanguageServer {
 
 	public void setDocumentLinks(List<DocumentLink> documentLinks) {
 		this.textDocumentService.setMockDocumentLinks(documentLinks);
+	}
+
+	public void setTypeDefinitions(List<LocationLink> locations) {
+		this.textDocumentService.setMockTypeDefinitions(locations);
 	}
 
 	public boolean isRunning() {

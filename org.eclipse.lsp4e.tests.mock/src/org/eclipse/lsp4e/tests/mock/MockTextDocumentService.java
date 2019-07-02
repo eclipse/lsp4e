@@ -66,6 +66,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private CompletionList mockCompletionList;
 	private Hover mockHover;
 	private List<? extends Location> mockDefinitionLocations;
+	private List<? extends LocationLink> mockTypeDefinitions;
 	private List<? extends TextEdit> mockFormattingTextEdits;
 	private SignatureHelp mockSignatureHelp;
 	private List<CodeLens> mockCodeLenses;
@@ -230,6 +231,12 @@ public class MockTextDocumentService implements TextDocumentService {
 		return CompletableFuture.completedFuture(this.mockDocumentColors);
 	}
 
+	@Override
+	public CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>> typeDefinition(
+			TextDocumentPositionParams position) {
+		return CompletableFuture.completedFuture(Either.forRight(this.mockTypeDefinitions));
+	}
+
 	public void setMockCompletionList(CompletionList completionList) {
 		this.mockCompletionList = completionList;
 	}
@@ -277,6 +284,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	public void reset() {
 		this.mockCompletionList = new CompletionList();
 		this.mockDefinitionLocations = Collections.emptyList();
+		this.mockTypeDefinitions = Collections.emptyList();
 		this.mockHover = null;
 		this.mockCodeLenses = null;
 		this.mockReferences = null;
@@ -312,4 +320,9 @@ public class MockTextDocumentService implements TextDocumentService {
 	public void setRenameEdit(WorkspaceEdit edit) {
 		this.mockRenameEdit = edit;
 	}
+
+	public void setMockTypeDefinitions(List<? extends LocationLink> mockTypeDefinitions) {
+		this.mockTypeDefinitions = mockTypeDefinitions;
+	}
+
 }

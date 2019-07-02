@@ -25,8 +25,8 @@ import org.eclipse.ui.PlatformUI;
 
 public class LSBasedHyperlink implements IHyperlink {
 
-	private Either<Location, LocationLink> location;
-	private IRegion highlightRegion;
+	private final Either<Location, LocationLink> location;
+	private final IRegion highlightRegion;
 
 	public LSBasedHyperlink(Either<Location, LocationLink> location, IRegion highlightRegion) {
 		this.location = location;
@@ -54,6 +54,15 @@ public class LSBasedHyperlink implements IHyperlink {
 	@Override
 	public String getHyperlinkText() {
 		return Messages.hyperlinkLabel;
+	}
+
+	/**
+	 *
+	 * @return
+	 * @noreference test only
+	 */
+	public Either<Location, LocationLink> getLocation() {
+		return location;
 	}
 
 	@Override

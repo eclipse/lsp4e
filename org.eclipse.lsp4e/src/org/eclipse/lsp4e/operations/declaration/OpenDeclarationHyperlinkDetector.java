@@ -14,9 +14,10 @@
 package org.eclipse.lsp4e.operations.declaration;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -34,9 +35,14 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.StaticRegistrationOptions;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector {
 
@@ -58,55 +64,96 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 		}
 		IRegion r = findWord(textViewer.getDocument(), region.getOffset());
 		final IRegion linkRegion = r != null ? r : region;
+		Collection<LSBasedHyperlink> allLinks = Collections.synchronizedList(new ArrayList<>());
 		try {
-			Collection<LSBasedHyperlink> res = LanguageServiceAccessor
-				.getLanguageServers(textViewer.getDocument(), capabilities -> Boolean.TRUE.equals(capabilities.getDefinitionProvider()))
-				.thenComposeAsync(languageServers -> {
-					Collection<LSBasedHyperlink> allLinks = Collections.synchronizedSet(new HashSet<>(languageServers.size()));
-					return CompletableFuture.allOf(languageServers.stream().map(ls ->
-						ls.getTextDocumentService()
-							.definition(params)
-							.thenAcceptAsync(locations -> {
-								if (locations == null) {
-									return;
-								} else if (locations.isLeft()) {
-									allLinks.addAll(locations.getLeft().stream().filter(Objects::nonNull).map(location -> new LSBasedHyperlink(location, linkRegion)).collect(Collectors.toList()));
-								} else {
-									allLinks.addAll(
-											locations.getRight().stream().filter(Objects::nonNull).map(locationLink -> {
-												IRegion selectionRegion = linkRegion;
-												Range originSelectionRange = locationLink.getOriginSelectionRange();
-												if (originSelectionRange != null) {
-													try {
-														int offset = LSPEclipseUtils
-																.toOffset(originSelectionRange.getStart(), document);
-														int endOffset = LSPEclipseUtils
-																.toOffset(originSelectionRange.getEnd(), document);
-														selectionRegion = new Region(offset, endOffset - offset);
-													} catch (BadLocationException e) {
-														LanguageServerPlugin.logError(e.getMessage(), e);
-													}
-												}
-												return new LSBasedHyperlink(locationLink, selectionRegion);
-											}).collect(Collectors.toList()));
-								}
-							})
-						).toArray(CompletableFuture[]::new)).thenApply(theVoid -> allLinks);
+			// Collect definitions
+			Collection<CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>>> allFutures = Collections.synchronizedCollection(new ArrayList<>());
+			CompletableFuture.allOf(
+				LanguageServiceAccessor
+					.getLanguageServers(textViewer.getDocument(), capabilities -> Boolean.TRUE.equals(capabilities.getDefinitionProvider()))
+					.thenAcceptAsync(languageServers ->
+						languageServers.stream().map(ls -> ls.getTextDocumentService().definition(params)).forEach(allFutures::add)
+					),
+				LanguageServiceAccessor
+					.getLanguageServers(textViewer.getDocument(), OpenDeclarationHyperlinkDetector::isTypeDefinitionProvider)
+					.thenAcceptAsync(languageServers ->
+						languageServers.stream().map(ls -> ls.getTextDocumentService().typeDefinition(params)).forEach(allFutures::add)
+					)
+			).thenCompose(theVoid ->
+				CompletableFuture.allOf(allFutures.stream().map(future ->
+				future.thenAccept(locations -> {
+					Collection<LSBasedHyperlink> links = toHyperlinks(document, linkRegion, locations);
+					synchronized (allLinks) {
+						allLinks.addAll(links);
 					}
-				).get(500, TimeUnit.MILLISECONDS);
-			if (res.isEmpty()) {
-				return null;
-			} else {
-				return res.toArray(new IHyperlink[res.size()]);
-			}
+				})).toArray(CompletableFuture[]::new))
+			).get(500, TimeUnit.MILLISECONDS);
 		} catch (ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
-			return null;
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+		}
+		if (allLinks.isEmpty()) {
 			return null;
 		}
+		return allLinks.toArray(new IHyperlink[allLinks.size()]);
+	}
+
+	/**
+	 * Fill the given Eclipse links by using the given LSP locations
+	 *
+	 * @param document
+	 *            the document
+	 * @param linkRegion
+	 *            the link region
+	 * @param locations
+	 *            the LSP locations
+	 * @param allLinks
+	 *            the Eclipse links to update
+	 */
+	private static Collection<LSBasedHyperlink> toHyperlinks(final IDocument document, final IRegion linkRegion,
+			Either<List<? extends Location>, List<? extends LocationLink>> locations) {
+		if (locations == null) {
+			return Collections.emptyList();
+		}
+		if (locations.isLeft()) {
+			return locations.getLeft().stream()
+					.filter(Objects::nonNull)
+					.map(location -> new LSBasedHyperlink(location, linkRegion))
+					.collect(Collectors.toList());
+		} else if (locations.isRight()) {
+			return locations.getRight().stream().filter(Objects::nonNull).map(locationLink -> {
+						IRegion selectionRegion = linkRegion;
+						Range originSelectionRange = locationLink.getOriginSelectionRange();
+						if (originSelectionRange != null) {
+							try {
+								int offset = LSPEclipseUtils
+										.toOffset(originSelectionRange.getStart(), document);
+								int endOffset = LSPEclipseUtils
+										.toOffset(originSelectionRange.getEnd(), document);
+								selectionRegion = new Region(offset, endOffset - offset);
+							} catch (BadLocationException e) {
+								LanguageServerPlugin.logError(e.getMessage(), e);
+							}
+						}
+						return new LSBasedHyperlink(locationLink, selectionRegion);
+					}).collect(Collectors.toList());
+		}
+		return Collections.emptyList();
+	}
+
+	private static boolean isTypeDefinitionProvider(ServerCapabilities capabilities) {
+		 Either<Boolean, StaticRegistrationOptions> typeDefinitionProvider = capabilities.getTypeDefinitionProvider();
+		 if (typeDefinitionProvider == null) {
+			 return false;
+		 }
+		 if (typeDefinitionProvider.isLeft()) {
+			return Boolean.TRUE.equals(typeDefinitionProvider.getLeft());
+		 } else if (typeDefinitionProvider.isRight()) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -129,7 +176,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 			int pos = offset;
 			char c;
 
-			while (pos >= 0) {
+			while (pos >= 0 && pos < document.getLength()) {
 				c = document.getChar(pos);
 				if (!Character.isUnicodeIdentifierPart(c)) {
 					break;

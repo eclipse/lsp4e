@@ -12,12 +12,16 @@
 package org.eclipse.lsp4e.test.definition;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -26,11 +30,13 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
+import org.eclipse.lsp4e.operations.declaration.LSBasedHyperlink;
 import org.eclipse.lsp4e.operations.declaration.OpenDeclarationHyperlinkDetector;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.ui.PlatformUI;
@@ -64,6 +70,29 @@ public class DefinitionTest {
 		IHyperlink[] hyperlinks = hyperlinkDetector.detectHyperlinks(viewer, new Region(1, 0), true);
 		assertEquals(1, hyperlinks.length);		
 		// TODO add location check
+	}
+
+	@Test
+	public void testDefinitionAndTypeDefinition() throws Exception {
+		Range definitionRange = new Range(new Position(0, 0), new Position(0, 1));
+		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(new Location("file://testDefinition", definitionRange)));
+		Range typeDefinitionRange = new Range(new Position(0, 2), new Position(0, 3));
+		MockLanguageServer.INSTANCE.setTypeDefinitions(Collections.singletonList(new LocationLink("file://testTypeDefinition", typeDefinitionRange, typeDefinitionRange)));
+
+		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
+		ITextViewer viewer = TestUtils.openTextViewer(file);
+
+		IHyperlink[] hyperlinks = hyperlinkDetector.detectHyperlinks(viewer, new Region(1, 0), true);
+		assertEquals(2, hyperlinks.length);
+		Set<String> uris = Arrays.stream(hyperlinks).map(LSBasedHyperlink.class::cast).map(LSBasedHyperlink::getLocation).map(location -> {
+			if (location.isLeft()) {
+				return location.getLeft().getUri();
+			} else {
+				return location.getRight().getTargetUri();
+			}
+		}).collect(Collectors.toSet());
+		assertTrue(uris.contains("file://testDefinition"));
+		assertTrue(uris.contains("file://testTypeDefinition"));
 	}
 
 	@Test
