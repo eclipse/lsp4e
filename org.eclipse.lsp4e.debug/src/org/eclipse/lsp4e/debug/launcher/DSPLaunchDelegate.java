@@ -31,6 +31,7 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.lsp4e.debug.DSPPlugin;
@@ -344,15 +345,30 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 
 			subMonitor.setWorkRemaining(80);
 
-			DSPDebugTarget target = new DSPDebugTarget(builder.launch, cleanup, inputStream, outputStream,
-					builder.dspParameters);
-			target.initialize(subMonitor.split(80));
+			ILaunch launch = builder.launch;
+			Map<String, Object> dspParameters = builder.dspParameters;
+			IDebugTarget target = createDebugTarget(subMonitor, cleanup, inputStream, outputStream, launch,
+					dspParameters);
 			builder.launch.addDebugTarget(target);
 		} catch (IOException | OperationCanceledException e1) {
 			abort("Failed to start debugging", e1);
 		} finally {
 			subMonitor.done();
 		}
+	}
+
+	/**
+	 * For extenders/consumers of {@link DSPLaunchDelegate} who want to provide
+	 * customization of the IDebugTarget, this method allows extenders to hook in a
+	 * custom debug target implementation. The debug target is normally a subclass
+	 * of {@link DSPDebugTarget}, but does not have to be. The arguments to this
+	 * method are normally just passed to {@link DSPDebugTarget} constructor.
+	 */
+	protected IDebugTarget createDebugTarget(SubMonitor subMonitor, Runnable cleanup, InputStream inputStream,
+			OutputStream outputStream, ILaunch launch, Map<String, Object> dspParameters) throws CoreException {
+		DSPDebugTarget target = new DSPDebugTarget(launch, cleanup, inputStream, outputStream, dspParameters);
+		target.initialize(subMonitor.split(80));
+		return target;
 	}
 
 	/**

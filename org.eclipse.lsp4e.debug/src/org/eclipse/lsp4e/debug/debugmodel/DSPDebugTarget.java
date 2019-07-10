@@ -163,8 +163,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				return result;
 			};
 
-			Launcher<IDebugProtocolServer> debugProtocolLauncher = DSPLauncher.createClientLauncher(this, in, out,
-					threadPool, wrapper);
+			InputStream in2 = in;
+			OutputStream out2 = out;
+			ExecutorService threadPool2 = threadPool;
+			Launcher<? extends IDebugProtocolServer> debugProtocolLauncher = createLauncher(wrapper, in2, out2,
+					threadPool2);
 
 			debugProtocolFuture = debugProtocolLauncher.startListening();
 			debugProtocolServer = debugProtocolLauncher.getRemoteProxy();
@@ -177,6 +180,23 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		} finally {
 			subMonitor.done();
 		}
+	}
+
+	/**
+	 * As the main reason for extending {@link DSPDebugTarget} is to interface to a
+	 * custom debug adapter that has more functionality than the protocol defines.
+	 * Overriding this method allows an extender to provide their own service
+	 * interface that extends {@link IDebugProtocolServer}.
+	 *
+	 * For more information on how to <a href=
+	 * "https://github.com/eclipse/lsp4j/tree/master/documentation#extending-the-protocol">extend
+	 * the protocol</a> using LSP4J
+	 */
+	protected Launcher<? extends IDebugProtocolServer> createLauncher(UnaryOperator<MessageConsumer> wrapper,
+			InputStream in, OutputStream out, ExecutorService threadPool) {
+		Launcher<IDebugProtocolServer> debugProtocolLauncher = DSPLauncher.createClientLauncher(this, in, out,
+				threadPool, wrapper);
+		return debugProtocolLauncher;
 	}
 
 	private CompletableFuture<Void> initialize(Map<String, Object> dspParameters, IProgressMonitor monitor) {

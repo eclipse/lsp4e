@@ -64,7 +64,7 @@ public abstract class DSPDebugElement extends DebugElement {
 	 * @param future
 	 * @throws DebugException
 	 */
-	static <T> T complete(CompletableFuture<T> future) throws DebugException {
+	protected static <T> T complete(CompletableFuture<T> future) throws DebugException {
 		try {
 			return future.get();
 		} catch (ExecutionException e) {
@@ -75,7 +75,7 @@ public abstract class DSPDebugElement extends DebugElement {
 		}
 	}
 
-	static <T> T monitorGet(CompletableFuture<T> future, IProgressMonitor monitor) throws DebugException {
+	protected static <T> T monitorGet(CompletableFuture<T> future, IProgressMonitor monitor) throws DebugException {
 		try {
 			while (true) {
 				if (monitor.isCanceled()) {
@@ -103,7 +103,7 @@ public abstract class DSPDebugElement extends DebugElement {
 
 	}
 
-	static DebugException newTargetRequestFailedException(String message, Throwable e) {
+	protected static DebugException newTargetRequestFailedException(String message, Throwable e) {
 		return new DebugException(new Status(IStatus.ERROR, DebugPlugin.getUniqueIdentifier(),
 				DebugException.TARGET_REQUEST_FAILED, message, e));
 	}
