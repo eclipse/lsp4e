@@ -134,9 +134,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		int maxSeverity = -1;
 		for (IMarker marker : resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO)) {
 			int offset = marker.getAttribute(IMarker.CHAR_START, -1);
-			if (offset != -1
-					&& offset >= LSPEclipseUtils.toOffset(range.getStart(), doc)
-					&& offset <= LSPEclipseUtils.toOffset(range.getEnd(), doc)) {
+			if (LSPEclipseUtils.isOffsetInRange(offset, range, doc)) {
 				maxSeverity = Math.max(maxSeverity, marker.getAttribute(IMarker.SEVERITY, -1));
 			}
 		}

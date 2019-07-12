@@ -164,6 +164,16 @@ public class LSPEclipseUtils {
 		return document.getLineInformation(position.getLine()).getOffset() + position.getCharacter();
 	}
 
+	public static boolean isOffsetInRange(int offset, Range range, IDocument document) {
+		try {
+			return offset != -1 && offset >= toOffset(range.getStart(), document)
+					&& offset <= toOffset(range.getEnd(), document);
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+			return false;
+		}
+	}
+
 	public static CompletionParams toCompletionParams(URI fileUri, int offset, IDocument document)
 			throws BadLocationException {
 		Position start = toPosition(offset, document);
