@@ -12,6 +12,9 @@
    <bundle id="org.eclipse.lsp4e.source">
       <category name="Sources and Tests"/>
    </bundle>
+   <bundle id="org.eclipse.lsp4e.debug.source">
+      <category name="Sources and Tests"/>
+   </bundle>
    <bundle id="org.eclipse.lsp4e.test">
       <category name="Sources and Tests"/>
    </bundle>
@@ -44,7 +47,4 @@
    <bundle id="com.google.gson">
      <category name="deps"/>
    </bundle>
-   <bundle id="org.eclipse.ui.genericeditor">
-     <category name="deps"/>
-   </bundle>  
 </site>
