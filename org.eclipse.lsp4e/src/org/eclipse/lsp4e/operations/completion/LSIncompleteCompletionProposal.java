@@ -37,6 +37,7 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.contentassist.BoldStylerProvider;
+import org.eclipse.jface.text.contentassist.CompletionProposal;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.ICompletionProposalExtension3;
 import org.eclipse.jface.text.contentassist.ICompletionProposalExtension4;
@@ -48,6 +49,7 @@ import org.eclipse.jface.text.link.LinkedModeModel;
 import org.eclipse.jface.text.link.LinkedModeUI;
 import org.eclipse.jface.text.link.LinkedPosition;
 import org.eclipse.jface.text.link.LinkedPositionGroup;
+import org.eclipse.jface.text.link.ProposalPosition;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -442,52 +444,76 @@ public class LSIncompleteCompletionProposal
 			int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
 			insertionOffset = computeNewOffset(item.getAdditionalTextEdits(), insertionOffset, document);
 			if (item.getInsertTextFormat() == InsertTextFormat.Snippet) {
-				int currentOffset = 0;
-				while ((currentOffset = insertText.indexOf('$', currentOffset)) != -1) {
+				int currentSnippetOffsetInInsertText = 0;
+				while ((currentSnippetOffsetInInsertText = insertText.indexOf('$', currentSnippetOffsetInInsertText)) != -1) {
 					StringBuilder keyBuilder = new StringBuilder();
-					String defaultValue = ""; //$NON-NLS-1$
-					int length = 1;
-					while (currentOffset + length < insertText.length() && Character.isDigit(insertText.charAt(currentOffset + length))) {
-						keyBuilder.append(insertText.charAt(currentOffset + length));
-						length++;
+					boolean isChoice = false;
+					List<String> snippetProposals = new ArrayList<>();
+					int offsetInSnippet = 1;
+					while (currentSnippetOffsetInInsertText + offsetInSnippet < insertText.length() && Character.isDigit(insertText.charAt(currentSnippetOffsetInInsertText + offsetInSnippet))) {
+						keyBuilder.append(insertText.charAt(currentSnippetOffsetInInsertText + offsetInSnippet));
+						offsetInSnippet++;
 					}
-					if (length == 1 && insertText.length() >= 2 && insertText.charAt(currentOffset + 1) == '{') {
-						length++;
-						while (currentOffset + length < insertText.length() && Character.isDigit(insertText.charAt(currentOffset + length))) {
-							keyBuilder.append(insertText.charAt(currentOffset + length));
-							length++;
+					if (keyBuilder.length() == 0 && insertText.substring(currentSnippetOffsetInInsertText).startsWith("${")) { //$NON-NLS-1$
+						offsetInSnippet = 2;
+						while (currentSnippetOffsetInInsertText + offsetInSnippet < insertText.length() && Character.isDigit(insertText.charAt(currentSnippetOffsetInInsertText + offsetInSnippet))) {
+							keyBuilder.append(insertText.charAt(currentSnippetOffsetInInsertText + offsetInSnippet));
+							offsetInSnippet++;
 						}
-						if (currentOffset + length < insertText.length() && insertText.charAt(currentOffset + length) == ':') {
-							length++;
-						}
-						while (currentOffset + length < insertText.length() && insertText.charAt(currentOffset + length) != '}') {
-							defaultValue += insertText.charAt(currentOffset + length);
-							length++;
-						}
-						if (defaultValue.startsWith("$")) { //$NON-NLS-1$
-							String varValue = getVariableValue(defaultValue.substring(1));
-							if (varValue != null) {
-								defaultValue = varValue;
+						if (currentSnippetOffsetInInsertText + offsetInSnippet < insertText.length()) {
+							char currentChar = insertText.charAt(currentSnippetOffsetInInsertText + offsetInSnippet);
+							if (currentChar == ':' || currentChar == '|') {
+								isChoice |= currentChar == '|';
+								offsetInSnippet++;
 							}
 						}
-						if (currentOffset + length < insertText.length() && insertText.charAt(currentOffset + length) == '}') {
-							length++;
+						boolean close = false;
+						StringBuilder valueBuilder = new StringBuilder();
+						while (currentSnippetOffsetInInsertText + offsetInSnippet < insertText.length() && !close) {
+							char currentChar = insertText.charAt(currentSnippetOffsetInInsertText + offsetInSnippet);
+							if (valueBuilder.length() > 0 &&
+								((isChoice && (currentChar == ',' || currentChar == '|') || currentChar == '}'))) {
+								String value = valueBuilder.toString();
+								if (value.startsWith("$")) { //$NON-NLS-1$
+									String varValue = getVariableValue(value.substring(1));
+									if (varValue != null) {
+										value = varValue;
+									}
+								}
+								snippetProposals.add(value);
+								valueBuilder = new StringBuilder();
+							} else if (currentChar != '}') {
+								valueBuilder.append(currentChar);
+							}
+							close = currentChar == '}';
+							offsetInSnippet++;
 						}
 					}
+					String defaultProposal = snippetProposals.isEmpty() ? "" : snippetProposals.get(0); //$NON-NLS-1$
 					if (keyBuilder.length() > 0) {
 						String key = keyBuilder.toString();
 						if (!regions.containsKey(key)) {
 							regions.put(key, new ArrayList<>());
 						}
-						insertText = insertText.substring(0, currentOffset) + defaultValue + insertText.substring(currentOffset + length);
-						LinkedPosition position = new LinkedPosition(document, insertionOffset + currentOffset, defaultValue.length());
+						insertText = insertText.substring(0, currentSnippetOffsetInInsertText) + defaultProposal + insertText.substring(currentSnippetOffsetInInsertText + offsetInSnippet);
+						LinkedPosition position = null;
+						if (!snippetProposals.isEmpty()) {
+							int replacementOffset = insertionOffset + currentSnippetOffsetInInsertText;
+							int replacementLength = insertText.length();
+							ICompletionProposal[] proposals = snippetProposals.stream().map(string ->
+								new CompletionProposal(string, replacementOffset, defaultProposal.length(), replacementOffset + string.length())
+							).toArray(ICompletionProposal[]::new);
+							position = new ProposalPosition(document, insertionOffset + currentSnippetOffsetInInsertText, defaultProposal.length(), proposals);
+						} else {
+							position = new LinkedPosition(document, insertionOffset + currentSnippetOffsetInInsertText, defaultProposal.length());
+						}
 						if (firstPosition == null) {
 							firstPosition = position;
 						}
 						regions.get(key).add(position);
-						currentOffset += defaultValue.length();
+						currentSnippetOffsetInInsertText += defaultProposal.length();
 					} else {
-						currentOffset++;
+						currentSnippetOffsetInInsertText++;
 					}
 				}
 			}

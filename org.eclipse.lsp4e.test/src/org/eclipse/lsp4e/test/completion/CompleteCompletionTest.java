@@ -14,6 +14,7 @@ package org.eclipse.lsp4e.test.completion;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -54,6 +55,9 @@ import org.eclipse.swt.custom.ST;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.junit.Assert;
@@ -334,6 +338,26 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
 		assertEquals(" and foo", viewer.getDocument().get());
 		// TODO check link edit groups
+	}
+
+	@Test
+	public void testChoiceSnippet() throws PartInitException, InvocationTargetException, CoreException {
+		CompletionItem completionItem = createCompletionItem("1${1|a,b|}2", CompletionItemKind.Class);
+		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, Collections.singletonList(completionItem)));
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,""));
+		int invokeOffset = 0;
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+		assertEquals(1, proposals.length);
+		Set<Shell> beforeShells = new HashSet<>(Arrays.asList(viewer.getTextWidget().getDisplay().getShells()));
+		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
+		assertEquals("1a2", viewer.getDocument().get());
+		Set<Shell> newShells = new HashSet<>(Arrays.asList(viewer.getTextWidget().getDisplay().getShells()));
+		newShells.removeAll(beforeShells);
+		assertNotEquals(Collections.emptySet(), newShells);
+		Table proposalList = (Table)newShells.iterator().next().getChildren()[0];
+		String[] itemLabels = Arrays.stream(proposalList.getItems()).map(TableItem::getText).toArray(String[]::new);
+		assertArrayEquals(new String[] {"a", "b"}, itemLabels);
 	}
 
 	@Test
