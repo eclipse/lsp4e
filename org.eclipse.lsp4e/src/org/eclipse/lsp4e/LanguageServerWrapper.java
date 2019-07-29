@@ -214,7 +214,10 @@ public class LanguageServerWrapper {
 						consumer.consume(message);
 						logMessage(message);
 						URI root = initParams.getRootUri() != null ? URI.create(initParams.getRootUri()) : null;
-						this.lspStreamProvider.handleMessage(message, this.languageServer, root);
+						final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
+						if (currentConnectionProvider != null && isActive()) {
+							currentConnectionProvider.handleMessage(message, this.languageServer, root);
+						}
 					}));
 
 			this.languageServer = launcher.getRemoteProxy();
