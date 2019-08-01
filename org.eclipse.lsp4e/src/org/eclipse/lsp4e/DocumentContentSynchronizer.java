@@ -17,6 +17,7 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
@@ -67,8 +68,12 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
 
+		IPath fromPortableString = Path.fromPortableString(this.fileUri.getPath());
 		if (languageId == null) {
-			languageId = Path.fromPortableString(this.fileUri.getPath()).getFileExtension();
+			languageId = fromPortableString.getFileExtension();
+			if (languageId == null) {
+				languageId = fromPortableString.lastSegment();
+			}
 		}
 
 		textDocument.setLanguageId(languageId);
