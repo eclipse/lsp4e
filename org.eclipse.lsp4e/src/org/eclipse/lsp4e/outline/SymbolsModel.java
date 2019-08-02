@@ -21,8 +21,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
@@ -41,9 +43,9 @@ public class SymbolsModel {
 
 	public static class DocumentSymbolWithFile {
 		public final DocumentSymbol symbol;
-		public final IFile file;
+		public final @NonNull IFile file;
 
-		public DocumentSymbolWithFile(DocumentSymbol symbol, IFile file) {
+		public DocumentSymbolWithFile(DocumentSymbol symbol, @NonNull IFile file) {
 			this.symbol = symbol;
 			this.file = file;
 		}
@@ -119,7 +121,11 @@ public class SymbolsModel {
 	public Object[] getElements() {
 		List<Object> res = new ArrayList<>();
 		res.addAll(Arrays.asList(getChildren(ROOT_SYMBOL_INFORMATION)));
-		rootSymbols.stream().map(symbol -> new DocumentSymbolWithFile(symbol, this.file)).forEach(res::add);
+		final IFile current = this.file;
+		Function<DocumentSymbol, Object> mapper = current != null ?
+				symbol -> new DocumentSymbolWithFile(symbol, current) :
+				symbol -> symbol;
+		rootSymbols.stream().map(mapper).forEach(res::add);
 		return res.toArray(new Object[res.size()]);
 	}
 
