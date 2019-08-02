@@ -514,6 +514,7 @@
          point="org.eclipse.ui.quickAccess">
       <computer
             class="org.eclipse.lsp4e.operations.symbols.WorkspaceSymbolsQuickAccessProvider"
-            name="Workspace Symbols"/>
+            name="Workspace Symbols"
+            requiresUIAccess="false"/>
    </extension>
 </plugin>
