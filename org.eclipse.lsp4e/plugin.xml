@@ -252,8 +252,9 @@
    <extension
          point="org.eclipse.ui.genericeditor.hoverProviders">
       <hoverProvider
-            class="org.eclipse.lsp4e.operations.hover.LSBasedHover"
-            contentType="org.eclipse.core.runtime.text">
+            class="org.eclipse.lsp4e.operations.hover.LSPTextHover"
+            contentType="org.eclipse.core.runtime.text"
+            id="org.eclipse.lsp4e.operations.hover.LSPTextHover">
       </hoverProvider>
    </extension>
    <extension

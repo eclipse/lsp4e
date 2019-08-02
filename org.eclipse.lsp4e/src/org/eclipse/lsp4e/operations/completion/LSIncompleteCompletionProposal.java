@@ -55,7 +55,7 @@ import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.operations.hover.LSBasedHover;
+import org.eclipse.lsp4e.operations.hover.LSPTextHover;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.InsertTextFormat;
@@ -328,7 +328,7 @@ public class LSIncompleteCompletionProposal
 			}
 		}
 
-		return LSBasedHover.styleHtml(res.toString());
+		return LSPTextHover.styleHtml(res.toString());
 	}
 
 	private void updateCompletionItem(CompletionItem resolvedItem) {

@@ -32,7 +32,7 @@ import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
-import org.eclipse.lsp4e.operations.hover.LSBasedHover;
+import org.eclipse.lsp4e.operations.hover.LSPTextHover;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -59,12 +59,12 @@ public class HoverTest {
 
 	@Rule public AllCleanRule clear = new AllCleanRule();
 	private IProject project;
-	private LSBasedHover hover;
+	private LSPTextHover hover;
 	
 	@Before
 	public void setUp() throws CoreException {
 		project = TestUtils.createProject("HoverTest" + System.currentTimeMillis());
-		hover = new LSBasedHover();
+		hover = new LSPTextHover();
 	}
 
 	@Test
@@ -179,7 +179,7 @@ public class HoverTest {
 
 		String hoverContent = hover.getHoverInfo(viewer, new Region(0, 10));
 
-		LSBasedHover hoverManager = new LSBasedHover();
+		LSPTextHover hoverManager = new LSPTextHover();
 
 		Display display = PlatformUI.getWorkbench().getDisplay();
 		final Shell shell = new Shell(display);

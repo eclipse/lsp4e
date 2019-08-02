@@ -56,7 +56,7 @@ import org.eclipse.swt.widgets.Shell;
  * LSP implementation of {@link org.eclipse.jface.text.ITextHover}
  *
  */
-public class LSBasedHover implements ITextHover, ITextHoverExtension {
+public class LSPTextHover implements ITextHover, ITextHoverExtension {
 
 	private static final String HEAD = "<head>"; //$NON-NLS-1$
 
@@ -68,7 +68,7 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 	private ITextViewer lastViewer;
 	private CompletableFuture<List<Hover>> request;
 
-	public LSBasedHover() {
+	public LSPTextHover() {
 		// nothing to init yet, comment requested by sonar
 	}
 
@@ -107,7 +107,7 @@ public class LSBasedHover implements ITextHover, ITextHoverExtension {
 		try {
 			String result = request.get(500, TimeUnit.MILLISECONDS).stream()
 				.filter(Objects::nonNull)
-				.map(LSBasedHover::getHoverString)
+				.map(LSPTextHover::getHoverString)
 				.filter(Objects::nonNull)
 				.collect(Collectors.joining("\n\n")) //$NON-NLS-1$
 				.trim();
