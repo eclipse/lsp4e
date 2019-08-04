@@ -209,7 +209,7 @@ public class LanguageServiceAccessor {
 	public static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition,
 			Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
-		LanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition);
+		LanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition, file.getFullPath());
 		if (capabilitiesPredicate == null
 				|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 				|| capabilitiesPredicate.test(wrapper.getServerCapabilities())) {
@@ -230,7 +230,7 @@ public class LanguageServiceAccessor {
 			@NonNull LanguageServerDefinition lsDefinition,
 			Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
-		LanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition);
+		LanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition, file.getFullPath());
 		if (capabilitiesPredicate == null
 				|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 				|| capabilitiesPredicate.test(wrapper.getServerCapabilities())) {
@@ -275,7 +275,7 @@ public class LanguageServiceAccessor {
 			}
 			for (ContentTypeToLanguageServerDefinition mapping : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
 				if (mapping != null && mapping.getValue() != null && mapping.isEnabled()) {
-					LanguageServerWrapper wrapper = getLSWrapperForConnection(project, mapping.getValue());
+					LanguageServerWrapper wrapper = getLSWrapperForConnection(project, mapping.getValue(), file.getFullPath());
 					if (request == null
 						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 						|| request.test(wrapper.getServerCapabilities())) {
@@ -339,8 +339,9 @@ public class LanguageServiceAccessor {
 						// we already checked a compatible LS with this definition
 						continue;
 					}
-					LanguageServerWrapper wrapper = new LanguageServerWrapper(file != null ? file.getProject() : null,
-							serverDefinition);
+					final IProject fileProject = file != null ? file.getProject() : null;
+					LanguageServerWrapper wrapper = fileProject != null ? new LanguageServerWrapper(fileProject, serverDefinition) :
+						new LanguageServerWrapper(serverDefinition, path);
 					startedServers.add(wrapper);
 					res.add(wrapper);
 				}
@@ -369,6 +370,12 @@ public class LanguageServiceAccessor {
 	@Deprecated
 	public static LanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project,
 			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
+		return 	getLSWrapperForConnection(project, serverDefinition, null);
+	}
+
+	@Deprecated
+	private static LanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project,
+			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
 		LanguageServerWrapper wrapper = null;
 
 		synchronized(startedServers) {
@@ -379,7 +386,8 @@ public class LanguageServiceAccessor {
 				}
 			}
 			if (wrapper == null) {
-				wrapper = new LanguageServerWrapper(project, serverDefinition);
+				wrapper = project != null ? new LanguageServerWrapper(project, serverDefinition) :
+					new LanguageServerWrapper(serverDefinition, initialPath);
 				wrapper.start();
 			}
 
