@@ -26,22 +26,24 @@ public class DSPBreakpointAdapter implements IToggleBreakpointsTarget {
 		ITextEditor textEditor = getEditor(part);
 		if (textEditor != null) {
 			IResource resource = textEditor.getEditorInput().getAdapter(IResource.class);
-			ITextSelection textSelection = (ITextSelection) selection;
-			int lineNumber = textSelection.getStartLine();
-			IBreakpoint[] breakpoints = DebugPlugin.getDefault().getBreakpointManager()
-					.getBreakpoints(DSPPlugin.ID_DSP_DEBUG_MODEL);
-			for (int i = 0; i < breakpoints.length; i++) {
-				IBreakpoint breakpoint = breakpoints[i];
-				if (breakpoint instanceof ILineBreakpoint && resource.equals(breakpoint.getMarker().getResource())
-						&& ((ILineBreakpoint) breakpoint).getLineNumber() == (lineNumber + 1)) {
-					// remove
-					breakpoint.delete();
-					return;
+			if (resource != null) {
+				ITextSelection textSelection = (ITextSelection) selection;
+				int lineNumber = textSelection.getStartLine();
+				IBreakpoint[] breakpoints = DebugPlugin.getDefault().getBreakpointManager()
+						.getBreakpoints(DSPPlugin.ID_DSP_DEBUG_MODEL);
+				for (int i = 0; i < breakpoints.length; i++) {
+					IBreakpoint breakpoint = breakpoints[i];
+					if (breakpoint instanceof ILineBreakpoint && resource.equals(breakpoint.getMarker().getResource())
+							&& ((ILineBreakpoint) breakpoint).getLineNumber() == (lineNumber + 1)) {
+						// remove
+						breakpoint.delete();
+						return;
+					}
 				}
+				// create line breakpoint (doc line numbers start at 0)
+				DSPLineBreakpoint lineBreakpoint = new DSPLineBreakpoint(resource, lineNumber + 1);
+				DebugPlugin.getDefault().getBreakpointManager().addBreakpoint(lineBreakpoint);
 			}
-			// create line breakpoint (doc line numbers start at 0)
-			DSPLineBreakpoint lineBreakpoint = new DSPLineBreakpoint(resource, lineNumber + 1);
-			DebugPlugin.getDefault().getBreakpointManager().addBreakpoint(lineBreakpoint);
 		}
 	}
 
