@@ -48,6 +48,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.participants.ProcessorBasedRefactoring;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Control;
@@ -96,6 +97,46 @@ public class RenameTest {
 			}
 		}).join();
 		assertEquals("new", document.get());
+	}
+
+	@Test
+	public void testPrepareRenameRefactoring() throws Exception {
+		IProject project = TestUtils.createProject("testPrepareRenameRefactoring");
+		IFile file = TestUtils.createUniqueTestFile(project, "old");
+		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
+		IDocument document = LSPEclipseUtils.getDocument(file);
+		LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider).thenAccept(languageServers -> {
+			LSPRenameProcessor processor = new LSPRenameProcessor(LSPEclipseUtils.getDocument(file), languageServers.get(0), 0);
+			processor.setNewName("new");
+			try {
+				ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
+				processorBasedRefactoring.checkAllConditions(new NullProgressMonitor());
+				processorBasedRefactoring.createChange(new NullProgressMonitor()).perform(new NullProgressMonitor());
+			} catch (CoreException e) {
+				e.printStackTrace();
+			}
+		}).join();
+		assertEquals("new", document.get());
+	}
+
+	@Test
+	public void testPrepareRenameRefactoringError() throws Exception {
+		IProject project = TestUtils.createProject("testPrepareRenameRefactoring");
+		IFile file = TestUtils.createUniqueTestFile(project, "old");
+		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
+		MockLanguageServer.INSTANCE.getTextDocumentService().setPrepareRenameResult(null);
+		IDocument document = LSPEclipseUtils.getDocument(file);
+		LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider).thenAccept(languageServers -> {
+			LSPRenameProcessor processor = new LSPRenameProcessor(LSPEclipseUtils.getDocument(file), languageServers.get(0), 0);
+			processor.setNewName("new");
+			try {
+				ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
+				RefactoringStatus status = processorBasedRefactoring.checkAllConditions(new NullProgressMonitor());
+				assertEquals(RefactoringStatus.FATAL, status.getSeverity());
+			} catch (CoreException e) {
+				e.printStackTrace();
+			}
+		}).join();
 	}
 
 	@Test

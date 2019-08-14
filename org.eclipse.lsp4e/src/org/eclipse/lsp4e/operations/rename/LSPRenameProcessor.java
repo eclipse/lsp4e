@@ -12,6 +12,8 @@
  */
 package org.eclipse.lsp4e.operations.rename;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.runtime.Assert;
@@ -24,11 +26,18 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4j.PrepareRenameResult;
+import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.RenameOptions;
 import org.eclipse.lsp4j.RenameParams;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ltk.core.refactoring.Change;
@@ -53,6 +62,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	private String newName;
 
 	private WorkspaceEdit rename;
+	private Either<Range, PrepareRenameResult> prepareRenameResult;
 
 	public LSPRenameProcessor(@NonNull IDocument document, LanguageServer languageServer, int offset) {
 		this.document = document;
@@ -83,7 +93,46 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	@Override
 	public RefactoringStatus checkInitialConditions(IProgressMonitor pm)
 			throws CoreException, OperationCanceledException {
-		return new RefactoringStatus();
+		RefactoringStatus status = new RefactoringStatus();
+
+		if (document == null) {
+			return status;
+		}
+		try {
+			CompletableFuture<List<LanguageServer>> serverList = LanguageServiceAccessor.getLanguageServers(document, LSPRenameProcessor::isPrepareRenameProvider) ;
+			for (LanguageServer serverToTry : serverList.get(500, TimeUnit.MILLISECONDS)) {
+				// check if prepareRename is supported by the active LSP
+				if (languageServer.equals(serverToTry)) {
+					TextDocumentIdentifier identifier = new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString());
+					TextDocumentPositionParams params = new TextDocumentPositionParams();
+					params.setTextDocument(identifier);
+					params.setPosition(LSPEclipseUtils.toPosition(offset, document));
+					prepareRenameResult = languageServer.getTextDocumentService().prepareRename(params).get(1000, TimeUnit.MILLISECONDS);
+					if (prepareRenameResult == null) {
+						status.addFatalError(Messages.rename_invalidated);
+					}
+				}
+			}
+		} catch (Exception e) {
+			handleError(e, status);
+			return new RefactoringStatus();
+		}
+		return status;
+	}
+
+	public static boolean isPrepareRenameProvider(ServerCapabilities serverCapabilities) {
+		if (serverCapabilities == null) {
+			return false;
+		}
+		Either<Boolean, RenameOptions> renameProvider = serverCapabilities.getRenameProvider();
+		if (renameProvider == null) {
+			return false;
+		}
+
+		if (renameProvider.isRight()) {
+			return renameProvider.getRight() != null && renameProvider.getRight().getPrepareProvider();
+		}
+		return false;
 	}
 
 	@Override

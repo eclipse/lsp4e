@@ -48,6 +48,7 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.PrepareRenameResult;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ReferenceParams;
@@ -85,6 +86,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<Either<Command, CodeAction>> mockCodeActions;
 	private List<ColorInformation> mockDocumentColors;
 	private WorkspaceEdit mockRenameEdit;
+	private PrepareRenameResult mockPrepareRenameResult;
 
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -93,6 +95,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		item.setLabel("Mock completion item");
 		mockCompletionList = new CompletionList(false, Collections.singletonList(item));
 		mockHover = new Hover(Collections.singletonList(Either.forLeft("Mock hover")), null);
+		mockPrepareRenameResult = new PrepareRenameResult(new Range(new Position(0,0), new Position(0,0)), "placeholder");
 		this.remoteProxies = new ArrayList<>();
 	}
 
@@ -191,6 +194,15 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
+	public CompletableFuture<Either<Range, PrepareRenameResult>> prepareRename(TextDocumentPositionParams params) {
+		if (this.mockPrepareRenameResult == null) {
+			return CompletableFuture.completedFuture(null);
+		} else {
+			return CompletableFuture.completedFuture(Either.forRight(this.mockPrepareRenameResult));	
+		}
+	}
+
+	@Override
 	public void didOpen(DidOpenTextDocumentParams params) {
 		if (didOpenCallback != null) {
 			didOpenCallback.complete(params);
@@ -259,6 +271,10 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void setMockHover(Hover hover) {
 		this.mockHover = hover;
+	}
+
+	public void setPrepareRenameResult(PrepareRenameResult result) {
+		this.mockPrepareRenameResult = result;
 	}
 
 	public void setMockCodeLenses(List<CodeLens> codeLenses) {

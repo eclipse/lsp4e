@@ -61,6 +61,7 @@ public class Messages extends NLS {
 	public static String rename_processor_required;
 	public static String serverEdit;
 	public static String rename_empty_message;
+	public static String rename_invalidated;
 	public static String completionError;
 	public static String linkWithEditor_label;
 	public static String linkWithEditor_description;
