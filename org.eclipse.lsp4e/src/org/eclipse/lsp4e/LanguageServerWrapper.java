@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -319,7 +320,9 @@ public class LanguageServerWrapper {
 			initializeFuture = languageServer.initialize(initParams).thenAccept(res -> {
 				serverCapabilities = res.getCapabilities();
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
-			}).thenRun(() -> this.languageServer.initialized(new InitializedParams()));
+			}).thenRun(() -> {
+				this.languageServer.initialized(new InitializedParams());
+			});
 
 			final Map<IPath, IDocument> toReconnect = filesToReconnect;
 			initializeFuture.thenRunAsync(() -> {
@@ -379,31 +382,42 @@ public class LanguageServerWrapper {
 			this.initializeFuture.cancel(true);
 			this.initializeFuture = null;
 		}
+
 		this.serverCapabilities = null;
 		this.dynamicRegistrations.clear();
 
 		final Future<?> serverFuture = this.launcherFuture;
 		final StreamConnectionProvider provider = this.lspStreamProvider;
-		Runnable stopFutureAndProvider = () -> {
+		final LanguageServer languageServerInstance = this.languageServer;
+
+		Runnable shutdownKillAndStopFutureAndProvider = () -> {
+			if (languageServerInstance != null) {
+				CompletableFuture<Object> shutdown = languageServerInstance.shutdown();
+				try {
+					shutdown.get(5, TimeUnit.SECONDS);
+				}
+				catch (Exception e) {
+				}
+			}
+
 			if (serverFuture != null) {
 				serverFuture.cancel(true);
 			}
+
+			if (languageServerInstance != null) {
+				languageServerInstance.exit();
+			}
+
 			if (provider != null) {
 				provider.stop();
 			}
 		};
-		if (this.languageServer != null) {
-			CompletableFuture<Object> shutdown = this.languageServer.shutdown();
-			shutdown.thenRun(stopFutureAndProvider);
-			shutdown.exceptionally(t -> {
-				stopFutureAndProvider.run();
-				return null;
-			});
-		} else {
-			stopFutureAndProvider.run();
-		}
+
+		CompletableFuture.runAsync(shutdownKillAndStopFutureAndProvider);
+
 		this.launcherFuture = null;
 		this.lspStreamProvider = null;
+
 		while (!this.connectedDocuments.isEmpty()) {
 			disconnect(this.connectedDocuments.keySet().iterator().next());
 		}
@@ -418,10 +432,14 @@ public class LanguageServerWrapper {
 
 	public void connect(IDocument document) throws IOException {
 		IFile file = LSPEclipseUtils.getFile(document);
+
 		if (file != null && file.exists()) {
 			connect(file, document);
 		} else {
-			connect(new Path(LSPEclipseUtils.toUri(document).getPath()), document);
+			URI uri = LSPEclipseUtils.toUri(document);
+			if (uri != null) {
+				connect(new Path(LSPEclipseUtils.toUri(document).getPath()), document);
+			}
 		}
 	}
 
@@ -645,6 +663,8 @@ public class LanguageServerWrapper {
 		} catch (TimeoutException e) {
 			LanguageServerPlugin.logError("LanguageServer not initialized after 10s", e); //$NON-NLS-1$
 		} catch (ExecutionException e) {
+			LanguageServerPlugin.logError(e);
+		} catch (CancellationException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
