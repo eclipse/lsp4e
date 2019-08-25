@@ -72,7 +72,8 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 					EvaluateResponse res = frame.getDebugProtocolServer().evaluate(args).get(); // ok to call get as it
 																								// should be a different
 																								// thread.
-					return new DSPVariable(getFrame(), res.getVariablesReference(), variableName, res.getResult());
+					return new DSPVariable(getFrame().getDebugTarget(), res.getVariablesReference(), variableName,
+							res.getResult(), res.getVariablesReference());
 				} catch (ExecutionException e) {
 					DSPPlugin.logError(e);
 					// will fail back by looking by looking up in current frame

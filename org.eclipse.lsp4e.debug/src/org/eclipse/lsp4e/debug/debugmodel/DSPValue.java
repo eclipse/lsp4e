@@ -19,14 +19,15 @@ import org.eclipse.lsp4j.debug.VariablesArguments;
 
 public final class DSPValue extends DSPDebugElement implements IValue {
 
+	private DSPVariable modelVariable;
 	private Long variablesReference;
-	private String name;
 	private String value;
+	private IVariable[] cachedVariables;
 
-	public DSPValue(DSPDebugElement parent, Long variablesReference, String name, String value) {
-		super(parent.getDebugTarget());
+	public DSPValue(DSPVariable variable, Long variablesReference, String value) {
+		super(variable.getDebugTarget());
+		this.modelVariable = variable;
 		this.variablesReference = variablesReference;
-		this.name = name;
 		this.value = value;
 	}
 
@@ -35,24 +36,27 @@ public final class DSPValue extends DSPDebugElement implements IValue {
 		if (!hasVariables()) {
 			return new IVariable[0];
 		}
-		VariablesArguments arguments = new VariablesArguments();
-		arguments.setVariablesReference(variablesReference);
-		Variable[] targetVariables = complete(getDebugTarget().getDebugProtocolServer().variables(arguments))
-				.getVariables();
+		if (cachedVariables == null) {
+			VariablesArguments arguments = new VariablesArguments();
+			arguments.setVariablesReference(variablesReference);
+			Variable[] targetVariables = complete(getDebugTarget().getDebugProtocolServer().variables(arguments))
+					.getVariables();
 
-		List<DSPVariable> variables = new ArrayList<>();
-		for (Variable variable : targetVariables) {
-			variables.add(
-					new DSPVariable(this, variable.getVariablesReference(), variable.getName(), variable.getValue()));
+			List<DSPVariable> variables = new ArrayList<>();
+			for (Variable variable : targetVariables) {
+				variables.add(new DSPVariable(modelVariable.getDebugTarget(), variablesReference, variable.getName(),
+						variable.getValue(), variable.getVariablesReference()));
+			}
+
+			cachedVariables = variables.toArray(new DSPVariable[variables.size()]);
 		}
-
-		return variables.toArray(new DSPVariable[variables.size()]);
+		return cachedVariables;
 	}
 
 	@Override
 	public String getReferenceTypeName() throws DebugException {
 		// TODO
-		return name;
+		return modelVariable.getName();
 	}
 
 	@Override

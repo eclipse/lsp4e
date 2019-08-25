@@ -15,7 +15,6 @@ import java.util.Objects;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IRegisterGroup;
 import org.eclipse.debug.core.model.IStackFrame;
-import org.eclipse.debug.core.model.IThread;
 import org.eclipse.debug.core.model.IVariable;
 import org.eclipse.lsp4j.debug.Scope;
 import org.eclipse.lsp4j.debug.ScopesArguments;
@@ -25,6 +24,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 	private DSPThread thread;
 	private StackFrame stackFrame;
 	private int depth;
+	private IVariable[] cachedVariables;
 
 	public DSPStackFrame(DSPThread thread, StackFrame stackFrame, int depth) {
 		super(thread.getDebugTarget());
@@ -36,6 +36,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 	public DSPStackFrame replace(StackFrame newStackFrame, int newDepth) {
 		if (newDepth == depth && Objects.equals(newStackFrame.getSource(), stackFrame.getSource())) {
 			stackFrame = newStackFrame;
+			cachedVariables = null;
 			return this;
 		}
 		return new DSPStackFrame(thread, newStackFrame, newDepth);
@@ -128,19 +129,23 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	@Override
 	public IVariable[] getVariables() throws DebugException {
-		ScopesArguments arguments = new ScopesArguments();
-		arguments.setFrameId(stackFrame.getId());
-		Scope[] scopes = complete(getDebugTarget().getDebugProtocolServer().scopes(arguments)).getScopes();
-		List<DSPVariable> vars = new ArrayList<>();
-		for (Scope scope : scopes) {
-			DSPVariable variable = new DSPVariable(this, scope.getVariablesReference(), scope.getName(), "");
-			vars.add(variable);
+		if (cachedVariables == null) {
+			ScopesArguments arguments = new ScopesArguments();
+			arguments.setFrameId(stackFrame.getId());
+			Scope[] scopes = complete(getDebugTarget().getDebugProtocolServer().scopes(arguments)).getScopes();
+			List<DSPVariable> vars = new ArrayList<>();
+			for (Scope scope : scopes) {
+				DSPVariable variable = new DSPVariable(getDebugTarget(), Long.valueOf(-1), scope.getName(), "",
+						scope.getVariablesReference());
+				vars.add(variable);
+			}
+			cachedVariables = vars.toArray(new IVariable[vars.size()]);
 		}
-		return vars.toArray(new IVariable[vars.size()]);
+		return cachedVariables;
 	}
 
 	@Override
-	public IThread getThread() {
+	public DSPThread getThread() {
 		return thread;
 	}
 

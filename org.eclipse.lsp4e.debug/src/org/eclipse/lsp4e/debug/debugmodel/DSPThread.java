@@ -290,4 +290,5 @@ public class DSPThread extends DSPDebugElement implements IThread {
 	public Long getId() {
 		return id;
 	}
+
 }

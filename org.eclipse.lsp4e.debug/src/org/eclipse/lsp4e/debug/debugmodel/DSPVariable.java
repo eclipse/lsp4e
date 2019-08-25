@@ -8,26 +8,44 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.debugmodel;
 
+import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.core.model.IVariable;
+import org.eclipse.lsp4j.debug.SetVariableArguments;
+import org.eclipse.lsp4j.debug.ValueFormat;
+import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
 
 public class DSPVariable extends DSPDebugElement implements IVariable {
 
-	private Long variablesReference;
-	private String name;
-	private String value;
+	private final Long parentVariablesReference;
+	private final String name;
+	private DSPValue dspValue;
 
-	public DSPVariable(DSPDebugElement parent, Long variablesReference, String name, String value) {
-		super(parent.getDebugTarget());
-		this.variablesReference = variablesReference;
+	public DSPVariable(DSPDebugTarget debugTarget, Long parentVariablesReference, String name, String value,
+			Long childrenVariablesReference) {
+		super(debugTarget);
+		this.parentVariablesReference = parentVariablesReference;
 		this.name = name;
-		this.value = value;
+		this.dspValue = new DSPValue(this, childrenVariablesReference, value);
 	}
 
 	@Override
 	public void setValue(String expression) throws DebugException {
-		// TODO
+		SetVariableArguments setVariableArgs = new SetVariableArguments();
+		setVariableArgs.setVariablesReference(parentVariablesReference);
+		setVariableArgs.setValue(expression);
+		setVariableArgs.setName(getName());
+		setVariableArgs.setFormat(new ValueFormat());
+		IDebugProtocolServer debugAdapter = getDebugProtocolServer();
+		debugAdapter.setVariable(setVariableArgs).thenAcceptAsync(res -> {
+			String v = res.getValue();
+			if (v == null) {
+				v = expression;
+			}
+			this.dspValue = new DSPValue(this, res.getVariablesReference(), v);
+			this.fireChangeEvent(DebugEvent.CONTENT);
+		});
 	}
 
 	@Override
@@ -37,14 +55,12 @@ public class DSPVariable extends DSPDebugElement implements IVariable {
 
 	@Override
 	public boolean supportsValueModification() {
-		// TODO
-		return false;
+		return getDebugTarget().getCapabilities().getSupportsSetVariable();
 	}
 
 	@Override
 	public boolean verifyValue(String expression) throws DebugException {
-		// TODO
-		return false;
+		return true;
 	}
 
 	@Override
@@ -55,7 +71,7 @@ public class DSPVariable extends DSPDebugElement implements IVariable {
 
 	@Override
 	public IValue getValue() throws DebugException {
-		return new DSPValue(this, variablesReference, name, value);
+		return this.dspValue;
 	}
 
 	@Override
@@ -71,6 +87,7 @@ public class DSPVariable extends DSPDebugElement implements IVariable {
 
 	@Override
 	public boolean hasValueChanged() throws DebugException {
+		// TODO
 		return false;
 	}
 }
