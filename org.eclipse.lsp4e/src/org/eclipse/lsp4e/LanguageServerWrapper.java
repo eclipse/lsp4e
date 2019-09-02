@@ -259,7 +259,7 @@ public class LanguageServerWrapper {
 			WorkspaceClientCapabilities workspaceClientCapabilities = new WorkspaceClientCapabilities();
 			workspaceClientCapabilities.setApplyEdit(Boolean.TRUE);
 			workspaceClientCapabilities.setExecuteCommand(new ExecuteCommandCapabilities(Boolean.TRUE));
-			workspaceClientCapabilities.setSymbol(new SymbolCapabilities());
+			workspaceClientCapabilities.setSymbol(new SymbolCapabilities(Boolean.TRUE));
 			workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);
 			WorkspaceEditCapabilities editCapabilities = new WorkspaceEditCapabilities();
 			editCapabilities.setDocumentChanges(Boolean.TRUE);
@@ -299,7 +299,7 @@ public class LanguageServerWrapper {
 					SymbolKind.Property, SymbolKind.String, SymbolKind.Struct, SymbolKind.TypeParameter,
 					SymbolKind.Variable)));
 			textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
-			textDocumentClientCapabilities.setFormatting(new FormattingCapabilities());
+			textDocumentClientCapabilities.setFormatting(new FormattingCapabilities(Boolean.TRUE));
 			textDocumentClientCapabilities.setHover(new HoverCapabilities());
 			textDocumentClientCapabilities.setOnTypeFormatting(null); // TODO
 			textDocumentClientCapabilities.setRangeFormatting(new RangeFormattingCapabilities());
@@ -714,6 +714,14 @@ public class LanguageServerWrapper {
 					addRegistration(reg, () -> unregisterCommands(newCommands));
 					registerCommands(newCommands);
 				}
+			} else if ("textDocument/formatting".equals(reg.getMethod())) { //$NON-NLS-1$
+				final Boolean beforeRegistration = serverCapabilities.getDocumentFormattingProvider();
+				serverCapabilities.setDocumentFormattingProvider(Boolean.TRUE);
+				addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(beforeRegistration));
+			} else if ("textDocument/rangeFormatting".equals(reg.getMethod())) { //$NON-NLS-1$
+				final Boolean beforeRegistration = serverCapabilities.getDocumentRangeFormattingProvider();
+				serverCapabilities.setDocumentRangeFormattingProvider(Boolean.TRUE);
+				addRegistration(reg, () -> serverCapabilities.setDocumentRangeFormattingProvider(beforeRegistration));
 			}
 		});
 	}
