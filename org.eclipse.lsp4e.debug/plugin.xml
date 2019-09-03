@@ -78,11 +78,6 @@
    <extension
          point="org.eclipse.core.runtime.adapters">
       <factory
-            class="org.eclipse.lsp4e.debug.breakpoints.DSPEditorAdapterFactory"
-            adaptableType="org.eclipse.ui.editors.text.TextEditor">
-			<adapter type="org.eclipse.debug.ui.actions.IToggleBreakpointsTarget"/>
-      </factory>
-      <factory
             adaptableType="org.eclipse.jface.text.TextSelection"
             class="org.eclipse.lsp4e.debug.breakpoints.TextSelectionToIVariable">
          <adapter
@@ -104,5 +99,11 @@
             name="LSP4E Debug Line Breakpoint"
             markerType="org.eclipse.lsp4e.debug.breakpoints.markerType.lineBreakpoint"
             id="org.eclipse.lsp4e.debug.breakpoints.lineBreakpoint"/>
+   </extension>
+   <extension point="org.eclipse.debug.ui.toggleBreakpointsTargetFactories">
+      <toggleTargetFactory
+            id="org.eclipse.lsp4e.debug.breakpoints.ToggleBreakpointsTargetFactory"
+            class="org.eclipse.lsp4e.debug.breakpoints.ToggleBreakpointsTargetFactory">
+      </toggleTargetFactory>
    </extension>
 </plugin>
