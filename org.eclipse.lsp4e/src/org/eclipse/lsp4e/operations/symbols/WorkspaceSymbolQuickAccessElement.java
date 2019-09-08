@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.symbols;
 
+import java.util.Random;
+
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
@@ -22,10 +24,19 @@ import org.eclipse.ui.quickaccess.QuickAccessElement;
 public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
 
 	private static final SymbolsLabelProvider LABEL_PROVIDER = new SymbolsLabelProvider(false, false);
+	private static final Random randomNumbers = new Random();
+
 	private final SymbolInformation symbol;
+	private final int idExtension;
 
 	public WorkspaceSymbolQuickAccessElement(SymbolInformation symbol) {
 		this.symbol = symbol;
+
+		// this random number id extension is a workaround for
+		// https://bugs.eclipse.org/bugs/show_bug.cgi?id=550835
+		//
+		// it avoids once selected symbols to disappear from the quick access list
+		this.idExtension = randomNumbers.nextInt();
 	}
 
 	@Override
@@ -41,7 +52,7 @@ public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
 	@Override
 	public String getId() {
 		Range range = symbol.getLocation().getRange();
-		return symbol.getName() + '@' + symbol.getLocation().getUri() + '[' + range.getStart().getLine() + ',' + range.getStart().getCharacter() + ':' + range.getEnd().getLine() + ',' + range.getEnd().getCharacter() + ']';
+		return symbol.getName() + '@' + symbol.getLocation().getUri() + '[' + range.getStart().getLine() + ',' + range.getStart().getCharacter() + ':' + range.getEnd().getLine() + ',' + range.getEnd().getCharacter() + ']' + ',' + idExtension;
 	}
 
 	@Override
