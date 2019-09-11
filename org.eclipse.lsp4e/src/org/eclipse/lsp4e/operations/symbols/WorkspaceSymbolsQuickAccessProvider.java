@@ -15,10 +15,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -53,10 +57,17 @@ public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer
 		}
 		WorkspaceSymbolParams params = new WorkspaceSymbolParams(query);
 		List<QuickAccessElement> res = Collections.synchronizedList(new ArrayList<>());
-		CompletableFuture.allOf(usedLanguageServers.stream().map(ls ->
-			ls.getWorkspaceService().symbol(params).thenAcceptAsync(symbols ->
-				res.addAll(symbols.stream().map(WorkspaceSymbolQuickAccessElement::new).collect(Collectors.toList()))
-		)).toArray(CompletableFuture[]::new)).join();
+
+		try {
+			CompletableFuture.allOf(usedLanguageServers.stream().map(ls ->
+				ls.getWorkspaceService().symbol(params).thenAcceptAsync(symbols ->
+					res.addAll(symbols.stream().map(WorkspaceSymbolQuickAccessElement::new).collect(Collectors.toList()))
+			)).toArray(CompletableFuture[]::new)).get(1000, TimeUnit.MILLISECONDS);
+		}
+		catch (ExecutionException | TimeoutException | InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+		}
+
 		return res.toArray(new QuickAccessElement[res.size()]);
 	}
 
