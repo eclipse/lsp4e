@@ -361,24 +361,40 @@ public class LSPEclipseUtils {
 			return null;
 		}
 
-		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
-		IDocument document = null;
-		ITextFileBuffer buffer = bufferManager.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
-		if (buffer != null) {
-			document = buffer.getDocument();
-		} else if (resource.getType() == IResource.FILE) {
+		IDocument document = getExistingDocument(resource);
+
+		if (document == null && resource.getType() == IResource.FILE) {
+			ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
 			try {
 				bufferManager.connect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
 			} catch (CoreException e) {
 				LanguageServerPlugin.logError(e);
 				return document;
 			}
-			buffer = bufferManager.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
+
+			ITextFileBuffer buffer = bufferManager.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
 			if (buffer != null) {
 				document = buffer.getDocument();
 			}
 		}
+
 		return document;
+	}
+
+	@Nullable
+	public static IDocument getExistingDocument(@Nullable IResource resource) {
+		if (resource == null) {
+			return null;
+		}
+
+		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+		ITextFileBuffer buffer = bufferManager.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
+		if (buffer != null) {
+			return buffer.getDocument();
+		}
+		else {
+			return null;
+		}
 	}
 
 	@Nullable

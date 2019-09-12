@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2019 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -117,9 +117,16 @@ public class SymbolsLabelProvider extends LabelProvider
 			}
 			if (range != null) {
 				try {
-					int maxSeverity = getMaxSeverity(file, range);
-					if (maxSeverity > IMarker.SEVERITY_INFO) {
-						return getOverlay(res, maxSeverity);
+					// use existing documents only to calculate the severity
+					// to avoid extra documents being created (and connected
+					// to the language server just for this (bug 550968)
+					IDocument doc = LSPEclipseUtils.getExistingDocument(file);
+
+					if (doc != null) {
+						int maxSeverity = getMaxSeverity(file, doc, range);
+						if (maxSeverity > IMarker.SEVERITY_INFO) {
+							return getOverlay(res, maxSeverity);
+						}
 					}
 				} catch (CoreException | BadLocationException e) {
 					LanguageServerPlugin.logError(e);
@@ -129,9 +136,8 @@ public class SymbolsLabelProvider extends LabelProvider
 		return res;
 	}
 
-	protected int getMaxSeverity(IResource resource, Range range)
+	protected int getMaxSeverity(IResource resource, IDocument doc, Range range)
 			throws CoreException, BadLocationException {
-		IDocument doc = LSPEclipseUtils.getDocument(resource);
 		int maxSeverity = -1;
 		for (IMarker marker : resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO)) {
 			int offset = marker.getAttribute(IMarker.CHAR_START, -1);
