@@ -26,6 +26,7 @@ import org.eclipse.mylyn.commons.notifications.ui.AbstractUiNotification;
 import org.eclipse.mylyn.commons.notifications.ui.NotificationsUi;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
@@ -141,9 +142,24 @@ public class ServerMessageHandler {
 		NotificationsUi.getService().notify(Collections.singletonList(notification));
 	}
 
-	public static CompletableFuture<MessageActionItem> showMessageRequest(ShowMessageRequestParams params) {
-		// TODO
-		return null;
+	public static CompletableFuture<MessageActionItem> showMessageRequest(LanguageServerWrapper wrapper, ShowMessageRequestParams params) {
+		String options[] = params.getActions().stream().map(MessageActionItem::getTitle).toArray(String[]::new);
+		CompletableFuture<MessageActionItem> future = new CompletableFuture<>();
+
+		Display.getDefault().asyncExec(() -> {
+			Shell shell = new Shell(Display.getCurrent());
+			MessageDialog dialog = new MessageDialog(shell, wrapper.serverDefinition.label,
+					null, params.getMessage(), MessageDialog.INFORMATION, 0, options);
+			MessageActionItem result = new MessageActionItem();
+			int dialogResult = dialog.open();
+			if (dialogResult != SWT.DEFAULT) { // the dialog was not dismissed without pressing a button (ESC key, close box, etc.)
+				result.setTitle(options[dialogResult]);
+			}
+			// according to https://github.com/Microsoft/language-server-protocol/issues/230
+			// the right thing to do is to return the res
+			future.complete(result);
+		});
+		return future;
 	}
 
 	private static MessageConsole findConsole(String name) {
