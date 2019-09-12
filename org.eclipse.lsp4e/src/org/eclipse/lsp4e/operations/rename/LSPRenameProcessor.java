@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2017 Angelo ZERR.
+ *  Copyright (c) 2017-2019 Angelo ZERR.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -9,6 +9,7 @@
  *  Angelo Zerr <angelo.zerr@gmail.com> - initial API and implementation
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *  Jan Koehnlein (TypeFox) - give user feedback on failures and no-ops
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 525411 - [rename] input field should be filled with symbol to rename
  */
 package org.eclipse.lsp4e.operations.rename;
 
@@ -23,6 +24,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -118,6 +120,24 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 			return new RefactoringStatus();
 		}
 		return status;
+	}
+
+	public String getPlaceholder() {
+		if (prepareRenameResult != null) {
+			if (prepareRenameResult.isRight()) {
+				return prepareRenameResult.getRight().getPlaceholder();
+			} else {
+				Range range = prepareRenameResult.getLeft();
+				try {
+					int startOffset = LSPEclipseUtils.toOffset(range.getStart(), document);
+					int endOffset = LSPEclipseUtils.toOffset(range.getEnd(), document);
+					return document.get(startOffset, endOffset - startOffset);
+				} catch (BadLocationException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			}
+		}
+		return "newName"; //$NON-NLS-1$
 	}
 
 	public static boolean isPrepareRenameProvider(ServerCapabilities serverCapabilities) {

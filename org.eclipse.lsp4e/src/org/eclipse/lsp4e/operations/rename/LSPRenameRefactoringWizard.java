@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2017 Angelo ZERR.
+ *  Copyright (c) 2017-2019 Angelo ZERR.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -7,6 +7,7 @@
  *
  *  Contributors:
  *  Angelo Zerr <angelo.zerr@gmail.com> - initial API and implementation
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 525411 - [rename] input field should be filled with symbol to rename
  */
 package org.eclipse.lsp4e.operations.rename;
 
@@ -68,8 +69,7 @@ public class LSPRenameRefactoringWizard extends RefactoringWizard {
 			label.setText(Messages.rename_label);
 
 			this.nameText = new Text(composite, SWT.BORDER);
-			// TODO: update name field with symbol name to refactor.
-			this.nameText.setText("newName"); //$NON-NLS-1$
+			this.nameText.setText(processor.getPlaceholder());
 			this.nameText.setFont(composite.getFont());
 			this.nameText.setLayoutData(new GridData(GridData.FILL, GridData.BEGINNING, true, false));
 			this.nameText.addModifyListener(e -> validatePage());

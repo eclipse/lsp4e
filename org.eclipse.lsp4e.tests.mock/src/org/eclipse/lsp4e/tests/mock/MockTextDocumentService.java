@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2017-2019 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -10,6 +10,7 @@
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Mickael Istria (Red Hat Inc.) - Support for delay and mock references
  *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 525411 - [rename] input field should be filled with symbol to rename
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
@@ -86,7 +87,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<Either<Command, CodeAction>> mockCodeActions;
 	private List<ColorInformation> mockDocumentColors;
 	private WorkspaceEdit mockRenameEdit;
-	private PrepareRenameResult mockPrepareRenameResult;
+	private Either<Range, PrepareRenameResult> mockPrepareRenameResult;
 
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -95,7 +96,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		item.setLabel("Mock completion item");
 		mockCompletionList = new CompletionList(false, Collections.singletonList(item));
 		mockHover = new Hover(Collections.singletonList(Either.forLeft("Mock hover")), null);
-		mockPrepareRenameResult = new PrepareRenameResult(new Range(new Position(0,0), new Position(0,0)), "placeholder");
+		mockPrepareRenameResult = Either.forRight(new PrepareRenameResult(new Range(new Position(0,0), new Position(0,0)), "placeholder"));
 		this.remoteProxies = new ArrayList<>();
 	}
 
@@ -198,7 +199,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		if (this.mockPrepareRenameResult == null) {
 			return CompletableFuture.completedFuture(null);
 		} else {
-			return CompletableFuture.completedFuture(Either.forRight(this.mockPrepareRenameResult));	
+			return CompletableFuture.completedFuture(this.mockPrepareRenameResult);
 		}
 	}
 
@@ -273,7 +274,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockHover = hover;
 	}
 
-	public void setPrepareRenameResult(PrepareRenameResult result) {
+	public void setPrepareRenameResult(Either<Range, PrepareRenameResult> result) {
 		this.mockPrepareRenameResult = result;
 	}
 

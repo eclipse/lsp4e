@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 Red Hat Inc. and others.
+ * Copyright (c) 2018-2019 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -8,6 +8,7 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - Added some suites
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 525411 - [rename] input field should be filled with symbol to rename
  *******************************************************************************/
 package org.eclipse.lsp4e.test.rename;
 
@@ -23,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -48,6 +50,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.participants.ProcessorBasedRefactoring;
 import org.eclipse.swt.SWT;
@@ -243,6 +246,46 @@ public class RenameTest {
 		} finally {
 			ideShell.getDisplay().removeFilter(SWT.Paint, pressOKonRenameDialogPaint);
 		}
+	}
+	
+	@Test
+	public void testPlaceholderUsingPlaceholderFromPrepareRenameResult() throws Exception {
+		IProject project = TestUtils.createProject("blah");
+		IFile file = TestUtils.createUniqueTestFile(project, "old");
+		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
+		IDocument document = LSPEclipseUtils.getDocument(file);
+		AtomicReference<String> placeholder = new AtomicReference<>();
+		LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider).thenAccept(languageServers -> {
+			LSPRenameProcessor processor = new LSPRenameProcessor(LSPEclipseUtils.getDocument(file), languageServers.get(0), 0);
+			try {
+				processor.checkInitialConditions(new NullProgressMonitor());
+			} catch (CoreException e) {
+				e.printStackTrace();
+			}
+			placeholder.set(processor.getPlaceholder());
+		}).join();
+		assertEquals("placeholder", placeholder.get());
+	}
+	
+	@Test
+	public void testPlaceholderUsingRangeFromPrepareRenameResult() throws Exception {
+		IProject project = TestUtils.createProject("blah");
+		IFile file = TestUtils.createUniqueTestFile(project, "old");
+		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
+		Range range = new Range(new Position(0, 1), new Position(0, 3)); // Two last letters of "old".
+		MockLanguageServer.INSTANCE.getTextDocumentService().setPrepareRenameResult(Either.forLeft(range));
+		IDocument document = LSPEclipseUtils.getDocument(file);
+		AtomicReference<String> placeholder = new AtomicReference<>();
+		LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider).thenAccept(languageServers -> {
+			LSPRenameProcessor processor = new LSPRenameProcessor(LSPEclipseUtils.getDocument(file), languageServers.get(0), 0);
+			try {
+				processor.checkInitialConditions(new NullProgressMonitor());
+			} catch (CoreException e) {
+				e.printStackTrace();
+			}
+			placeholder.set(processor.getPlaceholder());
+		}).join();
+		assertEquals("ld", placeholder.get());
 	}
 	
 	private void pressOk(Shell dialogShell) {
