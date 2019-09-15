@@ -109,6 +109,19 @@ public interface StreamConnectionProvider {
 	}
 
 	/**
+	 * Returns an object that describes the experimental features supported
+	 * by the client.
+	 * @implNote The returned object gets serialized by LSP4J, which itself uses
+	 *           GSon, so a GSon object can work too.
+	 * @since 0.12
+	 * @return an object whose fields represent the different experimental features
+	 *         supported by the client.
+	 */
+	public default Object getExperimentalFeaturesPOJO() {
+		return null;
+	}
+
+	/**
 	 * Provides trace level to be set on language server initialization.<br>
 	 * Legal values: "off" | "messages" | "verbose".
 	 *

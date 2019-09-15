@@ -309,7 +309,7 @@ public class LanguageServerWrapper {
 			textDocumentClientCapabilities
 					.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
 			initParams.setCapabilities(
-					new ClientCapabilities(workspaceClientCapabilities, textDocumentClientCapabilities, null));
+					new ClientCapabilities(workspaceClientCapabilities, textDocumentClientCapabilities, lspStreamProvider.getExperimentalFeaturesPOJO()));
 			initParams.setClientName(name);
 
 			initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
