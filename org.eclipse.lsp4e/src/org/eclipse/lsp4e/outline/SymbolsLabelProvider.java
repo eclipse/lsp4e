@@ -12,16 +12,21 @@
 package org.eclipse.lsp4e.outline;
 
 import java.net.URI;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -51,9 +56,25 @@ import org.eclipse.ui.internal.progress.ProgressManager;
 import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonLabelProvider;
 
+import com.google.common.collect.RangeMap;
+import com.google.common.collect.TreeRangeMap;
+
 public class SymbolsLabelProvider extends LabelProvider
 		implements ICommonLabelProvider, IStyledLabelProvider, IPreferenceChangeListener {
 
+	private Map<IResource, RangeMap<Integer, Integer>> severities = new HashMap<>();
+	private final IResourceChangeListener listener = e -> {
+		try {
+			e.getDelta().accept(d ->  {
+				if (d.getMarkerDeltas().length > 0) {
+					severities.remove(d.getResource());
+				}
+				return true;
+			});
+		} catch (CoreException ex) {
+			LanguageServerPlugin.logError(ex);
+		}
+	};
 	private Map<Image, Image[]> overlays = new HashMap<>();
 
 	private boolean showLocation;
@@ -69,11 +90,12 @@ public class SymbolsLabelProvider extends LabelProvider
 		this.showLocation = showLocation;
 		this.showKind = showKind;
 		InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID).addPreferenceChangeListener(this);
-
+		ResourcesPlugin.getWorkspace().addResourceChangeListener(listener);
 	}
 
 	@Override
 	public void dispose() {
+		ResourcesPlugin.getWorkspace().removeResourceChangeListener(listener);
 		InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID).removePreferenceChangeListener(this);
 		super.dispose();
 	}
@@ -106,6 +128,9 @@ public class SymbolsLabelProvider extends LabelProvider
 		} else if (element instanceof DocumentSymbolWithFile) {
 			file = ((DocumentSymbolWithFile) element).file;
 		}
+		/*
+		 * Implementation node: for problem decoration,m aybe consider using a ILabelDecorator/IDelayedLabelDecorator?
+		 */
 		if (file != null) {
 			Range range = null;
 			if (element instanceof SymbolInformation) {
@@ -136,16 +161,42 @@ public class SymbolsLabelProvider extends LabelProvider
 		return res;
 	}
 
-	protected int getMaxSeverity(IResource resource, IDocument doc, Range range)
+	protected int getMaxSeverity(@NonNull IResource resource, @NonNull IDocument doc, @NonNull Range range)
 			throws CoreException, BadLocationException {
-		int maxSeverity = -1;
-		for (IMarker marker : resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO)) {
-			int offset = marker.getAttribute(IMarker.CHAR_START, -1);
-			if (LSPEclipseUtils.isOffsetInRange(offset, range, doc)) {
-				maxSeverity = Math.max(maxSeverity, marker.getAttribute(IMarker.SEVERITY, -1));
-			}
+		if (!severities.containsKey(resource)) {
+			refreshMarkersByLine(resource);
 		}
-		return maxSeverity;
+		RangeMap<Integer, Integer> severitiesForResource = severities.get(resource);
+		if (severitiesForResource == null) {
+			return -1;
+		}
+		com.google.common.collect.Range<Integer> subRange = com.google.common.collect.Range.closed(
+				LSPEclipseUtils.toOffset(range.getStart(), doc),
+				LSPEclipseUtils.toOffset(range.getEnd(), doc));
+		return severitiesForResource.subRangeMap(subRange)
+				.asMapOfRanges()
+				.values()
+				.stream()
+				.max(Comparator.naturalOrder())
+				.orElse(-1);
+	}
+
+	private void refreshMarkersByLine(IResource resource) throws CoreException {
+		RangeMap<Integer, Integer> rangeMap = TreeRangeMap.create();
+		Arrays.stream(resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO))
+			.filter(marker -> marker.getAttribute(IMarker.SEVERITY, -1) > IMarker.SEVERITY_INFO)
+			.sorted(Comparator.comparingInt(marker -> marker.getAttribute(IMarker.SEVERITY, -1)))
+			.forEach(marker -> {
+				int start = marker.getAttribute(IMarker.CHAR_START, -1);
+				int end = marker.getAttribute(IMarker.CHAR_END, -1);
+				int severity = marker.getAttribute(IMarker.SEVERITY, -1);
+				if (start != end) {
+					com.google.common.collect.Range<Integer> markerRange = com.google.common.collect.Range.closed(start,end - 1);
+					rangeMap.remove(markerRange);
+					rangeMap.put(markerRange, severity);
+				}
+			});
+		severities.put(resource, rangeMap);
 	}
 
 	private Image getOverlay(Image res, int maxSeverity) {
