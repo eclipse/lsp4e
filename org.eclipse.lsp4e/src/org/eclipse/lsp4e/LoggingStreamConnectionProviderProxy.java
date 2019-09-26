@@ -34,7 +34,18 @@ import org.eclipse.ui.console.MessageConsole;
 import org.eclipse.ui.console.MessageConsoleStream;
 
 public class LoggingStreamConnectionProviderProxy implements StreamConnectionProvider {
-	public static final String LOG_DIRECTORY = "languageServers-log"; //$NON-NLS-1$
+
+	public static File getLogDirectory() {
+		IPath root = ResourcesPlugin.getWorkspace().getRoot().getLocation();
+		if (root == null) {
+			return null;
+		}
+		File logFolder = new File(root.addTrailingSeparator().toPortableString(), "languageServers-log"); //$NON-NLS-1$
+		if (!(logFolder.exists() || logFolder.mkdirs()) || !logFolder.isDirectory() || !logFolder.canWrite()) {
+			return null;
+		}
+		return logFolder;
+	}
 
 	private static final String FILE_KEY = "file.logging.enabled"; //$NON-NLS-1$
 	private static final String STDERR_KEY = "stderr.logging.enabled"; //$NON-NLS-1$
@@ -268,12 +279,8 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		if (logFile != null) {
 			return logFile;
 		}
-		IPath root = ResourcesPlugin.getWorkspace().getRoot().getLocation();
-		if (root == null) {
-			return null;
-		}
-		File logFolder = new File(root.addTrailingSeparator().toPortableString() + LOG_DIRECTORY);
-		if (!(logFolder.exists() || logFolder.mkdirs()) || !logFolder.isDirectory() || !logFolder.canWrite()) {
+		File logFolder = getLogDirectory();
+		if (logFolder == null) {
 			return null;
 		}
 		File file = new File(logFolder, id + ".log"); //$NON-NLS-1$

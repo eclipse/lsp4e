@@ -31,6 +31,7 @@ import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
 import org.eclipse.jface.viewers.ViewerCell;
+import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.lsp4e.ContentTypeToLSPLaunchConfigEntry;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -46,9 +47,11 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.internal.wizards.datatransfer.SmartImportWizard;
 
 public class LoggingPreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
 
@@ -176,9 +179,17 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		Label infoLabel = new Label(loggingComposite, SWT.NONE);
 		infoLabel.setText(Messages.preferencesPage_logging_info);
 		infoLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 3, 1));
+		Link logFolderLabel = new Link(loggingComposite, SWT.NONE);
+		logFolderLabel.setText(NLS.bind(Messages.preferencesPage_logging_fileLogsLocation, LoggingStreamConnectionProviderProxy.getLogDirectory()));
+		logFolderLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 3, 1));
+		logFolderLabel.addSelectionListener(widgetSelectedAdapter(e -> {
+			SmartImportWizard importWizard = new SmartImportWizard();
+			importWizard.setInitialImportSource(LoggingStreamConnectionProviderProxy.getLogDirectory());
+			WizardDialog dialog = new WizardDialog(logFolderLabel.getShell(), importWizard);
+			dialog.open();
+		}));
 		Label fileLoggingLabel = new Label(loggingComposite, SWT.NONE);
-		fileLoggingLabel.setText(NLS.bind(Messages.PreferencesPage_logging_toFile_description,
-				LoggingStreamConnectionProviderProxy.LOG_DIRECTORY));
+		fileLoggingLabel.setText(Messages.PreferencesPage_logging_toFile_description);
 		Button disableFileLogging = new Button(loggingComposite, SWT.NONE);
 		disableFileLogging.setText(Messages.PreferencePage_enablementCondition_disableAll);
 		disableFileLogging.addSelectionListener(widgetSelectedAdapter(e -> {

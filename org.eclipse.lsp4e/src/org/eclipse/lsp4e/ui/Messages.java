@@ -38,6 +38,7 @@ public class Messages extends NLS {
 	public static String PreferencesPage_logging_toConsole_title;
 	public static String PreferencesPage_logging_toConsole_description;
 	public static String preferencesPage_logging_info;
+	public static String preferencesPage_logging_fileLogsLocation;
 	public static String PreferencesPage_restartWarning_title;
 	public static String PreferencesPage_restartWarning_message;
 	public static String PreferencesPage_restartWarning_restart;
