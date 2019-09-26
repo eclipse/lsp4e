@@ -518,4 +518,11 @@
             name="Workspace Symbols"
             requiresUIAccess="false"/>
    </extension>
+   <extension
+         point="org.eclipse.ui.genericeditor.quickAssistProcessors">
+      <quickAssistProcessor
+            class="org.eclipse.lsp4e.operations.codeactions.LSPCodeActionQuickAssistProcessor"
+            contentType="org.eclipse.core.runtime.text">
+      </quickAssistProcessor>
+   </extension>
 </plugin>

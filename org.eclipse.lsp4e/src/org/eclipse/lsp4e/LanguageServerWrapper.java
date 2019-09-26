@@ -744,7 +744,7 @@ public class LanguageServerWrapper {
 				final Boolean beforeRegistration = serverCapabilities.getDocumentRangeFormattingProvider();
 				serverCapabilities.setDocumentRangeFormattingProvider(Boolean.TRUE);
 				addRegistration(reg, () -> serverCapabilities.setDocumentRangeFormattingProvider(beforeRegistration));
-			}  else if ("textDocument/codeAction".equals(reg.getMethod())) { //$NON-NLS-1$
+			} else if ("textDocument/codeAction".equals(reg.getMethod())){ //$NON-NLS-1$
 				final Either<Boolean, CodeActionOptions> beforeRegistration = serverCapabilities.getCodeActionProvider();
 				serverCapabilities.setCodeActionProvider(Boolean.TRUE);
 				addRegistration(reg, () -> serverCapabilities.setCodeActionProvider(beforeRegistration));

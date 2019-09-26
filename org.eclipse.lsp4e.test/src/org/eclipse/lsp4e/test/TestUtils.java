@@ -11,12 +11,15 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -27,6 +30,11 @@ import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
@@ -126,6 +134,29 @@ public class TestUtils {
 				.filter(definition -> "org.eclipse.lsp4e.test.server.disable".equals(definition.getValue().id)
 						&& "org.eclipse.lsp4e.test.content-type-disabled".equals(definition.getKey().toString()))
 				.findFirst().get();
+	}
+	
+	public static Shell findNewShell(Set<Shell> beforeShells, Display display) {
+		Shell[] afterShells = Arrays.stream(display.getShells())
+				.filter(Shell::isVisible)
+				.filter(shell -> !beforeShells.contains(shell))
+				.toArray(Shell[]::new);
+		assertEquals("No new shell found", 1, afterShells.length);
+		return afterShells[0];
+	}
+	
+	public static Table findCompletionSelectionControl(Widget control) {
+		if (control instanceof Table) {
+			return (Table)control;
+		} else if (control instanceof Composite) {
+			for (Widget child : ((Composite)control).getChildren()) {
+				Table res = findCompletionSelectionControl(child);
+				if (res != null) {
+					return res;
+				}
+			}
+		}
+		return null;
 	}
 
 	public static IEditorReference[] getEditors() {

@@ -11,7 +11,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.codeactions;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -38,17 +44,22 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
+import org.eclipse.ui.texteditor.ITextEditorActionConstants;
+import org.eclipse.ui.texteditor.TextOperationAction;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class CodeActionTests {
-	
+
 	@Rule public NoErrorLoggedRule rule = new NoErrorLoggedRule(LanguageServerPlugin.getDefault().getLog());
 	@Rule public AllCleanRule clear = new AllCleanRule();
-	
+
 	@Test
 	public void testCodeActionsClientCommandForTextEdit() throws CoreException {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
@@ -92,6 +103,7 @@ public class CodeActionTests {
 		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
+
 		try {
 			IMarker m = assertDiagnostics(f, "error", "fixme");
 			assertResolution(editor, m, "fixed");
@@ -99,6 +111,46 @@ public class CodeActionTests {
 			editor.close(false);
 			p.delete(true, new NullProgressMonitor());
 		}
+	}
+
+	private void checkCompletionContent(final Table completionProposalList) {
+		// should be instantaneous, but happens to go asynchronous on CI so let's allow a wait
+		  assertTrue("No item found", new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return completionProposalList.getItemCount() == 1;
+			}
+		}.waitForCondition(completionProposalList.getDisplay(), 100));
+
+		assertEquals(1, completionProposalList.getItemCount());
+		final TableItem quickAssistItem = completionProposalList.getItem(0);
+		assertTrue("Missing quick assist proposal", quickAssistItem.getText().contains("fixme")); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	@Test
+	public void testCodeActionsQuickAssist() throws CoreException {
+		MockLanguageServer.reset();
+		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
+		IFile f = TestUtils.createUniqueTestFile(p, "error");
+
+		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
+		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
+		MockLanguageServer.INSTANCE.setCodeActions(Collections
+				.singletonList(Either.forLeft(new Command(
+				"fixme",
+				"edit",
+				Collections.singletonList(wEdit))
+			)
+		));
+		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
+		final Set<Shell> beforeShells = Arrays.stream(editor.getSite().getShell().getDisplay().getShells()).filter(Shell::isVisible).collect(Collectors.toSet());
+		editor.selectAndReveal(3, 0);
+		TextOperationAction action = (TextOperationAction) editor.getAction(ITextEditorActionConstants.QUICK_ASSIST);
+		action.update();
+		action.run();
+		Shell completionShell= TestUtils.findNewShell(beforeShells, editor.getSite().getShell().getDisplay());
+		final Table completionProposalList = TestUtils.findCompletionSelectionControl(completionShell);
+		checkCompletionContent(completionProposalList);
 	}
 
 	@Test
