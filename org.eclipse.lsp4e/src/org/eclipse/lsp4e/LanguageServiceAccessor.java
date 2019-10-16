@@ -506,24 +506,23 @@ public class LanguageServiceAccessor {
 		if (uri == null) {
 			return CompletableFuture.completedFuture(Collections.emptyList());
 		}
-		final IPath path = new Path(uri.getPath());
-		final List<CompletableFuture<?>> serverRequests = new ArrayList<>();
 		final List<@NonNull LanguageServer> res = Collections.synchronizedList(new ArrayList<>());
 		try {
-			for (final LanguageServerWrapper wrapper : getLSWrappers(document)) {
-				serverRequests.add(wrapper.getInitializedServer().thenAcceptAsync(server -> {
-					if (server != null && (filter == null || filter.test(wrapper.getServerCapabilities()))) {
-						try {
-							wrapper.connect(document);
-						} catch (IOException ex) {
-							LanguageServerPlugin.logError(ex);
-						}
-						res.add(server);
-					}
-				}));
-			}
-			return CompletableFuture.allOf(serverRequests.toArray(new CompletableFuture[serverRequests.size()]))
-					.thenApply(theVoid -> res);
+			return CompletableFuture.allOf(getLSWrappers(document).stream().map(wrapper ->
+						wrapper.getInitializedServer().thenComposeAsync(server -> {
+							if (server != null && (filter == null || filter.test(wrapper.getServerCapabilities()))) {
+								try {
+									return wrapper.connect(document);
+								} catch (IOException ex) {
+									LanguageServerPlugin.logError(ex);
+								}
+							}
+							return CompletableFuture.completedFuture(null);
+						}).thenAccept(server -> {
+							if (server != null) {
+								res.add(server);
+							}
+						})).toArray(CompletableFuture[]::new)).thenApply(theVoid -> res);
 		} catch (final Exception e) {
 			LanguageServerPlugin.logError(e);
 		}

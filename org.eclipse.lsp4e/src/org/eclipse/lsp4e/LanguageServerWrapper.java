@@ -426,21 +426,35 @@ public class LanguageServerWrapper {
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
 	}
 
-	public void connect(@NonNull IFile file, IDocument document) throws IOException {
-		connect(file.getLocation(), document);
+	/**
+	 *
+	 * @param file
+	 * @param document
+	 * @return null if not connection has happened, a future tracking the connection state otherwise
+	 * @throws IOException
+	 */
+	public @Nullable CompletableFuture<LanguageServer> connect(@NonNull IFile file, IDocument document) throws IOException {
+		return connect(file.getLocation(), document);
 	}
 
-	public void connect(IDocument document) throws IOException {
+	/**
+	 *
+	 * @param document
+	 * @return null if not connection has happened, a future tracking the connection state otherwise
+	 * @throws IOException
+	 */
+	public @Nullable CompletableFuture<LanguageServer> connect(IDocument document) throws IOException {
 		IFile file = LSPEclipseUtils.getFile(document);
 
 		if (file != null && file.exists()) {
-			connect(file, document);
+			return connect(file, document);
 		} else {
 			URI uri = LSPEclipseUtils.toUri(document);
 			if (uri != null) {
-				connect(new Path(LSPEclipseUtils.toUri(document).getPath()), document);
+				return connect(new Path(LSPEclipseUtils.toUri(document).getPath()), document);
 			}
 		}
+		return null;
 	}
 
 	protected synchronized void watchProject(IProject project, boolean isInitializationRootProject) {
@@ -520,9 +534,10 @@ public class LanguageServerWrapper {
 	/**
 	 * To make public when we support non IFiles
 	 *
+	 * @return null if not connection has happened, a future that completes when file is initialized otherwise
 	 * @noreference internal so far
 	 */
-	private void connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
+	private CompletableFuture<LanguageServer> connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
 		final IPath thePath = Path.fromOSString(absolutePath.toFile().getAbsolutePath()); // should be useless
 
 		IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(thePath);
@@ -531,24 +546,24 @@ public class LanguageServerWrapper {
 		}
 
 		if (this.connectedDocuments.containsKey(thePath)) {
-			return;
+			return CompletableFuture.completedFuture(languageServer);
 		}
 		start();
 		if (this.initializeFuture == null) {
-			return;
+			return null;
 		}
 		if (document == null) {
 			IFile docFile = (IFile) LSPEclipseUtils.findResourceFor(thePath.toFile().toURI().toString());
 			document = LSPEclipseUtils.getDocument(docFile);
 		}
 		if (document == null) {
-			return;
+			return null;
 		}
 		final IDocument theDocument = document;
-		initializeFuture.thenRunAsync(() -> {
+		return initializeFuture.thenComposeAsync(theVoid -> {
 			synchronized (connectedDocuments) {
 				if (this.connectedDocuments.containsKey(thePath)) {
-					return;
+					return CompletableFuture.completedFuture(null);
 				}
 				Either<TextDocumentSyncKind, TextDocumentSyncOptions> syncOptions = initializeFuture == null ? null
 						: this.serverCapabilities.getTextDocumentSync();
@@ -563,8 +578,9 @@ public class LanguageServerWrapper {
 				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(thePath, listener);
+				return listener.didOpenFuture;
 			}
-		});
+		}).thenApply(theVoid -> languageServer);
 	}
 
 	public void disconnect(IPath path) {
