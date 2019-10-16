@@ -14,6 +14,7 @@
  *  Remy Suen <remy.suen@gmail.com> - Bug 520052 - Rename assumes that workspace edits are in reverse order
  *  Martin Lippert (Pivotal Inc.) - bug 531452, bug 532305
  *  Alex Boyko (Pivotal Inc.) - bug 543435 (WorkspaceEdit apply handling)
+ *  Markus Ofterdinger (SAP SE) - Bug 552140 - NullPointerException in LSP4E
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -461,10 +462,10 @@ public class LSPEclipseUtils {
 		if (introUrl != null) {
 			try {
 				if (!introUrl.execute()) {
-					LanguageServerPlugin.logWarning("Failed to execute IntroURL: " + uri, null); // $NON-NLS-1$ //$NON-NLS-1$
+					LanguageServerPlugin.logWarning("Failed to execute IntroURL: " + uri, null); //$NON-NLS-1$
 				}
 			} catch (Exception t) {
-				LanguageServerPlugin.logWarning("Error executing IntroURL: " + uri, t); // $NON-NLS-1$ //$NON-NLS-1$
+				LanguageServerPlugin.logWarning("Error executing IntroURL: " + uri, t); //$NON-NLS-1$
 			}
 		}
 	}
@@ -700,7 +701,11 @@ public class LSPEclipseUtils {
 	}
 
 	public static URI toUri(IResource resource) {
-		return toUri(resource.getLocation());
+		IPath location = resource.getLocation();
+		if (location != null) {
+			return toUri(location);
+		}
+		return null;
 	}
 
 	public static URI toUri(File file) {
