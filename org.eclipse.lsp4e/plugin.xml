@@ -6,6 +6,7 @@
    the feature should be part of the generic text editor -->
    <extension
          id="diagnostic"
+         name="%markers.name"
          point="org.eclipse.core.resources.markers">
       <super
             type="org.eclipse.core.resources.problemmarker">
