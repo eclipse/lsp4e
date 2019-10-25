@@ -81,6 +81,7 @@ import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializedParams;
+import org.eclipse.lsp4j.MarkupKind;
 import org.eclipse.lsp4j.RangeFormattingCapabilities;
 import org.eclipse.lsp4j.ReferencesCapabilities;
 import org.eclipse.lsp4j.Registration;
@@ -279,8 +280,10 @@ public class LanguageServerWrapper {
 									true));
 			textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
 			textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
+			CompletionItemCapabilities completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);
+			completionItemCapabilities.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
 			textDocumentClientCapabilities
-					.setCompletion(new CompletionCapabilities(new CompletionItemCapabilities(Boolean.TRUE)));
+					.setCompletion(new CompletionCapabilities(completionItemCapabilities));
 			DefinitionCapabilities definitionCapabilities = new DefinitionCapabilities();
 			definitionCapabilities.setLinkSupport(Boolean.TRUE);
 			textDocumentClientCapabilities.setDefinition(definitionCapabilities);
@@ -300,7 +303,9 @@ public class LanguageServerWrapper {
 					SymbolKind.Variable)));
 			textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
 			textDocumentClientCapabilities.setFormatting(new FormattingCapabilities(Boolean.TRUE));
-			textDocumentClientCapabilities.setHover(new HoverCapabilities());
+			HoverCapabilities hoverCapabilities = new HoverCapabilities();
+			hoverCapabilities.setContentFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
+			textDocumentClientCapabilities.setHover(hoverCapabilities);
 			textDocumentClientCapabilities.setOnTypeFormatting(null); // TODO
 			textDocumentClientCapabilities.setRangeFormatting(new RangeFormattingCapabilities());
 			textDocumentClientCapabilities.setReferences(new ReferencesCapabilities());
