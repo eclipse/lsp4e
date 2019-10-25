@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.highlight;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -192,7 +193,11 @@ public class HighlightReconcilingStrategy
 			LanguageServerPlugin.logError(e);
 			return;
 		}
-		TextDocumentIdentifier identifier = new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString());
+		URI uri = LSPEclipseUtils.toUri(document);
+		if(uri == null) {
+			return;
+		}
+		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri.toString());
 		TextDocumentPositionParams params = new TextDocumentPositionParams(identifier, position);
 		request = LanguageServiceAccessor.getLanguageServers(document,
 				capabilities -> Boolean.TRUE.equals(capabilities.getDocumentHighlightProvider()))
