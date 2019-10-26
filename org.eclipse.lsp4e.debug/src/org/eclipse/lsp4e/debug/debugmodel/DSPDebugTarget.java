@@ -5,6 +5,9 @@
  * which is available at https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
+ * 
+ * Contributors:
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 552451 - Should the DSPProcess be added to the Launch when "attach" is used?
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.debugmodel;
 
@@ -216,16 +219,19 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		targetName = Objects.toString(dspParameters.get("program"), "Debug Adapter Target");
 
 		monitor.subTask("Initializing connection to debug adapter");
+		boolean isLaunchRequest = "launch".equals(dspParameters.getOrDefault("request", "launch"));
 		CompletableFuture<Void> future = getDebugProtocolServer().initialize(arguments)
 				.thenAccept((Capabilities capabilities) -> {
 					monitor.worked(10);
 					this.capabilities = capabilities;
 				}).thenRun(() -> {
 					process = new DSPProcess(this);
-					launch.addProcess(process);
+					if (isLaunchRequest) {
+						launch.addProcess(process);
+					}
 				}).thenCompose(v -> {
 					monitor.worked(10);
-					if ("launch".equals(dspParameters.getOrDefault("request", "launch"))) {
+					if (isLaunchRequest) {
 						monitor.subTask("Launching program");
 						return getDebugProtocolServer().launch(dspParameters);
 					} else {
