@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.debugmodel;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -186,12 +187,39 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 		return stackFrame.getId();
 	}
 
+	public int getFrameInstructionAddressBits() {
+		String addr = stackFrame.getInstructionPointerReference();
+		if (addr == null || addr.length() > 10) {
+			return 64;
+		}
+		return 32;
+	}
+
+	public BigInteger getFrameInstructionAddress() {
+		String addr = stackFrame.getInstructionPointerReference();
+		if (addr == null || addr.length() == 0) {
+			return new BigInteger("0");
+		}
+		if (addr.startsWith("0x")) {
+			addr = addr.substring(2);
+		}
+		return new BigInteger(addr, 16);
+	}
+
 	@Override
 	public String toString() {
 		return "StackFrame [depth=" + depth + ", line=" + stackFrame.getLine() + ", thread=" + thread + ", stackFrame="
 				+ stackFrame + "]";
 	}
 
+	/**
+	 * Return the stack depth of this frame. The top of the stack is 0.
+	 * 
+	 * @return stack depth
+	 */
+	public int getDepth() {
+		return depth;
+	}
 
 	/**
 	 * Evaluate the given expression in the context of this frame.
