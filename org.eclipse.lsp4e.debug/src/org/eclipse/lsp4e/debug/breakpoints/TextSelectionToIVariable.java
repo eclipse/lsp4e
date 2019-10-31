@@ -24,10 +24,6 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4e.debug.debugmodel.DSPStackFrame;
-import org.eclipse.lsp4e.debug.debugmodel.DSPVariable;
-import org.eclipse.lsp4j.debug.EvaluateArguments;
-import org.eclipse.lsp4j.debug.EvaluateArgumentsContext;
-import org.eclipse.lsp4j.debug.EvaluateResponse;
 
 public class TextSelectionToIVariable implements IAdapterFactory {
 
@@ -64,23 +60,16 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 			}
 
 			if (Boolean.TRUE.equals(frame.getDebugTarget().getCapabilities().getSupportsEvaluateForHovers())) {
-				EvaluateArguments args = new EvaluateArguments();
-				args.setContext(EvaluateArgumentsContext.HOVER);
-				args.setFrameId(frame.getFrameId());
-				args.setExpression(variableName);
 				try {
-					EvaluateResponse res = frame.getDebugProtocolServer().evaluate(args).get(); // ok to call get as it
-																								// should be a different
-																								// thread.
-					return new DSPVariable(getFrame().getDebugTarget(), res.getVariablesReference(), variableName,
-							res.getResult(), res.getVariablesReference());
+					// ok to call get as it should be a different thread.
+					return frame.evaluate(variableName).get();
 				} catch (ExecutionException e) {
 					DSPPlugin.logError(e);
-					// will fail back by looking by looking up in current frame
+					// will fall back by looking by looking up in current frame
 				} catch (InterruptedException e) {
 					Thread.currentThread().interrupt();
 					DSPPlugin.logError(e);
-					// will fail back by looking by looking up in current frame
+					// will fall back by looking by looking up in current frame
 				}
 
 			}

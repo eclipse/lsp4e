@@ -11,11 +11,15 @@ package org.eclipse.lsp4e.debug.debugmodel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IRegisterGroup;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IVariable;
+import org.eclipse.lsp4j.debug.EvaluateArguments;
+import org.eclipse.lsp4j.debug.EvaluateArgumentsContext;
+import org.eclipse.lsp4j.debug.EvaluateResponse;
 import org.eclipse.lsp4j.debug.Scope;
 import org.eclipse.lsp4j.debug.ScopesArguments;
 import org.eclipse.lsp4j.debug.StackFrame;
@@ -188,4 +192,22 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 				+ stackFrame + "]";
 	}
 
+
+	/**
+	 * Evaluate the given expression in the context of this frame.
+	 * 
+	 * @param expression any expression
+	 * @return future with an IVariable that has the result
+	 */
+	public CompletableFuture<IVariable> evaluate(String expression) {
+		EvaluateArguments args = new EvaluateArguments();
+		args.setContext(EvaluateArgumentsContext.HOVER);
+		args.setFrameId(getFrameId());
+		args.setExpression(expression);
+		CompletableFuture<EvaluateResponse> evaluate = getDebugProtocolServer().evaluate(args);
+		CompletableFuture<IVariable> future = evaluate.thenApply(res -> new DSPVariable(getDebugTarget(),
+				res.getVariablesReference(), expression, res.getResult(), res.getVariablesReference()));
+		return future;
+
+	}
 }
