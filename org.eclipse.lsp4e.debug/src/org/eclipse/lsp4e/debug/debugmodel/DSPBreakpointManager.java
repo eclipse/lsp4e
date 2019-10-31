@@ -101,7 +101,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 	}
 
 	private CompletableFuture<Void> resendAllTargetBreakpoints(boolean enabled) {
-		IBreakpoint[] breakpoints = platformBreakpointManager.getBreakpoints(DSPPlugin.ID_DSP_DEBUG_MODEL);
+		IBreakpoint[] breakpoints = platformBreakpointManager.getBreakpoints();
 		for (IBreakpoint breakpoint : breakpoints) {
 			if (supportsBreakpoint(breakpoint)) {
 				if (enabled) {
