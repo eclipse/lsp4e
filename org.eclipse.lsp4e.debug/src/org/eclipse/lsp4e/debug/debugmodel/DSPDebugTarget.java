@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Kichwa Coders Ltd. and others.
+ * Copyright (c) 2017-2019 Kichwa Coders Ltd. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -8,6 +8,7 @@
  * 
  * Contributors:
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 552451 - Should the DSPProcess be added to the Launch when "attach" is used?
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 553196 - Toolbar terminate button always enabled even when the DSPDebugTarget is terminated
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.debugmodel;
 
@@ -313,7 +314,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public boolean canTerminate() {
-		return true;
+		return !isTerminated();
 	}
 
 	@Override
