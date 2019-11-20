@@ -9,6 +9,7 @@
  * Contributors:
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 552451 - Should the DSPProcess be added to the Launch when "attach" is used?
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 553196 - Toolbar terminate button always enabled even when the DSPDebugTarget is terminated
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 553234 - Implement DSPDebugTarget disconnect methods
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.debugmodel;
 
@@ -65,6 +66,7 @@ import org.eclipse.lsp4j.debug.RunInTerminalRequestArguments;
 import org.eclipse.lsp4j.debug.RunInTerminalRequestArgumentsKind;
 import org.eclipse.lsp4j.debug.RunInTerminalResponse;
 import org.eclipse.lsp4j.debug.StoppedEventArguments;
+import org.eclipse.lsp4j.debug.TerminateArguments;
 import org.eclipse.lsp4j.debug.TerminatedEventArguments;
 import org.eclipse.lsp4j.debug.Thread;
 import org.eclipse.lsp4j.debug.ThreadEventArguments;
@@ -112,6 +114,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	private AtomicBoolean refreshThreads = new AtomicBoolean(true);
 
 	private boolean fTerminated = false;
+	private boolean fSentTerminateRequest = false;
 	private String targetName = null;
 
 	private Runnable processCleanup;
@@ -327,11 +330,40 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		terminated();
 	}
 
+	/**
+	 * This implementation follows the "Debug session end" guidelines in
+	 * https://microsoft.github.io/debug-adapter-protocol/overview:
+	 * 
+	 * "When the development tool ends a debug session, the sequence of events is
+	 * slightly different based on whether the session has been initially 'launched'
+	 * or 'attached':
+	 * 
+	 * Debuggee launched: if a debug adapter supports the terminate request, the
+	 * development tool uses it to terminate the debuggee gracefully, i.e. it gives
+	 * the debuggee a chance to cleanup everything before terminating. If the
+	 * debuggee does not terminate but continues to run (or hits a breakpoint), the
+	 * debug session will continue, but if the development tool tries again to
+	 * terminate the debuggee, it will then use the disconnect request to end the
+	 * debug session unconditionally. The disconnect request is expected to
+	 * terminate the debuggee (and any child processes) forcefully.
+	 * 
+	 * Debuggee attached: If the debuggee has been 'attached' initially, the
+	 * development tool issues a disconnect request. This should detach the debugger
+	 * from the debuggee but will allow it to continue."
+	 */
 	@Override
 	public void terminate() throws DebugException {
-		DisconnectArguments arguments = new DisconnectArguments();
-		arguments.setTerminateDebuggee(true);
-		getDebugProtocolServer().disconnect(arguments).thenRun(this::terminated);
+		boolean shouldSendTerminateRequest = !fSentTerminateRequest
+				&& Boolean.TRUE.equals(getCapabilities().getSupportsTerminateRequest())
+				&& "launch".equals(dspParameters.getOrDefault("request", "launch"));
+		if (shouldSendTerminateRequest) {
+			fSentTerminateRequest = true;
+			getDebugProtocolServer().terminate(new TerminateArguments());
+		} else {
+			DisconnectArguments arguments = new DisconnectArguments();
+			arguments.setTerminateDebuggee(true);
+			getDebugProtocolServer().disconnect(arguments).thenRun(this::terminated);
+		}
 	}
 
 	@Override
@@ -420,19 +452,17 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public boolean canDisconnect() {
-		// TODO
-		return false;
+		return !isDisconnected();
 	}
 
 	@Override
 	public void disconnect() throws DebugException {
-		// TODO
+		getDebugProtocolServer().disconnect(new DisconnectArguments()).thenRun(this::terminated);
 	}
 
 	@Override
 	public boolean isDisconnected() {
-		// TODO
-		return false;
+		return fTerminated;
 	}
 
 	@Override
