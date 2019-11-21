@@ -8,7 +8,7 @@
  * 
  * Contributors:
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 552451 - Should the DSPProcess be added to the Launch when "attach" is used?
- *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 553196 - Toolbar terminate button always enabled even when the DSPDebugTarget is terminated
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 553196 - Toolbar & console terminate buttons always enabled even when the DSPDebugTarget is terminated
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 553234 - Implement DSPDebugTarget disconnect methods
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.debugmodel;
@@ -265,6 +265,8 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	private void terminated() {
 		fTerminated = true;
 		fireTerminateEvent();
+		// Disable the terminate button of the console associated with the DSPProcess.
+		DebugPlugin.getDefault().fireDebugEventSet(new DebugEvent[] { new DebugEvent(process, DebugEvent.TERMINATE) });
 		if (breakpointManager != null) {
 			breakpointManager.shutdown();
 		}
