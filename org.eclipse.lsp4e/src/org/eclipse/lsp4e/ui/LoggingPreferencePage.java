@@ -7,7 +7,8 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *  Lucas Bullen (Red Hat Inc.) - initial implementation
+ *  Lucas Bullen (Red Hat Inc.) - initial implementation.
+ *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 553376 - Logs preference page does not work on Windows
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
 
@@ -84,7 +85,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 	}
 
 	private void createStaticServersTable(Composite res) {
-		languageServerViewer = new TableViewer(res);
+		languageServerViewer = new TableViewer(res, SWT.FULL_SELECTION);
 		languageServerViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		languageServerViewer.setContentProvider(new ArrayContentProvider());
 
@@ -104,7 +105,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 	}
 
 	private void createLaunchConfigurationServersTable(Composite res) {
-		launchConfigurationViewer = new TableViewer(res);
+		launchConfigurationViewer = new TableViewer(res, SWT.FULL_SELECTION);
 		launchConfigurationViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		launchConfigurationViewer.setContentProvider(new ArrayContentProvider());
 
