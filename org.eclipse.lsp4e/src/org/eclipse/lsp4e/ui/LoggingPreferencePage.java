@@ -14,7 +14,6 @@ package org.eclipse.lsp4e.ui;
 
 import static org.eclipse.swt.events.SelectionListener.widgetSelectedAdapter;
 
-import java.awt.MouseInfo;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,11 +26,12 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.preference.PreferencePage;
 import org.eclipse.jface.viewers.ArrayContentProvider;
+import org.eclipse.jface.viewers.CellEditor;
+import org.eclipse.jface.viewers.CheckboxCellEditor;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
-import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.EditingSupport;
 import org.eclipse.jface.viewers.TableViewer;
 import org.eclipse.jface.viewers.TableViewerColumn;
-import org.eclipse.jface.viewers.ViewerCell;
 import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.lsp4e.ContentTypeToLSPLaunchConfigEntry;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
@@ -40,13 +40,11 @@ import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LoggingStreamConnectionProviderProxy;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.IWorkbench;
@@ -55,6 +53,56 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.internal.wizards.datatransfer.SmartImportWizard;
 
 public class LoggingPreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
+
+	private final class BooleanMapEditingSupport extends EditingSupport {
+
+		private final Map<String, Boolean> map;
+
+		private BooleanMapEditingSupport(TableViewer viewer,  Map<String, Boolean> map) {
+			super(viewer);
+			this.map = map;
+		}
+
+		@Override
+		protected void setValue(Object element, Object value) {
+			ContentTypeToLanguageServerDefinition server = (ContentTypeToLanguageServerDefinition)element;
+			map.put(server.getValue().id, (Boolean)value);
+			hasLoggingBeenChanged = true;
+			getViewer().refresh(element);
+		}
+
+		@Override
+		protected Object getValue(Object element) {
+			ContentTypeToLanguageServerDefinition server = (ContentTypeToLanguageServerDefinition)element;
+			return map.get(server.getValue().id);
+		}
+
+		@Override
+		protected CellEditor getCellEditor(Object element) {
+			return new CheckboxCellEditor();
+		}
+
+		@Override
+		protected boolean canEdit(Object element) {
+			return true;
+		}
+	}
+
+	private final class BooleanMapLabelProvider extends ColumnLabelProvider {
+		private final Map<String, Boolean> map;
+
+		private BooleanMapLabelProvider(Map<String, Boolean> map) {
+			super();
+			this.map = map;
+		}
+
+		@Override
+		public String getText(Object element) {
+			return map.getOrDefault(((ContentTypeToLanguageServerDefinition) element).getValue().id, false).booleanValue()
+							? Messages.PreferencePage_enablementCondition_true
+							: Messages.PreferencePage_enablementCondition_false;
+		}
+	}
 
 	private TableViewer languageServerViewer;
 	private TableViewer launchConfigurationViewer;
@@ -65,11 +113,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 
 	@Override
 	public void init(IWorkbench workbench) {
-	}
-
-	@Override
-	public void dispose() {
-		super.dispose();
+		//nothing to do
 	}
 
 	@Override
@@ -125,51 +169,17 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 	}
 
 	private void addLoggingColumnsToViewer(TableViewer viewer) {
-		int addedColumnIndex = viewer.getTable().getColumnCount();
 		TableViewerColumn logToFileColumn = new TableViewerColumn(viewer, SWT.NONE);
 		logToFileColumn.getColumn().setText(Messages.PreferencesPage_logging_toFile_title);
 		logToFileColumn.getColumn().setWidth(100);
-		logToFileColumn.setLabelProvider(new ColumnLabelProvider() {
-			@Override
-			public String getText(Object element) {
-				return serverEnableLoggingToFile
-						.getOrDefault(((ContentTypeToLanguageServerDefinition) element).getValue().id, false)
-								? Messages.PreferencePage_enablementCondition_true
-								: Messages.PreferencePage_enablementCondition_false;
-			}
-		});
+		logToFileColumn.setLabelProvider(new BooleanMapLabelProvider(serverEnableLoggingToFile));
+		logToFileColumn.setEditingSupport(new BooleanMapEditingSupport(viewer, serverEnableLoggingToFile));
 
 		TableViewerColumn logToConsoleColumn = new TableViewerColumn(viewer, SWT.NONE);
 		logToConsoleColumn.getColumn().setText(Messages.PreferencesPage_logging_toConsole_title);
 		logToConsoleColumn.getColumn().setWidth(125);
-		logToConsoleColumn.setLabelProvider(new ColumnLabelProvider() {
-			@Override
-			public String getText(Object element) {
-				return serverEnableLoggingToConsole
-						.getOrDefault(((ContentTypeToLanguageServerDefinition) element).getValue().id, false)
-								? Messages.PreferencePage_enablementCondition_true
-								: Messages.PreferencePage_enablementCondition_false;
-			}
-		});
-
-		viewer.addDoubleClickListener(event -> {
-			hasLoggingBeenChanged = true;
-			Point relativeCursorLocation = Display.getCurrent().getFocusControl().toControl(new Point(
-					MouseInfo.getPointerInfo().getLocation().x, MouseInfo.getPointerInfo().getLocation().y));
-			ViewerCell cell = ((TableViewer) event.getSource()).getCell(relativeCursorLocation);
-			if (cell == null || cell.getColumnIndex() > addedColumnIndex + 1)
-				return;
-			String key = ((ContentTypeToLanguageServerDefinition) ((StructuredSelection) event.getSelection())
-					.getFirstElement()).getValue().id;
-			if (cell.getColumnIndex() == addedColumnIndex) {
-				boolean newLogging = !serverEnableLoggingToFile.getOrDefault(key, false);
-				serverEnableLoggingToFile.put(key, newLogging);
-			} else {
-				boolean newLogging = !serverEnableLoggingToConsole.getOrDefault(key, false);
-				serverEnableLoggingToConsole.put(key, newLogging);
-			}
-			viewer.refresh();
-		});
+		logToConsoleColumn.setLabelProvider(new BooleanMapLabelProvider(serverEnableLoggingToConsole));
+		logToConsoleColumn.setEditingSupport(new BooleanMapEditingSupport(viewer, serverEnableLoggingToConsole));
 	}
 
 	private void createLoggingContents(Composite res) {
