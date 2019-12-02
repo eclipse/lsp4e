@@ -8,6 +8,7 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Max Bureck (Fraunhofer FOKUS) - Added ability to check for executed command
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
@@ -18,6 +19,7 @@ import java.util.function.Function;
 import org.eclipse.lsp4j.DidChangeConfigurationParams;
 import org.eclipse.lsp4j.DidChangeWatchedFilesParams;
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
+import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
 import org.eclipse.lsp4j.services.WorkspaceService;
@@ -25,6 +27,7 @@ import org.eclipse.lsp4j.services.WorkspaceService;
 public class MockWorkspaceService implements WorkspaceService {
 
 	private Function<?, ?> _futureFactory;
+	private CompletableFuture<ExecuteCommandParams> executedCommand = new CompletableFuture<>();
 
 	public <U> MockWorkspaceService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -64,4 +67,13 @@ public class MockWorkspaceService implements WorkspaceService {
 
 	}
 
+	@Override
+	public CompletableFuture<Object> executeCommand(ExecuteCommandParams params) {
+		executedCommand.complete(params);
+		return futureFactory(null);
+	}
+
+	public CompletableFuture<ExecuteCommandParams> getExecutedCommand() {
+		return executedCommand;
+	}
 }

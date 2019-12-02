@@ -37,6 +37,7 @@ import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkOptions;
+import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
@@ -53,11 +54,16 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
-import org.eclipse.lsp4j.services.WorkspaceService;
 
 public final class MockLanguageServer implements LanguageServer {
 
 	public static MockLanguageServer INSTANCE = new MockLanguageServer();
+
+	/**
+	 * This command will be reported on initialization to be supported for execution
+	 * by the server
+	 */
+	public static String SUPPORTED_COMMAND_ID = "mock.command";
 
 	private MockTextDocumentService textDocumentService = new MockTextDocumentService(this::buildMaybeDelayedFuture);
 	private MockWorkspaceService workspaceService = new MockWorkspaceService(this::buildMaybeDelayedFuture);
@@ -109,6 +115,8 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setDocumentLinkProvider(new DocumentLinkOptions());
 		capabilities.setSignatureHelpProvider(new SignatureHelpOptions());
 		capabilities.setDocumentHighlightProvider(Boolean.TRUE);
+		capabilities
+				.setExecuteCommandProvider(new ExecuteCommandOptions(Collections.singletonList(SUPPORTED_COMMAND_ID)));
 		RenameOptions prepareRenameProvider = new RenameOptions();
 		prepareRenameProvider.setPrepareProvider(true);
 		Either<Boolean, RenameOptions> renameEither = Either.forRight(prepareRenameProvider);
@@ -147,7 +155,7 @@ public final class MockLanguageServer implements LanguageServer {
 	}
 
 	@Override
-	public WorkspaceService getWorkspaceService() {
+	public MockWorkspaceService getWorkspaceService() {
 		return workspaceService;
 	}
 

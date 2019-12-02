@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -117,11 +116,6 @@ import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 
 /**
  * Some utility methods to convert between Eclipse and LS-API types
@@ -229,10 +223,18 @@ public class LSPEclipseUtils {
 		if (file != null) {
 			return LSPEclipseUtils.toUri(file);
 		} else {
-			ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
-			if (buffer != null) {
-				return LSPEclipseUtils.toUri(buffer.getLocation().toFile());
+			IPath path = toPath(document);
+			if(path != null) {
+				return LSPEclipseUtils.toUri(path.toFile());
 			}
+		}
+		return null;
+	}
+
+	public static IPath toPath(IDocument document) {
+		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
+		if (buffer != null) {
+			return buffer.getLocation();
 		}
 		return null;
 	}
@@ -718,94 +720,12 @@ public class LSPEclipseUtils {
 		}
 	}
 
-	// TODO consider using Entry/SimpleEntry instead
-	private static final class Pair<K, V> {
-		K key;
-		V value;
-		Pair(K key,V value) {
-			this.key = key;
-			this.value = value;
-		}
-	}
-
-	/**
-	 * Very empirical and unsafe heuristic to turn unknown command arguments
-	 * into a workspace edit...
-	 */
-	public static WorkspaceEdit createWorkspaceEdit(List<Object> commandArguments, IResource initialResource) {
-		WorkspaceEdit res = new WorkspaceEdit();
-		Map<String, List<TextEdit>> changes = new HashMap<>();
-		res.setChanges(changes);
-		Pair<IResource, List<TextEdit>> currentEntry = new Pair<>(initialResource, new ArrayList<>());
-		commandArguments.stream().flatMap(item -> {
-			if (item instanceof List) {
-				return ((List<?>)item).stream();
-			} else {
-				return Collections.singleton(item).stream();
-			}
-		}).forEach(arg -> {
-			if (arg instanceof String) {
-				changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
-				IResource resource = LSPEclipseUtils.findResourceFor((String)arg);
-				if (resource != null) {
-					currentEntry.key = resource;
-					currentEntry.value = new ArrayList<>();
-				}
-			} else if (arg instanceof WorkspaceEdit) {
-				changes.putAll(((WorkspaceEdit)arg).getChanges());
-			} else if (arg instanceof TextEdit) {
-				currentEntry.value.add((TextEdit)arg);
-			} else if (arg instanceof Map) {
-				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
-				TextEdit edit = gson.fromJson(gson.toJson(arg), TextEdit.class);
-				if (edit != null) {
-					currentEntry.value.add(edit);
-				}
-			} else if (arg instanceof JsonPrimitive) {
-				JsonPrimitive json = (JsonPrimitive) arg;
-				if (json.isString()) {
-					changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
-					IResource resource = LSPEclipseUtils.findResourceFor(json.getAsString());
-					if (resource != null) {
-						currentEntry.key = resource;
-						currentEntry.value = new ArrayList<>();
-					}
-				}
-			} else if (arg instanceof JsonArray) {
-				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
-				JsonArray array = (JsonArray) arg;
-				array.forEach(elt -> {
-					TextEdit edit = gson.fromJson(gson.toJson(elt), TextEdit.class);
-					if (edit != null) {
-						currentEntry.value.add(edit);
-					}
-				});
-			} else if (arg instanceof JsonObject) {
-				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
-				WorkspaceEdit wEdit = gson.fromJson((JsonObject) arg, WorkspaceEdit.class);
-				Map<String, List<TextEdit>> entries = wEdit.getChanges();
-				if (wEdit != null && !entries.isEmpty()) {
-					changes.putAll(entries);
-				} else {
-					TextEdit edit = gson.fromJson((JsonObject) arg, TextEdit.class);
-					if (edit != null && edit.getRange() != null) {
-						currentEntry.value.add(edit);
-					}
-				}
-			}
-		});
-		if (!currentEntry.value.isEmpty()) {
-			changes.put(currentEntry.key.getLocationURI().toString(), currentEntry.value);
-		}
-		return res;
-	}
-
 	@Nullable public static IFile getFile(IDocument document) {
-		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
-		if (buffer == null) {
+		IPath path = toPath(document);
+		if(path == null) {
 			return null;
 		}
-		IFile res = ResourcesPlugin.getWorkspace().getRoot().getFile(buffer.getLocation());
+		IFile res = ResourcesPlugin.getWorkspace().getRoot().getFile(path);
 		if (res != null && res.exists()) {
 			return res;
 		} else {

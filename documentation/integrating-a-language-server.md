@@ -11,3 +11,5 @@ See [multiple examples in the test](../org.eclipse.lsp4e.test/plugin.xml).
 ### Tips and Tricks
 
 * Use the `ProcessStreamConnectionProvider` if your LS is accessible as a process.
+
+* To handle LSP Commands (e.g. associated with `CodeLens` messages) in the IDE, register a sub-class of `org.eclipse.lsp4e.command.LSPCommandHandler` in the `plugin.xml` file of your plug-in via the `org.eclipse.ui.handlers` extension. The handler has to be registered for the `commandId` equal to the `Command.command` attribute of an LSP message. Note that client side handlers will not be triggered, if the language server is capable of executing commands of the same `commandId`.

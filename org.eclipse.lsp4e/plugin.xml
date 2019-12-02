@@ -525,4 +525,16 @@
             contentType="org.eclipse.core.runtime.text">
       </quickAssistProcessor>
    </extension>
+   <extension
+         point="org.eclipse.ui.commands">
+      <commandParameterType
+            converter="org.eclipse.lsp4e.command.internal.CommandConverter"
+            id="org.eclipse.lsp4e.commandParameterType"
+            type="org.eclipse.lsp4j.Command">
+      </commandParameterType>
+      <category
+            id="org.eclipse.lsp4e.commandCategory"
+            name="CodeLens">
+      </category>
+   </extension>
 </plugin>

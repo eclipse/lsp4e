@@ -46,6 +46,7 @@ Bundle-Localization: plugin
 Bundle-ActivationPolicy: lazy
 Bundle-Activator: org.eclipse.lsp4e.LanguageServerPlugin
 Export-Package: org.eclipse.lsp4e;x-internal:=true,
+ org.eclipse.lsp4e.command;x-internal:=true,
  org.eclipse.lsp4e.operations.completion;x-internal:=true,
  org.eclipse.lsp4e.operations.hover;x-internal:=true,
  org.eclipse.lsp4e.outline;x-internal:=true,

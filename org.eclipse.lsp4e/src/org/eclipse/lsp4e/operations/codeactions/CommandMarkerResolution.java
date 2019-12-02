@@ -8,27 +8,18 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
+ *  Max Bureck (Fraunhofer FOKUS) - Moved command execution to CommandExecutor
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
-import java.io.IOException;
-import java.util.concurrent.CompletableFuture;
-
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServersRegistry;
-import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.command.internal.CommandExecutor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4j.Command;
-import org.eclipse.lsp4j.ExecuteCommandOptions;
-import org.eclipse.lsp4j.ExecuteCommandParams;
-import org.eclipse.lsp4j.WorkspaceEdit;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
@@ -49,51 +40,10 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 	@Override
 	public void run(IMarker marker) {
 		IResource resource = marker.getResource();
+		IDocument document = LSPEclipseUtils.getDocument(resource);
 		String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
-		executeCommand(command, resource, languageServerId);
-	}
-
-	/*
-	 * TODO consider moving to LSPEclipseUtils?
-	 */
-	static void executeCommand(Command command, IResource resource, String languageServerId) {
-		// This is a *client-side* command, no need to go through
-		// workspace/executeCommand operation
-		// TODO? Consider binding LS commands to Eclipse commands and handlers???
-		if (command == null) {
-			return;
-		}
-
-		if (languageServerId != null) {
-			LanguageServerDefinition languageServerDefinition = LanguageServersRegistry.getInstance()
-					.getDefinition(languageServerId);
-			if (resource.getType() == IResource.FILE && languageServerDefinition != null) {
-				IFile file = (IFile) resource;
-				try {
-					CompletableFuture<LanguageServer> languageServerFuture = LanguageServiceAccessor
-							.getInitializedLanguageServer(file, languageServerDefinition, serverCapabilities -> {
-								ExecuteCommandOptions provider = serverCapabilities.getExecuteCommandProvider();
-								return provider != null && provider.getCommands().contains(command.getCommand());
-							});
-					if (languageServerFuture != null) {
-						languageServerFuture.thenAcceptAsync(server -> {
-							ExecuteCommandParams params = new ExecuteCommandParams();
-							params.setCommand(command.getCommand());
-							params.setArguments(command.getArguments());
-							server.getWorkspaceService().executeCommand(params);
-						});
-						return;
-					}
-				} catch (IOException e) {
-					// log and let the code fall through for LSPEclipseUtils to handle
-					LanguageServerPlugin.logError(e);
-				}
-			}
-		}
-		// tentative failback
-		if (command.getArguments() != null) {
-			WorkspaceEdit edit = LSPEclipseUtils.createWorkspaceEdit(command.getArguments(), resource);
-			LSPEclipseUtils.applyWorkspaceEdit(edit);
+		if(document != null) {
+			CommandExecutor.executeCommand(command, document, languageServerId);
 		}
 	}
 

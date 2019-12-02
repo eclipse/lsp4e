@@ -210,9 +210,7 @@ public class LanguageServiceAccessor {
 			Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
 		LanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition, file.getFullPath());
-		if (capabilitiesPredicate == null
-				|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-				|| capabilitiesPredicate.test(wrapper.getServerCapabilities())) {
+		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
 			wrapper.connect(file, null);
 			return wrapper.getServer();
 		}
@@ -224,20 +222,65 @@ public class LanguageServiceAccessor {
 	 * @param file
 	 * @param serverId
 	 * @param capabilitesPredicate a predicate to check capabilities
-	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request
+	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request.
+	 *  If {@code capabilitesPredicate} does not test positive for the server's capabilities, {@code null} is returned.
 	 */
 	public static CompletableFuture<LanguageServer> getInitializedLanguageServer(@NonNull IFile file,
 			@NonNull LanguageServerDefinition lsDefinition,
 			Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
 		LanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition, file.getFullPath());
-		if (capabilitiesPredicate == null
-				|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-				|| capabilitiesPredicate.test(wrapper.getServerCapabilities())) {
+		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
 			wrapper.connect(file, null);
 			return wrapper.getInitializedServer();
 		}
 		return null;
+	}
+
+	/**
+	 * Get the requested language server instance for the given document. Starts the
+	 * language server if not already started.
+	 *
+	 * @param document the document for which the initialized LanguageServer shall be returned
+	 * @param serverId the ID of the LanguageServer to be returned
+	 * @param capabilitesPredicate
+	 *            a predicate to check capabilities
+	 * @return a LanguageServer for the given file, which is defined with provided
+	 *         server ID and conforms to specified request. If
+	 *         {@code capabilitesPredicate} does not test positive for the server's
+	 *         capabilities, {@code null} is returned.
+	 */
+	public static CompletableFuture<LanguageServer> getInitializedLanguageServer(@NonNull IDocument document,
+			@NonNull LanguageServerDefinition lsDefinition, Predicate<ServerCapabilities> capabilitiesPredicate)
+			throws IOException {
+		IPath initialPath = LSPEclipseUtils.toPath(document);
+		LanguageServerWrapper wrapper = getLSWrapperForConnection(document, lsDefinition, initialPath);
+		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
+			wrapper.connect(document);
+			return wrapper.getInitializedServer();
+		}
+		return null;
+	}
+
+	/**
+	 * Checks if the given {@code wrapper}'s capabilities comply with the given
+	 * {@code capabilitiesPredicate}.
+	 *
+	 * @param wrapper
+	 *            the server that's capabilities are tested with
+	 *            {@code capabilitiesPredicate}
+	 * @param capabilitiesPredicate
+	 *            predicate testing the capabilities of {@code wrapper}.
+	 * @return The result of applying the capabilities of {@code wrapper} to
+	 *         {@code capabilitiesPredicate}, or {@code false} if
+	 *         {@code capabilitiesPredicate == null} or
+	 *         {@code wrapper.getServerCapabilities() == null}
+	 */
+	private static boolean capabilitiesComply(LanguageServerWrapper wrapper,
+			Predicate<ServerCapabilities> capabilitiesPredicate) {
+		return capabilitiesPredicate == null
+				|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+				|| capabilitiesPredicate.test(wrapper.getServerCapabilities());
 	}
 
 
@@ -276,9 +319,7 @@ public class LanguageServiceAccessor {
 			for (ContentTypeToLanguageServerDefinition mapping : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
 				if (mapping != null && mapping.getValue() != null && mapping.isEnabled()) {
 					LanguageServerWrapper wrapper = getLSWrapperForConnection(project, mapping.getValue(), file.getFullPath());
-					if (request == null
-						|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-						|| request.test(wrapper.getServerCapabilities())) {
+					if (capabilitiesComply(wrapper, request)) {
 						res.add(wrapper);
 					}
 				}
@@ -378,7 +419,7 @@ public class LanguageServiceAccessor {
 			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
 		LanguageServerWrapper wrapper = null;
 
-		synchronized(startedServers) {
+		synchronized (startedServers) {
 			for (LanguageServerWrapper startedWrapper : getStartedLSWrappers(project)) {
 				if (startedWrapper.serverDefinition.equals(serverDefinition)) {
 					wrapper = startedWrapper;
@@ -396,11 +437,49 @@ public class LanguageServiceAccessor {
 		return wrapper;
 	}
 
+	private static LanguageServerWrapper getLSWrapperForConnection(@NonNull IDocument document,
+			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
+		LanguageServerWrapper wrapper = null;
+
+		synchronized (startedServers) {
+			for (LanguageServerWrapper startedWrapper : getStartedLSWrappers(document)) {
+				if (startedWrapper.serverDefinition.equals(serverDefinition)) {
+					wrapper = startedWrapper;
+					break;
+				}
+			}
+			if (wrapper == null) {
+				wrapper = new LanguageServerWrapper(serverDefinition, initialPath);
+				wrapper.start();
+			}
+
+			startedServers.add(wrapper);
+		}
+		return wrapper;
+	}
+
+	/**
+	 * Interface to be used for passing lambdas to {@link LanguageServiceAccessor#addStartedServerSynchronized(ServerSupplier)}.
+	 */
+	@FunctionalInterface
+	private static interface ServerSupplier {
+		LanguageServerWrapper get() throws IOException;
+	}
+
 	private static @NonNull List<LanguageServerWrapper> getStartedLSWrappers(
 			@NonNull IProject project) {
-		return startedServers.stream().filter(wrapper -> wrapper.canOperate(project))
+		return getStartedLSWrappers(wrapper -> wrapper.canOperate(project));
+	}
+
+	private static @NonNull List<LanguageServerWrapper> getStartedLSWrappers(
+			@NonNull IDocument document) {
+		return getStartedLSWrappers(wrapper -> wrapper.canOperate(document));
+	}
+
+	private static  @NonNull List<LanguageServerWrapper> getStartedLSWrappers(@NonNull Predicate<LanguageServerWrapper> predicate) {
+		return startedServers.stream().filter(predicate)
 				.collect(Collectors.toList());
-		// TODO multi-root: also return servers which support multi-root?
+			// TODO multi-root: also return servers which support multi-root?
 	}
 
 	private static Collection<LanguageServerWrapper> getMatchingStartedWrappers(@NonNull IFile file,
@@ -459,9 +538,7 @@ public class LanguageServiceAccessor {
 				if (server == null) {
 					continue;
 				}
-				if (request == null
-					|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
-					|| request.test(wrapper.getServerCapabilities())) {
+				if (capabilitiesComply(wrapper, request)) {
 					serverInfos.add(server);
 				}
 			}
@@ -534,5 +611,11 @@ public class LanguageServiceAccessor {
 	public static boolean checkCapability(LanguageServer languageServer, Predicate<ServerCapabilities> condition) {
 		return startedServers.stream().filter(wrapper -> wrapper.isActive() && wrapper.getServer() == languageServer)
 				.anyMatch(wrapper -> condition.test(wrapper.getServerCapabilities()));
+	}
+
+	public static Optional<LanguageServerDefinition> resolveServerDefinition(LanguageServer languageServer) {
+		synchronized (startedServers) {
+			return startedServers.stream().filter(wrapper -> languageServer.equals(wrapper.getServer())).findFirst().map(wrapper -> wrapper.serverDefinition);
+		}
 	}
 }
