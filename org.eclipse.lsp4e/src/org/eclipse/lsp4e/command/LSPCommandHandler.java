@@ -15,6 +15,7 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.eclipse.ui.handlers.IHandlerService;
@@ -29,24 +30,36 @@ import org.eclipse.ui.handlers.IHandlerService;
  * </br>
  * This class is a shortcut for implementing an {@link IHandler} and in the
  * {@link IHandler#execute(ExecutionEvent)} method get the Command by calling:
- * {@code (Command)event.getObjectParameterForExecution(LSPCommandHandler.LSP_COMMAND_PARAMETER_ID)}.
+ * {@code (Command)event.getObjectParameterForExecution(LSPCommandHandler.LSP_COMMAND_PARAMETER_ID)} and
+ * {@code (IPath)event.getObjectParameterForExecution(LSPCommandHandler.LSP_PATH_PARAMETER_ID)}.
  */
 public abstract class LSPCommandHandler extends AbstractHandler {
 
 	/**
 	 * ID of the {@link Command} parameter in a handled {@link ExecutionEvent}. Can
-	 * be used to access a CodeLens via
+	 * be used to access a Command via
 	 * {@link ExecutionEvent#getObjectParameterForExecution(String)}.
 	 */
 	public static final String LSP_COMMAND_PARAMETER_ID = "org.eclipse.lsp4e.command.param"; //$NON-NLS-1$
 
+	/**
+	 * ID of the {@link IPath} parameter in a handled {@linkplain ExecutionEvent}.
+	 * Can be used to access the
+	 * {@link ExecutionEvent#getObjectParameterForExecution(String)}.
+	 */
+	public static final String LSP_PATH_PARAMETER_ID = "org.eclipse.lsp4e.path.param"; //$NON-NLS-1$
+
 	@Override
 	public final Object execute(ExecutionEvent event) throws ExecutionException {
 		Command command = (Command) event.getObjectParameterForExecution(LSP_COMMAND_PARAMETER_ID);
-		if(command == null) {
+		if (command == null) {
 			return null;
 		}
-		return execute(event, command);
+		IPath path = (IPath) event.getObjectParameterForExecution(LSP_PATH_PARAMETER_ID);
+		if (path == null) {
+			return null;
+		}
+		return execute(event, command, path);
 	}
 
 	/**
@@ -57,9 +70,14 @@ public abstract class LSPCommandHandler extends AbstractHandler {
 	 *            the application; must not be null.
 	 * @param command
 	 *            The Command to be executed on client side.
+	 * @param path
+	 *            The path to a resource that is the context for the command to be
+	 *            executed. This can either be a resource in the workspace or a file
+	 *            system path.
 	 * @return The result of the execution. Reserved for future use, must be null.
 	 * @throws ExecutionException
 	 *             if an exception occurred during execution.
 	 */
-	public abstract Object execute(ExecutionEvent event, @NonNull Command command) throws ExecutionException;
+	public abstract Object execute(ExecutionEvent event, @NonNull Command command, IPath path)
+			throws ExecutionException;
 }

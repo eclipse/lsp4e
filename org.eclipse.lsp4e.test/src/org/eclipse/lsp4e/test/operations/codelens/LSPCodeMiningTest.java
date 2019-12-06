@@ -25,6 +25,7 @@ import org.eclipse.core.commands.IHandler;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry;
@@ -77,12 +78,14 @@ public class LSPCodeMiningTest {
 		final CodeLens lens = createCodeLens(commandID);
 
 		final AtomicReference<Command> actualCommand = new AtomicReference<>(null);
+		final AtomicReference<IPath> actualPath = new AtomicReference<>(null);
 
 		// Create and register handler
 		IHandler handler = new LSPCommandHandler() {
 			@Override
-			public Object execute(ExecutionEvent event, Command command) throws ExecutionException {
+			public Object execute(ExecutionEvent event, Command command, IPath context) throws ExecutionException {
 				actualCommand.set(command);
+				actualPath.set(context);
 				return null;
 			}
 		};
@@ -101,6 +104,7 @@ public class LSPCodeMiningTest {
 		sut.getAction().accept(mouseEvent);
 
 		assertEquals(lens.getCommand(), actualCommand.get());
+		assertEquals(file.getFullPath(), actualPath.get());
 	}
 
 	@Test

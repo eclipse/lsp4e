@@ -9,6 +9,7 @@
 package org.eclipse.lsp4e.command.internal;
 
 import static org.eclipse.lsp4e.command.LSPCommandHandler.LSP_COMMAND_PARAMETER_ID;
+import static org.eclipse.lsp4e.command.LSPCommandHandler.LSP_PATH_PARAMETER_ID;
 
 import java.io.IOException;
 import java.net.URI;
@@ -29,6 +30,7 @@ import org.eclipse.core.commands.ParameterType;
 import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
@@ -61,6 +63,7 @@ public class CommandExecutor {
 
 	private static final String LSP_COMMAND_CATEGORY_ID = "org.eclipse.lsp4e.commandCategory"; //$NON-NLS-1$
 	private static final String LSP_COMMAND_PARAMETER_TYPE_ID = "org.eclipse.lsp4e.commandParameterType"; //$NON-NLS-1$
+	private static final String LSP_PATH_PARAMETER_TYPE_ID = "org.eclipse.lsp4e.pathParameterType"; //$NON-NLS-1$
 
 	/**
 	 * Will execute the given {@code command} either on a language server,
@@ -147,7 +150,8 @@ public class CommandExecutor {
 		if (workbench == null) {
 			return false;
 		}
-		ParameterizedCommand parameterizedCommand = createEclipseCoreCommand(command, workbench);
+		IPath context = LSPEclipseUtils.toPath(document);
+		ParameterizedCommand parameterizedCommand = createEclipseCoreCommand(command, context, workbench);
 		if (parameterizedCommand == null) {
 			return false;
 		}
@@ -167,7 +171,7 @@ public class CommandExecutor {
 		return true;
 	}
 
-	private static ParameterizedCommand createEclipseCoreCommand(@NonNull Command command,
+	private static ParameterizedCommand createEclipseCoreCommand(@NonNull Command command, IPath context,
 			@NonNull IWorkbench workbench) {
 		// Usually commands are defined via extension point, but we synthesize one on
 		// the fly for the command ID, since we do not want downstream users
@@ -177,15 +181,18 @@ public class CommandExecutor {
 		ICommandService commandService = workbench.getService(ICommandService.class);
 		org.eclipse.core.commands.Command coreCommand = commandService.getCommand(commandId);
 		if (!coreCommand.isDefined()) {
-			ParameterType paramType = commandService.getParameterType(LSP_COMMAND_PARAMETER_TYPE_ID);
+			ParameterType commandParamType = commandService.getParameterType(LSP_COMMAND_PARAMETER_TYPE_ID);
+			ParameterType pathParamType = commandService.getParameterType(LSP_PATH_PARAMETER_TYPE_ID);
 			Category category = commandService.getCategory(LSP_COMMAND_CATEGORY_ID);
 			IParameter[] parameters = {
-					new CommandEventParameter(paramType, command.getTitle(), LSP_COMMAND_PARAMETER_ID) };
+					new CommandEventParameter(commandParamType, command.getTitle(), LSP_COMMAND_PARAMETER_ID),
+					new CommandEventParameter(pathParamType, command.getTitle(), LSP_PATH_PARAMETER_ID)};
 			coreCommand.define(commandId, null, category, parameters);
 		}
 
 		Map<Object, Object> parameters = new HashMap<>();
 		parameters.put(LSP_COMMAND_PARAMETER_ID, command);
+		parameters.put(LSP_PATH_PARAMETER_ID, context);
 		ParameterizedCommand parameterizedCommand = ParameterizedCommand.generateCommand(coreCommand, parameters);
 		return parameterizedCommand;
 	}

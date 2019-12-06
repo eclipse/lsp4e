@@ -532,9 +532,14 @@
             id="org.eclipse.lsp4e.commandParameterType"
             type="org.eclipse.lsp4j.Command">
       </commandParameterType>
+      <commandParameterType
+            converter="org.eclipse.lsp4e.command.internal.PathConverter"
+            id="org.eclipse.lsp4e.pathParameterType"
+            type="org.eclipse.core.runtime.IPath">
+      </commandParameterType>
       <category
             id="org.eclipse.lsp4e.commandCategory"
-            name="CodeLens">
+            name="Command">
       </category>
    </extension>
 </plugin>
