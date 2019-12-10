@@ -279,7 +279,9 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 	@Override
 	public void dispose() {
-		outlineUpdater.uninstall();
+		if(outlineUpdater != null) {
+			outlineUpdater.uninstall();
+		}
 		ICommonContentProvider.super.dispose();
 	}
 
