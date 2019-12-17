@@ -21,6 +21,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeListener;
+import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
@@ -65,12 +66,15 @@ public class SymbolsLabelProvider extends LabelProvider
 	private Map<IResource, RangeMap<Integer, Integer>> severities = new HashMap<>();
 	private final IResourceChangeListener listener = e -> {
 		try {
-			e.getDelta().accept(d ->  {
-				if (d.getMarkerDeltas().length > 0) {
-					severities.remove(d.getResource());
-				}
-				return true;
-			});
+			IResourceDelta delta = e.getDelta();
+			if (delta != null) {
+				delta.accept(d -> {
+					if (d.getMarkerDeltas().length > 0) {
+						severities.remove(d.getResource());
+					}
+					return true;
+				});
+			}
 		} catch (CoreException ex) {
 			LanguageServerPlugin.logError(ex);
 		}
