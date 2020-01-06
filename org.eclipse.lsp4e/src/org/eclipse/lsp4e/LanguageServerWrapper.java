@@ -831,7 +831,11 @@ public class LanguageServerWrapper {
 	}
 
 	public boolean canOperate(@NonNull IDocument document) {
-		if (this.isConnectedTo(new Path(LSPEclipseUtils.toUri(document).getPath()))) {
+		URI documentUri = LSPEclipseUtils.toUri(document);
+		if (documentUri == null) {
+			return false;
+		}
+		if (this.isConnectedTo(new Path(documentUri.getPath()))) {
 			return true;
 		}
 		if (this.initialProject == null && this.connectedDocuments.isEmpty()) {
