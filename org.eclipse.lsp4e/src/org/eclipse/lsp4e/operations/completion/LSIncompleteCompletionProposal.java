@@ -11,6 +11,7 @@
  *   Michał Niewrzał (Rogue Wave Software Inc.)
  *   Lucas Bullen (Red Hat Inc.) - Refactored for incomplete completion lists
  *                               - [Bug 517428] Requests sent before initialization
+ *   Max Bureck (Fraunhofer FOKUS) - [Bug 536089] Execute the CompletionItem.command given after applying the completion
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.completion;
 
@@ -55,8 +56,10 @@ import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.command.internal.CommandExecutor;
 import org.eclipse.lsp4e.operations.hover.LSPTextHover;
 import org.eclipse.lsp4e.ui.LSPImages;
+import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.Position;
@@ -548,6 +551,15 @@ public class LSIncompleteCompletionProposal
 			} else {
 				selection = new Region(insertionOffset + textEdit.getNewText().length(), 0);
 			}
+
+			LanguageServiceAccessor.resolveServerDefinition(languageServer).map(definition -> definition.id)
+					.ifPresent(id -> {
+						Command command = item.getCommand();
+						if (command == null) {
+							return;
+						}
+						CommandExecutor.executeCommand(command, document, id);
+					});
 		} catch (BadLocationException ex) {
 			LanguageServerPlugin.logError(ex);
 		}

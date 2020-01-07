@@ -8,6 +8,7 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Max Bureck (Fraunhofer FOKUS) - added test for executing commands on completions
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
@@ -26,6 +27,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
@@ -43,9 +47,11 @@ import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
@@ -62,6 +68,8 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.junit.Assert;
 import org.junit.Test;
+
+import com.google.gson.JsonPrimitive;
 
 public class CompleteCompletionTest extends AbstractCompletionTest {
 	/*
@@ -135,6 +143,35 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
 		lsCompletionProposal.apply(viewer, '\n', 0, 0);
 		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
+	}
+
+	/*
+	 * This test checks if a Command associated with a completion that is applied will be executed.
+	 * The test will use a Command that shall be handled by the langauge server.
+	 */
+	@Test
+	public void testCommandExecution() throws CoreException, InvocationTargetException, InterruptedException, ExecutionException, TimeoutException {
+		CompletionItem completionItem = createCompletionItem("Bla", CompletionItemKind.Class);
+		String expectedParameter = "command execution parameter";
+		List<Object> commandArguments = Arrays.asList(expectedParameter);
+		completionItem.setCommand(new Command("TestCommand", MockLanguageServer.SUPPORTED_COMMAND_ID, commandArguments));
+
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, Arrays.asList(completionItem)));
+		
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, ""));
+		
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
+		assertEquals(1, proposals.length);
+
+		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
+		lsCompletionProposal.apply(viewer, '\n', 0, 0);
+
+		// Assert command was invoked on langauge server
+		ExecuteCommandParams executedCommand = MockLanguageServer.INSTANCE.getWorkspaceService().getExecutedCommand().get(2, TimeUnit.SECONDS);
+
+		assertEquals(MockLanguageServer.SUPPORTED_COMMAND_ID, executedCommand.getCommand());
+		List<JsonPrimitive> expectedParameterList = Arrays.asList(new JsonPrimitive(expectedParameter));
+		assertEquals(expectedParameterList, executedCommand.getArguments());
 	}
 
 	@Test
