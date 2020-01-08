@@ -12,6 +12,7 @@
  *   Lucas Bullen (Red Hat Inc.) - Refactored for incomplete completion lists
  *                               - [Bug 517428] Requests sent before initialization
  *   Max Bureck (Fraunhofer FOKUS) - [Bug 536089] Execute the CompletionItem.command given after applying the completion
+ *                                 - [Bug 558928] Variables replacement fix for Windows
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.completion;
 
@@ -22,9 +23,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.resource.JFaceResources;
@@ -591,15 +593,16 @@ public class LSIncompleteCompletionProposal
 	private String getVariableValue(String variableName) {
 		switch (variableName) {
 		case TM_FILENAME_BASE:
-			IPath pathBase = Path.fromPortableString(LSPEclipseUtils.toUri(document).getPath()).removeFileExtension();
+			IPath pathBase = LSPEclipseUtils.toPath(document).removeFileExtension();
 			String fileName = pathBase.lastSegment();
 			return fileName != null ? fileName : ""; //$NON-NLS-1$
 		case TM_FILENAME:
-			return Path.fromPortableString(LSPEclipseUtils.toUri(document).getPath()).lastSegment();
+			return LSPEclipseUtils.toPath(document).lastSegment();
 		case TM_FILEPATH:
-			return LSPEclipseUtils.toUri(document).getPath();
+			return getAbsoluteLocation(LSPEclipseUtils.toPath(document));
 		case TM_DIRECTORY:
-			return Path.fromPortableString(LSPEclipseUtils.toUri(document).getPath()).removeLastSegments(1).toString();
+			IPath dirPath = LSPEclipseUtils.toPath(document).removeLastSegments(1);
+			return getAbsoluteLocation(dirPath);
 		case TM_LINE_INDEX:
 			int lineIndex = item.getTextEdit().getRange().getStart().getLine();
 			return Integer.toString(lineIndex);
@@ -632,6 +635,25 @@ public class LSIncompleteCompletionProposal
 		default:
 			return null;
 		}
+	}
+
+	/**
+	 * Returns the absolute OS specific path for the given {@code path}.
+	 * @param path to be turned into an OS specific path
+	 * @return OS specific absolute path representation of argument {@code path}
+	 */
+	private String getAbsoluteLocation(IPath path) {
+		IResource res = ResourcesPlugin.getWorkspace().getRoot().findMember(path);
+		if(res != null) {
+			// On projects getRawLocation() returns null if it is located
+			// in the default location; getLocation(), however, returns the
+			// absolute path in the local file system
+			IPath location = res.getType() == IResource.PROJECT ? res.getLocation() : res.getRawLocation();
+			if(location != null) {
+				return location.toOSString();
+			}
+		}
+		return path.toFile().getAbsolutePath();
 	}
 
 	protected String getInsertText() {

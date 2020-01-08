@@ -54,6 +54,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.participants.ProcessorBasedRefactoring;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -221,9 +222,12 @@ public class RenameTest {
 			if (renameDialogOkPressed.get()) {
 				return;
 			}
-			if (event.widget instanceof Shell && event.widget != ideShell && "Rename".equals(((Shell)event.widget).getText())) {
-				event.widget.getDisplay().asyncExec(() -> pressOk((Shell)event.widget));
-				renameDialogOkPressed.set(true);
+			if(event.widget instanceof Composite) {
+				Shell shell = ((Composite)event.widget).getShell();
+				if(shell != ideShell && "Rename".equals(shell.getText())) {
+					event.widget.getDisplay().asyncExec(() -> pressOk(shell));
+					renameDialogOkPressed.set(true);
+				}
 			}
 		};
 		try {

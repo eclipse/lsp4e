@@ -8,6 +8,7 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Max Bureck (Fraunhofer FOKUS) - Adjustments to variable replacement test
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
@@ -452,11 +453,10 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 		int lineIndex = completionItem.getTextEdit().getRange().getStart().getLine();
 		String fileNameBase = testFile.getFullPath().removeFileExtension().lastSegment();
-		assertEquals(
-				String.format("%s %s %s %s %d %d %s %s%s", fileNameBase, testFile.getName(),
-						testFile.getLocation().toString(), testFile.getParent().getLocation().toString(), lineIndex,
-						lineIndex + 1, "line1", "l", content.substring(1)),
-				viewer.getDocument().get());
+		String filePath = testFile.getRawLocation().toOSString();
+		String fileDir = project.getLocation().toOSString();
+		assertEquals(String.format("%s %s %s %s %d %d %s %s%s", fileNameBase, testFile.getName(), filePath, fileDir,
+				lineIndex, lineIndex + 1, "line1", "l", content.substring(1)), viewer.getDocument().get());
 		// TODO check link edit groups
 	}
 
