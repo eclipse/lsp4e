@@ -61,7 +61,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 	private static final String HEAD = "<head>"; //$NON-NLS-1$
 
 
-	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage());
+	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage(true));
 
 
 	private IRegion lastRegion;
