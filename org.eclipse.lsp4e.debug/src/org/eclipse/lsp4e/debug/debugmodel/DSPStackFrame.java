@@ -140,7 +140,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 			Scope[] scopes = complete(getDebugTarget().getDebugProtocolServer().scopes(arguments)).getScopes();
 			List<DSPVariable> vars = new ArrayList<>();
 			for (Scope scope : scopes) {
-				DSPVariable variable = new DSPVariable(getDebugTarget(), Long.valueOf(-1), scope.getName(), "",
+				DSPVariable variable = new DSPVariable(getDebugTarget(), Integer.valueOf(-1), scope.getName(), "",
 						scope.getVariablesReference());
 				vars.add(variable);
 			}
@@ -166,7 +166,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	@Override
 	public int getLineNumber() throws DebugException {
-		return (int) (long) stackFrame.getLine();
+		return (int) stackFrame.getLine();
 	}
 
 	@Override
@@ -183,7 +183,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 		return stackFrame.getSource().getPath();
 	}
 
-	public Long getFrameId() {
+	public Integer getFrameId() {
 		return stackFrame.getId();
 	}
 
@@ -214,7 +214,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	/**
 	 * Return the stack depth of this frame. The top of the stack is 0.
-	 * 
+	 *
 	 * @return stack depth
 	 */
 	public int getDepth() {
@@ -223,7 +223,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	/**
 	 * Evaluate the given expression in the context of this frame.
-	 * 
+	 *
 	 * @param expression any expression
 	 * @return future with an IVariable that has the result
 	 */

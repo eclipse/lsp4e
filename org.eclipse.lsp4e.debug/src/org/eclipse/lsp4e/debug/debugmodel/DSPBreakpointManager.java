@@ -173,7 +173,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 			List<SourceBreakpoint> sourceBreakpoints = targetBreakpoints.computeIfAbsent(source,
 					s -> new ArrayList<>());
 			SourceBreakpoint sourceBreakpoint = new SourceBreakpoint();
-			sourceBreakpoint.setLine((long) lineNumber);
+			sourceBreakpoint.setLine(lineNumber);
 			sourceBreakpoints.add(sourceBreakpoint);
 		}
 	}
@@ -186,7 +186,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 			IPath location = resource.getLocation();
 			String path = location.toOSString();
 			String name = location.lastSegment();
-			long lineNumber;
+			int lineNumber;
 			try {
 				lineNumber = lineBreakpoint.getLineNumber();
 			} catch (CoreException e) {
@@ -215,7 +215,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 
 			Source source = entry.getKey();
 			List<SourceBreakpoint> bps = entry.getValue();
-			Long[] lines = bps.stream().map(SourceBreakpoint::getLine).toArray(Long[]::new);
+			Integer[] lines = bps.stream().map(SourceBreakpoint::getLine).toArray(Integer[]::new);
 			SourceBreakpoint[] sourceBps = bps.toArray(new SourceBreakpoint[bps.size()]);
 
 			SetBreakpointsArguments arguments = new SetBreakpointsArguments();

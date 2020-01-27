@@ -5,7 +5,7 @@
  * which is available at https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
- * 
+ *
  * Contributors:
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 552451 - Should the DSPProcess be added to the Launch when "attach" is used?
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 553196 - Toolbar & console terminate buttons always enabled even when the DSPDebugTarget is terminated
@@ -107,7 +107,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * accessed and instead accessed via {@link #getThreads()} which will ensure
 	 * they are up to date (against the {@link #refreshThreads} flag).
 	 */
-	private Map<Long, DSPThread> threads = Collections.synchronizedMap(new TreeMap<>());
+	private Map<Integer, DSPThread> threads = Collections.synchronizedMap(new TreeMap<>());
 	/**
 	 * Set to true to update the threads list from the debug adapter.
 	 */
@@ -335,11 +335,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	/**
 	 * This implementation follows the "Debug session end" guidelines in
 	 * https://microsoft.github.io/debug-adapter-protocol/overview:
-	 * 
+	 *
 	 * "When the development tool ends a debug session, the sequence of events is
 	 * slightly different based on whether the session has been initially 'launched'
 	 * or 'attached':
-	 * 
+	 *
 	 * Debuggee launched: if a debug adapter supports the terminate request, the
 	 * development tool uses it to terminate the debuggee gracefully, i.e. it gives
 	 * the debuggee a chance to cleanup everything before terminating. If the
@@ -348,7 +348,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * terminate the debuggee, it will then use the disconnect request to end the
 	 * debug session unconditionally. The disconnect request is expected to
 	 * terminate the debuggee (and any child processes) forcefully.
-	 * 
+	 *
 	 * Debuggee attached: If the debuggee has been 'attached' initially, the
 	 * development tool issues a disconnect request. This should detach the debugger
 	 * from the debuggee but will allow it to continue."
@@ -372,9 +372,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	public void continued(ContinuedEventArguments body) {
 		threadPool.execute(() -> {
 			DSPDebugElement source = null;
-			if (body.getThreadId() != null) {
-				source = getThread(body.getThreadId());
-			}
+			source = getThread(body.getThreadId());
 			if (source == null || body.getAllThreadsContinued() == null || body.getAllThreadsContinued()) {
 				Arrays.asList(getThreads()).forEach(DSPThread::continued);
 			}
@@ -494,7 +492,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			CompletableFuture<ThreadsResponse> threads2 = getDebugProtocolServer().threads();
 			CompletableFuture<DSPThread[]> future = threads2.thenApplyAsync(threadsResponse -> {
 				synchronized (threads) {
-					Map<Long, DSPThread> lastThreads = new TreeMap<>(threads);
+					Map<Integer, DSPThread> lastThreads = new TreeMap<>(threads);
 					threads.clear();
 					Thread[] body = threadsResponse.getThreads();
 					for (Thread thread : body) {
@@ -531,7 +529,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * @param threadId
 	 * @return
 	 */
-	private DSPThread getThread(Long threadId) {
+	private DSPThread getThread(Integer threadId) {
 		return threads.computeIfAbsent(threadId, id -> new DSPThread(this, threadId));
 	}
 

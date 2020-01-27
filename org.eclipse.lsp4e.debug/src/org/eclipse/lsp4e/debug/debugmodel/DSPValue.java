@@ -20,11 +20,11 @@ import org.eclipse.lsp4j.debug.VariablesArguments;
 public final class DSPValue extends DSPDebugElement implements IValue {
 
 	private DSPVariable modelVariable;
-	private Long variablesReference;
+	private Integer variablesReference;
 	private String value;
 	private IVariable[] cachedVariables;
 
-	public DSPValue(DSPVariable variable, Long variablesReference, String value) {
+	public DSPValue(DSPVariable variable, Integer variablesReference, String value) {
 		super(variable.getDebugTarget());
 		this.modelVariable = variable;
 		this.variablesReference = variablesReference;

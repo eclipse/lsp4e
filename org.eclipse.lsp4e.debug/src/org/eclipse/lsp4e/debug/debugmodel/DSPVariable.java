@@ -5,7 +5,7 @@
  * which is available at https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
- * 
+ *
  * Contributors:
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 553139 - NullPointerException if the debug adapter does not support SetVariable
  *******************************************************************************/
@@ -21,12 +21,12 @@ import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
 
 public class DSPVariable extends DSPDebugElement implements IVariable {
 
-	private final Long parentVariablesReference;
+	private final Integer parentVariablesReference;
 	private final String name;
 	private DSPValue dspValue;
 
-	public DSPVariable(DSPDebugTarget debugTarget, Long parentVariablesReference, String name, String value,
-			Long childrenVariablesReference) {
+	public DSPVariable(DSPDebugTarget debugTarget, Integer parentVariablesReference, String name, String value,
+			Integer childrenVariablesReference) {
 		super(debugTarget);
 		this.parentVariablesReference = parentVariablesReference;
 		this.name = name;

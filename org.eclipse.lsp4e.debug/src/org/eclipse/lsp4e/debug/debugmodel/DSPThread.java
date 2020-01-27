@@ -34,7 +34,7 @@ import org.eclipse.lsp4j.debug.StepOutArguments;
 import org.eclipse.lsp4j.debug.Thread;
 
 public class DSPThread extends DSPDebugElement implements IThread {
-	private final Long id;
+	private final Integer id;
 	/**
 	 * The name may not be known, if it is requested we will ask for it from the
 	 * target.
@@ -51,7 +51,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 		this.name = thread.getName();
 	}
 
-	public DSPThread(DSPDebugTarget debugTarget, Long threadId) {
+	public DSPThread(DSPDebugTarget debugTarget, Integer threadId) {
 		super(debugTarget);
 		this.id = threadId;
 	}
@@ -237,8 +237,8 @@ public class DSPThread extends DSPDebugElement implements IThread {
 			StackTraceArguments arguments = new StackTraceArguments();
 			arguments.setThreadId(id);
 			// TODO implement paging to get rest of frames
-			arguments.setStartFrame(0L);
-			arguments.setLevels(20L);
+			arguments.setStartFrame(0);
+			arguments.setLevels(20);
 			CompletableFuture<DSPStackFrame[]> future = getDebugTarget().getDebugProtocolServer().stackTrace(arguments)
 					.thenApply(response -> {
 						synchronized (frames) {
@@ -287,7 +287,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 		return new IBreakpoint[0];
 	}
 
-	public Long getId() {
+	public Integer getId() {
 		return id;
 	}
 
