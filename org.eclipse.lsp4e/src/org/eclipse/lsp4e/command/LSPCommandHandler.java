@@ -16,8 +16,8 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4j.Command;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.eclipse.ui.handlers.IHandlerService;
 
 /**
