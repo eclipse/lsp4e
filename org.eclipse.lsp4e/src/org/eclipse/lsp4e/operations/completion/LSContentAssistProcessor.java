@@ -48,8 +48,8 @@ import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.SignatureHelpOptions;
+import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SignatureInformation;
-import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -202,9 +202,9 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	@Override
 	public IContextInformation[] computeContextInformation(ITextViewer viewer, int offset) {
 		initiateLanguageServers(viewer.getDocument());
-		TextDocumentPositionParams param;
+		SignatureHelpParams param;
 		try {
-			param = LSPEclipseUtils.toTextDocumentPosistionParams(offset, viewer.getDocument());
+			param = LSPEclipseUtils.toSignatureHelpParams(offset, viewer.getDocument());
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 			return new IContextInformation[] { /* TODO? show error in context information */ };

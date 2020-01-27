@@ -77,6 +77,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.RenameFile;
 import org.eclipse.lsp4j.ResourceOperation;
+import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
@@ -203,11 +204,10 @@ public class LSPEclipseUtils {
 		return param;
 	}
 
-	public static TextDocumentPositionParams toTextDocumentPosistionParams(int offset, IDocument document)
+	private static <T extends TextDocumentPositionParams> T toTextDocumentPositionParamsCommon(@NonNull T param,  int offset, IDocument document)
 			throws BadLocationException {
 		URI uri = toUri(document);
 		Position start = toPosition(offset, document);
-		TextDocumentPositionParams param = new TextDocumentPositionParams();
 		param.setPosition(start);
 		TextDocumentIdentifier id = new TextDocumentIdentifier();
 		if (uri != null) {
@@ -216,6 +216,16 @@ public class LSPEclipseUtils {
 		}
 		param.setTextDocument(id);
 		return param;
+	}
+
+	public static SignatureHelpParams toSignatureHelpParams(int offset, IDocument document)
+			throws BadLocationException {
+		return toTextDocumentPositionParamsCommon(new SignatureHelpParams(), offset, document);
+	}
+
+	public static TextDocumentPositionParams toTextDocumentPosistionParams(int offset, IDocument document)
+			throws BadLocationException {
+		return toTextDocumentPositionParamsCommon(new TextDocumentPositionParams(), offset, document);
 	}
 
 	public static URI toUri(IDocument document) {

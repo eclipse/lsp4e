@@ -55,6 +55,7 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ReferenceParams;
 import org.eclipse.lsp4j.RenameParams;
 import org.eclipse.lsp4j.SignatureHelp;
+import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.TextEdit;
@@ -120,7 +121,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<SignatureHelp> signatureHelp(TextDocumentPositionParams position) {
+	public CompletableFuture<SignatureHelp> signatureHelp(SignatureHelpParams position) {
 		return CompletableFuture.completedFuture(mockSignatureHelp);
 	}
 

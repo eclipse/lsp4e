@@ -102,6 +102,7 @@ import org.eclipse.lsp4j.TypeDefinitionCapabilities;
 import org.eclipse.lsp4j.UnregistrationParams;
 import org.eclipse.lsp4j.WorkspaceClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceEditCapabilities;
+import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
@@ -496,7 +497,8 @@ public class LanguageServerWrapper {
 		// TODO? disconnect resources?
 		if (supportsWorkspaceFolderCapability()) {
 			WorkspaceFoldersChangeEvent event = new WorkspaceFoldersChangeEvent();
-			event.getRemoved().add(LSPEclipseUtils.toWorkspaceFolder(project));
+			WorkspaceFolder workspaceFolder = LSPEclipseUtils.toWorkspaceFolder(project);
+			event.getRemoved().add(workspaceFolder);
 			DidChangeWorkspaceFoldersParams params = new DidChangeWorkspaceFoldersParams();
 			params.setEvent(event);
 			this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(params);
