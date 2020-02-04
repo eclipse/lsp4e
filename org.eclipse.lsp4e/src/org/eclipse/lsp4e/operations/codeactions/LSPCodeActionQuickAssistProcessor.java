@@ -145,18 +145,18 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 
 		// Get the codeActions
 		CodeActionParams params = prepareCodeActionParams(this.infos);
+		List<CompletableFuture<Void>> futures = Collections.emptyList();
 		try {
 			// Prevent infinite recursion by only computing proposals if there aren't any
 			if (proposals.contains(COMPUTING) || proposals.isEmpty()) {
 				proposals.clear();
-				List<CompletableFuture<Void>> futures = infos.stream()
+				futures = infos.stream()
 						.map(info -> info.getInitializedLanguageClient()
 								.thenComposeAsync(ls -> ls.getTextDocumentService().codeAction(params)
 										.thenAcceptAsync(actions -> actions.stream().filter(Objects::nonNull)
 												.map(action -> new CodeActionCompletionProposal(action, info))
-												.forEach(proposals::add)))
-								.whenCompleteAsync((a, b) -> refreshProposals(invocationContext)))
-						.collect(Collectors.toList());
+												.forEach(proposals::add))))
+								.collect(Collectors.toList());
 
 				CompletableFuture<?> aggregateFutures = CompletableFuture
 						.allOf(futures.toArray(new CompletableFuture[futures.size()]));
@@ -165,6 +165,9 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		} catch (InterruptedException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (TimeoutException e) {
+			for (CompletableFuture<Void> future : futures) {
+				future.whenComplete((r, t) -> this.refreshProposals(invocationContext));
+			}
 			proposals.add(COMPUTING);
 		}
 
