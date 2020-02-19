@@ -1,3 +1,4 @@
 target/
 .settings/de.loskutov.anyedit.AnyEditTools.prefs
-.polyglot.build.properties
+.polyglot.*
+.META-INF_MANIFEST.MF
