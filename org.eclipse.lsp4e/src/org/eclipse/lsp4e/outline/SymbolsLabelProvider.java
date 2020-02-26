@@ -193,6 +193,9 @@ public class SymbolsLabelProvider extends LabelProvider
 			.forEach(marker -> {
 				int start = marker.getAttribute(IMarker.CHAR_START, -1);
 				int end = marker.getAttribute(IMarker.CHAR_END, -1);
+				if (end < start) {
+					end = start;
+				}
 				int severity = marker.getAttribute(IMarker.SEVERITY, -1);
 				if (start != end) {
 					com.google.common.collect.Range<Integer> markerRange = com.google.common.collect.Range.closed(start,end - 1);
