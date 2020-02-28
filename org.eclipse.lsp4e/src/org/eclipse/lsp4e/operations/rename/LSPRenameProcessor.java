@@ -30,13 +30,13 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4j.PrepareRenameParams;
 import org.eclipse.lsp4j.PrepareRenameResult;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.RenameOptions;
 import org.eclipse.lsp4j.RenameParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
-import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -106,7 +106,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 				// check if prepareRename is supported by the active LSP
 				if (languageServer.equals(serverToTry)) {
 					TextDocumentIdentifier identifier = new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString());
-					TextDocumentPositionParams params = new TextDocumentPositionParams();
+					PrepareRenameParams params = new PrepareRenameParams();
 					params.setTextDocument(identifier);
 					params.setPosition(LSPEclipseUtils.toPosition(offset, document));
 					prepareRenameResult = languageServer.getTextDocumentService().prepareRename(params).get(1000, TimeUnit.MILLISECONDS);

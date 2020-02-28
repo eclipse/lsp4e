@@ -72,12 +72,12 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 				LanguageServiceAccessor
 					.getLanguageServers(textViewer.getDocument(), capabilities -> Boolean.TRUE.equals(capabilities.getDefinitionProvider()))
 					.thenAcceptAsync(languageServers ->
-						languageServers.stream().map(ls -> ls.getTextDocumentService().definition(params)).forEach(allFutures::add)
+						languageServers.stream().map(ls -> ls.getTextDocumentService().definition(LSPEclipseUtils.toDefinitionParams(params))).forEach(allFutures::add)
 					),
 				LanguageServiceAccessor
 					.getLanguageServers(textViewer.getDocument(), OpenDeclarationHyperlinkDetector::isTypeDefinitionProvider)
 					.thenAcceptAsync(languageServers ->
-						languageServers.stream().map(ls -> ls.getTextDocumentService().typeDefinition(params)).forEach(allFutures::add)
+						languageServers.stream().map(ls -> ls.getTextDocumentService().typeDefinition(LSPEclipseUtils.toTypeDefinitionParams(params))).forEach(allFutures::add)
 					)
 			).thenCompose(theVoid ->
 				CompletableFuture.allOf(allFutures.stream().map(future ->

@@ -50,9 +50,9 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentHighlightKind;
+import org.eclipse.lsp4j.DocumentHighlightParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
-import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.swt.custom.StyledText;
 
 /**
@@ -198,7 +198,7 @@ public class HighlightReconcilingStrategy
 			return;
 		}
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri.toString());
-		TextDocumentPositionParams params = new TextDocumentPositionParams(identifier, position);
+		DocumentHighlightParams params = new DocumentHighlightParams(identifier, position);
 		request = LanguageServiceAccessor.getLanguageServers(document,
 				capabilities -> Boolean.TRUE.equals(capabilities.getDocumentHighlightProvider()))
 				.thenAcceptAsync(languageServers ->

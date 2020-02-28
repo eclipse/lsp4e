@@ -31,6 +31,7 @@ import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionParams;
+import org.eclipse.lsp4j.DefinitionParams;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
@@ -39,6 +40,7 @@ import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.DocumentColorParams;
 import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.DocumentHighlight;
+import org.eclipse.lsp4j.DocumentHighlightParams;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
 import org.eclipse.lsp4j.DocumentOnTypeFormattingParams;
@@ -46,9 +48,11 @@ import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.Hover;
+import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.PrepareRenameParams;
 import org.eclipse.lsp4j.PrepareRenameResult;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
@@ -57,8 +61,8 @@ import org.eclipse.lsp4j.RenameParams;
 import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SymbolInformation;
-import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.TypeDefinitionParams;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageClient;
@@ -116,7 +120,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<Hover> hover(TextDocumentPositionParams position) {
+	public CompletableFuture<Hover> hover(HoverParams position) {
 		return CompletableFuture.completedFuture(mockHover);
 	}
 
@@ -127,7 +131,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>> definition(
-			TextDocumentPositionParams position) {
+			DefinitionParams position) {
 		return CompletableFuture.completedFuture(Either.forLeft(mockDefinitionLocations));
 	}
 
@@ -137,7 +141,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(TextDocumentPositionParams position) {
+	public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(DocumentHighlightParams position) {
 		return CompletableFuture.completedFuture(mockDocumentHighlights);
 	}
 
@@ -196,7 +200,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<Either<Range, PrepareRenameResult>> prepareRename(TextDocumentPositionParams params) {
+	public CompletableFuture<Either<Range, PrepareRenameResult>> prepareRename(PrepareRenameParams params) {
 		if (this.mockPrepareRenameResult == null) {
 			return CompletableFuture.completedFuture(null);
 		} else {
@@ -247,7 +251,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>> typeDefinition(
-			TextDocumentPositionParams position) {
+			TypeDefinitionParams position) {
 		return CompletableFuture.completedFuture(Either.forRight(this.mockTypeDefinitions));
 	}
 

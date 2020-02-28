@@ -68,8 +68,10 @@ import org.eclipse.lsp4e.refactoring.LSPTextChange;
 import org.eclipse.lsp4j.Color;
 import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.CreateFile;
+import org.eclipse.lsp4j.DefinitionParams;
 import org.eclipse.lsp4j.DeleteFile;
 import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.MarkupContent;
@@ -82,6 +84,7 @@ import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.TypeDefinitionParams;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.WorkspaceFolder;
@@ -218,6 +221,10 @@ public class LSPEclipseUtils {
 		return param;
 	}
 
+	public static HoverParams toHoverParams(int offset, IDocument document) throws BadLocationException {
+		return toTextDocumentPositionParamsCommon(new HoverParams(), offset, document);
+	}
+
 	public static SignatureHelpParams toSignatureHelpParams(int offset, IDocument document)
 			throws BadLocationException {
 		return toTextDocumentPositionParamsCommon(new SignatureHelpParams(), offset, document);
@@ -226,6 +233,32 @@ public class LSPEclipseUtils {
 	public static TextDocumentPositionParams toTextDocumentPosistionParams(int offset, IDocument document)
 			throws BadLocationException {
 		return toTextDocumentPositionParamsCommon(new TextDocumentPositionParams(), offset, document);
+	}
+
+	public static DefinitionParams toDefinitionParams(TextDocumentPositionParams params) {
+		return toTextDocumentPositionParamsCommon(new DefinitionParams(), params);
+	}
+
+	public static TypeDefinitionParams toTypeDefinitionParams(TextDocumentPositionParams params) {
+		return toTextDocumentPositionParamsCommon(new TypeDefinitionParams(), params);
+	}
+
+	/**
+	 * Convert generic TextDocumentPositionParams to type specific version. Should
+	 * only be used for T where T adds no new fields.
+	 */
+	private static <T extends TextDocumentPositionParams> T toTextDocumentPositionParamsCommon(
+			@NonNull T specificParams, TextDocumentPositionParams genericParams) {
+		if (genericParams.getPosition() != null) {
+			specificParams.setPosition(genericParams.getPosition());
+		}
+		if (genericParams.getTextDocument() != null) {
+			specificParams.setTextDocument(genericParams.getTextDocument());
+		}
+		if (genericParams.getUri() != null) {
+			specificParams.setUri(genericParams.getUri());
+		}
+		return specificParams;
 	}
 
 	public static URI toUri(IDocument document) {
