@@ -214,10 +214,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			contextInformationLanguageServersFuture
 					.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
 							.map(languageServer -> languageServer.getTextDocumentService().signatureHelp(param))
-							.map(signatureHelpFuture -> signatureHelpFuture.thenAcceptAsync(signatureHelp -> signatureHelp
-									.getSignatures().stream().map(LSContentAssistProcessor::toContextInformation)
-									.forEach(contextInformations::add)))
-							.toArray(CompletableFuture[]::new)))
+							.map(signatureHelpFuture -> signatureHelpFuture.thenAcceptAsync(signatureHelp -> {
+								if (signatureHelp != null) {
+									signatureHelp.getSignatures().stream().map(LSContentAssistProcessor::toContextInformation)
+										.forEach(contextInformations::add);
+								}
+							})).toArray(CompletableFuture[]::new)))
 					.get(CONTEXT_INFORMATION_TIMEOUT, TimeUnit.MILLISECONDS);
 		} catch (ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
