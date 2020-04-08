@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+
+   <extension
+         id="ls-based-java-completion-computer"
+         name="%lsCompletionComputer_name"
+         point="org.eclipse.jdt.ui.javaCompletionProposalComputer">
+      <javaCompletionProposalComputer
+            activate="true"
+            categoryId="org.eclipse.lsp4e.jdt.ls-based-java-completion-computer"
+            class="org.eclipse.lsp4e.jdt.LSJavaCompletionProposalComputer"
+            needsSortingAfterFiltering="false"
+            requiresUIThread="false">
+      </javaCompletionProposalComputer>
+   </extension>
+   
+   <extension
+         id="ls-based-java-hover-provider"
+         point="org.eclipse.jdt.ui.javaEditorTextHovers">
+      <hover
+            activate="true"
+            class="org.eclipse.lsp4e.jdt.LSJavaHoverProvider"
+            id="org.eclipse.lsp4e.jdt.hoverprovider">
+      </hover>
+   </extension>
+   
+   <extension
+         point="org.eclipse.core.filebuffers.documentSetup">
+      <participant
+            class="org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant"
+            contentTypeId="org.eclipse.jdt.core.javaSource">
+      </participant>
+   </extension>
+
+</plugin>
