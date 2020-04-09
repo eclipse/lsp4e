@@ -20,6 +20,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -48,6 +49,20 @@ public class SymbolsModel {
 		public DocumentSymbolWithFile(DocumentSymbol symbol, @NonNull IFile file) {
 			this.symbol = symbol;
 			this.file = file;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (!(obj instanceof DocumentSymbolWithFile)) {
+				return false;
+			}
+			DocumentSymbolWithFile other = (DocumentSymbolWithFile)obj;
+			return Objects.equals(this.symbol, other.symbol) && Objects.equals(this.file, other.file);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(this.file, this.symbol);
 		}
 	}
 
@@ -157,6 +172,12 @@ public class SymbolsModel {
 			return result.isPresent() ? result.get() : null;
 		} else if (element instanceof DocumentSymbol) {
 			return parent.get(element);
+		} else if (element instanceof DocumentSymbolWithFile) {
+			DocumentSymbol parentSymbol = parent.get(element);
+			final IFile theFile = this.file;
+			if (parentSymbol != null && theFile != null) {
+				return new DocumentSymbolWithFile(parentSymbol, theFile);
+			}
 		}
 		return null;
 	}

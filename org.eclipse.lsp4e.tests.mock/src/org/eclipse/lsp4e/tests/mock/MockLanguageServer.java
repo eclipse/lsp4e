@@ -37,6 +37,7 @@ import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkOptions;
+import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
@@ -255,6 +256,10 @@ public final class MockLanguageServer implements LanguageServer {
 
 	public List<LanguageClient> getRemoteProxies() {
 		return remoteProxies;
+	}
+
+	public void setDocumentSymbols(DocumentSymbol documentSymbol) {
+		this.textDocumentService.setDocumentSymbols(Collections.singletonList(documentSymbol));
 	}
 
 }

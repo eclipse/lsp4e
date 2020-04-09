@@ -33,6 +33,7 @@ import org.eclipse.lsp4e.test.highlight.HighlightTest;
 import org.eclipse.lsp4e.test.hover.HoverTest;
 import org.eclipse.lsp4e.test.operations.codelens.LSPCodeMiningTest;
 import org.eclipse.lsp4e.test.outline.EditorToOutlineAdapterFactoryTest;
+import org.eclipse.lsp4e.test.outline.OutlineContentTest;
 import org.eclipse.lsp4e.test.outline.SymbolsLabelProviderTest;
 import org.eclipse.lsp4e.test.references.FindReferencesTest;
 import org.eclipse.lsp4e.test.rename.LSPTextChangeTest;
@@ -71,6 +72,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	RenameTest.class,
 	SymbolsLabelProviderTest.class,
 	EditorToOutlineAdapterFactoryTest.class,
+	OutlineContentTest.class,
 	LanguageServerWrapperTest.class,
 	ColorTest.class,
 	LSPCodeMiningTest.class

@@ -12,6 +12,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -30,7 +33,7 @@ import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
-import org.eclipse.jface.viewers.StructuredSelection;
+import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -190,41 +193,56 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	public static void refreshTreeSelection(TreeViewer viewer, int offset, IDocument document) {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) viewer.getContentProvider();
 		Object[] objects = contentProvider.getElements(null);
-		SymbolInformation bestSymbol = null;
-		int level = 0;
+		List<Object> path = new ArrayList<>();
 		while (objects != null && objects.length > 0) {
-			SymbolInformation nextChild = null;
-			for (Object object : objects) {
-				SymbolInformation symbol = object instanceof SymbolInformation ? (SymbolInformation) object
-						: Adapters.adapt(object, SymbolInformation.class);
-				if (symbol != null && isOffsetInSymbolRange(offset, symbol, document)) {
-					nextChild = symbol;
-					objects = contentProvider.getChildren(symbol);
+			boolean found = false;
+			for (int index = 0; index < objects.length; index++) {
+				Object object = objects[index];
+				Range range = toRange(object);
+				if (range != null && isOffsetInRange(offset, range, document)) {
+					objects = contentProvider.getChildren(object);
+					path.add(object);
+					found = true;
 					break;
 				}
 			}
-			if (nextChild == null)
-				break;
-			level++;
-			bestSymbol = nextChild;
+			if (!found) {
+				objects = null;
+			}
 		}
-		if (bestSymbol != null) {
-			if (bestSymbol.equals(viewer.getStructuredSelection().getFirstElement())) {
+		if (!path.isEmpty()) {
+			Object bestNode = path.get(path.size() - 1);
+			if (bestNode.equals(viewer.getStructuredSelection().getFirstElement())) {
 				// the symbol to select is the same than current selected symbol, don't select
 				// it.
 				return;
 			}
-			final int finalLevel = level;
-			final SymbolInformation finalBestSymbol = bestSymbol;
 			Display.getDefault().asyncExec(() -> {
-				viewer.expandToLevel(finalLevel);
-				viewer.setSelection(new StructuredSelection(finalBestSymbol), true);
+				TreePath treePath = new TreePath(path.toArray());
+				viewer.reveal(treePath);
+				viewer.setSelection(new TreeSelection(treePath), true);
 			});
 		}
 	}
 
-	private static boolean isOffsetInSymbolRange(int offset, SymbolInformation symbol, IDocument document) {
-		Range range = symbol.getLocation().getRange();
+	@SuppressWarnings("unused")
+	private static Range toRange(Object object) {
+		Range range = null;
+		@Nullable SymbolInformation symbol = object instanceof SymbolInformation ? (SymbolInformation) object
+				: Adapters.adapt(object, SymbolInformation.class);
+		if (symbol != null) {
+			range = symbol.getLocation().getRange();
+		} else {
+			@Nullable DocumentSymbolWithFile documentSymbol = object instanceof DocumentSymbolWithFile ? (DocumentSymbolWithFile) object
+					: Adapters.adapt(object, DocumentSymbolWithFile.class);
+			if (documentSymbol != null) {
+				range = documentSymbol.symbol.getRange();
+			}
+		}
+		return range;
+	}
+
+	private static boolean isOffsetInRange(int offset, Range range, IDocument document) {
 		try {
 			int startOffset = document.getLineOffset(range.getStart().getLine()) + range.getStart().getCharacter();
 			int endOffset = document.getLineOffset(range.getEnd().getLine()) + range.getEnd().getCharacter();

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionParams;
@@ -93,6 +94,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<ColorInformation> mockDocumentColors;
 	private WorkspaceEdit mockRenameEdit;
 	private Either<Range, PrepareRenameResult> mockPrepareRenameResult;
+	private List<DocumentSymbol> documentSymbols;
 
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -148,7 +150,11 @@ public class MockTextDocumentService implements TextDocumentService {
 	@Override
 	public CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> documentSymbol(
 			DocumentSymbolParams params) {
-		return CompletableFuture.completedFuture(null);
+		return CompletableFuture.completedFuture(documentSymbols.stream()
+				.map(symbol -> {
+					Either<SymbolInformation, DocumentSymbol> res = Either.forRight(symbol);
+					return res;
+				}).collect(Collectors.toList()));
 	}
 
 	@Override
@@ -313,6 +319,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.remoteProxies = new ArrayList<LanguageClient>();
 		this.mockCodeActions = new ArrayList<Either<Command, CodeAction>>();
 		this.mockRenameEdit = null;
+		this.documentSymbols = Collections.emptyList();
 	}
 
 	public void setDiagnostics(List<Diagnostic> diagnostics) {
@@ -345,6 +352,10 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void setMockTypeDefinitions(List<? extends LocationLink> mockTypeDefinitions) {
 		this.mockTypeDefinitions = mockTypeDefinitions;
+	}
+
+	public void setDocumentSymbols(List<DocumentSymbol> symbols) {
+		this.documentSymbols = symbols;
 	}
 
 }
