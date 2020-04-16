@@ -226,8 +226,8 @@ public final class MockLanguageServer implements LanguageServer {
 	public void exit() {
 	}
 
-	public void setTimeToProceedQueries(int i) {
-		this.delay = i;
+	public void setTimeToProceedQueries(long l) {
+		this.delay = l;
 	}
 
 	public void setDiagnostics(List<Diagnostic> diagnostics) {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2020 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -10,6 +10,7 @@
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525400 - [rename] improve rename support with ltk UI
  *  Jan Koehnlein (TypeFox) - handle missing existing document gracefully
+ *  Martin Lippert (Pivotal) - Bug 561373 - added async enablement for late language servers
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.rename;
 
@@ -19,6 +20,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.commands.HandlerEvent;
 import org.eclipse.core.commands.IHandler;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -113,12 +115,22 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 		if (document == null) {
 			return false;
 		}
+
 		try {
 			return !LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
-					.get(100, TimeUnit.MILLISECONDS).isEmpty();
+					.get(50, TimeUnit.MILLISECONDS).isEmpty();
 		} catch (java.util.concurrent.ExecutionException | TimeoutException e) {
-			LanguageServerPlugin.logError(e);
+
+			// in case the language servers take longer to kick in, defer the enablement to a later time
+			LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
+					.thenAccept((languageServer) -> {
+						boolean enabled = !languageServer.isEmpty();
+						HandlerEvent handleEvent = new HandlerEvent(this, enabled, false);
+						fireHandlerChanged(handleEvent);
+					});
+
 			return false;
+
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018-2019 Red Hat Inc. and others.
+ * Copyright (c) 2018, 2020 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -9,10 +9,12 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - Added some suites
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 525411 - [rename] input field should be filled with symbol to rename
+ *  Martin Lippert (Pivotal) - Bug 561373 - added async enablement for late language servers
  *******************************************************************************/
 package org.eclipse.lsp4e.test.rename;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -71,7 +73,7 @@ import org.junit.Test;
 public class RenameTest {
 
 	@Rule public AllCleanRule clear = new AllCleanRule();
-
+	
 	@Test
 	public void testRenameHandlerEnablement() throws Exception {
 		IProject project = TestUtils.createProject("blah");
@@ -80,6 +82,27 @@ public class RenameTest {
 		editor.selectAndReveal(1, 0);
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
+		assertTrue(command.isEnabled() && command.isHandled());
+	}
+
+	@Test
+	public void testAsyncRenameHandlerEnablement() throws Exception {
+		long delay = 2000;
+		// this fixed value is not really an optimal solution, since it depends on the following things
+		// to happen within that time frame. Should maybe re-work this in the future towards a more
+		// precise way of steering the execution from the test here
+		
+		MockLanguageServer.INSTANCE.setTimeToProceedQueries(delay);
+		
+		IProject project = TestUtils.createProject("blah");
+		IFile file = TestUtils.createUniqueTestFile(project, "old");
+		ITextEditor editor = (ITextEditor) TestUtils.openEditor(file);
+		editor.selectAndReveal(1, 0);
+		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
+		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
+		assertFalse(command.isEnabled() && command.isHandled());
+		
+		Thread.sleep(delay);
 		assertTrue(command.isEnabled() && command.isHandled());
 	}
 
