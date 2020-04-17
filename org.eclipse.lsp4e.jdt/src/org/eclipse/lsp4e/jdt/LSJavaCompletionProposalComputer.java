@@ -34,7 +34,7 @@ import org.eclipse.swt.graphics.Point;
 public class LSJavaCompletionProposalComputer implements IJavaCompletionProposalComputer {
 	
 	private static TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
-	private static long TIMEOUT_LENGTH = 2000;
+	private static long TIMEOUT_LENGTH = 300;
 
 	private LSContentAssistProcessor lsContentAssistProcessor;
 
