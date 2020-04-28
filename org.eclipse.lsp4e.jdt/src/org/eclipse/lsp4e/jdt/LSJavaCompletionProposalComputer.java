@@ -26,6 +26,7 @@ import org.eclipse.jdt.ui.text.java.IJavaCompletionProposalComputer;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContextInformation;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -37,9 +38,10 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 	private static long TIMEOUT_LENGTH = 300;
 
 	private LSContentAssistProcessor lsContentAssistProcessor;
+	private String javaCompletionSpecificErrorMessage;
 
 	public LSJavaCompletionProposalComputer() {
-		lsContentAssistProcessor = new LSContentAssistProcessor();
+		lsContentAssistProcessor = new LSContentAssistProcessor(false);
 	}
 
 	@Override
@@ -55,10 +57,24 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 		
 		try {
 			return Arrays.asList(asJavaProposals(future));
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
-			e.printStackTrace();
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logError(e);
+			javaCompletionSpecificErrorMessage = createErrorMessage(e);
+			return Collections.emptyList();
+		} catch (ExecutionException e) {
+			LanguageServerPlugin.logError(e);
+			javaCompletionSpecificErrorMessage = createErrorMessage(e);
+			return Collections.emptyList();
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			javaCompletionSpecificErrorMessage = createErrorMessage(e);
+			Thread.currentThread().interrupt();
 			return Collections.emptyList();
 		}
+	}
+
+	private String createErrorMessage(Exception ex) {
+		return Messages.javaSpecificCompletionError + " : " + (ex.getMessage() != null ? ex.getMessage() : ex.toString()); //$NON-NLS-1$
 	}
 
 	/**
@@ -93,10 +109,10 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 		IContextInformation[] contextInformation = lsContentAssistProcessor.computeContextInformation(context.getViewer(), context.getInvocationOffset());
 		return Arrays.asList(contextInformation);
 	}
-
+	
 	@Override
 	public String getErrorMessage() {
-		return lsContentAssistProcessor.getErrorMessage();
+		return javaCompletionSpecificErrorMessage != null ? javaCompletionSpecificErrorMessage : lsContentAssistProcessor.getErrorMessage();
 	}
 
 	@Override

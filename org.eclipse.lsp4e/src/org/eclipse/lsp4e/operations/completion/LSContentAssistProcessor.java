@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2020 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -62,6 +62,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private static final long CONTEXT_INFORMATION_TIMEOUT = 1000;
 	private IDocument currentDocument;
 	private String errorMessage;
+	private boolean errorAsCompletionItem;
 	private CompletableFuture<List<@NonNull LanguageServer>> completionLanguageServersFuture;
 	private final Object completionTriggerCharsSemaphore = new Object();
 	private char[] completionTriggerChars = new char[0];
@@ -70,6 +71,11 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private char[] contextTriggerChars = new char[0];
 
 	public LSContentAssistProcessor() {
+		this(true);
+	}
+
+	public LSContentAssistProcessor(boolean errorAsCompletionItem) {
+		this.errorAsCompletionItem = errorAsCompletionItem;
 	}
 
 	private Comparator<LSCompletionProposal> proposalConparoator = new LSCompletionProposalComparator();
@@ -79,12 +85,15 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		IDocument document = viewer.getDocument();
 		initiateLanguageServers(document);
 		CompletionParams param;
+
 		try {
 			param = LSPEclipseUtils.toCompletionParams(LSPEclipseUtils.toUri(document), offset, document);
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
-			return new ICompletionProposal[] { createErrorProposal(offset, e) };
+			this.errorMessage = createErrorMessage(offset, e);
+			return createErrorProposal(offset, e);
 		}
+
 		List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
 		try {
 			this.completionLanguageServersFuture
@@ -96,12 +105,15 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 					.get();
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
-			return new ICompletionProposal[] { createErrorProposal(offset, e) };
+			this.errorMessage = createErrorMessage(offset, e);
+			return createErrorProposal(offset, e);
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
+			this.errorMessage = createErrorMessage(offset, e);
 			Thread.currentThread().interrupt();
-			return new ICompletionProposal[] { createErrorProposal(offset, e) };
+			return createErrorProposal(offset, e);
 		}
+
 		LSCompletionProposal[] completeProposals = new LSCompletionProposal[proposals.size()];
 		int i = 0;
 		for (ICompletionProposal proposal : proposals) {
@@ -116,8 +128,17 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		return completeProposals;
 	}
 
-	private CompletionProposal createErrorProposal(int offset, Exception ex) {
-		return new CompletionProposal("", offset, 0, 0, null, Messages.completionError, null, ex.getMessage()); //$NON-NLS-1$
+	private ICompletionProposal[] createErrorProposal(int offset, Exception ex) {
+		if (errorAsCompletionItem) {
+			return new ICompletionProposal[] {new CompletionProposal("", offset, 0, 0, null, Messages.completionError, null, ex.getMessage())}; //$NON-NLS-1$
+		}
+		else {
+			return new ICompletionProposal[0];
+		}
+	}
+
+	private String createErrorMessage(int offset, Exception ex) {
+		return Messages.completionError + " : " + ex.getMessage(); //$NON-NLS-1$
 	}
 
 	private void initiateLanguageServers(@NonNull IDocument document) {
