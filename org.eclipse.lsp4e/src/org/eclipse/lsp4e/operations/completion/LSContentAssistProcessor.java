@@ -78,7 +78,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		this.errorAsCompletionItem = errorAsCompletionItem;
 	}
 
-	private Comparator<LSCompletionProposal> proposalConparoator = new LSCompletionProposalComparator();
+	private Comparator<LSCompletionProposal> proposalComparator = new LSCompletionProposalComparator();
 
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
@@ -124,7 +124,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 				return proposals.toArray(new ICompletionProposal[proposals.size()]);
 			}
 		}
-		Arrays.sort(completeProposals, proposalConparoator);
+		Arrays.sort(completeProposals, proposalComparator);
 		return completeProposals;
 	}
 
