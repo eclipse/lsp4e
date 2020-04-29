@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2019 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2020 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -10,6 +10,7 @@
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Michał Niewrzał (Rogue Wave Software Inc.) - hyperlink range detection
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
+ *  Martin Lippert (Pivotal Inc.) - [Bug 561270] labels include more details now
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.declaration;
 
@@ -48,12 +49,12 @@ public class LSBasedHyperlink implements IHyperlink {
 
 	@Override
 	public String getTypeLabel() {
-		return Messages.hyperlinkLabel;
+		return getLabel();
 	}
 
 	@Override
 	public String getHyperlinkText() {
-		return Messages.hyperlinkLabel;
+		return getLabel();
 	}
 
 	/**
@@ -73,6 +74,25 @@ public class LSBasedHyperlink implements IHyperlink {
 		} else {
 			LSPEclipseUtils.openInEditor(location.getRight(), page);
 		}
+	}
+
+	private String getLabel() {
+		if (this.location != null) {
+			String uri = this.location.isLeft() ? this.location.getLeft().getUri() : this.location.getRight().getTargetUri();
+			if (uri != null) {
+				if (uri.startsWith(LSPEclipseUtils.FILE_URI) && uri.length() > LSPEclipseUtils.FILE_URI.length()) {
+					return Messages.hyperlinkLabel + " - " + uri.substring(LSPEclipseUtils.FILE_URI.length()); //$NON-NLS-1$
+				}
+				else if (uri.startsWith(LSPEclipseUtils.INTRO_URL)) {
+					return Messages.hyperlinkLabel;
+				}
+				else if (uri.startsWith(LSPEclipseUtils.HTTP)) {
+					return Messages.hyperlinkLabel + " - " + uri; //$NON-NLS-1$
+				}
+			}
+		}
+
+		return Messages.hyperlinkLabel;
 	}
 
 }

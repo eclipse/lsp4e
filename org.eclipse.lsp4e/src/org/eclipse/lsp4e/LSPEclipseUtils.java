@@ -126,6 +126,10 @@ import org.eclipse.ui.texteditor.ITextEditor;
  */
 public class LSPEclipseUtils {
 
+	public static final String HTTP = "http"; //$NON-NLS-1$
+	public static final String INTRO_URL = "http://org.eclipse.ui.intro"; //$NON-NLS-1$
+	public static final String FILE_URI = "file://"; //$NON-NLS-1$
+
 	private static final String FILE = "file:"; //$NON-NLS-1$
 	private static final String FILE_SLASH = "file:/"; //$NON-NLS-1$
 	private static final String HTML = "html"; //$NON-NLS-1$
@@ -495,9 +499,9 @@ public class LSPEclipseUtils {
 	public static void open(String uri, IWorkbenchPage page, Range optionalRange) {
 		if (uri.startsWith(FILE)) {
 			openFileLocationInEditor(uri, page, optionalRange);
-		} else if (uri.startsWith("http://org.eclipse.ui.intro")) { //$NON-NLS-1$
+		} else if (uri.startsWith(INTRO_URL)) {
 			openIntroURL(uri);
-		} else if (uri.startsWith("http")) { //$NON-NLS-1$
+		} else if (uri.startsWith(HTTP)) {
 			openHttpLocationInBrowser(uri, page);
 		}
 	}
