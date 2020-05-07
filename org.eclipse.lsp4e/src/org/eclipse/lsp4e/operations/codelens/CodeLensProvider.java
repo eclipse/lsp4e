@@ -41,9 +41,14 @@ public class CodeLensProvider extends AbstractCodeMiningProvider {
 					.getLanguageServers(document, capabilities -> capabilities.getCodeLensProvider() != null)
 					.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
 							.map(languageServer -> languageServer.getTextDocumentService().codeLens(param)
-									.thenAcceptAsync(codeLenses ->
-										codeLenses.stream().filter(Objects::nonNull).map(codeLens ->
-											toCodeMining(document, languageServer, codeLens)).filter(Objects::nonNull).forEach(codeLensResults::add)))
+									.thenAcceptAsync(codeLenses -> {
+										// textDocument/codeLens may return null
+										if (codeLenses != null) {
+											codeLenses.stream().filter(Objects::nonNull)
+													.map(codeLens -> toCodeMining(document, languageServer, codeLens))
+													.filter(Objects::nonNull).forEach(codeLensResults::add);
+										}
+									}))
 							.toArray(CompletableFuture[]::new)))
 					.thenApplyAsync(theVoid -> codeLensResults);
 		}

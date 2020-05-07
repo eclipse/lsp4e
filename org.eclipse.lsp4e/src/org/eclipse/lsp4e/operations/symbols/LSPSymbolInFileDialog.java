@@ -71,7 +71,8 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 					return hasChildren(either.getRight());
 				}
 			} else if (element instanceof DocumentSymbol) {
-				return !((DocumentSymbol) element).getChildren().isEmpty();
+				return ((DocumentSymbol) element).getChildren() != null
+						&& !((DocumentSymbol) element).getChildren().isEmpty();
 			}
 			return false;
 		}
