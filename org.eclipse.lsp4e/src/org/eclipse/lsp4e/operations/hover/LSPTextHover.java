@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2020 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -101,11 +101,29 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 		if (textViewer == null || hoverRegion == null) {
 			return null;
 		}
+		CompletableFuture<String> hoverInfoFuture = getHoverInfoFuture(textViewer, hoverRegion);
+		if (hoverInfoFuture != null) {
+			try {
+				String result = hoverInfoFuture.get(500, TimeUnit.MILLISECONDS);
+				if (result != null) {
+					return result;
+				}
+			} catch (ExecutionException | TimeoutException e) {
+				LanguageServerPlugin.logError(e);
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+				Thread.currentThread().interrupt();
+			}
+		}
+		return null;
+	}
+
+	public CompletableFuture<String> getHoverInfoFuture(@NonNull ITextViewer textViewer, @NonNull IRegion hoverRegion) {
 		if (this.request == null || !textViewer.equals(this.lastViewer) || !hoverRegion.equals(this.lastRegion)) {
 			initiateHoverRequest(textViewer, hoverRegion.getOffset());
 		}
-		try {
-			String result = request.get(500, TimeUnit.MILLISECONDS).stream()
+		return request.thenApply(hoversList -> {
+			String result = hoversList.stream()
 				.filter(Objects::nonNull)
 				.map(LSPTextHover::getHoverString)
 				.filter(Objects::nonNull)
@@ -113,14 +131,10 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 				.trim();
 			if (!result.isEmpty()) {
 				return styleHtml(MARKDOWN_PARSER.parseToHtml(result));
+			} else {
+				return null;
 			}
-		} catch (ExecutionException | TimeoutException e) {
-			LanguageServerPlugin.logError(e);
-		} catch (InterruptedException e) {
-			LanguageServerPlugin.logError(e);
-			Thread.currentThread().interrupt();
-		}
-		return null;
+		});
 	}
 
 	protected static @Nullable String getHoverString(@NonNull Hover hover) {
