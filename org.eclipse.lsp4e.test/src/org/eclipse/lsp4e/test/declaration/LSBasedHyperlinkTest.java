@@ -47,7 +47,7 @@ public class LSBasedHyperlinkTest {
 	}
 
 	@Test
-	public void testHyperlinkLabelForIntroBasedLocation() {
+	public void testHyperlinkLabelForIntroBasedLocationWithoutLabel() {
 		Location location = new Location();
 		location.setUri("http://org.eclipse.ui.intro/execute?command=mycommand%28bindingKey%3DLorg%2Ftest%2Fmvctest%2FMyComponent%3B%2CprojectName%3Dmvctest%29");
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null);
@@ -56,12 +56,12 @@ public class LSBasedHyperlinkTest {
 	}
 
 	@Test
-	public void testHyperlinkLabelForIntroBasedLocationLink() {
+	public void testHyperlinkLabelForIntroBasedLocationLinkWithLabel() {
 		LocationLink location = new LocationLink();
-		location.setTargetUri("http://org.eclipse.ui.intro/execute?command=mycommand%28bindingKey%3DLorg%2Ftest%2Fmvctest%2FMyComponent%3B%2CprojectName%3Dmvctest%29");
+		location.setTargetUri("http://org.eclipse.ui.intro/execute?command=org.springframework.tooling.ls.eclipse.commons.commands.OpenJavaElementInEditor%28bindingKey%3DLorg%2Ftest%2Fmvctest%2FMyComponent%3B%2CprojectName%3Dmvctest%29&label=MyComponent+-+org.test.mvctest");
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null);
 		
-		assertEquals("Open Declaration", hyperlink.getHyperlinkText());
+		assertEquals("Open Declaration - MyComponent - org.test.mvctest", hyperlink.getHyperlinkText());
 	}
 
 	@Test

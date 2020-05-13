@@ -17,12 +17,15 @@ package org.eclipse.lsp4e.operations.declaration;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.intro.config.IIntroURL;
+import org.eclipse.ui.intro.config.IntroURLFactory;
 
 public class LSBasedHyperlink implements IHyperlink {
 
@@ -81,18 +84,43 @@ public class LSBasedHyperlink implements IHyperlink {
 			String uri = this.location.isLeft() ? this.location.getLeft().getUri() : this.location.getRight().getTargetUri();
 			if (uri != null) {
 				if (uri.startsWith(LSPEclipseUtils.FILE_URI) && uri.length() > LSPEclipseUtils.FILE_URI.length()) {
-					return Messages.hyperlinkLabel + " - " + uri.substring(LSPEclipseUtils.FILE_URI.length()); //$NON-NLS-1$
+					return getFileBasedLabel(uri);
 				}
 				else if (uri.startsWith(LSPEclipseUtils.INTRO_URL)) {
-					return Messages.hyperlinkLabel;
+					return getIntroUrlBasedLabel(uri);
 				}
 				else if (uri.startsWith(LSPEclipseUtils.HTTP)) {
-					return Messages.hyperlinkLabel + " - " + uri; //$NON-NLS-1$
+					return getHttpBasedLabel(uri);
 				}
 			}
 		}
 
 		return Messages.hyperlinkLabel;
+	}
+
+	private String getIntroUrlBasedLabel(String uri) {
+		try {
+			IIntroURL introUrl = IntroURLFactory.createIntroURL(uri);
+			if (introUrl != null) {
+				String label = introUrl.getParameter("label"); //$NON-NLS-1$
+				if (label != null) {
+					return Messages.hyperlinkLabel + " - " + label; //$NON-NLS-1$
+				}
+			}
+		}
+		catch (Exception e) {
+			LanguageServerPlugin.logError(e.getMessage(), e);
+		}
+
+		return Messages.hyperlinkLabel;
+	}
+
+	private String getHttpBasedLabel(String uri) {
+		return Messages.hyperlinkLabel + " - " + uri; //$NON-NLS-1$
+	}
+
+	private String getFileBasedLabel(String uri) {
+		return Messages.hyperlinkLabel + " - " + uri.substring(LSPEclipseUtils.FILE_URI.length()); //$NON-NLS-1$
 	}
 
 }
