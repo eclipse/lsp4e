@@ -96,6 +96,16 @@
                </appinfo>
             </annotation>
          </attribute>
+         <attribute name="launcherBuilder" type="string">
+            <annotation>
+               <documentation>
+                  An optional launcher builder to override &lt;code&gt;org.eclipse.lsp4j.jsonrpc.Launcher.Builder&lt;/code&gt;.
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="java" basedOn="org.eclipse.lsp4j.jsonrpc.Launcher$Builder:"/>
+               </appinfo>
+            </annotation>
+         </attribute>
          <attribute name="singleton" type="boolean">
             <annotation>
                <documentation>

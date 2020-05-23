@@ -36,6 +36,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.IFileBuffer;
@@ -107,6 +108,7 @@ import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
@@ -239,18 +241,23 @@ public class LanguageServerWrapper {
 					initParams.setRootUri(LSPEclipseUtils.toUri(new File("/")).toString()); //$NON-NLS-1$
 				}
 			}
-			Launcher<? extends LanguageServer> launcher = Launcher.createLauncher(client,
-					serverDefinition.getServerInterface(), this.lspStreamProvider.getInputStream(),
-					this.lspStreamProvider.getOutputStream(), executorService, consumer -> (message -> {
-						consumer.consume(message);
-						logMessage(message);
-						URI root = initParams.getRootUri() != null ? URI.create(initParams.getRootUri()) : null;
-						final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
-						if (currentConnectionProvider != null && isActive()) {
-							currentConnectionProvider.handleMessage(message, this.languageServer, root);
-						}
-					}));
-
+			Function<MessageConsumer, MessageConsumer> wrapper = consumer -> (message -> {
+				consumer.consume(message);
+				logMessage(message);
+				URI root = initParams.getRootUri() != null ? URI.create(initParams.getRootUri()) : null;
+				final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
+				if (currentConnectionProvider != null && isActive()) {
+					currentConnectionProvider.handleMessage(message, this.languageServer, root);
+				}
+			});
+			Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder()
+					.setLocalService(client)//
+					.setRemoteInterface(serverDefinition.getServerInterface())//
+					.setInput(lspStreamProvider.getInputStream())//
+					.setOutput(lspStreamProvider.getOutputStream())//
+					.setExecutorService(executorService)//
+					.wrapMessages(wrapper)//
+					.create();
 			this.languageServer = launcher.getRemoteProxy();
 			client.connect(languageServer, this);
 			this.launcherFuture = launcher.startListening();

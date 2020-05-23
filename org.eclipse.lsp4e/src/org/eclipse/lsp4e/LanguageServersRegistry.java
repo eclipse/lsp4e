@@ -42,6 +42,7 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.enablement.EnablementTester;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
+import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.statushandlers.StatusManager;
@@ -71,6 +72,7 @@ public class LanguageServersRegistry {
 	private static final String CLASS_ATTRIBUTE = "class"; //$NON-NLS-1$
 	private static final String CLIENT_IMPL_ATTRIBUTE = "clientImpl"; //$NON-NLS-1$
 	private static final String SERVER_INTERFACE_ATTRIBUTE = "serverInterface"; //$NON-NLS-1$
+	private static final String LAUNCHER_BUILDER_ATTRIBUTE = "launcherBuilder"; //$NON-NLS-1$
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_ATTRIBUTE = "enabledWhen"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_DESC = "description"; //$NON-NLS-1$
@@ -100,6 +102,10 @@ public class LanguageServersRegistry {
 
 		public Class<? extends LanguageServer> getServerInterface() {
 			return LanguageServer.class;
+		}
+
+		public <S extends LanguageServer> Launcher.Builder<S> createLauncherBuilder() {
+			return new Launcher.Builder<S>();
 		}
 
 	}
@@ -152,6 +158,20 @@ public class LanguageServersRegistry {
 				}
 			}
 			return super.getServerInterface();
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public <S extends LanguageServer> Launcher.Builder<S> createLauncherBuilder() {
+			String launcherSupplier = extension.getAttribute(LAUNCHER_BUILDER_ATTRIBUTE);
+			if (launcherSupplier != null && !launcherSupplier.isEmpty()) {
+				try {
+					return (Launcher.Builder<S>) extension.createExecutableExtension(LAUNCHER_BUILDER_ATTRIBUTE);
+				} catch (CoreException e) {
+					StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
+				}
+			}
+			return super.createLauncherBuilder();
 		}
 
 	}
