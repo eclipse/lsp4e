@@ -219,6 +219,8 @@ public class LSPImages {
 			return getImageForColor(completionItem);
 		case File:
 			return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FILE);
+		case Folder:
+			return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FOLDER);
 		case Reference:
 			return getImage(IMG_REFERENCE);
 		default:
