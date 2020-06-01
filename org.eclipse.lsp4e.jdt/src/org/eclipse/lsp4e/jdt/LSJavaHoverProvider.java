@@ -69,6 +69,10 @@ public class LSJavaHoverProvider extends JavadocHover {
 					lsHoverFuture.thenAccept(lsHtmlHoverContent::set)
 			).get(1000, TimeUnit.MILLISECONDS);
 
+			if (lsHtmlHoverContent.get() == null) {
+				// No hover content from Language Servers. Return null to let JDT compute the hover using its own Hover Providers
+				return null;
+			}
 			input = jdtHoverControlInput.get();
 			if (input != null) {
 				previous = (JavadocBrowserInformationControlInput) input.getPrevious();
@@ -78,9 +82,13 @@ public class LSJavaHoverProvider extends JavadocHover {
 			}
 
 		} catch (InterruptedException | ExecutionException e) {
-			jdtHtmlHoverContent = noJavadocMessage("Javadoc unavailable. Failed to obtain it.");
+			LanguageServerPlugin.logWarning("Javadoc unavailable. Failed to obtain it.", e);
+			// Return null to let JDT compute the hover using its own Hover Providers
+			return null;
 		} catch (TimeoutException e) {
-			jdtHtmlHoverContent = noJavadocMessage("Javadoc unavailable. Took too long to obtain it.");
+			LanguageServerPlugin.logWarning("Timeout waiting for data to generate LS hover", e);
+			// Return null to let JDT compute the hover using its own Hover Providers
+			return null;
 		}
 		
 		/*
@@ -149,14 +157,6 @@ public class LSJavaHoverProvider extends JavadocHover {
 			LanguageServerPlugin.logWarning("LS Hover Html and JDT hover html were naively concatenated as JDT hover HTML BODY tag wasn't found", null);
 		}
 		return lsHtml + SEPARATOR + jdtHtml;
-	}
-
-	private String noJavadocMessage(String message) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("<h4>");
-		sb.append(message);
-		sb.append("</h4>");
-		return wrapHtml(sb.toString()).toString();
 	}
 
 	@Override
