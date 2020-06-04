@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -37,7 +39,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.IFileBufferListener;
@@ -117,9 +118,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
-
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
 public class LanguageServerWrapper {
 
@@ -513,6 +511,14 @@ public class LanguageServerWrapper {
 	}
 
 	/**
+	 * Return the projects being watched.
+	 */
+	public Set<@NonNull IProject> watchedProjects() {
+		return allWatchedProjects;
+	}
+
+
+	/**
 	 * Check whether this LS is suitable for provided project. Starts the LS if not
 	 * already started.
 	 *
@@ -555,8 +561,8 @@ public class LanguageServerWrapper {
 	private CompletableFuture<LanguageServer> connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
 		final IPath thePath = Path.fromOSString(absolutePath.toFile().getAbsolutePath()); // should be useless
 
-		IFile file = ResourcesPlugin.getWorkspace().getRoot().getFile(thePath);
-		if (file.exists()) {
+		IFile file = ResourcesPlugin.getWorkspace().getRoot().getFileForLocation(thePath);
+		if (file != null && file.exists()) {
 			watchProject(file.getProject(), false);
 		}
 

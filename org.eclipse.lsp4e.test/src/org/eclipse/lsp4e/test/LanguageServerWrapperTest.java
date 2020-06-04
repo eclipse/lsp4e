@@ -15,7 +15,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
-
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
@@ -54,9 +53,14 @@ public class LanguageServerWrapperTest {
 		assertEquals(1, wrappers.size());
 
 		LanguageServerWrapper wrapper = wrappers.iterator().next();
-
+		for(int i = 0; i < 10 && !wrapper.isActive(); i++) {
+			Thread.sleep(100);
+		}
+		
 		assertTrue(wrapper.isConnectedTo(testFile1.getLocation()));
 		assertTrue(wrapper.isConnectedTo(testFile2.getLocation()));
+		assertTrue(wrapper.watchedProjects().contains(project1));
+		assertTrue(wrapper.watchedProjects().contains(project2));
 
 		TestUtils.closeEditor(editor1, false);
 		TestUtils.closeEditor(editor2, false);
