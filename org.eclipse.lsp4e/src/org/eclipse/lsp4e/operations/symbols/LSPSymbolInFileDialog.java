@@ -53,7 +53,8 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 					return getChildren(either.getRight());
 				}
 			} else if (parentElement instanceof DocumentSymbol) {
-				return ((DocumentSymbol) parentElement).getChildren().toArray();
+				List<DocumentSymbol> children = ((DocumentSymbol) parentElement).getChildren();
+				return children == null ? new Object[0] : children.toArray();
 			}
 			return null;
 		}

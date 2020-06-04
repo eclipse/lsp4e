@@ -16,7 +16,6 @@ package org.eclipse.lsp4e.operations.rename;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -104,6 +103,10 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 	@Override
 	public boolean isEnabled() {
 		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
+		if (!(part instanceof ITextEditor)) {
+			return false;
+		}
+
 		ISelection selection = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
 		if (!(selection instanceof ITextSelection) || selection.isEmpty()) {
 			return false;

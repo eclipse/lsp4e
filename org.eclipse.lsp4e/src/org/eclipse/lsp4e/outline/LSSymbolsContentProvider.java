@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -248,8 +249,12 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			symbols.cancel(true);
 		}
 		lastError = null;
+		URI documentUri = LSPEclipseUtils.toUri(outlineInfo.document);
+		if(documentUri == null) {
+			return;
+		}
 		DocumentSymbolParams params = new DocumentSymbolParams(
-				new TextDocumentIdentifier(LSPEclipseUtils.toUri(outlineInfo.document).toString()));
+				new TextDocumentIdentifier(documentUri.toString()));
 		symbols = outlineInfo.languageServer.getTextDocumentService().documentSymbol(params);
 		symbols.thenAcceptAsync(t -> {
 			symbolsModel.update(t);
