@@ -21,6 +21,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.HandlerEvent;
 import org.eclipse.core.commands.IHandler;
+import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -36,10 +37,8 @@ import org.eclipse.ltk.core.refactoring.participants.RefactoringProcessor;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ISources;
 import org.eclipse.ui.handlers.HandlerUtil;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPRenameHandler extends AbstractHandler implements IHandler {
@@ -100,21 +99,25 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 		return false;
 	}
 
-	@Override
-	public boolean isEnabled() {
-		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
-		if (!(part instanceof ITextEditor)) {
-			return false;
-		}
 
-		ISelection selection = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
+	@Override
+	public void setEnabled(Object evaluationContext) {
+		boolean enabled = false;
+		if (evaluationContext instanceof IEvaluationContext) {
+			Object activeEditor = ((IEvaluationContext) evaluationContext).getVariable(ISources.ACTIVE_EDITOR_NAME);
+			if (activeEditor instanceof ITextEditor) {
+				enabled = isEnabled((ITextEditor)activeEditor);
+			}
+		}
+		setBaseEnabled(enabled);
+	}
+
+	private boolean isEnabled(ITextEditor part) {
+		ISelection selection = part.getSelectionProvider().getSelection();
 		if (!(selection instanceof ITextSelection) || selection.isEmpty()) {
 			return false;
 		}
-		if (!(part instanceof ITextEditor)) {
-			return false;
-		}
-		IDocument document = LSPEclipseUtils.getDocument((ITextEditor) part);
+		IDocument document = LSPEclipseUtils.getDocument(part);
 		if (document == null) {
 			return false;
 		}
