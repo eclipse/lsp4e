@@ -17,7 +17,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -139,9 +138,11 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 			try {
 				List<?> items = symbols.get(1, TimeUnit.SECONDS);
-				for (Object item : items) {
-					if (item != null) {
-						contentProvider.add(item, itemsFilter);
+				if(items != null) {
+					for (Object item : items) {
+						if (item != null) {
+							contentProvider.add(item, itemsFilter);
+						}
 					}
 				}
 			} catch (ExecutionException | TimeoutException e) {
