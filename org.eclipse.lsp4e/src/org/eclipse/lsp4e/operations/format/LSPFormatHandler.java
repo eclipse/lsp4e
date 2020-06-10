@@ -13,10 +13,10 @@
 package org.eclipse.lsp4e.operations.format;
 
 import java.util.Collection;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -25,7 +25,8 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.ISources;
+import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -50,22 +51,16 @@ public class LSPFormatHandler extends AbstractHandler {
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
-		boolean enabled = false;
-		if (evaluationContext instanceof IEvaluationContext) {
-			Object activeEditor = ((IEvaluationContext) evaluationContext).getVariable(ISources.ACTIVE_EDITOR_NAME);
-			if (activeEditor instanceof ITextEditor) {
-				enabled = isEnabled((ITextEditor)activeEditor);
-			}
+	public boolean isEnabled() {
+		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
+		if (part instanceof ITextEditor) {
+			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
+					LSPEclipseUtils.getDocument((ITextEditor) part),
+					LSPFormatter::supportFormatting);
+			ISelection selection = ((ITextEditor) part).getSelectionProvider().getSelection();
+			return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
 		}
-		setBaseEnabled(enabled);
+		return false;
 	}
 
-	private boolean isEnabled(ITextEditor part) {
-		ISelection selection = part.getSelectionProvider().getSelection();
-		Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-				LSPEclipseUtils.getDocument(part),
-				LSPFormatter::supportFormatting);
-		return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
-	}
 }

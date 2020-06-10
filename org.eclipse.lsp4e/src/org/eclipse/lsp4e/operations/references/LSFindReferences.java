@@ -20,7 +20,6 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
-import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -31,7 +30,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.search.ui.NewSearchUI;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.ISources;
+import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -73,18 +72,12 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
-		boolean enabled = false;
-		if (evaluationContext instanceof IEvaluationContext) {
-			Object activeEditor = ((IEvaluationContext) evaluationContext).getVariable(ISources.ACTIVE_EDITOR_NAME);
-			if (activeEditor instanceof ITextEditor) {
-				enabled = isEnabled((ITextEditor)activeEditor);
-			}
+	public boolean isEnabled() {
+		IEditorPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
+		if (!(part instanceof ITextEditor)) {
+			return false;
 		}
-		setBaseEnabled(enabled);
-	}
-
-	private boolean isEnabled(ITextEditor editor) {
+		ITextEditor editor = (ITextEditor) part;
 		ISelection selection = editor.getSelectionProvider().getSelection();
 		if (selection.isEmpty() || !(selection instanceof ITextSelection)) {
 			return false;
@@ -102,4 +95,10 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 		}
 		return false;
 	}
+
+	@Override
+	public boolean isHandled() {
+		return true;
+	}
+
 }

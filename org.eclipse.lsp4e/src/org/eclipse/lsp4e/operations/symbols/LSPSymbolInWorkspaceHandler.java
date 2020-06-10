@@ -16,13 +16,11 @@ import java.util.List;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.IDialogConstants;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
@@ -31,8 +29,8 @@ import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.ISources;
 import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -78,23 +76,15 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
-		boolean enabled = false;
-		if (evaluationContext instanceof IEvaluationContext) {
-			Object activeEditor = ((IEvaluationContext) evaluationContext).getVariable(ISources.ACTIVE_EDITOR_NAME);
-			if (activeEditor instanceof ITextEditor) {
-				enabled = isEnabled((ITextEditor)activeEditor);
-			}
+	public boolean isEnabled() {
+		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
+		if (part instanceof ITextEditor) {
+			List<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
+					LSPEclipseUtils.getDocument((ITextEditor) part),
+					capabilities -> Boolean.TRUE.equals(capabilities.getWorkspaceSymbolProvider()));
+			return !infos.isEmpty();
 		}
-		setBaseEnabled(enabled);
-	}
-
-	private boolean isEnabled(ITextEditor part) {
-		ISelection selection = part.getSelectionProvider().getSelection();
-		List<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-				LSPEclipseUtils.getDocument(part),
-				capabilities -> Boolean.TRUE.equals(capabilities.getWorkspaceSymbolProvider()));
-		return !infos.isEmpty();
+		return false;
 	}
 
 }
