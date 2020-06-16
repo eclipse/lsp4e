@@ -14,6 +14,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -23,6 +25,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.eclipse.core.runtime.FileLocator;
+import org.eclipse.e4.ui.css.swt.theme.ITheme;
+import org.eclipse.e4.ui.css.swt.theme.IThemeEngine;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
@@ -51,31 +56,32 @@ import org.eclipse.mylyn.wikitext.parser.MarkupParser;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * LSP implementation of {@link org.eclipse.jface.text.ITextHover}
  *
  */
+@SuppressWarnings("restriction")
 public class LSPTextHover implements ITextHover, ITextHoverExtension {
 
 	private static final String HEAD = "<head>"; //$NON-NLS-1$
-
-
 	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage(true));
-
 
 	private IRegion lastRegion;
 	private ITextViewer lastViewer;
 	private CompletableFuture<List<Hover>> request;
+	private static IThemeEngine themeEngine;
 
 	public LSPTextHover() {
-		// nothing to init yet, comment requested by sonar
+		themeEngine = PlatformUI.getWorkbench().getService(IThemeEngine.class);
 	}
 
 	public static String styleHtml(String html) {
 		if (html == null || html.isEmpty()) {
 			return html;
 		}
+
 		// put CSS styling to match Eclipse style
 		ColorRegistry colorRegistry = JFaceResources.getColorRegistry();
 		Color foreground = colorRegistry.get("org.eclipse.ui.workbench.HOVER_FOREGROUND"); //$NON-NLS-1$
@@ -88,10 +94,25 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 				(foreground != null ? "color: " + toHTMLrgb(foreground.getRGB()) + "; " : "") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				" }</style>"; //$NON-NLS-1$
 
+		String hlStyle = null;
+		try {
+			URL urlHJScript = FileLocator.toFileURL(LanguageServerPlugin.getDefault().getClass().getResource("/resources/highlight.min.js/highlight.min.js")); //$NON-NLS-1$
+			URL urlHJCss = isDarkTheme() ? FileLocator.toFileURL(LanguageServerPlugin.getDefault().getClass().getResource("/resources/highlight.min.js/styles/dark.min.css")) : //$NON-NLS-1$
+					FileLocator.toFileURL(LanguageServerPlugin.getDefault().getClass().getResource("/resources/highlight.min.js/styles/default.min.css")); //$NON-NLS-1$
+			hlStyle = "<link rel='stylesheet' href='" + urlHJCss.toString() + "'>" + //$NON-NLS-1$ //$NON-NLS-2$
+					"<script src='" + urlHJScript.toString() + "'></script>" + //$NON-NLS-1$ //$NON-NLS-2$
+					"<script>hljs.initHighlightingOnLoad();</script>"; //$NON-NLS-1$
+		} catch (IOException e) {
+			LanguageServerPlugin.logError(e);
+		}
+
 		int headIndex = html.indexOf(HEAD);
 		StringBuilder builder = new StringBuilder(html.length() + style.length());
 		builder.append(html.substring(0, headIndex + HEAD.length()));
 		builder.append(style);
+		if (hlStyle != null) {
+			builder.append(hlStyle);
+		}
 		builder.append(html.substring(headIndex + HEAD.length()));
 		return builder.toString();
 	}
@@ -271,5 +292,10 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 				}
 			}
 		};
+	}
+
+	private static boolean isDarkTheme() {
+		ITheme activeTheme = themeEngine != null ? themeEngine.getActiveTheme() : null;
+		return activeTheme != null ? activeTheme.getId().toLowerCase().contains("dark") : false; //$NON-NLS-1$
 	}
 }

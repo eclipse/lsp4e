@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2020 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -30,6 +30,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
+@SuppressWarnings("restriction")
 class FocusableBrowserInformationControl extends BrowserInformationControl {
 
 	private static final LocationListener HYPER_LINK_LISTENER = new LocationListener() {
@@ -68,22 +69,25 @@ class FocusableBrowserInformationControl extends BrowserInformationControl {
 			setSize(hint.x, hint.y);
 			browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"nowrap\""); //$NON-NLS-1$
 			Double width = 20 + (Double) browser.evaluate("return document.body.scrollWidth;"); //$NON-NLS-1$
-			if (constraints != null && constraints.x < width) {
-				width = (double) constraints.x;
-			}
 
 			setSize(width.intValue(), hint.y);
 			browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"normal\""); //$NON-NLS-1$
 			Double height = (Double) browser.evaluate("return document.body.scrollHeight;"); //$NON-NLS-1$
-			if (constraints != null && constraints.y < height) {
-				height = (double) constraints.y;
-			}
 			if (Platform.getPreferencesService().getBoolean(EditorsUI.PLUGIN_ID,
 					AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SHOW_TEXT_HOVER_AFFORDANCE, true,
 					null)) {
 				FontData[] fontDatas = JFaceResources.getDialogFont().getFontData();
 				height = fontDatas[0].getHeight() + height;
 			}
+
+			width = Double.valueOf(width * 1.5);
+			if (constraints != null && constraints.x < width) {
+				width = (double) constraints.x;
+			}
+			if (constraints != null && constraints.y < height) {
+				height = (double) constraints.y;
+			}
+
 			setSize(width.intValue(), height.intValue());
 		}));
 		b.setJavascriptEnabled(true);
