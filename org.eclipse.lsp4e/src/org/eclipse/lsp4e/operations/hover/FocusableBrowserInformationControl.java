@@ -50,6 +50,10 @@ class FocusableBrowserInformationControl extends BrowserInformationControl {
 		}
 	};
 
+	public FocusableBrowserInformationControl(Shell parent, String symbolicFontName, boolean resizable) {
+		super(parent, JFaceResources.DEFAULT_FONT, resizable);
+	}
+
 	public FocusableBrowserInformationControl(Shell parent) {
 		super(parent, JFaceResources.DEFAULT_FONT, EditorsUI.getTooltipAffordanceString());
 	}
@@ -96,7 +100,7 @@ class FocusableBrowserInformationControl extends BrowserInformationControl {
 	@Override
 	public IInformationControlCreator getInformationPresenterControlCreator() {
 		return parent -> {
-			BrowserInformationControl res = new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT,
+			BrowserInformationControl res = new FocusableBrowserInformationControl(parent, JFaceResources.DEFAULT_FONT,
 					true);
 			res.addLocationListener(HYPER_LINK_LISTENER);
 			return res;
