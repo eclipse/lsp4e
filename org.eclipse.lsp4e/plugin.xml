@@ -97,7 +97,7 @@
       <handler
             class="org.eclipse.lsp4e.operations.rename.LSPRenameHandler"
             commandId="org.eclipse.ui.edit.rename">
-         <enabledWhen>
+         <activeWhen>
             <and>
                <with
                      variable="selection">
@@ -106,7 +106,7 @@
                   </instanceof>
                </with>
             </and>
-         </enabledWhen>
+         </activeWhen>
       </handler>
       <handler
             class="org.eclipse.lsp4e.operations.format.LSPFormatHandler"

@@ -11,11 +11,13 @@
  *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525400 - [rename] improve rename support with ltk UI
  *  Jan Koehnlein (TypeFox) - handle missing existing document gracefully
  *  Martin Lippert (Pivotal) - Bug 561373 - added async enablement for late language servers
+ *  Vincent Lorenzo (CEA LIST) vincent.lorenzo@cea.fr - Bug 564839
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.rename;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -39,7 +41,6 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPRenameHandler extends AbstractHandler implements IHandler {
@@ -101,44 +102,39 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 	}
 
 	@Override
-	public boolean isEnabled() {
+	public void setEnabled(Object evaluationContext) {
 		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
-		if (!(part instanceof ITextEditor)) {
-			return false;
-		}
+		boolean isEnable = part instanceof ITextEditor;
+		if (isEnable) {
+			ISelection selection = ((ITextEditor) part).getSelectionProvider().getSelection();
+			isEnable = selection instanceof ITextSelection && !selection.isEmpty();
 
-		ISelection selection = ((AbstractTextEditor) part).getSelectionProvider().getSelection();
-		if (!(selection instanceof ITextSelection) || selection.isEmpty()) {
-			return false;
-		}
-		if (!(part instanceof ITextEditor)) {
-			return false;
-		}
-		IDocument document = LSPEclipseUtils.getDocument((ITextEditor) part);
-		if (document == null) {
-			return false;
-		}
+			IDocument document = LSPEclipseUtils.getDocument((ITextEditor) part);
+			if (document != null && isEnable) {
+				try {
+					isEnable = !LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
+							.get(50, TimeUnit.MILLISECONDS).isEmpty();
+				} catch (java.util.concurrent.ExecutionException | TimeoutException e) {
 
-		try {
-			return !LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
-					.get(50, TimeUnit.MILLISECONDS).isEmpty();
-		} catch (java.util.concurrent.ExecutionException | TimeoutException e) {
+					// in case the language servers take longer to kick in, defer the enablement to
+					// a later time
+					LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
+							.thenAccept((languageServer) -> {
+								boolean enabled = !languageServer.isEmpty();
+								HandlerEvent handleEvent = new HandlerEvent(this, enabled, false);
+								fireHandlerChanged(handleEvent);
+							});
 
-			// in case the language servers take longer to kick in, defer the enablement to a later time
-			LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
-					.thenAccept((languageServer) -> {
-						boolean enabled = !languageServer.isEmpty();
-						HandlerEvent handleEvent = new HandlerEvent(this, enabled, false);
-						fireHandlerChanged(handleEvent);
-					});
+					isEnable = false;
 
-			return false;
-
-		} catch (InterruptedException e) {
-			LanguageServerPlugin.logError(e);
-			Thread.currentThread().interrupt();
-			return false;
+				} catch (InterruptedException e) {
+					LanguageServerPlugin.logError(e);
+					Thread.currentThread().interrupt();
+					isEnable = false;
+				}
+			}
 		}
+		setBaseEnabled(isEnable);
 	}
 
 }
