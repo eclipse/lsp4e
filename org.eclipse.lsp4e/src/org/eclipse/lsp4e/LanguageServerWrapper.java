@@ -15,8 +15,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -25,11 +23,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -38,19 +34,25 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
+
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.IFileBufferListener;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
+import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Assert;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
@@ -104,7 +106,6 @@ import org.eclipse.lsp4j.TypeDefinitionCapabilities;
 import org.eclipse.lsp4j.UnregistrationParams;
 import org.eclipse.lsp4j.WorkspaceClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceEditCapabilities;
-import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
@@ -118,6 +119,9 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 public class LanguageServerWrapper {
 
@@ -147,8 +151,6 @@ public class LanguageServerWrapper {
 	@Nullable
 	protected final IProject initialProject;
 	@NonNull
-	protected final Set<@NonNull IProject> allWatchedProjects;
-	@NonNull
 	protected Map<@NonNull IPath, @NonNull DocumentContentSynchronizer> connectedDocuments;
 	@Nullable
 	protected final IPath initialPath;
@@ -164,6 +166,13 @@ public class LanguageServerWrapper {
 	 */
 	private @NonNull Map<@NonNull String, @NonNull Runnable> dynamicRegistrations = new HashMap<>();
 	private boolean initiallySupportsWorkspaceFolders = false;
+	private final @NonNull IResourceChangeListener workspaceFolderUpdater = event -> {
+		WorkspaceFoldersChangeEvent workspaceFolderEvent = toWorkspaceFolderEvent(event);
+		if (workspaceFolderEvent == null || (workspaceFolderEvent.getAdded().isEmpty() && workspaceFolderEvent.getRemoved().isEmpty())) {
+			return;
+		}
+		this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(workspaceFolderEvent));
+	};
 
 	/* Backwards compatible constructor */
 	public LanguageServerWrapper(@NonNull IProject project, @NonNull LanguageServerDefinition serverDefinition) {
@@ -179,7 +188,6 @@ public class LanguageServerWrapper {
 			@Nullable IPath initialPath) {
 		this.initialProject = project;
 		this.initialPath = initialPath;
-		this.allWatchedProjects = new HashSet<>();
 		this.serverDefinition = serverDefinition;
 		this.connectedDocuments = new HashMap<>();
 	}
@@ -239,7 +247,7 @@ public class LanguageServerWrapper {
 					initParams.setRootUri(LSPEclipseUtils.toUri(new File("/")).toString()); //$NON-NLS-1$
 				}
 			}
-			Function<MessageConsumer, MessageConsumer> wrapper = consumer -> (message -> {
+			UnaryOperator<MessageConsumer> wrapper = consumer -> (message -> {
 				consumer.consume(message);
 				logMessage(message);
 				URI root = initParams.getRootUri() != null ? URI.create(initParams.getRootUri()) : null;
@@ -338,9 +346,7 @@ public class LanguageServerWrapper {
 
 			final Map<IPath, IDocument> toReconnect = filesToReconnect;
 			initializeFuture.thenRunAsync(() -> {
-				if (this.initialProject != null) {
-					watchProject(this.initialProject, true);
-				}
+				watchProjects();
 				for (Entry<IPath, IDocument> fileToReconnect : toReconnect.entrySet()) {
 					try {
 						connect(fileToReconnect.getKey(), fileToReconnect.getValue());
@@ -436,6 +442,7 @@ public class LanguageServerWrapper {
 		this.languageServer = null;
 
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
+		ResourcesPlugin.getWorkspace().removeResourceChangeListener(workspaceFolderUpdater);
 	}
 
 	/**
@@ -469,54 +476,48 @@ public class LanguageServerWrapper {
 		return null;
 	}
 
-	protected synchronized void watchProject(IProject project, boolean isInitializationRootProject) {
-		if (this.allWatchedProjects.contains(project)) {
+	private void watchProjects() {
+		if (!supportsWorkspaceFolderCapability()) {
 			return;
 		}
-		if (isInitializationRootProject && !this.allWatchedProjects.isEmpty()) {
-			return; // there can be only one root project
-		}
-		if (!isInitializationRootProject && !supportsWorkspaceFolderCapability()) {
-			// multi project and WorkspaceFolder notifications not supported by this server
-			// instance
-			return;
-		}
-		this.allWatchedProjects.add(project);
-		project.getWorkspace().addResourceChangeListener(event -> {
-			if (project.equals(event.getResource()) && (event.getDelta().getKind() == IResourceDelta.MOVED_FROM
-					|| event.getDelta().getKind() == IResourceDelta.REMOVED)) {
-				unwatchProject(project);
-			}
-		}, IResourceChangeEvent.POST_CHANGE);
-		if (supportsWorkspaceFolderCapability()) {
-			WorkspaceFoldersChangeEvent event = new WorkspaceFoldersChangeEvent();
-			event.getAdded().add(LSPEclipseUtils.toWorkspaceFolder(project));
-			DidChangeWorkspaceFoldersParams params = new DidChangeWorkspaceFoldersParams();
-			params.setEvent(event);
-			this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(params);
+		try {
+			ResourcesPlugin.getWorkspace().run(monitor -> {
+				WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
+				wsFolderEvent.getAdded().addAll(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects()).filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder).collect(Collectors.toList()));
+				this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(wsFolderEvent));
+				ResourcesPlugin.getWorkspace().addResourceChangeListener(workspaceFolderUpdater, IResourceChangeEvent.POST_CHANGE);
+			}, new NullProgressMonitor());
+		} catch (CoreException e) {
+			LanguageServerPlugin.logError(e);
 		}
 	}
 
-	private synchronized void unwatchProject(@NonNull IProject project) {
-		this.allWatchedProjects.remove(project);
-		// TODO? disconnect resources?
-		if (supportsWorkspaceFolderCapability()) {
-			WorkspaceFoldersChangeEvent event = new WorkspaceFoldersChangeEvent();
-			WorkspaceFolder workspaceFolder = LSPEclipseUtils.toWorkspaceFolder(project);
-			event.getRemoved().add(workspaceFolder);
-			DidChangeWorkspaceFoldersParams params = new DidChangeWorkspaceFoldersParams();
-			params.setEvent(event);
-			this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(params);
+	private static final @Nullable WorkspaceFoldersChangeEvent toWorkspaceFolderEvent(IResourceChangeEvent e) {
+		if (e.getType() != IResourceChangeEvent.POST_CHANGE) {
+			return null;
 		}
+		WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
+		try {
+			e.getDelta().accept(delta -> {
+				if (delta.getResource().getType() == IResource.PROJECT) {
+					IProject project = (IProject)delta.getResource();
+					if ((delta.getKind() == IResourceDelta.ADDED || delta.getKind() == IResourceDelta.OPEN) && project.isAccessible()) {
+						wsFolderEvent.getAdded().add(LSPEclipseUtils.toWorkspaceFolder((IProject)delta.getResource()));
+					} else if (delta.getKind() == IResourceDelta.REMOVED || (delta.getKind() == IResourceDelta.OPEN && !project.isAccessible())) {
+						wsFolderEvent.getRemoved().add(LSPEclipseUtils.toWorkspaceFolder((IProject)delta.getResource()));
+					}
+					// TODO: handle renamed/moved (on filesystem)
+				}
+				return delta.getResource().getType() == IResource.ROOT;
+			});
+		} catch (CoreException ex) {
+			LanguageServerPlugin.logError(ex);
+		}
+		if (wsFolderEvent.getAdded().isEmpty() && wsFolderEvent.getRemoved().isEmpty()) {
+			return null;
+		}
+		return wsFolderEvent;
 	}
-
-	/**
-	 * Return the projects being watched.
-	 */
-	public Set<@NonNull IProject> watchedProjects() {
-		return allWatchedProjects;
-	}
-
 
 	/**
 	 * Check whether this LS is suitable for provided project. Starts the LS if not
@@ -526,11 +527,7 @@ public class LanguageServerWrapper {
 	 * @since 0.5
 	 */
 	public boolean canOperate(IProject project) {
-		if (project.equals(this.initialProject) || this.allWatchedProjects.contains(project)) {
-			return true;
-		}
-
-		return serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
+		return project.equals(this.initialProject) || serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
 	}
 
 	/**
@@ -560,11 +557,6 @@ public class LanguageServerWrapper {
 	 */
 	private CompletableFuture<LanguageServer> connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
 		final IPath thePath = Path.fromOSString(absolutePath.toFile().getAbsolutePath()); // should be useless
-
-		IFile file = ResourcesPlugin.getWorkspace().getRoot().getFileForLocation(thePath);
-		if (file != null && file.exists()) {
-			watchProject(file.getProject(), false);
-		}
 
 		if (this.connectedDocuments.containsKey(thePath)) {
 			return CompletableFuture.completedFuture(languageServer);
@@ -776,6 +768,9 @@ public class LanguageServerWrapper {
 	}
 
 	synchronized void setWorkspaceFoldersEnablement(boolean enable) {
+		if (enable == supportsWorkspaceFolderCapability()) {
+			return;
+		}
 		if (serverCapabilities == null) {
 			this.serverCapabilities = new ServerCapabilities();
 		}
@@ -790,6 +785,9 @@ public class LanguageServerWrapper {
 			workspace.setWorkspaceFolders(folders);
 		}
 		folders.setSupported(enable);
+		if (enable) {
+			watchProjects();
+		}
 	}
 
 	synchronized void registerCommands(List<String> newCommands) {
