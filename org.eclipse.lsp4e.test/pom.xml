@@ -40,6 +40,7 @@
 					<testClass>org.eclipse.lsp4e.test.AllTests</testClass>
 					<useUIHarness>true</useUIHarness>
 					<useUIThread>true</useUIThread>
+					<forkedProcessTimeoutInSeconds>1200</forkedProcessTimeoutInSeconds>
 					<argLine>${tycho.testArgLine} ${ui.test.vmargs} ${os-jvm-flags}</argLine>
 				</configuration>
 			</plugin>

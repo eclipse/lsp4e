@@ -98,6 +98,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 										return null;
 									}
 								}).filter(Objects::nonNull).flatMap(List<DocumentLink>::stream).map(link -> {
+									DocumentHyperlink jfaceLink = null;
 									try {
 										int start = LSPEclipseUtils.toOffset(link.getRange().getStart(),
 												textViewer.getDocument());
@@ -105,12 +106,12 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 												textViewer.getDocument());
 										IRegion linkRegion = new Region(start, end - start);
 										if (TextUtilities.overlaps(region, linkRegion) && link.getTarget() != null) {
-											return new DocumentHyperlink(link.getTarget(), linkRegion);
+											jfaceLink = new DocumentHyperlink(link.getTarget(), linkRegion);
 										}
 									} catch (BadLocationException ex) {
 										LanguageServerPlugin.logError(ex);
 									}
-									return null;
+									return jfaceLink;
 								}).filter(Objects::nonNull).toArray(IHyperlink[]::new);
 						if (res.length == 0) {
 							return null;

@@ -63,14 +63,15 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 									.getTextDocumentService().documentColor(param).thenAcceptAsync(colors -> {
 										if (colors != null) {
 											colors.stream().filter(Objects::nonNull).map(color -> {
+												ColorInformationMining mining = null;
 												try {
-													return new ColorInformationMining(color, document,
+													mining = new ColorInformationMining(color, document,
 															textDocumentIdentifier, languageServer,
 															DocumentColorProvider.this);
 												} catch (BadLocationException e) {
 													LanguageServerPlugin.logError(e);
-													return null;
 												}
+												return mining;
 											}).filter(Objects::nonNull).forEach(colorResults::add);
 										}
 									})).toArray(CompletableFuture[]::new)))
