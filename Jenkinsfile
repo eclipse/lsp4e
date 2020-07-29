@@ -13,7 +13,7 @@ pipeline {
 	stages {
 		stage('initialize Gerrit review') {
 			steps {
-				gerritReview labels: [Verified: 0]
+				gerritReview labels: [Verified: 0], message: "Build started $BUILD_URL"
 			}
 		}
 		stage('Build') {
