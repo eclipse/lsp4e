@@ -550,30 +550,34 @@ public class LSPEclipseUtils {
 		try {
 			if (targetResource != null && targetResource.getType() == IResource.FILE) {
 				part = IDE.openEditor(page, (IFile) targetResource);
-				targetDocument = FileBuffers.getTextFileBufferManager()
-				        .getTextFileBuffer(targetResource.getFullPath(), LocationKind.IFILE).getDocument();
 			} else {
 				URI fileUri = URI.create(uri).normalize();
 				IFileStore fileStore =  EFS.getLocalFileSystem().getStore(fileUri);
 				IFileInfo fetchInfo = fileStore.fetchInfo();
 				if (!fetchInfo.isDirectory() && fetchInfo.exists()) {
 					part = IDE.openEditorOnFileStore(page, fileStore);
-					ITextFileBuffer fileStoreTextFileBuffer = FileBuffers.getTextFileBufferManager()
-							.getFileStoreTextFileBuffer(fileStore);
-					targetDocument = fileStoreTextFileBuffer.getDocument();
 				}
 			}
+
+			if (part != null && part instanceof ITextEditor) {
+		        targetDocument = ((ITextEditor) part).getDocumentProvider().getDocument(part.getEditorInput());
+			}
+
 		} catch (PartInitException e) {
 			LanguageServerPlugin.logError(e);
 		}
 		try {
-			if (part != null && part.getEditorSite() != null && part.getEditorSite().getSelectionProvider() != null && optionalRange != null) {
+			if (targetDocument != null
+				&& part != null && part.getEditorSite() != null && part.getEditorSite().getSelectionProvider() != null
+				&& optionalRange != null)
+			{
 				ISelectionProvider selectionProvider = part.getEditorSite().getSelectionProvider();
 
 				int offset = LSPEclipseUtils.toOffset(optionalRange.getStart(), targetDocument);
 				int endOffset = LSPEclipseUtils.toOffset(optionalRange.getEnd(), targetDocument);
 				selectionProvider.setSelection(new TextSelection(offset, endOffset > offset ? endOffset - offset : 0));
 			}
+
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}
