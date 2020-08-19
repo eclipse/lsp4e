@@ -11,6 +11,7 @@
  *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
  *  Angelo Zerr <angelo.zerr@gmail.com> - Bug 525602 - LSBasedHover must check if LS have codelens capability
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
+ *  Alex Boyko (VMware) - [Bug 566164] fix for NPE in LSPTextHover
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
@@ -99,9 +100,11 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 			URL urlHJScript = FileLocator.toFileURL(LanguageServerPlugin.getDefault().getClass().getResource("/resources/highlight.min.js/highlight.min.js")); //$NON-NLS-1$
 			URL urlHJCss = isDarkTheme() ? FileLocator.toFileURL(LanguageServerPlugin.getDefault().getClass().getResource("/resources/highlight.min.js/styles/dark.min.css")) : //$NON-NLS-1$
 					FileLocator.toFileURL(LanguageServerPlugin.getDefault().getClass().getResource("/resources/highlight.min.js/styles/default.min.css")); //$NON-NLS-1$
-			hlStyle = "<link rel='stylesheet' href='" + urlHJCss.toString() + "'>" + //$NON-NLS-1$ //$NON-NLS-2$
-					"<script src='" + urlHJScript.toString() + "'></script>" + //$NON-NLS-1$ //$NON-NLS-2$
-					"<script>hljs.initHighlightingOnLoad();</script>"; //$NON-NLS-1$
+			if (urlHJScript != null && urlHJCss != null) {
+				hlStyle = "<link rel='stylesheet' href='" + urlHJCss.toString() + "'>" + //$NON-NLS-1$ //$NON-NLS-2$
+						"<script src='" + urlHJScript.toString() + "'></script>" + //$NON-NLS-1$ //$NON-NLS-2$
+						"<script>hljs.initHighlightingOnLoad();</script>"; //$NON-NLS-1$
+			}
 		} catch (IOException e) {
 			LanguageServerPlugin.logError(e);
 		}
