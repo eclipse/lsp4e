@@ -19,7 +19,7 @@ pipeline {
 		stage('Build') {
 			steps {
 				wrap([$class: 'Xvnc', useXauthority: true]) {
-					sh 'mvn clean install -B -PpackAndSign -Dmaven.repo.local=$WORKSPACE/.m2/repository'
+					sh 'mvn clean install -B -PpackAndSign -Dmaven.repo.local=$WORKSPACE/.m2/repository -Dmaven.test.failure.ignore=true -Dmaven.test.error.ignore=true'
 				}
 			}
 			post {
