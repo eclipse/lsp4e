@@ -29,15 +29,12 @@ pipeline {
 				}
 				success {
 					gerritReview labels: [Verified: 1], message: "Build Succcess $BUILD_URL"
-					gerritCheck checks: ['lsp4e-bot@eclipse.org': 'SUCCESSFUL']
 				}
 				unstable {
 					gerritReview labels: [Verified: -1], message: "Build UNSTABLE (test failures) $BUILD_URL"
-					gerritCheck checks: ['lsp4e-bot@eclipse.org': 'FAILED']
 				}
 				failure {
 					gerritReview labels: [Verified: -1], message: "Build FAILED $BUILD_URL"
-					gerritCheck checks: ['lsp4e-bot@eclipse.org': 'FAILED']
 				}
 			}
 		}
