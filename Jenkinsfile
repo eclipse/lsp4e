@@ -45,7 +45,7 @@ pipeline {
 			steps {
 				sshagent ( ['projects-storage.eclipse.org-bot-ssh']) {
 					sh '''
-						DOWNLOAD_AREA=/home/data/httpd/download.eclipse.org/technology/lsp4e/snapshots/
+						DOWNLOAD_AREA=/home/data/httpd/download.eclipse.org/lsp4e/snapshots/
 						echo DOWNLOAD_AREA=$DOWNLOAD_AREA
 						ssh genie.lsp4e@build.eclipse.org "\
 							rm -rf  ${DOWNLOAD_AREA}/* && \
