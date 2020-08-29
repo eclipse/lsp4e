@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2020 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -9,6 +9,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Miro Spoenemann (TypeFox) - added clientImpl and serverInterface attributes
+ *  Alexander Fedorov (ArSysOp) - added parent context to evaluation
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -20,11 +21,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.expressions.ExpressionConverter;
+import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.resources.IFile;
@@ -45,6 +48,8 @@ import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.handlers.IHandlerService;
 import org.eclipse.ui.statushandlers.StatusManager;
 import org.osgi.framework.Bundle;
 
@@ -240,7 +245,7 @@ public class LanguageServersRegistry {
 							if (enabledWhenChildren.length == 1) {
 								try {
 									String description = enabledWhen.getAttribute(ENABLED_WHEN_DESC);
-									expression = new EnablementTester(
+									expression = new EnablementTester(this::evaluationContext,
 											ExpressionConverter.getDefault().perform(enabledWhenChildren[0]),
 											description);
 								} catch (CoreException e) {
@@ -264,6 +269,12 @@ public class LanguageServersRegistry {
 				LanguageServerPlugin.logWarning("server '" + mapping.id + "' not available", null); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
+	}
+
+	private IEvaluationContext evaluationContext() {
+		return Optional.ofNullable(PlatformUI.getWorkbench().getService(IHandlerService.class))//
+				.map(IHandlerService::getCurrentState)//
+				.orElse(null);
 	}
 
 	private void persistContentTypeToLaunchConfigurationMapping() {
