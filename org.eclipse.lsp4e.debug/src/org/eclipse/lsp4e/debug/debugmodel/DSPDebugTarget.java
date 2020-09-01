@@ -242,6 +242,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 						monitor.subTask("Attaching to running program");
 						return getDebugProtocolServer().attach(dspParameters);
 					}
+				}).handle((q, t) -> {
+					if (t != null) {
+						initialized.completeExceptionally(t);
+					}
+					return q;
 				}).thenCombineAsync(initialized, (v1, v2) -> {
 					monitor.worked(10);
 					return (Void) null;
