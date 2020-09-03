@@ -17,7 +17,6 @@ package org.eclipse.lsp4e;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -223,7 +222,7 @@ public class LanguageServerWrapper {
 			LanguageClientImpl client = serverDefinition.createLanguageClient();
 			ExecutorService executorService = Executors.newCachedThreadPool();
 			final InitializeParams initParams = new InitializeParams();
-			initParams.setProcessId(getCurrentProcessId());
+			initParams.setProcessId((int)ProcessHandle.current().pid());
 
 			URI rootURI = null;
 			IProject project = this.initialProject;
@@ -366,15 +365,6 @@ public class LanguageServerWrapper {
 		return serverCapabilities != null && serverCapabilities.getWorkspace() != null
 				&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
 				&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
-	}
-
-	private Integer getCurrentProcessId() {
-		String segment = ManagementFactory.getRuntimeMXBean().getName().split("@")[0]; //$NON-NLS-1$
-		try {
-			return Integer.valueOf(segment);
-		} catch (NumberFormatException ex) {
-			return null;
-		}
 	}
 
 	private void logMessage(Message message) {
