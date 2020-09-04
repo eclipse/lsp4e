@@ -27,9 +27,9 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
-import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DefaultInformationControl;
@@ -59,7 +59,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.command.internal.CommandExecutor;
-import org.eclipse.lsp4e.operations.hover.LSPTextHover;
+import org.eclipse.lsp4e.operations.hover.FocusableBrowserInformationControl;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
@@ -291,12 +291,7 @@ public class LSIncompleteCompletionProposal
 			@Override
 			protected IInformationControl doCreateInformationControl(Shell parent) {
 				if (BrowserInformationControl.isAvailable(parent)) {
-					return new BrowserInformationControl(parent, JFaceResources.DEFAULT_FONT, false) {
-						@Override
-						public IInformationControlCreator getInformationPresenterControlCreator() {
-							return parent1 -> new BrowserInformationControl(parent1, JFaceResources.DEFAULT_FONT, true);
-						}
-					};
+					return new FocusableBrowserInformationControl(parent);
 				} else {
 					return new DefaultInformationControl(parent);
 				}
@@ -305,7 +300,7 @@ public class LSIncompleteCompletionProposal
 	}
 
 	@Override
-	public Object getAdditionalProposalInfo(IProgressMonitor monitor) {
+	public String getAdditionalProposalInfo(IProgressMonitor monitor) {
 		if (LanguageServiceAccessor.checkCapability(languageServer,
 				capability -> Boolean.TRUE.equals(capability.getCompletionProvider().getResolveProvider()))) {
 			try {
@@ -333,7 +328,7 @@ public class LSIncompleteCompletionProposal
 			}
 		}
 
-		return LSPTextHover.styleHtml(res.toString());
+		return res.toString();
 	}
 
 	private void updateCompletionItem(CompletionItem resolvedItem) {
@@ -680,7 +675,7 @@ public class LSIncompleteCompletionProposal
 
 	@Override
 	public String getAdditionalProposalInfo() {
-		return this.item.getDetail();
+		return this.getAdditionalProposalInfo(new NullProgressMonitor());
 	}
 
 	@Override

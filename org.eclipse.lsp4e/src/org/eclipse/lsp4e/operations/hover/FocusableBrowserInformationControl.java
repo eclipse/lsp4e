@@ -11,18 +11,28 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
+import java.io.IOException;
+import java.net.URL;
+
+import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
+import org.eclipse.jface.resource.ColorRegistry;
 import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.jface.text.DefaultInformationControl;
 import org.eclipse.jface.text.IInformationControlCreator;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.browser.LocationListener;
 import org.eclipse.swt.browser.ProgressListener;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchPage;
@@ -31,7 +41,9 @@ import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 @SuppressWarnings("restriction")
-class FocusableBrowserInformationControl extends BrowserInformationControl {
+public class FocusableBrowserInformationControl extends BrowserInformationControl {
+
+	private static final String HEAD = "<head>"; //$NON-NLS-1$
 
 	private static final LocationListener HYPER_LINK_LISTENER = new LocationListener() {
 
@@ -98,12 +110,90 @@ class FocusableBrowserInformationControl extends BrowserInformationControl {
 	}
 
 	@Override
+	public void setInput(Object input) {
+		if (input instanceof String) {
+			input = styleHtml((String)input);
+		}
+		super.setInput(input);
+	}
+
+	public String styleHtml(String html) {
+		if (html == null || html.isEmpty()) {
+			return html;
+		}
+
+		// put CSS styling to match Eclipse style
+		ColorRegistry colorRegistry = JFaceResources.getColorRegistry();
+		Color foreground = colorRegistry.get("org.eclipse.ui.workbench.HOVER_FOREGROUND"); //$NON-NLS-1$
+		Color background = colorRegistry.get("org.eclipse.ui.workbench.HOVER_BACKGROUND"); //$NON-NLS-1$
+		String style = "<style TYPE='text/css'>html { " + //$NON-NLS-1$
+				"font-family: " + JFaceResources.getDefaultFontDescriptor().getFontData()[0].getName() + "; " + //$NON-NLS-1$ //$NON-NLS-2$
+				"font-size: " + Integer.toString(JFaceResources.getDefaultFontDescriptor().getFontData()[0].getHeight()) //$NON-NLS-1$
+				+ "pt; " + //$NON-NLS-1$
+				(background != null ? "background-color: " + toHTMLrgb(background.getRGB()) + "; " : "") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				(foreground != null ? "color: " + toHTMLrgb(foreground.getRGB()) + "; " : "") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				" }</style>"; //$NON-NLS-1$
+
+		String hlStyle = null;
+		try {
+			URL urlHJScript = FileLocator.toFileURL(LanguageServerPlugin.getDefault().getClass().getResource("/resources/highlight.min.js/highlight.min.js")); //$NON-NLS-1$
+			URL urlHJCss = FileLocator.toFileURL(LanguageServerPlugin.getDefault().getClass().getResource(isDarkTheme() ? //
+					"/resources/highlight.min.js/styles/dark.min.css" : //$NON-NLS-1$
+					"/resources/highlight.min.js/styles/default.min.css")); //$NON-NLS-1$
+			if (urlHJScript != null && urlHJCss != null) {
+				hlStyle = "<link rel='stylesheet' href='" + urlHJCss.toString() + "'>" + //$NON-NLS-1$ //$NON-NLS-2$
+						"<script src='" + urlHJScript.toString() + "'></script>" + //$NON-NLS-1$ //$NON-NLS-2$
+						"<script>hljs.initHighlightingOnLoad();</script>"; //$NON-NLS-1$
+			}
+		} catch (IOException e) {
+			LanguageServerPlugin.logError(e);
+		}
+
+		int headIndex = html.indexOf(HEAD);
+		StringBuilder builder = new StringBuilder(html.length() + style.length());
+		builder.append(html.substring(0, headIndex + HEAD.length()));
+		builder.append(style);
+		if (hlStyle != null) {
+			builder.append(hlStyle);
+		}
+		builder.append(html.substring(headIndex + HEAD.length()));
+		return builder.toString();
+	}
+
+	private boolean isDarkTheme() {
+		RGB color = getShell().getBackground().getRGB();
+		return (color.red * 0.299 + color.green * 0.587+ color.blue *0.114) < 128; //turn to grey and check the level
+	}
+
+	private static @NonNull String toHTMLrgb(RGB rgb) {
+		StringBuilder builder = new StringBuilder(7);
+		builder.append('#');
+		appendAsHexString(builder, rgb.red);
+		appendAsHexString(builder, rgb.green);
+		appendAsHexString(builder, rgb.blue);
+		return builder.toString();
+	}
+
+	private static void appendAsHexString(StringBuilder buffer, int intValue) {
+		String hexValue= Integer.toHexString(intValue);
+		if (hexValue.length() == 1) {
+			buffer.append('0');
+		}
+		buffer.append(hexValue);
+	}
+
+	@Override
 	public IInformationControlCreator getInformationPresenterControlCreator() {
 		return parent -> {
-			BrowserInformationControl res = new FocusableBrowserInformationControl(parent, JFaceResources.DEFAULT_FONT,
-					true);
-			res.addLocationListener(HYPER_LINK_LISTENER);
-			return res;
+			if (BrowserInformationControl.isAvailable(parent)) {
+				BrowserInformationControl res = new FocusableBrowserInformationControl(parent, JFaceResources.DEFAULT_FONT,
+						true);
+				res.addLocationListener(HYPER_LINK_LISTENER);
+				return res;
+			} else {
+				return new DefaultInformationControl(parent);
+			}
 		};
 	}
+
 }
