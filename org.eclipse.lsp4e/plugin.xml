@@ -455,12 +455,14 @@
             class="org.eclipse.lsp4e.operations.highlight.HighlightReconciler"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
-            <with
-                  variable="editorInput">
-               <test
-                     property="org.eclipse.lsp4e.hasLanguageServer">
-               </test>
-            </with>
+           <or>
+             <with variable="editorInput">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+             <with variable="viewer">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+           </or>
          </enabledWhen>
       </highlightReconciler>
    </extension>
@@ -470,12 +472,14 @@
             class="org.eclipse.lsp4e.operations.folding.LSPFoldingReconciler"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
-            <with
-                  variable="editorInput">
-               <test
-                     property="org.eclipse.lsp4e.hasLanguageServer">
-               </test>
-            </with>
+           <or>
+             <with variable="editorInput">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+             <with variable="viewer">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+           </or>
          </enabledWhen>
       </foldingReconciler>
    </extension>   
@@ -486,12 +490,14 @@
             id="org.eclipse.lsp4e.codelens"
             label="CodeLens">
          <enabledWhen>
-            <with
-                  variable="viewer">
-               <test
-                     property="org.eclipse.lsp4e.hasLanguageServer">
-               </test>
-            </with>
+           <or>
+             <with variable="editorInput">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+             <with variable="viewer">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+           </or>
          </enabledWhen>
       </codeMiningProvider>
       <codeMiningProvider
@@ -499,12 +505,14 @@
             id="org.eclipse.lsp4e.documentColor"
             label="Color">
          <enabledWhen>
-            <with
-                  variable="viewer">
-               <test
-                     property="org.eclipse.lsp4e.hasLanguageServer">
-               </test>
-            </with>
+           <or>
+             <with variable="editorInput">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+             <with variable="viewer">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+           </or>
          </enabledWhen>
       </codeMiningProvider>
    </extension>
