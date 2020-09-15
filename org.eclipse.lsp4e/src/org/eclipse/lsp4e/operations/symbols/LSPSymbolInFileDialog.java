@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.operations.symbols;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -29,10 +30,12 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
+import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -86,7 +89,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 	public LSPSymbolInFileDialog(Shell parentShell, ITextEditor textEditor,
 			@NonNull URI fileURI, List<Either<SymbolInformation, DocumentSymbol>> t) {
-		super(parentShell, PopupDialog.INFOPOPUP_SHELLSTYLE, true, true, true, false, false, null, null);
+		super(parentShell, PopupDialog.INFOPOPUPRESIZE_SHELLSTYLE, true, true, true, false, false, null, null);
 		this.fTextEditor = textEditor;
 		this.fileURI = fileURI;
 		this.fSymbols = t;
@@ -95,6 +98,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 	@Override
 	protected Control createDialogArea(Composite parent) {
+		getShell().setText(NLS.bind(Messages.symbolsInFile, Path.of(fileURI).getFileName()));
 		FilteredTree filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true);
 		TreeViewer viewer = filteredTree.getViewer();
 
