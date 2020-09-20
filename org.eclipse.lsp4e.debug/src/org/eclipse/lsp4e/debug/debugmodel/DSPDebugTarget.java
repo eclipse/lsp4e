@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017-2019 Kichwa Coders Ltd. and others.
+ * Copyright (c) 2017-2020 Kichwa Coders Ltd. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -7,9 +7,11 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 552451 - Should the DSPProcess be added to the Launch when "attach" is used?
- *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 553196 - Toolbar & console terminate buttons always enabled even when the DSPDebugTarget is terminated
- *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 553234 - Implement DSPDebugTarget disconnect methods
+ *  Pierre-Yves Bigourdan <pyvesdev@gmail.com>:
+ *    Bug 552451 - Should the DSPProcess be added to the Launch when "attach" is used?
+ *    Bug 553196 - Toolbar & console terminate buttons always enabled even when the DSPDebugTarget is terminated
+ *    Bug 553234 - Implement DSPDebugTarget disconnect methods
+ *    Bug 567158 - IllegalArgumentException when terminating DPSProcess that was never initialised
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.debugmodel;
 
@@ -270,8 +272,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	private void terminated() {
 		fTerminated = true;
 		fireTerminateEvent();
-		// Disable the terminate button of the console associated with the DSPProcess.
-		DebugPlugin.getDefault().fireDebugEventSet(new DebugEvent[] { new DebugEvent(process, DebugEvent.TERMINATE) });
+		if (process != null) {
+			// Disable the terminate button of the console associated with the DSPProcess.
+			DebugPlugin.getDefault()
+					.fireDebugEventSet(new DebugEvent[] { new DebugEvent(process, DebugEvent.TERMINATE) });
+		}
 		if (breakpointManager != null) {
 			breakpointManager.shutdown();
 		}
