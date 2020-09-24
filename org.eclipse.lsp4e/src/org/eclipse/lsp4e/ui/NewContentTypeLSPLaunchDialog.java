@@ -14,6 +14,7 @@ package org.eclipse.lsp4e.ui;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -29,7 +30,6 @@ import org.eclipse.debug.internal.ui.launchConfigurations.LaunchConfigurationTre
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.Dialog;
-import org.eclipse.jface.util.Util;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.DecoratingLabelProvider;
@@ -77,7 +77,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 			IContentType[] contentTypes = manager.getAllContentTypes();
 			for (int i = 0; i < contentTypes.length; i++) {
 				IContentType type = contentTypes[i];
-				if (Util.equals(type.getBaseType(), baseType)) {
+				if (Objects.equals(type.getBaseType(), baseType)) {
 					elements.add(type);
 				}
 			}
