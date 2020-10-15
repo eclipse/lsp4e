@@ -1,12 +1,12 @@
 /*******************************************************************************
- * Copyright (c) 2019 Fraunhofer FOKUS and others.
+ * Copyright (c) 2019, 2020 Fraunhofer FOKUS and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
  *******************************************************************************/
-package org.eclipse.lsp4e.command.internal;
+package org.eclipse.lsp4e.command;
 
 import static org.eclipse.lsp4e.command.LSPCommandHandler.LSP_COMMAND_PARAMETER_ID;
 import static org.eclipse.lsp4e.command.LSPCommandHandler.LSP_PATH_PARAMETER_ID;
@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Predicate;
 
 import org.eclipse.core.commands.Category;
 import org.eclipse.core.commands.ExecutionException;
@@ -30,6 +31,7 @@ import org.eclipse.core.commands.ParameterType;
 import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -39,10 +41,11 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.command.LSPCommandHandler;
+import org.eclipse.lsp4e.command.internal.CommandEventParameter;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -58,7 +61,12 @@ import com.google.gson.JsonPrimitive;
 
 /**
  * This class provides methods to execute {@link Command} instances.
+ * <p>
+ * This class is deprecated and will likely be removed in the future,
+ * when the LSP protocol provides standardized support for `client/executeCommand`
+ * messages. See https://github.com/microsoft/language-server-protocol/pull/1119
  */
+@Deprecated
 public class CommandExecutor {
 
 	private static final String LSP_COMMAND_CATEGORY_ID = "org.eclipse.lsp4e.commandCategory"; //$NON-NLS-1$
@@ -69,106 +77,128 @@ public class CommandExecutor {
 	 * Will execute the given {@code command} either on a language server,
 	 * supporting the command, or on the client, if an {@link IHandler} is
 	 * registered for the ID of the command (see {@link LSPCommandHandler}). If
-	 * {@code command} is {@code null}, then this method will do nothing. If neither
-	 * the server, nor the client are able to handle the command explicitly, a
+	 * {@code command} is {@code null}, then this method will do nothing (returning null).
+	 * If neither the server, nor the client are able to handle the command explicitly, a
 	 * heuristic method will try to interpret the command locally.
 	 *
 	 * @param command
 	 *            the LSP Command to be executed. If {@code null} this method will
 	 *            do nothing.
 	 * @param document
-	 *            the document for which the command was created
+	 *            optional document for which the command was created
 	 * @param languageServerId
 	 *            the ID of the language server for which the {@code command} is
 	 *            applicable. If {@code null}, the command will not be executed on
 	 *            the language server.
+	 * @return A CompletableFuture<Object> or null. A null return value means that
+	 *      'there is no known way to handle the command'. A non-null value means 'the command
+	 *      is being handled'. Therefore it is possible for a caller to determine synchronously
+	 *      whether the callee is handling the command or not (by checking whether the return value is not null).
 	 */
-	public static void executeCommand(@Nullable Command command, @NonNull IDocument document,
+	public static CompletableFuture<Object> executeCommand(@Nullable Command command, @Nullable IDocument document,
 			@Nullable String languageServerId) {
 		if (command == null) {
-			return;
+			return null;
 		}
-		if (executeCommandServerSide(command, languageServerId, document)) {
-			return;
+		CompletableFuture<Object> r = executeCommandServerSide(command, languageServerId, document);
+		if (r!=null) {
+			return r;
 		}
-		if (executeCommandClientSide(command, document)) {
-			return;
+		r = executeCommandClientSide(command, document);
+		if (r!=null) {
+			return r;
 		}
 		// tentative fallback
 		if (command.getArguments() != null) {
 			WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), document);
 			LSPEclipseUtils.applyWorkspaceEdit(edit);
+			return CompletableFuture.completedFuture(null);
 		}
+		return null;
 	}
 
-	private static boolean executeCommandServerSide(@NonNull Command command, @Nullable String languageServerId,
-			@NonNull IDocument document) {
-		if (languageServerId == null) {
-			return false;
-		}
-		LanguageServerDefinition languageServerDefinition = LanguageServersRegistry.getInstance()
+	private static CompletableFuture<Object> executeCommandServerSide(@NonNull Command command, @Nullable String languageServerId,
+			@Nullable IDocument document) {
+		@Nullable LanguageServerDefinition languageServerDefinition = languageServerId == null ? null : LanguageServersRegistry.getInstance()
 				.getDefinition(languageServerId);
-		if (languageServerDefinition == null) {
-			return false;
-		}
-
 		try {
 			CompletableFuture<LanguageServer> languageServerFuture = getLanguageServerForCommand(command, document,
 					languageServerDefinition);
 			if (languageServerFuture == null) {
-				return false;
+				return null;
 			}
 			// Server can handle command
-			languageServerFuture.thenAcceptAsync(server -> {
+			return languageServerFuture.thenApplyAsync(server -> {
 				ExecuteCommandParams params = new ExecuteCommandParams();
 				params.setCommand(command.getCommand());
 				params.setArguments(command.getArguments());
-				server.getWorkspaceService().executeCommand(params);
+				return server.getWorkspaceService().executeCommand(params);
 			});
-			return true;
 		} catch (IOException e) {
 			// log and let the code fall through for LSPEclipseUtils to handle
 			LanguageServerPlugin.logError(e);
-			return false;
+			return null;
 		}
-
 	}
 
 	private static CompletableFuture<LanguageServer> getLanguageServerForCommand(@NonNull Command command,
-			@NonNull IDocument document, @NonNull LanguageServerDefinition languageServerDefinition) throws IOException {
-		CompletableFuture<LanguageServer> languageServerFuture = LanguageServiceAccessor
-				.getInitializedLanguageServer(document, languageServerDefinition, serverCapabilities -> {
-					ExecuteCommandOptions provider = serverCapabilities.getExecuteCommandProvider();
-					return provider != null && provider.getCommands().contains(command.getCommand());
-				});
-		return languageServerFuture;
+			@Nullable IDocument document, @Nullable LanguageServerDefinition languageServerDefinition) throws IOException {
+		if (document!=null && languageServerDefinition!=null) {
+			return LanguageServiceAccessor
+					.getInitializedLanguageServer(document, languageServerDefinition, serverCapabilities -> {
+						ExecuteCommandOptions provider = serverCapabilities.getExecuteCommandProvider();
+						return provider != null && provider.getCommands().contains(command.getCommand());
+					});
+		} else {
+			String id = command.getCommand();
+			List<LanguageServer> commandHandlers = LanguageServiceAccessor.getActiveLanguageServers(handlesCommand(id));
+			if (commandHandlers != null && !commandHandlers.isEmpty()) {
+				if (commandHandlers.size() == 1) {
+					return CompletableFuture.completedFuture(commandHandlers.get(0));
+				} else if (commandHandlers.size() > 1) {
+					throw new IllegalStateException("Multiple language servers have registered to handle command '"+id+"'"); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+			}
+		}
+		return null;
+	}
+
+	private static Predicate<ServerCapabilities> handlesCommand(String id) {
+		return (serverCaps) -> {
+			ExecuteCommandOptions executeCommandProvider = serverCaps.getExecuteCommandProvider();
+			if (executeCommandProvider != null) {
+				return executeCommandProvider.getCommands().contains(id);
+			}
+			return false;
+		};
 	}
 
 	@SuppressWarnings("unused") // ECJ compiler for some reason thinks handlerService == null is always false
-	private static boolean executeCommandClientSide(@NonNull Command command, @NonNull IDocument document) {
+	private static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @Nullable IDocument document) {
 		IWorkbench workbench = PlatformUI.getWorkbench();
 		if (workbench == null) {
-			return false;
+			return null;
 		}
-		IPath context = LSPEclipseUtils.toPath(document);
+		IPath context = document==null
+				? ResourcesPlugin.getWorkspace().getRoot().getLocation()
+				: LSPEclipseUtils.toPath(document);
 		ParameterizedCommand parameterizedCommand = createEclipseCoreCommand(command, context, workbench);
-		if (parameterizedCommand == null) {
-			return false;
-		}
 		@Nullable
 		IHandlerService handlerService = workbench.getService(IHandlerService.class);
 		if (handlerService == null) {
-			return false;
+			return null;
+		}
+		if (parameterizedCommand == null) {
+			return null;
 		}
 		try {
-			handlerService.executeCommand(parameterizedCommand, null);
+			return CompletableFuture.completedFuture(handlerService.executeCommand(parameterizedCommand, null));
 		} catch (ExecutionException | NotDefinedException e) {
 			LanguageServerPlugin.logError(e);
-			return false;
+			return null;
 		} catch (NotEnabledException | NotHandledException e2) {
-			return false;
+			return null;
 		}
-		return true;
 	}
 
 	private static ParameterizedCommand createEclipseCoreCommand(@NonNull Command command, IPath context,

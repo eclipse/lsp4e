@@ -58,7 +58,7 @@ import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.command.internal.CommandExecutor;
+import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4e.operations.hover.FocusableBrowserInformationControl;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.Command;

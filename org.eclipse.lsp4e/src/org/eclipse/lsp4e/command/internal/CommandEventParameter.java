@@ -20,7 +20,7 @@ import org.eclipse.core.commands.ParameterValuesException;
  * This parameter class is needed for defining an Eclipse command (a handler can
  * be registered for) for an LSP Command.
  */
-class CommandEventParameter implements IParameter, ITypedParameter {
+public class CommandEventParameter implements IParameter, ITypedParameter {
 
 	private final ParameterType paramType;
 	private final String name;
