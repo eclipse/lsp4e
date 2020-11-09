@@ -215,7 +215,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 
 			Source source = entry.getKey();
 			List<SourceBreakpoint> bps = entry.getValue();
-			Integer[] lines = bps.stream().map(SourceBreakpoint::getLine).toArray(Integer[]::new);
+			int[] lines = bps.stream().mapToInt(SourceBreakpoint::getLine).toArray();
 			SourceBreakpoint[] sourceBps = bps.toArray(new SourceBreakpoint[bps.size()]);
 
 			SetBreakpointsArguments arguments = new SetBreakpointsArguments();
