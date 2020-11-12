@@ -3,3 +3,5 @@ bin/
 .settings/de.loskutov.anyedit.AnyEditTools.prefs
 .polyglot.*
 .META-INF_MANIFEST.MF
+dash-licenses/
+*.log

@@ -55,5 +55,18 @@ pipeline {
 				}
 			}
 		}
+		stage('Dash License Check') {
+			when {
+				branch 'master'
+			}
+			steps {
+				sh './run_dash_licenses.sh'
+			}
+			post {
+				always {
+					archiveArtifacts artifacts: '*.log'
+				}
+			}
+		}
 	}
 }
