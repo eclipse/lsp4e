@@ -1,6 +1,6 @@
 # Eclipse LSP4E
 
-[Eclipse LSP4E](https://projects.eclipse.org/projects/technology.lsp4e) makes Eclipse IDE able to consume the [Language Server protocol](https://github.com/Microsoft/language-server-protocol) and the [Debug Adapter protocol](https://github.com/Microsoft/vscode-debugadapter-node/tree/master/protocol).
+[Eclipse LSP4E](https://projects.eclipse.org/projects/technology.lsp4e) makes Eclipse IDE able to consume the [Language Server protocol (LSP)](https://microsoft.github.io/language-server-protocol/) and the [Debug Adapter protocol (DAP)](https://microsoft.github.io/debug-adapter-protocol/).
 
 **Target audience** are Eclipse plugin developers or Language developers willing to integrate a language which ships a Language Server or Debug Adapter into Eclipse IDE. End-users can also take advantage of this as LSP4E also defines a way to bind Eclipse IDE to existing language servers from UI.
 
@@ -11,10 +11,10 @@
 ## Preview
 
 ### Language Server in Eclipse in the Eclipse IDE
-[<img alt="Video demo" src="http://content.screencast.com/users/mistria/folders/Default/media/1a860eda-8a50-4668-874c-ee2dd2ef213c/FirstFrame.jpg" width="400px">](http://www.screencast.com/t/Xs3TtaQM)
+[<img alt="Video demo" src="https://content.screencast.com/users/mistria/folders/Default/media/1a860eda-8a50-4668-874c-ee2dd2ef213c/FirstFrame.jpg" width="400px">](http://www.screencast.com/t/Xs3TtaQM)
 
 ### Debug Adapter in action in the Eclipse IDE
-[<img alt="Video demo" src="http://content.screencast.com/users/mistria/folders/Default/media/8112c854-eaae-4fd4-b863-84a39e848647/FirstFrame.jpg" width="400px">](https://www.screencast.com/t/0QRpxSA3M7Qy)
+[<img alt="Video demo" src="https://content.screencast.com/users/mistria/folders/Default/media/8112c854-eaae-4fd4-b863-84a39e848647/FirstFrame.jpg" width="400px">](https://www.screencast.com/t/0QRpxSA3M7Qy)
 
 ## Features
 
@@ -49,7 +49,7 @@ Examples of integration contain:
 * [language-servers-for-eclipse](https://github.com/eclipselabs/language-servers-for-eclipse) Binds various language servers to the Eclipse IDE.
 * [Solargraph](https://github.com/PyvesB/eclipse-solargraph) Binds a **Ruby** language server to the Eclipse IDE.
 
-All those examples are already good for usage as they provide advanced edition features, and great for showcase of the LSP4E project.
+All those examples are good for usage as they provide advanced edition features, and great for showcase of the LSP4E project.
 
 ## Community
 
@@ -57,7 +57,7 @@ Contributions are highly welcome. [See how](CONTRIBUTING.md)
 
 ## Related projects
 
-The [Language Server protocol](https://github.com/Microsoft/language-server-protocol) specification is an open-source project.
+The [Language Server protocol](https://microsoft.github.io/language-server-protocol/) specification is an open-source project.
 
 As the Language Server Protocol doesn't include support for syntax highlighting, most adopters of LSP4E usually pair it with the [Eclipse TM4E](https://projects.eclipse.org/projects/technology.tm4e) project to provide Syntax Highlighting according to TextMate grammars.
 
@@ -65,4 +65,5 @@ Possible integration with Docker images as language-server are made possible tha
 
 ## History
 
-This has been initiated during the EclipseCon France 2016 Unconference. Some [initial documentation](/doc/index.adoc) is still available (although it may not be up to date).
+This has been initiated during the EclipseCon France 2016 Unconference with the first official release
+in [February 2017](https://projects.eclipse.org/projects/technology.lsp4e/releases/0.1.0).

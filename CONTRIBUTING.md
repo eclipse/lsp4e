@@ -1,7 +1,6 @@
 Issues and code contribution are handled via Eclipse.org infrastructure. See https://projects.eclipse.org/projects/technology.lsp4e/developer
 
-_TL;DR_: `mvn verify` should
-build a p2-accessible repository in `repository/target`.
+_TL;DR_: `mvn verify` will build a p2-accessible repository in `repository/target/repository`.
 
 # Development
 
@@ -10,39 +9,33 @@ Maven for building Eclipse bundles and features.
 
 ## Requirements
 
-1. Maven 3.1.1 or later. Although m2eclipse is bundled with its own Maven install,
+1. Maven 3.6.3 or later. Although m2eclipse is bundled with its own Maven install,
    Maven is necessary for command-line builds.
 
-1. JDK 8
+1. JDK 11. Only JDK 8 is required to run core LSP4E, but some components, such as JDT extensions and tests JDK11 is required.
 
 1. git (optional: you can use EGit from within Eclipse instead)
 
 1. The [Eclipse IDE](https://www.eclipse.org/downloads/eclipse-packages/).
-  It's easiest to use the _Eclipse IDE for Java EE Developers_ package. You can use
-  Eclipse 4.7 (Oxygen).
+  It's easiest to use the _Eclipse IDE for Enterprise Java Developers_ package.
 
   1. The [m2eclipse plugin](http://www.eclipse.org/m2e/) (also called m2e) is
      required to import the projects into Eclipse. m2eclipse is included in
-     [several packages](https://www.eclipse.org/downloads/compare.php?release=neon),
-     such as the _Eclipse IDE for Java EE Developers_ package.
+     [several packages](https://www.eclipse.org/downloads/packages/compare),
+     such as the _Eclipse IDE for Enterprise Java Developers_ package.
 
-1. Clone the project to a local directory using `git clone
-   git clone ssh://username@git.eclipse.org:29418/lsp4e/lsp4e.git`.
+1. Clone the project to a local directory using `git clone ssh://username@git.eclipse.org:29418/lsp4e/lsp4e.git`.
 
 ## Configuring Maven/Tycho Builds
 
 The plugin is built using Maven/Tycho and targeted to Java 8.
 
 
-### Changing the Eclipse Platform compilation and testing target
+### Eclipse Platform Target Platform
 
-By default, the build is targeted against Eclipse Oxygen / 4.7.
-You can explicitly set the `target-config` property to
-`target-platform-oxygen` (4.6) or `target-platform-photon` (4.8).
-
-```
-$ mvn -Dtarget-config=target-platform-photon verify
-```
+The build is generally targeted against the newest release of the Eclipse
+Platform. Refer to [target-platform-latest.target](target-platforms/target-platform-latest/target-platform-latest.target) for details on the current dependencies used
+to build LSP4E.
 
 ## Import into Eclipse
 
@@ -66,8 +59,9 @@ In Eclipse:
 
 5. At this point the Problems view should show on the order of 1000 errors.
 
-6. In the Project Explorer, select the file target-platform-photon.target. Open this
-   file with the target editor.
+6. In the Project Explorer, select the file
+   [target-platform-latest.target](target-platforms/target-platform-latest/target-platform-latest.target).
+   Open this file with the target editor.
 
 7. Click the "Set as Target Platform" link on the top right.
 
@@ -76,10 +70,14 @@ In Eclipse:
 When sending a pull request please squash your commits and set the commit message
 in this form:
 
+```
 Bug 528908 - Change Description
+
+Change details, if needed
+
 Signed-Off-By: Your Name <email@example.org>
 Change-Id: I8cd4aa13a8c61b550cfc80f68ab2b4d230b9f9b3
-
+```
 To push to Gerrit for review:
 
 ```
@@ -88,3 +86,5 @@ $ git push ssh://username@git.eclipse.org:29418/lsp4e/lsp4e.git HEAD:refs/for/ma
 
 Make sure that the name/email in the git commits matches the name/email you have
 registered with the Eclipse project. 
+
+Please see [Gerrit info on the Eclipse Wiki](https://wiki.eclipse.org/Gerrit) for more information.
