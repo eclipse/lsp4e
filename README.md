@@ -55,6 +55,10 @@ All those examples are good for usage as they provide advanced edition features,
 
 Contributions are highly welcome. [See how](CONTRIBUTING.md)
 
+## Changelog - New and Noteworthy
+
+Please review the [Changelog](CHANGELOG.md) for changes and new and noteworthy items.
+
 ## Related projects
 
 The [Language Server protocol](https://microsoft.github.io/language-server-protocol/) specification is an open-source project.
