@@ -59,10 +59,13 @@ public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer
 		List<QuickAccessElement> res = Collections.synchronizedList(new ArrayList<>());
 
 		try {
-			CompletableFuture.allOf(usedLanguageServers.stream().map(ls ->
-				ls.getWorkspaceService().symbol(params).thenAcceptAsync(symbols ->
-					res.addAll(symbols.stream().map(WorkspaceSymbolQuickAccessElement::new).collect(Collectors.toList()))
-			)).toArray(CompletableFuture[]::new)).get(1000, TimeUnit.MILLISECONDS);
+			CompletableFuture.allOf(usedLanguageServers.stream()
+					.map(ls -> ls.getWorkspaceService().symbol(params).thenAcceptAsync(symbols -> {
+						if (symbols != null) {
+							res.addAll(symbols.stream().map(WorkspaceSymbolQuickAccessElement::new)
+									.collect(Collectors.toList()));
+						}
+					})).toArray(CompletableFuture[]::new)).get(1000, TimeUnit.MILLISECONDS);
 		}
 		catch (ExecutionException | TimeoutException | InterruptedException e) {
 			LanguageServerPlugin.logError(e);
