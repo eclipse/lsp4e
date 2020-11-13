@@ -84,7 +84,47 @@ To push to Gerrit for review:
 $ git push ssh://username@git.eclipse.org:29418/lsp4e/lsp4e.git HEAD:refs/for/master
 ```
 
-Make sure that the name/email in the git commits matches the name/email you have
-registered with the Eclipse project. 
+Please see [Gerrit info on the Eclipse Wiki](https://wiki.eclipse.org/Gerrit) for more information on how to use Gerrit.
 
-Please see [Gerrit info on the Eclipse Wiki](https://wiki.eclipse.org/Gerrit) for more information.
+Make sure that the name/email in the git commits matches the name/email you have
+registered with the Eclipse project, that you have signed the ECA and that you have
+signed-off your commit. See the section Eclipse Contributor Agreement below for more
+information.
+
+## Bug Tracking
+
+This project uses Bugzilla to track ongoing development and issues.
+
+* Search for issues: https://bugs.eclipse.org/bugs/buglist.cgi?product=LSP4E
+* Create a new report:
+   https://bugs.eclipse.org/bugs/enter_bug.cgi?product=LSP4E
+
+Be sure to search for existing bugs before you create another one. Remember that
+contributions are always welcome!
+
+## Eclipse Development Process
+
+This Eclipse Foundation open project is governed by the Eclipse Foundation
+Development Process and operates under the terms of the Eclipse IP Policy.
+
+## Eclipse Contributor Agreement
+
+Before your contribution can be accepted by the project team contributors must
+electronically sign the Eclipse Contributor Agreement (ECA).
+
+* http://www.eclipse.org/legal/ECA.php
+
+Commits that are provided by non-committers must have a Signed-off-by field in
+the footer indicating that the author is aware of the terms by which the
+contribution has been provided to the project. The non-committer must
+additionally have an Eclipse Foundation account and must have a signed Eclipse
+Contributor Agreement (ECA) on file.
+
+For more information, please see the Eclipse Committer Handbook:
+https://www.eclipse.org/projects/handbook/#resources-commit
+
+## Contact
+
+Contact the project developers via the project's "dev" list.
+
+* https://dev.eclipse.org/mailman/listinfo/lsp4e-dev
