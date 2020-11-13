@@ -5,6 +5,8 @@
 * Target Platform updated to:
     * SimRel 2020-09, including Eclipse Platform 4.17
     * Eclipse LSP4J 0.10.0
+* Java 11 is required to build LSP4E and run tests
+* Java 11 is required to run some of the bundles. For now just the org.eclipse.lsp4e.jdt and test bundles. In a future release it may encompass all the bundles. The Eclipse Platform now has bundles that require Java 11 and some of those bundles may be dependencies of LSP4E.
 * Highlight.js is now being used for lsp4e's completion documentation. See [Bug 565496](https://bugs.eclipse.org/bugs/show_bug.cgi?id=565496)
 * LSP4E's format menu item has been relocated Generic Editor Source submenu
 * New icon for unit completion kind. See [Bug 567812 ](https://bugs.eclipse.org/bugs/show_bug.cgi?id=567812)

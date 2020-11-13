@@ -12,7 +12,7 @@ Maven for building Eclipse bundles and features.
 1. Maven 3.6.3 or later. Although m2eclipse is bundled with its own Maven install,
    Maven is necessary for command-line builds.
 
-1. JDK 11. Only JDK 8 is required to run core LSP4E, but some components, such as JDT extensions and tests JDK11 is required.
+1. JDK 11. Only Java 8 is required to run core LSP4E, but some components, such as JDT extensions and tests Java 11 is required. Some dependencies of LSP4E may also require Java 11.
 
 1. git (optional: you can use EGit from within Eclipse instead)
 
