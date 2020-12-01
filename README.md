@@ -48,6 +48,7 @@ Examples of integration contain:
 * [Eclipse WildWebDeveloper](https://github.com/eclipse/wildwebdeveloper) **HTML, CSS, JavaScript, TypeScript, Node.js, Angular, JSON, YAML (+Kubernetes) and XMLL** edition, using LSP4E and various language servers from SourceGraph and VSCode.
 * [language-servers-for-eclipse](https://github.com/eclipselabs/language-servers-for-eclipse) Binds various language servers to the Eclipse IDE.
 * [Solargraph](https://github.com/PyvesB/eclipse-solargraph) Binds a **Ruby** language server to the Eclipse IDE.
+* [Quarkus Tools](https://github.com/jbosstools/jbosstools-quarkus) Based on the Eclipse [LSP4MP](https://github.com/eclipse/lsp4mp) language server, extended for Quarkus specifics and binds to application.properties and Java files. 
 
 All those examples are good for usage as they provide advanced edition features, and great for showcase of the LSP4E project.
 
