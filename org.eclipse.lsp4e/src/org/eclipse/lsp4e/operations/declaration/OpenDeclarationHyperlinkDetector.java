@@ -17,7 +17,9 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -64,7 +66,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 		}
 		IRegion r = findWord(textViewer.getDocument(), region.getOffset());
 		final IRegion linkRegion = r != null ? r : region;
-		Collection<LSBasedHyperlink> allLinks = Collections.synchronizedList(new ArrayList<>());
+		Map<Either<Location, LocationLink>,LSBasedHyperlink> allLinks = Collections.synchronizedMap(new LinkedHashMap<>());
 		try {
 			// Collect definitions
 			Collection<CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>>> allFutures = Collections.synchronizedCollection(new ArrayList<>());
@@ -84,7 +86,9 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 				future.thenAccept(locations -> {
 					Collection<LSBasedHyperlink> links = toHyperlinks(document, linkRegion, locations);
 					synchronized (allLinks) {
-						allLinks.addAll(links);
+						links.forEach(link -> {
+							allLinks.putIfAbsent(link.getLocation(), link);
+						});
 					}
 				})).toArray(CompletableFuture[]::new))
 			).get(500, TimeUnit.MILLISECONDS);
@@ -97,7 +101,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 		if (allLinks.isEmpty()) {
 			return null;
 		}
-		return allLinks.toArray(new IHyperlink[allLinks.size()]);
+		return allLinks.values().toArray(new IHyperlink[allLinks.size()]);
 	}
 
 	/**
