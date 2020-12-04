@@ -11,8 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
@@ -30,12 +28,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.console.ConsolePlugin;
-import org.eclipse.ui.console.IConsole;
-import org.eclipse.ui.console.IConsoleConstants;
-import org.eclipse.ui.console.IConsoleManager;
-import org.eclipse.ui.console.MessageConsole;
-import org.eclipse.ui.console.MessageConsoleStream;
 
 @SuppressWarnings("restriction")
 public class ServerMessageHandler {
@@ -117,22 +109,22 @@ public class ServerMessageHandler {
 	}
 
 	public static void logMessage(LanguageServerWrapper wrapper, MessageParams params) {
-		MessageConsole console = findConsole(
-				String.format(NAME_PATTERN, wrapper.serverDefinition.label, wrapper.toString()));
-		if (console != null) {
-			StringBuilder log = new StringBuilder();
-			log.append('[');
-			log.append(params.getType().toString());
-			log.append(']');
-			log.append('\t');
-			log.append(params.getMessage());
-			MessageConsoleStream stream = console.newMessageStream();
-			stream.println(log.toString());
-			try {
-				stream.close();
-			} catch (IOException e) {
-				LanguageServerPlugin.logError(e);
-			}
+		StringBuilder log = new StringBuilder();
+		log.append('[');
+		log.append(params.getType().toString());
+		log.append(']');
+		log.append('\t');
+		log.append(params.getMessage());
+
+		switch(params.getType()) {
+		case Error:
+			LanguageServerPlugin.logError(log.toString(), null);
+			break;
+		case Warning:
+			LanguageServerPlugin.logWarning(log.toString(), null);
+			break;
+		default:
+			LanguageServerPlugin.logInfo(log.toString());
 		}
 	}
 
@@ -160,23 +152,6 @@ public class ServerMessageHandler {
 			future.complete(result);
 		});
 		return future;
-	}
-
-	private static MessageConsole findConsole(String name) {
-		ConsolePlugin plugin = ConsolePlugin.getDefault();
-		IConsoleManager conMan = plugin.getConsoleManager();
-		IConsole[] existing = conMan.getConsoles();
-		for (int i = 0; i < existing.length; i++) {
-			if (name.equals(existing[i].getName())) {
-				return (MessageConsole) existing[i];
-			}
-		}
-		// no console found, so create a new one
-		// use UTF-8 in message console instead of system encoding
-		MessageConsole myConsole = new MessageConsole(name, IConsoleConstants.MESSAGE_CONSOLE_TYPE, null,
-				StandardCharsets.UTF_8.name(), true);
-		conMan.addConsoles(new IConsole[] { myConsole });
-		return myConsole;
 	}
 
 }
