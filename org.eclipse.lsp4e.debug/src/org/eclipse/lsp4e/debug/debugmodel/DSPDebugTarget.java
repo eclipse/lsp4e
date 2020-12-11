@@ -45,6 +45,7 @@ import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.IMemoryBlock;
@@ -181,7 +182,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			debugProtocolFuture = debugProtocolLauncher.startListening();
 			debugProtocolServer = debugProtocolLauncher.getRemoteProxy();
 
-			CompletableFuture<Void> future = initialize(dspParameters, subMonitor);
+			CompletableFuture<?> future = initialize(dspParameters, subMonitor);
 			monitorGet(future, subMonitor);
 		} catch (Exception e) {
 			terminated();
@@ -208,7 +209,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		return debugProtocolLauncher;
 	}
 
-	private CompletableFuture<Void> initialize(Map<String, Object> dspParameters, IProgressMonitor monitor) {
+	private CompletableFuture<?> initialize(Map<String, Object> dspParameters, IProgressMonitor monitor) {
 		InitializeRequestArguments arguments = new InitializeRequestArguments();
 		arguments.setClientID("lsp4e.debug");
 		String adapterId = "adapterId";
@@ -226,7 +227,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 		monitor.subTask("Initializing connection to debug adapter");
 		boolean isLaunchRequest = "launch".equals(dspParameters.getOrDefault("request", "launch"));
-		CompletableFuture<Void> future = getDebugProtocolServer().initialize(arguments)
+		CompletableFuture<?> future = getDebugProtocolServer().initialize(arguments)
 				.thenAccept((Capabilities capabilities) -> {
 					monitor.worked(10);
 					this.capabilities = capabilities;
@@ -249,23 +250,26 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 						initialized.completeExceptionally(t);
 					}
 					return q;
-				}).thenCombineAsync(initialized, (v1, v2) -> {
-					monitor.worked(10);
-					return (Void) null;
-				}).thenCompose(v -> {
-					monitor.worked(10);
-					monitor.subTask("Sending breakpoints");
-					breakpointManager = new DSPBreakpointManager(getBreakpointManager(), getDebugProtocolServer(),
-							capabilities);
-					return breakpointManager.initialize();
-				}).thenCompose(v -> {
-					monitor.worked(30);
-					monitor.subTask("Sending configuration done");
-					if (Boolean.TRUE.equals(capabilities.getSupportsConfigurationDoneRequest())) {
-						return getDebugProtocolServer().configurationDone(new ConfigurationDoneArguments());
-					}
-					return CompletableFuture.completedFuture(null);
 				});
+		if (ILaunchManager.DEBUG_MODE.equals(launch.getLaunchMode())) {
+			future = future.thenCombineAsync(initialized, (v1, v2) -> {
+				monitor.worked(10);
+				return (Void) null;
+			}).thenCompose(v -> {
+				monitor.worked(10);
+				monitor.subTask("Sending breakpoints");
+				breakpointManager = new DSPBreakpointManager(getBreakpointManager(), getDebugProtocolServer(),
+						capabilities);
+				return breakpointManager.initialize();
+			}).thenCompose(v -> {
+				monitor.worked(30);
+				monitor.subTask("Sending configuration done");
+				if (Boolean.TRUE.equals(capabilities.getSupportsConfigurationDoneRequest())) {
+					return getDebugProtocolServer().configurationDone(new ConfigurationDoneArguments());
+				}
+				return CompletableFuture.completedFuture(null);
+			});
+		}
 		return future;
 	}
 
