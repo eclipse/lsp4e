@@ -485,7 +485,7 @@ public class LanguageServiceAccessor {
 	private static Collection<LanguageServerWrapper> getMatchingStartedWrappers(@NonNull IFile file,
 			@Nullable Predicate<ServerCapabilities> request) {
 		synchronized (startedServers) {
-			return startedServers.stream().filter(wrapper -> wrapper.isConnectedTo(file.getLocation())
+			return startedServers.stream().filter(wrapper -> wrapper.isActive() && wrapper.isConnectedTo(file.getLocation())
 					|| (LanguageServersRegistry.getInstance().matches(file, wrapper.serverDefinition)
 							&& wrapper.canOperate(file.getProject()))).filter(wrapper -> request == null
 					|| (wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities())))

@@ -192,7 +192,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 
 	public static void refreshTreeSelection(TreeViewer viewer, int offset, IDocument document) {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) viewer.getContentProvider();
-		Object[] objects = contentProvider.getElements(null);
+		Object[] objects = contentProvider != null ? contentProvider.getElements(null) : null;
 		List<Object> path = new ArrayList<>();
 		while (objects != null && objects.length > 0) {
 			boolean found = false;
@@ -200,7 +200,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 				Object object = objects[index];
 				Range range = toRange(object);
 				if (range != null && isOffsetInRange(offset, range, document)) {
-					objects = contentProvider.getChildren(object);
+					objects = contentProvider != null ? contentProvider.getChildren(object) : null;
 					path.add(object);
 					found = true;
 					break;

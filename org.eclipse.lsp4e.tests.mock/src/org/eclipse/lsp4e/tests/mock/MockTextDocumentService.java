@@ -105,6 +105,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		mockHover = new Hover(Collections.singletonList(Either.forLeft("Mock hover")), null);
 		mockPrepareRenameResult = Either.forRight(new PrepareRenameResult(new Range(new Position(0,0), new Position(0,0)), "placeholder"));
 		this.remoteProxies = new ArrayList<>();
+		this.documentSymbols = Collections.emptyList();
 	}
 
 	private <U> CompletableFuture<U> futureFactory(U value) {
