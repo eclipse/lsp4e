@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 Red Hat Inc. and others.
+ * Copyright (c) 2018, 2020 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -80,7 +80,7 @@ public abstract class AbstractCompletionTest {
 				cursorIndexInContent);
 		assertEquals(expectedOrder.length, proposals.length);
 		for (int i = 0; i < proposals.length; i++) {
-			assertEquals(expectedOrder[0], proposals[0].getDisplayString());
+			assertEquals(expectedOrder[i], proposals[i].getDisplayString());
 		}
 	}
 }

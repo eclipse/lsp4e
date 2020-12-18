@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 Red Hat Inc. and others.
+ * Copyright (c) 2018, 2020 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -44,7 +44,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 	public void testOrderByCategory() throws Exception {
 		// Category 1 before Category 2 (testa)
 		String[] completions = new String[] { "testa", "test.a", "a.test.a", "a.testa", "test" };
-		String[] orderedResults = new String[] { "test", "test.a", "a.test.a", "testa", "a.testa" };
+		String[] orderedResults = new String[] { "test", "testa", "a.testa", "test.a", "a.test.a" };
 		confirmCompletionResults(completions, "test", 4, orderedResults);
 
 		// Category 2 before Category 3 (atest)
@@ -67,13 +67,13 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 	public void testOrderByRank() throws Exception {
 		// Category 1
 		String[] completions = new String[] { "prefix.test", "alongprefix.test", "test", "test.test", "pretest.test" };
-		String[] orderedResults = new String[] { "test", "test.test", "prefix.test", "pretest.test",
+		String[] orderedResults = new String[] { "test", "test.test", "pretest.test", "prefix.test",
 				"alongprefix.test" };
 		confirmCompletionResults(completions, "test", 4, orderedResults);
 
 		// Category 2
 		completions = new String[] { "testa", "alongprefix.testa", "testatest", "prefix.testa" };
-		orderedResults = new String[] { "testa", "testatest", "prefix.testa", "alongprefix.testa" };
+		orderedResults = new String[] { "testa", "prefix.testa", "alongprefix.testa", "testatest" };
 		confirmCompletionResults(completions, "test", 4, orderedResults);
 
 		// Category 3
@@ -91,13 +91,13 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 	public void testOrderWithCapitalization() throws Exception {
 		// Category 1
 		String[] completions = new String[] { "prefiX.Test", "alongprefix.test", "tEsT", "teSt.teST", "preTEst.test" };
-		String[] orderedResults = new String[] { "tEsT", "teSt.teST", "prefiX.Test", "preTEst.test",
+		String[] orderedResults = new String[] { "tEsT", "teSt.teST", "preTEst.test", "prefiX.Test",
 				"alongprefix.test" };
 		confirmCompletionResults(completions, "test", 4, orderedResults);
 
 		// Category 2
 		completions = new String[] { "teSTa", "alonGPrefix.TESTA", "tEStatest", "prefix.testa" };
-		orderedResults = new String[] { "teSTa", "tEStatest", "prefix.testa", "alonGPrefix.TESTA" };
+		orderedResults = new String[] { "teSTa", "prefix.testa", "alonGPrefix.TESTA", "tEStatest" };
 		confirmCompletionResults(completions, "tESt", 4, orderedResults);
 
 		// Category 3
