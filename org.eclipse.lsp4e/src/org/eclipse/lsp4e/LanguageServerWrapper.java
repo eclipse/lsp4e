@@ -46,12 +46,12 @@ import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
@@ -487,16 +487,16 @@ public class LanguageServerWrapper {
 		if (!supportsWorkspaceFolderCapability()) {
 			return;
 		}
-		try {
-			ResourcesPlugin.getWorkspace().run(monitor -> {
+		new WorkspaceJob("Setting watch projects on server" + serverDefinition.label) { //$NON-NLS-1$
+			@Override
+			public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 				WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
 				wsFolderEvent.getAdded().addAll(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects()).filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder).collect(Collectors.toList()));
-				this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(wsFolderEvent));
+				LanguageServerWrapper.this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(wsFolderEvent));
 				ResourcesPlugin.getWorkspace().addResourceChangeListener(workspaceFolderUpdater, IResourceChangeEvent.POST_CHANGE);
-			}, new NullProgressMonitor());
-		} catch (CoreException e) {
-			LanguageServerPlugin.logError(e);
-		}
+				return Status.OK_STATUS;
+			}
+		}.schedule();
 	}
 
 	private static final @Nullable WorkspaceFoldersChangeEvent toWorkspaceFolderEvent(IResourceChangeEvent e) {
