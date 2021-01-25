@@ -1,6 +1,6 @@
 #!/bin/bash
 ###############################################################################
-# Copyright (c) 2020 Kichwa Coders Canada Inc and others.
+# Copyright (c) 2020, 2021 Kichwa Coders Canada Inc and others.
 #
 # This program and the accompanying materials
 # are made available under the terms of the Eclipse Public License 2.0
@@ -34,7 +34,7 @@ ${MVN:-mvn} -B -V -f dash-licenses clean package >dash-build.log  2>&1
 
 echo Run the license check
 exit_code=0
-if ! java -jar dash-licenses/target/org.eclipse.dash.licenses-*-SNAPSHOT.jar deps.log >dash-licenses.log  2>&1; then
+if ! java -jar dash-licenses/core/target/org.eclipse.dash.licenses-*-SNAPSHOT.jar deps.log >dash-licenses.log  2>&1; then
     echo Some licenses appear to have failed a check, review output below.
     exit_code=1
 fi
