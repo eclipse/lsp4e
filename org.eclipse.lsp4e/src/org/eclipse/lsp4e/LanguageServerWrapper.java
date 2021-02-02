@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -487,12 +488,15 @@ public class LanguageServerWrapper {
 		if (!supportsWorkspaceFolderCapability()) {
 			return;
 		}
-		new WorkspaceJob("Setting watch projects on server" + serverDefinition.label) { //$NON-NLS-1$
+		final LanguageServer currentLS = this.languageServer;
+		new WorkspaceJob("Setting watch projects on server " + serverDefinition.label) { //$NON-NLS-1$
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 				WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
-				wsFolderEvent.getAdded().addAll(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects()).filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder).collect(Collectors.toList()));
-				LanguageServerWrapper.this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(wsFolderEvent));
+				wsFolderEvent.getAdded().addAll(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects()).filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder).filter(Objects::nonNull).collect(Collectors.toList()));
+				if (currentLS != null && currentLS == LanguageServerWrapper.this.languageServer) {
+					currentLS.getWorkspaceService().didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(wsFolderEvent));
+				}
 				ResourcesPlugin.getWorkspace().addResourceChangeListener(workspaceFolderUpdater, IResourceChangeEvent.POST_CHANGE);
 				return Status.OK_STATUS;
 			}
