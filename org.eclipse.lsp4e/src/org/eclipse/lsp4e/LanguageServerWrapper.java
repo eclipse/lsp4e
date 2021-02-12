@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2021 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -12,6 +12,7 @@
  *  Jan Koehnlein (TypeFox) - bug 521744
  *  Martin Lippert (Pivotal, Inc.) - bug 531030, 527902, 534637
  *  Kris De Volder (Pivotal, Inc.) - dynamic command registration
+ *  Tamas Miklossy (itemis) - bug 571162
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -82,6 +83,7 @@ import org.eclipse.lsp4j.DocumentSymbolCapabilities;
 import org.eclipse.lsp4j.ExecuteCommandCapabilities;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.FailureHandlingKind;
+import org.eclipse.lsp4j.FoldingRangeCapabilities;
 import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
@@ -332,6 +334,7 @@ public class LanguageServerWrapper {
 						SymbolKind.Property, SymbolKind.String, SymbolKind.Struct, SymbolKind.TypeParameter,
 						SymbolKind.Variable)));
 				textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
+				textDocumentClientCapabilities.setFoldingRange(new FoldingRangeCapabilities());
 				textDocumentClientCapabilities.setFormatting(new FormattingCapabilities(Boolean.TRUE));
 				HoverCapabilities hoverCapabilities = new HoverCapabilities();
 				hoverCapabilities.setContentFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
