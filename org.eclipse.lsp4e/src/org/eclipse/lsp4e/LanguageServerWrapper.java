@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -202,12 +201,11 @@ public class LanguageServerWrapper {
 	 * @throws IOException
 	 */
 	public synchronized void start() throws IOException {
-		final Map<IPath, IDocument> filesToReconnect = Collections.emptyMap();
+		final Map<IPath, IDocument> filesToReconnect = new HashMap<>();
 		if (this.languageServer != null) {
 			if (isActive()) {
 				return;
 			} else {
-				filesToReconnect.clear();
 				for (Entry<IPath, DocumentContentSynchronizer> entry : this.connectedDocuments.entrySet()) {
 					filesToReconnect.put(entry.getKey(), entry.getValue().getDocument());
 				}
