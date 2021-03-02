@@ -1,5 +1,32 @@
 ## LSP4E Changelog and New and Noteworthy
 
+### 0.18.0
+
+📅 Release Date: March 2nd, 2021
+
+* New Capailities
+    * _"Bug 564491 - Replace deprecated editorInput variable in enabledWhen"_ allows to more easily use LSP4E in a TextViewer, outside of an editor
+    * _"Enable a long running LS start() method"_ can allow slower language server to work with LSP4E, while this was previously impossible
+* Bugfixes and other improvements about already existing capability
+    * Ensure LS is valid when triggering didChangeWorkspaceFolder
+    * [#571162] initialize folding capabilities properly.
+    * Bug 570527: launch setBreakpoints and configurationDone after initialized
+    * Bug 569714: delay projects watch in workspace job
+    * Allow DSPDebugTarget to complete earlier for non-debug launch
+    * Enable a long running LS start() method
+    * Make `window/logMessage` to report to Eclipse log instead of Console
+    * Bug 564491 - Replace deprecated editorInput variable in enabledWhen
+    * Bug 569345 - duplicate entries in open declaration (F3 and CTRL click)
+* LSP4E Development utilities
+    * Bug 569270: Add .options to build.properties to make debug/tracing discoverable in PDE
+* Dependencies, releng & build work
+    * Update target platform to newer Eclipse release
+    * Build with Tycho 2.2.0
+    * Move lsp4e.debug BREE to Java 11.
+    * Enable automated dependency IP check (dash license tool) in CI
+
+
+
 ### v0.17.0 (Nov 2020)
 
 * Target Platform updated to:
