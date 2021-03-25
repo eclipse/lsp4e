@@ -174,9 +174,12 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (severitiesForResource == null) {
 			return -1;
 		}
+		int bound1 = LSPEclipseUtils.toOffset(range.getStart(), doc);
+		int bound2 = LSPEclipseUtils.toOffset(range.getEnd(), doc);
+		// using bounds here because doc may have changed in the meantime so toOffset can return wrong results.
 		com.google.common.collect.Range<Integer> subRange = com.google.common.collect.Range.closed(
-				LSPEclipseUtils.toOffset(range.getStart(), doc),
-				LSPEclipseUtils.toOffset(range.getEnd(), doc));
+				Math.min(bound1, bound2), // we guard that lower <= endOffset
+				bound2);
 		return severitiesForResource.subRangeMap(subRange)
 				.asMapOfRanges()
 				.values()
@@ -210,10 +213,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (maxSeverity != 1 && maxSeverity != 2) {
 			throw new IllegalArgumentException("Severity " + maxSeverity + " not supported."); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		if (!this.overlays.containsKey(res)) {
-			this.overlays.put(res, new Image[2]);
-		}
-		Image[] currentOverlays = this.overlays.get(res);
+		Image[] currentOverlays = this.overlays.computeIfAbsent(res, key -> new Image[2]);
 		if (currentOverlays[maxSeverity - 1] == null) {
 			String overlayId = null;
 			if (maxSeverity == IMarker.SEVERITY_ERROR) {
