@@ -60,7 +60,9 @@ pipeline {
 				branch 'master'
 			}
 			steps {
-				sh './run_dash_licenses.sh'
+				catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+					sh './run_dash_licenses.sh'
+				}
 			}
 			post {
 				always {
