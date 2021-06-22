@@ -28,6 +28,7 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPFormatHandler extends AbstractHandler {
@@ -37,6 +38,13 @@ public class LSPFormatHandler extends AbstractHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
+		if (part instanceof MultiPageEditorPart) {
+			Object selectedPage = ((MultiPageEditorPart)part).getSelectedPage();
+			if (selectedPage instanceof IEditorPart) {
+				part = (IEditorPart)selectedPage;
+			}
+		}
+
 		if (part instanceof ITextEditor) {
 			ITextEditor textEditor = (ITextEditor) part;
 			final IDocument document = LSPEclipseUtils.getDocument(textEditor);
@@ -53,6 +61,13 @@ public class LSPFormatHandler extends AbstractHandler {
 	@Override
 	public boolean isEnabled() {
 		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
+		if (part instanceof MultiPageEditorPart) {
+			Object selectedPage = ((MultiPageEditorPart)part).getSelectedPage();
+			if (selectedPage instanceof IWorkbenchPart) {
+				part = (IWorkbenchPart)selectedPage;
+			}
+		}
+
 		if (part instanceof ITextEditor) {
 			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument((ITextEditor) part),
