@@ -169,7 +169,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 			if (params.getNewName() != null) {
 				// TODO: how to manage ltk with CompletableFuture? Is 1000 ms is enough?
 				rename = languageServer.getTextDocumentService().rename(params).get(1000, TimeUnit.MILLISECONDS);
-				if (!status.hasError() && rename.getChanges().isEmpty()) {
+				if (!status.hasError() && (rename == null || rename.getChanges().isEmpty())) {
 					status.addWarning(Messages.rename_empty_message);
 				}
 			}
