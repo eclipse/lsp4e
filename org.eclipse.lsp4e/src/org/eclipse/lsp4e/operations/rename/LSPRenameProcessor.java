@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2017-2019 Angelo ZERR.
+ *  Copyright (c) 2017-2021 Angelo ZERR.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -186,7 +186,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 					+ ((responseError.getData() instanceof String) ? (": " + responseError.getData()) : ""); //$NON-NLS-1$ //$NON-NLS-2$
 			status.addFatalError(message);
 		} else {
-			status.addFatalError(e.getMessage());
+			status.addFatalError(e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
 		}
 		return null;
 	}
