@@ -41,9 +41,9 @@ import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.StaticRegistrationOptions;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
+import org.eclipse.lsp4j.TypeDefinitionRegistrationOptions;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector {
@@ -72,7 +72,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 			Collection<CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>>> allFutures = Collections.synchronizedCollection(new ArrayList<>());
 			CompletableFuture.allOf(
 				LanguageServiceAccessor
-					.getLanguageServers(textViewer.getDocument(), capabilities -> Boolean.TRUE.equals(capabilities.getDefinitionProvider()))
+					.getLanguageServers(textViewer.getDocument(), capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDefinitionProvider()))
 					.thenAcceptAsync(languageServers ->
 						languageServers.stream().map(ls -> ls.getTextDocumentService().definition(LSPEclipseUtils.toDefinitionParams(params))).forEach(allFutures::add)
 					),
@@ -148,7 +148,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 	}
 
 	private static boolean isTypeDefinitionProvider(ServerCapabilities capabilities) {
-		 Either<Boolean, StaticRegistrationOptions> typeDefinitionProvider = capabilities.getTypeDefinitionProvider();
+		 Either<Boolean, TypeDefinitionRegistrationOptions> typeDefinitionProvider = capabilities.getTypeDefinitionProvider();
 		 if (typeDefinitionProvider == null) {
 			 return false;
 		 }

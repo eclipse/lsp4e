@@ -189,7 +189,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 		final IDocument document = viewer.getDocument();
 		this.lastViewer = viewer;
 		this.request = LanguageServiceAccessor
-			.getLanguageServers(document, capabilities -> Boolean.TRUE.equals(capabilities.getHoverProvider()))
+			.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
 				.thenApplyAsync(languageServers -> // Async is very important here, otherwise the LS Client thread is in
 													// deadlock and doesn't read bytes from LS
 				languageServers.stream()

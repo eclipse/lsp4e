@@ -48,7 +48,9 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServerMultiRootFolders;
+import org.eclipse.lsp4j.HoverOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
@@ -380,16 +382,25 @@ public class LanguageServiceAccessorTest {
 			ITextEditor editor = (ITextEditor) IDE.openEditorOnFileStore(
 					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(local.toURI()));
 			Assert.assertEquals(1, LanguageServiceAccessor.getLanguageServers(
-					TestUtils.getTextViewer(editor).getDocument(), ServerCapabilities::getHoverProvider).get().size());
+					TestUtils.getTextViewer(editor).getDocument(), this::hasHoverCapabilities).get().size());
 			PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
 			// opening another file should either reuse the LS or spawn another one, but not
 			// both
 			Assert.assertEquals(1,
 					LanguageServiceAccessor.getLanguageServers(
 							TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument(),
-							ServerCapabilities::getHoverProvider).get().size());
+							this::hasHoverCapabilities).get().size());
 		} finally {
 			Files.deleteIfExists(local.toPath());
+		}
+	}
+
+	private boolean hasHoverCapabilities(ServerCapabilities capabilities) {
+		Either<Boolean, HoverOptions> hoverProvider = capabilities.getHoverProvider();
+		if(hoverProvider.isLeft()) {
+			return hoverProvider.getLeft();
+		} else {
+			return hoverProvider.getRight() != null;
 		}
 	}
 

@@ -56,7 +56,7 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 			return null;
 		}
 		int offset = ((ITextSelection) sel).getOffset();
-		LanguageServiceAccessor.getLanguageServers(document, capabilities -> Boolean.TRUE.equals(capabilities.getReferencesProvider())).thenAcceptAsync(languageServers -> {
+		LanguageServiceAccessor.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getReferencesProvider())).thenAcceptAsync(languageServers -> {
 			if (languageServers.isEmpty()) {
 				return;
 			}
@@ -85,7 +85,7 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 		try {
 			return !LanguageServiceAccessor
 					.getLanguageServers(LSPEclipseUtils.getDocument(editor),
-							capability -> Boolean.TRUE.equals(capability.getReferencesProvider()))
+							capabilities -> LSPEclipseUtils.hasCapability(capabilities.getReferencesProvider()))
 					.get(50, TimeUnit.MILLISECONDS).isEmpty();
 		} catch (TimeoutException | java.util.concurrent.ExecutionException e) {
 			LanguageServerPlugin.logError(e);

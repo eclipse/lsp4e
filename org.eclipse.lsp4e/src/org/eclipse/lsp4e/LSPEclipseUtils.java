@@ -935,4 +935,16 @@ public class LSPEclipseUtils {
 		return LSPEclipseUtils.toUri(Path.fromPortableString(URI.create(uri).getPath()));
 	}
 
+	public static boolean hasCapability(Either<Boolean, ? extends Object> eitherCapability) {
+		if(eitherCapability != null) {
+			if (eitherCapability.isLeft()) {
+				return eitherCapability.getLeft();
+			} else {
+				return eitherCapability.getRight() != null;
+			}
+		} else {
+			return false;
+		}
+	}
+
 }

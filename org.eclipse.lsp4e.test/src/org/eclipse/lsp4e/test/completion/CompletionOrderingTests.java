@@ -30,6 +30,7 @@ import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.Test;
 
 public class CompletionOrderingTests extends AbstractCompletionTest {
@@ -116,24 +117,24 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 		List<CompletionItem> items = new ArrayList<>();
 		CompletionItem item = new CompletionItem("server.address");
 		item.setFilterText("server.address");
-		item.setTextEdit(new TextEdit(new Range(new Position(1, 12), new Position(5, 7)),
+		item.setTextEdit(Either.forLeft(new TextEdit(new Range(new Position(1, 12), new Position(5, 7)),
 						"  address: $1\n" +
 						"spring:\n" +
 						"  application:\n" +
-						"    name: f\n"));
+						"    name: f\n")));
 		items.add(item);
 
 		item = new CompletionItem("management.server.address");
 		item.setFilterText("management.server.address");
-		item.setTextEdit(new TextEdit(new Range(new Position(5, 0), new Position(5, 7)),
+		item.setTextEdit(Either.forLeft(new TextEdit(new Range(new Position(5, 0), new Position(5, 7)),
 						"management:\n" +
 						"  server:\n" +
-						"    address: $1\n"));
+						"    address: $1\n")));
 		items.add(item);
 
 		item = new CompletionItem("→ spring.jta.atomikos.datasource.xa-data-source-class-name");
 		item.setFilterText("spring.jta.atomikos.datasource.xa-data-source-class-name");
-		item.setTextEdit(new TextEdit(new Range(new Position(5, 0), new Position(0, 12)),item.getFilterText()));
+		item.setTextEdit(Either.forLeft(new TextEdit(new Range(new Position(5, 0), new Position(0, 12)),item.getFilterText())));
 		items.add(item);
 
 		String[] orderedResults = new String[] { "server.address", "management.server.address",

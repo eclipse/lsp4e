@@ -61,7 +61,11 @@ public class LSCompletionProposal extends LSIncompleteCompletionProposal
 			if (!documentFilter.isEmpty()) {
 				return CompletionProposalTools.isSubstringFoundOrderedInString(documentFilter, getFilterString());
 			} else if (item.getTextEdit() != null) {
-				return offset == LSPEclipseUtils.toOffset(item.getTextEdit().getRange().getStart(), document);
+				if(item.getTextEdit().isLeft()) {
+					return offset == LSPEclipseUtils.toOffset(item.getTextEdit().getLeft().getRange().getStart(), document);
+				} else {
+					return offset == LSPEclipseUtils.toOffset(item.getTextEdit().getRight().getInsert().getStart(), document);
+				}
 			}
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);

@@ -19,8 +19,8 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.codemining.LineHeaderCodeMining;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
-import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -53,7 +53,7 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 	@Override
 	protected CompletableFuture<Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
 		if (!LanguageServiceAccessor.checkCapability(languageServer,
-				capabilites -> capabilites.getCodeLensProvider().isResolveProvider())) {
+				capabilites -> capabilites.getCodeLensProvider().getResolveProvider())) {
 			return CompletableFuture.completedFuture(null);
 		}
 		return languageServer.getTextDocumentService().resolveCodeLens(this.codeLens)

@@ -28,9 +28,11 @@ import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.CompletionList;
+import org.eclipse.lsp4j.InsertReplaceEdit;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.PartInitException;
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,7 +57,19 @@ public abstract class AbstractCompletionTest {
 		CompletionItem item = new CompletionItem();
 		item.setLabel(label);
 		item.setKind(kind);
-		item.setTextEdit(new TextEdit(range, label));
+		item.setTextEdit(Either.forLeft(new TextEdit(range, label)));
+		return item;
+	}
+	
+	protected CompletionItem createCompletionItemWithInsertReplace(String label, CompletionItemKind kind, Range insertRange, Range replaceRange) {
+		CompletionItem item = new CompletionItem();
+		item.setLabel(label);
+		item.setKind(kind);
+		InsertReplaceEdit insertReplaceEdit = new InsertReplaceEdit();
+		insertReplaceEdit.setNewText(label);
+		insertReplaceEdit.setInsert(insertRange);
+		insertReplaceEdit.setReplace(replaceRange);
+		item.setTextEdit(Either.forRight(insertReplaceEdit));
 		return item;
 	}
 

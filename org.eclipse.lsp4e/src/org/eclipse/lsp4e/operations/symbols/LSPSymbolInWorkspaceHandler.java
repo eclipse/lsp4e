@@ -54,8 +54,7 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 		}
 
 		IProject project = resource.getProject();
-		List<@NonNull LanguageServer> languageServers = LanguageServiceAccessor.getLanguageServers(project,
-				capabilities -> Boolean.TRUE.equals(capabilities.getWorkspaceSymbolProvider()));
+		List<@NonNull LanguageServer> languageServers = LanguageServiceAccessor.getLanguageServers(project, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()));
 		if (languageServers.isEmpty()) {
 			return null;
 		}
@@ -81,7 +80,7 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 		if (part instanceof ITextEditor) {
 			List<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument((ITextEditor) part),
-					capabilities -> Boolean.TRUE.equals(capabilities.getWorkspaceSymbolProvider()));
+					capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()));
 			return !infos.isEmpty();
 		}
 		return false;

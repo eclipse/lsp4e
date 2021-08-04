@@ -51,6 +51,7 @@ import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Display;
@@ -197,7 +198,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		CompletionItem item = new CompletionItem();
 		item.setLabel("1024M");
 		item.setKind(CompletionItemKind.Value);
-		item.setTextEdit(new TextEdit(new Range(new Position(2, 10), new Position(2, 10)), "1024M"));
+		item.setTextEdit(Either.forLeft(new TextEdit(new Range(new Position(2, 10), new Position(2, 10)), "1024M")));
 		CompletionList completionList = new CompletionList(true, Collections.singletonList(item));
 		MockLanguageServer.INSTANCE.setCompletionList(completionList);
 
@@ -451,7 +452,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		assertEquals(1, proposals.length);
 		((LSIncompleteCompletionProposal) proposals[0]).apply(viewer.getDocument());
 
-		int lineIndex = completionItem.getTextEdit().getRange().getStart().getLine();
+		int lineIndex = completionItem.getTextEdit().getLeft().getRange().getStart().getLine();
 		String fileNameBase = testFile.getFullPath().removeFileExtension().lastSegment();
 		String filePath = testFile.getRawLocation().toOSString();
 		String fileDir = project.getLocation().toOSString();

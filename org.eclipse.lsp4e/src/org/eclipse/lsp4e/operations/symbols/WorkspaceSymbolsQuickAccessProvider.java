@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
@@ -46,12 +47,13 @@ public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer
 
 	@Override
 	public boolean needsRefresh() {
-		return this.usedLanguageServers == null || !this.usedLanguageServers.equals(LanguageServiceAccessor.getActiveLanguageServers(serverCapabilities -> Boolean.TRUE.equals(serverCapabilities.getWorkspaceSymbolProvider())));
+		return this.usedLanguageServers == null
+				|| !this.usedLanguageServers.equals(LanguageServiceAccessor.getActiveLanguageServers(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider())));
 	}
 
 	@Override
 	public QuickAccessElement[] computeElements(String query, IProgressMonitor monitor) {
-		this.usedLanguageServers = LanguageServiceAccessor.getActiveLanguageServers(serverCapabilities -> Boolean.TRUE.equals(serverCapabilities.getWorkspaceSymbolProvider()));
+		this.usedLanguageServers = LanguageServiceAccessor.getActiveLanguageServers(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()));
 		if (usedLanguageServers.isEmpty()) {
 			return new QuickAccessElement[0];
 		}

@@ -57,7 +57,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 			if (document != null) {
 				CompletableFuture<List<@NonNull LanguageServer>> languageServers = LanguageServiceAccessor
 						.getLanguageServers(document,
-								capabilities -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
+								capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDocumentSymbolProvider()));
 
 				List<@NonNull LanguageServer> servers = Collections.emptyList();
 				try {

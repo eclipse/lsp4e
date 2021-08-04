@@ -56,6 +56,7 @@ import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ST;
 import org.eclipse.swt.graphics.Point;
@@ -196,7 +197,7 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		CompletionItem item = new CompletionItem();
 		item.setLabel("1024M");
 		item.setKind(CompletionItemKind.Value);
-		item.setTextEdit(new TextEdit(new Range(new Position(2, 10), new Position(2, 10)), "1024M"));
+		item.setTextEdit(Either.forLeft(new TextEdit(new Range(new Position(2, 10), new Position(2, 10)), "1024M")));
 		CompletionList completionList = new CompletionList(false, Collections.singletonList(item));
 		MockLanguageServer.INSTANCE.setCompletionList(completionList);
 
@@ -484,13 +485,13 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		List<CompletionItem> items = new ArrayList<>();
 		CompletionItem item = new CompletionItem("server.web");
 		item.setFilterText("server.web");
-		item.setTextEdit(new TextEdit(new Range(new Position(0, 0), new Position(0, 10)), item.getFilterText()));
+		item.setTextEdit(Either.forLeft(new TextEdit(new Range(new Position(0, 0), new Position(0, 10)), item.getFilterText())));
 		items.add(item);
 		// 'soup' replacing the 'ver' in 'server' does not make sense when knowing that
 		// ver should have been a filter
 		item = new CompletionItem("soup");
 		item.setFilterText("soup");
-		item.setTextEdit(new TextEdit(new Range(new Position(0, 3), new Position(0, 7)), item.getFilterText()));
+		item.setTextEdit(Either.forLeft(new TextEdit(new Range(new Position(0, 3), new Position(0, 7)), item.getFilterText())));
 		items.add(item);
 		items.add(new CompletionItem(": 1.0.1"));
 		items.add(new CompletionItem("s.Status"));

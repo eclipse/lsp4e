@@ -200,7 +200,7 @@ public class HighlightReconcilingStrategy
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri.toString());
 		DocumentHighlightParams params = new DocumentHighlightParams(identifier, position);
 		request = LanguageServiceAccessor.getLanguageServers(document,
-				capabilities -> Boolean.TRUE.equals(capabilities.getDocumentHighlightProvider()))
+				capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDocumentHighlightProvider()))
 				.thenAcceptAsync(languageServers ->
 				CompletableFuture.allOf(languageServers.stream()
 						.map(languageServer -> languageServer.getTextDocumentService().documentHighlight(params))

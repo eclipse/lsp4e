@@ -69,9 +69,10 @@ public class LSPFormatter {
 		int tabWidth = store.getInt(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);
 		boolean insertSpaces = store.getBoolean(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SPACES_FOR_TABS);
 		// use range formatting if standard formatting is not supported or text is selected
-		if (capabilities != null && Boolean.TRUE.equals(capabilities.getDocumentRangeFormattingProvider())
-				&& (capabilities.getDocumentFormattingProvider() == null
-						|| !capabilities.getDocumentFormattingProvider() || textSelection.getLength() != 0)) {
+		if (capabilities != null
+				&& isDocumentRangeFormattingSupported(capabilities)
+				&& (!isDocumentFormattingSupported(capabilities)
+						|| textSelection.getLength() != 0)) {
 			DocumentRangeFormattingParams params = new DocumentRangeFormattingParams();
 			params.setTextDocument(docId);
 			params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
@@ -92,9 +93,17 @@ public class LSPFormatter {
 				.thenComposeAsync(server -> server.getTextDocumentService().formatting(params));
 	}
 
+	private static boolean isDocumentRangeFormattingSupported(ServerCapabilities capabilities) {
+		return LSPEclipseUtils.hasCapability(capabilities.getDocumentRangeFormattingProvider());
+	}
+
+	private static boolean isDocumentFormattingSupported(ServerCapabilities capabilities) {
+		return LSPEclipseUtils.hasCapability(capabilities.getDocumentFormattingProvider());
+	}
+
 	public static boolean supportFormatting(ServerCapabilities capabilities) {
-		return Boolean.TRUE.equals(capabilities.getDocumentFormattingProvider())
-				|| Boolean.TRUE.equals(capabilities.getDocumentRangeFormattingProvider());
+		return isDocumentFormattingSupported(capabilities)
+				|| isDocumentRangeFormattingSupported(capabilities);
 	}
 
 }

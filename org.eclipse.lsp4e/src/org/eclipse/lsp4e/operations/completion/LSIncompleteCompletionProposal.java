@@ -63,10 +63,12 @@ import org.eclipse.lsp4e.operations.hover.FocusableBrowserInformationControl;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
+import org.eclipse.lsp4j.InsertReplaceEdit;
 import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
@@ -368,11 +370,20 @@ public class LSIncompleteCompletionProposal
 
 	@Override
 	public int getPrefixCompletionStart(IDocument document, int completionOffset) {
-		if (this.item.getTextEdit() != null) {
-			try {
-				return LSPEclipseUtils.toOffset(this.item.getTextEdit().getRange().getStart(), document);
-			} catch (BadLocationException e) {
-				LanguageServerPlugin.logError(e);
+		Either<TextEdit, InsertReplaceEdit> textEdit = this.item.getTextEdit();
+		if (textEdit != null) {
+			if(textEdit.isLeft()) {
+				try {
+					return LSPEclipseUtils.toOffset(textEdit.getLeft().getRange().getStart(), document);
+				} catch (BadLocationException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			} else {
+				try {
+					return LSPEclipseUtils.toOffset(textEdit.getRight().getInsert().getStart(), document);
+				} catch (BadLocationException e) {
+					LanguageServerPlugin.logError(e);
+				}
 			}
 		}
 		String insertText = getInsertText();
@@ -399,7 +410,17 @@ public class LSIncompleteCompletionProposal
 
 	protected void apply(IDocument document, char trigger, int stateMask, int offset) {
 		String insertText = null;
-		TextEdit textEdit = item.getTextEdit();
+		Either<TextEdit, InsertReplaceEdit> eitherTextEdit = item.getTextEdit();
+		TextEdit textEdit = null;
+		if (eitherTextEdit != null) {
+			if(eitherTextEdit.isLeft()) {
+				textEdit = eitherTextEdit.getLeft();
+			} else {
+				// trick to partially support the new InsertReplaceEdit from LSP 3.16. Reuse previously code for TextEdit.
+				InsertReplaceEdit insertReplaceEdit = eitherTextEdit.getRight();
+				textEdit = new TextEdit(insertReplaceEdit.getInsert(), insertReplaceEdit.getNewText());
+			}
+		}
 		try {
 			if (textEdit == null) {
 				insertText = getInsertText();
@@ -599,13 +620,13 @@ public class LSIncompleteCompletionProposal
 			IPath dirPath = LSPEclipseUtils.toPath(document).removeLastSegments(1);
 			return getAbsoluteLocation(dirPath);
 		case TM_LINE_INDEX:
-			int lineIndex = item.getTextEdit().getRange().getStart().getLine();
+			int lineIndex = getTextEditRange().getStart().getLine();
 			return Integer.toString(lineIndex);
 		case TM_LINE_NUMBER:
-			int lineNumber = item.getTextEdit().getRange().getStart().getLine();
+			int lineNumber = getTextEditRange().getStart().getLine();
 			return Integer.toString(lineNumber + 1);
 		case TM_CURRENT_LINE:
-			int currentLineIndex = item.getTextEdit().getRange().getStart().getLine();
+			int currentLineIndex = getTextEditRange().getStart().getLine();
 			try {
 				IRegion lineInformation = document.getLineInformation(currentLineIndex);
 				String line = document.get(lineInformation.getOffset(), lineInformation.getLength());
@@ -615,7 +636,7 @@ public class LSIncompleteCompletionProposal
 				return ""; //$NON-NLS-1$
 			}
 		case TM_SELECTED_TEXT:
-			Range selectedRange = item.getTextEdit().getRange();
+			Range selectedRange = getTextEditRange();
 			try {
 				int startOffset = LSPEclipseUtils.toOffset(selectedRange.getStart(), document);
 				int endOffset = LSPEclipseUtils.toOffset(selectedRange.getEnd(), document);
@@ -629,6 +650,15 @@ public class LSIncompleteCompletionProposal
 			return ""; //$NON-NLS-1$
 		default:
 			return null;
+		}
+	}
+
+	private Range getTextEditRange() {
+		if (item.getTextEdit().isLeft()) {
+			return item.getTextEdit().getLeft().getRange();
+		} else {
+			// here providing insert range, currently do not know if insert or replace is requested
+			return item.getTextEdit().getRight().getInsert();
 		}
 	}
 
@@ -653,8 +683,13 @@ public class LSIncompleteCompletionProposal
 
 	protected String getInsertText() {
 		String insertText = this.item.getInsertText();
-		if (this.item.getTextEdit() != null) {
-			insertText = this.item.getTextEdit().getNewText();
+		Either<TextEdit, InsertReplaceEdit> eitherTextEdit = this.item.getTextEdit();
+		if (eitherTextEdit != null) {
+			if(eitherTextEdit.isLeft()) {
+				insertText = eitherTextEdit.getLeft().getNewText();
+			} else {
+				insertText = eitherTextEdit.getRight().getNewText();
+			}
 		}
 		if (insertText == null) {
 			insertText = this.item.getLabel();

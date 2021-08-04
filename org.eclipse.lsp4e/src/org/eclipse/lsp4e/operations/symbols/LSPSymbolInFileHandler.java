@@ -39,7 +39,7 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 			final ITextEditor textEditor = (ITextEditor) part;
 			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument(textEditor),
-					capabilities -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
+					capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDocumentSymbolProvider()));
 			if (infos.isEmpty()) {
 				return null;
 			}
@@ -65,7 +65,7 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 		if (part instanceof ITextEditor) {
 			List<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument((ITextEditor) part),
-					capabilities -> Boolean.TRUE.equals(capabilities.getDocumentSymbolProvider()));
+					capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDocumentSymbolProvider()));
 			return !infos.isEmpty();
 		}
 		return false;
