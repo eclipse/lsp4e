@@ -47,10 +47,10 @@ pipeline {
 					sh '''
 						DOWNLOAD_AREA=/home/data/httpd/download.eclipse.org/lsp4e/snapshots/
 						echo DOWNLOAD_AREA=$DOWNLOAD_AREA
-						ssh genie.lsp4e@build.eclipse.org "\
+						ssh genie.lsp4e@projects-storage.eclipse.org "\
 							rm -rf  ${DOWNLOAD_AREA}/* && \
 							mkdir -p ${DOWNLOAD_AREA}"
-						scp -r repository/target/repository/* genie.lsp4e@build.eclipse.org:${DOWNLOAD_AREA}
+						scp -r repository/target/repository/* genie.lsp4e@projects-storage.eclipse.org:${DOWNLOAD_AREA}
 					'''
 				}
 			}
