@@ -1,5 +1,11 @@
 ## LSP4E Changelog and New and Noteworthy
 
+### 0.19.0
+
+📅 Release Date: August 17th, 2021
+
+* Use newer LSP4J, bringing compatibility with LSP 3.16
+
 ### 0.18.0
 
 📅 Release Date: March 2nd, 2021
