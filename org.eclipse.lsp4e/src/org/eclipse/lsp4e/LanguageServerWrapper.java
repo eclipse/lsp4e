@@ -760,21 +760,21 @@ public class LanguageServerWrapper {
 				}
 			} else if ("textDocument/formatting".equals(reg.getMethod())) { //$NON-NLS-1$
 				Either<Boolean, DocumentFormattingOptions> documentFormattingProvider = serverCapabilities.getDocumentFormattingProvider();
-				if (documentFormattingProvider.isLeft()) {
+				if (documentFormattingProvider == null || documentFormattingProvider.isLeft()) {
 					serverCapabilities.setDocumentFormattingProvider(Boolean.TRUE);
-					addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider.getLeft()));
+					addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider));
 				} else {
 					serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider.getRight());
-					addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider.getRight()));
+					addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider));
 				}
 			} else if ("textDocument/rangeFormatting".equals(reg.getMethod())) { //$NON-NLS-1$
 				Either<Boolean, DocumentRangeFormattingOptions> documentRangeFormattingProvider = serverCapabilities.getDocumentRangeFormattingProvider();
-				if (documentRangeFormattingProvider.isLeft()) {
+				if (documentRangeFormattingProvider == null || documentRangeFormattingProvider.isLeft()) {
 					serverCapabilities.setDocumentRangeFormattingProvider(Boolean.TRUE);
-					addRegistration(reg, () -> serverCapabilities.setDocumentRangeFormattingProvider(documentRangeFormattingProvider.getLeft()));
+					addRegistration(reg, () -> serverCapabilities.setDocumentRangeFormattingProvider(documentRangeFormattingProvider));
 				} else {
 					serverCapabilities.setDocumentRangeFormattingProvider(documentRangeFormattingProvider.getRight());
-					addRegistration(reg, () -> serverCapabilities.setDocumentRangeFormattingProvider(documentRangeFormattingProvider.getRight()));
+					addRegistration(reg, () -> serverCapabilities.setDocumentRangeFormattingProvider(documentRangeFormattingProvider));
 				}
 			} else if ("textDocument/codeAction".equals(reg.getMethod())){ //$NON-NLS-1$
 				final Either<Boolean, CodeActionOptions> beforeRegistration = serverCapabilities.getCodeActionProvider();
