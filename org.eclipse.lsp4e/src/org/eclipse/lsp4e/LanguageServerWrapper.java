@@ -267,6 +267,7 @@ public class LanguageServerWrapper {
 							currentConnectionProvider.handleMessage(message, this.languageServer, root);
 						}
 					});
+					initParams.setWorkspaceFolders(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects()).filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder).filter(Objects::nonNull).collect(Collectors.toList()));
 					Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder()
 							.setLocalService(client)//
 							.setRemoteInterface(serverDefinition.getServerInterface())//
