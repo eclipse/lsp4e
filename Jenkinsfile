@@ -60,9 +60,7 @@ pipeline {
 				branch 'master'
 			}
 			steps {
-				catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-					sh './run_dash_licenses.sh'
-				}
+				sh 'mvn org.eclipse.dash:license-tool-plugin:license-check -Ddash.fail=true'
 			}
 			post {
 				always {
