@@ -62,11 +62,6 @@ pipeline {
 			steps {
 				sh 'mvn org.eclipse.dash:license-tool-plugin:license-check -Ddash.fail=true'
 			}
-			post {
-				always {
-					archiveArtifacts artifacts: '*.log'
-				}
-			}
 		}
 	}
 }
