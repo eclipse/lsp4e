@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2017 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2021 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -21,7 +21,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.function.Function;
 
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeLens;
@@ -135,12 +134,7 @@ public final class MockLanguageServer implements LanguageServer {
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
-			}).thenApply(new Function<Void, U>() {
-				@Override
-				public U apply(Void v) {
-					return value;
-				}
-			});
+			}).thenApply(v -> value);
 		}
 		return CompletableFuture.completedFuture(value);
 	}

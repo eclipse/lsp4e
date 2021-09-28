@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017-2019 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2017, 2021 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -317,8 +317,8 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockHover = null;
 		this.mockCodeLenses = null;
 		this.mockReferences = null;
-		this.remoteProxies = new ArrayList<LanguageClient>();
-		this.mockCodeActions = new ArrayList<Either<Command, CodeAction>>();
+		this.remoteProxies = new ArrayList<>();
+		this.mockCodeActions = new ArrayList<>();
 		this.mockRenameEdit = null;
 		this.documentSymbols = Collections.emptyList();
 	}
