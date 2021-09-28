@@ -19,7 +19,7 @@ pipeline {
 		stage('Build') {
 			steps {
 				wrap([$class: 'Xvnc', useXauthority: true]) {
-					sh 'mvn clean install -B -Psign -Dmaven.repo.local=$WORKSPACE/.m2/repository -Dmaven.test.failure.ignore=true -Dmaven.test.error.ignore=true'
+					sh 'mvn clean verify org.eclipse.dash:license-tool-plugin:license-check -B -Psign -Dmaven.repo.local=$WORKSPACE/.m2/repository -Dmaven.test.failure.ignore=true -Dmaven.test.error.ignore=true -Ddash.fail=true'
 				}
 			}
 			post {
@@ -53,14 +53,6 @@ pipeline {
 						scp -r repository/target/repository/* genie.lsp4e@projects-storage.eclipse.org:${DOWNLOAD_AREA}
 					'''
 				}
-			}
-		}
-		stage('Dash License Check') {
-			when {
-				branch 'master'
-			}
-			steps {
-				sh 'mvn org.eclipse.dash:license-tool-plugin:license-check -Ddash.fail=true'
 			}
 		}
 	}
