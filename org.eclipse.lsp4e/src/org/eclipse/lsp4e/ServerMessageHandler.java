@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2021 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -11,71 +11,53 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.util.Collections;
-import java.util.Date;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.notifications.AbstractNotificationPopup;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
-import org.eclipse.mylyn.commons.notifications.core.AbstractNotification;
-import org.eclipse.mylyn.commons.notifications.ui.AbstractUiNotification;
-import org.eclipse.mylyn.commons.notifications.ui.NotificationsUi;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 
-@SuppressWarnings("restriction")
 public class ServerMessageHandler {
 
 	private ServerMessageHandler() {
 		// this class shouldn't be instantiated
 	}
 
-	private static final String NAME_PATTERN = "%s (%s)"; //$NON-NLS-1$
-
-	private static class LSPNotification extends AbstractUiNotification {
+	private static class LSPNotification extends AbstractNotificationPopup {
 
 		private final String label;
 		private final MessageParams messageParams;
 
 		public LSPNotification(String label, MessageParams messageParams) {
-			super("lsp.notification"); //$NON-NLS-1$
+			super(Display.getCurrent());
+			setParentShell(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell());
 			this.label = label;
 			this.messageParams = messageParams;
 		}
 
 		@Override
-		public String getLabel() {
+		public String getPopupShellTitle() {
 			return label;
 		}
 
 		@Override
-		public String getDescription() {
-			return messageParams.getMessage();
+		protected void createContentArea(Composite parent) {
+			Label label = new Label(parent, SWT.WRAP);
+			label.setText(messageParams.getMessage());
 		}
 
 		@Override
-		public Date getDate() {
-			return new Date();
-		}
-
-		@Override
-		public <T> T getAdapter(Class<T> adapter) {
-			return null;
-		}
-
-		@Override
-		public Image getNotificationImage() {
-			return null;
-		}
-
-		@Override
-		public Image getNotificationKindImage() {
+		public Image getPopupShellImage(int maximumHeight) {
 			switch (messageParams.getType()) {
 			case Error:
 				return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_ERROR_TSK);
@@ -85,24 +67,6 @@ public class ServerMessageHandler {
 				return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_INFO_TSK);
 			default:
 				return null;
-			}
-		}
-
-		@Override
-		public void open() {
-			Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell();
-			switch (messageParams.getType()) {
-			case Error:
-				MessageDialog.openError(shell, label, messageParams.getMessage());
-				break;
-			case Warning:
-				MessageDialog.openWarning(shell, label, messageParams.getMessage());
-				break;
-			case Info:
-				MessageDialog.openInformation(shell, label, messageParams.getMessage());
-				break;
-			default:
-				MessageDialog.open(MessageDialog.NONE, shell, label, messageParams.getMessage(), SWT.None);
 			}
 		}
 
@@ -129,9 +93,11 @@ public class ServerMessageHandler {
 	}
 
 	public static void showMessage(String title, MessageParams params) {
-		AbstractNotification notification = new LSPNotification(String.format("LSP (%s)", title), //$NON-NLS-1$
-				params);
-		NotificationsUi.getService().notify(Collections.singletonList(notification));
+		Display.getDefault().asyncExec(() -> {
+			AbstractNotificationPopup notification = new LSPNotification(String.format("LSP (%s)", title), //$NON-NLS-1$
+					params);
+			notification.open();
+		});
 	}
 
 	public static CompletableFuture<MessageActionItem> showMessageRequest(LanguageServerWrapper wrapper, ShowMessageRequestParams params) {
