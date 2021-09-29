@@ -10,8 +10,7 @@
 	</prerequisites>
 	
 	<properties>
-		<tycho-version>2.4.0</tycho-version>
-		<tycho-pack200-version>2.3.0</tycho-pack200-version>
+		<tycho-version>2.5.0</tycho-version>
 		<sonar.jacoco.reportPath>../target/jacoco.exec</sonar.jacoco.reportPath>
 		<tycho.scmUrl>scm:git:https://git.eclipse.org/r/p/lsp4e/lsp4e.git</tycho.scmUrl>
 		<ui.test.vmargs></ui.test.vmargs>
