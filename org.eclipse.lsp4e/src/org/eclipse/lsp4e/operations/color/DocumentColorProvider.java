@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 Angelo Zerr and others.
+ * Copyright (c) 2018, 2021 Angelo Zerr and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -99,12 +99,6 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 	 */
 	public Color getColor(RGBA rgba, Display display) {
 		return colorTable.computeIfAbsent(rgba, key -> new Color(display, rgba));
-	}
-
-	@Override
-	public void dispose() {
-		colorTable.values().forEach(Color::dispose);
-		super.dispose();
 	}
 
 	private static boolean isColorProvider(ServerCapabilities capabilities) {
