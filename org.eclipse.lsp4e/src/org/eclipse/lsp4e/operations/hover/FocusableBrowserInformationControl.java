@@ -143,7 +143,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 			if (urlHJScript != null && urlHJCss != null) {
 				hlStyle = "<link rel='stylesheet' href='" + urlHJCss.toString() + "'>" + //$NON-NLS-1$ //$NON-NLS-2$
 						"<script src='" + urlHJScript.toString() + "'></script>" + //$NON-NLS-1$ //$NON-NLS-2$
-						"<script>hljs.initHighlightingOnLoad();</script>"; //$NON-NLS-1$
+						"<script>hljs.highlightAll();</script>"; //$NON-NLS-1$
 			}
 		} catch (IOException e) {
 			LanguageServerPlugin.logError(e);
