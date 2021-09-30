@@ -31,6 +31,7 @@ import org.eclipse.lsp4e.test.edit.LSPEclipseUtilsTest;
 import org.eclipse.lsp4e.test.format.FormatTest;
 import org.eclipse.lsp4e.test.highlight.HighlightTest;
 import org.eclipse.lsp4e.test.hover.HoverTest;
+import org.eclipse.lsp4e.test.message.ShowMessageTest;
 import org.eclipse.lsp4e.test.operations.codelens.LSPCodeMiningTest;
 import org.eclipse.lsp4e.test.outline.EditorToOutlineAdapterFactoryTest;
 import org.eclipse.lsp4e.test.outline.OutlineContentTest;
@@ -75,7 +76,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	OutlineContentTest.class,
 	LanguageServerWrapperTest.class,
 	ColorTest.class,
-	LSPCodeMiningTest.class
+	LSPCodeMiningTest.class,
+	ShowMessageTest.class
 })
 public class AllTests {
 
