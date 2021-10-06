@@ -807,20 +807,15 @@ public class LSPEclipseUtils {
 
 	@Nullable
 	private static String getFileName(@NonNull IDocument document) {
-		URI uri = LSPEclipseUtils.toUri(document);
-		if (uri == null) {
-			return null;
+		IFile file = getFile(document);
+		if (file != null) {
+			return file.getName();
 		}
-		String fileName = null;
-		try {
-			fileName = new File(uri).getName();
-		} catch (IllegalArgumentException e) {
-			IFile file = getFile(document);
-			if (file!= null) {
-			  fileName = file.getName();
-			}
+		IPath path = toPath(document);
+		if(path != null) {
+			return path.lastSegment();
 		}
-        return fileName;
+        return null;
 	}
 
 	@NonNull
