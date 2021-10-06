@@ -758,7 +758,7 @@ public class LSPEclipseUtils {
 		if (location != null) {
 			return toUri(location);
 		}
-		return null;
+		return resource.getLocationURI();
 	}
 
 	public static URI toUri(File file) {
@@ -805,14 +805,31 @@ public class LSPEclipseUtils {
 		return contentTypes;
 	}
 
-	@NonNull
-	public static List<IContentType> getDocumentContentTypes(@NonNull IDocument document) {
-		List<IContentType> contentTypes = new ArrayList<>();
+	@Nullable
+	private static String getFileName(@NonNull IDocument document) {
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
+			return null;
+		}
+		String fileName = null;
+		try {
+			fileName = new File(uri).getName();
+		} catch (IllegalArgumentException e) {
+			IFile file = getFile(document);
+			if (file!= null) {
+			  fileName = file.getName();
+			}
+		}
+        return fileName;
+	}
+
+	@NonNull
+	public static List<IContentType> getDocumentContentTypes(@NonNull IDocument document) {
+		String fileName = getFileName(document);
+		if (fileName == null) {
 			return Collections.emptyList();
 		}
-		String fileName = new File(uri).getName();
+		List<IContentType> contentTypes = new ArrayList<>();
 		try (InputStream contents = new DocumentInputStream(document)) {
 			contentTypes
 					.addAll(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, fileName)));
