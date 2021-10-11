@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2019 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2021 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -72,6 +72,7 @@ import org.eclipse.lsp4j.DefinitionParams;
 import org.eclipse.lsp4j.DeleteFile;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.HoverParams;
+import org.eclipse.lsp4j.LinkedEditingRangeParams;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.MarkupContent;
@@ -245,6 +246,10 @@ public class LSPEclipseUtils {
 
 	public static TypeDefinitionParams toTypeDefinitionParams(TextDocumentPositionParams params) {
 		return toTextDocumentPositionParamsCommon(new TypeDefinitionParams(), params);
+	}
+
+	public static LinkedEditingRangeParams toLinkedEditingRangeParams(TextDocumentPositionParams params) {
+		return toTextDocumentPositionParamsCommon(new LinkedEditingRangeParams(), params);
 	}
 
 	/**

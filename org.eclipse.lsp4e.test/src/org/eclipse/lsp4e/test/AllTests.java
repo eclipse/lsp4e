@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2019 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2021 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -31,6 +31,7 @@ import org.eclipse.lsp4e.test.edit.LSPEclipseUtilsTest;
 import org.eclipse.lsp4e.test.format.FormatTest;
 import org.eclipse.lsp4e.test.highlight.HighlightTest;
 import org.eclipse.lsp4e.test.hover.HoverTest;
+import org.eclipse.lsp4e.test.linkedediting.LinkedEditingTest;
 import org.eclipse.lsp4e.test.message.ShowMessageTest;
 import org.eclipse.lsp4e.test.operations.codelens.LSPCodeMiningTest;
 import org.eclipse.lsp4e.test.outline.EditorToOutlineAdapterFactoryTest;
@@ -68,6 +69,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DocumentLinkTest.class,
 	RunningLanguageServerTest.class,
 	HighlightTest.class,
+	LinkedEditingTest.class,
 	DynamicRegistrationTest.class,
 	LSPTextChangeTest.class,
 	RenameTest.class,

@@ -50,6 +50,8 @@ import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
+import org.eclipse.lsp4j.LinkedEditingRangeParams;
+import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Position;
@@ -80,6 +82,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<CodeLens> mockCodeLenses;
 	private List<DocumentLink> mockDocumentLinks;
 	private List<? extends DocumentHighlight> mockDocumentHighlights;
+	private LinkedEditingRanges mockLinkedEditingRanges;
 
 	private CompletableFuture<DidOpenTextDocumentParams> didOpenCallback;
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
@@ -146,6 +149,11 @@ public class MockTextDocumentService implements TextDocumentService {
 	@Override
 	public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(DocumentHighlightParams position) {
 		return CompletableFuture.completedFuture(mockDocumentHighlights);
+	}
+
+	@Override
+	public CompletableFuture<LinkedEditingRanges> linkedEditingRange(LinkedEditingRangeParams position) {
+		return CompletableFuture.completedFuture(mockLinkedEditingRanges);
 	}
 
 	@Override
@@ -341,6 +349,10 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
 		this.mockDocumentHighlights = documentHighlights;
+	}
+
+	public void setLinkedEditingRanges(LinkedEditingRanges linkedEditingRanges) {
+		this.mockLinkedEditingRanges = linkedEditingRanges;
 	}
 
 	public void setDocumentColors(List<ColorInformation> colors) {

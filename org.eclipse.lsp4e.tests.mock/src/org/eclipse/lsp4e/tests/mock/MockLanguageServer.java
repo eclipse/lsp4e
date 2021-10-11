@@ -41,6 +41,8 @@ import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
+import org.eclipse.lsp4j.LinkedEditingRangeRegistrationOptions;
+import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.RenameOptions;
@@ -123,6 +125,7 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setRenameProvider(renameEither);
 		capabilities.setColorProvider(Boolean.TRUE);
 		capabilities.setDocumentSymbolProvider(Boolean.TRUE);
+		capabilities.setLinkedEditingRangeProvider(new LinkedEditingRangeRegistrationOptions());
 		initializeResult.setCapabilities(capabilities);
 	}
 
@@ -192,6 +195,10 @@ public final class MockLanguageServer implements LanguageServer {
 
 	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
 		this.textDocumentService.setDocumentHighlights(documentHighlights);
+	}
+
+	public void setLinkedEditingRanges(LinkedEditingRanges linkedEditingRanges) {
+		this.textDocumentService.setLinkedEditingRanges(linkedEditingRanges);
 	}
 
 	public void setCompletionTriggerChars(Set<String> chars) {
