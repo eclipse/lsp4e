@@ -28,8 +28,6 @@ import java.util.stream.Collectors;
 
 import org.eclipse.core.expressions.ExpressionConverter;
 import org.eclipse.core.expressions.IEvaluationContext;
-import org.eclipse.core.filebuffers.FileBuffers;
-import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -403,16 +401,13 @@ public class LanguageServersRegistry {
 	}
 
 	public boolean canUseLanguageServer(@NonNull IDocument document) {
-		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
-		if (buffer == null) {
+		List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(document);
+
+		if (contentTypes.isEmpty()) {
 			return false;
 		}
-		String name = buffer.getLocation().lastSegment();
-		if (name == null) {
-			return false;
-		}
-		return !getAvailableLSFor(
-				Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(name))).isEmpty();
+
+		return !getAvailableLSFor(contentTypes).isEmpty();
 	}
 
 	public boolean canUseLanguageServer(@NonNull IFile file) {

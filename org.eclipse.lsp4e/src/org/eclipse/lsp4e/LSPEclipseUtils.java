@@ -825,16 +825,29 @@ public class LSPEclipseUtils {
 
 	@NonNull
 	public static List<IContentType> getDocumentContentTypes(@NonNull IDocument document) {
-		String fileName = getFileName(document);
-		if (fileName == null) {
-			return Collections.emptyList();
-		}
 		List<IContentType> contentTypes = new ArrayList<>();
-		try (InputStream contents = new DocumentInputStream(document)) {
-			contentTypes
-					.addAll(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, fileName)));
-		} catch (IOException e) {
-			LanguageServerPlugin.logError(e);
+
+		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
+		if (buffer != null) {
+			try {
+				// may be a more specific content-type, relying on some content-type factory and actual content (not just name)
+				IContentType contentType = buffer.getContentType();
+				if (contentType != null) {
+					contentTypes.add(contentType);
+				}
+			} catch (CoreException e) {
+				LanguageServerPlugin.logError("Exception occurred while fetching the content type from the buffer", e); //$NON-NLS-1$;
+			}
+		}
+
+		String fileName = getFileName(document);
+		if (fileName != null) {
+			try (InputStream contents = new DocumentInputStream(document)) {
+				contentTypes
+						.addAll(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, fileName)));
+			} catch (IOException e) {
+				LanguageServerPlugin.logError(e);
+			}
 		}
 		return contentTypes;
 	}
