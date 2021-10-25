@@ -588,7 +588,7 @@
    <extension
          point="org.eclipse.ui.genericeditor.autoEditStrategies">
       <autoEditStrategy
-            class="org.eclipse.lsp4e.operations.linkedediting.LSPLinkedEditingReconcilingStrategy"
+            class="org.eclipse.lsp4e.operations.linkedediting.LSPLinkedEditingAutoEditStrategy"
             contentType="org.eclipse.core.runtime.text">
       </autoEditStrategy>
    </extension>
