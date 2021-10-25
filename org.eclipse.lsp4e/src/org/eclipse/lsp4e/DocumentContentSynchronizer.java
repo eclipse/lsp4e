@@ -18,6 +18,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.core.filesystem.EFS;
+import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.content.IContentType;
@@ -57,8 +60,14 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			TextDocumentSyncKind syncKind) {
 		this.languageServerWrapper = languageServerWrapper;
 		this.fileUri = LSPEclipseUtils.toUri(document);
-		this.modificationStamp = new File(fileUri).lastModified();
-		this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
+        try {
+            IFileStore store = EFS.getStore(fileUri);
+            this.modificationStamp = store.fetchInfo().getLastModified();
+        } catch (CoreException e) {
+            LanguageServerPlugin.logError(e);
+            this.modificationStamp =  new File(fileUri).lastModified();
+        }
+        this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
 
 		this.document = document;
 		// add a document buffer
