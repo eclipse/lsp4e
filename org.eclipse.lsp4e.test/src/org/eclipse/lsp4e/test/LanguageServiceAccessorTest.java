@@ -278,7 +278,7 @@ public class LanguageServiceAccessorTest {
 		LanguageServerWrapper wrapper1 = wrappers1.iterator().next();
 		assertTrue(wrapper1.isActive());
 		
-		wrapper1.disconnect(testFile1.getFullPath());
+		wrapper1.disconnect(testFile1.getLocationURI());
 		assertFalse(wrapper1.isActive());
 		
 		Collection<LanguageServerWrapper> wrappers2 = LanguageServiceAccessor.getLSWrappers(testFile2,
@@ -290,7 +290,7 @@ public class LanguageServiceAccessorTest {
 		// make sure the language server for testFile1 (which is unrelated to testFile2 is not started again)
 		assertFalse(wrapper1.isActive());
 
-		wrapper2.disconnect(testFile2.getFullPath());
+		wrapper2.disconnect(testFile2.getLocationURI());
 	}
 
 	@Test

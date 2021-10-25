@@ -58,8 +58,8 @@ public class LanguageServerWrapperTest {
 			Thread.sleep(100);
 		}
 		
-		assertTrue(wrapper.isConnectedTo(testFile1.getLocation()));
-		assertTrue(wrapper.isConnectedTo(testFile2.getLocation()));
+		assertTrue(wrapper.isConnectedTo(testFile1.getLocationURI()));
+		assertTrue(wrapper.isConnectedTo(testFile2.getLocationURI()));
 
 		TestUtils.closeEditor(editor1, false);
 		TestUtils.closeEditor(editor2, false);

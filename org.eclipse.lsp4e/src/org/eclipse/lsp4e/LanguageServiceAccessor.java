@@ -125,7 +125,7 @@ public class LanguageServiceAccessor {
 		}
 
 		public int getVersion() {
-			return wrapper.getVersion(LSPEclipseUtils.getFile(document));
+			return wrapper.getVersion(fileUri);
 		}
 
 		public CompletableFuture<LanguageServer> getInitializedLanguageClient() {
@@ -352,7 +352,7 @@ public class LanguageServiceAccessor {
 			res.addAll(startedServers.stream()
 					.filter(wrapper -> {
 						try {
-							return wrapper.isConnectedTo(path) || LanguageServersRegistry.getInstance().matches(document, wrapper.serverDefinition);
+							return wrapper.isConnectedTo(uri) || LanguageServersRegistry.getInstance().matches(document, wrapper.serverDefinition);
 						} catch (Exception e) {
 							LanguageServerPlugin.logError(e);
 							return false;
@@ -485,7 +485,7 @@ public class LanguageServiceAccessor {
 	private static Collection<LanguageServerWrapper> getMatchingStartedWrappers(@NonNull IFile file,
 			@Nullable Predicate<ServerCapabilities> request) {
 		synchronized (startedServers) {
-			return startedServers.stream().filter(wrapper -> wrapper.isActive() && wrapper.isConnectedTo(file.getLocation())
+			return startedServers.stream().filter(wrapper -> wrapper.isActive() && wrapper.isConnectedTo(file.getLocationURI())
 					|| (LanguageServersRegistry.getInstance().matches(file, wrapper.serverDefinition)
 							&& wrapper.canOperate(file.getProject()))).filter(wrapper -> request == null
 					|| (wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities())))

@@ -19,6 +19,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,7 +28,6 @@ import java.util.List;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -80,7 +80,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		assertNotNull(serverDefinition);
 		LanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor
 				.getLSWrapperForConnection(testFile.getProject(), serverDefinition);
-		IPath fileLocation = testFile.getLocation();
+		URI fileLocation = testFile.getLocationURI();
 		// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
 		lsWrapperForConnection.connect(testFile, null);
 

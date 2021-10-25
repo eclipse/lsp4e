@@ -53,7 +53,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.content.IContentType;
@@ -131,8 +130,7 @@ public class LanguageServerWrapper {
 	private IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
 		public void bufferDisposed(IFileBuffer buffer) {
-			Path filePath = new Path(buffer.getFileStore().toURI().getPath());
-			disconnect(filePath);
+			disconnect(buffer.getFileStore().toURI());
 		}
 
 		@Override
@@ -140,8 +138,7 @@ public class LanguageServerWrapper {
 			if (isDirty) {
 				return;
 			}
-			Path filePath = new Path(buffer.getFileStore().toURI().getPath());
-			DocumentContentSynchronizer documentListener = connectedDocuments.get(filePath);
+			DocumentContentSynchronizer documentListener = connectedDocuments.get(buffer.getFileStore().toURI());
 			if (documentListener != null && documentListener.getModificationStamp() < buffer.getModificationStamp()) {
 				documentListener.documentSaved(buffer.getModificationStamp());
 			}
@@ -154,7 +151,7 @@ public class LanguageServerWrapper {
 	@Nullable
 	protected final IProject initialProject;
 	@NonNull
-	protected Map<@NonNull IPath, @NonNull DocumentContentSynchronizer> connectedDocuments;
+	protected Map<@NonNull URI, @NonNull DocumentContentSynchronizer> connectedDocuments;
 	@Nullable
 	protected final IPath initialPath;
 	protected final InitializeParams initParams = new InitializeParams();
@@ -203,12 +200,12 @@ public class LanguageServerWrapper {
 	 * @throws IOException
 	 */
 	public synchronized void start() throws IOException {
-		final Map<IPath, IDocument> filesToReconnect = new HashMap<>();
+		final Map<URI, IDocument> filesToReconnect = new HashMap<>();
 		if (this.languageServer != null) {
 			if (isActive()) {
 				return;
 			} else {
-				for (Entry<IPath, DocumentContentSynchronizer> entry : this.connectedDocuments.entrySet()) {
+				for (Entry<URI, DocumentContentSynchronizer> entry : this.connectedDocuments.entrySet()) {
 					filesToReconnect.put(entry.getKey(), entry.getValue().getDocument());
 				}
 				stop();
@@ -365,10 +362,10 @@ public class LanguageServerWrapper {
 			}).thenRun(() -> {
 				this.languageServer.initialized(new InitializedParams());
 			}).thenRun(() -> {
-				final Map<IPath, IDocument> toReconnect = filesToReconnect;
+				final Map<URI, IDocument> toReconnect = filesToReconnect;
 				initializeFuture.thenRunAsync(() -> {
 					watchProjects();
-					for (Entry<IPath, IDocument> fileToReconnect : toReconnect.entrySet()) {
+					for (Entry<URI, IDocument> fileToReconnect : toReconnect.entrySet()) {
 						try {
 							connect(fileToReconnect.getKey(), fileToReconnect.getValue());
 						} catch (IOException e) {
@@ -465,7 +462,7 @@ public class LanguageServerWrapper {
 	 * @throws IOException
 	 */
 	public @Nullable CompletableFuture<LanguageServer> connect(@NonNull IFile file, IDocument document) throws IOException {
-		return connect(file.getLocation(), document);
+		return connect(file.getLocationURI(), document);
 	}
 
 	/**
@@ -475,15 +472,9 @@ public class LanguageServerWrapper {
 	 * @throws IOException
 	 */
 	public @Nullable CompletableFuture<LanguageServer> connect(IDocument document) throws IOException {
-		IFile file = LSPEclipseUtils.getFile(document);
-
-		if (file != null && file.exists()) {
-			return connect(file, document);
-		} else {
-			URI uri = LSPEclipseUtils.toUri(document);
-			if (uri != null) {
-				return connect(new Path(LSPEclipseUtils.toUri(document).getPath()), document);
-			}
+		URI uri = LSPEclipseUtils.toUri(document);
+		if (uri != null) {
+			return connect(uri, document);
 		}
 		return null;
 	}
@@ -570,10 +561,9 @@ public class LanguageServerWrapper {
 	 * @return null if not connection has happened, a future that completes when file is initialized otherwise
 	 * @noreference internal so far
 	 */
-	private CompletableFuture<LanguageServer> connect(@NonNull IPath absolutePath, IDocument document) throws IOException {
-		final IPath thePath = Path.fromOSString(absolutePath.toFile().getAbsolutePath()); // should be useless
+	private CompletableFuture<LanguageServer> connect(@NonNull URI uri, IDocument document) throws IOException {
 
-		if (this.connectedDocuments.containsKey(thePath)) {
+		if (this.connectedDocuments.containsKey(uri)) {
 			return CompletableFuture.completedFuture(languageServer);
 		}
 		start();
@@ -581,7 +571,7 @@ public class LanguageServerWrapper {
 			return null;
 		}
 		if (document == null) {
-			IFile docFile = (IFile) LSPEclipseUtils.findResourceFor(thePath.toFile().toURI().toString());
+			IFile docFile = (IFile) LSPEclipseUtils.findResourceFor(uri.toString());
 			document = LSPEclipseUtils.getDocument(docFile);
 		}
 		if (document == null) {
@@ -590,7 +580,7 @@ public class LanguageServerWrapper {
 		final IDocument theDocument = document;
 		return initializeFuture.thenComposeAsync(theVoid -> {
 			synchronized (connectedDocuments) {
-				if (this.connectedDocuments.containsKey(thePath)) {
+				if (this.connectedDocuments.containsKey(uri)) {
 					return CompletableFuture.completedFuture(null);
 				}
 				Either<TextDocumentSyncKind, TextDocumentSyncOptions> syncOptions = initializeFuture == null ? null
@@ -605,14 +595,14 @@ public class LanguageServerWrapper {
 				}
 				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
-				LanguageServerWrapper.this.connectedDocuments.put(thePath, listener);
+				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
 				return listener.didOpenFuture;
 			}
 		}).thenApply(theVoid -> languageServer);
 	}
 
-	public void disconnect(IPath path) {
-		DocumentContentSynchronizer documentListener = this.connectedDocuments.remove(path);
+	public void disconnect(URI uri) {
+		DocumentContentSynchronizer documentListener = this.connectedDocuments.remove(uri);
 		if (documentListener != null) {
 			documentListener.getDocument().removeDocumentListener(documentListener);
 			documentListener.documentClosed();
@@ -623,27 +613,27 @@ public class LanguageServerWrapper {
 	}
 
 	public void disconnectContentType(@NonNull IContentType contentType) {
-		List<IPath> pathsToDisconnect = new ArrayList<>();
-		for (IPath path : connectedDocuments.keySet()) {
+		List<URI> urisToDisconnect = new ArrayList<>();
+		for (URI uri : connectedDocuments.keySet()) {
 			IFile[] foundFiles = ResourcesPlugin.getWorkspace().getRoot()
-					.findFilesForLocationURI(path.toFile().toURI());
+					.findFilesForLocationURI(uri);
 			if (foundFiles.length != 0
 					&& LSPEclipseUtils.getFileContentTypes(foundFiles[0]).stream().anyMatch(contentType::equals)) {
-				pathsToDisconnect.add(path);
+				urisToDisconnect.add(uri);
 			}
 		}
-		for (IPath path : pathsToDisconnect) {
-			disconnect(path);
+		for (URI uri : urisToDisconnect) {
+			disconnect(uri);
 		}
 	}
 
 	/**
-	 * checks if the wrapper is already connected to the document at the given path
+	 * checks if the wrapper is already connected to the document at the given uri
 	 *
 	 * @noreference test only
 	 */
-	public boolean isConnectedTo(IPath location) {
-		return connectedDocuments.containsKey(location);
+	public boolean isConnectedTo(URI uri) {
+		return connectedDocuments.containsKey(uri);
 	}
 
 	/**
@@ -859,12 +849,10 @@ public class LanguageServerWrapper {
 		}
 	}
 
-	int getVersion(IFile file) {
-		if (file != null && file.getLocation() != null) {
-			DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(file.getLocation());
-			if (documentContentSynchronizer != null) {
-				return documentContentSynchronizer.getVersion();
-			}
+	int getVersion(URI uri) {
+		DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(uri);
+		if (documentContentSynchronizer != null) {
+			return documentContentSynchronizer.getVersion();
 		}
 		return -1;
 	}
@@ -874,7 +862,7 @@ public class LanguageServerWrapper {
 		if (documentUri == null) {
 			return false;
 		}
-		if (this.isConnectedTo(new Path(documentUri.getPath()))) {
+		if (this.isConnectedTo(documentUri)) {
 			return true;
 		}
 		if (this.initialProject == null && this.connectedDocuments.isEmpty()) {
