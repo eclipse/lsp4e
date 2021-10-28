@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.internal.utils.FileUtil;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
@@ -164,6 +166,21 @@ public class LSPEclipseUtilsTest {
 		}
 	}
 
+	@Test
+	public void testURIToLinkedResourceMapping() throws CoreException { // bug 576425
+	   IProject project = null;
+	   try {
+		    URI uri = URI.create("other://a/res.txt");
+			project = TestUtils.createProject(getClass().getSimpleName() + uri.getScheme());
+			IFile file = project.getFile("res.txt");
+			file.createLink(uri, IResource.REPLACE | IResource.ALLOW_MISSING_LOCAL, new NullProgressMonitor());
+			Assert.assertEquals(file, LSPEclipseUtils.findResourceFor(file.getLocationURI().toString()));
+			Assert.assertEquals(file, LSPEclipseUtils.getFileHandle(file.getLocationURI().toString()));
+		} finally {
+			if (project != null) { project.delete(true, new NullProgressMonitor()); }
+		}
+	}
+	
 	@Test
 	public void testApplyTextEditLongerThanOrigin() throws Exception {
 		IProject project = null;

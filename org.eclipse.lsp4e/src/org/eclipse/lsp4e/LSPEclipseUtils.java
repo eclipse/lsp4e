@@ -15,6 +15,7 @@
  *  Martin Lippert (Pivotal Inc.) - bug 531452, bug 532305
  *  Alex Boyko (Pivotal Inc.) - bug 543435 (WorkspaceEdit apply handling)
  *  Markus Ofterdinger (SAP SE) - Bug 552140 - NullPointerException in LSP4E
+ *  Rubén Porras Campo (Avaloq) - Bug 576425 - Support Remote Files
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -33,6 +34,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -48,6 +50,7 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -300,11 +303,7 @@ public class LSPEclipseUtils {
 	}
 
 	public static IPath toPath(IDocument document) {
-		ITextFileBuffer buffer = toBuffer(document);
-		if (buffer != null) {
-			return buffer.getLocation();
-		}
-		return null;
+		return toPath(toBuffer(document));
 	}
 
 	public static int toEclipseMarkerSeverity(DiagnosticSeverity lspSeverity) {
@@ -322,13 +321,9 @@ public class LSPEclipseUtils {
 		}
 	}
 
-	public static IFile getFileHandle(@Nullable String uri) {
-		if (uri == null || uri.isEmpty() || !uri.startsWith(FILE)) {
-			return null;
-		}
-
+	private static <T> T findResourceForFile(String uri, BiFunction<IProject, IPath, T> pathProjectMapper, Class<T> type) {
 		String convertedUri = uri.replace("file:///", FILE_SLASH); //$NON-NLS-1$
-		convertedUri = convertedUri.replace("file://", FILE_SLASH); //$NON-NLS-1$
+		convertedUri = convertedUri.replace(FILE_URI, FILE_SLASH);
 		IPath path = Path.fromOSString(new File(URI.create(convertedUri)).getAbsolutePath());
 		IProject project = null;
 		for (IProject aProject : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
@@ -343,38 +338,37 @@ public class LSPEclipseUtils {
 		}
 		IPath projectRelativePath = path.removeFirstSegments(project.getLocation().segmentCount());
 		if (projectRelativePath.isEmpty()) {
-			return null;
+			if (type.isInstance(project)) {
+				return type.cast(project);
+			} else {
+				return null;
+			}
+		} else {
+			return pathProjectMapper.apply(project, projectRelativePath);
 		}
-		return project.getFile(projectRelativePath);
+	}
+
+	private static <T> T findResource(String uri, BiFunction<IProject, IPath, T> pathProjectMapper, Class<T> type) {
+        if (uri == null || uri.isEmpty()) {
+            return null;
+        }
+
+        if (uri.startsWith(FILE)) {
+            return findResourceForFile(uri, pathProjectMapper, type);
+        }
+
+        return Adapters.adapt(uri, type, true);
 	}
 
 	@Nullable
-	public static IResource findResourceFor(@Nullable String uri) {
-		if (uri == null || uri.isEmpty() || !uri.startsWith(FILE)) {
-			return null;
-		}
+    public static IFile getFileHandle(@Nullable String uri) {
+        return findResource(uri, IProject::getFile, IFile.class);
+    }
 
-		String convertedUri = uri.replace("file:///", FILE_SLASH); //$NON-NLS-1$
-		convertedUri = convertedUri.replace("file://", FILE_SLASH); //$NON-NLS-1$
-		IPath path = Path.fromOSString(new File(URI.create(convertedUri)).getAbsolutePath());
-		IProject project = null;
-		for (IProject aProject : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
-			IPath location = aProject.getLocation();
-			if (location != null && location.isPrefixOf(path)
-					&& (project == null || project.getLocation().segmentCount() < location.segmentCount())) {
-				project = aProject;
-			}
-		}
-		if (project == null) {
-			return null;
-		}
-		IPath projectRelativePath = path.removeFirstSegments(project.getLocation().segmentCount());
-		if (projectRelativePath.isEmpty()) {
-			return project;
-		} else {
-			return project.findMember(projectRelativePath);
-		}
-	}
+    @Nullable
+    public static IResource findResourceFor(@Nullable String uri) {
+    	return findResource(uri, IProject::findMember, IResource.class);
+    }
 
 	public static void applyEdit(TextEdit textEdit, IDocument document) throws BadLocationException {
 		document.replace(
