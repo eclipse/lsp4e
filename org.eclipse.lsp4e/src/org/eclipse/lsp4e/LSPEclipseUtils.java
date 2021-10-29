@@ -270,21 +270,37 @@ public class LSPEclipseUtils {
 		return specificParams;
 	}
 
+	private static ITextFileBuffer toBuffer(IDocument document) {
+		return FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
+	}
+
 	public static URI toUri(IDocument document) {
 		IFile file = getFile(document);
 		if (file != null) {
-			return LSPEclipseUtils.toUri(file);
+			return toUri(file);
 		} else {
-			IPath path = toPath(document);
-			if(path != null) {
-				return LSPEclipseUtils.toUri(path.toFile());
+			ITextFileBuffer buffer = toBuffer(document);
+			if (buffer != null) {
+				IPath path = toPath(buffer);
+				if(path != null) {
+					return toUri(path.toFile());
+				} else {
+					return buffer.getFileStore().toURI();
+				}
 			}
 		}
 		return null;
 	}
 
+	private static IPath toPath(ITextFileBuffer buffer) {
+		if (buffer != null) {
+			return buffer.getLocation();
+		}
+		return null;
+	}
+
 	public static IPath toPath(IDocument document) {
-		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
+		ITextFileBuffer buffer = toBuffer(document);
 		if (buffer != null) {
 			return buffer.getLocation();
 		}
