@@ -184,7 +184,7 @@
             class="org.eclipse.lsp4e.test.CreateAndRegisterContentTypeLSPLaunchConfigMapping">
       </startup>
    </extension>
-   
+
   <extension
          point="org.eclipse.core.expressions.propertyTesters">
       <propertyTester
@@ -195,7 +195,7 @@
             type="java.lang.Object">
       </propertyTester>
       </extension>
-  <extension 
+  <extension
          point="org.eclipse.core.filesystem.filesystems">
 	<filesystem scheme="other">
 	   <run class="org.eclipse.lsp4e.test.OtherFileSystem" />
@@ -218,6 +218,16 @@
             class="org.eclipse.lsp4e.test.UriToResourceAdapterFactory">
          <adapter
                type="org.eclipse.core.resources.IFile">
+         </adapter>
+      </factory>
+  </extension>
+  <extension
+         point="org.eclipse.core.runtime.adapters">
+      <factory
+            adaptableType="org.eclipse.core.resources.IFile"
+            class="org.eclipse.lsp4e.test.UriToResourceAdapterFactory">
+         <adapter
+               type="java.net.URI">
          </adapter>
       </factory>
   </extension>

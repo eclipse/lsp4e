@@ -769,6 +769,10 @@ public class LSPEclipseUtils {
 	}
 
 	public static URI toUri(IResource resource) {
+		URI adaptedURI = Adapters.adapt(resource, URI.class, true);
+		if (adaptedURI != null) {
+			return adaptedURI;
+		}
 		IPath location = resource.getLocation();
 		if (location != null) {
 			return toUri(location);

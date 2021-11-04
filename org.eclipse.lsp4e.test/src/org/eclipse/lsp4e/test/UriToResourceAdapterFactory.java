@@ -26,15 +26,15 @@ import org.eclipse.lsp4e.test.edit.LSPEclipseUtilsTest;
  *
  */
 public class UriToResourceAdapterFactory implements IAdapterFactory{
-	
-	
+
+
 	private static final String A_SEGMENT = "/a/";
 
 	@SuppressWarnings("unchecked")
 	  @Override
 	  public <T> T getAdapter(final Object adaptableObject, final Class<T> adapterType) {
 	    if (adaptableObject instanceof String) {
-	        URI uri = URI.create(((String) adaptableObject).replace(A_SEGMENT, ""));	        
+	        URI uri = URI.create(((String) adaptableObject).replace(A_SEGMENT, ""));
 	        String path = uri.getPath();
 	        IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(LSPEclipseUtilsTest.class.getSimpleName() + uri.getScheme());
 	        if (path != null) {
@@ -44,12 +44,18 @@ public class UriToResourceAdapterFactory implements IAdapterFactory{
 	            return (T) project.getFile(path);
 	          }
 	        }
+	    } else if (adaptableObject instanceof IFile) {
+	    	URI uri = ((IResource)adaptableObject).getLocationURI();
+	        IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(LSPEclipseUtilsTest.class.getSimpleName() + uri.getScheme());
+	        if (project != null && uri.getScheme().equals("other")) {
+	        	return (T) URI.create(uri.toString().replaceAll("//", "/" + A_SEGMENT));
+	        }
 	    }
 	    return null;
 	  }
 
 	  @Override
 	  public Class<?>[] getAdapterList() {
-	    return new Class<?>[] {IResource.class, IFile.class};
+	    return new Class<?>[] {IResource.class, IFile.class, URI.class};
 	  }
 }

@@ -156,7 +156,7 @@ public class LSPEclipseUtilsTest {
 			IFile file = project1.getFile("res");
 			file.create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
 			Assert.assertEquals(file, LSPEclipseUtils.findResourceFor(file.getLocationURI().toString()));
-			
+
 			project1.getFile("suffix").create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
 			project2 = TestUtils.createProject(project1.getName() + "suffix");
 			Assert.assertEquals(project2, LSPEclipseUtils.findResourceFor(project2.getLocationURI().toString()));
@@ -167,7 +167,7 @@ public class LSPEclipseUtilsTest {
 	}
 
 	@Test
-	public void testURIToLinkedResourceMapping() throws CoreException { // bug 576425
+	public void testCustomURIToResourceMapping() throws CoreException { // bug 576425
 	   IProject project = null;
 	   try {
 		    URI uri = URI.create("other://a/res.txt");
@@ -180,7 +180,21 @@ public class LSPEclipseUtilsTest {
 			if (project != null) { project.delete(true, new NullProgressMonitor()); }
 		}
 	}
-	
+
+	@Test
+	public void testCustomResourceToURIMapping() throws CoreException { // bug 576425
+	   IProject project = null;
+	   try {
+		    URI uri = URI.create("other://res.txt");
+			project = TestUtils.createProject(getClass().getSimpleName() + uri.getScheme());
+			IFile file = project.getFile("res.txt");
+			file.createLink(uri, IResource.REPLACE | IResource.ALLOW_MISSING_LOCAL, new NullProgressMonitor());
+			Assert.assertEquals(LSPEclipseUtils.toUri(file).toString(), "other://a/res.txt");
+		} finally {
+			if (project != null) { project.delete(true, new NullProgressMonitor()); }
+		}
+	}
+
 	@Test
 	public void testApplyTextEditLongerThanOrigin() throws Exception {
 		IProject project = null;
@@ -199,7 +213,7 @@ public class LSPEclipseUtilsTest {
 			if (project != null) { project.delete(true, new NullProgressMonitor()); }
 		}
 	}
-	
+
 	@Test
 	public void testApplyTextEditShorterThanOrigin() throws Exception {
 		IProject project = null;
