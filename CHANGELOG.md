@@ -1,5 +1,16 @@
 ## LSP4E Changelog and New and Noteworthy
 
+### 0.20.0
+
+📅 Release Date: November 9th, 2021
+
+* Bug 576425 - Support finding resources for remote URIs
+* Bug 573717 - Use JFace notifications instead of Mylyn
+* Bug 576425 - Support locations outside a local file system
+* Bug 571313 - Add support for 'textDocument/linkedEditingRange' method
+* Bug 525413 - [rename] bind rename with Alt+Shift+R instead with F2
+* Multiple dependencies and build machinery updates
+
 ### 0.19.0
 
 📅 Release Date: August 17th, 2021
