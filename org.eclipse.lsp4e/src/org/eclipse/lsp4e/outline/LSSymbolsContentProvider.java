@@ -194,21 +194,18 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
 		this.viewer = (TreeViewer) viewer;
 		this.outlineInfo = (OutlineInfo) newInput;
-		this.symbolsModel
-				.setFile((IFile) LSPEclipseUtils
-						.findResourceFor(LSPEclipseUtils.toUri(this.outlineInfo.document).toString()));
+		IFile file = LSPEclipseUtils.getFile(this.outlineInfo.document);
+		this.symbolsModel.setFile(file);
 		if (outlineUpdater != null) {
 			outlineUpdater.uninstall();
 		}
-		outlineUpdater = createOutlineUpdater();
+		outlineUpdater = createOutlineUpdater(file);
 		outlineUpdater.install();
 	}
 
-	private IOutlineUpdater createOutlineUpdater() {
+	private IOutlineUpdater createOutlineUpdater(IFile file) {
 		if (refreshOnResourceChanged) {
-			IResource resource = LSPEclipseUtils
-					.findResourceFor(LSPEclipseUtils.toUri(this.outlineInfo.document).toString());
-			return new ResourceChangeOutlineUpdater(resource);
+			return new ResourceChangeOutlineUpdater(file);
 		}
 		ITextViewer textViewer = outlineInfo.textEditor == null ? null
 				: ((ITextViewer) outlineInfo.textEditor.getAdapter(ITextOperationTarget.class));
