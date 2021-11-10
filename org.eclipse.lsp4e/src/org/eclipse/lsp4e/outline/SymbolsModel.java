@@ -56,7 +56,7 @@ public class SymbolsModel {
 			if (!(obj instanceof DocumentSymbolWithFile)) {
 				return false;
 			}
-			DocumentSymbolWithFile other = (DocumentSymbolWithFile)obj;
+			DocumentSymbolWithFile other = (DocumentSymbolWithFile) obj;
 			return Objects.equals(this.symbol, other.symbol) && Objects.equals(this.file, other.file);
 		}
 
@@ -148,19 +148,37 @@ public class SymbolsModel {
 		if (parentElement != null) {
 			if (parentElement instanceof SymbolInformation) {
 				List<SymbolInformation> children = childrenMap.get(parentElement);
-				if (children != null) {
+				if (children != null && !children.isEmpty()) {
 					return children.toArray();
 				}
 			} else if (parentElement instanceof DocumentSymbolWithFile) {
 				DocumentSymbolWithFile element = (DocumentSymbolWithFile) parentElement;
-				if(element.symbol.getChildren() == null) {
-					return EMPTY;
-				}
-				return element.symbol.getChildren().stream()
+				List<DocumentSymbol> children = element.symbol.getChildren();
+				if (children != null && !children.isEmpty()) {
+					return element.symbol.getChildren().stream()
 						.map(symbol -> new DocumentSymbolWithFile(symbol, element.file)).toArray();
+				}
 			}
 		}
 		return EMPTY;
+	}
+
+	public boolean hasChildren(Object parentElement) {
+		if (parentElement != null) {
+			if (parentElement instanceof SymbolInformation) {
+				List<SymbolInformation> children = childrenMap.get(parentElement);
+				if (children != null) {
+					return !children.isEmpty();
+				}
+			} else if (parentElement instanceof DocumentSymbolWithFile) {
+				DocumentSymbolWithFile element = (DocumentSymbolWithFile) parentElement;
+				List<DocumentSymbol> children = element.symbol.getChildren();
+				if (children != null) {
+					return !children.isEmpty();
+				}
+			}
+		}
+		return false;
 	}
 
 	public Object getParent(Object element) {

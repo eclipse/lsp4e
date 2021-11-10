@@ -12,6 +12,8 @@
 package org.eclipse.lsp4e.test.symbols;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,9 +90,11 @@ public class SymbolsModelTest {
 
 		assertEquals(1, symbolsModel.getElements().length);
 		assertEquals(items.get(0), symbolsModel.getElements()[0]);
+		assertTrue(symbolsModel.hasChildren(symbolsModel.getElements()[0]));
 		Object[] children = symbolsModel.getChildren(symbolsModel.getElements()[0]);
 		assertEquals(1, children.length);
 		assertEquals(items.get(1), children[0]);
+		assertTrue(symbolsModel.hasChildren(children[0]));
 		children = symbolsModel.getChildren(children[0]);
 		assertEquals(1, children.length);
 		assertEquals(items.get(2), children[0]);
@@ -117,6 +121,8 @@ public class SymbolsModelTest {
 		symbolsModel.update(eitherItems);
 
 		assertEquals(2, symbolsModel.getElements().length);
+		assertFalse(symbolsModel.hasChildren(symbolsModel.getElements()[0]));
+		assertFalse(symbolsModel.hasChildren(symbolsModel.getElements()[1]));
 		assertEquals(0, symbolsModel.getChildren(symbolsModel.getElements()[0]).length);
 		assertEquals(0, symbolsModel.getChildren(symbolsModel.getElements()[1]).length);
 	}

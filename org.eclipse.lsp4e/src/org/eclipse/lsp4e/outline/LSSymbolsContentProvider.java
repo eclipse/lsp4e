@@ -237,8 +237,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 	@Override
 	public boolean hasChildren(Object parentElement) {
-		Object[] children = symbolsModel.getChildren(parentElement);
-		return children != null && children.length > 0;
+		return symbolsModel.hasChildren(parentElement);
 	}
 
 	private void refreshTreeContentFromLS() {
