@@ -143,7 +143,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			public void run(IProgressMonitor monitor) throws CoreException {
 				if (resource.exists()) {
 					for (Diagnostic diagnostic : newDiagnostics) {
-						IMarker marker = resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE, computeMarkerAttributes(resource, diagnostic));
+						resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE, computeMarkerAttributes(resource, diagnostic));
 					}
 					for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
 						updateMarker(resource, entry.getValue(), entry.getKey());

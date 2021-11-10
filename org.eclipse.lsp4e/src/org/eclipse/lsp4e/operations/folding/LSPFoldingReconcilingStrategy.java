@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.text.BadLocationException;
@@ -54,7 +53,6 @@ public class LSPFoldingReconcilingStrategy
 
 	private IDocument document;
 	private ProjectionAnnotationModel projectionAnnotationModel;
-	private CompletableFuture<List<FoldingRange>> request;
 	private ProjectionViewer viewer;
 
 	/**

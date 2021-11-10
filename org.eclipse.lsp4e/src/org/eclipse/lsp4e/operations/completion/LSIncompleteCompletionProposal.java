@@ -520,7 +520,6 @@ public class LSIncompleteCompletionProposal
 						LinkedPosition position = null;
 						if (!snippetProposals.isEmpty()) {
 							int replacementOffset = insertionOffset + currentSnippetOffsetInInsertText;
-							int replacementLength = insertText.length();
 							ICompletionProposal[] proposals = snippetProposals.stream().map(string ->
 								new CompletionProposal(string, replacementOffset, defaultProposal.length(), replacementOffset + string.length())
 							).toArray(ICompletionProposal[]::new);
