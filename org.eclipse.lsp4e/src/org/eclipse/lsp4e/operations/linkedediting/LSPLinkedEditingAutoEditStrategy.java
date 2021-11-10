@@ -120,7 +120,7 @@ public class LSPLinkedEditingAutoEditStrategy extends LSPLinkedEditingBase imple
 			super.install();
 			fIsInstalled = true;
 		}
-		return fEnabled && !command.text.chars().anyMatch(ch->Character.isWhitespace(ch));
+		return fEnabled && !command.text.chars().anyMatch(Character::isWhitespace);
 	}
 
 	private boolean isOffsetInRanges(IDocument document, int offset) {

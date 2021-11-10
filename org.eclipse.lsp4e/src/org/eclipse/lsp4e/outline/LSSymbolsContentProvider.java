@@ -255,7 +255,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		symbols.thenAcceptAsync(t -> {
 			symbolsModel.update(t);
 
-			viewer.getControl().getDisplay().asyncExec(() -> viewer.refresh());
+			viewer.getControl().getDisplay().asyncExec(viewer::refresh);
 			if (!InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
 					.getBoolean(CNFOutlinePage.LINK_WITH_EDITOR_PREFERENCE, true)) {
 				return;
@@ -273,7 +273,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 		symbols.exceptionally(ex -> {
 			lastError = ex;
-			viewer.getControl().getDisplay().asyncExec(() -> viewer.refresh());
+			viewer.getControl().getDisplay().asyncExec(viewer::refresh);
 			return Collections.emptyList();
 		});
 	}
