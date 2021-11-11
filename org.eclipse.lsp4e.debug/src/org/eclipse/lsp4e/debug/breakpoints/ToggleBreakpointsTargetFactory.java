@@ -21,9 +21,9 @@ public class ToggleBreakpointsTargetFactory implements IToggleBreakpointsTargetF
 
 	private static final DSPBreakpointAdapter DSP_BREAKPOINT_ADAPTER = new DSPBreakpointAdapter();
 
-	public static String TOGGLE_BREAKPOINT_TARGET_ID = DSPPlugin.PLUGIN_ID + ".toggleBreakpointTarget"; //$NON-NLS-1$
+	public static final String TOGGLE_BREAKPOINT_TARGET_ID = DSPPlugin.PLUGIN_ID + ".toggleBreakpointTarget"; //$NON-NLS-1$
 
-	private static Set<String> TOGGLE_TARGET_IDS = Collections.singleton(TOGGLE_BREAKPOINT_TARGET_ID);
+	private static final Set<String> TOGGLE_TARGET_IDS = Collections.singleton(TOGGLE_BREAKPOINT_TARGET_ID);
 
 	@Override
 	public Set<String> getToggleTargets(IWorkbenchPart part, ISelection selection) {
