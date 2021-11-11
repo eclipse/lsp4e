@@ -247,8 +247,11 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	private static boolean isOffsetInRange(int offset, Range range, IDocument document) {
 		try {
 			int startOffset = document.getLineOffset(range.getStart().getLine()) + range.getStart().getCharacter();
+			if (startOffset > offset) {
+				return false;
+			}
 			int endOffset = document.getLineOffset(range.getEnd().getLine()) + range.getEnd().getCharacter();
-			return startOffset <= offset && endOffset >= offset;
+			return endOffset >= offset;
 		} catch (BadLocationException e) {
 			return false;
 		}
