@@ -64,13 +64,13 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	private final IDocument document;
 	private final LanguageServer languageServer;
 
-	class OutlineInfo {
+	static final class OutlineInfo {
 
-		public final ITextEditor textEditor;
-		public final LanguageServer languageServer;
-		public final IDocument document;
+		final ITextEditor textEditor;
+		final LanguageServer languageServer;
+		final IDocument document;
 
-		public OutlineInfo(IDocument document, LanguageServer languageServer, @Nullable ITextEditor textEditor) {
+		private OutlineInfo(IDocument document, LanguageServer languageServer, @Nullable ITextEditor textEditor) {
 			this.document = document;
 			this.languageServer = languageServer;
 			this.textEditor = textEditor;
