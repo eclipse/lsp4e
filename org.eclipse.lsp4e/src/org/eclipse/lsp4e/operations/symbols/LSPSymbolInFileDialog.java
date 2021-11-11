@@ -99,7 +99,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 	@Override
 	protected Control createDialogArea(Composite parent) {
 		getShell().setText(NLS.bind(Messages.symbolsInFile, Path.of(fileURI).getFileName()));
-		FilteredTree filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true);
+		FilteredTree filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false);
 		TreeViewer viewer = filteredTree.getViewer();
 
 		viewer.setContentProvider(new SymbolsContentProvider());

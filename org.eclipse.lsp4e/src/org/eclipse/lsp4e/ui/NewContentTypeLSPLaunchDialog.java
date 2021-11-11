@@ -124,7 +124,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		new Label(res, SWT.NONE).setText(Messages.NewContentTypeLSPLaunchDialog_associateContentType);
 		new Label(res, SWT.NONE).setText(Messages.NewContentTypeLSPLaunchDialog_withLSPLaunch);
 		// copied from ContentTypesPreferencePage
-		FilteredTree contentTypesFilteredTree = new FilteredTree(res, SWT.BORDER, new PatternFilter(), true);
+		FilteredTree contentTypesFilteredTree = new FilteredTree(res, SWT.BORDER, new PatternFilter(), true, false);
 		TreeViewer contentTypesViewer = contentTypesFilteredTree.getViewer();
 		contentTypesFilteredTree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		contentTypesViewer.setContentProvider(new ContentTypesContentProvider());
@@ -143,7 +143,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 			updateButtons();
 		});
 		// copied from LaunchConfigurationDialog : todo use LaunchConfigurationFilteredTree
-		FilteredTree launchersFilteredTree = new FilteredTree(res, SWT.BORDER, new PatternFilter(), true);
+		FilteredTree launchersFilteredTree = new FilteredTree(res, SWT.BORDER, new PatternFilter(), true, false);
 		TreeViewer launchConfigViewer = launchersFilteredTree.getViewer();
 		launchersFilteredTree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		launchConfigViewer.setLabelProvider(new DecoratingLabelProvider(DebugUITools.newDebugModelPresentation(), PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator()));
