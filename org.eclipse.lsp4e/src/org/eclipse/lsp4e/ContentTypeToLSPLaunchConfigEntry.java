@@ -26,6 +26,8 @@ import org.eclipse.lsp4e.LanguageServersRegistry.LaunchConfigurationLanguageServ
 
 public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToLanguageServerDefinition {
 
+	private static final long serialVersionUID = 7944251280308498957L;
+
 	private ILaunchConfiguration launchConfiguration;
 	private Set<String> launchModes;
 
