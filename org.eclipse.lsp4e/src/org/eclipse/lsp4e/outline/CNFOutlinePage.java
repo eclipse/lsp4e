@@ -192,29 +192,31 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 
 	public static void refreshTreeSelection(TreeViewer viewer, int offset, IDocument document) {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) viewer.getContentProvider();
-		Object[] objects = contentProvider != null ? contentProvider.getElements(null) : null;
+		if(contentProvider == null) {
+			return;
+		}
+
+		Object[] objects = contentProvider.getElements(null);
 		List<Object> path = new ArrayList<>();
 		while (objects != null && objects.length > 0) {
 			boolean found = false;
-			for (int index = 0; index < objects.length; index++) {
-				Object object = objects[index];
+			for (final Object object : objects) {
 				Range range = toRange(object);
 				if (range != null && isOffsetInRange(offset, range, document)) {
-					objects = contentProvider != null ? contentProvider.getChildren(object) : null;
+					objects = contentProvider.getChildren(object);
 					path.add(object);
 					found = true;
 					break;
 				}
 			}
 			if (!found) {
-				objects = null;
+				break;
 			}
 		}
 		if (!path.isEmpty()) {
 			Object bestNode = path.get(path.size() - 1);
 			if (bestNode.equals(viewer.getStructuredSelection().getFirstElement())) {
-				// the symbol to select is the same than current selected symbol, don't select
-				// it.
+				// the symbol to select is the same than current selected symbol, don't select it.
 				return;
 			}
 			Display.getDefault().asyncExec(() -> {
