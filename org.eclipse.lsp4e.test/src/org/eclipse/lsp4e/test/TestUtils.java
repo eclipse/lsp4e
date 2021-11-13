@@ -16,8 +16,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -25,6 +28,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
@@ -45,6 +49,9 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
+
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
 
 public class TestUtils {
 
@@ -127,6 +134,34 @@ public class TestUtils {
 		IFile testFile = p.getFile(name);
 		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
 		return testFile;
+	}
+
+	public static void delete(IProject project) throws CoreException {
+		if (project != null) {
+			project.delete(true, new NullProgressMonitor());
+		}
+	}
+
+	public static void delete(IProject... projects) throws CoreException {
+		if (projects != null && projects.length > 0) {
+			for(IProject project : projects) {
+				delete(project);
+			}
+		}
+	}
+
+	public static void delete(Path path) throws IOException {
+		if (path != null && Files.exists(path)) {
+			MoreFiles.deleteRecursively(path, RecursiveDeleteOption.ALLOW_INSECURE);
+		}
+	}
+
+	public static void delete(Path... paths) throws IOException {
+		if (paths != null && paths.length > 0) {
+			for(Path path : paths) {
+				delete(path);
+			}
+		}
 	}
 
 	public static ContentTypeToLanguageServerDefinition getDisabledLS() {

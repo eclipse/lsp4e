@@ -15,7 +15,7 @@
  *  Martin Lippert (Pivotal Inc.) - bug 531452, bug 532305
  *  Alex Boyko (Pivotal Inc.) - bug 543435 (WorkspaceEdit apply handling)
  *  Markus Ofterdinger (SAP SE) - Bug 552140 - NullPointerException in LSP4E
- *  Rubén Porras Campo (Avaloq) - Bug 576425 - Support Remote Files
+ *  RubÃ©n Porras Campo (Avaloq) - Bug 576425 - Support Remote Files
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -34,7 +34,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -45,10 +44,12 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileInfo;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.internal.utils.FileUtil;
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.CoreException;
@@ -134,7 +135,7 @@ public class LSPEclipseUtils {
 	public static final String INTRO_URL = "http://org.eclipse.ui.intro"; //$NON-NLS-1$
 	public static final String FILE_URI = "file://"; //$NON-NLS-1$
 
-	private static final String FILE = "file:"; //$NON-NLS-1$
+	private static final String FILE_SCHEME = "file"; //$NON-NLS-1$
 	private static final String FILE_SLASH = "file:/"; //$NON-NLS-1$
 	private static final String HTML = "html"; //$NON-NLS-1$
 	private static final String MARKDOWN = "markdown"; //$NON-NLS-1$
@@ -321,54 +322,66 @@ public class LSPEclipseUtils {
 		}
 	}
 
-	private static <T> T findResourceForFile(String uri, BiFunction<IProject, IPath, T> pathProjectMapper, Class<T> type) {
-		String convertedUri = uri.replace("file:///", FILE_SLASH); //$NON-NLS-1$
-		convertedUri = convertedUri.replace(FILE_URI, FILE_SLASH);
-		IPath path = Path.fromOSString(new File(URI.create(convertedUri)).getAbsolutePath());
-		IProject project = null;
-		for (IProject aProject : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
-			IPath location = aProject.getLocation();
-			if (location != null && location.isPrefixOf(path)
-					&& (project == null || project.getLocation().segmentCount() < location.segmentCount())) {
-				project = aProject;
-			}
-		}
-		if (project == null) {
+	@Nullable
+	public static IFile getFileHandle(@Nullable String uri) {
+		if (uri == null || uri.isEmpty()) {
 			return null;
 		}
-		IPath projectRelativePath = path.removeFirstSegments(project.getLocation().segmentCount());
-		if (projectRelativePath.isEmpty()) {
-			if (type.isInstance(project)) {
-				return type.cast(project);
-			} else {
-				return null;
+		if (uri.startsWith(FILE_SLASH)) {
+			URI uriObj = URI.create(uri);
+			IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
+			IFile[] files = wsRoot.findFilesForLocationURI(uriObj);
+			if (files.length > 0) {
+				return files[0];
 			}
+			return null;
 		} else {
-			return pathProjectMapper.apply(project, projectRelativePath);
+			return Adapters.adapt(uri, IFile.class, true);
 		}
-	}
-
-	private static <T> T findResource(String uri, BiFunction<IProject, IPath, T> pathProjectMapper, Class<T> type) {
-        if (uri == null || uri.isEmpty()) {
-            return null;
-        }
-
-        if (uri.startsWith(FILE)) {
-            return findResourceForFile(uri, pathProjectMapper, type);
-        }
-
-        return Adapters.adapt(uri, type, true);
 	}
 
 	@Nullable
-    public static IFile getFileHandle(@Nullable String uri) {
-        return findResource(uri, IProject::getFile, IFile.class);
-    }
+	public static IResource findResourceFor(@Nullable String uri) {
+		if (uri == null || uri.isEmpty()) {
+			return null;
+		}
+		if (uri.startsWith(FILE_SLASH)) {
+			return findResourceFor(URI.create(uri));
+		} else {
+			return Adapters.adapt(uri, IResource.class, true);
+		}
+	}
 
-    @Nullable
-    public static IResource findResourceFor(@Nullable String uri) {
-    	return findResource(uri, IProject::findMember, IResource.class);
-    }
+	@Nullable
+	public static IResource findResourceFor(@Nullable URI uri) {
+		if (uri == null) {
+			return null;
+		}
+		if (FILE_SCHEME.equals(uri.getScheme())) {
+			IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
+
+			IFile[] files = wsRoot.findFilesForLocationURI(uri);
+			if (files.length > 0) {
+				IFile file = files[0];
+				/*
+				 * IWorkspaceRoot#findFilesForLocationURI returns IFile objects for folders instead of null.
+				 * IWorkspaceRoot#findContainersForLocationURI returns IFolder objects for regular files instead of null.
+				 * Thus we have to manually check the file system entry to determine the correct type to return.
+				 */
+				if(!file.isVirtual() && !file.getLocation().toFile().isDirectory()) {
+					return file;
+				}
+			}
+
+			final IContainer[] containers = wsRoot.findContainersForLocationURI(uri);
+			if (containers.length > 0) {
+				return containers[0];
+			}
+			return null;
+		} else {
+			return Adapters.adapt(uri, IResource.class, true);
+		}
+	}
 
 	public static void applyEdit(TextEdit textEdit, IDocument document) throws BadLocationException {
 		document.replace(
@@ -512,7 +525,7 @@ public class LSPEclipseUtils {
 	}
 
 	public static void open(String uri, IWorkbenchPage page, Range optionalRange) {
-		if (uri.startsWith(FILE)) {
+		if (uri.startsWith(FILE_SLASH)) {
 			openFileLocationInEditor(uri, page, optionalRange);
 		} else if (uri.startsWith(INTRO_URL)) {
 			openIntroURL(uri);

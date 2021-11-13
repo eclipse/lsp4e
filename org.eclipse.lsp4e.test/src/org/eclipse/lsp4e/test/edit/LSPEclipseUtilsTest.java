@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -31,6 +32,7 @@ import java.util.LinkedList;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.internal.utils.FileUtil;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -161,8 +163,81 @@ public class LSPEclipseUtilsTest {
 			project2 = TestUtils.createProject(project1.getName() + "suffix");
 			Assert.assertEquals(project2, LSPEclipseUtils.findResourceFor(project2.getLocationURI().toString()));
 		} finally {
-			if (project1 != null) { project1.delete(true, new NullProgressMonitor()); }
-			if (project2 != null) { project2.delete(true, new NullProgressMonitor()); }
+			TestUtils.delete(project1, project2);
+		}
+	}
+
+	@Test
+	public void testLinkedResourceURIToResourceMapping() throws CoreException, IOException { // bug 577159
+		IProject project1 = null;
+		Path externalFile = null;
+		Path externalFolder = null;
+		try {
+			externalFile = Files.createTempFile("tmp_file-", null);
+			externalFolder = Files.createTempDirectory("tmp_dir-");
+
+			project1 = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
+
+			IFile linkedFile = project1.getFile("linked_file");
+			linkedFile.createLink(externalFile.toUri(), 0, new NullProgressMonitor());
+			Assert.assertTrue(linkedFile.isLinked());
+			Assert.assertEquals(linkedFile, LSPEclipseUtils.findResourceFor(linkedFile.getLocationURI().toString()));
+
+			IFolder linkedFolder = project1.getFolder("linked_folder");
+			linkedFolder.createLink(externalFolder.toUri(), 0, new NullProgressMonitor());
+			Assert.assertTrue(linkedFolder.isLinked());
+			Assert.assertEquals(linkedFolder,
+					LSPEclipseUtils.findResourceFor(linkedFolder.getLocationURI().toString()));
+
+			Files.createFile(externalFolder.resolve("child"));
+			IFile linkedFolderFile = linkedFolder.getFile("child");
+			Assert.assertEquals(linkedFolderFile,
+					LSPEclipseUtils.findResourceFor(linkedFolderFile.getLocationURI().toString()));
+		} finally {
+			TestUtils.delete(project1);
+			TestUtils.delete(externalFile, externalFolder);
+		}
+	}
+
+	@Test
+	public void testVirtualResourceURIToResourceMapping() throws CoreException, IOException { // bug 577159
+		IProject project1 = null;
+		Path externalFile = null;
+		Path externalFolder = null;
+		try {
+			externalFile = Files.createTempFile("tmp_file-", null);
+			externalFolder = Files.createTempDirectory("tmp_dir-");
+
+			project1 = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
+
+			IFolder virtualFolder = project1.getFolder("virtual_folder");
+			virtualFolder.create(IResource.VIRTUAL, true, new NullProgressMonitor());
+
+			Assert.assertEquals(virtualFolder.isVirtual(), true);
+			Assert.assertEquals(virtualFolder.getLocationURI().toString(), "virtual:/virtual");
+			Assert.assertEquals(virtualFolder.getRawLocationURI().toString(), "virtual:/virtual");
+			// getLocationURI()/getRawLocationURI() of virtual folders cannot be used to resolve a workspace resource
+			// thus LSPEclipseUtils.findResourceFor() returns null
+			Assert.assertEquals(null, LSPEclipseUtils.findResourceFor(virtualFolder.getLocationURI().toString()));
+
+			IFile linkedFile = virtualFolder.getFile("linked_file");
+			linkedFile.createLink(externalFile.toUri(), 0, new NullProgressMonitor());
+			Assert.assertTrue(linkedFile.isLinked());
+			Assert.assertEquals(linkedFile, LSPEclipseUtils.findResourceFor(linkedFile.getLocationURI().toString()));
+
+			IFolder linkedFolder = virtualFolder.getFolder("linked_folder");
+			linkedFolder.createLink(externalFolder.toUri(), 0, new NullProgressMonitor());
+			Assert.assertTrue(linkedFolder.isLinked());
+			Assert.assertEquals(linkedFolder,
+					LSPEclipseUtils.findResourceFor(linkedFolder.getLocationURI().toString()));
+
+			Files.createFile(externalFolder.resolve("child"));
+			IFile linkedFolderFile = linkedFolder.getFile("child");
+			Assert.assertEquals(linkedFolderFile,
+					LSPEclipseUtils.findResourceFor(linkedFolderFile.getLocationURI().toString()));
+		} finally {
+			TestUtils.delete(project1);
+			TestUtils.delete(externalFile, externalFolder);
 		}
 	}
 
