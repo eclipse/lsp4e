@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *  Rubén Porras Campo (Avaloq) - Bug 576425 - Support Remote Files
+ *  RubÃ©n Porras Campo (Avaloq) - Bug 576425 - Support Remote Files
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
@@ -22,8 +22,8 @@ import org.eclipse.lsp4e.test.edit.LSPEclipseUtilsTest;
 
 /**
  * A custom URI to Resource Mapper to test mapping of remote URIs by stripping the segment "/a/",
- * it is tighly coupled with {@link LSPEclipseUtilsTest#testURIToLinkedResourceMapping()}
- *
+ * it is tightly coupled with {@link LSPEclipseUtilsTest#testCustomURIToResourceMapping()}
+ * and {@link LSPEclipseUtilsTest#testCustomResourceToURIMapping()}
  */
 public class UriToResourceAdapterFactory implements IAdapterFactory{
 

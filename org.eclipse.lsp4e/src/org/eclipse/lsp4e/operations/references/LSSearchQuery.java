@@ -66,8 +66,9 @@ public class LSSearchQuery extends FileSearchQuery {
 	 * LSP search query to "Find references" from the given offset of the given
 	 * {@link LSPDocumentInfo}.
 	 *
+	 * @param document
 	 * @param offset
-	 * @param info
+	 * @param languageServer
 	 * @throws BadLocationException
 	 */
 	public LSSearchQuery(@NonNull IDocument document, int offset, @NonNull LanguageServer languageServer)

@@ -84,7 +84,7 @@ public final class CompletionProposalTools {
 	 * Category 3:<br>
 	 * The full completion filter is found within the document filter<br>
 	 * Category 4:<br>
-	 * {@link isSubstringFoundOrderedInString}(documentFilter, completionFilter) ==
+	 * {@link #isSubstringFoundOrderedInString(String, String)}(documentFilter, completionFilter) ==
 	 * true<br>
 	 * Category 5:<br>
 	 * Catch all case, usually when all the document's filter's characters are not

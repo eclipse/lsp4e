@@ -200,8 +200,8 @@ public class LanguageServiceAccessor {
 	/**
 	 * Get the requested language server instance for the given file. Starts the language server if not already started.
 	 * @param file
-	 * @param serverId
-	 * @param capabilitesPredicate a predicate to check capabilities
+	 * @param lsDefinition
+	 * @param capabilitiesPredicate a predicate to check capabilities
 	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request
 	 * @deprecated use {@link #getInitializedLanguageServer(IFile, LanguageServerDefinition, Predicate)} instead.
 	 */
@@ -220,8 +220,8 @@ public class LanguageServiceAccessor {
 	/**
 	 * Get the requested language server instance for the given file. Starts the language server if not already started.
 	 * @param file
-	 * @param serverId
-	 * @param capabilitesPredicate a predicate to check capabilities
+	 * @param lsDefinition
+	 * @param capabilitiesPredicate a predicate to check capabilities
 	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request.
 	 *  If {@code capabilitesPredicate} does not test positive for the server's capabilities, {@code null} is returned.
 	 */
@@ -242,8 +242,8 @@ public class LanguageServiceAccessor {
 	 * language server if not already started.
 	 *
 	 * @param document the document for which the initialized LanguageServer shall be returned
-	 * @param serverId the ID of the LanguageServer to be returned
-	 * @param capabilitesPredicate
+	 * @param lsDefinition the ID of the LanguageServer to be returned
+	 * @param capabilitiesPredicate
 	 *            a predicate to check capabilities
 	 * @return a LanguageServer for the given file, which is defined with provided
 	 *         server ID and conforms to specified request. If

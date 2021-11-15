@@ -140,7 +140,7 @@ public class LSIncompleteCompletionProposal
 	}
 
 	/**
-	 * See {@link CompletionProposalTools.getFilterFromDocument} for filter
+	 * See {@link CompletionProposalTools#getFilterFromDocument} for filter
 	 * generation logic
 	 *
 	 * @return The document filter for the given offset
@@ -160,7 +160,7 @@ public class LSIncompleteCompletionProposal
 	}
 
 	/**
-	 * See {@link CompletionProposalTools.getFilterFromDocument} for filter
+	 * See {@link CompletionProposalTools#getFilterFromDocument} for filter
 	 * generation logic
 	 *
 	 * @return The document filter for the last given offset
@@ -176,7 +176,7 @@ public class LSIncompleteCompletionProposal
 	}
 
 	/**
-	 * See {@link CompletionProposalTools.getScoreOfFilterMatch} for ranking logic
+	 * See {@link CompletionProposalTools#getScoreOfFilterMatch} for ranking logic
 	 *
 	 * @return The rank of the match between the document's filter and this
 	 *         completion's filter.
@@ -195,7 +195,7 @@ public class LSIncompleteCompletionProposal
 	}
 
 	/**
-	 * See {@link CompletionProposalTools.getCategoryOfFilterMatch} for category
+	 * See {@link CompletionProposalTools#getCategoryOfFilterMatch} for category
 	 * logic
 	 *
 	 * @return The category of the match between the document's filter and this

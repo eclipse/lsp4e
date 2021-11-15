@@ -141,7 +141,7 @@ public interface StreamConnectionProvider {
 	 * Allows to hook custom behavior on messages.
 	 * @param message a message
 	 * @param languageServer the language server receiving/sending the message.
-	 * @param rootUri
+	 * @param rootURI
 	 */
 	public default void handleMessage(Message message, LanguageServer languageServer, URI rootURI) {}
 

@@ -948,7 +948,7 @@ public class LSPEclipseUtils {
 	 * Convert the given LSP <code>color</code> instance to a Eclipse {@link RGBA}
 	 * instance.
 	 *
-	 * @param rgb
+	 * @param color
 	 *            the color instance to convert
 	 * @return the given LSP <code>color</code> instance to a Eclipse {@link RGBA}
 	 *         instance.
