@@ -14,8 +14,10 @@
 package org.eclipse.lsp4e.outline;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.resources.IFile;
@@ -35,7 +37,10 @@ import org.eclipse.jface.text.reconciler.AbstractReconciler;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategy;
 import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.ITreeSelection;
 import org.eclipse.jface.viewers.StructuredViewer;
+import org.eclipse.jface.viewers.TreePath;
+import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -255,7 +260,13 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		symbols.thenAcceptAsync(t -> {
 			symbolsModel.update(t);
 
-			viewer.getControl().getDisplay().asyncExec(viewer::refresh);
+			viewer.getControl().getDisplay().asyncExec(() -> {
+				TreePath[] expandedElements = viewer.getExpandedTreePaths();
+				TreePath[] initialSelection = ((ITreeSelection)viewer.getSelection()).getPaths();
+				viewer.refresh();
+				viewer.setExpandedTreePaths(Arrays.stream(expandedElements).map(symbolsModel::toUpdatedSymbol).filter(Objects::nonNull).toArray(TreePath[]::new));
+				viewer.setSelection(new TreeSelection(Arrays.stream(initialSelection).map(symbolsModel::toUpdatedSymbol).filter(Objects::nonNull).toArray(TreePath[]::new)));
+			});
 			if (!InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
 					.getBoolean(CNFOutlinePage.LINK_WITH_EDITOR_PREFERENCE, true)) {
 				return;

@@ -16,6 +16,8 @@ import java.util.Collections;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
@@ -69,6 +71,40 @@ public class OutlineContentTest {
 			}
 		}.waitForCondition(tree.getDisplay(), 2000));
 	}
+
+	@Test
+	public void testNodeRemainExpandedUponModification() throws CoreException, BadLocationException {
+		IProject project = TestUtils.createProject("EditorToOutlineAdapterFactoryTest2" + System.currentTimeMillis());
+		IFile testFile = TestUtils.createUniqueTestFile(project, "a(b())");
+		MockLanguageServer.INSTANCE.setDocumentSymbols(new DocumentSymbol("a", SymbolKind.Constant, new Range(new Position(0, 0), new Position(0, 6)), new Range(new Position(0, 0), new Position(0, 1)), "", Collections.singletonList(
+				new DocumentSymbol("b", SymbolKind.Constant, new Range(new Position(0, 2), new Position(0, 5)), new Range(new Position(0, 2), new Position(0, 3)))
+			)));
+		ITextEditor editor = (ITextEditor)TestUtils.openEditor(testFile);
+		CNFOutlinePage outlinePage = new CNFOutlinePage(MockLanguageServer.INSTANCE, editor);
+		Shell shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
+		shell.setLayout(new FillLayout());
+		outlinePage.createControl(shell);
+		shell.open();
+		Tree tree = (Tree)outlinePage.getControl();
+		editor.getSelectionProvider().setSelection(new TextSelection(4, 0));
+		assertTrue(new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return tree.getItems().length > 0 && tree.getItem(0).getExpanded();
+			}
+		}.waitForCondition(tree.getDisplay(), 2000));
+		IDocument document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
+		editor.selectAndReveal(document.getLength(), 0);
+		document.replace(document.getLength(), 0, "   ");
+		// ensure that tree remains expanded (for at least 2 seconds)
+		assertFalse(new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return !tree.getItem(0).getExpanded();
+			}
+		}.waitForCondition(tree.getDisplay(), 2000));
+	}
+
 
 	private boolean itemBselectedAndVisibile(Tree tree) {
 		if (tree.getSelection().length == 0) {

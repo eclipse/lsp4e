@@ -25,6 +25,7 @@ import java.util.function.Function;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.viewers.TreePath;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
@@ -210,6 +211,31 @@ public class SymbolsModel {
 
 	public void setFile(IFile file) {
 		this.file = file;
+	}
+
+	public TreePath toUpdatedSymbol(TreePath initialSymbol) {
+		List<Object> res = new ArrayList<>(initialSymbol.getSegmentCount());
+		Object currentSymbol = null;
+		for (int i = 0; i < initialSymbol.getSegmentCount(); i++) {
+			String name = getName(initialSymbol.getSegment(i));
+			Object[] currentChildren = (currentSymbol == null ? getElements() : getChildren(currentSymbol));
+			currentSymbol = Arrays.stream(currentChildren).filter(child -> Objects.equals(getName(child), name)).findAny().orElse(null);
+			if (currentSymbol == null) {
+				return null;
+			}
+			res.add(currentSymbol);
+		}
+		return new TreePath(res.toArray(Object[]::new));
+	}
+
+	private String getName(Object segment) {
+		if (segment instanceof DocumentSymbolWithFile) {
+			segment = ((DocumentSymbolWithFile)segment).symbol;
+		}
+		if (segment instanceof DocumentSymbol) {
+			return ((DocumentSymbol)segment).getName();
+		}
+		return null;
 	}
 
 }
