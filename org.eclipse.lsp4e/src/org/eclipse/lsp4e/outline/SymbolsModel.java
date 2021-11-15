@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
 
 import org.eclipse.core.resources.IFile;
@@ -37,9 +36,10 @@ public class SymbolsModel {
 	private static final SymbolInformation ROOT_SYMBOL_INFORMATION = new SymbolInformation();
 	private static final Object[] EMPTY = new Object[0];
 
-	private Map<SymbolInformation, List<SymbolInformation>> childrenMap = new HashMap<>();
-	private List<DocumentSymbol> rootSymbols = new ArrayList<>();
+	private volatile Map<SymbolInformation, List<SymbolInformation>> childrenMap = Collections.emptyMap();
+	private volatile List<DocumentSymbol> rootSymbols = Collections.emptyList();
 	private Map<DocumentSymbol, DocumentSymbol> parent = new HashMap<>();
+
 	private IFile file;
 
 	public static class DocumentSymbolWithFile {
@@ -66,12 +66,16 @@ public class SymbolsModel {
 		}
 	}
 
-	public boolean update(List<Either<SymbolInformation, DocumentSymbol>> response) {
+	public synchronized boolean update(List<Either<SymbolInformation, DocumentSymbol>> response) {
 		// TODO update model only on real change
-		childrenMap.clear();
-		rootSymbols.clear();
 		parent.clear();
-		if (response != null && !response.isEmpty()) {
+		if (response == null || response.isEmpty()) {
+			childrenMap = Collections.emptyMap();
+			rootSymbols = Collections.emptyList();
+		} else {
+			final Map<SymbolInformation, List<SymbolInformation>> newChildrenMap = new HashMap<>();
+			final List<DocumentSymbol> newRootSymbols = new ArrayList<>();
+
 			Collections.sort(response, Comparator.comparing(
 					either -> either.isLeft() ? either.getLeft().getLocation().getRange().getStart()
 							: either.getRight().getRange().getStart(),
@@ -87,21 +91,24 @@ public class SymbolsModel {
 					SymbolInformation symbol = either.getLeft();
 					if (isIncluded(previousSymbol, symbol)) {
 						parentStack.push(previousSymbol);
-						addChild(parentStack.peek(), symbol);
+						addChild(newChildrenMap, parentStack.peek(), symbol);
 					} else if (isIncluded(parentStack.peek(), symbol)) {
-						addChild(parentStack.peek(), symbol);
+						addChild(newChildrenMap, parentStack.peek(), symbol);
 					} else {
 						while (!isIncluded(parentStack.peek(), symbol)) {
 							parentStack.pop();
 						}
-						addChild(parentStack.peek(), symbol);
+						addChild(newChildrenMap, parentStack.peek(), symbol);
 						parentStack.push(symbol);
 					}
 					previousSymbol = symbol;
 				} else if (either.isRight()) {
-					rootSymbols.add(either.getRight());
+					newRootSymbols.add(either.getRight());
 				}
 			}
+
+			childrenMap = newChildrenMap;
+			rootSymbols = newRootSymbols;
 		}
 		return true;
 	}
@@ -128,8 +135,9 @@ public class SymbolsModel {
 				|| (included.getLine() == reference.getLine() && included.getCharacter() >= reference.getCharacter());
 	}
 
-	private void addChild(SymbolInformation parent, SymbolInformation child) {
-		List<SymbolInformation> children = childrenMap.computeIfAbsent(parent, key -> new ArrayList<>());
+	private void addChild(Map<SymbolInformation, List<SymbolInformation>> newChildrenMap, SymbolInformation parent,
+				SymbolInformation child) {
+		List<SymbolInformation> children = newChildrenMap.computeIfAbsent(parent, key -> new ArrayList<>());
 		children.add(child);
 	}
 
@@ -183,11 +191,11 @@ public class SymbolsModel {
 
 	public Object getParent(Object element) {
 		if (element instanceof SymbolInformation) {
-			Optional<SymbolInformation> result = childrenMap.keySet().stream().filter(parent -> {
-				List<SymbolInformation> children = childrenMap.get(parent);
-				return children == null ? false : children.contains(element);
-			}).findFirst();
-			return result.isPresent() ? result.get() : null;
+			for(Map.Entry<SymbolInformation, List<SymbolInformation>> entry: childrenMap.entrySet()) {
+				if(entry.getValue().contains(element)) {
+					return entry.getKey();
+				}
+			}
 		} else if (element instanceof DocumentSymbol) {
 			return parent.get(element);
 		} else if (element instanceof DocumentSymbolWithFile) {
