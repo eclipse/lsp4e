@@ -12,7 +12,7 @@
 	<properties>
 		<tycho-version>2.5.0</tycho-version>
 		<sonar.jacoco.reportPath>../target/jacoco.exec</sonar.jacoco.reportPath>
-		<tycho.scmUrl>scm:git:https://git.eclipse.org/r/p/lsp4e/lsp4e.git</tycho.scmUrl>
+		<tycho.scmUrl>scm:git:https://github.com/eclipse/lsp4e.git</tycho.scmUrl>
 		<ui.test.vmargs></ui.test.vmargs>
 		<target-config>target-platform-latest</target-config>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

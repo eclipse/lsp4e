@@ -11,11 +11,6 @@ pipeline {
 		jdk 'openjdk-jdk11-latest'
 	}
 	stages {
-		stage('initialize Gerrit review') {
-			steps {
-				gerritReview labels: [Verified: 0], message: "Build started $BUILD_URL"
-			}
-		}
 		stage('Build') {
 			steps {
 				wrap([$class: 'Xvnc', useXauthority: true]) {
@@ -26,15 +21,6 @@ pipeline {
 				always {
 					archiveArtifacts artifacts: 'repository/target/repository/**/*,repository/target/*.zip,*/target/work/data/.metadata/.log'
 					junit '*/target/surefire-reports/TEST-*.xml'
-				}
-				success {
-					gerritReview labels: [Verified: 1], message: "Build Succcess $BUILD_URL"
-				}
-				unstable {
-					gerritReview labels: [Verified: -1], message: "Build UNSTABLE (test failures) $BUILD_URL"
-				}
-				failure {
-					gerritReview labels: [Verified: -1], message: "Build FAILED $BUILD_URL"
 				}
 			}
 		}
