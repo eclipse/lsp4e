@@ -1,4 +1,6 @@
-# Eclipse LSP4E
+# Eclipse LSP4E - Language Server Protocol client for Eclipse IDE
+
+[![Clone to Eclipse IDE](https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/cloneToEclipseBadge.png)](https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/redirect.html)
 
 [Eclipse LSP4E](https://projects.eclipse.org/projects/technology.lsp4e) makes Eclipse IDE able to consume the [Language Server protocol (LSP)](https://microsoft.github.io/language-server-protocol/) and the [Debug Adapter protocol (DAP)](https://microsoft.github.io/debug-adapter-protocol/).
 
