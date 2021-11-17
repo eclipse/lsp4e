@@ -12,17 +12,16 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.symbols;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
-import org.eclipse.lsp4j.DocumentSymbolParams;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
@@ -37,24 +36,25 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
 		if (part instanceof ITextEditor) {
 			final ITextEditor textEditor = (ITextEditor) part;
-			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-					LSPEclipseUtils.getDocument(textEditor),
+			final IDocument document = LSPEclipseUtils.getDocument(textEditor);
+			if (document == null) {
+				return null;
+			}
+
+			List<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
 					capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDocumentSymbolProvider()));
 			if (infos.isEmpty()) {
 				return null;
 			}
-			// TODO maybe consider better strategy such as iterating on all LS until we have a good result
-			LSPDocumentInfo info = infos.iterator().next();
-			final Shell shell = HandlerUtil.getActiveShell(event);
-			DocumentSymbolParams params = new DocumentSymbolParams(
-					new TextDocumentIdentifier(info.getFileUri().toString()));
-			info.getInitializedLanguageClient()
-					.thenComposeAsync(langaugeServer -> langaugeServer.getTextDocumentService().documentSymbol(params))
-					.thenAcceptAsync(t -> shell.getDisplay().asyncExec(() -> {
-						LSPSymbolInFileDialog dialog = new LSPSymbolInFileDialog(shell, textEditor,
-								info.getFileUri(), t);
-						dialog.open();
-					}));
+
+			// TODO maybe consider better strategy such as iterating on all LS until we have
+			// a good result
+			final LSPDocumentInfo info = infos.get(0);
+			info.getInitializedLanguageClient().thenAcceptAsync(langServer -> {
+				final Shell shell = HandlerUtil.getActiveShell(event);
+				shell.getDisplay()
+						.asyncExec(() -> new LSPSymbolInFileDialog(shell, textEditor, document, langServer).open());
+			});
 		}
 		return null;
 	}
@@ -63,8 +63,12 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 	public boolean isEnabled() {
 		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
 		if (part instanceof ITextEditor) {
-			List<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-					LSPEclipseUtils.getDocument((ITextEditor) part),
+			final ITextEditor textEditor = (ITextEditor) part;
+			final IDocument document = LSPEclipseUtils.getDocument(textEditor);
+			if (document == null) {
+				return false;
+			}
+			List<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
 					capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDocumentSymbolProvider()));
 			return !infos.isEmpty();
 		}

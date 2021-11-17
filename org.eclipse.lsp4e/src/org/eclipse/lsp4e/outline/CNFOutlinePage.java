@@ -9,6 +9,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Lucas Bullen (Red Hat Inc.) - Bug 520053 - Clicking nodes in the 'Outline' should navigate
+ *  Sebastian Thomschke (Vegard IT GmbH) - Bug 564503 - Allow alphabetical sorting in Outline view
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
@@ -17,6 +18,8 @@ import java.util.List;
 
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
@@ -38,6 +41,7 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.outline.LSSymbolsContentProvider.OutlineViewerInput;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
@@ -51,11 +55,12 @@ import org.eclipse.ui.navigator.CommonViewer;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
-public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListener {
+public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListener, IPreferenceChangeListener {
 
 	public static final String ID = "org.eclipse.lsp4e.outline"; //$NON-NLS-1$
 	public static final String LINK_WITH_EDITOR_PREFERENCE = ID + ".linkWithEditor"; //$NON-NLS-1$
 	public static final String SHOW_KIND_PREFERENCE = ID + ".showKind"; //$NON-NLS-1$
+	public static final String SORT_OUTLINE_PREFERENCE = ID + ".sortOutline"; //$NON-NLS-1$
 
 	private CommonViewer outlineViewer;
 	private final IEclipsePreferences preferences;
@@ -64,21 +69,9 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	private final IDocument document;
 	private final LanguageServer languageServer;
 
-	static final class OutlineInfo {
-
-		final ITextEditor textEditor;
-		final LanguageServer languageServer;
-		final IDocument document;
-
-		private OutlineInfo(IDocument document, LanguageServer languageServer, @Nullable ITextEditor textEditor) {
-			this.document = document;
-			this.languageServer = languageServer;
-			this.textEditor = textEditor;
-		}
-	}
-
 	public CNFOutlinePage(LanguageServer languageServer, @Nullable ITextEditor textEditor) {
-		this.preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
+		preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
+		preferences.addPreferenceChangeListener(this);
 		this.textEditor = textEditor;
 		if (textEditor != null) {
 			this.textEditorViewer = ((ITextViewer) textEditor.getAdapter(ITextOperationTarget.class));
@@ -92,7 +85,10 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	@Override
 	public void createControl(Composite parent) {
 		this.outlineViewer = new CommonViewer(ID, parent, SWT.NONE);
-		this.outlineViewer.setInput(new OutlineInfo(this.document, this.languageServer, this.textEditor));
+		this.outlineViewer.setInput(new OutlineViewerInput(this.document, this.languageServer, this.textEditor));
+		if (preferences.getBoolean(SORT_OUTLINE_PREFERENCE, false)) {
+			this.outlineViewer.setComparator(OutlineSorter.INSTANCE);
+		}
 		this.outlineViewer.getLabelProvider().addListener(this);
 		if (textEditor != null) {
 			this.outlineViewer.addOpenListener(event -> {
@@ -259,6 +255,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 
 	@Override
 	public void dispose() {
+		preferences.removePreferenceChangeListener(this);
 		this.outlineViewer.dispose();
 		if (textEditorViewer != null) {
 			editorSelectionChangedListener.uninstall(textEditorViewer.getSelectionProvider());
@@ -305,4 +302,11 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 		this.outlineViewer.refresh(true);
 	}
 
+	@Override
+	public void preferenceChange(final PreferenceChangeEvent event) {
+		if (SORT_OUTLINE_PREFERENCE.equals(event.getKey()) && outlineViewer != null) {
+			final boolean newValue = Boolean.parseBoolean(event.getNewValue().toString());
+			outlineViewer.setComparator(newValue ? OutlineSorter.INSTANCE : null);
+		}
+	}
 }

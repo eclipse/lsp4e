@@ -805,6 +805,10 @@ public class LSPEclipseUtils {
 
 	@Nullable public static IFile getFile(IDocument document) {
 		IPath path = toPath(document);
+		return getFile(path);
+	}
+
+	@Nullable public static IFile getFile(IPath path) {
 		if(path == null) {
 			return null;
 		}
