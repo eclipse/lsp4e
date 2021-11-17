@@ -208,7 +208,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 	 * 			  a progress monitor
 	 */
 	private void updateLinkedEditingAnnotations(IAnnotationModel annotationModel, IProgressMonitor monitor) {
-		if (monitor.isCanceled()) {
+		if (monitor.isCanceled() || annotationModel == null) {
 			return;
 		}
 
