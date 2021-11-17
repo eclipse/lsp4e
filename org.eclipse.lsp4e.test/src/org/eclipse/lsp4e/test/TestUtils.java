@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -65,7 +66,7 @@ public class TestUtils {
 	}
 
 	public static ITextViewer getTextViewer(IEditorPart part) throws InvocationTargetException {
-		try {			
+		try {
 			if (part instanceof ITextEditor) {
 				ITextEditor textEditor = (ITextEditor) part;
 
@@ -81,7 +82,7 @@ public class TestUtils {
 			throw new InvocationTargetException(e);
 		}
 	}
-	
+
 	public static IEditorPart openEditor(IFile file) throws PartInitException {
 		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
@@ -144,7 +145,7 @@ public class TestUtils {
 
 	public static void delete(IProject... projects) throws CoreException {
 		if (projects != null && projects.length > 0) {
-			for(IProject project : projects) {
+			for (IProject project : projects) {
 				delete(project);
 			}
 		}
@@ -158,7 +159,7 @@ public class TestUtils {
 
 	public static void delete(Path... paths) throws IOException {
 		if (paths != null && paths.length > 0) {
-			for(Path path : paths) {
+			for (Path path : paths) {
 				delete(path);
 			}
 		}
@@ -170,7 +171,7 @@ public class TestUtils {
 						&& "org.eclipse.lsp4e.test.content-type-disabled".equals(definition.getKey().toString()))
 				.findFirst().get();
 	}
-	
+
 	public static Shell findNewShell(Set<Shell> beforeShells, Display display) {
 		Shell[] afterShells = Arrays.stream(display.getShells())
 				.filter(Shell::isVisible)
@@ -179,12 +180,12 @@ public class TestUtils {
 		assertEquals("No new shell found", 1, afterShells.length);
 		return afterShells[0];
 	}
-	
+
 	public static Table findCompletionSelectionControl(Widget control) {
 		if (control instanceof Table) {
-			return (Table)control;
+			return (Table) control;
 		} else if (control instanceof Composite) {
-			for (Widget child : ((Composite)control).getChildren()) {
+			for (Widget child : ((Composite) control).getChildren()) {
 				Table res = findCompletionSelectionControl(child);
 				if (res != null) {
 					return res;
@@ -205,6 +206,19 @@ public class TestUtils {
 		return null;
 	}
 
+	public static boolean waitForCondition(int timeout_ms, BooleanSupplier condition) {
+		return waitForCondition(timeout_ms, PlatformUI.getWorkbench().getDisplay(), condition);
+	}
+
+	public static boolean waitForCondition(int timeout_ms, Display display, BooleanSupplier condition) {
+		return new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return condition.getAsBoolean();
+			}
+		}.waitForCondition(display, timeout_ms);
+	}
+
 	public void waitForLanguageServerNotRunning(MockLanguageServer server) {
 		assertTrue(new DisplayHelper() {
 			@Override
@@ -213,5 +227,4 @@ public class TestUtils {
 			}
 		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 1000));
 	}
-
 }

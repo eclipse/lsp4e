@@ -77,6 +77,14 @@
                id="org.eclipse.ui.commands.toggleState">
          </state>
       </command>
+      <command
+            categoryId="org.eclipse.lsp4e.category"
+            id="org.eclipse.lsp4e.toggleSortOutline"
+            name="Sort Outline">
+         <state
+               class="org.eclipse.ui.handlers.RegistryToggleState:true"
+               id="org.eclipse.ui.commands.toggleState" />
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
@@ -141,6 +149,9 @@
          <class
                class="org.eclipse.lsp4e.outline.ShowKindHandler">
          </class>
+      </handler>
+      <handler commandId="org.eclipse.lsp4e.toggleSortOutline">
+         <class class="org.eclipse.lsp4e.outline.ToggleSortOutlineHandler" />
       </handler>
    </extension>
    <extension
@@ -245,6 +256,9 @@
                commandId="org.eclipse.lsp4e.format"
                style="push">
          </command>
+      </menuContribution>
+      <menuContribution allPopups="false" locationURI="toolbar:org.eclipse.ui.views.ContentOutline?after=additions">
+         <command commandId="org.eclipse.lsp4e.toggleSortOutline" style="toggle" label="Sort" />
       </menuContribution>
    </extension>
    <extension
@@ -375,7 +389,7 @@
 			verticalRulerPreferenceKey="LSP4EReadOccurrenceIndicationInVerticalRuler"
 			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4EReadOccurrenceIndicationColor"
 			colorPreferenceValue="212,212,212" presentationLayer="4"
-			showInNextPrevDropdownToolbarAction="true" 
+			showInNextPrevDropdownToolbarAction="true"
 			textStylePreferenceKey="LSP4EReadOccurrenceTextStyle"
 			textStylePreferenceValue="NONE">
 		</specification>
@@ -459,6 +473,11 @@
             disabledIcon="icons/full/dlcl16/link_to_editor.png"
             icon="icons/full/elcl16/link_to_editor.png">
       </image>
+      <image
+            commandId="org.eclipse.lsp4e.toggleSortOutline"
+            disabledIcon="icons/full/dlcl16/alphab_sort_co.png"
+            icon="icons/full/elcl16/alphab_sort_co.png">
+      </image>
    </extension>
    <extension
          point="org.eclipse.e4.ui.css.swt.theme">
@@ -516,7 +535,7 @@
            </or>
          </enabledWhen>
       </foldingReconciler>
-   </extension>   
+   </extension>
    <extension
          point="org.eclipse.ui.workbench.texteditor.codeMiningProviders">
       <codeMiningProvider
