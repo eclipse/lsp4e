@@ -346,22 +346,6 @@
       </viewerContentBinding>
    </extension>
    <extension
-         point="org.eclipse.mylyn.commons.notifications.ui.notifications">
-        <category
-        	id="org.eclipse.lsp4e"
-        	label="%notification.category.label">
-        </category>
-		<event
-		    categoryId="org.eclipse.lsp4e"
-		    id="lsp.notification"
-		    label="%notification.event.label"
-		    selected="true">
-		    <defaultHandler
-		      sinkId="org.eclipse.mylyn.commons.notifications.sink.Popup">
-		    </defaultHandler>
-		</event>
-   </extension>
-   <extension
          point="org.eclipse.core.filebuffers.documentSetup">
       <participant
             class="org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant"
