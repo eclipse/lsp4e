@@ -62,6 +62,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.RewriteSessionEditProcessor;
 import org.eclipse.jface.text.TextSelection;
@@ -924,6 +925,17 @@ public class LSPEclipseUtils {
 				}
 			}
 		}
+		return null;
+	}
+
+	public static ITextViewer getTextViewer(@Nullable final IEditorPart editorPart) {
+		final ITextViewer textViewer = Adapters.adapt(editorPart, ITextViewer.class);
+		if (textViewer != null)
+			return textViewer;
+
+		final Object textOperationTarget = Adapters.adapt(editorPart, ITextOperationTarget.class);
+		if (textOperationTarget instanceof ITextViewer)
+			return (ITextViewer) textOperationTarget;
 		return null;
 	}
 

@@ -39,7 +39,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Position;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
@@ -85,7 +84,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 				LSPEclipseUtils.findOpenEditorsFor(LSPEclipseUtils.toUri(uri)).stream()
 					.map(reference -> reference.getEditor(true))
 					.filter(Objects::nonNull)
-					.map(editor -> editor.getAdapter(ITextViewer.class))
+					.map(LSPEclipseUtils::getTextViewer)
 					.filter(Objects::nonNull)
 					.filter(ISourceViewer.class::isInstance)
 					.map(ISourceViewer.class::cast)

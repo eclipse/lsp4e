@@ -24,7 +24,6 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.ITextViewerExtension5;
@@ -73,11 +72,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 		preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 		preferences.addPreferenceChangeListener(this);
 		this.textEditor = textEditor;
-		if (textEditor != null) {
-			this.textEditorViewer = ((ITextViewer) textEditor.getAdapter(ITextOperationTarget.class));
-		} else {
-			this.textEditorViewer = null;
-		}
+		this.textEditorViewer = LSPEclipseUtils.getTextViewer(textEditor);
 		this.document = LSPEclipseUtils.getDocument(textEditor);
 		this.languageServer = languageServer;
 	}
