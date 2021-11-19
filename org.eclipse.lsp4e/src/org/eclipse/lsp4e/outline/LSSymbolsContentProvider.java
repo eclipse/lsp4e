@@ -33,7 +33,6 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
-import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.reconciler.AbstractReconciler;
@@ -246,8 +245,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		if (refreshOnResourceChanged) {
 			return new ResourceChangeOutlineUpdater(outlineViewerInput.documentFile);
 		}
-		ITextViewer textViewer = outlineViewerInput.textEditor == null ? null
-				: ((ITextViewer) outlineViewerInput.textEditor.getAdapter(ITextOperationTarget.class));
+		final ITextViewer textViewer = LSPEclipseUtils.getTextViewer(outlineViewerInput.textEditor);
 		return textViewer == null ? new DocumentChangedOutlineUpdater(outlineViewerInput.document)
 				: new ReconcilerOutlineUpdater(textViewer);
 	}
