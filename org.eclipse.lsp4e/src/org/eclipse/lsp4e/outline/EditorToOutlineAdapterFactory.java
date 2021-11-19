@@ -39,42 +39,46 @@ import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
 public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 
-	private static final Map<IEditorPart, LanguageServer> lsCache = Collections.synchronizedMap(new HashMap<>());
+	private static final String OUTLINE_VIEW_ID = "org.eclipse.ui.views.ContentOutline"; //$NON-NLS-1$
+
+	private static final Map<IEditorPart, LanguageServer> LANG_SERVER_CACHE = Collections.synchronizedMap(new HashMap<>());
 
 	@Override
 	public <T> T getAdapter(Object adaptableObject, Class<T> adapterType) {
-		if (adapterType == IContentOutlinePage.class && adaptableObject instanceof IEditorPart
-				&& LanguageServersRegistry.getInstance()
-						.canUseLanguageServer(((IEditorPart) adaptableObject).getEditorInput())) {
+		if (adapterType == IContentOutlinePage.class && adaptableObject instanceof IEditorPart) {
 
-			// first try to get / remove language server from cache from a previous call
-			LanguageServer server = lsCache.remove(adaptableObject);
-			if (server != null) {
-				return (T) createOutlinePage(adaptableObject, server);
-			}
+			final IEditorPart editorPart = (IEditorPart) adaptableObject;
 
-			IDocument document = LSPEclipseUtils.getDocument(((IEditorPart) adaptableObject).getEditorInput());
-			if (document != null) {
-				CompletableFuture<List<@NonNull LanguageServer>> languageServers = LanguageServiceAccessor
-						.getLanguageServers(document,
-								capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDocumentSymbolProvider()));
+			if (LanguageServersRegistry.getInstance().canUseLanguageServer(editorPart.getEditorInput())) {
 
-				List<@NonNull LanguageServer> servers = Collections.emptyList();
-				try {
-					servers = languageServers.get(50, TimeUnit.MILLISECONDS);
-				} catch (TimeoutException e) {
-					refreshContentOutlineAsync(languageServers, (IEditorPart) adaptableObject);
-				} catch (ExecutionException e) {
-					LanguageServerPlugin.logError(e);
-				} catch (InterruptedException e) {
-					LanguageServerPlugin.logError(e);
-					Thread.currentThread().interrupt();
+				// first try to get / remove language server from cache from a previous call
+				LanguageServer server = LANG_SERVER_CACHE.remove(adaptableObject);
+				if (server != null) {
+					return (T) createOutlinePage(editorPart, server);
 				}
 
-				if (!servers.isEmpty()) {
-					LanguageServer languageServer = servers.get(0); // TODO consider other strategies (select, //
-																	// merge...?)
-					return (T) createOutlinePage(adaptableObject, languageServer);
+				IDocument document = LSPEclipseUtils.getDocument(editorPart.getEditorInput());
+				if (document != null) {
+					CompletableFuture<List<@NonNull LanguageServer>> languageServers = LanguageServiceAccessor
+							.getLanguageServers(document, capabilities -> LSPEclipseUtils
+									.hasCapability(capabilities.getDocumentSymbolProvider()));
+
+					List<@NonNull LanguageServer> servers = Collections.emptyList();
+					try {
+						 servers = languageServers.get(50, TimeUnit.MILLISECONDS);
+					} catch (TimeoutException e) {
+						refreshContentOutlineAsync(languageServers, editorPart);
+					} catch (ExecutionException e) {
+						LanguageServerPlugin.logError(e);
+					} catch (InterruptedException e) {
+						LanguageServerPlugin.logError(e);
+						Thread.currentThread().interrupt();
+					}
+					if (!servers.isEmpty()) {
+						// TODO consider other strategies (select, merge...?)
+						LanguageServer languageServer = servers.get(0);
+						return (T) createOutlinePage(editorPart, languageServer);
+					}
 				}
 			}
 		}
@@ -86,10 +90,10 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 		return new Class<?>[] { IContentOutlinePage.class };
 	}
 
-	private static CNFOutlinePage createOutlinePage(Object adaptableObject, LanguageServer languageServer) {
+	private static CNFOutlinePage createOutlinePage(IEditorPart editorPart, LanguageServer languageServer) {
 		ITextEditor textEditor = null;
-		if (adaptableObject instanceof ITextEditor) {
-			textEditor = (ITextEditor) adaptableObject;
+		if (editorPart instanceof ITextEditor) {
+			textEditor = (ITextEditor) editorPart;
 		}
 		return new CNFOutlinePage(languageServer, textEditor);
 	}
@@ -101,10 +105,10 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 			if (!servers.isEmpty()) {
 				Display.getDefault().asyncExec(() -> {
 					IViewPart viewPart = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage()
-							.findView("org.eclipse.ui.views.ContentOutline"); //$NON-NLS-1$
+							.findView(OUTLINE_VIEW_ID);
 					if (viewPart instanceof ContentOutline) {
-						lsCache.put(editorPart, servers.get(0));
-						((ContentOutline)viewPart).partActivated(editorPart);
+						LANG_SERVER_CACHE.put(editorPart, servers.get(0));
+						((ContentOutline) viewPart).partActivated(editorPart);
 					}
 				});
 			}
