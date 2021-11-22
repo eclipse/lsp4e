@@ -28,7 +28,7 @@ import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
@@ -53,7 +53,6 @@ import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonContentProvider;
@@ -63,11 +62,14 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 	public static final Object COMPUTING = new Object();
 
+	@NonNullByDefault
 	public static final class OutlineViewerInput {
 
 		public final IDocument document;
-		public final ITextEditor textEditor;
 		public final LanguageServer languageServer;
+
+		@Nullable
+		public final ITextEditor textEditor;
 
 		@Nullable
 		private final IPath documentPath;
@@ -78,8 +80,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		@Nullable
 		private final URI documentURI;
 
-		public OutlineViewerInput(@NonNull IDocument document, @NonNull LanguageServer languageServer,
-				ITextEditor textEditor) {
+		public OutlineViewerInput(IDocument document, LanguageServer languageServer, @Nullable ITextEditor textEditor) {
 			this.document = document;
 			documentPath = LSPEclipseUtils.toPath(document);
 			documentFile = documentPath == null ? null : LSPEclipseUtils.getFile(documentPath);
@@ -201,11 +202,11 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	}
 
 	private TreeViewer viewer;
-	private Throwable lastError;
+	private volatile Throwable lastError;
 	private OutlineViewerInput outlineViewerInput;
 
-	private SymbolsModel symbolsModel = new SymbolsModel();
-	private CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> symbols;
+	private final SymbolsModel symbolsModel = new SymbolsModel();
+	private volatile CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> symbols;
 	private final boolean refreshOnResourceChanged;
 	private IOutlineUpdater outlineUpdater;
 
@@ -236,6 +237,10 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		this.viewer = (TreeViewer) viewer;
 		outlineViewerInput = (OutlineViewerInput) newInput;
 		symbolsModel.setFile(outlineViewerInput.documentFile);
+
+		// eagerly refresh the content tree, esp. important for the Quick Outline
+		// because otherwise the outline will be blank for 1-2 seconds initially
+		refreshTreeContentFromLS();
 
 		outlineUpdater = createOutlineUpdater();
 		outlineUpdater.install();
@@ -277,19 +282,25 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	}
 
 	protected void refreshTreeContentFromLS() {
-		if (symbols != null && !symbols.isDone()) {
-			symbols.cancel(true);
-		}
-		lastError = null;
-		URI documentURI = outlineViewerInput.documentURI;
+		final URI documentURI = outlineViewerInput.documentURI;
 		if (documentURI == null) {
+			lastError = new IllegalStateException("documentURI == null"); //$NON-NLS-1$
+			viewer.getControl().getDisplay().asyncExec(viewer::refresh);
 			return;
+		}
+
+		if (symbols != null) {
+			symbols.cancel(true);
 		}
 
 		DocumentSymbolParams params = new DocumentSymbolParams(new TextDocumentIdentifier(documentURI.toString()));
 		symbols = outlineViewerInput.languageServer.getTextDocumentService().documentSymbol(params);
 		symbols.thenAcceptAsync(response -> {
 			symbolsModel.update(response);
+			lastError = null;
+
+			final var linkWithEditor = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
+					.getBoolean(CNFOutlinePage.LINK_WITH_EDITOR_PREFERENCE, true);
 
 			viewer.getControl().getDisplay().asyncExec(() -> {
 				TreePath[] expandedElements = viewer.getExpandedTreePaths();
@@ -299,16 +310,13 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 						.filter(Objects::nonNull).toArray(TreePath[]::new));
 				viewer.setSelection(new TreeSelection(Arrays.stream(initialSelection).map(symbolsModel::toUpdatedSymbol)
 						.filter(Objects::nonNull).toArray(TreePath[]::new)));
-			});
-			if (!InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
-					.getBoolean(CNFOutlinePage.LINK_WITH_EDITOR_PREFERENCE, true)) {
-				return;
-			}
-			Display.getDefault().asyncExec(() -> {
-				ITextEditor editor = LSPEclipseUtils.getActiveTextEditor();
-				if (editor != null) {
-					ITextSelection selection = (ITextSelection) editor.getSelectionProvider().getSelection();
-					CNFOutlinePage.refreshTreeSelection(viewer, selection.getOffset(), outlineViewerInput.document);
+
+				if (linkWithEditor) {
+					ITextEditor editor = LSPEclipseUtils.getActiveTextEditor();
+					if (editor != null) {
+						ITextSelection selection = (ITextSelection) editor.getSelectionProvider().getSelection();
+						CNFOutlinePage.refreshTreeSelection(viewer, selection.getOffset(), outlineViewerInput.document);
+					}
 				}
 			});
 		});
@@ -325,7 +333,6 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		if (outlineUpdater != null) {
 			outlineUpdater.uninstall();
 		}
-		ICommonContentProvider.super.dispose();
 	}
 
 	@Override

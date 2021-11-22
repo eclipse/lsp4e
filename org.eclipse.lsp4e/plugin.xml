@@ -342,6 +342,9 @@
                   value="org.eclipse.lsp4e.LanguageServiceAccessor$LSPDocumentInfo">
             </instanceof>
          </enablement>
+         <commonSorter 
+               id="org.eclipse.lsp4e.outline.OutlineSorter" 
+               class="org.eclipse.lsp4e.outline.OutlineSorter" />
       </navigatorContent>
    </extension>
    <extension

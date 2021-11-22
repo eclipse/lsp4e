@@ -21,6 +21,7 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -51,6 +52,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IActionBars;
 import org.eclipse.ui.navigator.CommonViewer;
+import org.eclipse.ui.navigator.CommonViewerSorter;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
@@ -62,13 +64,17 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	public static final String SORT_OUTLINE_PREFERENCE = ID + ".sortOutline"; //$NON-NLS-1$
 
 	private CommonViewer outlineViewer;
+
 	private final IEclipsePreferences preferences;
 	private final ITextEditor textEditor;
 	private final ITextViewer textEditorViewer;
+
 	private final IDocument document;
+
+	@NonNull
 	private final LanguageServer languageServer;
 
-	public CNFOutlinePage(LanguageServer languageServer, @Nullable ITextEditor textEditor) {
+	public CNFOutlinePage(@NonNull LanguageServer languageServer, @Nullable ITextEditor textEditor) {
 		preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 		preferences.addPreferenceChangeListener(this);
 		this.textEditor = textEditor;
@@ -79,19 +85,19 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 
 	@Override
 	public void createControl(Composite parent) {
-		this.outlineViewer = new CommonViewer(ID, parent, SWT.NONE);
-		this.outlineViewer.setInput(new OutlineViewerInput(this.document, this.languageServer, this.textEditor));
-		if (preferences.getBoolean(SORT_OUTLINE_PREFERENCE, false)) {
-			this.outlineViewer.setComparator(OutlineSorter.INSTANCE);
+		outlineViewer = new CommonViewer(ID, parent, SWT.NONE);
+		if (document != null) {
+			outlineViewer.setInput(new OutlineViewerInput(document, languageServer, textEditor));
 		}
-		this.outlineViewer.getLabelProvider().addListener(this);
+		outlineViewer.setSorter(new CommonViewerSorter());
+		outlineViewer.getLabelProvider().addListener(this);
 		if (textEditor != null) {
-			this.outlineViewer.addOpenListener(event -> {
+			outlineViewer.addOpenListener(event -> {
 				if (preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true))
 					textEditor.setFocus();
 			});
-			this.outlineViewer.addSelectionChangedListener(event -> {
-				if (preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true)
+			outlineViewer.addSelectionChangedListener(event -> {
+				if (document != null && preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true)
 						&& outlineViewer.getTree().isFocusControl() && outlineViewer.getSelection() != null) {
 					Object selection = ((TreeSelection) outlineViewer.getSelection()).getFirstElement();
 					Range range = getRangeSelection(selection);
@@ -101,8 +107,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 									+ range.getStart().getCharacter();
 							int endOffset = document.getLineOffset(range.getEnd().getLine())
 									+ range.getEnd().getCharacter();
-							textEditor.selectAndReveal(startOffset,
-									endOffset - startOffset);
+							textEditor.selectAndReveal(startOffset, endOffset - startOffset);
 						} catch (BadLocationException e) {
 							return;
 						}
@@ -183,7 +188,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 
 	public static void refreshTreeSelection(TreeViewer viewer, int offset, IDocument document) {
 		ITreeContentProvider contentProvider = (ITreeContentProvider) viewer.getContentProvider();
-		if(contentProvider == null) {
+		if (contentProvider == null) {
 			return;
 		}
 
@@ -221,12 +226,15 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	@SuppressWarnings("unused")
 	private static Range toRange(Object object) {
 		Range range = null;
-		@Nullable SymbolInformation symbol = object instanceof SymbolInformation ? (SymbolInformation) object
+		@Nullable
+		SymbolInformation symbol = object instanceof SymbolInformation ? (SymbolInformation) object
 				: Adapters.adapt(object, SymbolInformation.class);
 		if (symbol != null) {
 			range = symbol.getLocation().getRange();
 		} else {
-			@Nullable DocumentSymbolWithFile documentSymbol = object instanceof DocumentSymbolWithFile ? (DocumentSymbolWithFile) object
+			@Nullable
+			DocumentSymbolWithFile documentSymbol = object instanceof DocumentSymbolWithFile
+					? (DocumentSymbolWithFile) object
 					: Adapters.adapt(object, DocumentSymbolWithFile.class);
 			if (documentSymbol != null) {
 				range = documentSymbol.symbol.getRange();
@@ -300,8 +308,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	@Override
 	public void preferenceChange(final PreferenceChangeEvent event) {
 		if (SORT_OUTLINE_PREFERENCE.equals(event.getKey()) && outlineViewer != null) {
-			final boolean newValue = Boolean.parseBoolean(event.getNewValue().toString());
-			outlineViewer.setComparator(newValue ? OutlineSorter.INSTANCE : null);
+			outlineViewer.refresh();
 		}
 	}
 }

@@ -19,14 +19,10 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
-import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
-import org.eclipse.lsp4e.outline.LSSymbolsContentProvider;
 import org.eclipse.lsp4e.outline.LSSymbolsContentProvider.OutlineViewerInput;
-import org.eclipse.lsp4e.outline.OutlineSorter;
-import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.DocumentSymbol;
@@ -41,16 +37,21 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
+import org.eclipse.ui.internal.navigator.NavigatorContentService;
+import org.eclipse.ui.internal.navigator.NavigatorDecoratingLabelProvider;
+import org.eclipse.ui.navigator.CommonViewerSorter;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPSymbolInFileDialog extends PopupDialog {
 
 	private final OutlineViewerInput outlineViewerInput;
+	private final ITextEditor textEditor;
 
 	public LSPSymbolInFileDialog(@NonNull Shell parentShell, @NonNull ITextEditor textEditor,
 			@NonNull IDocument document, @NonNull LanguageServer languageServer) {
 		super(parentShell, PopupDialog.INFOPOPUPRESIZE_SHELLSTYLE, true, true, true, false, false, null, null);
 		outlineViewerInput = new OutlineViewerInput(document, languageServer, textEditor);
+		this.textEditor = textEditor;
 		create();
 	}
 
@@ -58,23 +59,20 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 	protected Control createDialogArea(Composite parent) {
 		IFile documentFile = outlineViewerInput.documentFile;
 		getShell().setText(NLS.bind(Messages.symbolsInFile, documentFile == null ? null : documentFile.getName()));
+
 		FilteredTree filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false);
 		TreeViewer viewer = filteredTree.getViewer();
 
-		viewer.setContentProvider(new LSSymbolsContentProvider() {
-			@Override
-			public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-				super.inputChanged(viewer, oldInput, newInput);
-				// eagerly populating the tree to avoid the initial 1-2 second delay
-				// when automatically populated by the internal ReconcilerOutlineUpdater
-				refreshTreeContentFromLS();
-			}
-		});
-		if (InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
-				.getBoolean(CNFOutlinePage.SORT_OUTLINE_PREFERENCE, false)) {
-			viewer.setComparator(OutlineSorter.INSTANCE);
-		}
-		viewer.setLabelProvider(new SymbolsLabelProvider());
+		final var contentService = new NavigatorContentService(CNFOutlinePage.ID, viewer);
+		filteredTree.addDisposeListener(ev -> contentService.dispose());
+		final var contentProvider = contentService.createCommonContentProvider();
+		viewer.setContentProvider(contentProvider);
+
+		var sorter = new CommonViewerSorter();
+		sorter.setContentService(contentService);
+		viewer.setComparator(sorter);
+
+		viewer.setLabelProvider(new NavigatorDecoratingLabelProvider(contentService.createCommonLabelProvider()));
 		viewer.setUseHashlookup(true);
 		viewer.addSelectionChangedListener(event -> {
 			IStructuredSelection selection = (IStructuredSelection) event.getSelection();
@@ -98,7 +96,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 				try {
 					int offset = LSPEclipseUtils.toOffset(range.getStart(), outlineViewerInput.document);
 					int endOffset = LSPEclipseUtils.toOffset(range.getEnd(), outlineViewerInput.document);
-					outlineViewerInput.textEditor.selectAndReveal(offset, endOffset - offset);
+					textEditor.selectAndReveal(offset, endOffset - offset);
 				} catch (BadLocationException e) {
 					LanguageServerPlugin.logError(e);
 				}
@@ -114,7 +112,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		super.configureShell(shell);
 
 		shell.setSize(280, 300);
-		Control control = outlineViewerInput.textEditor.getAdapter(Control.class);
+		Control control = textEditor.getAdapter(Control.class);
 		if (control != null) {
 			shell.setLocation(
 					control.toDisplay(control.getBounds().width - shell.getSize().x, control.getLocation().y));
