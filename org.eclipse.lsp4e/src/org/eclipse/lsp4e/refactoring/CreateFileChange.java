@@ -36,7 +36,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.SubProgressMonitor;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -120,12 +120,12 @@ public class CreateFileChange extends ResourceChange {
 					folder.create(true, false, pm);
 				}
 
-				ifile.create(is, false, new SubProgressMonitor(pm, 1));
+				ifile.create(is, false, SubMonitor.convert(pm, 1));
 				if (fStampToRestore != IResource.NULL_STAMP) {
 					ifile.revertModificationStamp(fStampToRestore);
 				}
 				if (fExplicitEncoding) {
-					ifile.setCharset(fEncoding, new SubProgressMonitor(pm, 1));
+					ifile.setCharset(fEncoding, SubMonitor.convert(pm, 1));
 				} else {
 					pm.worked(1);
 				}
