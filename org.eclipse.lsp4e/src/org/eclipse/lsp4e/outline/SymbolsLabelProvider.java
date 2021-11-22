@@ -52,7 +52,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.internal.progress.ProgressManager;
 import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonLabelProvider;
@@ -113,7 +112,7 @@ public class SymbolsLabelProvider extends LabelProvider
 			return JFaceResources.getImage(ProgressManager.WAITING_JOB_KEY);
 		}
 		if (element instanceof Throwable) {
-			return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_ERROR_TSK);
+			return LSPImages.getSharedImage(ISharedImages.IMG_OBJS_ERROR_TSK);
 		}
 		if (element instanceof Either) {
 			element = ((Either<?, ?>) element).get();
@@ -222,8 +221,7 @@ public class SymbolsLabelProvider extends LabelProvider
 				overlayId = ISharedImages.IMG_DEC_FIELD_WARNING;
 			}
 			currentOverlays[maxSeverity - 1] = new DecorationOverlayIcon(res,
-				PlatformUI.getWorkbench().getSharedImages().getImageDescriptor(overlayId),
-				IDecoration.BOTTOM_LEFT).createImage();
+					LSPImages.getSharedImageDescriptor(overlayId), IDecoration.BOTTOM_LEFT).createImage();
 		}
 		return currentOverlays[maxSeverity - 1];
 	}

@@ -29,6 +29,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
@@ -47,7 +48,6 @@ import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.menus.IWorkbenchContribution;
 import org.eclipse.ui.progress.UIJob;
 import org.eclipse.ui.services.IServiceLocator;
@@ -107,8 +107,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 						if (u != null) {
 							final MenuItem item = new MenuItem(menu, SWT.NONE, index);
 							item.setText(u.getMessage());
-							item.setImage(PlatformUI.getWorkbench().getSharedImages()
-									.getImage(ISharedImages.IMG_DEC_FIELD_ERROR));
+							item.setImage(LSPImages.getSharedImage(ISharedImages.IMG_DEC_FIELD_ERROR));
 							item.setEnabled(false);
 						} else if (t != null) {
 							for (Either<Command, CodeAction> command : t) {
