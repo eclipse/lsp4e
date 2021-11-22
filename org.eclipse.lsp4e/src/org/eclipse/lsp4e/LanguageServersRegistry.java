@@ -196,12 +196,11 @@ public class LanguageServersRegistry {
 		}
 	}
 
-	private static LanguageServersRegistry INSTANCE = null;
+	private static final class LazyHolder {
+		static final LanguageServersRegistry INSTANCE = new LanguageServersRegistry();
+	}
 	public static LanguageServersRegistry getInstance() {
-		if (INSTANCE == null) {
-			INSTANCE = new LanguageServersRegistry();
-		}
-		return INSTANCE;
+		return LazyHolder.INSTANCE;
 	}
 
 	private List<ContentTypeToLanguageServerDefinition> connections = new ArrayList<>();
