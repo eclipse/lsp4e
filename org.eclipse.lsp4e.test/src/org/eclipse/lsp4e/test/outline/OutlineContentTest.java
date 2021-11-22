@@ -8,9 +8,8 @@
  */
 package org.eclipse.lsp4e.test.outline;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
+import static org.eclipse.lsp4e.test.TestUtils.*;
+import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,6 +23,7 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
+import org.eclipse.jface.text.tests.util.DisplayHelper;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
@@ -123,6 +123,7 @@ public class OutlineContentTest {
 			outlinePage.createControl(shell);
 			shell.open();
 			Tree tree = (Tree) outlinePage.getControl();
+			DisplayHelper.sleep(tree.getDisplay(), 500);
 
 			editor.getSelectionProvider().setSelection(new TextSelection(4, 0));
 			assertTrue(waitForCondition(2_000, tree.getDisplay(), //
@@ -161,6 +162,7 @@ public class OutlineContentTest {
 			outlinePage.createControl(shell);
 			shell.open();
 			Tree tree = (Tree) outlinePage.getControl();
+			DisplayHelper.sleep(tree.getDisplay(), 500);
 
 			editor.getSelectionProvider().setSelection(new TextSelection(4, 0));
 			assertTrue(waitForCondition(2_000, tree.getDisplay(), //
