@@ -716,7 +716,7 @@ public class LanguageServerWrapper {
 	@Nullable
 	public String getLanguageId(IContentType[] contentTypes) {
 		for (IContentType contentType : contentTypes) {
-			String languageId = serverDefinition.langugeIdMappings.get(contentType);
+			String languageId = serverDefinition.languageIdMappings.get(contentType);
 			if (languageId != null) {
 				return languageId;
 			}

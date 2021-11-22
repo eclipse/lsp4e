@@ -84,17 +84,17 @@ public class LanguageServersRegistry {
 		public final @NonNull String id;
 		public final @NonNull String label;
 		public final boolean isSingleton;
-		public final @NonNull Map<IContentType, String> langugeIdMappings;
+		public final @NonNull Map<IContentType, String> languageIdMappings;
 
-		public LanguageServerDefinition(@NonNull String id, @NonNull String label, boolean isSingleton) {
+		LanguageServerDefinition(@NonNull String id, @NonNull String label, boolean isSingleton) {
 			this.id = id;
 			this.label = label;
 			this.isSingleton = isSingleton;
-			this.langugeIdMappings = new ConcurrentHashMap<>();
+			this.languageIdMappings = new ConcurrentHashMap<>();
 		}
 
 		public void registerAssociation(@NonNull IContentType contentType, @NonNull String languageId) {
-			this.langugeIdMappings.put(contentType, languageId);
+			this.languageIdMappings.put(contentType, languageId);
 		}
 
 		public abstract StreamConnectionProvider createConnectionProvider();
@@ -108,7 +108,7 @@ public class LanguageServersRegistry {
 		}
 
 		public <S extends LanguageServer> Launcher.Builder<S> createLauncherBuilder() {
-			return new Launcher.Builder<S>();
+			return new Launcher.Builder<>();
 		}
 
 	}
