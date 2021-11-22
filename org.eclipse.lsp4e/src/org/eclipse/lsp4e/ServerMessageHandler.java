@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.notifications.AbstractNotificationPopup;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
@@ -40,7 +41,7 @@ public class ServerMessageHandler {
 
 		public LSPNotification(String label, MessageParams messageParams) {
 			super(Display.getCurrent());
-			setParentShell(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell());
+			setParentShell(UI.getActiveShell());
 			this.label = label;
 			this.messageParams = messageParams;
 		}

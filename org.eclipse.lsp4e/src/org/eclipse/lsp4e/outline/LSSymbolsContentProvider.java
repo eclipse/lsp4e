@@ -47,6 +47,7 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.SymbolInformation;
@@ -312,7 +313,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 						.filter(Objects::nonNull).toArray(TreePath[]::new)));
 
 				if (linkWithEditor) {
-					ITextEditor editor = LSPEclipseUtils.getActiveTextEditor();
+					ITextEditor editor = UI.getActiveTextEditor();
 					if (editor != null) {
 						ITextSelection selection = (ITextSelection) editor.getSelectionProvider().getSelection();
 						CNFOutlinePage.refreshTreeSelection(viewer, selection.getOffset(), outlineViewerInput.document);

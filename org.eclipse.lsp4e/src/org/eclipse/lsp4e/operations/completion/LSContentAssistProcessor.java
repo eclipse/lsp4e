@@ -43,6 +43,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionOptions;
@@ -266,7 +267,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	@Override
 	public char[] getCompletionProposalAutoActivationCharacters() {
-		ITextEditor textEditor = LSPEclipseUtils.getActiveTextEditor();
+		ITextEditor textEditor = UI.getActiveTextEditor();
 		if(textEditor != null) {
 			initiateLanguageServers(LSPEclipseUtils.getDocument(textEditor));
 			try {
@@ -305,7 +306,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	@Override
 	public char[] getContextInformationAutoActivationCharacters() {
-		ITextEditor textEditor = LSPEclipseUtils.getActiveTextEditor();
+		ITextEditor textEditor = UI.getActiveTextEditor();
 		if(textEditor != null) {
 			initiateLanguageServers(LSPEclipseUtils.getDocument(textEditor));
 			try {

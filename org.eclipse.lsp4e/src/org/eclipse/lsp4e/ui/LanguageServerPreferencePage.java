@@ -42,10 +42,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Link;
 import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IWorkbench;
-import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPreferencePage;
-import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.preferences.IWorkbenchPreferenceContainer;
 
 public class LanguageServerPreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
@@ -288,12 +285,9 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 	}
 
 	private IEditorReference[] getEditors() {
-		IWorkbenchWindow wWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		if (wWindow != null) {
-			IWorkbenchPage wPage = wWindow.getActivePage();
-			if (wPage != null) {
-				return wPage.getEditorReferences();
-			}
+		var page = UI.getActivePage();
+		if (page != null) {
+			return page.getEditorReferences();
 		}
 		return null;
 	}

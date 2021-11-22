@@ -30,6 +30,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.RenameOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -38,8 +39,6 @@ import org.eclipse.ltk.core.refactoring.participants.RefactoringProcessor;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -103,11 +102,10 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 
 	@Override
 	public void setEnabled(Object evaluationContext) {
-		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
-		boolean isEnable = part instanceof ITextEditor;
-		if (isEnable) {
+		var part = UI.getActivePart();
+		if (part instanceof ITextEditor) {
 			ISelection selection = ((ITextEditor) part).getSelectionProvider().getSelection();
-			isEnable = selection instanceof ITextSelection && !selection.isEmpty();
+			var isEnable = selection instanceof ITextSelection && !selection.isEmpty();
 
 			IDocument document = LSPEclipseUtils.getDocument((ITextEditor) part);
 			if (document != null && isEnable) {
@@ -133,8 +131,12 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 					isEnable = false;
 				}
 			}
+			setBaseEnabled(isEnable);
+		} else {
+			setBaseEnabled(false);
 		}
-		setBaseEnabled(isEnable);
+
+
 	}
 
 }

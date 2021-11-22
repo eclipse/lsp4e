@@ -16,9 +16,9 @@ import java.util.Random;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.quickaccess.QuickAccessElement;
 
 public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
@@ -57,7 +57,7 @@ public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
 
 	@Override
 	public void execute() {
-		LSPEclipseUtils.openInEditor(symbol.getLocation(), PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage());
+		LSPEclipseUtils.openInEditor(symbol.getLocation(), UI.getActivePage());
 	}
 
 }

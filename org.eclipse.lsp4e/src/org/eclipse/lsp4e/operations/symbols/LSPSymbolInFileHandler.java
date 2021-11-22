@@ -22,10 +22,10 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -61,7 +61,7 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 
 	@Override
 	public boolean isEnabled() {
-		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
+		IWorkbenchPart part = UI.getActivePart();
 		if (part instanceof ITextEditor) {
 			final ITextEditor textEditor = (ITextEditor) part;
 			final IDocument document = LSPEclipseUtils.getDocument(textEditor);

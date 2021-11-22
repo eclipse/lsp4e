@@ -19,11 +19,10 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.intro.config.IIntroURL;
 import org.eclipse.ui.intro.config.IntroURLFactory;
 
@@ -71,11 +70,10 @@ public class LSBasedHyperlink implements IHyperlink {
 
 	@Override
 	public void open() {
-		IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 		if (location.isLeft()) {
-			LSPEclipseUtils.openInEditor(location.getLeft(), page);
+			LSPEclipseUtils.openInEditor(location.getLeft(), UI.getActivePage());
 		} else {
-			LSPEclipseUtils.openInEditor(location.getRight(), page);
+			LSPEclipseUtils.openInEditor(location.getRight(), UI.getActivePage());
 		}
 	}
 
