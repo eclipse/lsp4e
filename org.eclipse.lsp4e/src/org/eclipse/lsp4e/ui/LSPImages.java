@@ -135,6 +135,28 @@ public class LSPImages {
 		return imageRegistry;
 	}
 
+	/**
+	 * @param imageId See static IMG_* fields of {@link ISharedImages}
+	 * @return the workbench's shared image for the , or null if not found
+	 */
+	public static Image getSharedImage(String imageId) {
+		if(imageId == null) {
+			return null;
+		}
+		return PlatformUI.getWorkbench().getSharedImages().getImage(imageId);
+	}
+
+	/**
+	 * @param imageId See static IMG_* fields of {@link ISharedImages}
+	 * @return the workbench's shared image descriptor for the workbench, or null if not found
+	 */
+	public static ImageDescriptor getSharedImageDescriptor(String imageId) {
+		if(imageId == null) {
+			return null;
+		}
+		return PlatformUI.getWorkbench().getSharedImages().getImageDescriptor(imageId);
+	}
+
 	public static Image imageFromSymbolKind(SymbolKind kind) {
 		if (kind == null) {
 			return EMPTY_IMAGE;
@@ -155,7 +177,7 @@ public class LSPImages {
 		case Field:
 			return getImage(IMG_FIELD);
 		case File:
-			return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FILE);
+			return getSharedImage(ISharedImages.IMG_OBJ_FILE);
 		case Function:
 			return getImage(IMG_FUNCTION);
 		case Interface:
@@ -218,9 +240,9 @@ public class LSPImages {
 		case Color:
 			return getImageForColor(completionItem);
 		case File:
-			return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FILE);
+			return getSharedImage(ISharedImages.IMG_OBJ_FILE);
 		case Folder:
-			return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJ_FOLDER);
+			return getSharedImage(ISharedImages.IMG_OBJ_FOLDER);
 		case Reference:
 			return getImage(IMG_REFERENCE);
 		default:

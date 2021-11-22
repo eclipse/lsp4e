@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.notifications.AbstractNotificationPopup;
+import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
@@ -26,7 +27,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.ISharedImages;
-import org.eclipse.ui.PlatformUI;
 
 public class ServerMessageHandler {
 
@@ -61,11 +61,11 @@ public class ServerMessageHandler {
 		public Image getPopupShellImage(int maximumHeight) {
 			switch (messageParams.getType()) {
 			case Error:
-				return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_ERROR_TSK);
+				return LSPImages.getSharedImage(ISharedImages.IMG_OBJS_ERROR_TSK);
 			case Warning:
-				return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_WARN_TSK);
+				return LSPImages.getSharedImage(ISharedImages.IMG_OBJS_WARN_TSK);
 			case Info:
-				return PlatformUI.getWorkbench().getSharedImages().getImage(ISharedImages.IMG_OBJS_INFO_TSK);
+				return LSPImages.getSharedImage(ISharedImages.IMG_OBJS_INFO_TSK);
 			default:
 				return null;
 			}
