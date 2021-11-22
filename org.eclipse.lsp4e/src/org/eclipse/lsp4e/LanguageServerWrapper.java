@@ -63,6 +63,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.CodeActionCapabilities;
 import org.eclipse.lsp4j.CodeActionKind;
@@ -679,8 +680,7 @@ public class LanguageServerWrapper {
 				};
 				waitForInitialization.setUser(true);
 				waitForInitialization.setSystem(false);
-				PlatformUI.getWorkbench().getProgressService().showInDialog(
-						PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell(), waitForInitialization);
+				PlatformUI.getWorkbench().getProgressService().showInDialog(UI.getActiveShell(), waitForInitialization);
 			}
 			return initializeFuture.thenApply(r -> this.languageServer);
 		}

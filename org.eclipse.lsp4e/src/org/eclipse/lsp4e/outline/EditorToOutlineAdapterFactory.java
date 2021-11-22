@@ -28,11 +28,11 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IViewPart;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.ContentOutline;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
@@ -104,11 +104,13 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 		languageServers.thenAcceptAsync(servers -> {
 			if (!servers.isEmpty()) {
 				Display.getDefault().asyncExec(() -> {
-					IViewPart viewPart = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage()
-							.findView(OUTLINE_VIEW_ID);
-					if (viewPart instanceof ContentOutline) {
-						LANG_SERVER_CACHE.put(editorPart, servers.get(0));
-						((ContentOutline) viewPart).partActivated(editorPart);
+					var page = UI.getActivePage();
+					if(page != null) {
+						IViewPart viewPart = page.findView(OUTLINE_VIEW_ID);
+						if (viewPart instanceof ContentOutline) {
+							LANG_SERVER_CACHE.put(editorPart, servers.get(0));
+							((ContentOutline) viewPart).partActivated(editorPart);
+						}
 					}
 				});
 			}

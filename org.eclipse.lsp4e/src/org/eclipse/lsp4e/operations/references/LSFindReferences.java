@@ -27,10 +27,10 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.search.ui.NewSearchUI;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -73,7 +73,11 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 
 	@Override
 	public boolean isEnabled() {
-		IEditorPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
+		var page = UI.getActivePage();
+		if(page == null) {
+			return false;
+		}
+		IEditorPart part = page.getActiveEditor();
 		if (!(part instanceof ITextEditor)) {
 			return false;
 		}

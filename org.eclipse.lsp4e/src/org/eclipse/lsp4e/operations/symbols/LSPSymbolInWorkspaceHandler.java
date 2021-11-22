@@ -25,14 +25,13 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchSite;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -69,14 +68,13 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 		SymbolInformation symbolInformation = (SymbolInformation) dialog.getFirstResult();
 		Location location = symbolInformation.getLocation();
 
-		IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-		LSPEclipseUtils.openInEditor(location, page);
+		LSPEclipseUtils.openInEditor(location, UI.getActivePage());
 		return null;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		IWorkbenchPart part = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActivePart();
+		IWorkbenchPart part = UI.getActivePart();
 		if (part instanceof ITextEditor) {
 			List<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
 					LSPEclipseUtils.getDocument((ITextEditor) part),

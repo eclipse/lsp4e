@@ -30,6 +30,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
@@ -60,7 +61,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 
 	@Override
 	public void initialize(IServiceLocator serviceLocator) {
-		IEditorPart editor = LSPEclipseUtils.getActiveTextEditor();
+		IEditorPart editor = UI.getActiveTextEditor();
 		if (editor != null) {
 			ITextEditor textEditor = (ITextEditor) editor;
 			IDocument document = LSPEclipseUtils.getDocument(textEditor);
