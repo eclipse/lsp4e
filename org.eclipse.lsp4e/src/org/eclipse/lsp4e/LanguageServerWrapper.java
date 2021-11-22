@@ -422,8 +422,10 @@ public class LanguageServerWrapper {
 				CompletableFuture<Object> shutdown = languageServerInstance.shutdown();
 				try {
 					shutdown.get(5, TimeUnit.SECONDS);
-				}
-				catch (Exception e) {
+				} catch(InterruptedException ex) {
+					Thread.currentThread().interrupt();
+				} catch (Exception ex) {
+					LanguageServerPlugin.logError(ex);
 				}
 			}
 
@@ -696,14 +698,12 @@ public class LanguageServerWrapper {
 		try {
 			getInitializedServer().get(10, TimeUnit.SECONDS);
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logError("LanguageServer not initialized after 10s", e); //$NON-NLS-1$
-		} catch (ExecutionException e) {
-			LanguageServerPlugin.logError(e);
-		} catch (CancellationException e) {
+			LanguageServerPlugin.logError("LanguageServer not initialized within 10s", e); //$NON-NLS-1$
+		} catch (ExecutionException | CancellationException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (InterruptedException e) {
-			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+			LanguageServerPlugin.logError(e);
 		}
 
 		return this.serverCapabilities;
