@@ -51,13 +51,13 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 	private OutputStream outputStream;
 	private ILaunch launch;
 	private IProcess process;
-	private ILaunchConfiguration launchConfiguration;
+	private final ILaunchConfiguration launchConfiguration;
 	private Set<String> launchModes;
 
 	protected static class StreamProxyInputStream extends InputStream implements IStreamListener {
 
-		private ConcurrentLinkedQueue<Byte> queue = new ConcurrentLinkedQueue<>();
-		private IProcess process;
+		private final ConcurrentLinkedQueue<Byte> queue = new ConcurrentLinkedQueue<>();
+		private final IProcess process;
 
 		public StreamProxyInputStream(IProcess process) {
 			this.process = process;

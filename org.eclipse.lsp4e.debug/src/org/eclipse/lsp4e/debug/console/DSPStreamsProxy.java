@@ -21,9 +21,9 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 
 public class DSPStreamsProxy implements IStreamsProxy2 {
 
-	private IDebugProtocolServer debugProtocolServer;
-	private DSPStreamMonitor outputStream;
-	private DSPStreamMonitor errorStream;
+	private final IDebugProtocolServer debugProtocolServer;
+	private final DSPStreamMonitor outputStream;
+	private final DSPStreamMonitor errorStream;
 
 	public DSPStreamsProxy(IDebugProtocolServer debugProtocolServer) {
 		this.debugProtocolServer = debugProtocolServer;

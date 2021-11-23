@@ -26,7 +26,7 @@ import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
 public class DeleteExternalFile extends Change {
 
-	private @NonNull File file;
+	private final @NonNull File file;
 
 	public DeleteExternalFile(@NonNull File file) {
 		this.file = file;

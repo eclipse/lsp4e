@@ -26,7 +26,7 @@ import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
 
 public class CommandMarkerResolution extends WorkbenchMarkerResolution implements IMarkerResolution {
 
-	private @NonNull Command command;
+	private final @NonNull Command command;
 
 	public CommandMarkerResolution(@NonNull Command command) {
 		this.command = command;

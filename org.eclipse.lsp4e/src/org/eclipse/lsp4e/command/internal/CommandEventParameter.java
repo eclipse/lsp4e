@@ -24,7 +24,7 @@ public class CommandEventParameter implements IParameter, ITypedParameter {
 
 	private final ParameterType paramType;
 	private final String name;
-	private String id;
+	private final String id;
 
 	public CommandEventParameter(ParameterType paramType, String name, String id) {
 		super();

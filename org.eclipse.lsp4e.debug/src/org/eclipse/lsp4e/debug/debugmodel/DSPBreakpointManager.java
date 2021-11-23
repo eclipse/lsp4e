@@ -49,10 +49,10 @@ import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
  * additional fields in the marker to specify full path
  */
 public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakpointListener {
-	private Map<Source, List<SourceBreakpoint>> targetBreakpoints = new HashMap<>();
-	private IDebugProtocolServer debugProtocolServer;
-	private IBreakpointManager platformBreakpointManager;
-	private Capabilities capabilities;
+	private final Map<Source, List<SourceBreakpoint>> targetBreakpoints = new HashMap<>();
+	private final IDebugProtocolServer debugProtocolServer;
+	private final IBreakpointManager platformBreakpointManager;
+	private final Capabilities capabilities;
 
 	public DSPBreakpointManager(IBreakpointManager platformBreakpointManager, IDebugProtocolServer debugProtocolServer,
 			Capabilities capabilities) {

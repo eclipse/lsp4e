@@ -26,9 +26,9 @@ import org.eclipse.lsp4j.debug.ScopesArguments;
 import org.eclipse.lsp4j.debug.StackFrame;
 
 public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
-	private DSPThread thread;
+	private final DSPThread thread;
 	private StackFrame stackFrame;
-	private int depth;
+	private final int depth;
 	private IVariable[] cachedVariables;
 
 	public DSPStackFrame(DSPThread thread, StackFrame stackFrame, int depth) {

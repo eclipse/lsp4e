@@ -94,33 +94,33 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * same thread. (Note for requests, use the *Async versions on
 	 * completeablefuture to achieve the same effect.)
 	 */
-	private ExecutorService threadPool = Executors.newCachedThreadPool();
+	private final ExecutorService threadPool = Executors.newCachedThreadPool();
 
-	private ILaunch launch;
+	private final ILaunch launch;
 	private Future<?> debugProtocolFuture;
 	private IDebugProtocolServer debugProtocolServer;
 	private Capabilities capabilities;
 	/**
 	 * Once we have received initialized event, this member will be "done" as a flag
 	 */
-	private CompletableFuture<Void> initialized = new CompletableFuture<>();
+	private final CompletableFuture<Void> initialized = new CompletableFuture<>();
 
 	/**
 	 * The cached set of current threads. This should generally not be directly
 	 * accessed and instead accessed via {@link #getThreads()} which will ensure
 	 * they are up to date (against the {@link #refreshThreads} flag).
 	 */
-	private Map<Integer, DSPThread> threads = Collections.synchronizedMap(new TreeMap<>());
+	private final Map<Integer, DSPThread> threads = Collections.synchronizedMap(new TreeMap<>());
 	/**
 	 * Set to true to update the threads list from the debug adapter.
 	 */
-	private AtomicBoolean refreshThreads = new AtomicBoolean(true);
+	private final AtomicBoolean refreshThreads = new AtomicBoolean(true);
 
 	private boolean fTerminated = false;
 	private boolean fSentTerminateRequest = false;
 	private String targetName = null;
 
-	private Runnable processCleanup;
+	private final Runnable processCleanup;
 	private DSPBreakpointManager breakpointManager;
 	private DSPProcess process;
 	private InputStream in;
@@ -130,7 +130,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * User supplied debug paramters for {@link IDebugProtocolServer#launch(Map)}
 	 * and {@link IDebugProtocolServer#attach(Map)}
 	 */
-	private Map<String, Object> dspParameters;
+	private final Map<String, Object> dspParameters;
 
 	public DSPDebugTarget(ILaunch launch, Runnable processCleanup, InputStream in, OutputStream out,
 			Map<String, Object> dspParameters) {

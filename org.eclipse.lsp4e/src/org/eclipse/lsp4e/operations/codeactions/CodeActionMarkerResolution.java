@@ -29,7 +29,7 @@ import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
 
 public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implements IMarkerResolution {
 
-	private CodeAction codeAction;
+	private final CodeAction codeAction;
 
 	public CodeActionMarkerResolution(CodeAction codeAction) {
 		this.codeAction = codeAction;

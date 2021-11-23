@@ -106,9 +106,9 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 
 	private TableViewer languageServerViewer;
 	private TableViewer launchConfigurationViewer;
-	private Map<String, Boolean> serverEnableLoggingToFile = new HashMap<>();
-	private Map<String, Boolean> serverEnableLoggingToConsole = new HashMap<>();
-	private IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
+	private final Map<String, Boolean> serverEnableLoggingToFile = new HashMap<>();
+	private final Map<String, Boolean> serverEnableLoggingToConsole = new HashMap<>();
+	private final IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
 	private boolean hasLoggingBeenChanged = false;
 
 	@Override

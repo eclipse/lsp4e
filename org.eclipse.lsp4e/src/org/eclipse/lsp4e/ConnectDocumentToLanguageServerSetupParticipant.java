@@ -32,7 +32,7 @@ import org.eclipse.jface.text.IDocument;
  *
  */
 public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumentSetupParticipant, IDocumentSetupParticipantExtension {
-	private Map<IPath, Job> locationMap = new HashMap<IPath, Job>();
+	private final Map<IPath, Job> locationMap = new HashMap<IPath, Job>();
 
 	public ConnectDocumentToLanguageServerSetupParticipant() {
 

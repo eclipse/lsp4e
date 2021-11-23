@@ -39,7 +39,7 @@ public class SymbolsModel {
 
 	private volatile Map<SymbolInformation, List<SymbolInformation>> childrenMap = Collections.emptyMap();
 	private volatile List<DocumentSymbol> rootSymbols = Collections.emptyList();
-	private Map<DocumentSymbol, DocumentSymbol> parent = new HashMap<>();
+	private final Map<DocumentSymbol, DocumentSymbol> parent = new HashMap<>();
 
 	private IFile file;
 

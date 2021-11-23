@@ -128,7 +128,7 @@ import com.google.gson.JsonObject;
 
 public class LanguageServerWrapper {
 
-	private IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
+	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
 		public void bufferDisposed(IFileBuffer buffer) {
 			disconnect(buffer.getFileStore().toURI());
@@ -166,7 +166,7 @@ public class LanguageServerWrapper {
 	/**
 	 * Map containing unregistration handlers for dynamic capability registrations.
 	 */
-	private @NonNull Map<@NonNull String, @NonNull Runnable> dynamicRegistrations = new HashMap<>();
+	private final @NonNull Map<@NonNull String, @NonNull Runnable> dynamicRegistrations = new HashMap<>();
 	private boolean initiallySupportsWorkspaceFolders = false;
 	private final @NonNull IResourceChangeListener workspaceFolderUpdater = event -> {
 		WorkspaceFoldersChangeEvent workspaceFolderEvent = toWorkspaceFolderEvent(event);

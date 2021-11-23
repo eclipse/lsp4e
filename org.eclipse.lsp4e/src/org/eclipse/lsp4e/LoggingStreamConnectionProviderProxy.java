@@ -50,11 +50,11 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	private static final String FILE_KEY = "file.logging.enabled"; //$NON-NLS-1$
 	private static final String STDERR_KEY = "stderr.logging.enabled"; //$NON-NLS-1$
 
-	private StreamConnectionProvider provider;
+	private final StreamConnectionProvider provider;
 	private InputStream inputStream;
 	private OutputStream outputStream;
 	private InputStream errorStream;
-	private String id;
+	private final String id;
 	private final File logFile;
 	private boolean logToFile;
 	private boolean logToConsole;

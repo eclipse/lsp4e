@@ -50,11 +50,11 @@ import org.eclipse.osgi.util.NLS;
 
 public class CreateFileChange extends ResourceChange {
 
-	private URI uri;
-	private String fSource;
+	private final URI uri;
+	private final String fSource;
 	private String fEncoding;
 	private boolean fExplicitEncoding;
-	private long fStampToRestore;
+	private final long fStampToRestore;
 
 	public CreateFileChange(URI uri, String source, String encoding) {
 		this(uri, source, encoding, IResource.NULL_STAMP);

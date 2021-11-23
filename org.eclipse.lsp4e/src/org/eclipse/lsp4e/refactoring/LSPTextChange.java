@@ -45,8 +45,8 @@ import org.eclipse.text.edits.UndoEdit;
 @SuppressWarnings("restriction")
 public class LSPTextChange extends TextChange {
 
-	private @NonNull URI fileUri;
-	private @NonNull TextEdit textEdit;
+	private final @NonNull URI fileUri;
+	private final @NonNull TextEdit textEdit;
 
 	private Either<IFile, IFileStore> file;
 	private int fAcquireCount;

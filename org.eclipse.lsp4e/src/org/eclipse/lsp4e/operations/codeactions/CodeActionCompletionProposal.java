@@ -31,7 +31,7 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 	private CodeAction fcodeAction;
 	private Command fcommand;
 	private String fdisplayString;
-	private LSPDocumentInfo finfo;
+	private final LSPDocumentInfo finfo;
 
 	public CodeActionCompletionProposal(Either<Command, CodeAction> command, LSPDocumentInfo info) {
 		this.finfo = info;

@@ -62,7 +62,7 @@ import com.google.common.collect.TreeRangeMap;
 public class SymbolsLabelProvider extends LabelProvider
 		implements ICommonLabelProvider, IStyledLabelProvider, IPreferenceChangeListener {
 
-	private Map<IResource, RangeMap<Integer, Integer>> severities = new HashMap<>();
+	private final Map<IResource, RangeMap<Integer, Integer>> severities = new HashMap<>();
 	private final IResourceChangeListener listener = e -> {
 		try {
 			IResourceDelta delta = e.getDelta();
@@ -78,9 +78,9 @@ public class SymbolsLabelProvider extends LabelProvider
 			LanguageServerPlugin.logError(ex);
 		}
 	};
-	private Map<Image, Image[]> overlays = new HashMap<>();
+	private final Map<Image, Image[]> overlays = new HashMap<>();
 
-	private boolean showLocation;
+	private final boolean showLocation;
 
 	private boolean showKind;
 

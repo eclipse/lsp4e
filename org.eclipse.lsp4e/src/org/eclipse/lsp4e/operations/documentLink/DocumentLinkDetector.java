@@ -39,8 +39,8 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 
 	public static class DocumentHyperlink implements IHyperlink {
 
-		private String uri;
-		private IRegion highlightRegion;
+		private final String uri;
+		private final IRegion highlightRegion;
 
 		public DocumentHyperlink(String uri, IRegion highlightRegion) {
 			this.uri = uri;

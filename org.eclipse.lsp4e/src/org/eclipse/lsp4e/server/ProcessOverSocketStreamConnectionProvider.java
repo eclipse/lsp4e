@@ -29,7 +29,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
  */
 public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessStreamConnectionProvider {
 
-	private int port;
+	private final int port;
 	private Socket socket;
 	private InputStream inputStream;
 	private OutputStream outputStream;

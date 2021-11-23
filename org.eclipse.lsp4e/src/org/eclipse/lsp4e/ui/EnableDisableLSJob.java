@@ -24,8 +24,8 @@ import org.eclipse.ui.IEditorReference;
 
 public class EnableDisableLSJob extends Job {
 
-	private List<ContentTypeToLanguageServerDefinition> serverDefinitions;
-	private IEditorReference[] editors;
+	private final List<ContentTypeToLanguageServerDefinition> serverDefinitions;
+	private final IEditorReference[] editors;
 
 	public EnableDisableLSJob(List<ContentTypeToLanguageServerDefinition> serverDefinitions,
 			IEditorReference[] editors) {

@@ -19,8 +19,8 @@ import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
  */
 public class DSPProcess implements IProcess {
 
-	private DSPDebugTarget target;
-	private DSPStreamsProxy proxy;
+	private final DSPDebugTarget target;
+	private final DSPStreamsProxy proxy;
 
 	public DSPProcess(DSPDebugTarget target) {
 		this.target = target;

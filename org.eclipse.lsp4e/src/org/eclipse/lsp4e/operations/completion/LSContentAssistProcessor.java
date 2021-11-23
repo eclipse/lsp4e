@@ -63,7 +63,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private static final long CONTEXT_INFORMATION_TIMEOUT = 1000;
 	private IDocument currentDocument;
 	private String errorMessage;
-	private boolean errorAsCompletionItem;
+	private final boolean errorAsCompletionItem;
 	private CompletableFuture<List<@NonNull LanguageServer>> completionLanguageServersFuture;
 	private final Object completionTriggerCharsSemaphore = new Object();
 	private char[] completionTriggerChars = new char[0];
@@ -79,7 +79,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		this.errorAsCompletionItem = errorAsCompletionItem;
 	}
 
-	private Comparator<LSCompletionProposal> proposalComparator = new LSCompletionProposalComparator();
+	private final Comparator<LSCompletionProposal> proposalComparator = new LSCompletionProposalComparator();
 
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
