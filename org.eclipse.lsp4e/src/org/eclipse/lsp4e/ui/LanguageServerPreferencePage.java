@@ -52,7 +52,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 	private Button removeButton;
 	private CheckboxTableViewer checkboxViewer;
 	private TableViewer viewer;
-	private SelectionAdapter contentTypeLinkListener;
+	private final SelectionAdapter contentTypeLinkListener;
 	private List<ContentTypeToLanguageServerDefinition> changedDefinitions;
 
 	public LanguageServerPreferencePage() {

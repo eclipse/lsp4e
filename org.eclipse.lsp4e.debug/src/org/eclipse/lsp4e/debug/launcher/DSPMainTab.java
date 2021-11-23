@@ -49,7 +49,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 	private Text serverHost;
 	private Text serverPort;
 
-	private boolean allowCustomSettingsCheckbox;
+	private final boolean allowCustomSettingsCheckbox;
 	private Button customDebugAdapterCheckbox;
 	private Group debugAdapterSettingsGroup;
 	private Composite launchParametersGroup;

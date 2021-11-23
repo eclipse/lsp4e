@@ -19,9 +19,9 @@ import org.eclipse.lsp4j.debug.VariablesArguments;
 
 public final class DSPValue extends DSPDebugElement implements IValue {
 
-	private DSPVariable modelVariable;
-	private Integer variablesReference;
-	private String value;
+	private final DSPVariable modelVariable;
+	private final Integer variablesReference;
+	private final String value;
 	private IVariable[] cachedVariables;
 
 	public DSPValue(DSPVariable variable, Integer variablesReference, String value) {

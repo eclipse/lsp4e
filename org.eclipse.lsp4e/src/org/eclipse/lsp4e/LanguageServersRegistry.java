@@ -114,7 +114,7 @@ public class LanguageServersRegistry {
 	}
 
 	static class ExtensionLanguageServerDefinition extends LanguageServerDefinition {
-		private IConfigurationElement extension;
+		private final IConfigurationElement extension;
 
 		public ExtensionLanguageServerDefinition(IConfigurationElement element) {
 			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE), Boolean.parseBoolean(element.getAttribute(SINGLETON_ATTRIBUTE)));
@@ -203,8 +203,8 @@ public class LanguageServersRegistry {
 		return LazyHolder.INSTANCE;
 	}
 
-	private List<ContentTypeToLanguageServerDefinition> connections = new ArrayList<>();
-	private IPreferenceStore preferenceStore;
+	private final List<ContentTypeToLanguageServerDefinition> connections = new ArrayList<>();
+	private final IPreferenceStore preferenceStore;
 
 	private LanguageServersRegistry() {
 		this.preferenceStore = LanguageServerPlugin.getDefault().getPreferenceStore();

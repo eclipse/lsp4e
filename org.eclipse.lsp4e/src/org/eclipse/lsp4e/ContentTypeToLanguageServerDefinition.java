@@ -23,7 +23,7 @@ import org.eclipse.lsp4e.enablement.EnablementTester;
 public class ContentTypeToLanguageServerDefinition extends SimpleEntry<IContentType, LanguageServerDefinition> {
 
 	private static final long serialVersionUID = 6002703726009331762L;
-	private EnablementTester enablement;
+	private final EnablementTester enablement;
 
 	public ContentTypeToLanguageServerDefinition(@NonNull IContentType contentType,
 			@NonNull LanguageServerDefinition provider,

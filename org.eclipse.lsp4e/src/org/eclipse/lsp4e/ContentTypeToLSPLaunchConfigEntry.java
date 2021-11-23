@@ -28,8 +28,8 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToLanguageServ
 
 	private static final long serialVersionUID = 7944251280308498957L;
 
-	private ILaunchConfiguration launchConfiguration;
-	private Set<String> launchModes;
+	private final ILaunchConfiguration launchConfiguration;
+	private final Set<String> launchModes;
 
 	public ContentTypeToLSPLaunchConfigEntry(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig,
 			@NonNull Set<String> launchModes) {

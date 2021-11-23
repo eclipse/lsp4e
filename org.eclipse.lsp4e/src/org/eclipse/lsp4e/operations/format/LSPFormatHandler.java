@@ -33,7 +33,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPFormatHandler extends AbstractHandler {
 
-	private LSPFormatter formatter = new LSPFormatter();
+	private final LSPFormatter formatter = new LSPFormatter();
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {

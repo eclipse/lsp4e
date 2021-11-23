@@ -40,8 +40,8 @@ public class DSPThread extends DSPDebugElement implements IThread {
 	 * target.
 	 */
 	private String name;
-	private List<DSPStackFrame> frames = Collections.synchronizedList(new ArrayList<>());
-	private AtomicBoolean refreshFrames = new AtomicBoolean(true);
+	private final List<DSPStackFrame> frames = Collections.synchronizedList(new ArrayList<>());
+	private final AtomicBoolean refreshFrames = new AtomicBoolean(true);
 	private boolean stepping;
 	private boolean isSuspended = false;
 

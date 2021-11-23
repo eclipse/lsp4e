@@ -20,7 +20,7 @@ import org.eclipse.jface.text.IDocument;
 
 final class DocumentInputStream extends InputStream {
 	private int index = 0;
-	private IDocument document;
+	private final IDocument document;
 
 	DocumentInputStream(IDocument document) {
 		this.document = document;

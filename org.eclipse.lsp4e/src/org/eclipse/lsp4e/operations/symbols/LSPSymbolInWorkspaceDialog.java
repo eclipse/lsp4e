@@ -50,7 +50,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 	private static class InternalSymbolsLabelProvider extends SymbolsLabelProvider {
 
 		private String pattern;
-		private BoldStylerProvider stylerProvider;
+		private final BoldStylerProvider stylerProvider;
 
 		public InternalSymbolsLabelProvider(BoldStylerProvider stylerProvider) {
 			super(true, InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
@@ -102,8 +102,8 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		}
 	}
 
-	private List<@NonNull LanguageServer> languageServers;
-	private InternalSymbolsLabelProvider labelProvider;
+	private final List<@NonNull LanguageServer> languageServers;
+	private final InternalSymbolsLabelProvider labelProvider;
 
 	public LSPSymbolInWorkspaceDialog(Shell shell, List<@NonNull LanguageServer> languageServers) {
 		super(shell);

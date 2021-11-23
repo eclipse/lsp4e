@@ -15,8 +15,8 @@ import org.eclipse.debug.core.model.IFlushableStreamMonitor;
 
 public class DSPStreamMonitor implements IFlushableStreamMonitor {
 
-	private ListenerList<IStreamListener> listeners = new ListenerList<>();
-	private StringBuilder stream = new StringBuilder();
+	private final ListenerList<IStreamListener> listeners = new ListenerList<>();
+	private final StringBuilder stream = new StringBuilder();
 	private boolean buffer;
 
 	@Override

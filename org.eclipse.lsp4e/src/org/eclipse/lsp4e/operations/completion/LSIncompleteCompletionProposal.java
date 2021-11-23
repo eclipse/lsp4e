@@ -127,7 +127,7 @@ public class LSIncompleteCompletionProposal
 	private Integer rankScore;
 	private String documentFilter;
 	private String documentFilterAddition = ""; //$NON-NLS-1$
-	private LanguageServer languageServer;
+	private final LanguageServer languageServer;
 
 	public LSIncompleteCompletionProposal(@NonNull IDocument document, int offset, @NonNull CompletionItem item,
 			LanguageServer languageServer) {

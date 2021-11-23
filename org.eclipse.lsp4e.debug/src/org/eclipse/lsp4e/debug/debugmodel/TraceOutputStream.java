@@ -14,7 +14,7 @@ import java.io.OutputStream;
 
 public class TraceOutputStream extends FilterOutputStream {
 
-	private OutputStream trace;
+	private final OutputStream trace;
 
 	public TraceOutputStream(OutputStream out, OutputStream trace) {
 		super(out);
