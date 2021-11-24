@@ -1,5 +1,12 @@
 ## LSP4E Changelog and New and Noteworthy
 
+### 0.20.1
+
+📅 Release Date: November 24th, 2021
+
+Bugfixes (including fix for regression [Issue #3 - Avoid error in compare editor](https://github.com/eclipse/lsp4e/issues/3)) and code improvements
+
+
 ### 0.20.0
 
 📅 Release Date: November 9th, 2021
