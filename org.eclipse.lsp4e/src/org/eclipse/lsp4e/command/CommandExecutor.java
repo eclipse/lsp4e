@@ -164,7 +164,7 @@ public class CommandExecutor {
 	}
 
 	private static Predicate<ServerCapabilities> handlesCommand(String id) {
-		return (serverCaps) -> {
+		return serverCaps -> {
 			ExecuteCommandOptions executeCommandProvider = serverCaps.getExecuteCommandProvider();
 			if (executeCommandProvider != null) {
 				return executeCommandProvider.getCommands().contains(id);

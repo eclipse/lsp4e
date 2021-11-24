@@ -143,8 +143,7 @@ public class SymbolsModel {
 	}
 
 	public Object[] getElements() {
-		List<Object> res = new ArrayList<>();
-		res.addAll(Arrays.asList(getChildren(ROOT_SYMBOL_INFORMATION)));
+		List<Object> res = new ArrayList<>(Arrays.asList(getChildren(ROOT_SYMBOL_INFORMATION)));
 		final IFile current = this.file;
 		Function<DocumentSymbol, Object> mapper = current != null ?
 				symbol -> new DocumentSymbolWithFile(symbol, current) :

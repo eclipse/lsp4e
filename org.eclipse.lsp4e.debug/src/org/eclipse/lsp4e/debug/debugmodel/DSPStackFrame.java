@@ -140,7 +140,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 			Scope[] scopes = complete(getDebugTarget().getDebugProtocolServer().scopes(arguments)).getScopes();
 			List<DSPVariable> vars = new ArrayList<>();
 			for (Scope scope : scopes) {
-				DSPVariable variable = new DSPVariable(getDebugTarget(), Integer.valueOf(-1), scope.getName(), "",
+				DSPVariable variable = new DSPVariable(getDebugTarget(), -1, scope.getName(), "",
 						scope.getVariablesReference());
 				vars.add(variable);
 			}
@@ -166,7 +166,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	@Override
 	public int getLineNumber() throws DebugException {
-		return (int) stackFrame.getLine();
+		return stackFrame.getLine();
 	}
 
 	@Override
@@ -198,7 +198,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 	public BigInteger getFrameInstructionAddress() {
 		String addr = stackFrame.getInstructionPointerReference();
 		if (addr == null || addr.length() == 0) {
-			return new BigInteger("0");
+			return BigInteger.ZERO;
 		}
 		if (addr.startsWith("0x")) {
 			addr = addr.substring(2);

@@ -238,7 +238,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 					annotationModel.addAnnotation(mapEntry.getKey(), mapEntry.getValue());
 				}
 			}
-			fLinkedEditingAnnotations = annotationMap.keySet().toArray(new Annotation[annotationMap.keySet().size()]);
+			fLinkedEditingAnnotations = annotationMap.keySet().toArray(new Annotation[annotationMap.size()]);
 		}
 	}
 

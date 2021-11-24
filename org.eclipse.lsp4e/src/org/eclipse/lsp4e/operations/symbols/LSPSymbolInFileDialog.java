@@ -12,7 +12,6 @@
 package org.eclipse.lsp4e.operations.symbols;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.PopupDialog;
 import org.eclipse.jface.text.BadLocationException;
