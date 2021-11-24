@@ -296,7 +296,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 						try {
 							for (byte b : text
 									.getBytes(finalBuilder.launch.getAttribute(DebugPlugin.ATTR_CONSOLE_ENCODING))) {
-								bytes.add(Byte.valueOf(b));
+								bytes.add(b);
 							}
 						} catch (IOException e) {
 							DSPPlugin.logError(e);

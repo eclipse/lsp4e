@@ -34,7 +34,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
@@ -137,24 +136,21 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 				toUpdate.put(associatedMarker, diagnostic);
 			}
 		}
-		IWorkspaceRunnable runnable = new IWorkspaceRunnable() {
-			@Override
-			public void run(IProgressMonitor monitor) throws CoreException {
-				if (resource.exists()) {
-					for (Diagnostic diagnostic : newDiagnostics) {
-						resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE, computeMarkerAttributes(resource, diagnostic));
-					}
-					for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
-						updateMarker(resource, entry.getValue(), entry.getKey());
-					}
-					toDeleteMarkers.forEach(t -> {
-						try {
-							t.delete();
-						} catch (CoreException e) {
-							LanguageServerPlugin.logError(e);
-						}
-					});
+		IWorkspaceRunnable runnable = monitor -> {
+			if (resource.exists()) {
+				for (Diagnostic diagnostic : newDiagnostics) {
+					resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE, computeMarkerAttributes(resource, diagnostic));
 				}
+				for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
+					updateMarker(resource, entry.getValue(), entry.getKey());
+				}
+				toDeleteMarkers.forEach(t -> {
+					try {
+						t.delete();
+					} catch (CoreException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				});
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(runnable, new NullProgressMonitor());

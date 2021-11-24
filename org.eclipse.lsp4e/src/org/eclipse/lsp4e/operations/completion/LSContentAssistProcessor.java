@@ -291,14 +291,14 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 		Set<Character> triggers = new HashSet<>();
 		for (char c : initialArray) {
-			triggers.add(Character.valueOf(c));
+			triggers.add(c);
 		}
 		additionalTriggers.stream().filter(s -> !Strings.isNullOrEmpty(s))
-				.map(triggerChar -> Character.valueOf(triggerChar.charAt(0))).forEach(triggers::add);
+				.map(triggerChar -> triggerChar.charAt(0)).forEach(triggers::add);
 		char[] res = new char[triggers.size()];
 		int i = 0;
 		for (Character c : triggers) {
-			res[i] = c.charValue();
+			res[i] = c;
 			i++;
 		}
 		return res;

@@ -88,7 +88,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		}
 	}
 
-	private final class BooleanMapLabelProvider extends ColumnLabelProvider {
+	private static final class BooleanMapLabelProvider extends ColumnLabelProvider {
 		private final Map<String, Boolean> map;
 
 		private BooleanMapLabelProvider(Map<String, Boolean> map) {
@@ -98,7 +98,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 
 		@Override
 		public String getText(Object element) {
-			return map.getOrDefault(((ContentTypeToLanguageServerDefinition) element).getValue().id, false).booleanValue()
+			return map.getOrDefault(((ContentTypeToLanguageServerDefinition) element).getValue().id, false)
 							? Messages.PreferencePage_enablementCondition_true
 							: Messages.PreferencePage_enablementCondition_false;
 		}
