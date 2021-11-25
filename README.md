@@ -47,7 +47,7 @@ Examples of integration contain:
 * [Eclipse Corrosion](https://github.com/eclipse/corrosion) **Rust** support plugin for Eclipse IDE, edition is powered by LSP4E and RLS.
 * [Eclipse aCute](https://github.com/eclipse/aCute) **C#** edition in Eclipse IDE using LSP4E and OmniSharp LSP implementation.
 * End-user using Language Server from **Docker image**, providing edition feature in the IDE without creating specific Eclipse IDE plugin: http://www.screencast.com/t/vksX3uZm1aj
-* [Eclipse WildWebDeveloper](https://github.com/eclipse/wildwebdeveloper) **HTML, CSS, JavaScript, TypeScript, Node.js, Angular, JSON, YAML (+Kubernetes) and XMLL** edition, using LSP4E and various language servers from SourceGraph and VSCode.
+* [Eclipse WildWebDeveloper](https://github.com/eclipse/wildwebdeveloper) **HTML, CSS, JavaScript, TypeScript, Node.js, Angular, JSON, YAML (+Kubernetes) and XML** edition, using LSP4E and various language servers from SourceGraph and VSCode.
 * [language-servers-for-eclipse](https://github.com/eclipselabs/language-servers-for-eclipse) Binds various language servers to the Eclipse IDE.
 * [Solargraph](https://github.com/PyvesB/eclipse-solargraph) Binds a **Ruby** language server to the Eclipse IDE.
 * [Quarkus Tools](https://github.com/jbosstools/jbosstools-quarkus) Based on the Eclipse [LSP4MP](https://github.com/eclipse/lsp4mp) language server, extended for Quarkus specifics and binds to application.properties and Java files. 
