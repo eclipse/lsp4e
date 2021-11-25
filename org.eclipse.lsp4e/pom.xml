@@ -7,8 +7,8 @@
 	</parent>
 	<artifactId>org.eclipse.lsp4e</artifactId>
 	<packaging>eclipse-plugin</packaging>
-	<version>0.13.8-SNAPSHOT</version>
-	
+	<version>0.13.9-SNAPSHOT</version>
+
 	<build>
 		<plugins>
 			<plugin>

@@ -82,7 +82,7 @@
             id="org.eclipse.lsp4e.toggleSortOutline"
             name="Sort Outline">
          <state
-               class="org.eclipse.ui.handlers.RegistryToggleState:true"
+               class="org.eclipse.ui.handlers.RegistryToggleState:false"
                id="org.eclipse.ui.commands.toggleState" />
       </command>
    </extension>
@@ -342,8 +342,8 @@
                   value="org.eclipse.lsp4e.LanguageServiceAccessor$LSPDocumentInfo">
             </instanceof>
          </enablement>
-         <commonSorter 
-               id="org.eclipse.lsp4e.outline.OutlineSorter" 
+         <commonSorter
+               id="org.eclipse.lsp4e.outline.OutlineSorter"
                class="org.eclipse.lsp4e.outline.OutlineSorter" />
       </navigatorContent>
    </extension>
