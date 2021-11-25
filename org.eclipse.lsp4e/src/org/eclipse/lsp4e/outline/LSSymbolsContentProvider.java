@@ -62,6 +62,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeContentProvider {
 
 	public static final Object COMPUTING = new Object();
+	public static final String VIEWER_PROPERTY_IS_QUICK_OUTLINE = "isQuickOutline"; //$NON-NLS-1$
 
 	@NonNullByDefault
 	public static final class OutlineViewerInput {
@@ -209,6 +210,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	private final SymbolsModel symbolsModel = new SymbolsModel();
 	private volatile CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> symbols;
 	private final boolean refreshOnResourceChanged;
+	private boolean isQuickOutline;
 	private IOutlineUpdater outlineUpdater;
 
 	public LSSymbolsContentProvider() {
@@ -236,6 +238,8 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		}
 
 		this.viewer = (TreeViewer) viewer;
+		isQuickOutline = Boolean.TRUE.equals(viewer.getData(VIEWER_PROPERTY_IS_QUICK_OUTLINE));
+
 		outlineViewerInput = (OutlineViewerInput) newInput;
 		symbolsModel.setFile(outlineViewerInput.documentFile);
 
@@ -243,8 +247,10 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		// because otherwise the outline will be blank for 1-2 seconds initially
 		refreshTreeContentFromLS();
 
-		outlineUpdater = createOutlineUpdater();
-		outlineUpdater.install();
+		if (!isQuickOutline) {
+			outlineUpdater = createOutlineUpdater();
+			outlineUpdater.install();
+		}
 	}
 
 	private IOutlineUpdater createOutlineUpdater() {
@@ -300,17 +306,21 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			symbolsModel.update(response);
 			lastError = null;
 
-			final var linkWithEditor = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
+			final var linkWithEditor = isQuickOutline || InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID)
 					.getBoolean(CNFOutlinePage.LINK_WITH_EDITOR_PREFERENCE, true);
 
 			viewer.getControl().getDisplay().asyncExec(() -> {
-				TreePath[] expandedElements = viewer.getExpandedTreePaths();
-				TreePath[] initialSelection = ((ITreeSelection) viewer.getSelection()).getPaths();
-				viewer.refresh();
-				viewer.setExpandedTreePaths(Arrays.stream(expandedElements).map(symbolsModel::toUpdatedSymbol)
-						.filter(Objects::nonNull).toArray(TreePath[]::new));
-				viewer.setSelection(new TreeSelection(Arrays.stream(initialSelection).map(symbolsModel::toUpdatedSymbol)
-						.filter(Objects::nonNull).toArray(TreePath[]::new)));
+				if (isQuickOutline) {
+					viewer.refresh();
+				} else {
+					TreePath[] expandedElements = viewer.getExpandedTreePaths();
+					TreePath[] initialSelection = ((ITreeSelection) viewer.getSelection()).getPaths();
+					viewer.refresh();
+					viewer.setExpandedTreePaths(Arrays.stream(expandedElements).map(symbolsModel::toUpdatedSymbol)
+							.filter(Objects::nonNull).toArray(TreePath[]::new));
+					viewer.setSelection(new TreeSelection(Arrays.stream(initialSelection)
+							.map(symbolsModel::toUpdatedSymbol).filter(Objects::nonNull).toArray(TreePath[]::new)));
+				}
 
 				if (linkWithEditor) {
 					ITextEditor editor = UI.getActiveTextEditor();

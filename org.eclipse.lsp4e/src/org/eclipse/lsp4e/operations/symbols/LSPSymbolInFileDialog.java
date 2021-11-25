@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.symbols;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.PopupDialog;
@@ -21,6 +23,7 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
+import org.eclipse.lsp4e.outline.LSSymbolsContentProvider;
 import org.eclipse.lsp4e.outline.LSSymbolsContentProvider.OutlineViewerInput;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4e.ui.Messages;
@@ -61,6 +64,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 		FilteredTree filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false);
 		TreeViewer viewer = filteredTree.getViewer();
+		viewer.setData(LSSymbolsContentProvider.VIEWER_PROPERTY_IS_QUICK_OUTLINE, Boolean.TRUE);
 
 		final var contentService = new NavigatorContentService(CNFOutlinePage.ID, viewer);
 		filteredTree.addDisposeListener(ev -> contentService.dispose());
@@ -73,11 +77,21 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 		viewer.setLabelProvider(new NavigatorDecoratingLabelProvider(contentService.createCommonLabelProvider()));
 		viewer.setUseHashlookup(true);
+
+		final var isFirstSelectionEvent = new AtomicBoolean(true);
 		viewer.addSelectionChangedListener(event -> {
+			// ignore the first selection event which is fired when the current editor
+			// selection is pre-selected in the tree view when the outline popup is opens
+			if (isFirstSelectionEvent.get()) {
+				isFirstSelectionEvent.set(false);
+				return;
+			}
+
 			IStructuredSelection selection = (IStructuredSelection) event.getSelection();
 			if (selection.isEmpty()) {
 				return;
 			}
+
 			Object item = selection.getFirstElement();
 			if (item instanceof Either<?, ?>) {
 				item = ((Either<?, ?>) item).get();
