@@ -816,14 +816,19 @@ public class LSPEclipseUtils {
 
 	@NonNull
 	public static List<IContentType> getFileContentTypes(@NonNull IFile file) {
+		IContentTypeManager contentTypeManager = Platform.getContentTypeManager();
 		List<IContentType> contentTypes = new ArrayList<>();
-		try (InputStream contents = file.getContents()) {
-			// TODO consider using document as inputstream
-			contentTypes.addAll(
-					Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, file.getName())));
-		} catch (CoreException | IOException e) {
-			LanguageServerPlugin.logError(e);
-		}
+		if (file.exists()) {
+			try (InputStream contents = file.getContents()) {
+				// TODO consider using document as inputstream
+				contentTypes.addAll(
+						Arrays.asList(contentTypeManager.findContentTypesFor(contents, file.getName())));
+			} catch (CoreException | IOException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		} else {
+			contentTypes.addAll(Arrays.asList(contentTypeManager.findContentTypesFor(file.getName())));
+		}	
 		return contentTypes;
 	}
 
