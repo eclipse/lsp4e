@@ -310,6 +310,10 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 					.getBoolean(CNFOutlinePage.LINK_WITH_EDITOR_PREFERENCE, true);
 
 			viewer.getControl().getDisplay().asyncExec(() -> {
+				if(viewer.getTree().isDisposed()) {
+					return;
+				}
+
 				if (isQuickOutline) {
 					viewer.refresh();
 				} else {
