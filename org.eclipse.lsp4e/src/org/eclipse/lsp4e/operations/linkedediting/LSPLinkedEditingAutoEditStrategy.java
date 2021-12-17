@@ -11,10 +11,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.linkedediting;
 
-import java.util.Comparator;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DocumentCommand;
@@ -22,7 +22,6 @@ import org.eclipse.jface.text.IAutoEditStrategy;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 
 public class LSPLinkedEditingAutoEditStrategy extends LSPLinkedEditingBase implements IAutoEditStrategy {
@@ -38,8 +37,8 @@ public class LSPLinkedEditingAutoEditStrategy extends LSPLinkedEditingBase imple
 
 		if (!isOffsetInRanges(document, command.offset)) {
 			try {
-				collectLinkedEditingRanges(document, command.offset).get();
-			} catch (InterruptedException | ExecutionException e) {
+				collectLinkedEditingRanges(document, command.offset).get(50, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
@@ -48,15 +47,13 @@ public class LSPLinkedEditingAutoEditStrategy extends LSPLinkedEditingBase imple
 			return;
 		}
 
-		Set<Range> sortedRanges = new TreeSet<>(RANGE_OFFSET_ORDER);
-		sortedRanges.addAll(fLinkedEditingRanges.getRanges());
-
+		List<Range> ranges = fLinkedEditingRanges.getRanges();
 		int changeStart = Integer.MAX_VALUE;
 		int changeEnd = Integer.MIN_VALUE;
 		Range commandRange = null;
 		int delta = 0;
 		try {
-			for (Range r : sortedRanges) {
+			for (Range r : ranges) {
 				int start = LSPEclipseUtils.toOffset(r.getStart(), document);
 				if (changeStart > start) {
 					changeStart = start;
@@ -84,7 +81,7 @@ public class LSPLinkedEditingAutoEditStrategy extends LSPLinkedEditingBase imple
 		int caretOffset = -1;
 		try {
 			int currentOffset = changeStart;
-			for (Range r : sortedRanges) {
+			for (Range r : ranges) {
 				int rangeStart = LSPEclipseUtils.toOffset(r.getStart(), document);
 				int rangeEnd = LSPEclipseUtils.toOffset(r.getEnd(), document);
 				if (currentOffset < rangeStart) {
@@ -145,23 +142,4 @@ public class LSPLinkedEditingAutoEditStrategy extends LSPLinkedEditingBase imple
 		}
 		return false;
 	}
-
-    /**
-     * A Comparator that orders {@code Region} objects by offset
-     */
-    private static final Comparator<Range> RANGE_OFFSET_ORDER = new RangeOffsetComparator();
-    private static class RangeOffsetComparator
-            implements Comparator<Range> {
-    	@Override
-		public int compare(Range r1, Range r2) {
-            Position p1 = r1.getStart();
-            Position p2 = r2.getStart();
-
-            if (p1.getLine() == p2.getLine()) {
-            	return p1.getCharacter() - p2.getCharacter();
-            }
-
-            return p1.getLine() - p2.getLine();
-        }
-    }
 }
