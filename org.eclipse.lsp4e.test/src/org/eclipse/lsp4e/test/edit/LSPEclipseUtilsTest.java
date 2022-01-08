@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2019 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -9,6 +9,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Remy Suen <remy.suen@gmail.com> - Bug 520052 - Rename assumes that workspace edits are in reverse order
+ *  Pierre-Yves Bigourdan <pyvesdev@gmail.com> - Issue 29
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
@@ -55,6 +56,7 @@ import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Control;
@@ -336,6 +338,15 @@ public class LSPEclipseUtilsTest {
 	public void testURICreationUnix() {
 		Assume.assumeFalse(Platform.OS_WIN32.equals(Platform.getOS()));
 		Assert.assertEquals("file:///test%20with%20space", LSPEclipseUtils.toUri(new File("/test with space")).toString());
+	}
+
+	@Test
+	public void testToWorkspaceFolder() throws Exception {
+		IProject project = TestUtils.createProject("testToWorkspaceFolder");
+
+		WorkspaceFolder folder = LSPEclipseUtils.toWorkspaceFolder(project);
+		Assert.assertEquals("testToWorkspaceFolder", folder.getName());
+		Assert.assertEquals("file://", folder.getUri().substring(0, "file://".length()));
 	}
 
 	@Test
