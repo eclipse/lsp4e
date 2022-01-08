@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2021 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -16,6 +16,7 @@
  *  Alex Boyko (Pivotal Inc.) - bug 543435 (WorkspaceEdit apply handling)
  *  Markus Ofterdinger (SAP SE) - Bug 552140 - NullPointerException in LSP4E
  *  Rubén Porras Campo (Avaloq) - Bug 576425 - Support Remote Files
+ *  Pierre-Yves Bigourdan <pyvesdev@gmail.com> - Issue 29
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -810,7 +811,8 @@ public class LSPEclipseUtils {
 	@NonNull
 	public static WorkspaceFolder toWorkspaceFolder(@NonNull IProject project) {
 		WorkspaceFolder folder = new WorkspaceFolder();
-		folder.setUri(project.getLocationURI() != null ? project.getLocationURI().toString() : ""); //$NON-NLS-1$
+		URI folderUri = toUri(project);
+		folder.setUri(folderUri != null ? folderUri.toString() : ""); //$NON-NLS-1$
 		folder.setName(project.getName());
 		return folder;
 	}
@@ -829,7 +831,7 @@ public class LSPEclipseUtils {
 			}
 		} else {
 			contentTypes.addAll(Arrays.asList(contentTypeManager.findContentTypesFor(file.getName())));
-		}	
+		}
 		return contentTypes;
 	}
 
