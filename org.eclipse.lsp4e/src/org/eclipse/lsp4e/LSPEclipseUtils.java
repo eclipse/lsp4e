@@ -810,7 +810,8 @@ public class LSPEclipseUtils {
 	@NonNull
 	public static WorkspaceFolder toWorkspaceFolder(@NonNull IProject project) {
 		WorkspaceFolder folder = new WorkspaceFolder();
-		folder.setUri(project.getLocationURI() != null ? project.getLocationURI().toString() : ""); //$NON-NLS-1$
+		URI uri = toUri(project);
+		folder.setUri(uri != null ? uri.toString() : ""); //$NON-NLS-1$
 		folder.setName(project.getName());
 		return folder;
 	}
