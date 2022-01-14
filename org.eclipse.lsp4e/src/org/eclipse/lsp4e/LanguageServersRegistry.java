@@ -413,11 +413,29 @@ public class LanguageServersRegistry {
 		return !getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file)).isEmpty();
 	}
 
+	/**
+	 *
+	 * @param contentTypes content-types to check against LS registry. Base types are checked too.
+	 * @return definitions that can support the following content-types
+	 */
 	private Set<LanguageServerDefinition> getAvailableLSFor(Collection<IContentType> contentTypes) {
 		Set<LanguageServerDefinition> res = new HashSet<>();
+		contentTypes = expandToSuperTypes(contentTypes);
 		for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
 			if (mapping.isEnabled() && contentTypes.contains(mapping.getKey())) {
 				res.add(mapping.getValue());
+			}
+		}
+		return res;
+	}
+
+	private Collection<IContentType> expandToSuperTypes(Collection<IContentType> contentTypes) {
+		ArrayList<IContentType> res = new ArrayList<>(contentTypes);
+		for (int i = 0; i < res.size(); i++) {
+			IContentType current = res.get(i);
+			IContentType base = current.getBaseType();
+			if (base != null && !res.contains(base)) {
+				res.add(base);
 			}
 		}
 		return res;
