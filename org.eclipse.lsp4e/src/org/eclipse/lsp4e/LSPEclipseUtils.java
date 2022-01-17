@@ -513,13 +513,15 @@ public class LSPEclipseUtils {
 	}
 
 	public static void open(String uri, IWorkbenchPage page, Range optionalRange) {
-		if (uri.startsWith(FILE_SLASH)) {
+		if (uri.startsWith(HTTP)) {
+			if (uri.startsWith(INTRO_URL)) {
+				openIntroURL(uri);
+			} else {
+				openHttpLocationInBrowser(uri, page);
+			}
+		} else {
 			openFileLocationInEditor(uri, page, optionalRange);
-		} else if (uri.startsWith(INTRO_URL)) {
-			openIntroURL(uri);
-		} else if (uri.startsWith(HTTP)) {
-			openHttpLocationInBrowser(uri, page);
-		}
+		} 
 	}
 
 	protected static void openIntroURL(final String uri) {
