@@ -577,8 +577,10 @@ public class LSPEclipseUtils {
 				}
 			}
 
-			if (part != null && part instanceof ITextEditor) {
-		        targetDocument = ((ITextEditor) part).getDocumentProvider().getDocument(part.getEditorInput());
+
+			ITextEditor textEditor = Adapters.adapt(part, ITextEditor.class);
+			if (textEditor != null) {
+				targetDocument = textEditor.getDocumentProvider().getDocument(textEditor.getEditorInput());
 			}
 
 		} catch (PartInitException e) {
