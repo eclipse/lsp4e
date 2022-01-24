@@ -39,7 +39,7 @@ At the moment, it provides regular JFace/Platform Text classes for:
 
 ### Debug
 
-Support for the Debug Adapter Protocol includes usual debug operations (breakpoints, step forward, step into, view variable value, evaluate expression, change variable value...) in the Platform Debug framework and its related UI components.
+Support for the [Debug Adapter Protocol](https://microsoft.github.io/debug-adapter-protocol/) includes usual debug operations (breakpoints, step forward, step into, view variable value, evaluate expression, change variable value...) in the [Eclipse Platform Debug](https://www.eclipse.org/eclipse/debug/) framework and its related UI components.
 
 ## Examples
 
