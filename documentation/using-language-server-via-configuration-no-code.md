@@ -2,7 +2,7 @@
 
 Eclipse LSP4E provides a way to dynamically define a language server and associate it with some files in the Eclipse IDE, without coding the integration.
 
-This is quite handy for testing a lanaguage server, however, it's not recommended to rely on it for actual production usage (you should prefer using the `org.eclipse.lsp4e.languageServers` extension point for that).
+This is quite handy for testing a language server, however, it's not recommended to rely on it for actual production usage (you should prefer using the `org.eclipse.lsp4e.languageServers` extension point for that).
 
 Requirements for the language server
 * The Language Server must be "runnable" from command-line
@@ -17,7 +17,7 @@ In Preferences > Content-Type, check that either a content-type is already defin
 
 ### Step 2: Create a Launch Configuration describing how to start your Language Server
 
-In the usual _Launch Configurations_ dialog, define how your langauge server should be started. Depending on your language server, you may want to start it as a Java Program or as an External Program... Use the various fields to customize things like command-line arguments or environment variables if necessary.
+In the usual _Launch Configurations_ dialog, define how your language server should be started. Depending on your language server, you may want to start it as a Java Program or as an External Program... Use the various fields to customize things like command-line arguments or environment variables if necessary.
 
 To help you with development and testing, it's usually nice to be able to monitor the language server output. So you may want to tick the _Command > Allocate Console_ checkbox.
 
