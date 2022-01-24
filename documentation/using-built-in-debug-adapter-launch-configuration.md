@@ -14,11 +14,10 @@ Steps to use launch configuration:
 * Provide information to either start the Debug Adapter Server or connect to it.
 * Fill the launch parameters as Json. It is the ones which are sent during [`launch request`](https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Launch).
 
-
 ### Use Case 2: develop a Debug Adapter Server
 
 When starting the development of a Debug Adapter Server, using the built-in Debug Adapter launch configuration avoids the requirement to provide a specific Eclipse plugin. It will be possible to provide it later.
 
 The `monitor Debug Adapter launcher process` option is very useful, it allows to track the communication between the client and the server.
 
-Please note that currently only a `launch` option for the Application Under Debug is available. In case, it is difficult to `launch` as first iteration and easier to `attach`, you can simply trick your Debug Adapter server and redirect the launch request to `attach`. To avoid this trick in the future, please vote/implement for this [issue](https://github.com/eclipse/lsp4e/issues/49).
+By default, the `launch` option for the Application Under Debug is used. In case, the Application Under Debug is already running and the goal is to `attach`, you need to add `"request": "attach"` in the `Launch parameters as Json`.
