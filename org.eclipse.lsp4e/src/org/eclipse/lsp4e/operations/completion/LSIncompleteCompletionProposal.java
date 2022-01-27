@@ -61,7 +61,6 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4e.operations.hover.FocusableBrowserInformationControl;
 import org.eclipse.lsp4e.ui.LSPImages;
-import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.InsertReplaceEdit;
 import org.eclipse.lsp4j.InsertTextFormat;
@@ -513,9 +512,6 @@ public class LSIncompleteCompletionProposal
 					String defaultProposal = snippetProposals.isEmpty() ? "" : snippetProposals.get(0); //$NON-NLS-1$
 					if (keyBuilder.length() > 0) {
 						String key = keyBuilder.toString();
-						if (!regions.containsKey(key)) {
-							regions.put(key, new ArrayList<>());
-						}
 						insertText = insertText.substring(0, currentSnippetOffsetInInsertText) + defaultProposal + insertText.substring(currentSnippetOffsetInInsertText + offsetInSnippet);
 						LinkedPosition position = null;
 						if (!snippetProposals.isEmpty()) {
@@ -530,7 +526,7 @@ public class LSIncompleteCompletionProposal
 						if (firstPosition == null) {
 							firstPosition = position;
 						}
-						regions.get(key).add(position);
+						regions.computeIfAbsent(key, whatever -> new ArrayList<>()).add(position);
 						currentSnippetOffsetInInsertText += defaultProposal.length();
 					} else {
 						currentSnippetOffsetInInsertText++;
@@ -548,7 +544,8 @@ public class LSIncompleteCompletionProposal
 				LSPEclipseUtils.applyEdit(textEdit, document);
 			}
 
-			if (viewer != null && !regions.isEmpty()) {
+			boolean onlyPlaceCaret = regions.size() == 1 && regions.values().iterator().next().size() == 1 && regions.values().iterator().next().stream().noneMatch(ProposalPosition.class::isInstance);
+			if (viewer != null && !regions.isEmpty() && !onlyPlaceCaret) {
 				LinkedModeModel model = new LinkedModeModel();
 				for (List<LinkedPosition> positions: regions.values()) {
 					LinkedPositionGroup group = new LinkedPositionGroup();
@@ -565,18 +562,17 @@ public class LSIncompleteCompletionProposal
 				// ui.setExitPosition(getTextViewer(), exit, 0, Integer.MAX_VALUE);
 				ui.setCyclingMode(LinkedModeUI.CYCLE_NEVER);
 				ui.enter();
+			} else if (onlyPlaceCaret) {
+				org.eclipse.jface.text.Position region = regions.values().iterator().next().get(0);
+				selection = new Region(region.getOffset(), region.getLength());
 			} else {
 				selection = new Region(insertionOffset + textEdit.getNewText().length(), 0);
 			}
 
-			LanguageServiceAccessor.resolveServerDefinition(languageServer).map(definition -> definition.id)
-					.ifPresent(id -> {
-						Command command = item.getCommand();
-						if (command == null) {
-							return;
-						}
-						CommandExecutor.executeCommand(command, document, id);
-					});
+			if (item.getCommand() != null) {
+				LanguageServiceAccessor.resolveServerDefinition(languageServer).map(definition -> definition.id)
+						.ifPresent(id -> CommandExecutor.executeCommand(item.getCommand(), document, id));
+			}
 		} catch (BadLocationException ex) {
 			LanguageServerPlugin.logError(ex);
 		}
