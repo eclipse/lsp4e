@@ -40,7 +40,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.tests.util.DisplayHelper;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.rename.LSPRenameHandler;

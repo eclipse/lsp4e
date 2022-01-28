@@ -21,7 +21,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jface.text.tests.util.DisplayHelper;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.operations.references.LSFindReferences;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;

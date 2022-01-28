@@ -29,7 +29,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
 import org.eclipse.jface.text.source.ISourceViewer;
-import org.eclipse.jface.text.tests.util.DisplayHelper;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.operations.highlight.HighlightReconcilingStrategy;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;

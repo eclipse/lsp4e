@@ -31,7 +31,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
-import org.eclipse.jface.text.tests.util.DisplayHelper;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.operations.hover.LSPTextHover;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;

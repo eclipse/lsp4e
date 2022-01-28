@@ -23,7 +23,7 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
-import org.eclipse.jface.text.tests.util.DisplayHelper;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
