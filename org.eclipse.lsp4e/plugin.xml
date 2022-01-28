@@ -379,7 +379,6 @@
       <type name="org.eclipse.lsp4e.read"></type>
       <type name="org.eclipse.lsp4e.write"></type>
       <type name="org.eclipse.lsp4e.text"></type>
-      <type name="org.eclipse.lsp4e.linkedediting"></type>
    </extension>
    <extension point="org.eclipse.ui.editors.markerAnnotationSpecification">
 		<specification annotationType="org.eclipse.lsp4e.read"
@@ -426,22 +425,6 @@
 			colorPreferenceValue="212,212,212" presentationLayer="4"
 			showInNextPrevDropdownToolbarAction="true"
 			textStylePreferenceKey="LSP4ETextOccurrenceTextStyle"
-			textStylePreferenceValue="NONE">
-		</specification>
-   </extension>
-   <extension point="org.eclipse.ui.editors.markerAnnotationSpecification">
-		<specification annotationType="org.eclipse.lsp4e.linkedediting"
-			label="LSP Linked Editing Occurrence"
-			textPreferenceKey="LSP4ELinkedEditingOccurrenceIndication" textPreferenceValue="false"
-			highlightPreferenceKey="LSP4ELinkedEditingOccurrenceHighlighting"
-			highlightPreferenceValue="true" contributesToHeader="false"
-			overviewRulerPreferenceKey="LSP4ELinkedEditingOccurrenceIndicationInOverviewRuler"
-			overviewRulerPreferenceValue="false"
-			verticalRulerPreferenceKey="LSP4ELinkedEditingOccurrenceIndicationInVerticalRuler"
-			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4ELinkedEditingOccurrenceIndicationColor"
-			colorPreferenceValue="242,212,242" presentationLayer="5"
-			showInNextPrevDropdownToolbarAction="false"
-			textStylePreferenceKey="LSP4ELinkedEditingOccurrenceTextStyle"
 			textStylePreferenceValue="NONE">
 		</specification>
    </extension>
@@ -495,20 +478,6 @@
          point="org.eclipse.ui.genericeditor.highlightReconcilers">
       <highlightReconciler
             class="org.eclipse.lsp4e.operations.highlight.HighlightReconciler"
-            contentType="org.eclipse.core.runtime.text">
-         <enabledWhen>
-           <or>
-             <with variable="editorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-             <with variable="viewer">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-           </or>
-         </enabledWhen>
-      </highlightReconciler>
-      <highlightReconciler
-            class="org.eclipse.lsp4e.operations.linkedediting.LinkedEditingHighlightReconciler"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
            <or>
@@ -611,10 +580,20 @@
       </category>
    </extension>
    <extension
-         point="org.eclipse.ui.genericeditor.autoEditStrategies">
-      <autoEditStrategy
-            class="org.eclipse.lsp4e.operations.linkedediting.LSPLinkedEditingAutoEditStrategy"
+         point="org.eclipse.ui.genericeditor.reconcilers">
+      <reconciler
+            class="org.eclipse.lsp4e.operations.linkedediting.LinkedEditingReconciler"
             contentType="org.eclipse.core.runtime.text">
-      </autoEditStrategy>
+         <enabledWhen>
+           <or>
+             <with variable="editorInput">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+             <with variable="viewer">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+           </or>
+         </enabledWhen>
+      </reconciler>
    </extension>
 </plugin>

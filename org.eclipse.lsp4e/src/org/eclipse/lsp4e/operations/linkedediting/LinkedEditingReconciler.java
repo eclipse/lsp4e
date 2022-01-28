@@ -19,9 +19,9 @@ import org.eclipse.jface.text.reconciler.MonoReconciler;
 /**
  * {@link IReconciler} implementation to Linked Editing.
  */
-public class LinkedEditingHighlightReconciler extends MonoReconciler {
+public class LinkedEditingReconciler extends MonoReconciler {
 
-	public LinkedEditingHighlightReconciler() {
+	public LinkedEditingReconciler() {
 		super(new LSPLinkedEditingReconcilingStrategy(), false);
 	}
 

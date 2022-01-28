@@ -11,13 +11,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.linkedediting;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.eclipse.core.runtime.ICoreRunnable;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.jface.text.BadLocationException;
@@ -25,15 +21,15 @@ import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jface.text.IRegion;
-import org.eclipse.jface.text.ISynchronizable;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.link.LinkedModeModel;
+import org.eclipse.jface.text.link.LinkedModeUI;
+import org.eclipse.jface.text.link.LinkedPosition;
+import org.eclipse.jface.text.link.LinkedPositionGroup;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategy;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategyExtension;
-import org.eclipse.jface.text.source.Annotation;
-import org.eclipse.jface.text.source.IAnnotationModel;
-import org.eclipse.jface.text.source.IAnnotationModelExtension;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.jface.viewers.IPostSelectionProvider;
 import org.eclipse.jface.viewers.ISelection;
@@ -45,22 +41,15 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.ui.progress.UIJob;
+import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
 
 public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase implements IReconcilingStrategy, IReconcilingStrategyExtension, IDocumentListener {
-	public static final String LINKEDEDITING_ANNOTATION_TYPE = "org.eclipse.lsp4e.linkedediting"; //$NON-NLS-1$
-
 	private ISourceViewer sourceViewer;
 	private IDocument fDocument;
 	private EditorSelectionChangedListener editorSelectionChangedListener;
 	private Job highlightJob;
-
-	/**
-	 * Holds the current linkedEditing annotations.
-	 */
-	private Annotation[] fLinkedEditingAnnotations = null;
-
-	public LSPLinkedEditingReconcilingStrategy() {
-	}
+	private LinkedModeModel linkedModel;
 
 	class EditorSelectionChangedListener implements ISelectionChangedListener {
 		public void install(ISelectionProvider selectionProvider) {
@@ -89,7 +78,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 
 		@Override
 		public void selectionChanged(SelectionChangedEvent event) {
-			updateLinkedEditingHighlights(event.getSelection());
+			updateLinkedEditing(event.getSelection());
 		}
 	}
 
@@ -119,7 +108,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 			if (fEnabled) {
 				initialReconcile();
 			} else {
-				removeLinkedEditingAnnotations();
+				//linkedModel.exit(ILinkedModeListener.EXIT_ALL);
 			}
 		}
 	}
@@ -136,7 +125,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 			if (textWidget != null && selectionProvider != null) {
 				textWidget.getDisplay().asyncExec(() -> {
 					if (!textWidget.isDisposed()) {
-						updateLinkedEditingHighlights(selectionProvider.getSelection());
+						updateLinkedEditing(selectionProvider.getSelection());
 					}
 				});
 			}
@@ -171,106 +160,57 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 
 	@Override
 	public void documentChanged(DocumentEvent event) {
-		updateLinkedEditingHighlights(event.getOffset());
+		updateLinkedEditing(event.getOffset());
 	}
 
-	private void updateLinkedEditingHighlights(ISelection selection) {
+	private void updateLinkedEditing(ISelection selection) {
 		if (selection instanceof ITextSelection) {
-			updateLinkedEditingHighlights(((ITextSelection) selection).getOffset());
+			updateLinkedEditing(((ITextSelection) selection).getOffset());
 		}
 	}
 
-	private void updateLinkedEditingHighlights(int offset) {
-		if (sourceViewer != null  && fDocument != null  && fEnabled) {
+	private void updateLinkedEditing(int offset) {
+		if (sourceViewer != null  && fDocument != null  && fEnabled && linkedModel == null || !linkedModel.anyPositionContains(offset)) {
 			collectLinkedEditingRanges(fDocument, offset)
-				.thenAcceptAsync(theVoid -> updateLinkedEditingHighlights());
+				.thenAcceptAsync(this::applyLinkedEdit);
 		}
 	}
 
-	private void updateLinkedEditingHighlights() {
+	private void applyLinkedEdit(LinkedEditingRanges ranges) {
 		if (highlightJob != null) {
 			highlightJob.cancel();
 		}
-		highlightJob = Job.createSystem("LSP4E Linked Editing Highlight", //$NON-NLS-1$
-				(ICoreRunnable)(monitor -> {
-					updateLinkedEditingAnnotations(
-							sourceViewer.getAnnotationModel(), monitor);
-					}));
+		if (ranges == null) {
+			return;
+		}
+		highlightJob = new UIJob("LSP4E Linked Editing") { //$NON-NLS-1$
+			@Override
+			public IStatus runInUIThread(IProgressMonitor monitor) {
+				linkedModel = new LinkedModeModel();
+				try {
+					linkedModel.addGroup(toJFaceGroup(ranges));
+					linkedModel.forceInstall();
+					ITextSelection selectionBefore = (ITextSelection)sourceViewer.getSelectionProvider().getSelection();
+					LinkedModeUI linkedMode = new EditorLinkedModeUI(linkedModel, sourceViewer);
+					linkedMode.enter();
+					sourceViewer.getSelectionProvider().setSelection(selectionBefore);
+					return Status.OK_STATUS;
+				} catch (BadLocationException ex) {
+					return new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, ex.getMessage(), ex);
+				}
+			}
+		};
 		highlightJob.schedule();
 	}
 
-	/**
-	 * Update the UI annotations with the given list of LinkedEditing.
-	 *
-	 * @param annotationModel
-	 *            annotation model to update.
-	 * @param monitor
-	 * 			  a progress monitor
-	 */
-	private void updateLinkedEditingAnnotations(IAnnotationModel annotationModel, IProgressMonitor monitor) {
-		if (monitor.isCanceled() || annotationModel == null) {
-			return;
+	private LinkedPositionGroup toJFaceGroup(LinkedEditingRanges ranges) throws BadLocationException {
+		LinkedPositionGroup res = new LinkedPositionGroup();
+		for (Range range : ranges.getRanges()) {
+			int startOffset = LSPEclipseUtils.toOffset(range.getStart(), fDocument);
+			int length = LSPEclipseUtils.toOffset(range.getEnd(), fDocument) - startOffset;
+			res.addPosition(new LinkedPosition(fDocument, startOffset, length));
 		}
-
-		LinkedEditingRanges ranges = fLinkedEditingRanges;
-		Map<Annotation, org.eclipse.jface.text.Position> annotationMap = new HashMap<>(ranges == null ? 0 : ranges.getRanges().size());
-		if (ranges != null) {
-			for (Range r : ranges.getRanges()) {
-				try {
-					int start = LSPEclipseUtils.toOffset(r.getStart(), fDocument);
-					int end = LSPEclipseUtils.toOffset(r.getEnd(), fDocument);
-					annotationMap.put(new Annotation(LINKEDEDITING_ANNOTATION_TYPE, false, null),
-							new org.eclipse.jface.text.Position(start, end - start));
-				} catch (BadLocationException e) {
-					LanguageServerPlugin.logError(e);
-				}
-			}
-		}
-
-		synchronized (getLockObject(annotationModel)) {
-			if (annotationModel instanceof IAnnotationModelExtension) {
-				((IAnnotationModelExtension) annotationModel).replaceAnnotations(fLinkedEditingAnnotations, annotationMap);
-			} else {
-				removeLinkedEditingAnnotations();
-				Iterator<Entry<Annotation, org.eclipse.jface.text.Position>> iter = annotationMap.entrySet().iterator();
-				while (iter.hasNext()) {
-					Entry<Annotation, org.eclipse.jface.text.Position> mapEntry = iter.next();
-					annotationModel.addAnnotation(mapEntry.getKey(), mapEntry.getValue());
-				}
-			}
-			fLinkedEditingAnnotations = annotationMap.keySet().toArray(new Annotation[annotationMap.size()]);
-		}
+		return res;
 	}
 
-	/**
-	 * Returns the lock object for the given annotation model.
-	 *
-	 * @param annotationModel
-	 *            the annotation model
-	 * @return the annotation model's lock object
-	 */
-	private Object getLockObject(IAnnotationModel annotationModel) {
-		if (annotationModel instanceof ISynchronizable) {
-			Object lock = ((ISynchronizable) annotationModel).getLockObject();
-			if (lock != null)
-				return lock;
-		}
-		return annotationModel;
-	}
-
-	void removeLinkedEditingAnnotations() {
-		IAnnotationModel annotationModel = sourceViewer.getAnnotationModel();
-		if (annotationModel == null || fLinkedEditingAnnotations == null)
-			return;
-
-		synchronized (getLockObject(annotationModel)) {
-			if (annotationModel instanceof IAnnotationModelExtension) {
-				((IAnnotationModelExtension) annotationModel).replaceAnnotations(fLinkedEditingAnnotations, null);
-			} else {
-				for (Annotation fOccurrenceAnnotation : fLinkedEditingAnnotations)
-					annotationModel.removeAnnotation(fOccurrenceAnnotation);
-			}
-			fLinkedEditingAnnotations = null;
-		}
-	}
 }
