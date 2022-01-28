@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.operations.linkedediting;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
@@ -47,7 +48,7 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 		cancel();
 	}
 
-	protected CompletableFuture<Void> collectLinkedEditingRanges(IDocument document, int offset) {
+	protected CompletableFuture<LinkedEditingRanges> collectLinkedEditingRanges(IDocument document, int offset) {
 		fLinkedEditingRanges = null;
 		cancel();
 
@@ -68,13 +69,18 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri.toString());
 		TextDocumentPositionParams params = new TextDocumentPositionParams(identifier, position);
 
-		return request = LanguageServiceAccessor.getLanguageServers(document,
+		AtomicReference<LinkedEditingRanges> range = new AtomicReference<>();
+		return LanguageServiceAccessor.getLanguageServers(document,
 					capabilities -> LSPEclipseUtils.hasCapability(capabilities.getLinkedEditingRangeProvider()))
 				.thenComposeAsync(languageServers ->
 					CompletableFuture.allOf(languageServers.stream()
 							.map(ls -> ls.getTextDocumentService().linkedEditingRange(LSPEclipseUtils.toLinkedEditingRangeParams(params))
-								.thenAcceptAsync(result -> fLinkedEditingRanges = result))
-									.toArray(CompletableFuture[]::new)));
+								.thenAcceptAsync(result -> {
+									if (result != null && result.getRanges() != null && result.getRanges().size() > 1) {
+										range.set(result);
+									}
+							})).toArray(CompletableFuture[]::new)))
+				.thenApplyAsync(theVoid -> range.get());
 	}
 
 	/**
