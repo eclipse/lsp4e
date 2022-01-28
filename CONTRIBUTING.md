@@ -25,7 +25,7 @@ For more information, please see the Eclipse Committer Handbook:
 Eclipse LSP4E use mainly 2 channels for strategical and technical discussions
 
 * 🐞 View and report issues through uses GitHub Issues at https://github.com/eclipse/lsp4e/issues. _📜 Migration to GitHub tracker took place in November 2021, for older tickets, see https://bugs.eclipse.org/bugs/buglist.cgi?product=lsp4e 📜_
-* 📧 Join the lsp4e-dev@eclipse.org mailing-list to get in touch with other contributors about project organization and planning, and browse archive at 📜 [https://accounts.eclipse.org/mailing-list/m2e-dev](https://accounts.eclipse.org/mailing-list/lsp4e-dev)
+* 📧 Join the lsp4e-dev@eclipse.org mailing-list to get in touch with other contributors about project organization and planning, and browse archive at 📜 [https://accounts.eclipse.org/mailing-list/lsp4e-dev](https://accounts.eclipse.org/mailing-list/lsp4e-dev)
 
 ## 🆕 Trying latest builds
 
