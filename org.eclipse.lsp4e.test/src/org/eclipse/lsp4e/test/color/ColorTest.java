@@ -18,7 +18,7 @@ import java.util.Collections;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.jface.text.tests.util.DisplayHelper;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;

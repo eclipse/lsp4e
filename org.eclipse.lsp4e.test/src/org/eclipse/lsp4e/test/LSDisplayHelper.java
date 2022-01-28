@@ -13,7 +13,7 @@ package org.eclipse.lsp4e.test;
 
 import java.util.function.Supplier;
 
-import org.eclipse.jface.text.tests.util.DisplayHelper;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 
 /**
  * display helper with supplier function, for easy use with lambda expression
