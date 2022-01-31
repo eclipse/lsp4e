@@ -80,7 +80,7 @@
       <command
             categoryId="org.eclipse.lsp4e.category"
             id="org.eclipse.lsp4e.toggleSortOutline"
-            name="Sort Outline">
+            name="%command.toggle.outline.sort.name">
          <state
                class="org.eclipse.ui.handlers.RegistryToggleState:false"
                id="org.eclipse.ui.commands.toggleState" />
@@ -258,7 +258,24 @@
          </command>
       </menuContribution>
       <menuContribution allPopups="false" locationURI="toolbar:org.eclipse.ui.views.ContentOutline?after=additions">
-         <command commandId="org.eclipse.lsp4e.toggleSortOutline" style="toggle" label="Sort" />
+         <command commandId="org.eclipse.lsp4e.toggleSortOutline" style="toggle" label="%command.toggle.outline.sort.label">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+	              <with variable="activePart">
+	                 <instanceof
+                           value="org.eclipse.ui.views.contentoutline.ContentOutline">
+                     </instanceof>
+	              </with>
+	              <with
+	                    variable="activePart">
+	                 <test
+	                       property="org.eclipse.lsp4e.hasCNFOutlinePage">
+	                 </test>
+	              </with>
+	           </and>
+            </visibleWhen>
+         </command>
       </menuContribution>
    </extension>
    <extension
