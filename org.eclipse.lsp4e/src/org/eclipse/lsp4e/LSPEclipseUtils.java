@@ -521,7 +521,7 @@ public class LSPEclipseUtils {
 			}
 		} else {
 			openFileLocationInEditor(uri, page, optionalRange);
-		} 
+		}
 	}
 
 	protected static void openIntroURL(final String uri) {
@@ -604,15 +604,21 @@ public class LSPEclipseUtils {
 	}
 
 	public static IDocument getDocument(ITextEditor editor) {
-		try {
-			Method getSourceViewerMethod= AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
-			getSourceViewerMethod.setAccessible(true);
-			ITextViewer viewer = (ITextViewer) getSourceViewerMethod.invoke(editor);
-			return viewer.getDocument();
-		} catch (Exception ex) {
-			LanguageServerPlugin.logError(ex);
-			return null;
+		IDocument res = getDocument(editor.getEditorInput());
+		if (res != null) {
+			return res;
 		}
+		if (editor instanceof AbstractTextEditor) {
+			try {
+				Method getSourceViewerMethod= AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
+				getSourceViewerMethod.setAccessible(true);
+				ITextViewer viewer = (ITextViewer) getSourceViewerMethod.invoke(editor);
+				return viewer.getDocument();
+			} catch (Exception ex) {
+				LanguageServerPlugin.logError(ex);
+			}
+		}
+		return null;
 	}
 
 	public static IDocument getDocument(IEditorInput editorInput) {
