@@ -252,7 +252,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 					return q;
 				});
 		if (ILaunchManager.DEBUG_MODE.equals(launch.getLaunchMode())) {
-			future = CompletableFuture.allOf(future, initialized.thenRun(() -> {
+			future = CompletableFuture.allOf(future, initialized).thenRun(() -> {
 				monitor.worked(10);
 			}).thenCompose(v -> {
 				monitor.worked(10);
@@ -267,7 +267,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 					return getDebugProtocolServer().configurationDone(new ConfigurationDoneArguments());
 				}
 				return CompletableFuture.completedFuture(null);
-			}));
+			});
 		}
 		return future;
 	}
