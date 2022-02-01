@@ -263,7 +263,10 @@ public class LSPEclipseUtils {
 	}
 
 	private static ITextFileBuffer toBuffer(IDocument document) {
-		return FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
+		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+		if (bufferManager == null) 
+			return null;
+		return bufferManager.getTextFileBuffer(document);
 	}
 
 	public static URI toUri(IDocument document) {
@@ -431,11 +434,13 @@ public class LSPEclipseUtils {
 
 		if (document == null && resource.getType() == IResource.FILE) {
 			ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+			if (bufferManager == null) 
+				return null;
 			try {
 				bufferManager.connect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
 			} catch (CoreException e) {
 				LanguageServerPlugin.logError(e);
-				return document;
+				return null;
 			}
 
 			ITextFileBuffer buffer = bufferManager.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
@@ -452,8 +457,9 @@ public class LSPEclipseUtils {
 		if (resource == null) {
 			return null;
 		}
-
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+		if (bufferManager == null) 
+			return null;
 		ITextFileBuffer buffer = bufferManager.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
 		if (buffer != null) {
 			return buffer.getDocument();
@@ -476,7 +482,7 @@ public class LSPEclipseUtils {
 			return null;
 		}
 
-		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+
 		IDocument document = null;
 		IFileStore store = null;
 		try {
@@ -485,6 +491,9 @@ public class LSPEclipseUtils {
 			LanguageServerPlugin.logError(e);
 			return null;
 		}
+		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+		if (bufferManager == null) 
+			return null;
 		ITextFileBuffer buffer = bufferManager.getFileStoreTextFileBuffer(store);
 		if (buffer != null) {
 			document = buffer.getDocument();
@@ -862,16 +871,19 @@ public class LSPEclipseUtils {
 	public static List<IContentType> getDocumentContentTypes(@NonNull IDocument document) {
 		List<IContentType> contentTypes = new ArrayList<>();
 
-		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
-		if (buffer != null) {
-			try {
-				// may be a more specific content-type, relying on some content-type factory and actual content (not just name)
-				IContentType contentType = buffer.getContentType();
-				if (contentType != null) {
-					contentTypes.add(contentType);
+		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+		if (bufferManager != null) {
+			ITextFileBuffer buffer = bufferManager.getTextFileBuffer(document);
+			if (buffer != null) {
+				try {
+					// may be a more specific content-type, relying on some content-type factory and actual content (not just name)
+					IContentType contentType = buffer.getContentType();
+					if (contentType != null) {
+						contentTypes.add(contentType);
+					}
+				} catch (CoreException e) {
+					LanguageServerPlugin.logError("Exception occurred while fetching the content type from the buffer", e); //$NON-NLS-1$;
 				}
-			} catch (CoreException e) {
-				LanguageServerPlugin.logError("Exception occurred while fetching the content type from the buffer", e); //$NON-NLS-1$;
 			}
 		}
 
