@@ -78,6 +78,10 @@ public class SymbolsLabelProvider extends LabelProvider
 			LanguageServerPlugin.logError(ex);
 		}
 	};
+	/*
+	 * key: initial object image
+	 * value: array of images decorated with marker for severity (index + 1)
+	 */
 	private final Map<Image, Image[]> overlays = new HashMap<>();
 
 	private final boolean showLocation;
@@ -100,6 +104,8 @@ public class SymbolsLabelProvider extends LabelProvider
 	public void dispose() {
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(listener);
 		InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID).removePreferenceChangeListener(this);
+		overlays.values().stream().flatMap(Arrays::stream).forEach(Image::dispose);
+		overlays.clear();
 		super.dispose();
 	}
 
