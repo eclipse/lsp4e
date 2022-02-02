@@ -560,7 +560,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 						|| capabilities.getSignatureHelpProvider() != null)
 				.get(0);
 		CompletionItem item = new CompletionItem("blah");
-		item.setDetail("detail");
+		item.setDocumentation("documentation");
 		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
 				item, info.getLanguageClient());
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
