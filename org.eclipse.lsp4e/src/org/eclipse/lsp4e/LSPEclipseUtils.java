@@ -435,12 +435,12 @@ public class LSPEclipseUtils {
 		if (document == null && resource.getType() == IResource.FILE) {
 			ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
 			if (bufferManager == null) 
-				return null;
+				return document;
 			try {
 				bufferManager.connect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
 			} catch (CoreException e) {
 				LanguageServerPlugin.logError(e);
-				return null;
+				return document;
 			}
 
 			ITextFileBuffer buffer = bufferManager.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
@@ -613,16 +613,27 @@ public class LSPEclipseUtils {
 	}
 
 	public static IDocument getDocument(ITextEditor editor) {
-		IDocument res = getDocument(editor.getEditorInput());
-		if (res != null) {
-			return res;
+		if (editor == null)
+			return null;
+		final IEditorInput editorInput = editor.getEditorInput();
+		if (editorInput != null) {
+			final IDocumentProvider documentProvider = editor.getDocumentProvider();
+			if (documentProvider != null) {
+				final IDocument document = documentProvider.getDocument(editorInput);
+				if (document != null)
+					return document;
+			}
+			IDocument res = getDocument(editorInput);
+			if (res != null) {
+				return res;
+			}
 		}
 		if (editor instanceof AbstractTextEditor) {
 			try {
 				Method getSourceViewerMethod= AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
 				getSourceViewerMethod.setAccessible(true);
-				ITextViewer viewer = (ITextViewer) getSourceViewerMethod.invoke(editor);
-				return viewer.getDocument();
+				ITextViewer viewer = (ITextViewer) getSourceViewerMethod.invoke(editor); 
+				return (viewer == null) ? null : viewer.getDocument();
 			} catch (Exception ex) {
 				LanguageServerPlugin.logError(ex);
 			}
