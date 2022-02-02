@@ -126,6 +126,7 @@ import org.eclipse.ui.intro.config.IIntroURL;
 import org.eclipse.ui.intro.config.IntroURLFactory;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
+import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
@@ -263,7 +264,10 @@ public class LSPEclipseUtils {
 	}
 
 	private static ITextFileBuffer toBuffer(IDocument document) {
-		return FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
+		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+		if (bufferManager == null) 
+			return null;
+		return bufferManager.getTextFileBuffer(document);
 	}
 
 	public static URI toUri(IDocument document) {
@@ -431,6 +435,8 @@ public class LSPEclipseUtils {
 
 		if (document == null && resource.getType() == IResource.FILE) {
 			ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+			if (bufferManager == null) 
+				return document;
 			try {
 				bufferManager.connect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
 			} catch (CoreException e) {
@@ -452,8 +458,9 @@ public class LSPEclipseUtils {
 		if (resource == null) {
 			return null;
 		}
-
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+		if (bufferManager == null) 
+			return null;
 		ITextFileBuffer buffer = bufferManager.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
 		if (buffer != null) {
 			return buffer.getDocument();
@@ -476,7 +483,7 @@ public class LSPEclipseUtils {
 			return null;
 		}
 
-		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+
 		IDocument document = null;
 		IFileStore store = null;
 		try {
@@ -485,6 +492,9 @@ public class LSPEclipseUtils {
 			LanguageServerPlugin.logError(e);
 			return null;
 		}
+		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+		if (bufferManager == null) 
+			return null;
 		ITextFileBuffer buffer = bufferManager.getFileStoreTextFileBuffer(store);
 		if (buffer != null) {
 			document = buffer.getDocument();
@@ -604,16 +614,27 @@ public class LSPEclipseUtils {
 	}
 
 	public static IDocument getDocument(ITextEditor editor) {
-		IDocument res = getDocument(editor.getEditorInput());
-		if (res != null) {
-			return res;
+		if (editor == null)
+			return null;
+		final IEditorInput editorInput = editor.getEditorInput();
+		if (editorInput != null) {
+			final IDocumentProvider documentProvider = editor.getDocumentProvider();
+			if (documentProvider != null) {
+				final IDocument document = documentProvider.getDocument(editorInput);
+				if (document != null)
+					return document;
+			}
+			IDocument res = getDocument(editorInput);
+			if (res != null) {
+				return res;
+			}
 		}
 		if (editor instanceof AbstractTextEditor) {
 			try {
 				Method getSourceViewerMethod= AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
 				getSourceViewerMethod.setAccessible(true);
-				ITextViewer viewer = (ITextViewer) getSourceViewerMethod.invoke(editor);
-				return viewer.getDocument();
+				ITextViewer viewer = (ITextViewer) getSourceViewerMethod.invoke(editor); 
+				return (viewer == null) ? null : viewer.getDocument();
 			} catch (Exception ex) {
 				LanguageServerPlugin.logError(ex);
 			}
@@ -862,16 +883,19 @@ public class LSPEclipseUtils {
 	public static List<IContentType> getDocumentContentTypes(@NonNull IDocument document) {
 		List<IContentType> contentTypes = new ArrayList<>();
 
-		ITextFileBuffer buffer = FileBuffers.getTextFileBufferManager().getTextFileBuffer(document);
-		if (buffer != null) {
-			try {
-				// may be a more specific content-type, relying on some content-type factory and actual content (not just name)
-				IContentType contentType = buffer.getContentType();
-				if (contentType != null) {
-					contentTypes.add(contentType);
+		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+		if (bufferManager != null) {
+			ITextFileBuffer buffer = bufferManager.getTextFileBuffer(document);
+			if (buffer != null) {
+				try {
+					// may be a more specific content-type, relying on some content-type factory and actual content (not just name)
+					IContentType contentType = buffer.getContentType();
+					if (contentType != null) {
+						contentTypes.add(contentType);
+					}
+				} catch (CoreException e) {
+					LanguageServerPlugin.logError("Exception occurred while fetching the content type from the buffer", e); //$NON-NLS-1$;
 				}
-			} catch (CoreException e) {
-				LanguageServerPlugin.logError("Exception occurred while fetching the content type from the buffer", e); //$NON-NLS-1$;
 			}
 		}
 
