@@ -316,13 +316,15 @@ public class LSIncompleteCompletionProposal
 		}
 
 		StringBuilder res = new StringBuilder();
-		if (this.item.getDetail() != null) {
+		if (this.item.getDetail() != null && !this.item.getDetail().isEmpty()) {
 			res.append("<p>" + this.item.getDetail() + "</p>"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		if (res.length() > 0) {
 			res.append("<br/>"); //$NON-NLS-1$
 		}
-		if (this.item.getDocumentation() != null) {
+		if (this.item.getDocumentation() != null &&
+			((this.item.getDocumentation().isLeft() && this.item.getDocumentation().getLeft() != null && !this.item.getDocumentation().getLeft().isEmpty()) ||
+			(this.item.getDocumentation().isRight() && this.item.getDocumentation().getRight() != null && this.item.getDocumentation().getRight().getValue() != null && !this.item.getDocumentation().getRight().getValue().isEmpty())))		{
 			String htmlDocString = LSPEclipseUtils.getHtmlDocString(this.item.getDocumentation());
 			if (htmlDocString != null) {
 				res.append(htmlDocString);

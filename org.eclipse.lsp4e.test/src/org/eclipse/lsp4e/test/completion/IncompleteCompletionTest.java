@@ -13,6 +13,7 @@
 package org.eclipse.lsp4e.test.completion;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -34,7 +35,6 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
@@ -58,6 +58,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Test;
 
@@ -505,4 +506,65 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 				new CompletionItem("blah"), info.getLanguageClient());
 		completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 	}
+
+	@Test
+	public void testAdditionalInformationWithEmptyDetail() throws Exception {
+		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();
+		LSPDocumentInfo info = LanguageServiceAccessor
+				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
+						|| capabilities.getSignatureHelpProvider() != null)
+				.get(0);
+		CompletionItem item = new CompletionItem("blah");
+		item.setDetail("");
+		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+				item, info.getLanguageClient());
+		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
+		assertTrue(addInfo.isEmpty());
+	}
+
+	@Test
+	public void testAdditionalInformationWithDetail() throws Exception {
+		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();
+		LSPDocumentInfo info = LanguageServiceAccessor
+				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
+						|| capabilities.getSignatureHelpProvider() != null)
+				.get(0);
+		CompletionItem item = new CompletionItem("blah");
+		item.setDetail("detail");
+		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+				item, info.getLanguageClient());
+		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
+		assertTrue(addInfo.indexOf("<p>detail</p>") >= 0);
+	}
+	
+	@Test
+	public void testAdditionalInformationWithEmptyDocumentation() throws Exception {
+		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();
+		LSPDocumentInfo info = LanguageServiceAccessor
+				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
+						|| capabilities.getSignatureHelpProvider() != null)
+				.get(0);
+		CompletionItem item = new CompletionItem("blah");
+		item.setDocumentation("");
+		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+				item, info.getLanguageClient());
+		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
+		assertTrue(addInfo.isEmpty());
+	}
+
+	@Test
+	public void testAdditionalInformationWithDocumentation() throws Exception {
+		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();
+		LSPDocumentInfo info = LanguageServiceAccessor
+				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
+						|| capabilities.getSignatureHelpProvider() != null)
+				.get(0);
+		CompletionItem item = new CompletionItem("blah");
+		item.setDetail("detail");
+		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+				item, info.getLanguageClient());
+		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
+		assertFalse(addInfo.isEmpty());
+	}
+
 }
