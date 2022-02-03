@@ -1,5 +1,17 @@
 ## LSP4E Changelog and New and Noteworthy
 
+### 0.20.2
+
+📅 Release Date: February 3rd, 2022
+
+##### Noticeable bugfixes
+
+Among others:
+* Use standard JFace LinkedModeUI for linkedEditRanges
+* Better support for multi-page editors
+* Better support for URIs/documents
+* Smarter LS/file association (also consider base content types when looking up for matching LS)
+
 ### 0.20.1
 
 📅 Release Date: November 24th, 2021
