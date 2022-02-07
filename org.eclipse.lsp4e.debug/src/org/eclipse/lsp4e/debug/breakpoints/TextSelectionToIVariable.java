@@ -58,6 +58,9 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 			if (variableName.isEmpty()) {
 				variableName = findVariableName(document, selection.getOffset());
 			}
+			if (variableName == null || variableName.isEmpty()) {
+				return null;
+			}
 
 			if (Boolean.TRUE.equals(frame.getDebugTarget().getCapabilities().getSupportsEvaluateForHovers())) {
 				try {
