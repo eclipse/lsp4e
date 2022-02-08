@@ -88,8 +88,8 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 				// ok to call get as it should be a different thread.
 				return frame.evaluate(variableName).get();
 			} catch (ExecutionException e) {
-				DSPPlugin.logError(e);
-				// will fall back by looking by looking up in current frame
+				// can happen in normal execution when trying to evaluate some token that's not
+				// a variable
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				DSPPlugin.logError(e);
