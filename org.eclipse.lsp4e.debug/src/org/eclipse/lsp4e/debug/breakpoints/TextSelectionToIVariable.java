@@ -53,48 +53,48 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 		if (frame == null) {
 			return null;
 		}
+		String variableName = null;
 		try {
-			String variableName = document.get(selection.getOffset(), selection.getLength());
+			variableName = document.get(selection.getOffset(), selection.getLength());
 			if (variableName.isEmpty()) {
 				variableName = findVariableName(document, selection.getOffset());
 			}
-			if (variableName == null || variableName.isEmpty()) {
-				return null;
-			}
+		} catch (BadLocationException e) {
+			DSPPlugin.logError(e);
+		}
+		if (variableName == null || variableName.isEmpty()
+				|| !Character.isJavaIdentifierStart(variableName.charAt(0))) {
+			return null;
+		}
 
-			if (Boolean.TRUE.equals(frame.getDebugTarget().getCapabilities().getSupportsEvaluateForHovers())) {
-				try {
-					// ok to call get as it should be a different thread.
-					return frame.evaluate(variableName).get();
-				} catch (ExecutionException e) {
-					DSPPlugin.logError(e);
-					// will fall back by looking by looking up in current frame
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-					DSPPlugin.logError(e);
-					// will fall back by looking by looking up in current frame
-				}
-
-			}
-
-			try {
-				for (IVariable scopeVariable : frame.getVariables()) {
-					IValue scope = scopeVariable.getValue();
-					if (scope != null) {
-						IVariable[] vars = scope.getVariables();
-						for (IVariable var : vars) {
-							if (var.getName().equals(variableName)) {
-								return var;
-							}
+		try {
+			for (IVariable scopeVariable : frame.getVariables()) {
+				IValue scope = scopeVariable.getValue();
+				if (scope != null) {
+					IVariable[] vars = scope.getVariables();
+					for (IVariable var : vars) {
+						if (var.getName().equals(variableName)) {
+							return var;
 						}
 					}
 				}
-			} catch (DebugException de) {
-				DSPPlugin.logError(de);
 			}
+		} catch (DebugException de) {
+			DSPPlugin.logError(de);
+		}
 
-		} catch (BadLocationException e) {
-			DSPPlugin.logError(e);
+		if (Boolean.TRUE.equals(frame.getDebugTarget().getCapabilities().getSupportsEvaluateForHovers())) {
+			try {
+				// ok to call get as it should be a different thread.
+				return frame.evaluate(variableName).get();
+			} catch (ExecutionException e) {
+				DSPPlugin.logError(e);
+				// will fall back by looking by looking up in current frame
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				DSPPlugin.logError(e);
+				// will fall back by looking by looking up in current frame
+			}
 		}
 		return null;
 	}
