@@ -10,6 +10,7 @@ package org.eclipse.lsp4e.debug.breakpoints;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 import org.eclipse.core.runtime.Adapters;
@@ -50,7 +51,7 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 			return null;
 		}
 		DSPStackFrame frame = getFrame();
-		if (frame == null) {
+		if (frame == null || !match(document, frame)) {
 			return null;
 		}
 		String variableName = null;
@@ -97,6 +98,14 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 			}
 		}
 		return null;
+	}
+
+	private boolean match(IDocument document, DSPStackFrame frame) {
+		Object sourceElement = frame.getLaunch().getSourceLocator().getSourceElement(frame);
+		if (sourceElement instanceof String) {
+			return Objects.equals(DocumentUtils.toUri(document).getPath(), sourceElement);
+		}
+		return false;
 	}
 
 	private String findVariableName(IDocument document, int offset) {
