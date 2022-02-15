@@ -12,11 +12,16 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IAdapterFactory;
 import org.eclipse.debug.core.DebugException;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.ILaunch;
+import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.core.model.IVariable;
 import org.eclipse.debug.ui.DebugUITools;
@@ -24,6 +29,7 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4e.debug.DSPPlugin;
+import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
 import org.eclipse.lsp4e.debug.debugmodel.DSPStackFrame;
 
 public class TextSelectionToIVariable implements IAdapterFactory {
@@ -46,6 +52,9 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 	}
 
 	private IVariable getVariableFor(TextSelection selection) {
+		if (!hasDAPTarget()) {
+			return null;
+		}
 		IDocument document = getDocument(selection);
 		if (document == null) {
 			return null;
@@ -98,6 +107,14 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 			}
 		}
 		return null;
+	}
+
+	private boolean hasDAPTarget() {
+		return Stream.of(DebugPlugin.getDefault().getLaunchManager().getLaunches()) //
+				.filter(Predicate.not(ILaunch::isTerminated)) //
+				.filter(launch -> ILaunchManager.DEBUG_MODE.equals(launch.getLaunchMode())) //
+				.flatMap(launch -> Stream.of(launch.getDebugTargets())) //
+				.anyMatch(DSPDebugTarget.class::isInstance);
 	}
 
 	private boolean match(IDocument document, DSPStackFrame frame) {
