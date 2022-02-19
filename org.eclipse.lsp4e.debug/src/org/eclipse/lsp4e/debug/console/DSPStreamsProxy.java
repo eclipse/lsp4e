@@ -1,17 +1,23 @@
 /*******************************************************************************
- * Copyright (c) 2017 Kichwa Coders Ltd. and others.
+ * Copyright (c) 2017-2022 Kichwa Coders Ltd. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
+ * Contributors:
+ *  Pierre-Yves Bigourdan <pyvesdev@gmail.com> - Add frameId to EvaluateArguments request
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.console;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.core.runtime.Adapters;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.debug.core.model.IStreamsProxy2;
+import org.eclipse.debug.ui.DebugUITools;
+import org.eclipse.lsp4e.debug.debugmodel.DSPStackFrame;
 import org.eclipse.lsp4j.debug.EvaluateArguments;
 import org.eclipse.lsp4j.debug.EvaluateArgumentsContext;
 import org.eclipse.lsp4j.debug.EvaluateResponse;
@@ -48,7 +54,13 @@ public class DSPStreamsProxy implements IStreamsProxy2 {
 			EvaluateArguments args = new EvaluateArguments();
 			args.setContext(EvaluateArgumentsContext.REPL);
 			args.setExpression(trimmed);
-			// TODO args.setFrameId(0);
+			IAdaptable adaptable = DebugUITools.getDebugContext();
+			if (adaptable != null) {
+				DSPStackFrame frame = Adapters.adapt(adaptable, DSPStackFrame.class);
+				if (frame != null) {
+					args.setFrameId(frame.getFrameId());
+				}
+			}
 			CompletableFuture<EvaluateResponse> future = debugProtocolServer.evaluate(args);
 			future.thenAcceptAsync(response -> {
 				// TODO support structured responses too?
