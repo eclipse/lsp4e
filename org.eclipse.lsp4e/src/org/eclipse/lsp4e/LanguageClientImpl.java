@@ -15,6 +15,7 @@ package org.eclipse.lsp4e;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IProject;
@@ -23,6 +24,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
@@ -39,7 +41,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 
 public class LanguageClientImpl implements LanguageClient {
 
-	private LSPDiagnosticsToMarkers diagnosticHandler;
+	private Consumer<PublishDiagnosticsParams> diagnosticHandler;
 
 	private LanguageServer server;
 	private LanguageServerWrapper wrapper;
@@ -47,7 +49,11 @@ public class LanguageClientImpl implements LanguageClient {
 	public final void connect(LanguageServer server, LanguageServerWrapper wrapper) {
 		this.server = server;
 		this.wrapper = wrapper;
-		this.diagnosticHandler = new LSPDiagnosticsToMarkers(wrapper.serverDefinition.id);
+		this.diagnosticHandler = getDiagnosticHandler(wrapper.serverDefinition.id);
+	}
+
+	protected Consumer<PublishDiagnosticsParams> getDiagnosticHandler(@NonNull String serverId) {
+		return new LSPDiagnosticsToMarkers(serverId);
 	}
 
 	protected final LanguageServer getLanguageServer() {

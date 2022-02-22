@@ -47,6 +47,7 @@ Bundle-Activator: org.eclipse.lsp4e.LanguageServerPlugin
 Export-Package: org.eclipse.lsp4e;x-internal:=true,
  org.eclipse.lsp4e.command;x-internal:=true,
  org.eclipse.lsp4e.operations.completion;x-internal:=true,
+ org.eclipse.lsp4e.operations.diagnostics;x-internal:=true,
  org.eclipse.lsp4e.operations.hover;x-internal:=true,
  org.eclipse.lsp4e.outline;x-internal:=true,
  org.eclipse.lsp4e.server;version="0.1.0"
