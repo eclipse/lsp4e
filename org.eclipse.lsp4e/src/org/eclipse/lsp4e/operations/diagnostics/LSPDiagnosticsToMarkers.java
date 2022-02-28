@@ -127,8 +127,9 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 				.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
 		List<Diagnostic> newDiagnostics = new ArrayList<>();
 		Map<IMarker, Diagnostic> toUpdate = new HashMap<>();
+		IDocument document = diagnostics.getDiagnostics().isEmpty() ? null : LSPEclipseUtils.getDocument(resource);
 		for (Diagnostic diagnostic : diagnostics.getDiagnostics()) {
-			IMarker associatedMarker = getExistingMarkerFor(resource, diagnostic, toDeleteMarkers);
+			IMarker associatedMarker = getExistingMarkerFor(document, diagnostic, toDeleteMarkers);
 			if (associatedMarker == null) {
 				newDiagnostics.add(diagnostic);
 			} else {
@@ -139,10 +140,10 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		IWorkspaceRunnable runnable = monitor -> {
 			if (resource.exists()) {
 				for (Diagnostic diagnostic : newDiagnostics) {
-					resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE, computeMarkerAttributes(resource, diagnostic));
+					resource.createMarker(LS_DIAGNOSTIC_MARKER_TYPE, computeMarkerAttributes(document, diagnostic));
 				}
 				for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
-					updateMarker(resource, entry.getValue(), entry.getKey());
+					updateMarker(document, entry.getValue(), entry.getKey());
 				}
 				toDeleteMarkers.forEach(t -> {
 					try {
@@ -156,9 +157,9 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		ResourcesPlugin.getWorkspace().run(runnable, new NullProgressMonitor());
 	}
 
-	protected void updateMarker(IResource resource, Diagnostic diagnostic, IMarker marker) {
+	protected void updateMarker(IDocument document, Diagnostic diagnostic, IMarker marker) {
 		try {
-			Map<String, Object> targetAttributes = computeMarkerAttributes(resource, diagnostic);
+			Map<String, Object> targetAttributes = computeMarkerAttributes(document, diagnostic);
 			if (!targetAttributes.equals(marker.getAttributes())) {
 				marker.setAttributes(targetAttributes);
 			}
@@ -167,25 +168,15 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		}
 	}
 
-	private Map<String, Object> computeMarkerAttributes(IResource resource, Diagnostic diagnostic)
+	private Map<String, Object> computeMarkerAttributes(IDocument document, Diagnostic diagnostic)
 			throws CoreException {
 		Map<String, Object> targetAttributes = new HashMap<>(7);
 		targetAttributes.put(LSP_DIAGNOSTIC, diagnostic);
 		targetAttributes.put(LANGUAGE_SERVER_ID, this.languageServerId);
 		targetAttributes.put(IMarker.MESSAGE, diagnostic.getMessage());
 		targetAttributes.put(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
-		if (resource.getType() == IResource.FILE) {
+		if (document != null) {
 			try {
-				IFile file = (IFile) resource;
-				ITextFileBufferManager manager = FileBuffers.getTextFileBufferManager();
-				ITextFileBuffer textFileBuffer = manager.getTextFileBuffer(file.getFullPath(), LocationKind.IFILE);
-
-				if (textFileBuffer == null) {
-					manager.connect(file.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
-					textFileBuffer = manager.getTextFileBuffer(file.getFullPath(), LocationKind.IFILE);
-				}
-
-				IDocument document = textFileBuffer.getDocument();
 				int start = Math.min(LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), document),
 						document.getLength());
 				int end = Math.min(LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document),
@@ -207,14 +198,11 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		return targetAttributes;
 	}
 
-	private IMarker getExistingMarkerFor(IResource resource, Diagnostic diagnostic, Set<IMarker> remainingMarkers) {
-		ITextFileBuffer textFileBuffer = FileBuffers.getTextFileBufferManager()
-				.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
-		if (textFileBuffer == null) {
+	private IMarker getExistingMarkerFor(IDocument document, Diagnostic diagnostic, Set<IMarker> remainingMarkers) {
+		if (document == null) {
 			return null;
 		}
 
-		IDocument document = textFileBuffer.getDocument();
 		for (IMarker marker : remainingMarkers) {
 			int startOffset = MarkerUtilities.getCharStart(marker);
 			int endOffset = MarkerUtilities.getCharEnd(marker);
