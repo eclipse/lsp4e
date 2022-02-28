@@ -199,7 +199,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	}
 
 	private IMarker getExistingMarkerFor(IDocument document, Diagnostic diagnostic, Set<IMarker> remainingMarkers) {
-		if (document != null) {
+		if (document == null) {
 			return null;
 		}
 
