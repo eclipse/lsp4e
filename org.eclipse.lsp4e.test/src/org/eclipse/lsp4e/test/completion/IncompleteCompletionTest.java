@@ -41,7 +41,7 @@ import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
-import org.eclipse.lsp4e.operations.completion.LSIncompleteCompletionProposal;
+import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.CompletionItem;
@@ -95,7 +95,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(items.size(), proposals.length);
 		// TODO compare both structures
-		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
 		LSIncompleteCompletionProposal.apply(viewer.getDocument());
 		assertEquals(new Point("FirstClass".length(), 0),
 				LSIncompleteCompletionProposal.getSelection(viewer.getDocument()));
@@ -113,7 +113,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(items.size(), proposals.length);
 		// TODO compare both structures
-		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
 		LSIncompleteCompletionProposal.apply(viewer.getDocument());
 		assertEquals(new Point("FirstClass".length(), 0),
 				LSIncompleteCompletionProposal.getSelection(viewer.getDocument()));
@@ -135,7 +135,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 			ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer,
 					content.length());
 			assertEquals(1, proposals.length);
-			LSIncompleteCompletionProposal proposal = (LSIncompleteCompletionProposal) proposals[0];
+			LSCompletionProposal proposal = (LSCompletionProposal) proposals[0];
 
 			StyledString simpleStyledStr = proposal.getStyledDisplayString();
 			assertEquals("FirstClassDeprecated", simpleStyledStr.getString());
@@ -168,9 +168,9 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
-		assertEquals(2, proposals.length);
+		assertEquals(1, proposals.length);
 		// TODO compare items
-		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
 		LSIncompleteCompletionProposal.apply(viewer.getDocument());
 		assertEquals(new Point("FirstClass".length(), 0),
 				LSIncompleteCompletionProposal.getSelection(viewer.getDocument()));
@@ -188,7 +188,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
 		assertEquals(1, proposals.length);
 		// TODO compare items
-		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
 		LSIncompleteCompletionProposal.apply(viewer.getDocument());
 		assertEquals(new Point("FirstClass".length(), 0),
 				LSIncompleteCompletionProposal.getSelection(viewer.getDocument()));
@@ -209,7 +209,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
 		assertEquals(1, proposals.length);
 
-		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
 		LSIncompleteCompletionProposal.apply(viewer.getDocument());
 		assertEquals(content + "1024M", viewer.getDocument().get());
 		assertEquals(new Point(viewer.getDocument().getLength(), 0),
@@ -241,7 +241,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 24);
 		assertEquals(items.size(), proposals.length);
 		// TODO compare both structures
-		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
 		LSIncompleteCompletionProposal.apply(viewer.getDocument());
 
 		String newContent = viewer.getDocument().get();
@@ -271,7 +271,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 24);
 		assertEquals(1, proposals.length);
-		((LSIncompleteCompletionProposal) proposals[0]).apply(viewer.getDocument());
+		((LSCompletionProposal) proposals[0]).apply(viewer.getDocument());
 
 		String newContent = viewer.getDocument().get();
 		assertEquals("this <addOnText1> is <addOnText2> the main < and foo> content of the file", newContent);
@@ -289,7 +289,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, content.length());
-		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
 		LSIncompleteCompletionProposal.apply(viewer.getDocument());
 		assertEquals(true, viewer.getDocument().get().equals("FirstClass"));
 		assertEquals(new Point(viewer.getDocument().getLength(), 0),
@@ -306,7 +306,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		String content = "FirstNotMatchedLabel";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 5);
-		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
 		LSIncompleteCompletionProposal.apply(viewer.getDocument());
 		assertEquals("FirstClass", viewer.getDocument().get());
 		assertEquals(new Point("FirstClass".length(), 0),
@@ -325,7 +325,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 		int invokeOffset = 5;
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
-		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
 
 		// simulate additional typing (to filter) after invoking completion
 		viewer.getDocument().replace(5, 0, "No");
@@ -351,7 +351,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		int invokeOffset = content.length();
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
 		assertEquals(1, proposals.length);
-		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
 
 		// simulate additional typing (to filter) after invoking completion
 		viewer.getDocument().replace(content.length(), 0, "nc");
@@ -372,7 +372,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 		int invokeOffset = viewer.getDocument().getLength() - "InsertHere".length();
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
-		LSIncompleteCompletionProposal LSIncompleteCompletionProposal = (LSIncompleteCompletionProposal) proposals[0];
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
 		LSIncompleteCompletionProposal.apply(viewer.getDocument());
 		assertEquals("line1\nlineInserted", viewer.getDocument().get());
 		assertEquals(new Point(viewer.getDocument().getLength(), 0),
@@ -397,14 +397,14 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 		int invokeOffset = 1;
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
-		assertEquals(6, proposals.length);
-		assertEquals("AA", proposals[0].getDisplayString());
-		assertEquals("AB", proposals[1].getDisplayString());
-		assertEquals("BA", proposals[2].getDisplayString());
-		assertEquals("BB", proposals[3].getDisplayString());
+		assertEquals(4, proposals.length);
+		assertEquals("BA", proposals[0].getDisplayString());
+		assertEquals("BB", proposals[1].getDisplayString());
+		assertEquals("AB", proposals[2].getDisplayString());
+		assertEquals("CB", proposals[3].getDisplayString());
 
-		((LSIncompleteCompletionProposal) proposals[0]).apply(viewer.getDocument());
-		assertEquals("AA", viewer.getDocument().get());
+		((LSCompletionProposal) proposals[0]).apply(viewer.getDocument());
+		assertEquals("BA", viewer.getDocument().get());
 	}
 
 	@Test
@@ -417,7 +417,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		int invokeOffset = 0;
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
 		assertEquals(1, proposals.length);
-		((LSIncompleteCompletionProposal) proposals[0]).apply(viewer.getDocument());
+		((LSCompletionProposal) proposals[0]).apply(viewer.getDocument());
 		assertEquals(" and foo", viewer.getDocument().get());
 		// TODO check link edit groups
 	}
@@ -432,7 +432,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		int invokeOffset = 0;
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
 		assertEquals(1, proposals.length);
-		((LSIncompleteCompletionProposal) proposals[0]).apply(viewer.getDocument());
+		((LSCompletionProposal) proposals[0]).apply(viewer.getDocument());
 		assertEquals("foo and foo", viewer.getDocument().get());
 		// TODO check link edit groups
 	}
@@ -451,7 +451,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		int invokeOffset = 0;
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
 		assertEquals(1, proposals.length);
-		((LSIncompleteCompletionProposal) proposals[0]).apply(viewer.getDocument());
+		((LSCompletionProposal) proposals[0]).apply(viewer.getDocument());
 
 		int lineIndex = completionItem.getTextEdit().getLeft().getRange().getStart().getLine();
 		String fileNameBase = testFile.getFullPath().removeFileExtension().lastSegment();
@@ -502,7 +502,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
 						|| capabilities.getSignatureHelpProvider() != null)
 				.get(0);
-		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
 				new CompletionItem("blah"), info.getLanguageClient());
 		completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 	}
@@ -516,7 +516,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 				.get(0);
 		CompletionItem item = new CompletionItem("blah");
 		item.setDetail("");
-		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
 				item, info.getLanguageClient());
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertTrue(addInfo.isEmpty());
@@ -531,7 +531,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 				.get(0);
 		CompletionItem item = new CompletionItem("blah");
 		item.setDetail("detail");
-		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
 				item, info.getLanguageClient());
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertTrue(addInfo.indexOf("<p>detail</p>") >= 0);
@@ -546,7 +546,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 				.get(0);
 		CompletionItem item = new CompletionItem("blah");
 		item.setDocumentation("");
-		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
 				item, info.getLanguageClient());
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertTrue(addInfo.isEmpty());
@@ -561,7 +561,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 				.get(0);
 		CompletionItem item = new CompletionItem("blah");
 		item.setDocumentation("documentation");
-		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
 				item, info.getLanguageClient());
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertFalse(addInfo.isEmpty());
