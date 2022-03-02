@@ -45,7 +45,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 public class LanguageClientImpl implements LanguageClient {
 
 	private static final String EXTENSION_POINT_ID = LanguageServerPlugin.PLUGIN_ID + ".languageServer"; //$NON-NLS-1$
-	private static final String MARKERS_ELEMENT = "markers"; //$NON-NLS-1$
+	private static final String LS_ELEMENT = "server"; //$NON-NLS-1$
 	private static final String MARKER_TYPE_ELEMENT = "makerType"; //$NON-NLS-1$
 	private static final String MARKER_ATTR_COMPUTER_ELEMENT = "markerAttributeComputer"; //$NON-NLS-1$
 
@@ -66,7 +66,7 @@ public class LanguageClientImpl implements LanguageClient {
 		for (IConfigurationElement extension : Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION_POINT_ID)) {
 			String id = extension.getAttribute(ID_ATTRIBUTE);
 			if (id != null && !id.isEmpty()) {
-				if (extension.getName().equals(MARKERS_ELEMENT)) {
+				if (extension.getName().equals(LS_ELEMENT)) {
 					String markerType = extension.getAttribute(MARKER_TYPE_ELEMENT);
 					IMarkerAttributeComputer markerAttributeComputerElement = null;
 					try {

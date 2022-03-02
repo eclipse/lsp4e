@@ -114,6 +114,34 @@ Since 0.10
                </documentation>
             </annotation>
          </attribute>
+         <attribute name="markerAttributeComputer" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="java" basedOn=":org.eclipse.lsp4e.IMarkerAttributeComputer"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+         <attribute name="makerType" type="string">
+            <annotation>
+               <documentation>
+                  An optional marker type that will be used as type for the markers created for the diagnostics being reported by the server. If undefined, the marker type &lt;code&gt;org.eclipse.lsp4e.diagnostic&lt;/code&gt; is used. This marker type must  have the property &quot;persistent&quot; set to false and have &quot;org.eclipse.lsp4e.diagnostic&quot; as subtype.
+As an example:
+&lt;code&gt;
+&lt;extension
+        id=&quot;com.com.xyz.marker&quot;
+        name=&quot;My Custome Marker&quot;
+        point=&quot;org.eclipse.core.resources.markers&quot;&gt;
+    &lt;super type=&quot;com.xyz.marker&quot;/&gt;
+    &lt;super type=&quot;org.eclipse.lsp4e.diagnostic&quot;/&gt;
+    &lt;persistent value=&quot;false&quot;/&gt;
+&lt;/extension&gt;
+&lt;/code&gt;
+               </documentation>
+            </annotation>
+         </attribute>
       </complexType>
    </element>
 
@@ -179,40 +207,6 @@ Since 0.10
                <documentation>
                   
                </documentation>
-            </annotation>
-         </attribute>
-      </complexType>
-   </element>
-
-
-   <element name="markers">
-      <complexType>
-         <attribute name="makerType" type="string">
-            <annotation>
-               <documentation>
-                  An optional marker type that will be used as type for the markers created for the diagnostics being reported by the server. If undefined, the marker type &lt;code&gt;org.eclipse.lsp4e.diagnostic&lt;/code&gt; is used. This marker type must  have the property &quot;persistent&quot; set to false and have &quot;org.eclipse.lsp4e.diagnostic&quot; as subtype.
-As an example:
-&lt;code&gt;
-&lt;extension
-        id=&quot;com.com.xyz.marker&quot;
-        name=&quot;My Custome Marker&quot;
-        point=&quot;org.eclipse.core.resources.markers&quot;&gt;
-    &lt;super type=&quot;com.xyz.marker&quot;/&gt;
-    &lt;super type=&quot;org.eclipse.lsp4e.diagnostic&quot;/&gt;
-    &lt;persistent value=&quot;false&quot;/&gt;
-&lt;/extension&gt;
-&lt;/code&gt;
-               </documentation>
-            </annotation>
-         </attribute>
-         <attribute name="markerAttributeComputer" type="string">
-            <annotation>
-               <documentation>
-                  
-               </documentation>
-               <appinfo>
-                  <meta.attribute kind="java"/>
-               </appinfo>
             </annotation>
          </attribute>
       </complexType>
