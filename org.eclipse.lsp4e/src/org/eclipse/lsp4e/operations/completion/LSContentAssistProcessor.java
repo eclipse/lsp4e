@@ -20,12 +20,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.annotation.NonNull;
@@ -36,6 +38,7 @@ import org.eclipse.jface.text.contentassist.CompletionProposal;
 import org.eclipse.jface.text.contentassist.ContextInformation;
 import org.eclipse.jface.text.contentassist.ContextInformationValidator;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
+import org.eclipse.jface.text.contentassist.ICompletionProposalExtension2;
 import org.eclipse.jface.text.contentassist.IContentAssistProcessor;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.jface.text.contentassist.IContextInformationValidator;
@@ -195,30 +198,14 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		if (completionList == null) {
 			return Collections.emptyList();
 		}
-		List<CompletionItem> items = Collections.emptyList();
-		boolean isIncomplete = false;
-		if (completionList.isLeft()) {
-			items = completionList.getLeft();
-		} else if (completionList.isRight()) {
-			isIncomplete = completionList.getRight().isIncomplete();
-			items = completionList.getRight().getItems();
-		}
-		List<ICompletionProposal> proposals = new ArrayList<>();
-		for (CompletionItem item : items) {
-			if (item != null) {
-				if (isIncomplete) {
-					ICompletionProposal proposal = new LSIncompleteCompletionProposal(document, offset, item,
-							languageServer);
-					proposals.add(proposal);
-				} else {
-					ICompletionProposal proposal = new LSCompletionProposal(document, offset, item, languageServer);
-					if (((LSCompletionProposal) proposal).validate(document, offset, null)) {
-						proposals.add(proposal);
-					}
-				}
-			}
-		}
-		return proposals;
+		List<CompletionItem> items = completionList.isLeft() ? completionList.getLeft() : completionList.getRight().getItems();
+		boolean isIncomplete = completionList.isRight() ? completionList.getRight().isIncomplete() : false;
+		return items.stream() //
+				.filter(Objects::nonNull)
+				.map(item -> new LSCompletionProposal(document, offset, item,
+							languageServer, isIncomplete))
+				.filter(proposal -> ((ICompletionProposalExtension2)proposal).validate(document, offset, null))
+				.collect(Collectors.toList());
 	}
 
 	@Override
