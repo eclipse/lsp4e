@@ -1,0 +1,121 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Schema file written by PDE -->
+<schema targetNamespace="org.eclipse.lsp4e" xmlns="http://www.w3.org/2001/XMLSchema">
+<annotation>
+      <appinfo>
+         <meta.schema plugin="org.eclipse.lsp4e" id="languageClient" name="Language Client"/>
+      </appinfo>
+      <documentation>
+         This extension point allows to customzie behaviour of the client communicating with the Language Server.
+      </documentation>
+   </annotation>
+
+   <include schemaLocation="schema://org.eclipse.core.expressions/schema/expressionLanguage.exsd"/>
+
+   <element name="extension">
+      <annotation>
+         <appinfo>
+            <meta.element />
+         </appinfo>
+      </annotation>
+      <complexType>
+         <sequence minOccurs="1" maxOccurs="unbounded">
+         </sequence>
+         <attribute name="point" type="string" use="required">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="id" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="name" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+               <appinfo>
+                  <meta.attribute translatable="true"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="markers">
+      <complexType>
+         <attribute name="makerType" type="string">
+            <annotation>
+               <documentation>
+                  An optional marker type that will be used as type for the markers created for the diagnostics being reported by the server. If undefined, the marker type &lt;code&gt;org.eclipse.lsp4e.diagnostic&lt;/code&gt; is used. This marker type must  have the property &quot;persistent&quot; set to false and have &quot;org.eclipse.lsp4e.diagnostic&quot; as subtype.
+As an example:
+&lt;code&gt;
+&lt;extension
+        id=&quot;com.com.xyz.marker&quot;
+        name=&quot;My Custome Marker&quot;
+        point=&quot;org.eclipse.core.resources.markers&quot;&gt;
+    &lt;super type=&quot;com.xyz.marker&quot;/&gt;
+    &lt;super type=&quot;org.eclipse.lsp4e.diagnostic&quot;/&gt;
+    &lt;persistent value=&quot;false&quot;/&gt;
+&lt;/extension&gt;
+&lt;/code&gt;
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="markerAttributeComputer" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="java"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="since"/>
+      </appinfo>
+      <documentation>
+         [Enter the first release in which this extension point appears.]
+      </documentation>
+   </annotation>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="examples"/>
+      </appinfo>
+      <documentation>
+         [Enter extension point usage example here.]
+      </documentation>
+   </annotation>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="apiinfo"/>
+      </appinfo>
+      <documentation>
+         [Enter API information here.]
+      </documentation>
+   </annotation>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="implementation"/>
+      </appinfo>
+      <documentation>
+         [Enter information about supplied implementation of this extension point.]
+      </documentation>
+   </annotation>
+
+
+</schema>

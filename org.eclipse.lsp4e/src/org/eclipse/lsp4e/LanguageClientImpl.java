@@ -20,8 +20,11 @@ import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
@@ -41,6 +44,13 @@ import org.eclipse.lsp4j.services.LanguageServer;
 
 public class LanguageClientImpl implements LanguageClient {
 
+	private static final String EXTENSION_POINT_ID = LanguageServerPlugin.PLUGIN_ID + ".languageClient"; //$NON-NLS-1$
+	private static final String MARKERS_ELEMENT = "markers"; //$NON-NLS-1$
+	private static final String MARKER_TYPE_ELEMNT = "makerType"; //$NON-NLS-1$
+	private static final String MARKER_ATTR_COMPUTER_ELEMNT = "markerAttributeComputer"; //$NON-NLS-1$
+
+	private static final String ID_ATTRIBUTE = "id"; //$NON-NLS-1$
+
 	private Consumer<PublishDiagnosticsParams> diagnosticHandler;
 
 	private LanguageServer server;
@@ -52,7 +62,21 @@ public class LanguageClientImpl implements LanguageClient {
 		this.diagnosticHandler = getDiagnosticHandler(wrapper.serverDefinition.id);
 	}
 
-	protected Consumer<PublishDiagnosticsParams> getDiagnosticHandler(@NonNull String serverId) {
+	private Consumer<PublishDiagnosticsParams> getDiagnosticHandler(@NonNull String serverId) {
+		for (IConfigurationElement extension : Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION_POINT_ID)) {
+			String id = extension.getAttribute(ID_ATTRIBUTE);
+			if (id != null && !id.isEmpty()) {
+				if (extension.getName().equals(MARKERS_ELEMENT)) {
+					String markerType = extension.getAttribute(MARKER_TYPE_ELEMNT);
+					try {
+						IMarkerAttributeComputer markerAttributeComputerElement = (IMarkerAttributeComputer) extension.createExecutableExtension(MARKER_ATTR_COMPUTER_ELEMNT);
+						return new LSPDiagnosticsToMarkers(serverId, markerType, markerAttributeComputerElement);
+					} catch (CoreException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				}
+			}
+		}
 		return new LSPDiagnosticsToMarkers(serverId);
 	}
 

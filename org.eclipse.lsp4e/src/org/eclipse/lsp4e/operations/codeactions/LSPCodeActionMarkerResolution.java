@@ -27,12 +27,12 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.resource.JFaceResources;
+import org.eclipse.lsp4e.IMarkerAttributeComputer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
@@ -117,7 +117,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 			IResource res = marker.getResource();
 			if (res != null && res.getType() == IResource.FILE) {
 				IFile file = (IFile)res;
-				String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
+				String languageServerId = marker.getAttribute(IMarkerAttributeComputer.LANGUAGE_SERVER_ID, null);
 				List<CompletableFuture<LanguageServer>> languageServerFutures = new ArrayList<>();
 				if (languageServerId != null) { // try to use same LS as the one that created the marker
 					LanguageServerDefinition definition = LanguageServersRegistry.getInstance().getDefinition(languageServerId);
@@ -149,7 +149,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				List<CompletableFuture<?>> futures = new ArrayList<>();
 				for (CompletableFuture<LanguageServer> lsf : languageServerFutures) {
 					marker.setAttribute(LSP_REMEDIATION, COMPUTING);
-					Diagnostic diagnostic = (Diagnostic)marker.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC);
+					Diagnostic diagnostic = (Diagnostic)marker.getAttribute(IMarkerAttributeComputer.LSP_DIAGNOSTIC);
 					CodeActionContext context = new CodeActionContext(Collections.singletonList(diagnostic));
 					CodeActionParams params = new CodeActionParams();
 					params.setContext(context);
