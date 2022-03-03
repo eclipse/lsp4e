@@ -45,9 +45,13 @@ import org.eclipse.lsp4j.Range;
  */
 public class MarkerAttributeComputer {
 
+	// Specific marker attributes defined by LSP4E
+	public static final String LANGUAGE_SERVER_ID = "languageServerId"; //$NON-NLS-1$
+	public static final String LSP_DIAGNOSTIC = "lspDiagnostic"; //$NON-NLS-1$
+
 	private @Nullable String languageServerId;
 
-	public final void initilize(@NonNull String languageServerId) {
+	public final void initialize(@NonNull String languageServerId) {
 		this.languageServerId = languageServerId;
 	}
 
@@ -75,8 +79,8 @@ public class MarkerAttributeComputer {
 	public Map<String, Object> computeMarkerAttributes(@NonNull IResource resource, @Nullable IDocument document,
 			@NonNull Diagnostic diagnostic) {
 		Map<String, Object> targetAttributes = new HashMap<>(attributeCount());
-		targetAttributes.put(ILSPMarker.LSP_DIAGNOSTIC, diagnostic);
-		targetAttributes.put(ILSPMarker.LANGUAGE_SERVER_ID, this.languageServerId);
+		targetAttributes.put(MarkerAttributeComputer.LSP_DIAGNOSTIC, diagnostic);
+		targetAttributes.put(MarkerAttributeComputer.LANGUAGE_SERVER_ID, this.languageServerId);
 		targetAttributes.put(IMarker.MESSAGE, diagnostic.getMessage());
 		targetAttributes.put(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
 
