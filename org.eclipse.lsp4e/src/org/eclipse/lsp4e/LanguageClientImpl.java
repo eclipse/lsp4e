@@ -16,19 +16,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
@@ -44,14 +41,8 @@ import org.eclipse.lsp4j.services.LanguageServer;
 
 public class LanguageClientImpl implements LanguageClient {
 
-	private static final String EXTENSION_POINT_ID = LanguageServerPlugin.PLUGIN_ID + ".languageServer"; //$NON-NLS-1$
-	private static final String LS_ELEMENT = "server"; //$NON-NLS-1$
-	private static final String MARKER_TYPE_ELEMENT = "makerType"; //$NON-NLS-1$
-	private static final String MARKER_ATTR_COMPUTER_ELEMENT = "markerAttributeComputer"; //$NON-NLS-1$
-
-	private static final String ID_ATTRIBUTE = "id"; //$NON-NLS-1$
-
 	private Consumer<PublishDiagnosticsParams> diagnosticHandler;
+	private Supplier<Consumer<PublishDiagnosticsParams>> diagnosticHandlerSupplier;
 
 	private LanguageServer server;
 	private LanguageServerWrapper wrapper;
@@ -59,29 +50,11 @@ public class LanguageClientImpl implements LanguageClient {
 	public final void connect(LanguageServer server, LanguageServerWrapper wrapper) {
 		this.server = server;
 		this.wrapper = wrapper;
-		this.diagnosticHandler = getDiagnosticHandler(wrapper.serverDefinition.id);
+		this.diagnosticHandler = diagnosticHandlerSupplier.get();
 	}
 
-	private Consumer<PublishDiagnosticsParams> getDiagnosticHandler(@NonNull String serverId) {
-		for (IConfigurationElement extension : Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION_POINT_ID)) {
-			String id = extension.getAttribute(ID_ATTRIBUTE);
-			if (id != null && !id.isEmpty()) {
-				if (extension.getName().equals(LS_ELEMENT)) {
-					String markerType = extension.getAttribute(MARKER_TYPE_ELEMENT);
-					IMarkerAttributeComputer markerAttributeComputerElement = null;
-					try {
-						String markerAttributeComputer = extension.getAttribute(MARKER_ATTR_COMPUTER_ELEMENT);
-						if (markerAttributeComputer != null && !markerAttributeComputer.isEmpty()) {
-							markerAttributeComputerElement = (IMarkerAttributeComputer) extension.createExecutableExtension(MARKER_ATTR_COMPUTER_ELEMENT);
-						}
-						return new LSPDiagnosticsToMarkers(serverId, markerType, markerAttributeComputerElement);
-					} catch (CoreException e) {
-						LanguageServerPlugin.logError(e);
-					}
-				}
-			}
-		}
-		return new LSPDiagnosticsToMarkers(serverId);
+	protected void setDiagnosticsToMarkersSupplier(@NonNull Supplier<Consumer<PublishDiagnosticsParams>> supplier) {
+		this.diagnosticHandlerSupplier = supplier;
 	}
 
 	protected final LanguageServer getLanguageServer() {
