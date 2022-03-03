@@ -34,7 +34,7 @@ import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.lsp4e.IMarkerAttributeComputer;
+import org.eclipse.lsp4e.ILSPMarker;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -96,7 +96,7 @@ public class DiagnosticsTest {
 			assertEquals(0, MarkerUtilities.getCharStart(marker));
 			assertEquals(10, MarkerUtilities.getCharEnd(marker));
 			assertEquals(1, MarkerUtilities.getLineNumber(marker));
-			assertEquals(marker.getAttribute(IMarkerAttributeComputer.LSP_DIAGNOSTIC), diagnostic);
+			assertEquals(marker.getAttribute(ILSPMarker.LSP_DIAGNOSTIC), diagnostic);
 		}
 
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), Collections.emptyList()));
@@ -128,7 +128,7 @@ public class DiagnosticsTest {
 			assertEquals(content.length(), MarkerUtilities.getCharStart(marker));
 			assertEquals(content.length(), MarkerUtilities.getCharEnd(marker));
 			assertEquals(1, MarkerUtilities.getLineNumber(marker));
-			assertEquals(marker.getAttribute(IMarkerAttributeComputer.LSP_DIAGNOSTIC), diagnostic);
+			assertEquals(marker.getAttribute(ILSPMarker.LSP_DIAGNOSTIC), diagnostic);
 		}
 	}
 
@@ -242,7 +242,7 @@ public class DiagnosticsTest {
 						IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
 								IResource.DEPTH_INFINITE);
 						for (IMarker marker : markers) {
-							if (marker.getAttribute(IMarkerAttributeComputer.LSP_DIAGNOSTIC).equals(diagnostic)) {
+							if (marker.getAttribute(ILSPMarker.LSP_DIAGNOSTIC).equals(diagnostic)) {
 								return true;
 							}
 						}

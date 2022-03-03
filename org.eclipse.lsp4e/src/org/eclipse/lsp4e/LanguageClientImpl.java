@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IProject;
@@ -41,8 +40,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 
 public class LanguageClientImpl implements LanguageClient {
 
-	private Consumer<PublishDiagnosticsParams> diagnosticHandler;
-	private Supplier<Consumer<PublishDiagnosticsParams>> diagnosticHandlerSupplier;
+	private Consumer<PublishDiagnosticsParams> diagnosticConsumer;
 
 	private LanguageServer server;
 	private LanguageServerWrapper wrapper;
@@ -50,11 +48,10 @@ public class LanguageClientImpl implements LanguageClient {
 	public final void connect(LanguageServer server, LanguageServerWrapper wrapper) {
 		this.server = server;
 		this.wrapper = wrapper;
-		this.diagnosticHandler = diagnosticHandlerSupplier.get();
 	}
 
-	protected void setDiagnosticsToMarkersSupplier(@NonNull Supplier<Consumer<PublishDiagnosticsParams>> supplier) {
-		this.diagnosticHandlerSupplier = supplier;
+	protected void setDiagnosticsConsumer(@NonNull Consumer<PublishDiagnosticsParams> diagnosticConsumer) {
+		this.diagnosticConsumer = diagnosticConsumer;
 	}
 
 	protected final LanguageServer getLanguageServer() {
@@ -78,7 +75,7 @@ public class LanguageClientImpl implements LanguageClient {
 
 	@Override
 	public final void publishDiagnostics(PublishDiagnosticsParams diagnostics) {
-		this.diagnosticHandler.accept(diagnostics);
+		diagnosticConsumer.accept(diagnostics);
 	}
 
 	@Override

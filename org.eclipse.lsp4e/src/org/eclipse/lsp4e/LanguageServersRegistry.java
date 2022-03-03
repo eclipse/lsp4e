@@ -124,11 +124,11 @@ public class LanguageServersRegistry {
 		private static Consumer<PublishDiagnosticsParams> getDiagnosticHandler(@NonNull IConfigurationElement extension) {
 			String serverId = extension.getAttribute(ID_ATTRIBUTE);
 			String markerType = extension.getAttribute(MARKER_TYPE_ELEMENT);
-			IMarkerAttributeComputer markerAttributeComputerElement = null;
+			MarkerAttributeComputer markerAttributeComputerElement = null;
 			try {
 				String markerAttributeComputer = extension.getAttribute(MARKER_ATTR_COMPUTER_ELEMENT);
 				if (markerAttributeComputer != null && !markerAttributeComputer.isEmpty()) {
-					markerAttributeComputerElement = (IMarkerAttributeComputer) extension.createExecutableExtension(MARKER_ATTR_COMPUTER_ELEMENT);
+					markerAttributeComputerElement = (MarkerAttributeComputer) extension.createExecutableExtension(MARKER_ATTR_COMPUTER_ELEMENT);
 				}
 			} catch (CoreException e) {
 				LanguageServerPlugin.logError(e);
@@ -166,7 +166,7 @@ public class LanguageServersRegistry {
 			if (languageClient == null) {
 				languageClient = super.createLanguageClient();
 			}
-			languageClient.setDiagnosticsToMarkersSupplier(() -> getDiagnosticHandler(extension));
+			languageClient.setDiagnosticsConsumer(getDiagnosticHandler(extension));
 			return languageClient;
 		}
 

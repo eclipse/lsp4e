@@ -18,7 +18,7 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.lsp4e.IMarkerAttributeComputer;
+import org.eclipse.lsp4e.ILSPMarker;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.command.CommandExecutor;
@@ -59,7 +59,7 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 			IResource resource = marker.getResource();
 			IDocument document = LSPEclipseUtils.getDocument(resource);
 			if (document != null) {
-				String languageServerId = marker.getAttribute(IMarkerAttributeComputer.LANGUAGE_SERVER_ID, null);
+				String languageServerId = marker.getAttribute(ILSPMarker.LANGUAGE_SERVER_ID, null);
 				CommandExecutor.executeCommand(codeAction.getCommand(), document, languageServerId);
 			}
 		}
@@ -73,7 +73,7 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 		return Arrays.stream(markers).filter(marker -> {
 			try {
 				return codeAction.getDiagnostics()
-						.contains(marker.getAttribute(IMarkerAttributeComputer.LSP_DIAGNOSTIC));
+						.contains(marker.getAttribute(ILSPMarker.LSP_DIAGNOSTIC));
 			} catch (CoreException e) {
 				LanguageServerPlugin.logError(e);
 				return false;

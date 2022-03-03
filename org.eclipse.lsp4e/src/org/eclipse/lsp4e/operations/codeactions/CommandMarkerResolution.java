@@ -16,7 +16,7 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.lsp4e.IMarkerAttributeComputer;
+import org.eclipse.lsp4e.ILSPMarker;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4j.Command;
@@ -41,7 +41,7 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 	public void run(IMarker marker) {
 		IResource resource = marker.getResource();
 		IDocument document = LSPEclipseUtils.getDocument(resource);
-		String languageServerId = marker.getAttribute(IMarkerAttributeComputer.LANGUAGE_SERVER_ID, null);
+		String languageServerId = marker.getAttribute(ILSPMarker.LANGUAGE_SERVER_ID, null);
 		if(document != null) {
 			CommandExecutor.executeCommand(command, document, languageServerId);
 		}
