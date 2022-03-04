@@ -14,7 +14,6 @@ package org.eclipse.lsp4e.operations.diagnostics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,7 +51,6 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
 	public static final String LANGUAGE_SERVER_ID = "languageServerId"; //$NON-NLS-1$
 	private final @NonNull String languageServerId;
-	private final @NonNull Map<String, Object> globalMarkerAttributes;
 	private final @NonNull String markerType;
 	private final @NonNull MarkerAttributeComputer markerAttributeComputer;
 
@@ -60,7 +58,6 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		this.languageServerId = serverId;
 		this.markerType = markerType != null ? markerType : LS_DIAGNOSTIC_MARKER_TYPE;
 		this.markerAttributeComputer = markerAttributeComputer != null ? markerAttributeComputer : new MarkerAttributeComputer();
-		this.globalMarkerAttributes = Collections.singletonMap(LANGUAGE_SERVER_ID, languageServerId);
 	}
 
 	public LSPDiagnosticsToMarkers(@NonNull String serverId) {
@@ -150,13 +147,13 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 				for (Diagnostic diagnostic : newDiagnostics) {
 					Map<String, Object> markerAttributes = markerAttributeComputer.computeMarkerAttributes(document, diagnostic);
 					markerAttributes.putAll(resourceMarkerAttributes);
-					markerAttributes.putAll(globalMarkerAttributes);
+					markerAttributes.put(LANGUAGE_SERVER_ID, languageServerId);
 					resource.createMarker(markerType, markerAttributes);
 				}
 				for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
 					Map<String, Object> markerAttributes = markerAttributeComputer.computeMarkerAttributes(document, entry.getValue());
 					markerAttributes.putAll(resourceMarkerAttributes);
-					markerAttributes.putAll(globalMarkerAttributes);
+					markerAttributes.put(LANGUAGE_SERVER_ID, languageServerId);
 					updateMarker(markerAttributes, entry.getKey());
 				}
 				toDeleteMarkers.forEach(t -> {
