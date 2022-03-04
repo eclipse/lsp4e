@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,62 +26,50 @@ import org.eclipse.lsp4j.Range;
 
 /**
  * A class that computes the attributes of a
- * {@link org.eclipse.core.resources.IMarker} for a given {@link Diagnostic}.
+ * {@link org.eclipse.core.resources.IMarker}.
  *
  * It can be extended by sub-classing it to add additional attributes to the
  * ones already set by this class.
  * <p>
- * In this case:
- * <li>{@link #computeMarkerAttributes(IResource, IDocument, Diagnostic)} should
- * reuse the basis implementation and only add attributes from the returned map.
- * <li>{@link #attributeCount()} should reuse the basis implementation to
- * calculate the new expected size.
+ * When doing so {@link #computeMarkerAttributes(IResource)} and
+ * {@link #computeMarkerAttributes(IDocument, Diagnostic)} should reuse the
+ * basis implementation and only add attributes from the returned map.
  *
  * <p>
  * Implementation detail: For performance we allow subclasses to work directly
- * on the map and cannot prevent attribute removal during
- * {@link #computeMarkerAttributes(IResource, IDocument, Diagnostic)}, however,
- * other parts of LSP4E, especially marker resolution depend on the attributes
- * set in this class.
+ * on the map returned by
+ * {@link #computeMarkerAttributes(IDocument, Diagnostic)}. However
+ * {@link #computeMarkerAttributes(IResource)} returns an immutable empty
+ * collection, which cannot be extended.
  */
 public class MarkerAttributeComputer {
 
 	// Specific marker attributes defined by LSP4E
-	public static final String LANGUAGE_SERVER_ID = "languageServerId"; //$NON-NLS-1$
 	public static final String LSP_DIAGNOSTIC = "lspDiagnostic"; //$NON-NLS-1$
 
-	private @Nullable String languageServerId;
-
-	public final void initialize(@NonNull String languageServerId) {
-		this.languageServerId = languageServerId;
-	}
-
 	/**
-	 * Defines the expected number of attributes that will be computed, it is used
-	 * to optimize size of the map at creation time.
-	 *
-	 * @return the expected number of attributes that will be computed
-	 */
-	public int attributeCount() {
-		return 7;
-	}
-
-	/**
-	 * Computes the attributes of a marker.
+	 * Computes the attributes of a marker for the given resource.
 	 *
 	 * @param resource,
 	 *            the {@link Resource} where this marker will be created
+	 * @return a map with the marker attributes
+	 */
+	public Map<String, Object> computeMarkerAttributes(@NonNull IResource resource) {
+		return Collections.emptyMap();
+	}
+
+	/**
+	 * Computes the attributes of a marker for the given document and diagnostic.
+	 *
 	 * @param document,
 	 *            the {@link Document} attached to the given resource
 	 * @param diagnostic,
 	 *            the diagnostic to me mapped to a marker.
 	 * @return a map with the marker attributes
 	 */
-	public Map<String, Object> computeMarkerAttributes(@NonNull IResource resource, @Nullable IDocument document,
-			@NonNull Diagnostic diagnostic) {
-		Map<String, Object> targetAttributes = new HashMap<>(attributeCount());
+	public Map<String, Object> computeMarkerAttributes(@Nullable IDocument document, @NonNull Diagnostic diagnostic) {
+		Map<String, Object> targetAttributes = new HashMap<>(8);
 		targetAttributes.put(MarkerAttributeComputer.LSP_DIAGNOSTIC, diagnostic);
-		targetAttributes.put(MarkerAttributeComputer.LANGUAGE_SERVER_ID, this.languageServerId);
 		targetAttributes.put(IMarker.MESSAGE, diagnostic.getMessage());
 		targetAttributes.put(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
 

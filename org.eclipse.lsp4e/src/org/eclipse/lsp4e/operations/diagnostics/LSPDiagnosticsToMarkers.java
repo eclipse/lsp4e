@@ -14,6 +14,7 @@ package org.eclipse.lsp4e.operations.diagnostics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -49,7 +50,9 @@ import org.eclipse.ui.texteditor.MarkerUtilities;
 public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParams> {
 
 	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
+	public static final String LANGUAGE_SERVER_ID = "languageServerId"; //$NON-NLS-1$
 	private final @NonNull String languageServerId;
+	private final @NonNull Map<String, Object> globalMarkerAttributes;
 	private final @NonNull String markerType;
 	private final @NonNull MarkerAttributeComputer markerAttributeComputer;
 
@@ -57,7 +60,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		this.languageServerId = serverId;
 		this.markerType = markerType != null ? markerType : LS_DIAGNOSTIC_MARKER_TYPE;
 		this.markerAttributeComputer = markerAttributeComputer != null ? markerAttributeComputer : new MarkerAttributeComputer();
-		this.markerAttributeComputer.initialize(serverId);
+		this.globalMarkerAttributes = Collections.singletonMap(LANGUAGE_SERVER_ID, languageServerId);
 	}
 
 	public LSPDiagnosticsToMarkers(@NonNull String serverId) {
@@ -128,7 +131,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		Set<IMarker> toDeleteMarkers = new HashSet<>(
 				Arrays.asList(resource.findMarkers(markerType, false, IResource.DEPTH_ONE)));
 		toDeleteMarkers
-				.removeIf(marker -> !Objects.equals(marker.getAttribute(MarkerAttributeComputer.LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
+				.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
 		List<Diagnostic> newDiagnostics = new ArrayList<>();
 		Map<IMarker, Diagnostic> toUpdate = new HashMap<>();
 		IDocument document = diagnostics.getDiagnostics().isEmpty() ? null : LSPEclipseUtils.getDocument(resource);
@@ -143,11 +146,18 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		}
 		IWorkspaceRunnable runnable = monitor -> {
 			if (resource.exists()) {
+				Map<String, Object> resourceMarkerAttributes = markerAttributeComputer.computeMarkerAttributes(resource);
 				for (Diagnostic diagnostic : newDiagnostics) {
-					resource.createMarker(markerType, markerAttributeComputer.computeMarkerAttributes(resource, document, diagnostic));
+					Map<String, Object> markerAttributes = markerAttributeComputer.computeMarkerAttributes(document, diagnostic);
+					markerAttributes.putAll(resourceMarkerAttributes);
+					markerAttributes.putAll(globalMarkerAttributes);
+					resource.createMarker(markerType, markerAttributes);
 				}
 				for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
-					updateMarker(resource, document, entry.getValue(), entry.getKey());
+					Map<String, Object> markerAttributes = markerAttributeComputer.computeMarkerAttributes(document, entry.getValue());
+					markerAttributes.putAll(resourceMarkerAttributes);
+					markerAttributes.putAll(globalMarkerAttributes);
+					updateMarker(markerAttributes, entry.getKey());
 				}
 				toDeleteMarkers.forEach(t -> {
 					try {
@@ -161,8 +171,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		ResourcesPlugin.getWorkspace().run(runnable, new NullProgressMonitor());
 	}
 
-	protected void updateMarker(@NonNull IResource resource, @Nullable IDocument document, @NonNull Diagnostic diagnostic, @NonNull IMarker marker) {
-		Map<String, Object> targetAttributes = markerAttributeComputer.computeMarkerAttributes(resource, document, diagnostic);
+	protected void updateMarker(@NonNull Map<String, Object> targetAttributes, @NonNull IMarker marker) {
 		try {
 			if (!targetAttributes.equals(marker.getAttributes())) {
 				marker.setAttributes(targetAttributes);
@@ -182,7 +191,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 				if (LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), document) == MarkerUtilities.getCharStart(marker)
 						&& LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document) == MarkerUtilities.getCharEnd(marker)
 						&& Objects.equals(marker.getAttribute(IMarker.MESSAGE), diagnostic.getMessage())
-						&& Objects.equals(marker.getAttribute(MarkerAttributeComputer.LANGUAGE_SERVER_ID), this.languageServerId)) {
+						&& Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID), this.languageServerId)) {
 					return marker;
 				}
 			} catch (CoreException | BadLocationException e) {
