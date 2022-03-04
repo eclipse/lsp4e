@@ -48,8 +48,8 @@ import org.eclipse.ui.texteditor.MarkerUtilities;
 
 public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParams> {
 
-	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
 	public static final String LANGUAGE_SERVER_ID = "languageServerId"; //$NON-NLS-1$
+	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
 	private final @NonNull String languageServerId;
 	private final @NonNull String markerType;
 	private final @NonNull MarkerAttributeComputer markerAttributeComputer;
