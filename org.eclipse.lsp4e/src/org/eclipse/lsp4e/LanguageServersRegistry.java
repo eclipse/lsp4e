@@ -121,7 +121,7 @@ public class LanguageServersRegistry {
 	static class ExtensionLanguageServerDefinition extends LanguageServerDefinition {
 		private final IConfigurationElement extension;
 
-		private static Consumer<PublishDiagnosticsParams> getDiagnosticHandler(@NonNull IConfigurationElement extension) {
+		private Consumer<PublishDiagnosticsParams> getDiagnosticHandler(@NonNull IConfigurationElement extension) {
 			String serverId = extension.getAttribute(ID_ATTRIBUTE);
 			String markerType = extension.getAttribute(MARKER_TYPE_ELEMENT);
 			MarkerAttributeComputer markerAttributeComputerElement = null;
