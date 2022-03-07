@@ -35,17 +35,33 @@ import org.eclipse.lsp4j.Range;
  * {@link #computeMarkerAttributes(IDocument, Diagnostic)} should reuse the
  * basis implementation and only add attributes from the returned map.
  *
+ * Implementations can also customize {@link #attributeCount()} to optimize the
+ * size of the attribute map when it is created.
+ *
  * <p>
- * Implementation detail: For performance we allow subclasses to work directly
- * on the map returned by
- * {@link #computeMarkerAttributes(IDocument, Diagnostic)}. However
+ * Implementation detail: For performance reasons we allow subclasses to add
+ * attributes directly to the map returned by
+ * {@link #computeMarkerAttributes(IDocument, Diagnostic)}. The attributes
+ * returned by {@link #computeMarkerAttributes(IResource)} as well as an
+ * attribute containing the language server ID are added as well to this map.
+ * <p>
  * {@link #computeMarkerAttributes(IResource)} returns an immutable empty
- * collection, which cannot be extended.
+ * collection, which cannot be modified.
  */
 public class MarkerAttributeComputer {
 
 	// Specific marker attributes defined by LSP4E
 	public static final String LSP_DIAGNOSTIC = "lspDiagnostic"; //$NON-NLS-1$
+
+	/**
+	 * Defines the expected number of attributes that will be computed, it is used
+	 * to optimize size of the map at creation time.
+	 *
+	 * @return the expected number of attributes that will be computed
+	 */
+	public int attributeCount() {
+		return 8;
+	}
 
 	/**
 	 * Computes the attributes of a marker for the given resource.
@@ -64,36 +80,37 @@ public class MarkerAttributeComputer {
 	 * @param document,
 	 *            the {@link Document} attached to the given resource
 	 * @param diagnostic,
-	 *            the diagnostic to me mapped to a marker.
+	 *            the {@link Diagnostic} to me mapped to a marker.
 	 * @return a map with the marker attributes
 	 */
 	public Map<String, Object> computeMarkerAttributes(@Nullable IDocument document, @NonNull Diagnostic diagnostic) {
-		Map<String, Object> targetAttributes = new HashMap<>(8);
-		targetAttributes.put(MarkerAttributeComputer.LSP_DIAGNOSTIC, diagnostic);
-		targetAttributes.put(IMarker.MESSAGE, diagnostic.getMessage());
-		targetAttributes.put(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
+		Map<String, Object> attributes = new HashMap<>(attributeCount());
+		attributes.put(MarkerAttributeComputer.LSP_DIAGNOSTIC, diagnostic);
+		attributes.put(IMarker.MESSAGE, diagnostic.getMessage());
+		attributes.put(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
 
 		if (document != null) {
+			Range range = diagnostic.getRange();
+			int documentLength = document.getLength();
 			try {
-				Range range = diagnostic.getRange();
-				int documentLength = document.getLength();
 				int start = Math.min(LSPEclipseUtils.toOffset(range.getStart(), document), documentLength);
 				int end = Math.min(LSPEclipseUtils.toOffset(range.getEnd(), document), documentLength);
+				int lineOfStartOffset = document.getLineOfOffset(start);
 				if (start == end && documentLength > end) {
 					end++;
-					if (document.getLineOfOffset(end) != document.getLineOfOffset(start)) {
+					if (document.getLineOfOffset(end) != lineOfStartOffset) {
 						start--;
 						end--;
 					}
 				}
-				targetAttributes.put(IMarker.CHAR_START, start);
-				targetAttributes.put(IMarker.CHAR_END, end);
-				targetAttributes.put(IMarker.LINE_NUMBER, document.getLineOfOffset(start) + 1);
+				attributes.put(IMarker.CHAR_START, start);
+				attributes.put(IMarker.CHAR_END, end);
+				attributes.put(IMarker.LINE_NUMBER, lineOfStartOffset + 1);
 			} catch (BadLocationException ex) {
 				LanguageServerPlugin.logError(ex);
 			}
 		}
-		return targetAttributes;
+		return attributes;
 	}
 
 }
