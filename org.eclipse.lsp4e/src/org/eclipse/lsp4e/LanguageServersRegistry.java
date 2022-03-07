@@ -121,7 +121,7 @@ public class LanguageServersRegistry {
 	static class ExtensionLanguageServerDefinition extends LanguageServerDefinition {
 		private final IConfigurationElement extension;
 
-		private Consumer<PublishDiagnosticsParams> getDiagnosticHandler(@NonNull IConfigurationElement extension) {
+		private Consumer<PublishDiagnosticsParams> getDiagnosticHandler() {
 			String serverId = extension.getAttribute(ID_ATTRIBUTE);
 			String markerType = extension.getAttribute(MARKER_TYPE_ELEMENT);
 			MarkerAttributeComputer markerAttributeComputerElement = null;
@@ -166,7 +166,7 @@ public class LanguageServersRegistry {
 			if (languageClient == null) {
 				languageClient = super.createLanguageClient();
 			}
-			languageClient.setDiagnosticsConsumer(getDiagnosticHandler(extension));
+			languageClient.setDiagnosticsConsumer(getDiagnosticHandler());
 			return languageClient;
 		}
 
