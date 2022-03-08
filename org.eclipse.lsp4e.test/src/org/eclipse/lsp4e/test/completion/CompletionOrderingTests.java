@@ -21,7 +21,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
-import org.eclipse.lsp4e.operations.completion.LSIncompleteCompletionProposal;
+import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.CompletionItem;
@@ -161,7 +161,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 				.get(0);
 
 		CompletionItem completionItem = createCompletionItem("test", CompletionItemKind.Class, range);
-		LSIncompleteCompletionProposal completionProposal = new LSIncompleteCompletionProposal(document, 0,
+		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
 				completionItem, info.getLanguageClient());
 		// Blank input ''
 		assertEquals("", completionProposal.getDocumentFilter());
@@ -178,7 +178,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 
 		document.set("prefix:pnd");
 		completionItem = createCompletionItem("append", CompletionItemKind.Class);
-		completionProposal = new LSIncompleteCompletionProposal(document, 7, completionItem, info.getLanguageClient());
+		completionProposal = new LSCompletionProposal(document, 7, completionItem, info.getLanguageClient());
 		// Blank input 'prefix:'
 		assertEquals("", completionProposal.getDocumentFilter());
 		assertEquals(0, completionProposal.getRankScore());
