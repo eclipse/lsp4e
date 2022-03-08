@@ -32,6 +32,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.MarkerAttributeComputer;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.CodeAction;
@@ -149,7 +150,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				List<CompletableFuture<?>> futures = new ArrayList<>();
 				for (CompletableFuture<LanguageServer> lsf : languageServerFutures) {
 					marker.setAttribute(LSP_REMEDIATION, COMPUTING);
-					Diagnostic diagnostic = (Diagnostic)marker.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC);
+					Diagnostic diagnostic = (Diagnostic)marker.getAttribute(MarkerAttributeComputer.LSP_DIAGNOSTIC);
 					CodeActionContext context = new CodeActionContext(Collections.singletonList(diagnostic));
 					CodeActionParams params = new CodeActionParams();
 					params.setContext(context);

@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.expressions.ExpressionConverter;
@@ -42,7 +43,9 @@ import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.enablement.EnablementTester;
+import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IEditorInput;
@@ -74,6 +77,8 @@ public class LanguageServersRegistry {
 	private static final String LANGUAGE_ID_ATTRIBUTE = "languageId"; //$NON-NLS-1$
 	private static final String CLASS_ATTRIBUTE = "class"; //$NON-NLS-1$
 	private static final String CLIENT_IMPL_ATTRIBUTE = "clientImpl"; //$NON-NLS-1$
+	private static final String MARKER_TYPE_ELEMENT = "makerType"; //$NON-NLS-1$
+	private static final String MARKER_ATTR_COMPUTER_ELEMENT = "markerAttributeComputer"; //$NON-NLS-1$
 	private static final String SERVER_INTERFACE_ATTRIBUTE = "serverInterface"; //$NON-NLS-1$
 	private static final String LAUNCHER_BUILDER_ATTRIBUTE = "launcherBuilder"; //$NON-NLS-1$
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
@@ -116,6 +121,21 @@ public class LanguageServersRegistry {
 	static class ExtensionLanguageServerDefinition extends LanguageServerDefinition {
 		private final IConfigurationElement extension;
 
+		private Consumer<PublishDiagnosticsParams> getDiagnosticHandler() {
+			String serverId = extension.getAttribute(ID_ATTRIBUTE);
+			String markerType = extension.getAttribute(MARKER_TYPE_ELEMENT);
+			MarkerAttributeComputer markerAttributeComputerElement = null;
+			try {
+				String markerAttributeComputer = extension.getAttribute(MARKER_ATTR_COMPUTER_ELEMENT);
+				if (markerAttributeComputer != null && !markerAttributeComputer.isEmpty()) {
+					markerAttributeComputerElement = (MarkerAttributeComputer) extension.createExecutableExtension(MARKER_ATTR_COMPUTER_ELEMENT);
+				}
+			} catch (CoreException e) {
+				LanguageServerPlugin.logError(e);
+			}
+			return new LSPDiagnosticsToMarkers(serverId, markerType, markerAttributeComputerElement);
+		}
+
 		public ExtensionLanguageServerDefinition(IConfigurationElement element) {
 			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE), Boolean.parseBoolean(element.getAttribute(SINGLETON_ATTRIBUTE)));
 			this.extension = element;
@@ -134,15 +154,20 @@ public class LanguageServersRegistry {
 
 		@Override
 		public LanguageClientImpl createLanguageClient() {
+			LanguageClientImpl languageClient = null;
 			String clientImpl = extension.getAttribute(CLIENT_IMPL_ATTRIBUTE);
 			if (clientImpl != null && !clientImpl.isEmpty()) {
 				try {
-					return (LanguageClientImpl) extension.createExecutableExtension(CLIENT_IMPL_ATTRIBUTE);
+					languageClient = (LanguageClientImpl) extension.createExecutableExtension(CLIENT_IMPL_ATTRIBUTE);
 				} catch (CoreException e) {
 					StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
 				}
 			}
-			return super.createLanguageClient();
+			if (languageClient == null) {
+				languageClient = super.createLanguageClient();
+			}
+			languageClient.setDiagnosticsConsumer(getDiagnosticHandler());
+			return languageClient;
 		}
 
 		@SuppressWarnings("unchecked")
