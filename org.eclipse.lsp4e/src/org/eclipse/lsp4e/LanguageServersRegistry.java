@@ -124,11 +124,11 @@ public class LanguageServersRegistry {
 		private Consumer<PublishDiagnosticsParams> getDiagnosticHandler() {
 			String serverId = extension.getAttribute(ID_ATTRIBUTE);
 			String markerType = extension.getAttribute(MARKER_TYPE_ELEMENT);
-			MarkerAttributeComputer markerAttributeComputerElement = null;
+			IMarkerAttributeComputer markerAttributeComputerElement = null;
 			try {
 				String markerAttributeComputer = extension.getAttribute(MARKER_ATTR_COMPUTER_ELEMENT);
 				if (markerAttributeComputer != null && !markerAttributeComputer.isEmpty()) {
-					markerAttributeComputerElement = (MarkerAttributeComputer) extension.createExecutableExtension(MARKER_ATTR_COMPUTER_ELEMENT);
+					markerAttributeComputerElement = (IMarkerAttributeComputer) extension.createExecutableExtension(MARKER_ATTR_COMPUTER_ELEMENT);
 				}
 			} catch (CoreException e) {
 				LanguageServerPlugin.logError(e);
