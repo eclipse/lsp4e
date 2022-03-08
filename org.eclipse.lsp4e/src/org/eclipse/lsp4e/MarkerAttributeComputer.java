@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
@@ -64,9 +65,12 @@ public class MarkerAttributeComputer {
 	 *            the {@link Document} attached to the given resource
 	 * @param diagnostic,
 	 *            the {@link Diagnostic} to me mapped to a marker.
+	 * @param resource,
+	 *            the {@link IResource} that contains the document.
 	 * @return a map with the marker attributes
 	 */
-	public Map<String, Object> computeMarkerAttributes(@Nullable IDocument document, @NonNull Diagnostic diagnostic) {
+	public Map<String, Object> computeMarkerAttributes(@Nullable IDocument document, @NonNull Diagnostic diagnostic,
+			@NonNull IResource resource) {
 		Map<String, Object> attributes = new HashMap<>(attributeCount());
 		attributes.put(MarkerAttributeComputer.LSP_DIAGNOSTIC, diagnostic);
 		attributes.put(IMarker.MESSAGE, diagnostic.getMessage());
