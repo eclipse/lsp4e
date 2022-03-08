@@ -143,16 +143,13 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		}
 		IWorkspaceRunnable runnable = monitor -> {
 			if (resource.exists()) {
-				Map<String, Object> resourceMarkerAttributes = markerAttributeComputer.computeMarkerAttributes(resource);
 				for (Diagnostic diagnostic : newDiagnostics) {
 					Map<String, Object> markerAttributes = markerAttributeComputer.computeMarkerAttributes(document, diagnostic);
-					markerAttributes.putAll(resourceMarkerAttributes);
 					markerAttributes.put(LANGUAGE_SERVER_ID, languageServerId);
 					resource.createMarker(markerType, markerAttributes);
 				}
 				for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
 					Map<String, Object> markerAttributes = markerAttributeComputer.computeMarkerAttributes(document, entry.getValue());
-					markerAttributes.putAll(resourceMarkerAttributes);
 					markerAttributes.put(LANGUAGE_SERVER_ID, languageServerId);
 					updateMarker(markerAttributes, entry.getKey());
 				}

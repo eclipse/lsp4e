@@ -11,12 +11,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.IResource;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
@@ -31,9 +29,8 @@ import org.eclipse.lsp4j.Range;
  * It can be extended by sub-classing it to add additional attributes to the
  * ones already set by this class.
  * <p>
- * When doing so {@link #computeMarkerAttributes(IResource)} and
- * {@link #computeMarkerAttributes(IDocument, Diagnostic)} should reuse the
- * basis implementation and only add attributes from the returned map.
+ * When doing so {@link #computeMarkerAttributes(IDocument, Diagnostic)} should
+ * reuse the basis implementation and only add attributes from the returned map.
  *
  * Implementations can also customize {@link #attributeCount()} to optimize the
  * size of the attribute map when it is created.
@@ -41,12 +38,9 @@ import org.eclipse.lsp4j.Range;
  * <p>
  * Implementation detail: For performance reasons we allow subclasses to add
  * attributes directly to the map returned by
- * {@link #computeMarkerAttributes(IDocument, Diagnostic)}. The attributes
- * returned by {@link #computeMarkerAttributes(IResource)} as well as an
- * attribute containing the language server ID are added as well to this map.
+ * {@link #computeMarkerAttributes(IDocument, Diagnostic)}. An attribute
+ * containing the language server ID is added later to this map.
  * <p>
- * {@link #computeMarkerAttributes(IResource)} returns an immutable empty
- * collection, which cannot be modified.
  */
 public class MarkerAttributeComputer {
 
@@ -61,17 +55,6 @@ public class MarkerAttributeComputer {
 	 */
 	public int attributeCount() {
 		return 8;
-	}
-
-	/**
-	 * Computes the attributes of a marker for the given resource.
-	 *
-	 * @param resource,
-	 *            the {@link Resource} where this marker will be created
-	 * @return a map with the marker attributes
-	 */
-	public Map<String, Object> computeMarkerAttributes(@NonNull IResource resource) {
-		return Collections.emptyMap();
 	}
 
 	/**
