@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2019 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -545,7 +545,23 @@ public class LSCompletionProposal
 			if (additionalEdits != null && !additionalEdits.isEmpty()) {
 				List<TextEdit> allEdits = new ArrayList<>();
 				allEdits.add(textEdit);
-				allEdits.addAll(additionalEdits);
+				additionalEdits.stream().forEach(te -> {
+					int shift = offset - this.initialOffset;
+					if (shift != 0) {
+						try {
+							int start = LSPEclipseUtils.toOffset(te.getRange().getStart(), document);
+							int end = LSPEclipseUtils.toOffset(te.getRange().getEnd(), document);
+							if (start > this.initialOffset) {
+								// We need to shift the Range according to the shift
+								te.getRange().setStart(LSPEclipseUtils.toPosition(start + shift, document));
+								te.getRange().setEnd(LSPEclipseUtils.toPosition(end + shift, document));
+							}
+						} catch (BadLocationException e) {
+							LanguageServerPlugin.logError(e);
+						}
+					}
+					allEdits.add(te);
+				});
 				LSPEclipseUtils.applyEdits(document, allEdits);
 			} else {
 				LSPEclipseUtils.applyEdit(textEdit, document);

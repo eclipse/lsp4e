@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2019 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2022 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -473,6 +473,51 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(2 * items.size(), proposals.length);
+	}
+
+	@Test
+	public void testCompletionWithAdditionalTextEditInsertion() throws Exception {
+		IFile file = TestUtils.createUniqueTestFile(project, "Some Text Before\n<tag>tagText</tag>\nSome Text After");
+		ITextViewer viewer = TestUtils.openTextViewer(file);
+		// Create item
+		CompletionItem item = createCompletionItem("tagText", 
+				CompletionItemKind.Text, 
+				new Range(
+						new Position(1, "<tag>".length()), 
+						new Position(1,  "<tag>".length() + "tag".length())));
+		// Set additional TExtEdits on the item
+		List<TextEdit> additionalEdits = new ArrayList<>(2);
+		// Prefix to be inserted to the end of line that precedes the line to be "completed"
+		additionalEdits.add(new TextEdit(new Range(
+				new Position(1, 0), 
+				new Position(1, 0)), 
+				"<prefix>prefixText</prefix>\n"));
+		// Postfix to be inserted to the end of line to be "completed"
+		additionalEdits.add(new TextEdit(new Range(
+				new Position(1, "<tag>tag</tag>".length()), 
+				new Position(1, "<tag>tag</tag>".length())), 
+				"\n<postfix>postfixText</postfix>"));
+		item.setAdditionalTextEdits(additionalEdits);
+		
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(item)));
+
+		String text = viewer.getDocument().get();
+		int invokeOffset = text.indexOf("<tag>tag") + "<tag>tag".length();
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
+
+		// Apply the proposal using an offset shifted by 4 chars, thus emulating a user typed character after the CA invocation
+		int currentOffset = invokeOffset + "Text".length(); // Emulate 1 character typed in after CA invocation
+		LSIncompleteCompletionProposal.apply(viewer.getDocument(), Character.MIN_VALUE, currentOffset);
+
+		final String expectedText = "Some Text Before\n"
+				+ "<prefix>prefixText</prefix>\n"
+				+ "<tag>tagText</tag>\n"
+				+ "<postfix>postfixText</postfix>\n"
+				+ "Some Text After";
+		assertEquals(expectedText, viewer.getDocument().get());
+		assertEquals(new Point(viewer.getDocument().get().indexOf("</tag>") , 0),
+				LSIncompleteCompletionProposal.getSelection(viewer.getDocument()));
 	}
 
 	@Test
