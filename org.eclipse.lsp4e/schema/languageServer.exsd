@@ -117,10 +117,10 @@ Since 0.10
          <attribute name="markerAttributeComputer" type="string">
             <annotation>
                <documentation>
-                  An optional marker attribute computer that will be used to compute the attributes of a org.eclipse.core.resources.IMarker for a given diagnostic being reported by the server. If undefined, a default computer will be used.
+                  An optional marker attribute computer that will be used to add custom attributes to a org.eclipse.core.resources.IMarker for a given diagnostic being reported by the server.
                </documentation>
                <appinfo>
-                  <meta.attribute kind="java" basedOn="org.eclipse.lsp4e.MarkerAttributeComputer:"/>
+                  <meta.attribute kind="java" basedOn=":org.eclipse.lsp4e.IMarkerAttributeComputer"/>
                </appinfo>
             </annotation>
          </attribute>

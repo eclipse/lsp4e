@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -39,25 +40,27 @@ import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
 import org.eclipse.jface.text.source.IAnnotationModelExtension;
 import org.eclipse.jface.text.source.ISourceViewer;
+import org.eclipse.lsp4e.IMarkerAttributeComputer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.MarkerAttributeComputer;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.ui.texteditor.MarkerUtilities;
 
 public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParams> {
 
+	public static final String LSP_DIAGNOSTIC = "lspDiagnostic"; //$NON-NLS-1$
 	public static final String LANGUAGE_SERVER_ID = "languageServerId"; //$NON-NLS-1$
 	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
 	private final @NonNull String languageServerId;
 	private final @NonNull String markerType;
-	private final @NonNull MarkerAttributeComputer markerAttributeComputer;
+	private final Optional<IMarkerAttributeComputer> markerAttributeComputer;
 
-	public LSPDiagnosticsToMarkers(@NonNull String serverId, @Nullable String markerType, @Nullable MarkerAttributeComputer markerAttributeComputer) {
+	public LSPDiagnosticsToMarkers(@NonNull String serverId, @Nullable String markerType, @Nullable IMarkerAttributeComputer markerAttributeComputer) {
 		this.languageServerId = serverId;
 		this.markerType = markerType != null ? markerType : LS_DIAGNOSTIC_MARKER_TYPE;
-		this.markerAttributeComputer = markerAttributeComputer != null ? markerAttributeComputer : new MarkerAttributeComputer();
+		this.markerAttributeComputer = Optional.ofNullable(markerAttributeComputer);
 	}
 
 	public LSPDiagnosticsToMarkers(@NonNull String serverId) {
@@ -144,13 +147,11 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		IWorkspaceRunnable runnable = monitor -> {
 			if (resource.exists()) {
 				for (Diagnostic diagnostic : newDiagnostics) {
-					Map<String, Object> markerAttributes = markerAttributeComputer.computeMarkerAttributes(document, diagnostic);
-					markerAttributes.put(LANGUAGE_SERVER_ID, languageServerId);
+					Map<String, Object> markerAttributes = computeMarkerAttributes(document, diagnostic, resource);
 					resource.createMarker(markerType, markerAttributes);
 				}
 				for (Entry<IMarker, Diagnostic> entry : toUpdate.entrySet()) {
-					Map<String, Object> markerAttributes = markerAttributeComputer.computeMarkerAttributes(document, entry.getValue());
-					markerAttributes.put(LANGUAGE_SERVER_ID, languageServerId);
+					Map<String, Object> markerAttributes = computeMarkerAttributes(document, entry.getValue(), resource);
 					updateMarker(markerAttributes, entry.getKey());
 				}
 				toDeleteMarkers.forEach(t -> {
@@ -193,5 +194,42 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			}
 		}
 		return null;
+	}
+
+	private @NonNull Map<String, Object> computeMarkerAttributes(@Nullable IDocument document,
+			@NonNull Diagnostic diagnostic, @NonNull IResource resource) {
+		Map<String, Object> attributes = new HashMap<>(8);
+		attributes.put(LSP_DIAGNOSTIC, diagnostic);
+		attributes.put(LANGUAGE_SERVER_ID, languageServerId);
+		attributes.put(IMarker.MESSAGE, diagnostic.getMessage());
+		attributes.put(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
+
+		if (document != null) {
+			Range range = diagnostic.getRange();
+			int documentLength = document.getLength();
+			try {
+				int start = Math.min(LSPEclipseUtils.toOffset(range.getStart(), document), documentLength);
+				int end = Math.min(LSPEclipseUtils.toOffset(range.getEnd(), document), documentLength);
+				int lineOfStartOffset = document.getLineOfOffset(start);
+				if (start == end && documentLength > end) {
+					end++;
+					if (document.getLineOfOffset(end) != lineOfStartOffset) {
+						start--;
+						end--;
+					}
+				}
+				attributes.put(IMarker.CHAR_START, start);
+				attributes.put(IMarker.CHAR_END, end);
+				attributes.put(IMarker.LINE_NUMBER, lineOfStartOffset + 1);
+			} catch (BadLocationException ex) {
+				LanguageServerPlugin.logError(ex);
+			}
+		}
+
+
+		markerAttributeComputer
+				.ifPresent(c -> c.addMarkerAttributesForDiagnostic(diagnostic, document, resource, attributes));
+
+		return attributes;
 	}
 }
