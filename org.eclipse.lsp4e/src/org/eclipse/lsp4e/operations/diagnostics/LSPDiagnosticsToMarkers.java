@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -54,12 +55,12 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
 	private final @NonNull String languageServerId;
 	private final @NonNull String markerType;
-	private final @Nullable IMarkerAttributeComputer markerAttributeComputer;
+	private final Optional<IMarkerAttributeComputer> markerAttributeComputer;
 
 	public LSPDiagnosticsToMarkers(@NonNull String serverId, @Nullable String markerType, @Nullable IMarkerAttributeComputer markerAttributeComputer) {
 		this.languageServerId = serverId;
 		this.markerType = markerType != null ? markerType : LS_DIAGNOSTIC_MARKER_TYPE;
-		this.markerAttributeComputer = markerAttributeComputer;
+		this.markerAttributeComputer = Optional.ofNullable(markerAttributeComputer);
 	}
 
 	public LSPDiagnosticsToMarkers(@NonNull String serverId) {
@@ -226,9 +227,8 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		}
 
 
-		if (markerAttributeComputer != null) {
-			markerAttributeComputer.addMarkerAttributesForDiagnostic(diagnostic, document, resource, attributes);
-		}
+		markerAttributeComputer
+				.ifPresent(c -> c.addMarkerAttributesForDiagnostic(diagnostic, document, resource, attributes));
 
 		return attributes;
 	}
