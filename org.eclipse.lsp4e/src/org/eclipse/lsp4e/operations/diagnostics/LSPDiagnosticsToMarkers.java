@@ -145,7 +145,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			}
 		}
 		IWorkspaceRunnable runnable = monitor -> {
-			if (resource.exists()) {
+			try {
 				for (Diagnostic diagnostic : newDiagnostics) {
 					Map<String, Object> markerAttributes = computeMarkerAttributes(document, diagnostic, resource);
 					resource.createMarker(markerType, markerAttributes);
@@ -161,6 +161,10 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 						LanguageServerPlugin.logError(e);
 					}
 				});
+			} catch (CoreException e) {
+				if (resource.exists()) {
+					LanguageServerPlugin.logError(e);
+				}
 			}
 		};
 		ResourcesPlugin.getWorkspace().run(runnable, new NullProgressMonitor());
