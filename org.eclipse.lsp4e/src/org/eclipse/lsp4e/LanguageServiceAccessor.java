@@ -404,7 +404,6 @@ public class LanguageServiceAccessor {
 	 * @return
 	 * @throws IOException
 	 */
-	@Deprecated
 	public static LanguageServerWrapper getLSWrapperForDefinition(@NonNull IProject project,
 			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
 		return 	getLSWrapperForConnection(project, serverDefinition, null);
