@@ -396,6 +396,21 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
+	 * Return existing {@link LanguageServerWrapper} for the given definition. If
+	 * not found, create a new one with the given definition.
+	 *
+	 * @param project
+	 * @param serverDefinition
+	 * @return
+	 * @throws IOException
+	 */
+	@Deprecated
+	public static LanguageServerWrapper getLSWrapperForDefinition(@NonNull IProject project,
+			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
+		return 	getLSWrapperForConnection(project, serverDefinition, null);
+	}
+
+	/**
 	 * Return existing {@link LanguageServerWrapper} for the given connection. If
 	 * not found, create a new one with the given connection and register it for
 	 * this project/content-type.
