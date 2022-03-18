@@ -23,8 +23,10 @@ import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.link.ILinkedModeListener;
 import org.eclipse.jface.text.link.LinkedModeModel;
 import org.eclipse.jface.text.link.LinkedModeUI;
+import org.eclipse.jface.text.link.LinkedModeUI.ExitFlags;
 import org.eclipse.jface.text.link.LinkedPosition;
 import org.eclipse.jface.text.link.LinkedPositionGroup;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
@@ -192,6 +194,12 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 					linkedModel.forceInstall();
 					ITextSelection selectionBefore = (ITextSelection)sourceViewer.getSelectionProvider().getSelection();
 					LinkedModeUI linkedMode = new EditorLinkedModeUI(linkedModel, sourceViewer);
+					linkedMode.setExitPolicy((model, event, offset, length) -> {
+						if (Character.isUnicodeIdentifierPart(event.character)) {
+							return null;
+						}
+						return new ExitFlags(ILinkedModeListener.EXIT_ALL, false);
+					});
 					linkedMode.enter();
 					sourceViewer.getSelectionProvider().setSelection(selectionBefore);
 					return Status.OK_STATUS;
