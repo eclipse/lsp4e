@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -104,7 +105,7 @@ public class SymbolsLabelProvider extends LabelProvider
 	public void dispose() {
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(listener);
 		InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID).removePreferenceChangeListener(this);
-		overlays.values().stream().flatMap(Arrays::stream).forEach(Image::dispose);
+		overlays.values().stream().flatMap(Arrays::stream).filter(Objects::nonNull).forEach(Image::dispose);
 		overlays.clear();
 		super.dispose();
 	}
