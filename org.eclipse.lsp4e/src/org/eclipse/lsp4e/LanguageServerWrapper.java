@@ -131,7 +131,7 @@ public class LanguageServerWrapper {
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
 		public void bufferDisposed(IFileBuffer buffer) {
-			disconnect(buffer.getFileStore().toURI());
+			disconnect(LSPEclipseUtils.toUri(buffer));
 		}
 
 		@Override
@@ -139,7 +139,7 @@ public class LanguageServerWrapper {
 			if (isDirty) {
 				return;
 			}
-			DocumentContentSynchronizer documentListener = connectedDocuments.get(buffer.getFileStore().toURI());
+			DocumentContentSynchronizer documentListener = connectedDocuments.get(LSPEclipseUtils.toUri(buffer));
 			if (documentListener != null && documentListener.getModificationStamp() < buffer.getModificationStamp()) {
 				documentListener.documentSaved(buffer.getModificationStamp());
 			}

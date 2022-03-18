@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBufferManager;
 import org.eclipse.core.filebuffers.LocationKind;
@@ -265,7 +266,7 @@ public class LSPEclipseUtils {
 
 	private static ITextFileBuffer toBuffer(IDocument document) {
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
-		if (bufferManager == null) 
+		if (bufferManager == null)
 			return null;
 		return bufferManager.getTextFileBuffer(document);
 	}
@@ -288,7 +289,7 @@ public class LSPEclipseUtils {
 		return null;
 	}
 
-	private static IPath toPath(ITextFileBuffer buffer) {
+	private static IPath toPath(IFileBuffer buffer) {
 		if (buffer != null) {
 			return buffer.getLocation();
 		}
@@ -435,7 +436,7 @@ public class LSPEclipseUtils {
 
 		if (document == null && resource.getType() == IResource.FILE) {
 			ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
-			if (bufferManager == null) 
+			if (bufferManager == null)
 				return document;
 			try {
 				bufferManager.connect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
@@ -459,7 +460,7 @@ public class LSPEclipseUtils {
 			return null;
 		}
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
-		if (bufferManager == null) 
+		if (bufferManager == null)
 			return null;
 		ITextFileBuffer buffer = bufferManager.getTextFileBuffer(resource.getFullPath(), LocationKind.IFILE);
 		if (buffer != null) {
@@ -493,7 +494,7 @@ public class LSPEclipseUtils {
 			return null;
 		}
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
-		if (bufferManager == null) 
+		if (bufferManager == null)
 			return null;
 		ITextFileBuffer buffer = bufferManager.getFileStoreTextFileBuffer(store);
 		if (buffer != null) {
@@ -633,7 +634,7 @@ public class LSPEclipseUtils {
 			try {
 				Method getSourceViewerMethod= AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
 				getSourceViewerMethod.setAccessible(true);
-				ITextViewer viewer = (ITextViewer) getSourceViewerMethod.invoke(editor); 
+				ITextViewer viewer = (ITextViewer) getSourceViewerMethod.invoke(editor);
 				return (viewer == null) ? null : viewer.getDocument();
 			} catch (Exception ex) {
 				LanguageServerPlugin.logError(ex);
@@ -810,6 +811,14 @@ public class LSPEclipseUtils {
 			return toUri(location);
 		}
 		return resource.getLocationURI();
+	}
+
+	@Nullable public static URI toUri(@NonNull IFileBuffer buffer) {
+		IFile res = ResourcesPlugin.getWorkspace().getRoot().getFile(buffer.getLocation());
+		if (res != null) {
+			return toUri(res);
+		}
+		return buffer.getFileStore().toURI();
 	}
 
 	public static URI toUri(File file) {
