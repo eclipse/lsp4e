@@ -27,8 +27,8 @@ import java.util.function.Consumer;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.IWorkspaceRunnable;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
@@ -167,7 +167,8 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 				}
 			}
 		};
-		ResourcesPlugin.getWorkspace().run(runnable, new NullProgressMonitor());
+		IWorkspace ws = resource.getWorkspace();
+		ws.run(runnable, ws.getRuleFactory().markerRule(resource), IWorkspace.AVOID_UPDATE, new NullProgressMonitor());
 	}
 
 	protected void updateMarker(@NonNull Map<String, Object> targetAttributes, @NonNull IMarker marker) {
