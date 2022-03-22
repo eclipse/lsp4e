@@ -418,8 +418,8 @@ public class LanguageServiceAccessor {
 	 * @param serverDefinition
 	 * @return
 	 * @throws IOException
-	 * @Deprecated will be made private soon, use getLSWrapper
-	 * @noreference will be made private soon, use getLSWrapper
+	 * @Deprecated will be made private soon, use {@link #getLSWrapper}
+	 * @noreference will be made private soon, use {@link #getLSWrapper}
 	 * @deprecated
 	 */
 	@Deprecated
