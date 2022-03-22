@@ -816,7 +816,10 @@ public class LSPEclipseUtils {
 	@Nullable public static URI toUri(@NonNull IFileBuffer buffer) {
 		IFile res = ResourcesPlugin.getWorkspace().getRoot().getFile(buffer.getLocation());
 		if (res != null) {
-			return toUri(res);
+			URI uri = toUri(res);
+			if (uri != null) {
+				return uri;
+			}
 		}
 		return buffer.getFileStore().toURI();
 	}
