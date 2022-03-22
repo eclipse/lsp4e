@@ -65,7 +65,7 @@ import org.junit.Test;
 public class IncompleteCompletionTest extends AbstractCompletionTest {
 	/*
 	 * This tests the not-so-official way to associate a LS to a file programmatically, and then to retrieve the LS
-	 * for the file independently of the content-types. Although doing it programatically isn't recommended, consuming
+	 * for the file independently of the content-types. Although doing it programmatically isn't recommended, consuming
 	 * file-specific LS already associated is something we want to support.
 	 */
 	@Test
@@ -79,16 +79,15 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 		LanguageServerDefinition serverDefinition = LanguageServersRegistry.getInstance().getDefinition("org.eclipse.lsp4e.test.server");
 		assertNotNull(serverDefinition);
-		LanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor
-				.getLSWrapperForConnection(testFile.getProject(), serverDefinition);
+		LanguageServerWrapper lsWrapper = LanguageServiceAccessor.getLSWrapper(testFile.getProject(), serverDefinition);
 		URI fileLocation = testFile.getLocationURI();
 		// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
-		lsWrapperForConnection.connect(testFile, null);
+		lsWrapper.connect(testFile, null);
 
 		new DisplayHelper() {
 			@Override
 			protected boolean condition() {
-				return lsWrapperForConnection.isConnectedTo(fileLocation);
+				return lsWrapper.isConnectedTo(fileLocation);
 			}
 		}.waitForCondition(Display.getCurrent(), 3000);
 

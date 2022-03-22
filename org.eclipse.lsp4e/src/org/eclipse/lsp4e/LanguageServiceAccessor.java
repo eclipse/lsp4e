@@ -209,7 +209,7 @@ public class LanguageServiceAccessor {
 	public static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition,
 			Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
-		LanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition, file.getFullPath());
+		LanguageServerWrapper wrapper = getLSWrapper(file.getProject(), lsDefinition, file.getFullPath());
 		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
 			wrapper.connect(file, null);
 			return wrapper.getServer();
@@ -229,7 +229,7 @@ public class LanguageServiceAccessor {
 			@NonNull LanguageServerDefinition lsDefinition,
 			Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
-		LanguageServerWrapper wrapper = getLSWrapperForConnection(file.getProject(), lsDefinition, file.getFullPath());
+		LanguageServerWrapper wrapper = getLSWrapper(file.getProject(), lsDefinition, file.getFullPath());
 		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
 			wrapper.connect(file, null);
 			return wrapper.getInitializedServer();
@@ -318,7 +318,7 @@ public class LanguageServiceAccessor {
 			}
 			for (ContentTypeToLanguageServerDefinition mapping : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
 				if (mapping != null && mapping.getValue() != null && mapping.isEnabled()) {
-					LanguageServerWrapper wrapper = getLSWrapperForConnection(project, mapping.getValue(), file.getFullPath());
+					LanguageServerWrapper wrapper = getLSWrapper(project, mapping.getValue(), file.getFullPath());
 					if (capabilitiesComply(wrapper, request)) {
 						res.add(wrapper);
 					}
@@ -406,7 +406,7 @@ public class LanguageServiceAccessor {
 	 */
 	public static LanguageServerWrapper getLSWrapper(@NonNull IProject project,
 			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
-		return 	getLSWrapperForConnection(project, serverDefinition, null);
+		return 	getLSWrapper(project, serverDefinition, null);
 	}
 
 	/**
@@ -425,11 +425,10 @@ public class LanguageServiceAccessor {
 	@Deprecated
 	public static LanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project,
 			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
-		return 	getLSWrapperForConnection(project, serverDefinition, null);
+		return 	getLSWrapper(project, serverDefinition);
 	}
 
-	@Deprecated
-	private static LanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project,
+	private static LanguageServerWrapper getLSWrapper(@NonNull IProject project,
 			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
 		LanguageServerWrapper wrapper = null;
 
