@@ -46,10 +46,12 @@ public class UriToResourceAdapterFactory implements IAdapterFactory{
 	        }
 	    } else if (adaptableObject instanceof IFile) {
 	    	URI uri = ((IResource)adaptableObject).getLocationURI();
-	        IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(LSPEclipseUtilsTest.class.getSimpleName() + uri.getScheme());
-	        if (project != null && uri.getScheme().equals("other")) {
-	        	return (T) URI.create(uri.toString().replaceAll("//", "/" + A_SEGMENT));
-	        }
+	    	if (uri != null) {	    		
+	    		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(LSPEclipseUtilsTest.class.getSimpleName() + uri.getScheme());
+	    		if (project != null && uri.getScheme().equals("other")) {
+	    			return (T) URI.create(uri.toString().replaceAll("//", "/" + A_SEGMENT));
+	    		}
+	    	}
 	    }
 	    return null;
 	  }
