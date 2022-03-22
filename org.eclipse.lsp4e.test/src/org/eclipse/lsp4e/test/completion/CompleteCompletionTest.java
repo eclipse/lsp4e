@@ -38,7 +38,6 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
@@ -67,6 +66,7 @@ import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -75,7 +75,7 @@ import com.google.gson.JsonPrimitive;
 public class CompleteCompletionTest extends AbstractCompletionTest {
 	/*
 	 * This tests the not-so-official way to associate a LS to a file programmatically, and then to retrieve the LS
-	 * for the file independently of the content-types. Although doing it programatically isn't recommended, consuming
+	 * for the file independently of the content-types. Although doing it programmatically isn't recommended, consuming
 	 * file-specific LS already associated is something we want to support.
 	 */
 	@Test
@@ -89,19 +89,18 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 
 		LanguageServerDefinition serverDefinition = LanguageServersRegistry.getInstance().getDefinition("org.eclipse.lsp4e.test.server");
 		assertNotNull(serverDefinition);
-		LanguageServerWrapper lsWrapperForConnection = LanguageServiceAccessor
-				.getLSWrapperForConnection(testFile.getProject(), serverDefinition);
+		LanguageServerWrapper lsWrapper = LanguageServiceAccessor.getLSWrapper(testFile.getProject(), serverDefinition);
 		URI fileLocation = testFile.getLocationURI();
 		// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
-		lsWrapperForConnection.connect(testFile, null);
+		lsWrapper.connect(testFile, null);
 
 		new DisplayHelper() {
 			@Override
 			protected boolean condition() {
-				return lsWrapperForConnection.isConnectedTo(fileLocation);
+				return lsWrapper.isConnectedTo(fileLocation);
 			}
 		}.waitForCondition(Display.getCurrent(), 3000);
-		Assert.assertTrue(lsWrapperForConnection.isConnectedTo(fileLocation));
+		Assert.assertTrue(lsWrapper.isConnectedTo(fileLocation));
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(items.size(), proposals.length);

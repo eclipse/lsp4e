@@ -19,6 +19,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -44,6 +45,8 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -71,6 +74,14 @@ public class LanguageServiceAccessorTest {
 	@Before
 	public void setUp() throws CoreException {
 		project = TestUtils.createProject("LanguageServiceAccessorTest" + System.currentTimeMillis());
+	}
+
+	@Test
+	public void testGetLSWrapper() throws IOException, CoreException {
+		LanguageServerDefinition serverDefinition = LanguageServersRegistry.getInstance().getDefinition("org.eclipse.lsp4e.test.server");
+		assertNotNull(serverDefinition);
+		LanguageServerWrapper lsWrapper = LanguageServiceAccessor.getLSWrapper(project, serverDefinition);
+		assertNotNull(lsWrapper);
 	}
 
 	@Test
