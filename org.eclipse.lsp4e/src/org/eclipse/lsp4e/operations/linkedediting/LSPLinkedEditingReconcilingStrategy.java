@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Red Hat Inc. and others.
+ * Copyright (c) 2021, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -10,6 +10,9 @@
  *   Victor Rubezhny (Red Hat Inc.) - initial implementation
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.linkedediting;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -43,6 +46,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.ui.progress.UIJob;
 import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
 
@@ -138,7 +142,6 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 	public void setDocument(IDocument document) {
 		if (this.fDocument != null) {
 			this.fDocument.removeDocumentListener(this);
-			fLinkedEditingRanges = null;
 		}
 
 		this.fDocument = document;
@@ -195,10 +198,25 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 					ITextSelection selectionBefore = (ITextSelection)sourceViewer.getSelectionProvider().getSelection();
 					LinkedModeUI linkedMode = new EditorLinkedModeUI(linkedModel, sourceViewer);
 					linkedMode.setExitPolicy((model, event, offset, length) -> {
-						if (Character.isUnicodeIdentifierPart(event.character)) {
+						if (event.character == 0 || event.character == '\b') {
 							return null;
 						}
-						return new ExitFlags(ILinkedModeListener.EXIT_ALL, false);
+
+						if (ranges != null && ranges.getWordPattern()  != null) {
+							String valuee = getValueInRange(ranges, event, offset, length);
+							if (valuee != null) {
+								Pattern pattern = Pattern.compile(ranges.getWordPattern());
+								Matcher matcher = pattern.matcher(valuee);
+								if (matcher.matches()) {
+									return null;
+								}
+							}
+						} else {
+							if (Character.isUnicodeIdentifierPart(event.character) || event.character == '_') {
+								return null;
+							}
+						}
+						return new ExitFlags(ILinkedModeListener.EXIT_ALL, true);
 					});
 					linkedMode.enter();
 					sourceViewer.getSelectionProvider().setSelection(selectionBefore);
@@ -209,6 +227,25 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 			}
 		};
 		highlightJob.schedule();
+	}
+
+	String getValueInRange(LinkedEditingRanges ranges, VerifyEvent event, int offset, int length) {
+		try {
+			for (Range range : ranges.getRanges()) {
+				int start = LSPEclipseUtils.toOffset(range.getStart(), fDocument);
+				int end = LSPEclipseUtils.toOffset(range.getEnd(), fDocument);
+				if (start <= offset && offset <= end) {
+					StringBuilder sb = new StringBuilder();
+					sb.append(fDocument.get(start, end - start)); 	// The range text before the insertion
+					String newChars = event.character == 0 ? "" : Character.toString(event.character); //$NON-NLS-1$
+					sb.replace(offset - start, offset - start  + length, newChars);
+					return sb.toString();
+				}
+			}
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+		}
+		return null;
 	}
 
 	private LinkedPositionGroup toJFaceGroup(LinkedEditingRanges ranges) throws BadLocationException {
