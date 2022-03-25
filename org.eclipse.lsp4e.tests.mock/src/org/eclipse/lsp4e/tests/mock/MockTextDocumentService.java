@@ -231,7 +231,10 @@ public class MockTextDocumentService implements TextDocumentService {
 		}
 
 		if (this.diagnostics != null && !this.diagnostics.isEmpty()) {
-			this.remoteProxies.stream().forEach(p -> p.publishDiagnostics(new PublishDiagnosticsParams(params.getTextDocument().getUri(), this.diagnostics)));
+			// 'collect(Collectors.toSet()` is added here in order to prevent a
+			// ConcurrentModificationException appearance
+			this.remoteProxies.stream().collect(Collectors.toSet()).forEach(p -> p.publishDiagnostics(
+					new PublishDiagnosticsParams(params.getTextDocument().getUri(), this.diagnostics)));
 		}
 	}
 

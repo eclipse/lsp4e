@@ -32,7 +32,6 @@ import org.eclipse.lsp4j.TextDocumentPositionParams;
 public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 	public static final String LINKED_EDITING_PREFERENCE = "org.eclipse.ui.genericeditor.linkedediting"; //$NON-NLS-1$
 
-	protected LinkedEditingRanges fLinkedEditingRanges;
 	private CompletableFuture<Void> request;
 	protected boolean fEnabled;
 
@@ -49,7 +48,6 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 	}
 
 	protected CompletableFuture<LinkedEditingRanges> collectLinkedEditingRanges(IDocument document, int offset) {
-		fLinkedEditingRanges = null;
 		cancel();
 
 		if (document == null) {
