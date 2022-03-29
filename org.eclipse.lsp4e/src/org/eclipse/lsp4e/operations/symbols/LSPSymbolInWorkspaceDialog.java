@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
@@ -69,7 +70,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		}
 
 		@Override
-		protected int getMaxSeverity(IResource resource, IDocument doc, Range range) throws CoreException, BadLocationException {
+		protected int getMaxSeverity(@NonNull IResource resource, @NonNull IDocument doc, @NonNull Range range) throws CoreException, BadLocationException {
 			int maxSeverity = -1;
 			for (IMarker marker : resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO)) {
 				int offset = marker.getAttribute(IMarker.CHAR_START, -1);
