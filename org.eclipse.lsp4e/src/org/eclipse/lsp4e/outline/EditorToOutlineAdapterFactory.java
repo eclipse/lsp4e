@@ -56,7 +56,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 				// first try to get / remove language server from cache from a previous call
 				LanguageServer server = LANG_SERVER_CACHE.remove(adaptableObject);
 				if (server != null) {
-               return (T) createOutlinePage(editorPart, server);
+					return adapterType.cast(createOutlinePage(editorPart, server));
 				}
 
 				IDocument document = LSPEclipseUtils.getDocument(editorInput);
@@ -79,7 +79,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 					if (!servers.isEmpty()) {
 						// TODO consider other strategies (select, merge...?)
 						LanguageServer languageServer = servers.get(0);
-						return (T) createOutlinePage(editorPart, languageServer);
+						return adapterType.cast(createOutlinePage(editorPart, languageServer));
 					}
 				}
 			}
