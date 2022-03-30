@@ -31,6 +31,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -48,16 +49,17 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 		if (adapterType == IContentOutlinePage.class && adaptableObject instanceof IEditorPart) {
 
 			final IEditorPart editorPart = (IEditorPart) adaptableObject;
+			final IEditorInput editorInput = editorPart.getEditorInput();
 
-			if (LanguageServersRegistry.getInstance().canUseLanguageServer(editorPart.getEditorInput())) {
+			if (editorInput != null && LanguageServersRegistry.getInstance().canUseLanguageServer(editorInput)) {
 
 				// first try to get / remove language server from cache from a previous call
 				LanguageServer server = LANG_SERVER_CACHE.remove(adaptableObject);
 				if (server != null) {
-					return (T) createOutlinePage(editorPart, server);
+					return adapterType.cast(createOutlinePage(editorPart, server));
 				}
 
-				IDocument document = LSPEclipseUtils.getDocument(editorPart.getEditorInput());
+				IDocument document = LSPEclipseUtils.getDocument(editorInput);
 				if (document != null) {
 					CompletableFuture<List<@NonNull LanguageServer>> languageServers = LanguageServiceAccessor
 							.getLanguageServers(document, capabilities -> LSPEclipseUtils
@@ -77,7 +79,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 					if (!servers.isEmpty()) {
 						// TODO consider other strategies (select, merge...?)
 						LanguageServer languageServer = servers.get(0);
-						return (T) createOutlinePage(editorPart, languageServer);
+						return adapterType.cast(createOutlinePage(editorPart, languageServer));
 					}
 				}
 			}
@@ -90,7 +92,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 		return new Class<?>[] { IContentOutlinePage.class };
 	}
 
-	private static CNFOutlinePage createOutlinePage(IEditorPart editorPart, LanguageServer languageServer) {
+	private static CNFOutlinePage createOutlinePage(IEditorPart editorPart, @NonNull LanguageServer languageServer) {
 		ITextEditor textEditor = null;
 		if (editorPart instanceof ITextEditor) {
 			textEditor = (ITextEditor) editorPart;

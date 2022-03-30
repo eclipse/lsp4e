@@ -33,7 +33,7 @@ public interface IMarkerAttributeComputer {
 	 * @param diagnostic
 	 *            the {@link Diagnostic} to me mapped to a marker
 	 * @param document
-	 *            the {@link Document} attached to the given resource
+	 *            the {@link IDocument} attached to the given resource
 	 * @param resource
 	 *            the {@link IResource} that contains the document
 	 * @param attributes
