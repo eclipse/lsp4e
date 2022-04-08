@@ -610,7 +610,7 @@ public class LanguageServerWrapper {
 			documentListener.getDocument().removeDocumentListener(documentListener);
 			documentListener.documentClosed();
 		}
-		if (this.connectedDocuments.isEmpty()) {
+		if (this.serverDefinition.stopOnLastDisconnectedDocument && this.connectedDocuments.isEmpty()) {
 			stop();
 		}
 	}
