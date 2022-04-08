@@ -407,7 +407,7 @@ public class LanguageServerWrapper {
 		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
 	}
 
-	synchronized void stop() {
+	public synchronized void stop() {
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
 			this.initializeFuture = null;

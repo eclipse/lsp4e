@@ -146,6 +146,8 @@ As an example:
             <annotation>
                <documentation>
                   Wether the server should be stopped when the last buffer connected to the server is disconnected. It defaults to true.
+
+If set to false, the server will run until LanguageServerWrapper#close is called programatically or the IDE is closed.
                </documentation>
             </annotation>
          </attribute>
