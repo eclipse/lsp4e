@@ -306,30 +306,30 @@ public class LanguageServiceAccessorTest {
 
 	@Test
 	public void testStopOnLastDisconnectedDocumentFalse() throws Exception {
-		IFile testFile1 = TestUtils.createUniqueTestFile(project, "lsptWithStopOnLastDisconnectedDocumentFalse", "");
+		IFile testFile = TestUtils.createUniqueTestFile(project, "lsptWithStopOnLastDisconnectedDocumentFalse", "");
 
-		Collection<LanguageServerWrapper> wrappers1 = LanguageServiceAccessor.getLSWrappers(testFile1,
-				c -> Boolean.TRUE);
-		assertEquals(1, wrappers1.size());
-		LanguageServerWrapper wrapper1 = wrappers1.iterator().next();
-		assertTrue(wrapper1.isActive());
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile, c -> Boolean.TRUE);
+		assertEquals(1, wrappers.size());
+		LanguageServerWrapper wrapper = wrappers.iterator().next();
+		assertTrue(wrapper.isActive());
 		
-		wrapper1.disconnect(testFile1.getLocationURI());
-		assertTrue(wrapper1.isActive());
+		wrapper.disconnect(testFile.getLocationURI());
+		assertTrue(wrapper.isActive());
+		wrapper.stop();
+		assertFalse(wrapper.isActive());
 	}
 
 	@Test
 	public void testStopOnLastDisconnectedDocumentDefault() throws Exception {
-		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 
-		Collection<LanguageServerWrapper> wrappers1 = LanguageServiceAccessor.getLSWrappers(testFile1,
-				c -> Boolean.TRUE);
-		assertEquals(1, wrappers1.size());
-		LanguageServerWrapper wrapper1 = wrappers1.iterator().next();
-		assertTrue(wrapper1.isActive());
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile, c -> Boolean.TRUE);
+		assertEquals(1, wrappers.size());
+		LanguageServerWrapper wrapper = wrappers.iterator().next();
+		assertTrue(wrapper.isActive());
 		
-		wrapper1.disconnect(testFile1.getLocationURI());
-		assertFalse(wrapper1.isActive());
+		wrapper.disconnect(testFile.getLocationURI());
+		assertFalse(wrapper.isActive());
 	}
 
 	@Test
