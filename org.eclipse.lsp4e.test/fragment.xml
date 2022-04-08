@@ -28,6 +28,12 @@
             id="org.eclipse.lsp4e.test.server.disable"
             label="Test LS Enablement">
       </server>
+      <server
+            class="org.eclipse.lsp4e.test.MockConnectionProvider"
+            id="org.eclipse.lsp4e.test.server-with-stop-on-last-disconnected-document"
+            stopOnLastDisconnectedDocument="false"
+            label="Test LS with StopOnLastDisconnectedDocument set to false">
+      </server>
       <contentTypeMapping
             contentType="org.eclipse.lsp4e.test.content-type"
             id="org.eclipse.lsp4e.test.server">
@@ -60,6 +66,10 @@
       <contentTypeMapping
             contentType="org.eclipse.lsp4e.test.content-type-server-with-multi-root"
             id="org.eclipse.lsp4e.test.server-with-multi-root-support">
+      </contentTypeMapping>
+      <contentTypeMapping
+            contentType="org.eclipse.lsp4e.test.content-type-server-with-stop-on-last-disconnected-document"
+            id="org.eclipse.lsp4e.test.server-with-stop-on-last-disconnected-document">
       </contentTypeMapping>
       <contentTypeMapping
             contentType="org.eclipse.lsp4e.test.content-type-enabled"
@@ -125,6 +135,13 @@
             file-extensions="lsptWithMultiRoot"
             id="org.eclipse.lsp4e.test.content-type-server-with-multi-root"
             name="Test Content Type Server with Multi-Root Support"
+            priority="normal">
+      </content-type>
+      <content-type
+            base-type="org.eclipse.core.runtime.text"
+            file-extensions="lsptWithStopOnLastDisconnectedDocumentFalse"
+            id="org.eclipse.lsp4e.test.content-type-server-with-stop-on-last-disconnected-document"
+            name="Test Content Type Server with Stop On Last Disconnected Document set to false"
             priority="normal">
       </content-type>
       <content-type
