@@ -142,6 +142,13 @@ As an example:
                </documentation>
             </annotation>
          </attribute>
+         <attribute name="stopOnLastDisconnectedDocument" type="boolean">
+            <annotation>
+               <documentation>
+                  Wether the server should be stopped when the last buffer connected to the server is disconnected. It defaults to true.
+               </documentation>
+            </annotation>
+         </attribute>
       </complexType>
    </element>
 
