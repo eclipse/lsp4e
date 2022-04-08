@@ -305,6 +305,34 @@ public class LanguageServiceAccessorTest {
 	}
 
 	@Test
+	public void testStopOnLastDisconnectedDocumentFalse() throws Exception {
+		IFile testFile1 = TestUtils.createUniqueTestFile(project, "lsptWithStopOnLastDisconnectedDocumentFalse", "");
+
+		Collection<LanguageServerWrapper> wrappers1 = LanguageServiceAccessor.getLSWrappers(testFile1,
+				c -> Boolean.TRUE);
+		assertEquals(1, wrappers1.size());
+		LanguageServerWrapper wrapper1 = wrappers1.iterator().next();
+		assertTrue(wrapper1.isActive());
+		
+		wrapper1.disconnect(testFile1.getLocationURI());
+		assertTrue(wrapper1.isActive());
+	}
+
+	@Test
+	public void testStopOnLastDisconnectedDocumentDefault() throws Exception {
+		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
+
+		Collection<LanguageServerWrapper> wrappers1 = LanguageServiceAccessor.getLSWrappers(testFile1,
+				c -> Boolean.TRUE);
+		assertEquals(1, wrappers1.size());
+		LanguageServerWrapper wrapper1 = wrappers1.iterator().next();
+		assertTrue(wrapper1.isActive());
+		
+		wrapper1.disconnect(testFile1.getLocationURI());
+		assertFalse(wrapper1.isActive());
+	}
+
+	@Test
 	public void testLanguageServerHierarchy_moreSpecializedFirst() throws Exception {
 		// file with a content-type and a parent, each associated to one LS
 		IFile testFile = TestUtils.createUniqueTestFile(project, "lsptchild", "");
