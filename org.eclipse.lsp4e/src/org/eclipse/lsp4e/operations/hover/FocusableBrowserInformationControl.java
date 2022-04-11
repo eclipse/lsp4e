@@ -23,6 +23,7 @@ import org.eclipse.jface.resource.ColorRegistry;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.DefaultInformationControl;
 import org.eclipse.jface.text.IInformationControlCreator;
+import org.eclipse.jface.util.Util;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.ui.UI;
@@ -68,6 +69,15 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 		super(parent, JFaceResources.DEFAULT_FONT, EditorsUI.getTooltipAffordanceString());
 	}
 
+	private double adjust(double height, Object margin) {
+		if (margin instanceof String && ((String) margin).endsWith("px")) { //$NON-NLS-1$
+			try {
+				height += Integer.parseInt(((String) margin).substring(0, ((String) margin).length() - 2));
+			} catch (NumberFormatException e) {}
+		}
+		return height;
+	}
+
 	@Override
 	protected void createContent(Composite parent) {
 		super.createContent(parent);
@@ -87,6 +97,8 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 			setSize(width.intValue(), hint.y);
 			browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"normal\""); //$NON-NLS-1$
 			Double height = (Double) browser.evaluate("return document.body.scrollHeight;"); //$NON-NLS-1$
+			Object marginTop = browser.evaluate("return window.getComputedStyle(document.body).marginTop;"); //$NON-NLS-1$
+			Object marginBottom = browser.evaluate("return getComputedStyle(document.body).marginBottom;"); //$NON-NLS-1$
 			if (Platform.getPreferencesService().getBoolean(EditorsUI.PLUGIN_ID,
 					AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SHOW_TEXT_HOVER_AFFORDANCE, true,
 					null)) {
@@ -95,6 +107,10 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 			}
 
 			width = Double.valueOf(width * 1.5);
+			if (Util.isWin32()) {
+				height = adjust(height, marginTop);
+				height = adjust(height, marginBottom);
+			}
 			if (constraints != null && constraints.x < width) {
 				width = (double) constraints.x;
 			}
