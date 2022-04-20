@@ -74,8 +74,8 @@ public class LanguageServersRegistry {
 	private static final String ID_ATTRIBUTE = "id"; //$NON-NLS-1$
 	private static final String SINGLETON_ATTRIBUTE = "singleton"; //$NON-NLS-1$
 	private static final boolean DEFAULT_SINGLETON = false;
-	private static final String STOP_ON_LAST_DISCONNECTED_DOCUMENT = "stopOnLastDisconnectedDocument"; //$NON-NLS-1$
-	private static final boolean DEFAULT_STOP_ON_LAST_DISCONNECTED_DOCUMENT = true;
+	private static final String LAST_DOCUMENT_DISCONNECTED_TIMEOUT = "lastDocumentDisconnectedTimeout"; //$NON-NLS-1$
+	private static final int DEFAULT_LAST_DOCUMENTED_DISCONNECTED_TIEMOUT = 0;
 	private static final String CONTENT_TYPE_ATTRIBUTE = "contentType"; //$NON-NLS-1$
 	private static final String LANGUAGE_ID_ATTRIBUTE = "languageId"; //$NON-NLS-1$
 	private static final String CLASS_ATTRIBUTE = "class"; //$NON-NLS-1$
@@ -92,14 +92,14 @@ public class LanguageServersRegistry {
 		public final @NonNull String id;
 		public final @NonNull String label;
 		public final boolean isSingleton;
-		public final boolean stopOnLastDisconnectedDocument;
+		public final int lastDocumentDisconnectedTimeout;
 		public final @NonNull Map<IContentType, String> languageIdMappings;
 
-		LanguageServerDefinition(@NonNull String id, @NonNull String label, boolean isSingleton, boolean stopOnLastDisconnectedDocument) {
+		LanguageServerDefinition(@NonNull String id, @NonNull String label, boolean isSingleton, int lastDocumentDisconnectedTimeout) {
 			this.id = id;
 			this.label = label;
 			this.isSingleton = isSingleton;
-			this.stopOnLastDisconnectedDocument = stopOnLastDisconnectedDocument;
+			this.lastDocumentDisconnectedTimeout = lastDocumentDisconnectedTimeout;
 			this.languageIdMappings = new ConcurrentHashMap<>();
 		}
 
@@ -145,13 +145,13 @@ public class LanguageServersRegistry {
 			return Boolean.parseBoolean(element.getAttribute(SINGLETON_ATTRIBUTE));
 		}
 
-		private static boolean getStopOnLastDisconnectedDocument(IConfigurationElement element) {
-			String stopOnLastDisconnectedDocumentAttribute = element.getAttribute(STOP_ON_LAST_DISCONNECTED_DOCUMENT);
-			return stopOnLastDisconnectedDocumentAttribute == null ? DEFAULT_STOP_ON_LAST_DISCONNECTED_DOCUMENT : Boolean.parseBoolean(stopOnLastDisconnectedDocumentAttribute);
+		private static int getLastDocumentDisconnectedTimeout(IConfigurationElement element) {
+			String lastDocumentisconnectedTiemoutAttribute = element.getAttribute(LAST_DOCUMENT_DISCONNECTED_TIMEOUT);
+			return lastDocumentisconnectedTiemoutAttribute == null ? DEFAULT_LAST_DOCUMENTED_DISCONNECTED_TIEMOUT : Integer.parseInt(lastDocumentisconnectedTiemoutAttribute);
 		}
 
 		public ExtensionLanguageServerDefinition(@NonNull IConfigurationElement element) {
-			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE), getIsSingleton(element), getStopOnLastDisconnectedDocument(element));
+			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE), getIsSingleton(element), getLastDocumentDisconnectedTimeout(element));
 			this.extension = element;
 		}
 
@@ -224,7 +224,7 @@ public class LanguageServersRegistry {
 
 		public LaunchConfigurationLanguageServerDefinition(ILaunchConfiguration launchConfiguration,
 				Set<String> launchModes) {
-			super(launchConfiguration.getName(), launchConfiguration.getName(), DEFAULT_SINGLETON, DEFAULT_STOP_ON_LAST_DISCONNECTED_DOCUMENT);
+			super(launchConfiguration.getName(), launchConfiguration.getName(), DEFAULT_SINGLETON, DEFAULT_LAST_DOCUMENTED_DISCONNECTED_TIEMOUT);
 			this.launchConfiguration = launchConfiguration;
 			this.launchModes = launchModes;
 		}

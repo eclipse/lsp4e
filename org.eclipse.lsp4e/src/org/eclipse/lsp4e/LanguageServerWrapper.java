@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -162,6 +164,7 @@ public class LanguageServerWrapper {
 	private CompletableFuture<Void> initializeFuture;
 	private LanguageServer languageServer;
 	private ServerCapabilities serverCapabilities;
+	private Timer timer;
 
 	/**
 	 * Map containing unregistration handlers for dynamic capability registrations.
@@ -565,7 +568,9 @@ public class LanguageServerWrapper {
 	 * @noreference internal so far
 	 */
 	private CompletableFuture<LanguageServer> connect(@NonNull URI uri, IDocument document) throws IOException {
-
+		if (timer != null) {
+			timer.cancel();
+		}
 		if (this.connectedDocuments.containsKey(uri)) {
 			return CompletableFuture.completedFuture(languageServer);
 		}
@@ -610,8 +615,21 @@ public class LanguageServerWrapper {
 			documentListener.getDocument().removeDocumentListener(documentListener);
 			documentListener.documentClosed();
 		}
-		if (this.serverDefinition.stopOnLastDisconnectedDocument && this.connectedDocuments.isEmpty()) {
-			stop();
+		if (this.connectedDocuments.isEmpty()) {
+			if (timer != null) {
+				timer.cancel();
+			}
+			if (this.serverDefinition.lastDocumentDisconnectedTimeout == 0) {
+				stop();
+			}
+			timer = new Timer("Stop Language Server Timer"); //$NON-NLS-1$
+
+			timer.schedule(new TimerTask() {
+				@Override
+				public void run() {
+					stop();
+				}
+			}, TimeUnit.SECONDS.toMillis(this.serverDefinition.lastDocumentDisconnectedTimeout));
 		}
 	}
 
