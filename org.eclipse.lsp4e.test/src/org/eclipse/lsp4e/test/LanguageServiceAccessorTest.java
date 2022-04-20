@@ -320,7 +320,7 @@ public class LanguageServiceAccessorTest {
 	}
 
 	@Test
-	public void testLastDocumentDisconnectedTimeoutManualTimerStop() throws Exception {
+	public void testLastDocumentDisconnectedTimeoutTimerStop() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "lsptWithLastDocumentDisconnectedTimeout", "");
 
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile, c -> Boolean.TRUE);

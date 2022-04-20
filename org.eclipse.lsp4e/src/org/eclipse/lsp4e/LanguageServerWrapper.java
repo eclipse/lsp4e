@@ -409,6 +409,10 @@ public class LanguageServerWrapper {
 	}
 
 	public synchronized void stop() {
+		if (timer != null) {
+			timer.cancel();
+			timer = null;
+		}
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
 			this.initializeFuture = null;
@@ -570,6 +574,7 @@ public class LanguageServerWrapper {
 	private CompletableFuture<LanguageServer> connect(@NonNull URI uri, IDocument document) throws IOException {
 		if (timer != null) {
 			timer.cancel();
+			timer = null;
 		}
 		if (this.connectedDocuments.containsKey(uri)) {
 			return CompletableFuture.completedFuture(languageServer);
