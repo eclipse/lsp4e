@@ -142,12 +142,12 @@ As an example:
                </documentation>
             </annotation>
          </attribute>
-         <attribute name="stopOnLastDisconnectedDocument" type="boolean">
+         <attribute name="lastDocumentDisconnectedTimeout" type="string">
             <annotation>
                <documentation>
-                  Wether the server should be stopped when the last buffer connected to the server is disconnected. It defaults to true.
+                  Timeout in seconds after which the server should be stopped when the last buffer connected to the server is disconnected. It defaults to zero, that is, the server is stop right after the last connected document is disconected.
 
-If set to false, the server will run until LanguageServerWrapper#close is called programatically or the IDE is closed.
+If set to a number bigger than zero, the server will run until the timeout is reached or until LanguageServerWrapper#close is called programatically or the IDE is closed.
                </documentation>
             </annotation>
          </attribute>

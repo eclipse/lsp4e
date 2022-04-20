@@ -305,14 +305,14 @@ public class LanguageServiceAccessorTest {
 	}
 
 	@Test
-	public void testStopOnLastDisconnectedDocumentFalse() throws Exception {
-		IFile testFile = TestUtils.createUniqueTestFile(project, "lsptWithStopOnLastDisconnectedDocumentFalse", "");
+	public void testLastDocumentDisconnectedTimeoutManualStop() throws Exception {
+		IFile testFile = TestUtils.createUniqueTestFile(project, "lsptWithLastDocumentDisconnectedTimeout", "");
 
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile, c -> Boolean.TRUE);
 		assertEquals(1, wrappers.size());
 		LanguageServerWrapper wrapper = wrappers.iterator().next();
 		assertTrue(wrapper.isActive());
-		
+
 		wrapper.disconnect(testFile.getLocationURI());
 		assertTrue(wrapper.isActive());
 		wrapper.stop();
@@ -320,14 +320,29 @@ public class LanguageServiceAccessorTest {
 	}
 
 	@Test
-	public void testStopOnLastDisconnectedDocumentDefault() throws Exception {
+	public void testLastDocumentDisconnectedTimeoutManualTimerStop() throws Exception {
+		IFile testFile = TestUtils.createUniqueTestFile(project, "lsptWithLastDocumentDisconnectedTimeout", "");
+
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile, c -> Boolean.TRUE);
+		assertEquals(1, wrappers.size());
+		LanguageServerWrapper wrapper = wrappers.iterator().next();
+		assertTrue(wrapper.isActive());
+
+		wrapper.disconnect(testFile.getLocationURI());
+		assertTrue(wrapper.isActive());
+		Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+		assertFalse(wrapper.isActive());
+	}
+	
+	@Test
+	public void testLastDocumentDisconnectedTimeoutZero() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile, c -> Boolean.TRUE);
 		assertEquals(1, wrappers.size());
 		LanguageServerWrapper wrapper = wrappers.iterator().next();
 		assertTrue(wrapper.isActive());
-		
+
 		wrapper.disconnect(testFile.getLocationURI());
 		assertFalse(wrapper.isActive());
 	}
