@@ -355,13 +355,8 @@ public class LSPEclipseUtils {
 
 			IFile[] files = wsRoot.findFilesForLocationURI(uri);
 			if (files.length > 0) {
-				IFile file = files[0];
-				/*
-				 * IWorkspaceRoot#findFilesForLocationURI returns IFile objects for folders instead of null.
-				 * IWorkspaceRoot#findContainersForLocationURI returns IFolder objects for regular files instead of null.
-				 * Thus we have to manually check the file system entry to determine the correct type to return.
-				 */
-				if(!file.isVirtual() && !file.getLocation().toFile().isDirectory()) {
+				IFile file = findMostNested(files);
+				if(file!=null) {
 					return file;
 				}
 			}
@@ -374,6 +369,25 @@ public class LSPEclipseUtils {
 		} else {
 			return Adapters.adapt(uri, IResource.class, true);
 		}
+	}
+
+	private static IFile findMostNested(IFile[] files) {
+		int shortestLen = Integer.MAX_VALUE;
+		IFile shortest = null;
+		for (IFile file : files) {
+			/*
+			 * IWorkspaceRoot#findFilesForLocationURI returns IFile objects for folders instead of null.
+			 * IWorkspaceRoot#findContainersForLocationURI returns IFolder objects for regular files instead of null.
+			 * Thus we have to manually check the file system entry to determine the correct type to return.
+			 */
+			if(!file.isVirtual() && !file.getLocation().toFile().isDirectory()) {
+				IPath path = file.getFullPath();
+				if (path.segmentCount() < shortestLen) {
+					shortest = file;
+				}
+			}
+		}
+		return shortest;
 	}
 
 	public static void applyEdit(TextEdit textEdit, IDocument document) throws BadLocationException {
