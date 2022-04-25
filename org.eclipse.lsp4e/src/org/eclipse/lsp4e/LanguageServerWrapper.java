@@ -109,6 +109,7 @@ import org.eclipse.lsp4j.TypeDefinitionCapabilities;
 import org.eclipse.lsp4j.UnregistrationParams;
 import org.eclipse.lsp4j.WorkspaceClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceEditCapabilities;
+import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
@@ -495,25 +496,47 @@ public class LanguageServerWrapper {
 				if (currentLS != null && currentLS == LanguageServerWrapper.this.languageServer) {
 					currentLS.getWorkspaceService().didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(wsFolderEvent));
 				}
-				ResourcesPlugin.getWorkspace().addResourceChangeListener(workspaceFolderUpdater, IResourceChangeEvent.POST_CHANGE);
+				ResourcesPlugin.getWorkspace().addResourceChangeListener(workspaceFolderUpdater, IResourceChangeEvent.POST_CHANGE | IResourceChangeEvent.PRE_DELETE);
 				return Status.OK_STATUS;
 			}
 		}.schedule();
 	}
 
-	private static final @Nullable WorkspaceFoldersChangeEvent toWorkspaceFolderEvent(IResourceChangeEvent e) {
-		if (e.getType() != IResourceChangeEvent.POST_CHANGE) {
+	private static final @Nullable WorkspaceFoldersChangeEvent toWorkspaceFolderEvent(
+			IResourceChangeEvent e) {
+
+		// If a project delete then the delta is null, but we get the project in the top-level resource
+		WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
+		if (e.getType() == IResourceChangeEvent.PRE_DELETE) {
+			final IResource resource = e.getResource();
+			if (resource instanceof IProject) {
+				wsFolderEvent.getRemoved()
+						.add(LSPEclipseUtils.toWorkspaceFolder((IProject)resource));
+				return wsFolderEvent;
+			} else {
+				return null;
+			}
+		} else if (e.getType() != IResourceChangeEvent.POST_CHANGE) {
 			return null;
 		}
-		WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
+
+		// Use the visitor implementation to extract the low-level detail from delta
 		try {
 			e.getDelta().accept(delta -> {
 				if (delta.getResource().getType() == IResource.PROJECT) {
-					IProject project = (IProject)delta.getResource();
-					if ((delta.getKind() == IResourceDelta.ADDED || delta.getKind() == IResourceDelta.OPEN) && project.isAccessible()) {
-						wsFolderEvent.getAdded().add(LSPEclipseUtils.toWorkspaceFolder((IProject)delta.getResource()));
-					} else if (delta.getKind() == IResourceDelta.REMOVED || (delta.getKind() == IResourceDelta.OPEN && !project.isAccessible())) {
-						wsFolderEvent.getRemoved().add(LSPEclipseUtils.toWorkspaceFolder((IProject)delta.getResource()));
+					IProject project = (IProject) delta.getResource();
+					final WorkspaceFolder wsFolder = LSPEclipseUtils.toWorkspaceFolder(project);
+					if ((delta.getKind() == IResourceDelta.ADDED || (delta.getKind() == IResourceDelta.CHANGED
+							&& (delta.getFlags() & IResourceDelta.OPEN) == IResourceDelta.OPEN))
+							&& project.isAccessible()
+							&& wsFolder != null) {
+						wsFolderEvent.getAdded().add(wsFolder);
+					} else if ((delta.getKind() == IResourceDelta.REMOVED
+							|| (delta.getKind() == IResourceDelta.CHANGED
+									&& (delta.getFlags() & IResourceDelta.OPEN) == IResourceDelta.OPEN))
+									&& !project.isAccessible()
+									&& wsFolder != null) {
+						wsFolderEvent.getRemoved().add(wsFolder);
 					}
 					// TODO: handle renamed/moved (on filesystem)
 				}
