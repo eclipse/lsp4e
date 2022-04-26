@@ -410,11 +410,26 @@ public class LanguageServerWrapper {
 		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
 	}
 
-	public synchronized void stop() {
+	private void removeStopTimer() {
 		if (timer != null) {
 			timer.cancel();
 			timer = null;
 		}
+	}
+
+	private void startStopTimer() {
+		timer = new Timer("Stop Language Server Timer"); //$NON-NLS-1$
+
+		timer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+				stop();
+			}
+		}, TimeUnit.SECONDS.toMillis(this.serverDefinition.lastDocumentDisconnectedTimeout));
+	}
+
+	public synchronized void stop() {
+		removeStopTimer();
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
 			this.initializeFuture = null;
@@ -574,10 +589,7 @@ public class LanguageServerWrapper {
 	 * @noreference internal so far
 	 */
 	private CompletableFuture<LanguageServer> connect(@NonNull URI uri, IDocument document) throws IOException {
-		if (timer != null) {
-			timer.cancel();
-			timer = null;
-		}
+		removeStopTimer();
 		if (this.connectedDocuments.containsKey(uri)) {
 			return CompletableFuture.completedFuture(languageServer);
 		}
@@ -623,20 +635,12 @@ public class LanguageServerWrapper {
 			documentListener.documentClosed();
 		}
 		if (this.connectedDocuments.isEmpty()) {
-			if (timer != null) {
-				timer.cancel();
-			}
-			if (this.serverDefinition.lastDocumentDisconnectedTimeout == 0) {
+			if (this.serverDefinition.lastDocumentDisconnectedTimeout != 0) {
+				removeStopTimer();
+				startStopTimer();
+			} else {
 				stop();
 			}
-			timer = new Timer("Stop Language Server Timer"); //$NON-NLS-1$
-
-			timer.schedule(new TimerTask() {
-				@Override
-				public void run() {
-					stop();
-				}
-			}, TimeUnit.SECONDS.toMillis(this.serverDefinition.lastDocumentDisconnectedTimeout));
 		}
 	}
 
