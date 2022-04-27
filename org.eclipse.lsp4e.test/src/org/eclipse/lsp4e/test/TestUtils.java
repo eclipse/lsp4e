@@ -23,6 +23,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.BooleanSupplier;
 
 import org.eclipse.core.resources.IFile;
@@ -31,7 +33,6 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -48,6 +49,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.FileEditorInput;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -226,5 +228,31 @@ public class TestUtils {
 				return !server.isRunning();
 			}
 		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 1000));
+	}
+	
+	public static class JobSynchronizer extends NullProgressMonitor {
+		private final CountDownLatch latch = new CountDownLatch(1);
+		
+		@Override
+		public void done() {
+			latch.countDown();
+
+		}
+		@Override
+		public void setCanceled(boolean cancelled) {
+			super.setCanceled(cancelled);
+			if (cancelled) {
+				latch.countDown();
+			}
+		}
+		
+		public void await() throws InterruptedException, BrokenBarrierException {
+			latch.await();
+		}
+		
+		@Override
+		public void worked(int work) {
+			latch.countDown();
+		}
 	}
 }
