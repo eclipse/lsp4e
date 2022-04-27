@@ -418,6 +418,7 @@ public class LanguageServerWrapper {
 		final Future<?> serverFuture = this.launcherFuture;
 		final StreamConnectionProvider provider = this.lspStreamProvider;
 		final LanguageServer languageServerInstance = this.languageServer;
+		ResourcesPlugin.getWorkspace().removeResourceChangeListener(workspaceFolderUpdater);
 
 		Runnable shutdownKillAndStopFutureAndProvider = () -> {
 			if (languageServerInstance != null) {
@@ -455,7 +456,6 @@ public class LanguageServerWrapper {
 		this.languageServer = null;
 
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
-		ResourcesPlugin.getWorkspace().removeResourceChangeListener(workspaceFolderUpdater);
 	}
 
 	/**
@@ -529,13 +529,13 @@ public class LanguageServerWrapper {
 					if ((delta.getKind() == IResourceDelta.ADDED || (delta.getKind() == IResourceDelta.CHANGED
 							&& (delta.getFlags() & IResourceDelta.OPEN) == IResourceDelta.OPEN))
 							&& project.isAccessible()
-							&& wsFolder != null) {
+							&& wsFolder != null && !wsFolder.getUri().isEmpty()) {
 						wsFolderEvent.getAdded().add(wsFolder);
 					} else if ((delta.getKind() == IResourceDelta.REMOVED
 							|| (delta.getKind() == IResourceDelta.CHANGED
 									&& (delta.getFlags() & IResourceDelta.OPEN) == IResourceDelta.OPEN))
 									&& !project.isAccessible()
-									&& wsFolder != null) {
+									&& wsFolder != null && !wsFolder.getUri().isEmpty()) {
 						wsFolderEvent.getRemoved().add(wsFolder);
 					}
 					// TODO: handle renamed/moved (on filesystem)

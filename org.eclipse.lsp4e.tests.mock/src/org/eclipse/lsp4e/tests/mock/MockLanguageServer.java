@@ -22,6 +22,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Supplier;
 
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeLens;
@@ -60,7 +61,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 
 public final class MockLanguageServer implements LanguageServer {
 
-	public static MockLanguageServer INSTANCE = new MockLanguageServer();
+	public static MockLanguageServer INSTANCE = new MockLanguageServer(MockLanguageServer::defaultServerCapabilities);
 
 	/**
 	 * This command will be reported on initialization to be supported for execution
@@ -77,11 +78,15 @@ public final class MockLanguageServer implements LanguageServer {
 	private List<LanguageClient> remoteProxies = new ArrayList<>();
 
 	public static void reset() {
-		INSTANCE = new MockLanguageServer();
+		INSTANCE = new MockLanguageServer(MockLanguageServer::defaultServerCapabilities);
 	}
 
-	private MockLanguageServer() {
-		resetInitializeResult();
+	public static void reset(final Supplier<ServerCapabilities> serverConfigurer) {
+		INSTANCE = new MockLanguageServer(serverConfigurer);
+	}
+
+	private MockLanguageServer(final Supplier<ServerCapabilities> serverConfigurer) {
+		resetInitializeResult(serverConfigurer);
 	}
 
 	/**
@@ -103,7 +108,24 @@ public final class MockLanguageServer implements LanguageServer {
 		this.started = true;
 	}
 
-	private void resetInitializeResult() {
+	private void resetInitializeResult(final Supplier<ServerCapabilities> serverConfigurer) {
+		initializeResult.setCapabilities(serverConfigurer.get());
+	}
+
+	<U> CompletableFuture<U> buildMaybeDelayedFuture(U value) {
+		if (delay > 0) {
+			return CompletableFuture.runAsync(() -> {
+				try {
+					Thread.sleep(delay);
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}).thenApply(v -> value);
+		}
+		return CompletableFuture.completedFuture(value);
+	}
+
+	public static ServerCapabilities defaultServerCapabilities() {
 		ServerCapabilities capabilities = new ServerCapabilities();
 		capabilities.setTextDocumentSync(TextDocumentSyncKind.Full);
 		CompletionOptions completionProvider = new CompletionOptions(false, null);
@@ -127,22 +149,8 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setColorProvider(Boolean.TRUE);
 		capabilities.setDocumentSymbolProvider(Boolean.TRUE);
 		capabilities.setLinkedEditingRangeProvider(new LinkedEditingRangeRegistrationOptions());
-		initializeResult.setCapabilities(capabilities);
+		return capabilities;
 	}
-
-	<U> CompletableFuture<U> buildMaybeDelayedFuture(U value) {
-		if (delay > 0) {
-			return CompletableFuture.runAsync(() -> {
-				try {
-					Thread.sleep(delay);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-			}).thenApply(v -> value);
-		}
-		return CompletableFuture.completedFuture(value);
-	}
-
 	@Override
 	public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
 		return buildMaybeDelayedFuture(initializeResult);

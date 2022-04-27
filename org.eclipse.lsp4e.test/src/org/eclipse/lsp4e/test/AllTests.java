@@ -79,7 +79,8 @@ import org.junit.runners.Suite.SuiteClasses;
 	LanguageServerWrapperTest.class,
 	ColorTest.class,
 	LSPCodeMiningTest.class,
-	ShowMessageTest.class
+	ShowMessageTest.class,
+	WorkspaceFoldersTest.class
 })
 public class AllTests {
 

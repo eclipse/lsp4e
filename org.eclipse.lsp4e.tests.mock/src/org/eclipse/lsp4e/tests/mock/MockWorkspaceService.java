@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -28,6 +29,7 @@ public class MockWorkspaceService implements WorkspaceService {
 
 	private Function<?, ?> _futureFactory;
 	private CompletableFuture<ExecuteCommandParams> executedCommand = new CompletableFuture<>();
+	private List<DidChangeWorkspaceFoldersParams> workspaceFoldersEvents = new ArrayList<>();
 
 	public <U> MockWorkspaceService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -63,8 +65,11 @@ public class MockWorkspaceService implements WorkspaceService {
 
 	@Override
 	public void didChangeWorkspaceFolders(DidChangeWorkspaceFoldersParams params) {
-		// TODO Auto-generated method stub
+		workspaceFoldersEvents.add(params);
+	}
 
+	public List<DidChangeWorkspaceFoldersParams> getWorkspaceFoldersEvents() {
+		return this.workspaceFoldersEvents;
 	}
 
 	@Override

@@ -11,17 +11,30 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import java.util.function.Supplier;
+
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.intro.IIntroPart;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
 public class AllCleanRule extends TestWatcher {
+	
+	private final Supplier<ServerCapabilities> serverConfigurer;
+	
+	public AllCleanRule() {
+		this.serverConfigurer = MockLanguageServer::defaultServerCapabilities;
+	}
+	
+	public AllCleanRule(final Supplier<ServerCapabilities> serverConfigurer) {
+		this.serverConfigurer = serverConfigurer;
+	}
 
 	@Override
 	protected void starting(Description description) {
@@ -49,6 +62,6 @@ public class AllCleanRule extends TestWatcher {
 			}
 		}
 		LanguageServiceAccessor.clearStartedServers();
-		MockLanguageServer.reset();
+		MockLanguageServer.reset(this.serverConfigurer);
 	}
 }
