@@ -214,7 +214,7 @@ public class DiagnosticsTest {
 			Assert.assertTrue(new DisplayHelper() {
 				@Override
 				protected boolean condition() {
-					return ColorTest.containsColor(widget, warningColor);
+					return ColorTest.containsColor(widget, warningColor, 10);
 				}
 			}.waitForCondition(widget.getDisplay(), 3000));
 		} finally {
