@@ -70,6 +70,7 @@ import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.CodeActionKindCapabilities;
 import org.eclipse.lsp4j.CodeActionLiteralSupportCapabilities;
 import org.eclipse.lsp4j.CodeActionOptions;
+import org.eclipse.lsp4j.CodeActionResolveSupportCapabilities;
 import org.eclipse.lsp4j.CodeLensCapabilities;
 import org.eclipse.lsp4j.ColorProviderCapabilities;
 import org.eclipse.lsp4j.CompletionCapabilities;
@@ -300,15 +301,16 @@ public class LanguageServerWrapper {
 				editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
 				workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
 				TextDocumentClientCapabilities textDocumentClientCapabilities = new TextDocumentClientCapabilities();
-				textDocumentClientCapabilities
-						.setCodeAction(
-								new CodeActionCapabilities(
-										new CodeActionLiteralSupportCapabilities(
-												new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix,
-														CodeActionKind.Refactor, CodeActionKind.RefactorExtract,
-														CodeActionKind.RefactorInline, CodeActionKind.RefactorRewrite,
-														CodeActionKind.Source, CodeActionKind.SourceOrganizeImports))),
-										true));
+				CodeActionCapabilities codeAction = new CodeActionCapabilities(
+						new CodeActionLiteralSupportCapabilities(
+								new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix,
+										CodeActionKind.Refactor, CodeActionKind.RefactorExtract,
+										CodeActionKind.RefactorInline, CodeActionKind.RefactorRewrite,
+										CodeActionKind.Source, CodeActionKind.SourceOrganizeImports))),
+						true);
+				codeAction.setDataSupport(true);
+				codeAction.setResolveSupport(new CodeActionResolveSupportCapabilities(List.of("edit")));  //$NON-NLS-1$
+				textDocumentClientCapabilities.setCodeAction(codeAction);
 				textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
 				textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
 				CompletionItemCapabilities completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);

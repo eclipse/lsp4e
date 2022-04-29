@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2020 Pivotal Inc. and others.
+ * Copyright (c) 2017, 2022 Pivotal Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -21,15 +21,11 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.ui.text.java.ContentAssistInvocationContext;
-import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposalComputer;
-import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
-import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.Point;
 
 @SuppressWarnings({ "restriction" })
 public class LSJavaCompletionProposalComputer implements IJavaCompletionProposalComputer {
@@ -117,53 +113,6 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 
 	@Override
 	public void sessionEnded() {
-	}
-	
-	class LSJavaProposal implements IJavaCompletionProposal {
-		
-		private ICompletionProposal delegate;
-		private int relevance;
-
-		public LSJavaProposal(ICompletionProposal delegate,  int relevance) {
-			this.delegate = delegate;
-			this.relevance = relevance;
-		}
-
-		@Override
-		public void apply(IDocument document) {
-			delegate.apply(document);	
-		}
-
-		@Override
-		public String getAdditionalProposalInfo() {
-			return delegate.getAdditionalProposalInfo();
-		}
-
-		@Override
-		public IContextInformation getContextInformation() {
-			return delegate.getContextInformation();
-		}
-
-		@Override
-		public String getDisplayString() {
-			return delegate.getDisplayString();
-		}
-
-		@Override
-		public Image getImage() {
-			return delegate.getImage();
-		}
-
-		@Override
-		public Point getSelection(IDocument document) {
-			return delegate.getSelection(document);
-		}
-
-		@Override
-		public int getRelevance() {
-			return relevance;
-		}
-		
 	}
 
 }

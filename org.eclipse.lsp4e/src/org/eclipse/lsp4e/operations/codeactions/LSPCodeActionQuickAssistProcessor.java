@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat Inc. and others.
+ * Copyright (c) 2019, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.contentassist.CompletionProposal;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContextInformation;
@@ -37,7 +36,6 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
-import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
@@ -47,15 +45,11 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.internal.progress.ProgressInfoItem;
-import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor {
 
 	private List<LSPDocumentInfo> infos;
-	private Range range;
-	List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
 
 	private static final ICompletionProposal COMPUTING = new ICompletionProposal() {
 
@@ -106,13 +100,13 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 	@Override
 	public boolean canAssist(IQuickAssistInvocationContext invocationContext) {
 		if (this.infos == null || this.infos.isEmpty()) {
-			infos = getLSPDocumentInfos();
+			infos = getLSPDocumentInfos(invocationContext.getSourceViewer().getDocument());
 			if (infos.isEmpty()) {
 				return false;
 			}
 		}
 
-		CodeActionParams params = prepareCodeActionParams(infos);
+		CodeActionParams params = prepareCodeActionParams(infos, invocationContext.getOffset(), invocationContext.getLength());
 		List<Either<Command, CodeAction>> possibleProposals = Collections.synchronizedList(new ArrayList<>());
 		List<CompletableFuture<Void>> futures = infos.stream()
 				.map(info -> info.getInitializedLanguageClient()
@@ -138,19 +132,18 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 	@Override
 	public ICompletionProposal[] computeQuickAssistProposals(IQuickAssistInvocationContext invocationContext) {
 		if (this.infos == null || this.infos.isEmpty()) {
-			infos = getLSPDocumentInfos();
+			infos = getLSPDocumentInfos(invocationContext.getSourceViewer().getDocument());
 			if (infos.isEmpty()) {
 				return NO_PROPOSALS;
 			}
 		}
 
 		// Get the codeActions
-		CodeActionParams params = prepareCodeActionParams(this.infos);
+		CodeActionParams params = prepareCodeActionParams(infos, invocationContext.getOffset(), invocationContext.getLength());
+		List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
 		List<CompletableFuture<Void>> futures = Collections.emptyList();
 		try {
 			// Prevent infinite recursion by only computing proposals if there aren't any
-			if (proposals.contains(COMPUTING) || proposals.isEmpty()) {
-				proposals.clear();
 				futures = infos.stream()
 						.map(info -> info.getInitializedLanguageClient()
 								.thenComposeAsync(ls -> ls.getTextDocumentService().codeAction(params)
@@ -162,7 +155,6 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 				CompletableFuture<?> aggregateFutures = CompletableFuture
 						.allOf(futures.toArray(new CompletableFuture[futures.size()]));
 				aggregateFutures.get(200, TimeUnit.MILLISECONDS);
-			}
 		} catch (InterruptedException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (TimeoutException e) {
@@ -175,25 +167,12 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		return proposals.toArray(new ICompletionProposal[proposals.size()]);
 	}
 
-	private List<LSPDocumentInfo> getLSPDocumentInfos() {
-		IEditorPart editor = UI.getActiveTextEditor();
-		if (editor != null) {
-			ITextEditor textEditor = (ITextEditor) editor;
-			IDocument document = LSPEclipseUtils.getDocument(textEditor);
-			if (document == null) {
-				return Collections.emptyList();
-			}
-			infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-					LSPCodeActionMarkerResolution::providesCodeActions);
-			ITextSelection selection = (ITextSelection) textEditor.getSelectionProvider().getSelection();
-			try {
-				this.range = new Range(LSPEclipseUtils.toPosition(selection.getOffset(), document),
-						LSPEclipseUtils.toPosition(selection.getOffset() + selection.getLength(), document));
-			} catch (BadLocationException e) {
-				LanguageServerPlugin.logError(e);
-			}
+	private List<LSPDocumentInfo> getLSPDocumentInfos(IDocument document) {
+		if (document == null) {
+			return Collections.emptyList();
 		}
-		return infos;
+		return LanguageServiceAccessor.getLSPDocumentInfosFor(document,
+				LSPCodeActionMarkerResolution::providesCodeActions);
 	}
 
 	/**
@@ -208,11 +187,16 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 				.getSourceViewer().getTextOperationTarget().doOperation(ISourceViewer.QUICK_ASSIST));
 	}
 
-	private CodeActionParams prepareCodeActionParams(List<LSPDocumentInfo> infos) {
+	private static CodeActionParams prepareCodeActionParams(List<LSPDocumentInfo> infos, int offset, int length) {
 		CodeActionContext context = new CodeActionContext(Collections.emptyList());
 		CodeActionParams params = new CodeActionParams();
 		params.setTextDocument(new TextDocumentIdentifier(infos.get(0).getFileUri().toString()));
-		params.setRange(this.range);
+		try {
+			params.setRange(new Range(LSPEclipseUtils.toPosition(offset, infos.get(0).getDocument()), LSPEclipseUtils
+					.toPosition(offset + length, infos.get(0).getDocument())));
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+		}
 		params.setContext(context);
 		return params;
 	}

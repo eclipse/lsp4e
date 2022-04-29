@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat Inc. and others.
+ * Copyright (c) 2019, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -18,6 +18,7 @@ import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.CodeAction;
+import org.eclipse.lsp4j.CodeActionOptions;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
@@ -44,20 +45,42 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 		}
 	}
 
+	private boolean isCodeActionResolveSupported() {
+		ServerCapabilities capabilities = this.finfo.getCapabilites();
+		if (capabilities != null) {
+			Either<Boolean, CodeActionOptions> caProvider = capabilities.getCodeActionProvider();
+			if (caProvider.isRight()) {
+				CodeActionOptions options = caProvider.getRight();
+				return options.getResolveProvider().booleanValue();
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public void apply(IDocument document) {
 		if (fcodeAction != null) {
-			if (fcodeAction.getEdit() != null) {
-				LSPEclipseUtils.applyWorkspaceEdit(fcodeAction.getEdit());
+			if (isCodeActionResolveSupported() && fcodeAction.getEdit() == null) {
+				// Unresolved code action "edit" property. Resolve it.
+				finfo.getInitializedLanguageClient().thenComposeAsync(ls -> ls.getTextDocumentService().resolveCodeAction(fcodeAction)).thenAccept(this::apply);
+			} else {
+				apply(fcodeAction);
 			}
-			if (fcodeAction.getCommand() != null) {
-				executeCommand(fcodeAction.getCommand());
-			}
-
 		} else if (fcommand != null) {
 			executeCommand(fcommand);
 		} else {
 			// Should never get here
+		}
+	}
+
+	private void apply(CodeAction codeaction) {
+		if (codeaction != null) {
+			if (codeaction.getEdit() != null) {
+				LSPEclipseUtils.applyWorkspaceEdit(codeaction.getEdit());
+			}
+			if (codeaction.getCommand() != null) {
+				executeCommand(codeaction.getCommand());
+			}
 		}
 	}
 
