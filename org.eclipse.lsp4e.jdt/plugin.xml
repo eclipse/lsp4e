@@ -32,5 +32,13 @@
             contentTypeId="org.eclipse.jdt.core.javaSource">
       </participant>
    </extension>
+   <extension
+         point="org.eclipse.jdt.ui.quickAssistProcessors">
+      <quickAssistProcessor
+            class="org.eclipse.lsp4e.jdt.LspJavaQuickAssistProcessor"
+            id="org.eclipse.lsp4e.jdt.quickAssistProcessor"
+            name="LS Java Quick Proposals">
+      </quickAssistProcessor>
+   </extension>
 
 </plugin>
