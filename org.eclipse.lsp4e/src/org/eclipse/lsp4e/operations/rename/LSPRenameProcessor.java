@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2017-2021 Angelo ZERR.
+ *  Copyright (c) 2017-2022 Angelo ZERR.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -197,7 +197,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 			throw new CoreException(
 					new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, Messages.rename_processor_required));
 		}
-		return LSPEclipseUtils.toCompositeChange(rename);
+		return LSPEclipseUtils.toCompositeChange(rename, Messages.rename_title);
 	}
 
 	@Override

@@ -167,14 +167,6 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		return proposals.toArray(new ICompletionProposal[proposals.size()]);
 	}
 
-	private List<LSPDocumentInfo> getLSPDocumentInfos(IDocument document) {
-		if (document == null) {
-			return Collections.emptyList();
-		}
-		return LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-				LSPCodeActionMarkerResolution::providesCodeActions);
-	}
-
 	/**
 	 * Reinvokes the quickAssist in order to refresh the list of completion
 	 * proposals
@@ -185,6 +177,14 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 	private void refreshProposals(IQuickAssistInvocationContext invocationContext) {
 		invocationContext.getSourceViewer().getTextWidget().getDisplay().asyncExec(() -> invocationContext
 				.getSourceViewer().getTextOperationTarget().doOperation(ISourceViewer.QUICK_ASSIST));
+	}
+
+	private static List<LSPDocumentInfo> getLSPDocumentInfos(IDocument document) {
+		if (document == null) {
+			return Collections.emptyList();
+		}
+		return LanguageServiceAccessor.getLSPDocumentInfosFor(document,
+				LSPCodeActionMarkerResolution::providesCodeActions);
 	}
 
 	private static CodeActionParams prepareCodeActionParams(List<LSPDocumentInfo> infos, int offset, int length) {
