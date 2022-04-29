@@ -76,7 +76,7 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 	private void apply(CodeAction codeaction) {
 		if (codeaction != null) {
 			if (codeaction.getEdit() != null) {
-				LSPEclipseUtils.applyWorkspaceEdit(codeaction.getEdit());
+				LSPEclipseUtils.applyWorkspaceEdit(codeaction.getEdit(), codeaction.getTitle());
 			}
 			if (codeaction.getCommand() != null) {
 				executeCommand(codeaction.getCommand());

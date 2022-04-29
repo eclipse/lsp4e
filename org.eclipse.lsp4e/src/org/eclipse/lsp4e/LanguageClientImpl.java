@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2017 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -89,7 +89,7 @@ public class LanguageClientImpl implements LanguageClient {
 			Job job = new Job(Messages.serverEdit) {
 				@Override
 				public IStatus run(IProgressMonitor monitor) {
-					LSPEclipseUtils.applyWorkspaceEdit(params.getEdit());
+					LSPEclipseUtils.applyWorkspaceEdit(params.getEdit(), params.getLabel());
 					return Status.OK_STATUS;
 				}
 			};

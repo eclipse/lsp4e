@@ -101,6 +101,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
 import org.eclipse.ltk.core.refactoring.DocumentChange;
 import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
+import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.ltk.core.refactoring.resource.DeleteResourceChange;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
@@ -135,6 +136,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
  */
 public class LSPEclipseUtils {
 
+	private static final String DEFAULT_LABEL = "LSP Workspace Edit"; //$NON-NLS-1$
 	public static final String HTTP = "http"; //$NON-NLS-1$
 	public static final String INTRO_URL = "http://org.eclipse.ui.intro"; //$NON-NLS-1$
 	public static final String FILE_URI = "file://"; //$NON-NLS-1$
@@ -668,8 +670,20 @@ public class LSPEclipseUtils {
 	 * @param wsEdit
 	 */
 	public static void applyWorkspaceEdit(WorkspaceEdit wsEdit) {
-		CompositeChange change = toCompositeChange(wsEdit);
+		applyWorkspaceEdit(wsEdit, null);
+	}
+
+	/**
+	 * Applies a workspace edit. It does simply change the underlying documents.
+	 *
+	 * @param wsEdit
+	 * @param label
+	 */
+	public static void applyWorkspaceEdit(WorkspaceEdit wsEdit, String label) {
+		String name = label == null ? DEFAULT_LABEL : label;
+		CompositeChange change = toCompositeChange(wsEdit, name);
 		PerformChangeOperation changeOperation = new PerformChangeOperation(change);
+		changeOperation.setUndoManager(RefactoringCore.getUndoManager(), name);
 		try {
 			ResourcesPlugin.getWorkspace().run(changeOperation, new NullProgressMonitor());
 		} catch (CoreException e) {
@@ -681,10 +695,11 @@ public class LSPEclipseUtils {
 	 * Returns a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
 	 *
 	 * @param wsEdit
+	 * @param name
 	 * @return a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
 	 */
-	public static CompositeChange toCompositeChange(WorkspaceEdit wsEdit) {
-		CompositeChange change = new CompositeChange("LSP Workspace Edit"); //$NON-NLS-1$
+	public static CompositeChange toCompositeChange(WorkspaceEdit wsEdit, String name) {
+		CompositeChange change = new CompositeChange(name);
 		List<Either<TextDocumentEdit, ResourceOperation>> documentChanges = wsEdit.getDocumentChanges();
 		if (documentChanges != null) {
 			// documentChanges are present, the latter are preferred over changes

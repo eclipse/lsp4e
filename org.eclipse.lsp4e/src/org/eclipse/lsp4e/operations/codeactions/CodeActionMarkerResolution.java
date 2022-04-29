@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018 Red Hat Inc. and others.
+ * Copyright (c) 2018, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -53,7 +53,7 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 	@Override
 	public void run(IMarker marker) {
 		if (codeAction.getEdit() != null) {
-			LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit());
+			LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
 		}
 		if (codeAction.getCommand() != null) {
 			IResource resource = marker.getResource();

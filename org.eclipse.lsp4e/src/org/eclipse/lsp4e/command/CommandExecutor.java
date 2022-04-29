@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019, 2020 Fraunhofer FOKUS and others.
+ * Copyright (c) 2019, 2022 Fraunhofer FOKUS and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -111,7 +111,7 @@ public class CommandExecutor {
 		// tentative fallback
 		if (command.getArguments() != null) {
 			WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), document);
-			LSPEclipseUtils.applyWorkspaceEdit(edit);
+			LSPEclipseUtils.applyWorkspaceEdit(edit, command.getTitle());
 			return CompletableFuture.completedFuture(null);
 		}
 		return null;
