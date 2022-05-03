@@ -413,22 +413,27 @@ public class LSPEclipseUtils {
 			return;
 		}
 
-		IDocumentUndoManager manager = DocumentUndoManagerRegistry.getDocumentUndoManager(document);
-		if (manager != null) {
-			manager.beginCompoundChange();
-		}
-
 		MultiTextEdit edit = new MultiTextEdit();
 		for (TextEdit textEdit : edits) {
 			if (textEdit != null) {
 				try {
 					int offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
 					int length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
+					if (length < 0) {
+ 						// Must be a bad location: we bail out to avoid corrupting the document.
+ 						LanguageServerPlugin.logInfo("Invalid location information found during formatting"); //$NON-NLS-1$
+ 						return;
+ 					}
 					edit.addChild(new ReplaceEdit(offset, length, textEdit.getNewText()));
 				} catch (BadLocationException e) {
 					LanguageServerPlugin.logError(e);
 				}
 			}
+		}
+
+		IDocumentUndoManager manager = DocumentUndoManagerRegistry.getDocumentUndoManager(document);
+		if (manager != null) {
+			manager.beginCompoundChange();
 		}
 		try {
 			RewriteSessionEditProcessor editProcessor = new RewriteSessionEditProcessor(document, edit,

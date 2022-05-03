@@ -12,13 +12,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
+import static org.eclipse.lsp4e.test.TestUtils.numberOfChangesIs;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 import java.util.function.Predicate;
 
 import org.eclipse.core.filesystem.EFS;
@@ -35,6 +35,7 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
@@ -70,10 +71,9 @@ public class DocumentDidChangeTest {
 		});
 
 		// Test initial insert
-		CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 		viewer.getDocument().replace(0, 0, "Hello");
-		DidChangeTextDocumentParams lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+		TestUtils.waitForCondition(1000,  numberOfChangesIs(1));
+		DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
 		TextDocumentContentChangeEvent change0 = lastChange.getContentChanges().get(0);
@@ -87,10 +87,9 @@ public class DocumentDidChangeTest {
 		assertEquals("Hello", change0.getText());
 
 		// Test additional insert
-		didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 		viewer.getDocument().replace(5, 0, " ");
-		lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+		TestUtils.waitForCondition(1000,  numberOfChangesIs(2));
+		lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(1);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
 		change0 = lastChange.getContentChanges().get(0);
@@ -104,10 +103,9 @@ public class DocumentDidChangeTest {
 		assertEquals(" ", change0.getText());
 
 		// test replace
-		didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 		viewer.getDocument().replace(0, 5, "Hallo");
-		lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+		TestUtils.waitForCondition(1000,  numberOfChangesIs(3));
+		lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(2);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
 		change0 = lastChange.getContentChanges().get(0);
@@ -139,10 +137,9 @@ public class DocumentDidChangeTest {
 		});
 
 		// Test initial insert
-		CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 		viewer.getDocument().replace("line1\nline2\n".length(), "line3\n".length(), "");
-		DidChangeTextDocumentParams lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+		TestUtils.waitForCondition(1000,  numberOfChangesIs(1));
+		DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
 		TextDocumentContentChangeEvent change0 = lastChange.getContentChanges().get(0);
@@ -154,6 +151,26 @@ public class DocumentDidChangeTest {
 		assertEquals(0, range.getEnd().getCharacter());
 		assertEquals(Integer.valueOf(6), change0.getRangeLength());
 		assertEquals("", change0.getText());
+	}
+	
+	@Test
+	public void testIncrementalEditOrdering() throws Exception {
+		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
+		.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		StyledText text = viewer.getTextWidget();
+		for (int i = 0; i < 500; i++) {
+			text.append(i + "\n");
+		}
+		TestUtils.waitForCondition(10000,  numberOfChangesIs(500));
+		List<DidChangeTextDocumentParams> changes = MockLanguageServer.INSTANCE.getDidChangeEvents();
+		for (int i = 0; i < 500; i++) {
+			String delta = changes.get(i).getContentChanges().get(0).getText();
+			assertEquals(i + "\n", delta);
+		}
+
 	}
 
 	@Test
@@ -172,21 +189,20 @@ public class DocumentDidChangeTest {
 			}
 		});
 		// Test initial insert
-		CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 		String text = "Hello";
 		viewer.getDocument().replace(0, 0, text);
-		DidChangeTextDocumentParams lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+		TestUtils.waitForCondition(1000,  numberOfChangesIs(1));
+		DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
 		TextDocumentContentChangeEvent change0 = lastChange.getContentChanges().get(0);
 		assertEquals(text, change0.getText());
 
 		// Test additional insert
-		didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
+
 		viewer.getDocument().replace(5, 0, " World");
-		lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+		TestUtils.waitForCondition(1000,  numberOfChangesIs(2));
+		lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(1);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
 		change0 = lastChange.getContentChanges().get(0);
@@ -210,21 +226,19 @@ public class DocumentDidChangeTest {
 				}
 			});
 			// Test initial insert
-			CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-			MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 			String text = "Hello";
 			viewer.getDocument().replace(0, 0, text);
-			DidChangeTextDocumentParams lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+			TestUtils.waitForCondition(1000,  numberOfChangesIs(1));
+			DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);
 			assertNotNull(lastChange.getContentChanges());
 			assertEquals(1, lastChange.getContentChanges().size());
 			TextDocumentContentChangeEvent change0 = lastChange.getContentChanges().get(0);
 			assertEquals(text, change0.getText());
 	
 			// Test additional insert
-			didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-			MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
 			viewer.getDocument().replace(5, 0, " World");
-			lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+			TestUtils.waitForCondition(1000,  numberOfChangesIs(2));
+			lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(1);
 			assertNotNull(lastChange.getContentChanges());
 			assertEquals(1, lastChange.getContentChanges().size());
 			change0 = lastChange.getContentChanges().get(0);
@@ -244,4 +258,5 @@ public class DocumentDidChangeTest {
 		}
 		return syncKind;
 	}
+	
 }

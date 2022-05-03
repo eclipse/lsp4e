@@ -255,4 +255,8 @@ public class TestUtils {
 			latch.countDown();
 		}
 	}
+	
+	public static BooleanSupplier numberOfChangesIs(int changes) {
+		return () -> MockLanguageServer.INSTANCE.getDidChangeEvents().size() == changes;
+	}
 }

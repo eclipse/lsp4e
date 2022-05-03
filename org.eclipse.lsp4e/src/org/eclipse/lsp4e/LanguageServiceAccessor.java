@@ -29,7 +29,9 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -139,6 +141,20 @@ public class LanguageServiceAccessor {
 		public boolean isActive() {
 			return this.wrapper.isActive();
 		}
+
+		public <U> @Nullable CompletableFuture<U> executeOnCurrentVersionAsync(
+ 				Function<LanguageServer, ? extends CompletionStage<U>> fn) {
+ 			return this.wrapper.executeOnCurrentVersionAsync(LSPEclipseUtils.getFile(document), fn);
+ 		}
+
+		public long getModificationStamp() {
+ 			return wrapper.getModificationStamp(LSPEclipseUtils.getFile(document));
+ 		}
+
+ 		public long getDocumentModificationStamp() {
+ 			return wrapper.getDocumentModificationStamp(LSPEclipseUtils.getFile(document));
+
+ 		}
 	}
 
 

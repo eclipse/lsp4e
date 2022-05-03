@@ -31,12 +31,14 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -603,7 +605,7 @@ public class LanguageServerWrapper {
 				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
-				return listener.didOpenFuture;
+				return listener.lastChangeFuture();
 			}
 		}).thenApply(theVoid -> languageServer);
 	}
@@ -865,6 +867,40 @@ public class LanguageServerWrapper {
 		}
 		return -1;
 	}
+
+	public long getModificationStamp(@Nullable IFile file) {
+ 		if (file != null && file.getLocation() != null) {
+ 			DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(file.getLocationURI());
+ 			if (documentContentSynchronizer != null) {
+ 				return documentContentSynchronizer.getModificationStamp();
+ 			}
+ 		}
+ 		return -1;
+ 	}
+
+
+ 	public long getDocumentModificationStamp(@Nullable IFile file) {
+ 		if (file != null && file.getLocation() != null) {
+ 			DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(file.getLocationURI());
+ 			if (documentContentSynchronizer != null) {
+ 				return documentContentSynchronizer.getDocumentModificationStamp();
+ 			}
+ 		}
+ 		return -1;
+ 	}
+
+
+ 	public <U> @Nullable CompletableFuture< U> executeOnCurrentVersionAsync(IFile file,
+ 			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
+ 		if (file != null && file.getLocation() != null) {
+ 			DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(file.getLocationURI());
+ 			if (documentContentSynchronizer != null) {
+ 				return documentContentSynchronizer.executeOnCurrentVersionAsync(fn);
+ 			}
+ 		}
+ 		return null;
+ 	}
+
 
 	public boolean canOperate(@NonNull IDocument document) {
 		URI documentUri = LSPEclipseUtils.toUri(document);
