@@ -51,6 +51,11 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 
 	private List<LSPDocumentInfo> infos;
 
+	// Data necessary for caching proposals
+	private Object lock = new Object();
+	private IQuickAssistInvocationContext cachedContext;
+	private List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
+
 	private static final ICompletionProposal COMPUTING = new ICompletionProposal() {
 
 		@Override
@@ -99,8 +104,9 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 
 	@Override
 	public boolean canAssist(IQuickAssistInvocationContext invocationContext) {
-		if (this.infos == null || this.infos.isEmpty()) {
-			infos = getLSPDocumentInfos(invocationContext.getSourceViewer().getDocument());
+		IDocument document = invocationContext.getSourceViewer().getDocument();
+		if (this.infos == null || this.infos.isEmpty() || this.infos.get(0).getDocument() != document) {
+			infos = getLSPDocumentInfos(document);
 			if (infos.isEmpty()) {
 				return false;
 			}
@@ -131,34 +137,56 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 
 	@Override
 	public ICompletionProposal[] computeQuickAssistProposals(IQuickAssistInvocationContext invocationContext) {
-		if (this.infos == null || this.infos.isEmpty()) {
-			infos = getLSPDocumentInfos(invocationContext.getSourceViewer().getDocument());
+		IDocument document = invocationContext.getSourceViewer().getDocument();
+		if (this.infos == null || this.infos.isEmpty() || this.infos.get(0).getDocument() != document) {
+			infos = getLSPDocumentInfos(document);
 			if (infos.isEmpty()) {
 				return NO_PROPOSALS;
 			}
 		}
 
+		// If context has changed, i.e. neq quick assist invocation rather than old
+		// proposals computed and calling this method artificially to show proposals in
+		// the UI
+		synchronized (lock) {
+			if (cachedContext != invocationContext) {
+				cachedContext = invocationContext;
+				proposals.clear();
+			}
+		}
+
 		// Get the codeActions
 		CodeActionParams params = prepareCodeActionParams(infos, invocationContext.getOffset(), invocationContext.getLength());
-		List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
 		List<CompletableFuture<Void>> futures = Collections.emptyList();
 		try {
-			// Prevent infinite recursion by only computing proposals if there aren't any
+			// Prevent infinite re-entrance by only computing proposals if there aren't any
+			if (proposals.contains(COMPUTING) || proposals.isEmpty()) {
+				proposals.clear();
 				futures = infos.stream()
 						.map(info -> info.getInitializedLanguageClient()
 								.thenComposeAsync(ls -> ls.getTextDocumentService().codeAction(params)
 										.thenAcceptAsync(actions -> actions.stream().filter(Objects::nonNull)
 												.map(action -> new CodeActionCompletionProposal(action, info))
-												.forEach(proposals::add))))
+												.forEach(p -> {
+													// non-ui thread. Context might have changed (quick assist at a different spot) by the time time proposals are computed
+													synchronized(lock) {
+														if (cachedContext == invocationContext) {
+															proposals.add(p);
+														}
+													}
+												}))))
 								.collect(Collectors.toList());
 
 				CompletableFuture<?> aggregateFutures = CompletableFuture
 						.allOf(futures.toArray(new CompletableFuture[futures.size()]));
 				aggregateFutures.get(200, TimeUnit.MILLISECONDS);
+			}
 		} catch (InterruptedException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (TimeoutException e) {
 			for (CompletableFuture<Void> future : futures) {
+				// Refresh will effectively re-enter this method with the same invocationContext and already computed proposals simply to show the proposals in the UI
+				// Should be aware of this!
 				future.whenComplete((r, t) -> this.refreshProposals(invocationContext));
 			}
 			proposals.add(COMPUTING);
