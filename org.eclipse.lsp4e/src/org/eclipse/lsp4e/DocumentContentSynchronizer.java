@@ -269,7 +269,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
-		languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didSave(params));
+		++version;
+ 		lastChangeFuture = lastChangeFuture.thenApplyAsync(ls -> {
+ 			ls.getTextDocumentService().didSave(params);
+ 			return ls;
+ 		});
 	}
 
 	public void documentClosed() {
