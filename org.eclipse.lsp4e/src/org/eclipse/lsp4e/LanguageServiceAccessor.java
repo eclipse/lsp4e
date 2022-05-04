@@ -142,19 +142,11 @@ public class LanguageServiceAccessor {
 			return this.wrapper.isActive();
 		}
 
-		public <U> @Nullable CompletableFuture<U> executeOnCurrentVersionAsync(
+		public <U> @Nullable CompletableFuture<U> executeOnCurrentVersionAsync(long expectedDocumentStamp,
  				Function<LanguageServer, ? extends CompletionStage<U>> fn) {
- 			return this.wrapper.executeOnCurrentVersionAsync(LSPEclipseUtils.getFile(document), fn);
+ 			return this.wrapper.executeOnCurrentVersionAsync(expectedDocumentStamp, LSPEclipseUtils.getFile(document), fn);
  		}
 
-		public long getModificationStamp() {
- 			return wrapper.getModificationStamp(LSPEclipseUtils.getFile(document));
- 		}
-
- 		public long getDocumentModificationStamp() {
- 			return wrapper.getDocumentModificationStamp(LSPEclipseUtils.getFile(document));
-
- 		}
 	}
 
 

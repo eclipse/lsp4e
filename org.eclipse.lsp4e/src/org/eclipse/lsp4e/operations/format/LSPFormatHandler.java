@@ -17,6 +17,7 @@ import java.util.Collection;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -51,8 +52,16 @@ public class LSPFormatHandler extends AbstractHandler {
 			final Shell shell = textEditor.getSite().getShell();
 			ISelection selection = HandlerUtil.getCurrentSelection(event);
 			if (document != null && selection instanceof ITextSelection) {
-				formatter.requestFormatting(document, (ITextSelection) selection).thenAcceptAsync(
-						edits -> shell.getDisplay().asyncExec(() -> formatter.applyEdits(document, edits)));
+				final long stamp = documentModificationStamp(document);
+ 				formatter.requestFormatting(document, (ITextSelection) selection, stamp).thenAcceptAsync(edits -> {
+ 					if (!edits.isEmpty()) {
+ 						shell.getDisplay().asyncExec(() -> {
+ 							if (stamp == documentModificationStamp(document)) {
+ 								formatter.applyEdits(document, edits);
+ 							}
+ 						});
+ 					}
+ 				});
 			}
 		}
 		return null;
@@ -78,4 +87,7 @@ public class LSPFormatHandler extends AbstractHandler {
 		return false;
 	}
 
+	private static long documentModificationStamp(IDocument document) {
+ 		return document instanceof Document ? ((Document) document).getModificationStamp() : -1;
+ 	}
 }

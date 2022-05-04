@@ -70,6 +70,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private CompletableFuture<LanguageServer> lastChangeFuture;
 	private long documentModificationStamp;
 	private LanguageServer languageServer;
+	private final Object syncRoot = new Object();
+	private RuntimeException outOfDateException = new RuntimeException(); // FIX ME: SHOULD BE SEPARATE CLASS
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
 			@NonNull IDocument document, TextDocumentSyncKind syncKind) {
@@ -117,14 +119,26 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		});
 	}
 
-	<U> @NonNull CompletableFuture<U> executeOnCurrentVersionAsync(
+	<U> @NonNull CompletableFuture<U> executeOnCurrentVersionAsync(long expectedDocumentStamp,
 			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
-		CompletableFuture<U> valueFuture = lastChangeFuture.thenComposeAsync(fn);
-		// We ignore any exceptions that happen when executing the given future
-		lastChangeFuture = valueFuture.handle((value, error) -> {
-			return this.languageServer;
-		});
-		return valueFuture;
+		synchronized (syncRoot) {
+ 			if (expectedDocumentStamp == documentModificationStamp) {
+ 				// We will be issuing this request on the correct version of the document, so
+ 				// queue it.
+ 				CompletableFuture<U> valueFuture = lastChangeFuture.thenComposeAsync(fn);
+ 				// We ignore any exceptions that happen when executing the given future
+ 				lastChangeFuture = valueFuture.handle((value, error) -> {
+ 					return this.languageServer;
+ 				});
+ 				return valueFuture;
+ 			} else {
+ 				// If we were to issue this request now, it would happen on the wrong version of
+ 				// the document
+ 				CompletableFuture<U> future = new CompletableFuture<>();
+ 				future.completeExceptionally(outOfDateException);
+ 				return future;
+ 			}
+ 		}
 	}
 
 	CompletableFuture<LanguageServer> lastChangeFuture() {
@@ -143,10 +157,12 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			changeParams = null;
 
 			changeParamsToSend.getTextDocument().setVersion(++version);
-			lastChangeFuture = lastChangeFuture.thenApplyAsync(ls -> {
-				ls.getTextDocumentService().didChange(changeParamsToSend);
-				return ls;
-			});
+			synchronized (syncRoot) {
+ 				lastChangeFuture = lastChangeFuture.thenApplyAsync(ls -> {
+ 					ls.getTextDocumentService().didChange(changeParamsToSend);
+ 					return ls;
+ 				});
+ 			}
 		}
 		documentModificationStamp = event.getModificationStamp();
 	}
@@ -258,6 +274,10 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	}
 
 	public void documentSaved(long timestamp) {
+		if (modificationStamp >= timestamp) {
+ 			// Old event
+ 			return;
+ 		}
 		this.modificationStamp = timestamp;
 		ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
 		if (serverCapabilities != null) {
@@ -270,10 +290,12 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
 		++version;
- 		lastChangeFuture = lastChangeFuture.thenApplyAsync(ls -> {
- 			ls.getTextDocumentService().didSave(params);
- 			return ls;
- 		});
+		synchronized (syncRoot) {
+ 			lastChangeFuture = lastChangeFuture.thenApplyAsync(ls -> {
+ 				ls.getTextDocumentService().didSave(params);
+ 				return ls;
+ 			});
+ 		}
 	}
 
 	public void documentClosed() {
@@ -298,14 +320,6 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	 */
 	private TextDocumentSyncKind getTextDocumentSyncKind() {
 		return syncKind;
-	}
-
-	protected long getModificationStamp() {
-		return modificationStamp;
-	}
-
-	protected long getDocumentModificationStamp() {
-		return documentModificationStamp;
 	}
 
 	public IDocument getDocument() {

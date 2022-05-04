@@ -21,7 +21,6 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
-import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -46,38 +45,26 @@ public class LSPFormatter {
 	}
 
 	public CompletableFuture<List<? extends TextEdit>> requestFormatting(@NonNull IDocument document,
-			@NonNull ITextSelection textSelection) {
+			@NonNull ITextSelection textSelection, long expectedModificationStamp) {
 		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
 				LSPFormatter::supportFormatting);
 		if (infos.isEmpty()) {
 			return CompletableFuture.completedFuture(Collections.emptyList());
 		}
-		// TODO consider a better strategy for that, maybe iterate on all LS until one gives a result
+		// TODO consider a better strategy for that, maybe iterate on all LS until one
+		// gives a result
 		LSPDocumentInfo info = infos.iterator().next();
-		final long currentModificationStamp = document instanceof Document
- 				? ((Document) document).getModificationStamp()
- 				: -1;
- 		// Only attempt formatting if the server is up-to-date with the latest changes
- 		if (info.getDocumentModificationStamp() == currentModificationStamp) {
- 			try {
- 				return requestFormatting(info, textSelection).thenApply(edits -> {
- 					if (document instanceof Document) {
- 						if (currentModificationStamp != ((Document) document).getModificationStamp()) {
- 							// The document has been updated since the formatting request
- 							return null;
- 						}
- 					}
- 					return edits;
- 				});
- 			} catch (BadLocationException e) {
- 				LanguageServerPlugin.logError(e);
- 			}
- 		}
+
+		try {
+			return requestFormatting(info, textSelection, expectedModificationStamp);
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+		}
 		return CompletableFuture.completedFuture(Collections.emptyList());
 	}
 
 	private CompletableFuture<List<? extends TextEdit>> requestFormatting(LSPDocumentInfo info,
-			ITextSelection textSelection) throws BadLocationException {
+			ITextSelection textSelection, long expectedModificationStamp) throws BadLocationException {
 		TextDocumentIdentifier docId = new TextDocumentIdentifier(info.getFileUri().toString());
 		ServerCapabilities capabilities = info.getCapabilites();
 		IPreferenceStore store = EditorsUI.getPreferenceStore();
@@ -97,13 +84,13 @@ public class LSPFormatter {
 					fullFormat ? info.getDocument().getLength() : textSelection.getOffset() + textSelection.getLength(),
 					info.getDocument());
 			params.setRange(new Range(start, end));
-			return info.executeOnCurrentVersionAsync(server -> server.getTextDocumentService().rangeFormatting(params));
+			return info.executeOnCurrentVersionAsync(expectedModificationStamp, server -> server.getTextDocumentService().rangeFormatting(params));
 		}
 
 		DocumentFormattingParams params = new DocumentFormattingParams();
 		params.setTextDocument(docId);
 		params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
-		return info.executeOnCurrentVersionAsync(server -> server.getTextDocumentService().formatting(params));
+		return info.executeOnCurrentVersionAsync(expectedModificationStamp, server -> server.getTextDocumentService().formatting(params));
 	}
 
 	private static boolean isDocumentRangeFormattingSupported(ServerCapabilities capabilities) {

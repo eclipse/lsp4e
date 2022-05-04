@@ -157,7 +157,7 @@ public class LanguageServerWrapper {
 				return;
 			}
 			DocumentContentSynchronizer documentListener = connectedDocuments.get(LSPEclipseUtils.toUri(buffer));
-			if (documentListener != null && documentListener.getModificationStamp() < buffer.getModificationStamp()) {
+			if (documentListener != null) {
 				documentListener.documentSaved(buffer.getModificationStamp());
 			}
 		}
@@ -868,34 +868,12 @@ public class LanguageServerWrapper {
 		return -1;
 	}
 
-	public long getModificationStamp(@Nullable IFile file) {
- 		if (file != null && file.getLocation() != null) {
- 			DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(file.getLocationURI());
- 			if (documentContentSynchronizer != null) {
- 				return documentContentSynchronizer.getModificationStamp();
- 			}
- 		}
- 		return -1;
- 	}
-
-
- 	public long getDocumentModificationStamp(@Nullable IFile file) {
- 		if (file != null && file.getLocation() != null) {
- 			DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(file.getLocationURI());
- 			if (documentContentSynchronizer != null) {
- 				return documentContentSynchronizer.getDocumentModificationStamp();
- 			}
- 		}
- 		return -1;
- 	}
-
-
- 	public <U> @Nullable CompletableFuture< U> executeOnCurrentVersionAsync(IFile file,
+ 	public <U> @Nullable CompletableFuture< U> executeOnCurrentVersionAsync(long expectedDocumentStamp, IFile file,
  			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
  		if (file != null && file.getLocation() != null) {
  			DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(file.getLocationURI());
  			if (documentContentSynchronizer != null) {
- 				return documentContentSynchronizer.executeOnCurrentVersionAsync(fn);
+ 				return documentContentSynchronizer.executeOnCurrentVersionAsync(expectedDocumentStamp, fn);
  			}
  		}
  		return null;

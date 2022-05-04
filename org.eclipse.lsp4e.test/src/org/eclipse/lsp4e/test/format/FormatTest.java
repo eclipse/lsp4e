@@ -55,8 +55,9 @@ public class FormatTest {
 	public void testFormattingInvalidDocument() throws InterruptedException, ExecutionException {
 		LSPFormatter formatter = new LSPFormatter();
 		ITextSelection selection = TextSelection.emptySelection();
+		Document document = new Document();
 
-		List<? extends TextEdit> edits = formatter.requestFormatting(new Document(), selection).get();
+		List<? extends TextEdit> edits = formatter.requestFormatting(document, selection, document.getModificationStamp()).get();
 		assertEquals(0, edits.size());
 	}
 
@@ -71,8 +72,9 @@ public class FormatTest {
 
 		LSPFormatter formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
+		Document document = (Document)viewer.getDocument();
 
-		List<? extends TextEdit> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection)
+		List<? extends TextEdit> edits = formatter.requestFormatting(document, (ITextSelection) selection, document.getModificationStamp())
 				.get();
 		editor.getSite().getShell().getDisplay().syncExec(() -> formatter.applyEdits(viewer.getDocument(), edits));
 
@@ -98,8 +100,9 @@ public class FormatTest {
 
 		LSPFormatter formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
+		Document document = (Document)viewer.getDocument();
 
-		List<? extends TextEdit> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection)
+		List<? extends TextEdit> edits = formatter.requestFormatting(document, (ITextSelection) selection, document.getModificationStamp())
 				.get();
 		editor.getSite().getShell().getDisplay().syncExec(() -> formatter.applyEdits(viewer.getDocument(), edits));
 
