@@ -142,6 +142,12 @@ public class LanguageServiceAccessor {
 			return this.wrapper.isActive();
 		}
 
+		/**
+		 * Submit an asynchronous call (i.e. to the language server) that will only be executed if the
+		 * expected document version matches the stored one (which tracks change events).
+		 *
+		 * @see org.eclipse.lsp4e.LanguageServerWrapper#executeOnCurrentVersionAsync
+		 */
 		public <U> @Nullable CompletableFuture<U> executeOnCurrentVersionAsync(long expectedDocumentStamp,
  				Function<LanguageServer, ? extends CompletionStage<U>> fn) {
  			return this.wrapper.executeOnCurrentVersionAsync(expectedDocumentStamp, LSPEclipseUtils.getFile(document), fn);

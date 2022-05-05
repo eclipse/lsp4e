@@ -16,6 +16,7 @@ package org.eclipse.lsp4e;
 import java.io.File;
 import java.net.URI;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -70,8 +71,12 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private CompletableFuture<LanguageServer> lastChangeFuture;
 	private long documentModificationStamp;
 	private LanguageServer languageServer;
+
+	/**
+	 * Synchronization guard to protect <code>lastChangeFuture</code> and <code>documentModificationStamp</code>
+	 * from race conditions
+	 */
 	private final Object syncRoot = new Object();
-	private RuntimeException outOfDateException = new RuntimeException(); // FIX ME: SHOULD BE SEPARATE CLASS
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
 			@NonNull IDocument document, TextDocumentSyncKind syncKind) {
@@ -88,10 +93,9 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		this.document = document;
 
-		// If we have been constructed on a modified document, make sure the stamp is up to date
-		documentModificationStamp = document instanceof Document
-			? ((Document) document).getModificationStamp()
-			: 0;
+		// If we have been constructed on a modified document, make sure the stamp is up
+		// to date
+		documentModificationStamp = document instanceof Document ? ((Document) document).getModificationStamp() : 0;
 
 		// add a document buffer
 		TextDocumentItem textDocument = new TextDocumentItem();
@@ -119,26 +123,36 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		});
 	}
 
+	/**
+	 * Submit an asynchronous call (i.e. to the language server) that will only be executed if the
+	 * expected document version matches the stored one (which tracks change events).
+	 *
+	 * @param <U> Computation return type
+	 * @param expectedDocumentStamp The current version of the document according to the calling code
+	 * @param fn Asynchronous computation on the language server
+	 * @return A future that will throw a <code>ConcurrentModificationException</code> on <code>get()</code>
+	 * if the document has changed in the meantime.
+	 */
 	<U> @NonNull CompletableFuture<U> executeOnCurrentVersionAsync(long expectedDocumentStamp,
 			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
 		synchronized (syncRoot) {
- 			if (expectedDocumentStamp == documentModificationStamp) {
- 				// We will be issuing this request on the correct version of the document, so
- 				// queue it.
- 				CompletableFuture<U> valueFuture = lastChangeFuture.thenComposeAsync(fn);
- 				// We ignore any exceptions that happen when executing the given future
- 				lastChangeFuture = valueFuture.handle((value, error) -> {
- 					return this.languageServer;
- 				});
- 				return valueFuture;
- 			} else {
- 				// If we were to issue this request now, it would happen on the wrong version of
- 				// the document
- 				CompletableFuture<U> future = new CompletableFuture<>();
- 				future.completeExceptionally(outOfDateException);
- 				return future;
- 			}
- 		}
+			if (expectedDocumentStamp == documentModificationStamp) {
+				// We will be issuing this request on the correct version of the document, so
+				// queue it.
+				CompletableFuture<U> valueFuture = lastChangeFuture.thenComposeAsync(fn);
+				// We ignore any exceptions that happen when executing the given future
+				lastChangeFuture = valueFuture.handle((value, error) -> {
+					return this.languageServer;
+				});
+				return valueFuture;
+			} else {
+				// If we were to issue this request now, it would happen on the wrong version of
+				// the document
+				CompletableFuture<U> future = new CompletableFuture<>();
+				future.completeExceptionally(new ConcurrentModificationException());
+				return future;
+			}
+		}
 	}
 
 	CompletableFuture<LanguageServer> lastChangeFuture() {
@@ -151,20 +165,18 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		if (syncKind == TextDocumentSyncKind.Full) {
 			createChangeEvent(event);
 		}
-
-		if (changeParams != null) {
-			final DidChangeTextDocumentParams changeParamsToSend = changeParams;
-			changeParams = null;
-
-			changeParamsToSend.getTextDocument().setVersion(++version);
-			synchronized (syncRoot) {
- 				lastChangeFuture = lastChangeFuture.thenApplyAsync(ls -> {
- 					ls.getTextDocumentService().didChange(changeParamsToSend);
- 					return ls;
- 				});
- 			}
+		final DidChangeTextDocumentParams changeParamsToSend = changeParams;
+		synchronized (syncRoot) {
+			if (changeParamsToSend != null) {
+				changeParams = null;
+				changeParamsToSend.getTextDocument().setVersion(++version);
+				lastChangeFuture = lastChangeFuture.thenApplyAsync(ls -> {
+					ls.getTextDocumentService().didChange(changeParamsToSend);
+					return ls;
+				});
+			}
+			documentModificationStamp = event.getModificationStamp();
 		}
-		documentModificationStamp = event.getModificationStamp();
 	}
 
 	@Override
@@ -275,9 +287,9 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 	public void documentSaved(long timestamp) {
 		if (modificationStamp >= timestamp) {
- 			// Old event
- 			return;
- 		}
+			// Old event
+			return;
+		}
 		this.modificationStamp = timestamp;
 		ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
 		if (serverCapabilities != null) {
@@ -291,11 +303,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
 		++version;
 		synchronized (syncRoot) {
- 			lastChangeFuture = lastChangeFuture.thenApplyAsync(ls -> {
- 				ls.getTextDocumentService().didSave(params);
- 				return ls;
- 			});
- 		}
+			lastChangeFuture = lastChangeFuture.thenApplyAsync(ls -> {
+				ls.getTextDocumentService().didSave(params);
+				return ls;
+			});
+		}
 	}
 
 	public void documentClosed() {
@@ -332,8 +344,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 	private void checkEvent(DocumentEvent event) {
 		if (this.document != event.getDocument()) {
-			throw new IllegalStateException(
-					"Synchronizer should apply to only a single document, which is the one it was instantiated for"); //$NON-NLS-1$
+			throw new IllegalStateException("Synchronizer should apply to only a single document, which is the one it was instantiated for"); //$NON-NLS-1$
 		}
 	}
 }

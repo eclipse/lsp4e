@@ -868,6 +868,19 @@ public class LanguageServerWrapper {
 		return -1;
 	}
 
+	/**
+	 * Submit an asynchronous call (i.e. to the language server) that will only be executed if the
+	 * expected document version matches the stored one (which tracks change events).
+	 * Ensures that sequential actions on a document happen in order w.r.t. the language server's view
+	 *
+	 * @param <U> Return type of future
+	 * @param expectedDocumentStamp The current version of the document according to the calling code
+	 * @param file Document to synchronize on
+	 * @param fn Asynchronous computation on the language server
+	 * @return A future that will throw a <code>ConcurrentModificationException</code> on <code>get()</code>
+	 * if the document has changed in the meantime.
+	 * @return Null if the input file is null or does not exist within the workspace, returns null
+	 */
  	public <U> @Nullable CompletableFuture< U> executeOnCurrentVersionAsync(long expectedDocumentStamp, IFile file,
  			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
  		if (file != null && file.getLocation() != null) {
