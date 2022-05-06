@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2022 Red Hat Inc. and others.
+ * Copyright (c) 2016-2017 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -20,7 +20,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -37,7 +36,6 @@ import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
-import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.CodeActionOptions;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
@@ -162,13 +160,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					futures.add(codeAction);
 					codeAction.thenAcceptAsync(actions -> {
 						try {
-							List<Either<Command, CodeAction>> quickFixActions = actions.stream().filter(a -> {
-								if (a.isRight()) {
-									return CodeActionKind.QuickFix.equals(a.getRight().getKind());
-								}
-								return true;
-							}).collect(Collectors.toList());
-							marker.setAttribute(LSP_REMEDIATION, quickFixActions);
+							marker.setAttribute(LSP_REMEDIATION, actions);
 						} catch (CoreException e) {
 							LanguageServerPlugin.logError(e);
 						}
