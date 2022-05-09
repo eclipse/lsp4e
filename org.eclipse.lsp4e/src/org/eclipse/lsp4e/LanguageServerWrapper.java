@@ -138,6 +138,16 @@ public class LanguageServerWrapper {
 		}
 
 		@Override
+		public void stateChanging(IFileBuffer buffer) {
+			if (buffer.isDirty()) {
+				DocumentContentSynchronizer documentListener = connectedDocuments.get(LSPEclipseUtils.toUri(buffer));
+				if (documentListener != null ) {
+					documentListener.documentAboutToBeSaved();
+				}
+			}
+		}
+
+		@Override
 		public void dirtyStateChanged(IFileBuffer buffer, boolean isDirty) {
 			if (isDirty) {
 				return;
