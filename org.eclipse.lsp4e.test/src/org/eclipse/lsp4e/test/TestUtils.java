@@ -18,8 +18,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BooleanSupplier;
@@ -59,6 +61,8 @@ public class TestUtils {
 	private TestUtils() {
 		// this class shouldn't be instantiated
 	}
+	
+	private static List<File> tempFiles = new ArrayList<>();
 
 	public static ITextViewer openTextViewer(IFile file) throws PartInitException {
 		IEditorPart editor = openEditor(file);

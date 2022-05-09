@@ -53,7 +53,8 @@ public class AllCleanRule extends TestWatcher {
 	}
 
 	private void clear() {
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+		// Give the platform three attempts to shut down windows
+		for (int i = 3; i > 0 && !PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false); i--) {}
 		for (IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
 			try {
 				project.delete(true, null);
