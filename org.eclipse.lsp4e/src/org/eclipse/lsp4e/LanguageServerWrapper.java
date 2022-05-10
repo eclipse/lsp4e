@@ -173,13 +173,7 @@ public class LanguageServerWrapper {
 	 */
 	private final @NonNull Map<@NonNull String, @NonNull Runnable> dynamicRegistrations = new HashMap<>();
 	private boolean initiallySupportsWorkspaceFolders = false;
-	private final @NonNull IResourceChangeListener workspaceFolderUpdater = event -> {
-		WorkspaceFoldersChangeEvent workspaceFolderEvent = toWorkspaceFolderEvent(event);
-		if (workspaceFolderEvent == null || (workspaceFolderEvent.getAdded().isEmpty() && workspaceFolderEvent.getRemoved().isEmpty())) {
-			return;
-		}
-		this.languageServer.getWorkspaceService().didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(workspaceFolderEvent));
-	};
+	private final @NonNull IResourceChangeListener workspaceFolderUpdater = new WorkspaceFolderListener();
 
 	/* Backwards compatible constructor */
 	public LanguageServerWrapper(@NonNull IProject project, @NonNull LanguageServerDefinition serverDefinition) {
@@ -526,54 +520,6 @@ public class LanguageServerWrapper {
 		}.schedule();
 	}
 
-	private static final @Nullable WorkspaceFoldersChangeEvent toWorkspaceFolderEvent(
-			IResourceChangeEvent e) {
-
-		// If a project delete then the delta is null, but we get the project in the top-level resource
-		WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
-		if (e.getType() == IResourceChangeEvent.PRE_DELETE) {
-			final IResource resource = e.getResource();
-			if (resource instanceof IProject) {
-				wsFolderEvent.getRemoved()
-						.add(LSPEclipseUtils.toWorkspaceFolder((IProject)resource));
-				return wsFolderEvent;
-			} else {
-				return null;
-			}
-		} else if (e.getType() != IResourceChangeEvent.POST_CHANGE) {
-			return null;
-		}
-
-		// Use the visitor implementation to extract the low-level detail from delta
-		try {
-			e.getDelta().accept(delta -> {
-				if (delta.getResource().getType() == IResource.PROJECT) {
-					IProject project = (IProject) delta.getResource();
-					final WorkspaceFolder wsFolder = LSPEclipseUtils.toWorkspaceFolder(project);
-					if ((delta.getKind() == IResourceDelta.ADDED || (delta.getKind() == IResourceDelta.CHANGED
-							&& (delta.getFlags() & IResourceDelta.OPEN) == IResourceDelta.OPEN))
-							&& project.isAccessible()
-							&& wsFolder != null && !wsFolder.getUri().isEmpty()) {
-						wsFolderEvent.getAdded().add(wsFolder);
-					} else if ((delta.getKind() == IResourceDelta.REMOVED
-							|| (delta.getKind() == IResourceDelta.CHANGED
-									&& (delta.getFlags() & IResourceDelta.OPEN) == IResourceDelta.OPEN))
-									&& !project.isAccessible()
-									&& wsFolder != null && !wsFolder.getUri().isEmpty()) {
-						wsFolderEvent.getRemoved().add(wsFolder);
-					}
-					// TODO: handle renamed/moved (on filesystem)
-				}
-				return delta.getResource().getType() == IResource.ROOT;
-			});
-		} catch (CoreException ex) {
-			LanguageServerPlugin.logError(ex);
-		}
-		if (wsFolderEvent.getAdded().isEmpty() && wsFolderEvent.getRemoved().isEmpty()) {
-			return null;
-		}
-		return wsFolderEvent;
-	}
 
 	/**
 	 * Check whether this LS is suitable for provided project. Starts the LS if not
@@ -925,6 +871,123 @@ public class LanguageServerWrapper {
 			return true;
 		}
 		return serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
+	}
+
+	/**
+	 * Resource listener that translates Eclipse resource events into LSP workspace folder events
+	 * and dispatches them if the language server is still active
+	 */
+	private class WorkspaceFolderListener implements IResourceChangeListener {
+		@Override
+		public void resourceChanged(IResourceChangeEvent event) {
+			WorkspaceFoldersChangeEvent workspaceFolderEvent = toWorkspaceFolderEvent(event);
+			if (workspaceFolderEvent == null || (workspaceFolderEvent.getAdded().isEmpty() && workspaceFolderEvent.getRemoved().isEmpty())) {
+				return;
+			}
+			// If shutting down, language server will be set to null, so ignore the event
+			final LanguageServer currentServer = LanguageServerWrapper.this.languageServer;
+			if (currentServer != null) {
+				currentServer.getWorkspaceService().didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(workspaceFolderEvent));
+			}
+		}
+
+		private @Nullable WorkspaceFoldersChangeEvent toWorkspaceFolderEvent(
+				IResourceChangeEvent e) {
+			if (!isPostChangeEvent(e) && !isPreDeletEvent(e)) {
+				return null;
+			}
+
+			// If a project delete then the delta is null, but we get the project in the top-level resource
+			WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
+			if (isPreDeletEvent(e)) {
+				final IResource resource = e.getResource();
+				if (resource instanceof IProject) {
+					wsFolderEvent.getRemoved()
+							.add(LSPEclipseUtils.toWorkspaceFolder((IProject)resource));
+					return wsFolderEvent;
+				} else {
+					return null;
+				}
+			}
+
+			// Use the visitor implementation to extract the low-level detail from delta
+			try {
+				e.getDelta().accept(delta -> {
+					if (delta.getResource() instanceof IProject) {
+						IProject project = (IProject) delta.getResource();
+						final WorkspaceFolder wsFolder = LSPEclipseUtils.toWorkspaceFolder(project);
+						if ((isAddEvent(delta) || isProjectOpenCloseEvent(delta))
+								&& project.isAccessible()
+								&& isValid(wsFolder)) {
+							wsFolderEvent.getAdded().add(wsFolder);
+						} else if ((isRemoveEvent(delta)|| isProjectOpenCloseEvent(delta))
+										&& !project.isAccessible()
+										&& isValid(wsFolder)) {
+							wsFolderEvent.getRemoved().add(wsFolder);
+						}
+						// TODO: handle renamed/moved (on filesystem)
+					}
+					return delta.getResource().getType() == IResource.ROOT;
+				});
+			} catch (CoreException ex) {
+				LanguageServerPlugin.logError(ex);
+			}
+			if (wsFolderEvent.getAdded().isEmpty() && wsFolderEvent.getRemoved().isEmpty()) {
+				return null;
+			}
+			return wsFolderEvent;
+		}
+
+		/**
+		 *
+		 * @return True if this event is being fired after a change (e.g. a project open/close)
+		 */
+		private boolean isPostChangeEvent(IResourceChangeEvent e) {
+			return e.getType() == IResourceChangeEvent.POST_CHANGE;
+		}
+
+		/**
+		 *
+		 * @return True if this event is being fired prior to a project resource being deleted
+		 */
+		private boolean isPreDeletEvent(IResourceChangeEvent e) {
+			return e.getType() == IResourceChangeEvent.PRE_DELETE;
+		}
+
+		/**
+		 *
+		 * @return True if this delta corresponds to a project resource being added
+		 */
+		private boolean isAddEvent(IResourceDelta delta) {
+			return delta.getKind() == IResourceDelta.ADDED;
+		}
+
+		/**
+		 *
+		 * @return True if this delta corresponds to a project resource being removed
+		 */
+		private boolean isRemoveEvent(IResourceDelta delta) {
+			return delta.getKind() == IResourceDelta.REMOVED;
+		}
+
+		/**
+		 * Decode the bitmask + enum to work out if this is a project open event
+		 * @param delta
+		 * @return True if it is a project open event
+		 */
+		private boolean isProjectOpenCloseEvent(IResourceDelta delta) {
+			return delta.getKind() == IResourceDelta.CHANGED
+					&& (delta.getFlags() & IResourceDelta.OPEN) == IResourceDelta.OPEN;
+		}
+
+		/**
+		 *
+		 * @return True if this workspace folder is non-null and has non-empty content
+		 */
+		private boolean isValid(WorkspaceFolder wsFolder) {
+			return wsFolder != null && wsFolder.getUri() != null && !wsFolder.getUri().isEmpty();
+		}
+
 	}
 
 }
