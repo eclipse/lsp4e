@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2021 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2022 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -11,6 +11,7 @@
  *  Mickael Istria (Red Hat Inc.) - added support for delays
  *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens.
  *  Kris De Volder (Pivotal Inc.) - Provide test code access to Client proxy.
+ *  Rubén Porras Campo (Avaloq Evolution AG) - Add support for willSaveWaitUntil.
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
@@ -52,6 +53,7 @@ import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureHelpOptions;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
+import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -220,6 +222,16 @@ public final class MockLanguageServer implements LanguageServer {
 		if (chars != null) {
 			initializeResult.getCapabilities().getSignatureHelpProvider().setTriggerCharacters(new ArrayList<>(chars));
 		}
+	}
+
+	public void setWillSaveWaitUntil(List<TextEdit> edits) {
+		TextDocumentSyncOptions textDocumentSyncOptions = new TextDocumentSyncOptions();
+		textDocumentSyncOptions.setWillSaveWaitUntil(true);
+		textDocumentSyncOptions.setSave(true);
+		textDocumentSyncOptions.setChange(TextDocumentSyncKind.Full);
+		initializeResult.getCapabilities().setTextDocumentSync(textDocumentSyncOptions);
+
+		this.textDocumentService.setWillSaveWaitUntilCallback(edits);
 	}
 
 	public InitializeResult getInitializeResult() {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2021 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2017, 2022 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -11,6 +11,7 @@
  *  Mickael Istria (Red Hat Inc.) - Support for delay and mock references
  *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 525411 - [rename] input field should be filled with symbol to rename
+ *  Rubén Porras Campo (Avaloq Evolution AG) - Add support for willSaveWaitUntil.
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
@@ -66,6 +67,7 @@ import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.TypeDefinitionParams;
+import org.eclipse.lsp4j.WillSaveTextDocumentParams;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageClient;
@@ -88,6 +90,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
 	private CompletableFuture<DidSaveTextDocumentParams> didSaveCallback;
 	private CompletableFuture<DidCloseTextDocumentParams> didCloseCallback;
+	private List<TextEdit> mockWillSaveWaitUntilTextEdits;
 
 	private Function<?, ? extends CompletableFuture<?>> _futureFactory;
 	private List<LanguageClient> remoteProxies;
@@ -263,6 +266,14 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
+	public CompletableFuture<List<TextEdit>> willSaveWaitUntil(WillSaveTextDocumentParams params) {
+		if (mockWillSaveWaitUntilTextEdits != null) {
+			return CompletableFuture.completedFuture(mockWillSaveWaitUntilTextEdits);
+		}
+		return null;
+	}
+
+	@Override
 	public CompletableFuture<List<ColorInformation>> documentColor(DocumentColorParams params) {
 		return CompletableFuture.completedFuture(this.mockDocumentColors);
 	}
@@ -372,6 +383,10 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void setDocumentSymbols(List<DocumentSymbol> symbols) {
 		this.documentSymbols = symbols;
+	}
+
+	public void setWillSaveWaitUntilCallback(List<TextEdit> textEdits) {
+		this.mockWillSaveWaitUntilTextEdits = textEdits;
 	}
 
 }

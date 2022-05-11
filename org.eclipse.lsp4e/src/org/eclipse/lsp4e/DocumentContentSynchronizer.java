@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2019 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -9,6 +9,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Michał Niewrzał (Rogue Wave Software Inc.)
+ *  Rubén Porras Campo (Avaloq Evolution AG) - documentAboutToBeSaved implementation
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -16,7 +17,12 @@ import java.io.File;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
@@ -38,9 +44,12 @@ import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentItem;
+import org.eclipse.lsp4j.TextDocumentSaveReason;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
+import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
+import org.eclipse.lsp4j.WillSaveTextDocumentParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
@@ -163,6 +172,57 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		return true;
 	}
 
+	private boolean serverSupportsWillSaveWaitUntil() {
+		ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
+		if(serverCapabilities != null ) {
+			Either<TextDocumentSyncKind, TextDocumentSyncOptions> textDocumentSync = serverCapabilities.getTextDocumentSync();
+			if(textDocumentSync.isRight()) {
+				TextDocumentSyncOptions saveOptions = textDocumentSync.getRight();
+				return saveOptions != null && saveOptions.getWillSaveWaitUntil();
+			}
+		}
+		return false;
+	}
+
+	private static final int WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS = 2;
+	private static final int WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD = 3;
+	private static final Map<String, Integer> WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP = new ConcurrentHashMap<>();
+
+	public void documentAboutToBeSaved() {
+		if (!serverSupportsWillSaveWaitUntil()) {
+			return;
+		}
+
+		String uri = fileUri.toString();
+		if (WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.getOrDefault(uri, 0) > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD) {
+			return;
+		}
+
+		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri);
+		// Use @link{TextDocumentSaveReason.Manual} as the platform does not give enough information to be accurate
+		WillSaveTextDocumentParams params = new WillSaveTextDocumentParams(identifier, TextDocumentSaveReason.Manual);
+		List<TextEdit> edits = null;
+		try {
+			edits = languageServerWrapper.getInitializedServer()
+				.thenComposeAsync(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
+				.get(WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
+		} catch (ExecutionException e) {
+			LanguageServerPlugin.logError(e);
+		} catch (TimeoutException e) {
+			Integer timeoutCount = WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.compute(uri,
+					(k, v) -> v == null ? 1 : Integer.valueOf(v + 1));
+			String message = "WillSaveWaitUntil timeouted out after " + Integer.valueOf(WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS).toString() +" seconds for " + uri;  //$NON-NLS-1$//$NON-NLS-2$
+			if (timeoutCount > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD) {
+				message = message + ", it will no longer be called for this document"; //$NON-NLS-1$
+			}
+			LanguageServerPlugin.logWarning(message, e);
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
+		}
+		LSPEclipseUtils.applyEdits(document, edits);
+	}
+
 	public void documentSaved(long timestamp) {
 		this.modificationStamp = timestamp;
 		ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
@@ -178,9 +238,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	}
 
 	public void documentClosed() {
+		String uri = fileUri.toString();
+		WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.remove(uri);
 		// When LS is shut down all documents are being disconnected. No need to send "didClose" message to the LS that is being shut down or not yet started
 		if (languageServerWrapper.isActive()) {
-			TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
+			TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri);
 			DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
 			languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
 		}

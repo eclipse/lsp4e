@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2021 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -13,6 +13,7 @@
  *  Martin Lippert (Pivotal, Inc.) - bug 531030, 527902, 534637
  *  Kris De Volder (Pivotal, Inc.) - dynamic command registration
  *  Tamas Miklossy (itemis) - bug 571162
+ *  Rubén Porras Campo (Avaloq Evolution AG) - documentAboutToBeSaved implementation
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -136,6 +137,16 @@ public class LanguageServerWrapper {
 		@Override
 		public void bufferDisposed(IFileBuffer buffer) {
 			disconnect(LSPEclipseUtils.toUri(buffer));
+		}
+
+		@Override
+		public void stateChanging(IFileBuffer buffer) {
+			if (buffer.isDirty()) {
+				DocumentContentSynchronizer documentListener = connectedDocuments.get(LSPEclipseUtils.toUri(buffer));
+				if (documentListener != null ) {
+					documentListener.documentAboutToBeSaved();
+				}
+			}
 		}
 
 		@Override
