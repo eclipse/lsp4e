@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2022 Avaloq Evolution AG.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -7,8 +7,7 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
- *  Martin Lippert (Pivotal Inc.) - fixed instability
+ *  Rubén Porras Campo (Avaloq Evolution AG) - initial implementation
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 

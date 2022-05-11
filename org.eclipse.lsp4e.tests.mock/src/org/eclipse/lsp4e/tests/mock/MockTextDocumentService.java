@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2021 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2017, 2022 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -11,6 +11,7 @@
  *  Mickael Istria (Red Hat Inc.) - Support for delay and mock references
  *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 525411 - [rename] input field should be filled with symbol to rename
+ *  Rubén Porras Campo (Avaloq Evolution AG) - Add support for willSaveWaitUntil.
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
