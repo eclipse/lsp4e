@@ -27,6 +27,7 @@ import org.eclipse.lsp4e.test.edit.DocumentDidCloseTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidOpenTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidSaveTest;
 import org.eclipse.lsp4e.test.edit.DocumentRevertAndCloseTest;
+import org.eclipse.lsp4e.test.edit.DocumentWillSaveWaitUntilTest;
 import org.eclipse.lsp4e.test.edit.LSPEclipseUtilsTest;
 import org.eclipse.lsp4e.test.format.FormatTest;
 import org.eclipse.lsp4e.test.highlight.HighlightTest;
@@ -56,6 +57,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DocumentDidOpenTest.class,
 	DocumentDidChangeTest.class,
 	DocumentDidSaveTest.class,
+	DocumentWillSaveWaitUntilTest.class,
 	DocumentDidCloseTest.class,
 	DocumentRevertAndCloseTest.class,
 	SymbolsModelTest.class,

@@ -66,6 +66,7 @@ import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.TypeDefinitionParams;
+import org.eclipse.lsp4j.WillSaveTextDocumentParams;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageClient;
@@ -88,6 +89,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
 	private CompletableFuture<DidSaveTextDocumentParams> didSaveCallback;
 	private CompletableFuture<DidCloseTextDocumentParams> didCloseCallback;
+	private List<TextEdit> mockWillSaveWaitUntilTextEdits;
 
 	private Function<?, ? extends CompletableFuture<?>> _futureFactory;
 	private List<LanguageClient> remoteProxies;
@@ -263,6 +265,14 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
+	public CompletableFuture<List<TextEdit>> willSaveWaitUntil(WillSaveTextDocumentParams params) {
+		if (mockWillSaveWaitUntilTextEdits != null) {
+			return CompletableFuture.completedFuture(mockWillSaveWaitUntilTextEdits);
+		}
+		return null;
+	}
+
+	@Override
 	public CompletableFuture<List<ColorInformation>> documentColor(DocumentColorParams params) {
 		return CompletableFuture.completedFuture(this.mockDocumentColors);
 	}
@@ -372,6 +382,10 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	public void setDocumentSymbols(List<DocumentSymbol> symbols) {
 		this.documentSymbols = symbols;
+	}
+
+	public void setWillSaveWaitUntilCallback(List<TextEdit> textEdits) {
+		this.mockWillSaveWaitUntilTextEdits = textEdits;
 	}
 
 }

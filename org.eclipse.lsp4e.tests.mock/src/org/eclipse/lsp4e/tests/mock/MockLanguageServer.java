@@ -51,6 +51,7 @@ import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureHelpOptions;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
+import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -212,6 +213,16 @@ public final class MockLanguageServer implements LanguageServer {
 		if (chars != null) {
 			initializeResult.getCapabilities().getSignatureHelpProvider().setTriggerCharacters(new ArrayList<>(chars));
 		}
+	}
+
+	public void setWillSaveWaitUntil(List<TextEdit> edits) {
+		TextDocumentSyncOptions textDocumentSyncOptions = new TextDocumentSyncOptions();
+		textDocumentSyncOptions.setWillSaveWaitUntil(true);
+		textDocumentSyncOptions.setSave(true);
+		textDocumentSyncOptions.setChange(TextDocumentSyncKind.Full);
+		initializeResult.getCapabilities().setTextDocumentSync(textDocumentSyncOptions);
+
+		this.textDocumentService.setWillSaveWaitUntilCallback(edits);
 	}
 
 	public InitializeResult getInitializeResult() {
