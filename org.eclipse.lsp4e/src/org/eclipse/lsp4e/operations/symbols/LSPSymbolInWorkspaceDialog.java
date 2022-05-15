@@ -13,10 +13,11 @@ package org.eclipse.lsp4e.operations.symbols;
 
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
@@ -37,7 +38,10 @@ import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolTag;
+import org.eclipse.lsp4j.WorkspaceSymbol;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -90,10 +94,10 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 		@Override
 		public boolean matchItem(Object item) {
-			if (!(item instanceof SymbolInformation)) {
+			if (!(item instanceof WorkspaceSymbol)) {
 				return false;
 			}
-			SymbolInformation info = (SymbolInformation) item;
+			WorkspaceSymbol info = (WorkspaceSymbol) item;
 			return info.getName().toLowerCase().indexOf(getPattern().toLowerCase()) != -1;
 		}
 
@@ -135,10 +139,11 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 			}
 
 			WorkspaceSymbolParams params = new WorkspaceSymbolParams(itemsFilter.getPattern());
-			CompletableFuture<List<? extends SymbolInformation>> symbols = server.getWorkspaceService().symbol(params);
-
 			try {
-				List<?> items = symbols.get(1, TimeUnit.SECONDS);
+				List<? extends WorkspaceSymbol> items = server.getWorkspaceService() //
+						.symbol(params) //
+						.thenApplyAsync(LSPSymbolInWorkspaceDialog::eitherToWorkspaceSymbols) //
+						.get(1, TimeUnit.SECONDS);
 				if(items != null) {
 					for (Object item : items) {
 						if (item != null) {
@@ -157,12 +162,11 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	@Override
 	public String getElementName(Object item) {
-		SymbolInformation info = (SymbolInformation) item;
-		return info.getName();
+		return ((WorkspaceSymbol)item).getName();
 	}
 
 	@Override
-	protected Comparator<SymbolInformation> getItemsComparator() {
+	protected Comparator<WorkspaceSymbol> getItemsComparator() {
 		return (o1, o2) -> o1.getName().compareToIgnoreCase(o2.getName());
 	}
 
@@ -185,4 +189,26 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		return null;
 	}
 
+	private static List<WorkspaceSymbol> toWorkspaceSymbols(List<? extends SymbolInformation> source) {
+		return source == null ?
+				List.of() :
+				source.stream().map(LSPSymbolInWorkspaceDialog::toWorkspaceSymbol).collect(Collectors.toList());
+	}
+
+	private static WorkspaceSymbol toWorkspaceSymbol(SymbolInformation symbolinformation) {
+		if (symbolinformation == null) {
+			return null;
+		}
+		WorkspaceSymbol res = new WorkspaceSymbol();
+		res.setName(symbolinformation.getName());
+		res.setLocation(Either.forLeft(symbolinformation.getLocation()));
+		res.setKind(symbolinformation.getKind());
+		res.setContainerName(symbolinformation.getContainerName());
+		res.setTags(symbolinformation.getDeprecated() ? List.of(SymbolTag.Deprecated) : List.of());
+		return res;
+	}
+
+	static List<? extends WorkspaceSymbol> eitherToWorkspaceSymbols(Either<List<? extends SymbolInformation>, List<? extends WorkspaceSymbol>> source) {
+		return source.map(LSPSymbolInWorkspaceDialog::toWorkspaceSymbols, Function.identity());
+	}
 }
