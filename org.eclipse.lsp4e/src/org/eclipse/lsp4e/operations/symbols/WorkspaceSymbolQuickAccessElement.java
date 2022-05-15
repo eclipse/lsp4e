@@ -12,13 +12,16 @@
 package org.eclipse.lsp4e.operations.symbols;
 
 import java.util.Random;
+import java.util.function.Function;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.ui.UI;
+import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.WorkspaceSymbol;
 import org.eclipse.ui.quickaccess.QuickAccessElement;
 
 public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
@@ -26,10 +29,10 @@ public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
 	private static final SymbolsLabelProvider LABEL_PROVIDER = new SymbolsLabelProvider(false, false);
 	private static final Random randomNumbers = new Random();
 
-	private final SymbolInformation symbol;
+	private final WorkspaceSymbol symbol;
 	private final int idExtension;
 
-	public WorkspaceSymbolQuickAccessElement(SymbolInformation symbol) {
+	public WorkspaceSymbolQuickAccessElement(WorkspaceSymbol symbol) {
 		this.symbol = symbol;
 
 		// this random number id extension is a workaround for
@@ -51,13 +54,14 @@ public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
 
 	@Override
 	public String getId() {
-		Range range = symbol.getLocation().getRange();
-		return symbol.getName() + '@' + symbol.getLocation().getUri() + '[' + range.getStart().getLine() + ',' + range.getStart().getCharacter() + ':' + range.getEnd().getLine() + ',' + range.getEnd().getCharacter() + ']' + ',' + idExtension;
+		Location location = symbol.getLocation().map(Function.identity(), symbol -> new Location(symbol.getUri(), null));
+		@Nullable Range range = location.getRange();
+		return symbol.getName() + '@' + location.getUri() + (range != null ? '[' + range.getStart().getLine() + ',' + range.getStart().getCharacter() + ':' + range.getEnd().getLine() + ',' + range.getEnd().getCharacter() + ']' : "") + ',' + idExtension; //$NON-NLS-1$
 	}
 
 	@Override
 	public void execute() {
-		LSPEclipseUtils.openInEditor(symbol.getLocation(), UI.getActivePage());
+		LSPEclipseUtils.openInEditor(symbol.getLocation().map(Function.identity(), symbol -> new Location(symbol.getUri(), null)), UI.getActivePage());
 	}
 
 }
