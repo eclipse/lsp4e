@@ -319,7 +319,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 				} else {
 					inputStream = debugAdapterProcess.getInputStream();
 					outputStream = debugAdapterProcess.getOutputStream();
-					cleanup = debugAdapterProcess::destroy;
+					cleanup = debugAdapterProcess::destroyForcibly;
 				}
 			} else {
 
