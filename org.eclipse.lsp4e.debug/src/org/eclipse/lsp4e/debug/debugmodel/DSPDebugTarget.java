@@ -373,11 +373,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				&& "launch".equals(dspParameters.getOrDefault("request", "launch"));
 		if (shouldSendTerminateRequest) {
 			fSentTerminateRequest = true;
-			getDebugProtocolServer().terminate(new TerminateArguments());
+			getDebugProtocolServer().terminate(new TerminateArguments()).thenRunAsync(this::terminated);
 		} else {
 			DisconnectArguments arguments = new DisconnectArguments();
 			arguments.setTerminateDebuggee(true);
-			getDebugProtocolServer().disconnect(arguments).thenRun(this::terminated);
+			getDebugProtocolServer().disconnect(arguments).thenRunAsync(this::terminated);
 		}
 	}
 
