@@ -92,6 +92,12 @@ public class LSPTextChange extends TextChange {
 				this.fBuffer = manager.getFileStoreTextFileBuffer(this.file.getRight());
 			}
 		}
+
+		// Just to confuse things, the parent eclipse TextChange class can take a TextEdit, but the ltk TextEdit class is
+		// unrelated to the lso4j POJO we receive in our constructor. We need to call setEdit() with an Eclipse TextEdit
+		// because that's used by the preview logic to compute the changed document. We do it here rather than in the constructor
+		// since we need the document to translate line offsets into character offset. Strictly this would not work then
+		// if the platform called getEdit() prior to this method being traversed, but it seems to be OK in practice.
 		final IDocument document  = fBuffer.getDocument();
 		int offset = 0;
 		int length = document.getLength();
