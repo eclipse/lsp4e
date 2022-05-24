@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.refactoring.LSPTextChange;
 import org.eclipse.lsp4e.test.AllCleanRule;
@@ -27,6 +28,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
+import org.eclipse.ltk.core.refactoring.TextChange;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,6 +44,16 @@ public class LSPTextChangeTest {
 		PerformChangeOperation operation = new PerformChangeOperation(new LSPTextChange("test", LSPEclipseUtils.toUri(file), edit));
 		operation.run(new NullProgressMonitor());
 		assertEquals(edit.getNewText(), LSPEclipseUtils.getDocument(file).get());
+	}
+	
+	@Test
+	public void testRefactoringPreview() throws Exception {
+		IProject project = TestUtils.createProject("blah");
+		IFile file = TestUtils.createUniqueTestFile(project, "old");
+		TextEdit edit = new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new");
+		TextChange change = new LSPTextChange("test", LSPEclipseUtils.toUri(file), edit);
+		IDocument preview = change.getPreviewDocument(new NullProgressMonitor());
+		assertEquals(preview.get(), "new");
 	}
 
 	@Test

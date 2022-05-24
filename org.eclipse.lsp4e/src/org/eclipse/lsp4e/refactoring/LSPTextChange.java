@@ -30,6 +30,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ltk.core.refactoring.Change;
@@ -91,7 +92,20 @@ public class LSPTextChange extends TextChange {
 				this.fBuffer = manager.getFileStoreTextFileBuffer(this.file.getRight());
 			}
 		}
-		return fBuffer.getDocument();
+		final IDocument document  = fBuffer.getDocument();
+		int offset = 0;
+		int length = document.getLength();
+		if (this.textEdit.getRange() != null) {
+			try {
+				offset = LSPEclipseUtils.toOffset(this.textEdit.getRange().getStart(), document);
+				length = LSPEclipseUtils.toOffset(this.textEdit.getRange().getEnd(), document) - offset;
+				this.setEdit(new ReplaceEdit(offset, length, this.textEdit.getNewText()));
+			} catch (BadLocationException e) {
+				// Should not happen
+				LanguageServerPlugin.logError(e);
+			}
+		}
+		return document;
 	}
 
 	@Override
