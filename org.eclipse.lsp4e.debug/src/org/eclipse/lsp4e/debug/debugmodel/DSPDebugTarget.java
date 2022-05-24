@@ -283,7 +283,9 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		if (breakpointManager != null) {
 			breakpointManager.shutdown();
 		}
-		debugProtocolFuture.cancel(true);
+		if (debugProtocolFuture != null) {
+			debugProtocolFuture.cancel(true);
+		}
 		try {
 			in.close();
 		} catch (IOException e1) {
