@@ -79,7 +79,6 @@ import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.validation.ReflectiveMessageValidator;
 
 public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDebugProtocolClient {
@@ -619,7 +618,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * <p>
 	 * With this request a debug adapter can run a command in a terminal.
 	 */
-	@JsonRequest
+	@Override
 	public CompletableFuture<RunInTerminalResponse> runInTerminal(RunInTerminalRequestArguments args) {
 		if (RunInTerminalRequestArgumentsKind.EXTERNAL.equals(args.getKind())) {
 			// TODO handle external run in terminal in an external way?
