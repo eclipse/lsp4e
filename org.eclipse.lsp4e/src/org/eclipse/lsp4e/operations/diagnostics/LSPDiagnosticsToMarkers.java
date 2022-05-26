@@ -24,6 +24,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -134,6 +136,11 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 				.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
 		List<Diagnostic> newDiagnostics = new ArrayList<>();
 		Map<IMarker, Diagnostic> toUpdate = new HashMap<>();
+
+		// A language server can scan the whole project and generate diagnostics for files that are not currently open in the IDE
+		// (the markers will show up in the problem view). If so, need to open the document temporarily but be sure to release it
+		// when we're done
+		final boolean disconnect = !diagnostics.getDiagnostics().isEmpty() && LSPEclipseUtils.getExistingDocument(resource) == null;
 		IDocument document = diagnostics.getDiagnostics().isEmpty() ? null : LSPEclipseUtils.getDocument(resource);
 		for (Diagnostic diagnostic : diagnostics.getDiagnostics()) {
 			IMarker associatedMarker = getExistingMarkerFor(document, diagnostic, toDeleteMarkers);
@@ -164,6 +171,14 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			} catch (CoreException e) {
 				if (resource.exists()) {
 					LanguageServerPlugin.logError(e);
+				}
+			} finally {
+				if (document != null && disconnect) {
+					try {
+						FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
+					} catch (CoreException e) {
+						LanguageServerPlugin.logError(e);
+					}
 				}
 			}
 		};
