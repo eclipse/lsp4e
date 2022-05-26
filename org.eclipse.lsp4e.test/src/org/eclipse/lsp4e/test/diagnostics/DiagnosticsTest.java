@@ -13,6 +13,7 @@
 package org.eclipse.lsp4e.test.diagnostics;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,7 +34,9 @@ import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -102,6 +105,26 @@ public class DiagnosticsTest {
 
 		markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_INFINITE);
 		assertEquals(0, markers.length);
+	}
+	
+	@Test
+	public void testFileBuffersNotLeaked() throws Exception {
+		IFile file = TestUtils.createUniqueTestFile(project, "Diagnostic Other Text");
+
+		Range range = new Range(new Position(0, 0), new Position(0, 10));
+		List<Diagnostic> diagnostics = new ArrayList<>();
+		diagnostics.add(createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"));
+
+		IDocument existingDocument = LSPEclipseUtils.getExistingDocument(file);
+		
+		assertNull(existingDocument);
+		
+		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics));
+		
+		IDocument shouldHaveBeenClosed = LSPEclipseUtils.getExistingDocument(file);
+		assertNull(shouldHaveBeenClosed);
+
+
 	}
 
 	@Test
