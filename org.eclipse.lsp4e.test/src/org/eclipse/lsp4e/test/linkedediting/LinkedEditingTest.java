@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -141,13 +142,11 @@ public class LinkedEditingTest {
 		}.waitForCondition(Display.getCurrent(), 3000);
 
 		IAnnotationModel model = sourceViewer.getAnnotationModel();
-		Annotation annotation = findAnnotation(sourceViewer, 14);
-		Assert.assertNotNull(annotation);
-//		System.out.println("testLinkedEditingExitPolicy: annotation found at offset 14: " + annotation.getType());
-		assertTrue(annotation.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link"));
+		List<Annotation> annotations = findAnnotations(sourceViewer, 14).stream().filter(a -> a.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")).collect(Collectors.toList());
+		assertEquals("Exepected only 1 link annotation here, got " + annotations, 1, annotations.size());
 		Annotation masterAnnotation = findAnnotation(sourceViewer, "org.eclipse.ui.internal.workbench.texteditor.link.master");
 		assertNotNull(masterAnnotation);
-		assertEquals(annotation, masterAnnotation);
+		assertTrue(annotations.contains(masterAnnotation));
 		org.eclipse.jface.text.Position masterPosition = model.getPosition(masterAnnotation);
 		assertNotNull(masterPosition);
 		Annotation slaveAnnotation = findAnnotation(sourceViewer, "org.eclipse.ui.internal.workbench.texteditor.link.slave");
@@ -167,7 +166,6 @@ public class LinkedEditingTest {
 				while (iterator.hasNext()) {
 					Annotation annotation = iterator.next();
 					if (annotation.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")) {
-//						System.out.println("testLinkedEditingExitPolicy: Wait for annotation succeeded: " + annotation.getType());
 						return true;
 					}
 				}
@@ -176,26 +174,23 @@ public class LinkedEditingTest {
 		}.waitForCondition(Display.getCurrent(), 3000);
 		
 		model = sourceViewer.getAnnotationModel();
-		annotation = findAnnotation(sourceViewer, 15);
 		// No "linked" annotation is to be found at this offset
-		if (annotation != null) {
-//			System.out.println("testLinkedEditingExitPolicy: annotation found at offset 15: " + annotation.getType());
-			assertFalse(annotation.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link"));
-		}
+		assertFalse(findAnnotations(sourceViewer, 15).stream().anyMatch(a -> a.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")));
 	}
 	
-	private Annotation findAnnotation(ISourceViewer sourceViewer, int offset) {
+	private List<Annotation> findAnnotations(ISourceViewer sourceViewer, int offset) {
+		List<Annotation> annotations = new ArrayList<>();
 		IAnnotationModel model = sourceViewer.getAnnotationModel();
 		Iterator<Annotation> iterator = model.getAnnotationIterator();
 		while (iterator.hasNext()) {
 			Annotation annotation = iterator.next();
 			org.eclipse.jface.text.Position position = model.getPosition(annotation);
 			if (position != null && position.includes(offset)) {
-				return annotation;
+				annotations.add(annotation);
 			}
 		}
 		
-		return null;
+		return annotations;
 	}
 
 	private Annotation findAnnotation(ISourceViewer sourceViewer, String type) {
