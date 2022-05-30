@@ -16,12 +16,14 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
@@ -57,6 +59,8 @@ import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 
 public class TestUtils {
+
+	private static Set<File> tempFiles = new HashSet<>();
 
 	private TestUtils() {
 		// this class shouldn't be instantiated
@@ -165,6 +169,29 @@ public class TestUtils {
 				delete(path);
 			}
 		}
+	}
+	
+	public static File createTempFile(String prefix, String suffix) throws IOException {
+		File tmp = File.createTempFile(prefix, suffix);
+		tempFiles.add(tmp);
+		return tmp;
+	}
+	
+	public static void addManagedTempFile(File file) {
+		tempFiles.add(file);
+	}
+	
+	public static void tearDown() {
+		tempFiles.forEach(file -> {
+			try {
+				Files.deleteIfExists(file.toPath());
+			} catch (IOException e) {
+				// Trying to have the tests run quieter but I suppose if there's an actual
+				// problem we'd better find out about it
+				e.printStackTrace();
+			}
+		});
+		tempFiles.clear();
 	}
 
 	public static ContentTypeToLanguageServerDefinition getDisabledLS() {

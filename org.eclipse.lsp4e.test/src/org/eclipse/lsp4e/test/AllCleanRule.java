@@ -63,5 +63,6 @@ public class AllCleanRule extends TestWatcher {
 		}
 		LanguageServiceAccessor.clearStartedServers();
 		MockLanguageServer.reset(this.serverConfigurer);
+		TestUtils.tearDown();
 	}
 }
