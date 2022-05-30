@@ -25,6 +25,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.TestUtils.JobSynchronizer;
@@ -100,6 +101,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 				.next();
 		new LSDisplayHelper(() -> MockLanguageServer.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
 				300);
+		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
 				c -> Boolean.TRUE);
@@ -127,7 +129,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 				.next();
 		new LSDisplayHelper(() -> MockLanguageServer.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
 				300);
-
+		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 		final JobSynchronizer synchronizer = new JobSynchronizer();
 		project.close(synchronizer);
 		synchronizer.await();
@@ -151,6 +153,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 				.next();
 		new LSDisplayHelper(() -> MockLanguageServer.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
 				300);
+		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
 				c -> Boolean.TRUE);
@@ -180,6 +183,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 				.next();
 		new LSDisplayHelper(() -> MockLanguageServer.INSTANCE.isRunning()).waitForCondition(Display.getCurrent(), 5000,
 				300);
+		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 
 		final JobSynchronizer synchronizer = new JobSynchronizer();
 		project.close(synchronizer);
