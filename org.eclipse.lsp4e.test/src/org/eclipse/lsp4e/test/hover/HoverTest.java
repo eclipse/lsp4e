@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -31,7 +30,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.operations.hover.LSPTextHover;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -49,6 +47,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -139,14 +138,10 @@ public class HoverTest {
 				new Range(new Position(0, 0), new Position(0, 0)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
-		File file = File.createTempFile("testHoverOnExternalfile", ".lspt");
-		try {
-			ITextViewer viewer = TestUtils.getTextViewer(IDE.openInternalEditorOnFileStore(
-					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
-			Assert.assertTrue(hover.getHoverInfo(viewer, new Region(0, 0)).contains("blah"));
-		} finally {
-			Files.deleteIfExists(file.toPath());
-		}
+		File file = TestUtils.createTempFile("testHoverOnExternalfile", ".lspt");
+		ITextViewer viewer = TestUtils.getTextViewer(IDE.openInternalEditorOnFileStore(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
+		Assert.assertTrue(hover.getHoverInfo(viewer, new Region(0, 0)).contains("blah"));
 	}
 
 	@Test

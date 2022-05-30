@@ -21,7 +21,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -431,22 +430,18 @@ public class LanguageServiceAccessorTest {
 
 	@Test
 	public void testLSforExternalThenLocalFile() throws Exception {
-		File local = File.createTempFile("testLSforExternalThenLocalFile", ".lspt");
-		try {
-			ITextEditor editor = (ITextEditor) IDE.openEditorOnFileStore(
-					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(local.toURI()));
-			Assert.assertEquals(1, LanguageServiceAccessor.getLanguageServers(
-					TestUtils.getTextViewer(editor).getDocument(), this::hasHoverCapabilities).get().size());
-			PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
-			// opening another file should either reuse the LS or spawn another one, but not
-			// both
-			Assert.assertEquals(1,
-					LanguageServiceAccessor.getLanguageServers(
-							TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument(),
-							this::hasHoverCapabilities).get().size());
-		} finally {
-			Files.deleteIfExists(local.toPath());
-		}
+		File local = TestUtils.createTempFile("testLSforExternalThenLocalFile", ".lspt");
+		ITextEditor editor = (ITextEditor) IDE.openEditorOnFileStore(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(local.toURI()));
+		Assert.assertEquals(1, LanguageServiceAccessor.getLanguageServers(
+				TestUtils.getTextViewer(editor).getDocument(), this::hasHoverCapabilities).get().size());
+		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+		// opening another file should either reuse the LS or spawn another one, but not
+		// both
+		Assert.assertEquals(1,
+				LanguageServiceAccessor.getLanguageServers(
+						TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument(),
+						this::hasHoverCapabilities).get().size());
 	}
 
 	private boolean hasHoverCapabilities(ServerCapabilities capabilities) {

@@ -16,7 +16,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -198,40 +197,36 @@ public class DocumentDidChangeTest {
 		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
 				.setTextDocumentSync(TextDocumentSyncKind.Full);
 
-		File file = File.createTempFile("testFullSyncExternalFile", ".lspt");
-		try {
-			IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
-			ITextViewer viewer = TestUtils.getTextViewer(editor);
-			LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
-				@Override
-				public boolean test(ServerCapabilities t) {
-					assertEquals(TextDocumentSyncKind.Full, getDocumentSyncKind(t));
-					return true;
-				}
-			});
-			// Test initial insert
-			CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-			MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
-			String text = "Hello";
-			viewer.getDocument().replace(0, 0, text);
-			DidChangeTextDocumentParams lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
-			assertNotNull(lastChange.getContentChanges());
-			assertEquals(1, lastChange.getContentChanges().size());
-			TextDocumentContentChangeEvent change0 = lastChange.getContentChanges().get(0);
-			assertEquals(text, change0.getText());
-	
-			// Test additional insert
-			didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
-			MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
-			viewer.getDocument().replace(5, 0, " World");
-			lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
-			assertNotNull(lastChange.getContentChanges());
-			assertEquals(1, lastChange.getContentChanges().size());
-			change0 = lastChange.getContentChanges().get(0);
-			assertEquals("Hello World", change0.getText());
-		} finally {
-			Files.deleteIfExists(file.toPath());
-		}
+		File file = TestUtils.createTempFile("testFullSyncExternalFile", ".lspt");
+		IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
+			@Override
+			public boolean test(ServerCapabilities t) {
+				assertEquals(TextDocumentSyncKind.Full, getDocumentSyncKind(t));
+				return true;
+			}
+		});
+		// Test initial insert
+		CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
+		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
+		String text = "Hello";
+		viewer.getDocument().replace(0, 0, text);
+		DidChangeTextDocumentParams lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+		assertNotNull(lastChange.getContentChanges());
+		assertEquals(1, lastChange.getContentChanges().size());
+		TextDocumentContentChangeEvent change0 = lastChange.getContentChanges().get(0);
+		assertEquals(text, change0.getText());
+
+		// Test additional insert
+		didChangeExpectation = new CompletableFuture<DidChangeTextDocumentParams>();
+		MockLanguageServer.INSTANCE.setDidChangeCallback(didChangeExpectation);
+		viewer.getDocument().replace(5, 0, " World");
+		lastChange = didChangeExpectation.get(1000, TimeUnit.MILLISECONDS);
+		assertNotNull(lastChange.getContentChanges());
+		assertEquals(1, lastChange.getContentChanges().size());
+		change0 = lastChange.getContentChanges().get(0);
+		assertEquals("Hello World", change0.getText());
 	}
 
 

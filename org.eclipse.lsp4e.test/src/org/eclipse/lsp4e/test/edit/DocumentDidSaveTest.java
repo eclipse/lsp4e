@@ -16,7 +16,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -85,35 +84,31 @@ public class DocumentDidSaveTest {
 
 	@Test
 	public void testSaveExternalFile() throws Exception {
-		File file = File.createTempFile("testSaveExternalFile", ".lspt");
-		try {
-			IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
-			ITextViewer viewer = TestUtils.getTextViewer(editor);
-	
-			// make sure that timestamp after save will differ from creation time (no better idea at the moment)
+		File file = TestUtils.createTempFile("testSaveExternalFile", ".lspt");
+		IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
+
+		// make sure that timestamp after save will differ from creation time (no better idea at the moment)
 //			testFile.setLocalTimeStamp(0);
-	
-			// Force LS to initialize and open file
-			LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(editor.getEditorInput()), capabilites -> Boolean.TRUE);
-			CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
-			MockLanguageServer.INSTANCE.setDidSaveCallback(didSaveExpectation);
-	
-			// simulate change in file
-			viewer.getDocument().replace(0, 0, "Hello");
-			editor.doSave(new NullProgressMonitor());
-	
-			new LSDisplayHelper(() -> {
-				try {
-					DidSaveTextDocumentParams lastChange = didSaveExpectation.get(10, TimeUnit.MILLISECONDS);
-					assertNotNull(lastChange.getTextDocument());
-					assertEquals(LSPEclipseUtils.toUri(file).toString(), lastChange.getTextDocument().getUri());
-					return true;
-				} catch (TimeoutException | InterruptedException | ExecutionException e) {
-					return false;
-				}
-			}).waitForCondition(Display.getCurrent(), 2000);
-		} finally {
-			Files.deleteIfExists(file.toPath());
-		}
+
+		// Force LS to initialize and open file
+		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(editor.getEditorInput()), capabilites -> Boolean.TRUE);
+		CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
+		MockLanguageServer.INSTANCE.setDidSaveCallback(didSaveExpectation);
+
+		// simulate change in file
+		viewer.getDocument().replace(0, 0, "Hello");
+		editor.doSave(new NullProgressMonitor());
+
+		new LSDisplayHelper(() -> {
+			try {
+				DidSaveTextDocumentParams lastChange = didSaveExpectation.get(10, TimeUnit.MILLISECONDS);
+				assertNotNull(lastChange.getTextDocument());
+				assertEquals(LSPEclipseUtils.toUri(file).toString(), lastChange.getTextDocument().getUri());
+				return true;
+			} catch (TimeoutException | InterruptedException | ExecutionException e) {
+				return false;
+			}
+		}).waitForCondition(Display.getCurrent(), 2000);
 	}
 }

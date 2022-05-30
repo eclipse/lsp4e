@@ -63,6 +63,8 @@ public class OutlineContentTest {
 				new Range(new Position(2, 0), new Position(2, 2)),
 				new Range(new Position(2, 0), new Position(2, 2)));
 
+		MockLanguageServer.INSTANCE.setDocumentSymbols(symbolCow, symbolFox, symbolCat);
+
 		// ensure outline sorting is disabled
 		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 		prefs.putBoolean(CNFOutlinePage.SORT_OUTLINE_PREFERENCE, false);

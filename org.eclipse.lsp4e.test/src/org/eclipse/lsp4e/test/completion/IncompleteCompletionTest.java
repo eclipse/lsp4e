@@ -525,18 +525,14 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		items.add(createCompletionItem("FirstClassExternal", CompletionItemKind.Class));
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
-		File file = File.createTempFile("testCompletionExternalFile", ".lspt");
-		try {
-			ITextEditor editor = (ITextEditor) IDE.openEditorOnFileStore(
-					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
-			ITextViewer viewer = TestUtils.getTextViewer(editor);
-			ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
-			assertEquals(1, proposals.length);
-			proposals[0].apply(viewer.getDocument());
-			assertEquals("FirstClassExternal", viewer.getDocument().get());
-		} finally {
-			file.delete();
-		}
+		File file = TestUtils.createTempFile("testCompletionExternalFile", ".lspt");
+		ITextEditor editor = (ITextEditor) IDE.openEditorOnFileStore(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
+		assertEquals(1, proposals.length);
+		proposals[0].apply(viewer.getDocument());
+		assertEquals("FirstClassExternal", viewer.getDocument().get());
 	}
 
 	@Test
