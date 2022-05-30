@@ -52,9 +52,7 @@ public class OutlineContentTest {
 		IProject project = TestUtils
 				.createProject("OutlineContentTest_testOutlineSorting" + System.currentTimeMillis());
 		try {
-
-			IFile testFile = TestUtils.createUniqueTestFile(project, "content does not matter");
-
+			IFile testFile = TestUtils.createUniqueTestFile(project, "content\n does\n not\n matter\n but needs to cover the ranges described below");
 			DocumentSymbol symbolCow = new DocumentSymbol("cow", SymbolKind.Constant,
 					new Range(new Position(0, 0), new Position(0, 2)),
 					new Range(new Position(0, 0), new Position(0, 2)));
