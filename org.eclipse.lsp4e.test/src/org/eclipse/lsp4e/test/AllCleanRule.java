@@ -69,6 +69,7 @@ public class AllCleanRule extends TestWatcher {
 				e.printStackTrace();
 			}
 		}
+		MockLanguageServer.INSTANCE.waitBeforeTearDown();
 		LanguageServiceAccessor.clearStartedServers();
 		MockLanguageServer.reset(this.serverConfigurer);
 		TestUtils.tearDown();

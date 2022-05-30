@@ -20,7 +20,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
@@ -79,6 +81,8 @@ public final class MockLanguageServer implements LanguageServer {
 
 	private List<LanguageClient> remoteProxies = new ArrayList<>();
 
+	private List<CompletableFuture<?>> inFlight = new ArrayList<>();
+
 	public static void reset() {
 		INSTANCE = new MockLanguageServer(MockLanguageServer::defaultServerCapabilities);
 	}
@@ -104,6 +108,16 @@ public final class MockLanguageServer implements LanguageServer {
 		f.get();
 	}
 
+	public void waitBeforeTearDown() {
+		this.inFlight.forEach(future -> {
+			try {
+				future.join();
+			} catch (CancellationException | CompletionException e) {
+				System.err.println("Error waiting for in flight requests prior to teardown: " + e.getMessage());
+			}
+		});
+	}
+
 	public void addRemoteProxy(LanguageClient remoteProxy) {
 		this.textDocumentService.addRemoteProxy(remoteProxy);
 		this.remoteProxies.add(remoteProxy);
@@ -116,13 +130,15 @@ public final class MockLanguageServer implements LanguageServer {
 
 	<U> CompletableFuture<U> buildMaybeDelayedFuture(U value) {
 		if (delay > 0) {
-			return CompletableFuture.runAsync(() -> {
+			CompletableFuture<U> future = CompletableFuture.runAsync(() -> {
 				try {
 					Thread.sleep(delay);
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
 			}).thenApply(v -> value);
+			inFlight.add(future);
+			return future;
 		}
 		return CompletableFuture.completedFuture(value);
 	}
