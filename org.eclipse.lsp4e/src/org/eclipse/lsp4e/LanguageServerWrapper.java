@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -179,6 +180,7 @@ public class LanguageServerWrapper {
 	private LanguageServer languageServer;
 	private ServerCapabilities serverCapabilities;
 	private Timer timer;
+	private AtomicBoolean stopping = new AtomicBoolean(false);
 
 	/**
 	 * Map containing unregistration handlers for dynamic capability registrations.
@@ -448,6 +450,10 @@ public class LanguageServerWrapper {
 	}
 
 	public synchronized void stop() {
+		final boolean alreadyStopping = this.stopping.getAndSet(true);
+		if (alreadyStopping) {
+			return;
+		}
 		removeStopTimer();
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
@@ -485,6 +491,7 @@ public class LanguageServerWrapper {
 			if (provider != null) {
 				provider.stop();
 			}
+			this.stopping.set(false);
 		};
 
 		CompletableFuture.runAsync(shutdownKillAndStopFutureAndProvider);
