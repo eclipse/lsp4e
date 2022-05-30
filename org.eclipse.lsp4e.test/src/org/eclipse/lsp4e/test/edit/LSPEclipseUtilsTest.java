@@ -395,7 +395,7 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testTextEditDoesntAutomaticallySaveOpenExternalFiles() throws Exception {
-		File file = File.createTempFile("testTextEditDoesntAutomaticallySaveOpenExternalFiles", ".whatever");
+		File file = TestUtils.createTempFile("testTextEditDoesntAutomaticallySaveOpenExternalFiles", ".whatever");
 		IEditorPart editor = IDE.openInternalEditorOnFileStore(
 				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
 		TextEdit te = new TextEdit();

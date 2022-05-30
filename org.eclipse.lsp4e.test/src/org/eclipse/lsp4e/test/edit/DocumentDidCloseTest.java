@@ -15,7 +15,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -59,24 +58,20 @@ public class DocumentDidCloseTest {
 
 	@Test
 	public void testCloseExternalFile() throws Exception {
-		File testFile = File.createTempFile("testCloseExternalFile", ".lspt");
-		try {
-			IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(testFile.toURI()));
-	
-			// Force LS to initialize and open file
-			LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(editor.getEditorInput()), capabilites -> Boolean.TRUE);
-	
-			CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
-			MockLanguageServer.INSTANCE.setDidCloseCallback(didCloseExpectation);
-	
-			TestUtils.closeEditor(editor, false);
-	
-			DidCloseTextDocumentParams lastChange = didCloseExpectation.get(1000, TimeUnit.MILLISECONDS);
-			assertNotNull(lastChange.getTextDocument());
-			assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
-		} finally {
-			Files.deleteIfExists(testFile.toPath());
-		}
+		File testFile = TestUtils.createTempFile("testCloseExternalFile", ".lspt");
+		IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(testFile.toURI()));
+
+		// Force LS to initialize and open file
+		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(editor.getEditorInput()), capabilites -> Boolean.TRUE);
+
+		CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
+		MockLanguageServer.INSTANCE.setDidCloseCallback(didCloseExpectation);
+
+		TestUtils.closeEditor(editor, false);
+
+		DidCloseTextDocumentParams lastChange = didCloseExpectation.get(1000, TimeUnit.MILLISECONDS);
+		assertNotNull(lastChange.getTextDocument());
+		assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
 	}
 
 }

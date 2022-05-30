@@ -15,7 +15,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -81,18 +80,14 @@ public class DocumentLinkTest {
 		links.add(new DocumentLink(new Range(new Position(0, 9), new Position(0, 15)), "file://test0"));
 		MockLanguageServer.INSTANCE.setDocumentLinks(links);
 
-		File file = File.createTempFile("testDocumentLinkExternalFile", ".lspt");
-		try {
-			ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(
-					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
-			ITextViewer viewer = TestUtils.getTextViewer(editor);
-	
-			IHyperlink[] hyperlinks = documentLinkDetector.detectHyperlinks(viewer, new Region(13, 0), true);
-			assertEquals(1, hyperlinks.length);
-			assertEquals("file://test0", hyperlinks[0].getHyperlinkText());
-		} finally {
-			Files.deleteIfExists(file.toPath());
-		}
+		File file = TestUtils.createTempFile("testDocumentLinkExternalFile", ".lspt");
+		ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
+
+		IHyperlink[] hyperlinks = documentLinkDetector.detectHyperlinks(viewer, new Region(13, 0), true);
+		assertEquals(1, hyperlinks.length);
+		assertEquals("file://test0", hyperlinks[0].getHyperlinkText());
 	}
 
 	@Test

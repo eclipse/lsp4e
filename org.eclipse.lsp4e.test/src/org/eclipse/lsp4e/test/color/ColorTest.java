@@ -13,7 +13,6 @@ package org.eclipse.lsp4e.test.color;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.nio.file.Files;
 import java.util.Collections;
 
 import org.eclipse.core.filesystem.EFS;
@@ -64,24 +63,20 @@ public class ColorTest {
 
 	@Test
 	public void testColorProviderExternalFile() throws Exception {
-		File file = File.createTempFile("testColorProviderExternalFile", ".lspt");
-		try {
-			try (
-				FileOutputStream out = new FileOutputStream(file);
-			) {
-				out.write("\u2588\u2588\u2588\u2588\u2588".getBytes());
-			}
-			ITextViewer viewer = TestUtils.getTextViewer(IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
-			StyledText widget = viewer.getTextWidget();
-			Assert.assertTrue(new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					return containsColor(widget, color, 10);
-				}
-			}.waitForCondition(widget.getDisplay(), 3000));
-		} finally {
-			Files.deleteIfExists(file.toPath());
+		File file = TestUtils.createTempFile("testColorProviderExternalFile", ".lspt");
+		try (
+			FileOutputStream out = new FileOutputStream(file);
+		) {
+			out.write("\u2588\u2588\u2588\u2588\u2588".getBytes());
 		}
+		ITextViewer viewer = TestUtils.getTextViewer(IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
+		StyledText widget = viewer.getTextWidget();
+		Assert.assertTrue(new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				return containsColor(widget, color, 10);
+			}
+		}.waitForCondition(widget.getDisplay(), 3000));
 	}
 
 	/**

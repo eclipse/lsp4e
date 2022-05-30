@@ -58,16 +58,12 @@ public class LSPTextChangeTest {
 
 	@Test
 	public void testPerformOperationExternalFile() throws Exception {
-		File file = File.createTempFile("testPerformOperationExternalFile", ".lspt");
-		try {
-			Files.write(file.toPath(), "old".getBytes());
-			TextEdit edit = new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new");
-			PerformChangeOperation operation = new PerformChangeOperation(new LSPTextChange("test", LSPEclipseUtils.toUri(file), edit));
-			operation.run(new NullProgressMonitor());
-			assertEquals(edit.getNewText(), new String(Files.readAllBytes(file.toPath())));
-		} finally {
-			Files.deleteIfExists(file.toPath());
-		}
+		File file = TestUtils.createTempFile("testPerformOperationExternalFile", ".lspt");
+		Files.write(file.toPath(), "old".getBytes());
+		TextEdit edit = new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new");
+		PerformChangeOperation operation = new PerformChangeOperation(new LSPTextChange("test", LSPEclipseUtils.toUri(file), edit));
+		operation.run(new NullProgressMonitor());
+		assertEquals(edit.getNewText(), new String(Files.readAllBytes(file.toPath())));
 	}
 
 }

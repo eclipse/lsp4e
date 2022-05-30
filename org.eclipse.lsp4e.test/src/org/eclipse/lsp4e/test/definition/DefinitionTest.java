@@ -15,7 +15,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -100,17 +99,13 @@ public class DefinitionTest {
 		Location location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(location));
 
-		File file = File.createTempFile("testDocumentLinkExternalFile", ".lspt");
-		try {
-			ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(
-					PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
-			ITextViewer viewer = TestUtils.getTextViewer(editor);
+		File file = TestUtils.createTempFile("testDocumentLinkExternalFile", ".lspt");
+		ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
 
-			IHyperlink[] hyperlinks = hyperlinkDetector.detectHyperlinks(viewer, new Region(0, 0), true);
-			assertEquals(1, hyperlinks.length);
-		} finally {
-			Files.deleteIfExists(file.toPath());
-		}
+		IHyperlink[] hyperlinks = hyperlinkDetector.detectHyperlinks(viewer, new Region(0, 0), true);
+		assertEquals(1, hyperlinks.length);
 	}
 	
 	@Test

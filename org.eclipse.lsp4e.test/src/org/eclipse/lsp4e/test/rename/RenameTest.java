@@ -40,7 +40,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.rename.LSPRenameHandler;
@@ -66,6 +65,7 @@ import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Rule;
 import org.junit.Test;
@@ -168,7 +168,7 @@ public class RenameTest {
 
 	@Test
 	public void testRenameRefactoringExternalFile() throws Exception {
-		File file = File.createTempFile("testPerformOperationExternalFile", ".lspt");
+		File file = TestUtils.createTempFile("testPerformOperationExternalFile", ".lspt");
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(file.toURI()));
 		IFileStore store = EFS.getStore(file.toURI());
 		ITextFileBufferManager manager = ITextFileBufferManager.DEFAULT;
@@ -190,7 +190,6 @@ public class RenameTest {
 			assertEquals("new", document.get());
 		} finally {
 			manager.disconnectFileStore(store, new NullProgressMonitor());
-			Files.deleteIfExists(file.toPath());
 		}
 	}
 
@@ -198,30 +197,26 @@ public class RenameTest {
 	public void testRenameChangeAlsoExternalFile() throws Exception {
 		IProject project = TestUtils.createProject("blah");
 		IFile workspaceFile = TestUtils.createUniqueTestFile(project, "old");
-		File externalFile = File.createTempFile("testRenameChangeAlsoExternalFile", ".lspt");
-		try {
-			Files.write(externalFile.toPath(), "old".getBytes());
-			Map<String, List<TextEdit>> edits = new HashMap<>(2, 1.f);
-			edits.put(LSPEclipseUtils.toUri(workspaceFile).toString(), Collections.singletonList(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new")));
-			edits.put(LSPEclipseUtils.toUri(externalFile).toString(), Collections.singletonList(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new")));
-			MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(new WorkspaceEdit(edits));
-			IDocument document = LSPEclipseUtils.getDocument(workspaceFile);
-			LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider).thenAccept(languageServers -> {
-				LSPRenameProcessor processor = new LSPRenameProcessor(LSPEclipseUtils.getDocument(workspaceFile), languageServers.get(0), 0);
-				processor.setNewName("new");
-				try {
-					ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
-					processorBasedRefactoring.checkAllConditions(new NullProgressMonitor());
-					processorBasedRefactoring.createChange(new NullProgressMonitor()).perform(new NullProgressMonitor());
-				} catch (CoreException e) {
-					e.printStackTrace();
-				}
-			}).join();
-			assertEquals("new", document.get());
-			assertEquals("new", new String(Files.readAllBytes(externalFile.toPath())));
-		} finally {
-			Files.deleteIfExists(externalFile.toPath());
-		}
+		File externalFile = TestUtils.createTempFile("testRenameChangeAlsoExternalFile", ".lspt");
+		Files.write(externalFile.toPath(), "old".getBytes());
+		Map<String, List<TextEdit>> edits = new HashMap<>(2, 1.f);
+		edits.put(LSPEclipseUtils.toUri(workspaceFile).toString(), Collections.singletonList(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new")));
+		edits.put(LSPEclipseUtils.toUri(externalFile).toString(), Collections.singletonList(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new")));
+		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(new WorkspaceEdit(edits));
+		IDocument document = LSPEclipseUtils.getDocument(workspaceFile);
+		LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider).thenAccept(languageServers -> {
+			LSPRenameProcessor processor = new LSPRenameProcessor(LSPEclipseUtils.getDocument(workspaceFile), languageServers.get(0), 0);
+			processor.setNewName("new");
+			try {
+				ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
+				processorBasedRefactoring.checkAllConditions(new NullProgressMonitor());
+				processorBasedRefactoring.createChange(new NullProgressMonitor()).perform(new NullProgressMonitor());
+			} catch (CoreException e) {
+				e.printStackTrace();
+			}
+		}).join();
+		assertEquals("new", document.get());
+		assertEquals("new", new String(Files.readAllBytes(externalFile.toPath())));
 	}
 
 	@Test

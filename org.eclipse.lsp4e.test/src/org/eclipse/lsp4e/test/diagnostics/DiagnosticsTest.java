@@ -17,7 +17,6 @@ import static org.junit.Assert.assertNull;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -193,7 +192,7 @@ public class DiagnosticsTest {
 	@Test
 	public void testDiagnosticsOnExternalFile() throws Exception {
 		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(new Diagnostic(new Range(new Position(0, 0), new Position(0, 1)), "This is a warning", DiagnosticSeverity.Warning, null)));
-		File file = File.createTempFile("testDiagnosticsOnExternalFile", ".lspt");
+		File file = TestUtils.createTempFile("testDiagnosticsOnExternalFile", ".lspt");
 		Font font = null;
 		try {
 			try (
@@ -218,7 +217,6 @@ public class DiagnosticsTest {
 				}
 			}.waitForCondition(widget.getDisplay(), 3000));
 		} finally {
-			Files.deleteIfExists(file.toPath());
 			if (font != null) {
 				font.dispose();
 			}
