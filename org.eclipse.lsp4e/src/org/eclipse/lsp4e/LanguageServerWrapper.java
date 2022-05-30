@@ -437,6 +437,16 @@ public class LanguageServerWrapper {
 		}, TimeUnit.SECONDS.toMillis(this.serverDefinition.lastDocumentDisconnectedTimeout));
 	}
 
+	/**
+	 * Internal hook so that the unwrapped remote proxy can be matched to the corresponding
+	 * wrapper, which tracks things like whether it is still running or not
+	 * @param server LanguageServer to match on
+	 * @return True if this is the wrapper for the given server
+	 */
+	boolean isWrapperFor(LanguageServer server) {
+		return server == this.languageServer;
+	}
+
 	public synchronized void stop() {
 		removeStopTimer();
 		if (this.initializeFuture != null) {
