@@ -27,6 +27,8 @@ import org.junit.runner.Description;
 
 public class AllCleanRule extends TestWatcher {
 	
+	private static final boolean LOG_TEST_NAMES = Boolean.getBoolean("lsp4e.log.test.names");
+	
 	private final Supplier<ServerCapabilities> serverConfigurer;
 	
 	public AllCleanRule() {
@@ -43,6 +45,9 @@ public class AllCleanRule extends TestWatcher {
 		IIntroPart intro = PlatformUI.getWorkbench().getIntroManager().getIntro();
 		if (intro != null) {
 			PlatformUI.getWorkbench().getIntroManager().closeIntro(intro);
+		}
+		if (LOG_TEST_NAMES) {
+			System.out.println("Starting: " + description);
 		}
 		clear();
 	}
