@@ -220,7 +220,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
 		}
-		LSPEclipseUtils.applyEdits(document, edits);
+		try {
+			LSPEclipseUtils.applyEdits(document, edits);
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+		}
 	}
 
 	public void documentSaved(long timestamp) {

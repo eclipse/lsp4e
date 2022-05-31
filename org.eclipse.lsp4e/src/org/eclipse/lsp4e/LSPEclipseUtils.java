@@ -407,28 +407,29 @@ public class LSPEclipseUtils {
 	 *            document to modify
 	 * @param edits
 	 *            list of LSP TextEdits
+	 * @throws BadLocationException
 	 */
-	public static void applyEdits(IDocument document, List<? extends TextEdit> edits) {
+	public static void applyEdits(IDocument document, List<? extends TextEdit> edits) throws BadLocationException {
 		if (document == null || edits == null || edits.isEmpty()) {
 			return;
-		}
-
-		IDocumentUndoManager manager = DocumentUndoManagerRegistry.getDocumentUndoManager(document);
-		if (manager != null) {
-			manager.beginCompoundChange();
 		}
 
 		MultiTextEdit edit = new MultiTextEdit();
 		for (TextEdit textEdit : edits) {
 			if (textEdit != null) {
-				try {
-					int offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
-					int length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
-					edit.addChild(new ReplaceEdit(offset, length, textEdit.getNewText()));
-				} catch (BadLocationException e) {
-					LanguageServerPlugin.logError(e);
+				int offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
+				int length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
+				if (length < 0) {
+					// Must be a bad location: we bail out to avoid corrupting the document.
+					throw new BadLocationException("Invalid location information found applying edits"); //$NON-NLS-1$
 				}
+				edit.addChild(new ReplaceEdit(offset, length, textEdit.getNewText()));
 			}
+		}
+
+		IDocumentUndoManager manager = DocumentUndoManagerRegistry.getDocumentUndoManager(document);
+		if (manager != null) {
+			manager.beginCompoundChange();
 		}
 		try {
 			RewriteSessionEditProcessor editProcessor = new RewriteSessionEditProcessor(document, edit,
