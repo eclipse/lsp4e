@@ -31,12 +31,14 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -603,7 +605,7 @@ public class LanguageServerWrapper {
 				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
-				return listener.didOpenFuture;
+				return listener.lastChangeFuture();
 			}
 		}).thenApply(theVoid -> languageServer);
 	}
@@ -865,6 +867,27 @@ public class LanguageServerWrapper {
 		}
 		return -1;
 	}
+
+	/**
+ 	 * Submit an asynchronous call (i.e. to the language server) that be inserted into the current position w.r.t.
+ 	 * document change events
+ 	 *
+ 	 * @param <U> Computation return type
+ 	 * @param file Document to serialise on
+ 	 * @param fn Asynchronous computation on the language server
+ 	 * @return Asynchronous result object.
+ 	 */
+ 	public <U> @Nullable CompletableFuture< U> executeOnCurrentVersionAsync(IFile file,
+ 			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
+ 		if (file != null && file.getLocation() != null) {
+ 			DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(file.getLocationURI());
+ 			if (documentContentSynchronizer != null) {
+ 				return documentContentSynchronizer.executeOnCurrentVersionAsync(fn);
+ 			}
+ 		}
+ 		return null;
+ 	}
+
 
 	public boolean canOperate(@NonNull IDocument document) {
 		URI documentUri = LSPEclipseUtils.toUri(document);
