@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -87,10 +88,10 @@ public class MockTextDocumentService implements TextDocumentService {
 	private LinkedEditingRanges mockLinkedEditingRanges;
 
 	private CompletableFuture<DidOpenTextDocumentParams> didOpenCallback;
-	private CompletableFuture<DidChangeTextDocumentParams> didChangeCallback;
 	private CompletableFuture<DidSaveTextDocumentParams> didSaveCallback;
 	private CompletableFuture<DidCloseTextDocumentParams> didCloseCallback;
 	private List<TextEdit> mockWillSaveWaitUntilTextEdits;
+	private ConcurrentLinkedQueue<DidChangeTextDocumentParams> didChangeEvents = new ConcurrentLinkedQueue<>();
 
 	private Function<?, ? extends CompletableFuture<?>> _futureFactory;
 	private List<LanguageClient> remoteProxies;
@@ -243,10 +244,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public void didChange(DidChangeTextDocumentParams params) {
-		if (didChangeCallback != null) {
-			didChangeCallback.complete(params);
-			didChangeCallback = null;
-		}
+		this.didChangeEvents.add(params);
 	}
 
 	@Override
@@ -292,8 +290,8 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.didOpenCallback = didOpenExpectation;
 	}
 
-	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
-		this.didChangeCallback = didChangeExpectation;
+	public List<DidChangeTextDocumentParams> getDidChangeEvents() {
+		return new ArrayList<>(this.didChangeEvents);
 	}
 
 	public void setDidSaveCallback(CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation) {

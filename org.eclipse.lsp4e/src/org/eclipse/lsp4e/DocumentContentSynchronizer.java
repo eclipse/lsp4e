@@ -19,13 +19,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
@@ -51,6 +55,7 @@ import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WillSaveTextDocumentParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.services.LanguageServer;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
 
@@ -62,23 +67,24 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private int version = 0;
 	private DidChangeTextDocumentParams changeParams;
 	private long modificationStamp;
-	final @NonNull CompletableFuture<Void> didOpenFuture;
+	private final AtomicReference<CompletableFuture<LanguageServer>> lastChangeFuture;
+	private LanguageServer languageServer;
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
-			@NonNull IDocument document,
-			TextDocumentSyncKind syncKind) {
+			@NonNull IDocument document, TextDocumentSyncKind syncKind) {
 		this.languageServerWrapper = languageServerWrapper;
 		this.fileUri = LSPEclipseUtils.toUri(document);
-        try {
-            IFileStore store = EFS.getStore(fileUri);
-            this.modificationStamp = store.fetchInfo().getLastModified();
-        } catch (CoreException e) {
-            LanguageServerPlugin.logError(e);
-            this.modificationStamp =  new File(fileUri).lastModified();
-        }
-        this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
+		try {
+			IFileStore store = EFS.getStore(fileUri);
+			this.modificationStamp = store.fetchInfo().getLastModified();
+		} catch (CoreException e) {
+			LanguageServerPlugin.logError(e);
+			this.modificationStamp = new File(fileUri).lastModified();
+		}
+		this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
 
 		this.document = document;
+
 		// add a document buffer
 		TextDocumentItem textDocument = new TextDocumentItem();
 		textDocument.setUri(fileUri.toString());
@@ -98,8 +104,35 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		textDocument.setLanguageId(languageId);
 		textDocument.setVersion(++version);
-		didOpenFuture = languageServerWrapper.getInitializedServer()
-				.thenAcceptAsync(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
+		lastChangeFuture = new AtomicReference<>(languageServerWrapper.getInitializedServer().thenApplyAsync(ls -> {
+			this.languageServer = ls;
+			ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument));
+			return ls;
+		}));
+	}
+
+	/**
+ 	 * Submit an asynchronous call (i.e. to the language server) that be inserted into the current position w.r.t.
+ 	 * document change events
+ 	 *
+ 	 * @param <U> Computation return type
+ 	 * @param fn Asynchronous computation on the language server
+ 	 * @return Asynchronous result object.
+ 	 */
+	private <U> @NonNull CompletableFuture<U> executeOnCurrentVersionAsync(
+			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
+		AtomicReference<CompletableFuture<U>> resValueFuture = new AtomicReference<>();
+		lastChangeFuture.updateAndGet(f -> {
+			CompletableFuture<U> valueFuture = f.thenComposeAsync(fn);
+			resValueFuture.set(valueFuture);
+			// We ignore any exceptions that happen when executing the given future
+			return valueFuture.handle((value, error) -> this.languageServer);
+		});
+		return resValueFuture.get();
+	}
+
+	CompletableFuture<LanguageServer> lastChangeFuture() {
+		return lastChangeFuture.get();
 	}
 
 	@Override
@@ -114,8 +147,10 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			changeParams = null;
 
 			changeParamsToSend.getTextDocument().setVersion(++version);
-			languageServerWrapper.getInitializedServer()
-					.thenAcceptAsync(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
+			lastChangeFuture.updateAndGet(f -> f.thenApplyAsync(ls -> {
+				ls.getTextDocumentService().didChange(changeParamsToSend);
+				return ls;
+			}));
 		}
 	}
 
@@ -130,15 +165,17 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	}
 
 	/**
-	 * Convert Eclipse {@link DocumentEvent} to LS according {@link TextDocumentSyncKind}.
-	 * {@link TextDocumentContentChangeEventImpl}.
+	 * Convert Eclipse {@link DocumentEvent} to LS according
+	 * {@link TextDocumentSyncKind}. {@link TextDocumentContentChangeEventImpl}.
 	 *
 	 * @param event
 	 *            Eclipse {@link DocumentEvent}
 	 * @return true if change event is ready to be sent
 	 */
 	private boolean createChangeEvent(DocumentEvent event) {
-		changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(), Collections.singletonList(new TextDocumentContentChangeEvent()));
+		Assert.isTrue(changeParams == null);
+		changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(),
+				Collections.singletonList(new TextDocumentContentChangeEvent()));
 		changeParams.getTextDocument().setUri(fileUri.toString());
 
 		IDocument document = event.getDocument();
@@ -203,8 +240,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		WillSaveTextDocumentParams params = new WillSaveTextDocumentParams(identifier, TextDocumentSaveReason.Manual);
 		List<TextEdit> edits = null;
 		try {
-			edits = languageServerWrapper.getInitializedServer()
-				.thenComposeAsync(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
+			edits = executeOnCurrentVersionAsync(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
 				.get(WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
@@ -230,32 +266,39 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	public void documentSaved(long timestamp) {
 		this.modificationStamp = timestamp;
 		ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
-		if(serverCapabilities != null ) {
-			Either<TextDocumentSyncKind, TextDocumentSyncOptions> textDocumentSync = serverCapabilities.getTextDocumentSync();
-			if(textDocumentSync.isRight() && textDocumentSync.getRight().getSave() == null) {
+		if (serverCapabilities != null) {
+			Either<TextDocumentSyncKind, TextDocumentSyncOptions> textDocumentSync = serverCapabilities
+					.getTextDocumentSync();
+			if (textDocumentSync.isRight() && textDocumentSync.getRight().getSave() == null) {
 				return;
 			}
 		}
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
-		languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didSave(params));
+		lastChangeFuture.updateAndGet(f -> f.thenApplyAsync(ls -> {
+  			ls.getTextDocumentService().didSave(params);
+  			return ls;
+  		}));
 	}
 
 	public void documentClosed() {
 		String uri = fileUri.toString();
 		WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.remove(uri);
-		// When LS is shut down all documents are being disconnected. No need to send "didClose" message to the LS that is being shut down or not yet started
+		// When LS is shut down all documents are being disconnected. No need to send
+		// "didClose" message to the LS that is being shut down or not yet started
 		if (languageServerWrapper.isActive()) {
 			TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri);
 			DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
-			languageServerWrapper.getInitializedServer().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
+			lastChangeFuture.get().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
 		}
 	}
 
 	/**
-	 * Returns the text document sync kind capabilities of the server and {@link TextDocumentSyncKind#Full} otherwise.
+	 * Returns the text document sync kind capabilities of the server and
+	 * {@link TextDocumentSyncKind#Full} otherwise.
 	 *
-	 * @return the text document sync kind capabilities of the server and {@link TextDocumentSyncKind#Full} otherwise.
+	 * @return the text document sync kind capabilities of the server and
+	 *         {@link TextDocumentSyncKind#Full} otherwise.
 	 */
 	private TextDocumentSyncKind getTextDocumentSyncKind() {
 		return syncKind;
@@ -275,7 +318,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 	private void checkEvent(DocumentEvent event) {
 		if (this.document != event.getDocument()) {
-			throw new IllegalStateException("Synchronizer should apply to only a single document, which is the one it was instantiated for"); //$NON-NLS-1$
+			throw new IllegalStateException(
+					"Synchronizer should apply to only a single document, which is the one it was instantiated for"); //$NON-NLS-1$
 		}
 	}
 }

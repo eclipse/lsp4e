@@ -169,8 +169,8 @@ public final class MockLanguageServerMultiRootFolders implements LanguageServer 
 		this.textDocumentService.setDidOpenCallback(didOpenExpectation);
 	}
 
-	public void setDidChangeCallback(CompletableFuture<DidChangeTextDocumentParams> didChangeExpectation) {
-		this.textDocumentService.setDidChangeCallback(didChangeExpectation);
+	public List<DidChangeTextDocumentParams> getDidChangeEvents() {
+		return this.textDocumentService.getDidChangeEvents();
 	}
 
 	public void setDidSaveCallback(CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation) {
