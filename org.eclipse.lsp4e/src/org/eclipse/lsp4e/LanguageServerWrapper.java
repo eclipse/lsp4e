@@ -869,24 +869,22 @@ public class LanguageServerWrapper {
 	}
 
 	/**
- 	 * Submit an asynchronous call (i.e. to the language server) that be inserted into the current position w.r.t.
- 	 * document change events
- 	 *
- 	 * @param <U> Computation return type
- 	 * @param file Document to serialise on
- 	 * @param fn Asynchronous computation on the language server
- 	 * @return Asynchronous result object.
- 	 */
- 	public <U> @Nullable CompletableFuture< U> executeOnCurrentVersionAsync(IFile file,
- 			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
- 		if (file != null && file.getLocation() != null) {
- 			DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(file.getLocationURI());
- 			if (documentContentSynchronizer != null) {
- 				return documentContentSynchronizer.executeOnCurrentVersionAsync(fn);
- 			}
- 		}
- 		return null;
- 	}
+	 * Submit an asynchronous call (i.e. to the language server) that be inserted into the current position w.r.t.
+	 * document change events
+	 *
+	 * @param <U> Computation return type
+	 * @param file Document to serialise on
+	 * @param fn Asynchronous computation on the language server
+	 * @return Asynchronous result object.
+	 */
+	<U> @Nullable CompletableFuture< U> executeOnCurrentVersionAsync(URI uri,
+			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
+		DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(uri);
+		if (documentContentSynchronizer != null) {
+			return documentContentSynchronizer.executeOnCurrentVersionAsync(fn);
+		}
+		return null;
+	}
 
 
 	public boolean canOperate(@NonNull IDocument document) {

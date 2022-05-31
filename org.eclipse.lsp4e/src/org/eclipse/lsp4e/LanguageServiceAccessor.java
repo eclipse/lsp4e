@@ -150,7 +150,7 @@ public class LanguageServiceAccessor {
  		 */
 		public <U> @Nullable CompletableFuture<U> executeOnCurrentVersionAsync(
  				Function<LanguageServer, ? extends CompletionStage<U>> fn) {
- 			return this.wrapper.executeOnCurrentVersionAsync(LSPEclipseUtils.getFile(document), fn);
+ 			return this.wrapper.executeOnCurrentVersionAsync(this.fileUri, fn);
  		}
 	}
 
