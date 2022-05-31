@@ -41,7 +41,11 @@ import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 public class LSPFormatter {
 
 	public void applyEdits(IDocument document, List<? extends TextEdit> edits) {
-		LSPEclipseUtils.applyEdits(document, edits);
+		try {
+			LSPEclipseUtils.applyEdits(document, edits);
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+		}
 	}
 
 	public CompletableFuture<List<? extends TextEdit>> requestFormatting(@NonNull IDocument document,
