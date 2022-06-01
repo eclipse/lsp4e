@@ -234,8 +234,8 @@ public class LanguageServerWrapper {
 					lspStreamProvider.start();
 				} catch (Exception e) {
 					LanguageServerPlugin.logError(e);
-					stop();
 					initializeFuture.completeExceptionally(e);
+					stop();
 				}
 				return null;
 			}).thenApply((server) -> {
