@@ -495,7 +495,7 @@ public class LanguageServerWrapper {
 	 * @throws IOException
 	 */
 	public @Nullable CompletableFuture<LanguageServer> connect(@NonNull IFile file, IDocument document) throws IOException {
-		return connect(file.getLocationURI(), document);
+		return connect(LSPEclipseUtils.toUri(file), document);
 	}
 
 	/**
@@ -505,9 +505,15 @@ public class LanguageServerWrapper {
 	 * @throws IOException
 	 */
 	public @Nullable CompletableFuture<LanguageServer> connect(IDocument document) throws IOException {
-		URI uri = LSPEclipseUtils.toUri(document);
-		if (uri != null) {
-			return connect(uri, document);
+		IFile file = LSPEclipseUtils.getFile(document);
+
+		if (file != null && file.exists()) {
+			return connect(file, document);
+		} else {
+			URI uri = LSPEclipseUtils.toUri(document);
+			if (uri != null) {
+				return connect(LSPEclipseUtils.toUri(document), document);
+			}
 		}
 		return null;
 	}
