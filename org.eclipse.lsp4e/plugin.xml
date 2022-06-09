@@ -91,7 +91,7 @@
       <handler
             class="org.eclipse.lsp4e.operations.references.LSFindReferences"
             commandId="org.eclipse.ui.genericeditor.findReferences">
-         <enabledWhen>
+         <activeWhen>
             <and>
                <with
                      variable="selection">
@@ -99,8 +99,14 @@
                         value="org.eclipse.jface.text.ITextSelection">
                   </instanceof>
                </with>
+               <with
+                     variable="activeEditorInput">
+                  <test
+                        property="org.eclipse.lsp4e.hasLanguageServer">
+                  </test>
+               </with>
             </and>
-         </enabledWhen>
+         </activeWhen>
       </handler>
       <handler
             class="org.eclipse.lsp4e.operations.rename.LSPRenameHandler"
@@ -113,13 +119,19 @@
                         value="org.eclipse.jface.text.ITextSelection">
                   </instanceof>
                </with>
+               <with
+                     variable="activeEditorInput">
+                  <test
+                        property="org.eclipse.lsp4e.hasLanguageServer">
+                  </test>
+               </with>
             </and>
          </activeWhen>
       </handler>
       <handler
             class="org.eclipse.lsp4e.operations.format.LSPFormatHandler"
             commandId="org.eclipse.lsp4e.format">
-         <enabledWhen>
+         <activeWhen>
             <and>
                <with
                      variable="selection">
@@ -127,8 +139,14 @@
                         value="org.eclipse.jface.text.ITextSelection">
                   </instanceof>
                </with>
+               <with
+                     variable="activeEditorInput">
+                  <test
+                        property="org.eclipse.lsp4e.hasLanguageServer">
+                  </test>
+               </with>
             </and>
-         </enabledWhen>
+         </activeWhen>
       </handler>
       <handler
             class="org.eclipse.lsp4e.operations.symbols.LSPSymbolInFileHandler"
