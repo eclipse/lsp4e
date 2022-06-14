@@ -215,7 +215,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			Either<TextDocumentSyncKind, TextDocumentSyncOptions> textDocumentSync = serverCapabilities.getTextDocumentSync();
 			if(textDocumentSync.isRight()) {
 				TextDocumentSyncOptions saveOptions = textDocumentSync.getRight();
-				return saveOptions != null && saveOptions.getWillSaveWaitUntil();
+				return saveOptions != null && Boolean.TRUE.equals(saveOptions.getWillSaveWaitUntil());
 			}
 		}
 		return false;
