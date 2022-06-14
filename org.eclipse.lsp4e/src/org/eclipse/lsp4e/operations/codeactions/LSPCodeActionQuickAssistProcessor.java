@@ -148,10 +148,14 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		// If context has changed, i.e. neq quick assist invocation rather than old
 		// proposals computed and calling this method artificially to show proposals in
 		// the UI
+		boolean proposalsRefreshInProgress = false;
 		synchronized (lock) {
 			if (cachedContext != invocationContext) {
 				cachedContext = invocationContext;
 				proposals.clear();
+			} else {
+				proposalsRefreshInProgress = true;
+				proposals.remove(COMPUTING);
 			}
 		}
 
@@ -160,21 +164,14 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		List<CompletableFuture<Void>> futures = Collections.emptyList();
 		try {
 			// Prevent infinite re-entrance by only computing proposals if there aren't any
-			if (proposals.contains(COMPUTING) || proposals.isEmpty()) {
+			if (!proposalsRefreshInProgress) {
 				proposals.clear();
 				futures = infos.stream()
 						.map(info -> info.getInitializedLanguageClient()
 								.thenComposeAsync(ls -> ls.getTextDocumentService().codeAction(params)
 										.thenAcceptAsync(actions -> actions.stream().filter(Objects::nonNull)
 												.map(action -> new CodeActionCompletionProposal(action, info))
-												.forEach(p -> {
-													// non-ui thread. Context might have changed (quick assist at a different spot) by the time time proposals are computed
-													synchronized(lock) {
-														if (cachedContext == invocationContext) {
-															proposals.add(p);
-														}
-													}
-												}))))
+												.forEach(p -> processNewProposal(invocationContext, p)))))
 								.collect(Collectors.toList());
 
 				CompletableFuture<?> aggregateFutures = CompletableFuture
@@ -193,6 +190,15 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		}
 
 		return proposals.toArray(new ICompletionProposal[proposals.size()]);
+	}
+
+	private void processNewProposal(IQuickAssistInvocationContext invocationContext, ICompletionProposal p) {
+		// non-ui thread. Context might have changed (quick assist at a different spot) by the time time proposals are computed
+		synchronized(lock) {
+			if (cachedContext == invocationContext) {
+				proposals.add(p);
+			}
+		}
 	}
 
 	/**
