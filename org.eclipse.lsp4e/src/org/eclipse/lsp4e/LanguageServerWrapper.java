@@ -128,6 +128,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -241,7 +242,8 @@ public class LanguageServerWrapper {
 			}).thenApply((server) -> {
 				try {
 					LanguageClientImpl client = serverDefinition.createLanguageClient();
-					ExecutorService executorService = Executors.newCachedThreadPool();
+					String theardNameFormat = "LS-"+ serverDefinition.id + "-launcher-%d" ; //$NON-NLS-1$ //$NON-NLS-2$
+					ExecutorService executorService = Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(theardNameFormat).build());
 					initParams.setProcessId((int)ProcessHandle.current().pid());
 
 					URI rootURI = null;
