@@ -119,7 +119,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
  	 * @param fn Asynchronous computation on the language server
  	 * @return Asynchronous result object.
  	 */
-	private <U> @NonNull CompletableFuture<U> executeOnCurrentVersionAsync(
+	<U> @NonNull CompletableFuture<U> executeOnCurrentVersionAsync(
 			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
 		AtomicReference<CompletableFuture<U>> resValueFuture = new AtomicReference<>();
 		lastChangeFuture.updateAndGet(f -> {
