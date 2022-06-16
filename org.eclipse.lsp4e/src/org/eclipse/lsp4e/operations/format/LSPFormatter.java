@@ -86,8 +86,7 @@ public class LSPFormatter {
 					fullFormat ? info.getDocument().getLength() : textSelection.getOffset() + textSelection.getLength(),
 					info.getDocument());
 			params.setRange(new Range(start, end));
-			return info.getInitializedLanguageClient()
-					.thenComposeAsync(server -> server.getTextDocumentService().rangeFormatting(params));
+			return info.executeOnCurrentVersionAsync(server -> server.getTextDocumentService().rangeFormatting(params));
 		}
 
 		DocumentFormattingParams params = new DocumentFormattingParams();
