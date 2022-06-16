@@ -28,8 +28,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -139,6 +141,17 @@ public class LanguageServiceAccessor {
 		public boolean isActive() {
 			return this.wrapper.isActive();
 		}
+
+		/**
+  		 * Submit an asynchronous call (i.e. to the language server) that will be inserted into the current
+  		 * stream of document change events
+  		 *
+  		 * @see org.eclipse.lsp4e.LanguageServerWrapper#executeOnCurrentVersionAsync
+  		 */
+ 		public <U> @Nullable CompletableFuture<U> executeOnCurrentVersionAsync(
+  				Function<LanguageServer, ? extends CompletionStage<U>> fn) {
+  			return this.wrapper.executeOnCurrentVersionAsync(this.fileUri, fn);
+  		}
 	}
 
 	public static @NonNull List<CompletableFuture<LanguageServer>> getInitializedLanguageServers(@NonNull IFile file,
