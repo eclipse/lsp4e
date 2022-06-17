@@ -133,7 +133,7 @@ public final class MockLanguageServer implements LanguageServer {
 		initializeResult.setCapabilities(serverConfigurer.get());
 	}
 
-	<U> CompletableFuture<U> buildMaybeDelayedFuture(U value) {
+	public <U> CompletableFuture<U> buildMaybeDelayedFuture(U value) {
 		if (delay > 0) {
 			CompletableFuture<U> future = CompletableFuture.runAsync(() -> {
 				try {
@@ -146,6 +146,15 @@ public final class MockLanguageServer implements LanguageServer {
 			return future;
 		}
 		return CompletableFuture.completedFuture(value);
+	}
+
+	/**
+	 * Hook to allow subclassing of the mock text document service
+	 * 
+	 * @param mockService
+	 */
+	public void setTextDocumentService(MockTextDocumentService mockService) {
+		this.textDocumentService = mockService;
 	}
 
 	public static ServerCapabilities defaultServerCapabilities() {
