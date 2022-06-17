@@ -16,7 +16,9 @@ import static org.junit.Assert.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -32,8 +34,11 @@ import org.eclipse.lsp4e.operations.format.LSPFormatter;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
+import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -81,6 +86,34 @@ public class FormatTest {
 		assertEquals("Formatting Other Text", viewer.getDocument().get());
 
 		TestUtils.closeEditor(editor, false);
+	}
+	
+	@Test
+	public void testFormattingSerializedWithUpdates() throws Exception {
+		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
+		.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+		AtomicInteger editsReceivedToDate = new AtomicInteger(0);
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			@Override
+			public CompletableFuture<List<? extends TextEdit>> formatting(DocumentFormattingParams params) {
+				editsReceivedToDate.set(this.getDidChangeEvents().size());
+				return super.formatting(params);
+			}
+		});
+		
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = TestUtils.getTextViewer(editor);
+
+		viewer.getDocument().replace(0, 0, "Hello, ");
+		viewer.getDocument().replace(6, 0, "world! ");
+		viewer.getDocument().replace(13, 0, "Here is some extra text!");
+		
+		LSPFormatter formatter = new LSPFormatter();
+		ISelection selection = viewer.getSelectionProvider().getSelection();
+		List<? extends TextEdit> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection).get();
+		assertEquals(3, editsReceivedToDate.get());
+
 	}
 
 	@Test
