@@ -26,6 +26,7 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -80,10 +81,13 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 
 	@Override
 	public IMarkerResolution[] getResolutions(IMarker marker) {
-		Object att;
+		Object att = null;
 		try {
-			checkMarkerResoultion(marker);
 			att = marker.getAttribute(LSP_REMEDIATION);
+			if (att == null) {
+				checkMarkerResoultion(marker);
+				att = marker.getAttribute(LSP_REMEDIATION);
+			}
 		} catch (IOException | CoreException | ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
 			return new IMarkerResolution[0];
@@ -94,11 +98,10 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		}
 		if (att == COMPUTING) {
 			return new IMarkerResolution[] { COMPUTING };
-		}
-		List<Either<Command, CodeAction>> commands = (List<Either<Command, CodeAction>>) att;
-		if (commands == null) {
+		} else if (att == null) {
 			return new IMarkerResolution[0];
 		}
+		List<Either<Command, CodeAction>> commands = (List<Either<Command, CodeAction>>) att;
 		List<IMarkerResolution> res = new ArrayList<>(commands.size());
 		for (Either<Command, CodeAction> command : commands) {
 			if (command != null) {
@@ -113,63 +116,67 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 	}
 
 	private void checkMarkerResoultion(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException, TimeoutException {
-		if (marker.getAttribute(LSP_REMEDIATION) == null) {
-			IResource res = marker.getResource();
-			if (res != null && res.getType() == IResource.FILE) {
-				IFile file = (IFile)res;
-				String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
-				List<CompletableFuture<LanguageServer>> languageServerFutures = new ArrayList<>();
-				if (languageServerId != null) { // try to use same LS as the one that created the marker
-					LanguageServerDefinition definition = LanguageServersRegistry.getInstance().getDefinition(languageServerId);
-					if (definition != null) {
-						CompletableFuture<LanguageServer> serverFuture = LanguageServiceAccessor
-								.getInitializedLanguageServer(file, definition,
-										serverCapabilities -> serverCapabilities == null
-												|| providesCodeActions(serverCapabilities));
-						if (serverFuture != null) {
-							languageServerFutures.add(serverFuture);
-						}
+		IResource res = marker.getResource();
+		if (res != null && res.getType() == IResource.FILE) {
+			IFile file = (IFile)res;
+			Object[] attributes = marker.getAttributes(new String[]{LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC});
+			String languageServerId = (String) attributes[0];
+			Diagnostic diagnostic = (Diagnostic) attributes[1];
+			List<CompletableFuture<?>> futures = new ArrayList<>();
+			for (CompletableFuture<LanguageServer> lsf : getLanguageServerFutures(file, languageServerId)) {
+				marker.setAttribute(LSP_REMEDIATION, COMPUTING);
+				CodeActionContext context = new CodeActionContext(Collections.singletonList(diagnostic));
+				CodeActionParams params = new CodeActionParams();
+				params.setContext(context);
+				params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(res).toString()));
+				params.setRange(diagnostic.getRange());
+				CompletableFuture<List<Either<Command, CodeAction>>> codeAction = lsf
+						.thenComposeAsync(ls -> ls.getTextDocumentService().codeAction(params));
+				futures.add(codeAction);
+				codeAction.thenAcceptAsync(actions -> {
+					try {
+						marker.setAttribute(LSP_REMEDIATION, actions);
+					} catch (CoreException e) {
+						LanguageServerPlugin.logError(e);
 					}
+				});
+			}
+			// wait a bit to avoid showing too much "Computing" without looking like a freeze
+			CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()])).get(300, TimeUnit.MILLISECONDS);
+		}
+	}
+
+	private List<CompletableFuture<LanguageServer>> getLanguageServerFutures(@NonNull IFile file, @Nullable String languageServerId)
+			throws IOException {
+		List<CompletableFuture<LanguageServer>> languageServerFutures = new ArrayList<>();
+		if (languageServerId != null) { // try to use same LS as the one that created the marker
+			LanguageServerDefinition definition = LanguageServersRegistry.getInstance().getDefinition(languageServerId);
+			if (definition != null) {
+				CompletableFuture<LanguageServer> serverFuture = LanguageServiceAccessor
+						.getInitializedLanguageServer(file, definition,
+								serverCapabilities -> serverCapabilities == null
+										|| providesCodeActions(serverCapabilities));
+				if (serverFuture != null) {
+					languageServerFutures.add(serverFuture);
 				}
-				if (languageServerFutures.isEmpty()) { // if it's not there, try any other server
-					languageServerFutures.addAll(LanguageServiceAccessor.getInitializedLanguageServers(file,
-							capabilities -> {
-								Either<Boolean, CodeActionOptions> codeActionProvider = capabilities
-										.getCodeActionProvider();
-								if (codeActionProvider == null) {
-									return false;
-								} else if (codeActionProvider.isLeft()) {
-									return Boolean.TRUE.equals(codeActionProvider.getLeft());
-								} else if (codeActionProvider.isRight()) {
-									return true;
-								}
-								return false;
-							}));
-				}
-				List<CompletableFuture<?>> futures = new ArrayList<>();
-				for (CompletableFuture<LanguageServer> lsf : languageServerFutures) {
-					marker.setAttribute(LSP_REMEDIATION, COMPUTING);
-					Diagnostic diagnostic = (Diagnostic)marker.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC);
-					CodeActionContext context = new CodeActionContext(Collections.singletonList(diagnostic));
-					CodeActionParams params = new CodeActionParams();
-					params.setContext(context);
-					params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(marker.getResource()).toString()));
-					params.setRange(diagnostic.getRange());
-					CompletableFuture<List<Either<Command, CodeAction>>> codeAction = lsf
-							.thenComposeAsync(ls -> ls.getTextDocumentService().codeAction(params));
-					futures.add(codeAction);
-					codeAction.thenAcceptAsync(actions -> {
-						try {
-							marker.setAttribute(LSP_REMEDIATION, actions);
-						} catch (CoreException e) {
-							LanguageServerPlugin.logError(e);
-						}
-					});
-				}
-				// wait a bit to avoid showing too much "Computing" without looking like a freeze
-				CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()])).get(300, TimeUnit.MILLISECONDS);
 			}
 		}
+		if (languageServerFutures.isEmpty()) { // if it's not there, try any other server
+			languageServerFutures.addAll(LanguageServiceAccessor.getInitializedLanguageServers(file,
+					capabilities -> {
+						Either<Boolean, CodeActionOptions> codeActionProvider = capabilities
+								.getCodeActionProvider();
+						if (codeActionProvider == null) {
+							return false;
+						} else if (codeActionProvider.isLeft()) {
+							return Boolean.TRUE.equals(codeActionProvider.getLeft());
+						} else if (codeActionProvider.isRight()) {
+							return true;
+						}
+						return false;
+					}));
+		}
+		return languageServerFutures;
 	}
 
 	static boolean providesCodeActions(@NonNull ServerCapabilities serverCapabilities) {
