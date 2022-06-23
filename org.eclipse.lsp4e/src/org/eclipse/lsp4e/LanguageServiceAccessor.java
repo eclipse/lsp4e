@@ -145,15 +145,7 @@ public class LanguageServiceAccessor {
 	public static @NonNull List<CompletableFuture<LanguageServer>> getInitializedLanguageServers(@NonNull IFile file,
 			@Nullable Predicate<ServerCapabilities> request) throws IOException {
 		synchronized (startedServers) {
-			Collection<LanguageServerWrapper> wrappers = getLSWrappers(file, request);
-			return wrappers.stream().map(wrapper -> wrapper.getInitializedServer().thenApplyAsync(server -> {
-				try {
-					wrapper.connect(file, null);
-				} catch (IOException e) {
-					LanguageServerPlugin.logError(e);
-				}
-				return server;
-			})).collect(Collectors.toList());
+			return getLSWrappers(file, request).stream().map(LanguageServerWrapper::getInitializedServer).collect(Collectors.toList());
 		}
 	}
 
@@ -231,7 +223,6 @@ public class LanguageServiceAccessor {
 			throws IOException {
 		LanguageServerWrapper wrapper = getLSWrapper(file.getProject(), lsDefinition, file.getFullPath());
 		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
-			wrapper.connect(file, null);
 			return wrapper.getInitializedServer();
 		}
 		return null;
@@ -256,7 +247,6 @@ public class LanguageServiceAccessor {
 		IPath initialPath = LSPEclipseUtils.toPath(document);
 		LanguageServerWrapper wrapper = getLSWrapperForConnection(document, lsDefinition, initialPath);
 		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
-			wrapper.connect(document);
 			return wrapper.getInitializedServer();
 		}
 		return null;
