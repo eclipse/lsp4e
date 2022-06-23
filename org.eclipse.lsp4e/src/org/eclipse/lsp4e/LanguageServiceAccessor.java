@@ -428,12 +428,12 @@ public class LanguageServiceAccessor {
 		return getLSWrapper(project, serverDefinition);
 	}
 
-	private static LanguageServerWrapper getLSWrapper(@NonNull IProject project,
+	private static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
 			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
 		LanguageServerWrapper wrapper = null;
 
 		synchronized (startedServers) {
-			for (LanguageServerWrapper startedWrapper : getStartedLSWrappers(project)) {
+			for (LanguageServerWrapper startedWrapper : getStartedLSWrappers(w -> project != null && w.canOperate(project))) {
 				if (startedWrapper.serverDefinition.equals(serverDefinition)) {
 					wrapper = startedWrapper;
 					break;
@@ -455,7 +455,7 @@ public class LanguageServiceAccessor {
 		LanguageServerWrapper wrapper = null;
 
 		synchronized (startedServers) {
-			for (LanguageServerWrapper startedWrapper : getStartedLSWrappers(document)) {
+			for (LanguageServerWrapper startedWrapper : getStartedLSWrappers(w -> w.canOperate(document))) {
 				if (startedWrapper.serverDefinition.equals(serverDefinition)) {
 					wrapper = startedWrapper;
 					break;
@@ -479,16 +479,6 @@ public class LanguageServiceAccessor {
 		LanguageServerWrapper get() throws IOException;
 	}
 
-	private static @NonNull List<LanguageServerWrapper> getStartedLSWrappers(
-			@NonNull IProject project) {
-		return getStartedLSWrappers(wrapper -> wrapper.canOperate(project));
-	}
-
-	private static @NonNull List<LanguageServerWrapper> getStartedLSWrappers(
-			@NonNull IDocument document) {
-		return getStartedLSWrappers(wrapper -> wrapper.canOperate(document));
-	}
-
 	private static  @NonNull List<LanguageServerWrapper> getStartedLSWrappers(@NonNull Predicate<LanguageServerWrapper> predicate) {
 		return startedServers.stream().filter(predicate)
 				.collect(Collectors.toList());
@@ -498,10 +488,11 @@ public class LanguageServiceAccessor {
 	private static Collection<LanguageServerWrapper> getMatchingStartedWrappers(@NonNull IFile file,
 			@Nullable Predicate<ServerCapabilities> request) {
 		synchronized (startedServers) {
+			IProject project = file.getProject();
 			return startedServers.stream().filter(wrapper -> wrapper.isActive() && wrapper.isConnectedTo(file.getLocationURI())
 					|| (LanguageServersRegistry.getInstance().matches(file, wrapper.serverDefinition)
-							&& wrapper.canOperate(file.getProject()))).filter(wrapper -> request == null
-					|| (wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities())))
+							&& project != null && wrapper.canOperate(project))).filter(wrapper -> request == null
+							|| (wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities())))
 					.collect(Collectors.toList());
 		}
 	}

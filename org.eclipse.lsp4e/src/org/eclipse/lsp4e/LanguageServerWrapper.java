@@ -547,7 +547,7 @@ public class LanguageServerWrapper {
 	 * @return whether this language server can operate on the given project
 	 * @since 0.5
 	 */
-	public boolean canOperate(IProject project) {
+	public boolean canOperate(@NonNull IProject project) {
 		return project.equals(this.initialProject) || serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
 	}
 
