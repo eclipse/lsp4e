@@ -354,7 +354,9 @@ public class LanguageServerWrapper {
 				textDocumentClientCapabilities.setOnTypeFormatting(null); // TODO
 				textDocumentClientCapabilities.setRangeFormatting(new RangeFormattingCapabilities());
 				textDocumentClientCapabilities.setReferences(new ReferencesCapabilities());
-				textDocumentClientCapabilities.setRename(new RenameCapabilities());
+				final var renameCapabilities = new RenameCapabilities();
+				renameCapabilities.setPrepareSupport(true);
+				textDocumentClientCapabilities.setRename(renameCapabilities);
 				textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
 				textDocumentClientCapabilities
 						.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
