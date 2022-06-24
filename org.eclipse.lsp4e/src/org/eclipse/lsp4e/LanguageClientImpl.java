@@ -44,7 +44,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 public class LanguageClientImpl implements LanguageClient {
 
 	private Consumer<PublishDiagnosticsParams> diagnosticConsumer;
-	private final ProgressManager progressManager = new ProgressManager();
+	private final LSPProgressManager progressManager = new LSPProgressManager();
 
 	private LanguageServer server;
 	private LanguageServerWrapper wrapper;

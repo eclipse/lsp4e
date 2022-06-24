@@ -33,12 +33,12 @@ import org.eclipse.lsp4j.WorkDoneProgressNotification;
 import org.eclipse.lsp4j.WorkDoneProgressReport;
 import org.eclipse.lsp4j.services.LanguageServer;
 
-public class ProgressManager {
+public class LSPProgressManager {
 	private final Map<String, BlockingQueue<ProgressParams>> progressMap;
 	private final Map<IProgressMonitor, Integer> currentPercentageMap;
 	private LanguageServer languageServer;
 
-	public ProgressManager() {
+	public LSPProgressManager() {
 		this.progressMap = new ConcurrentHashMap<>();
 		this.currentPercentageMap = new ConcurrentHashMap<>();
 	}
