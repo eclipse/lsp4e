@@ -9,7 +9,7 @@
  * Contributors:
  *  Rubén Porras Campo (Avaloq Evolution AG) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e;
+package org.eclipse.lsp4e.progress;
 
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -23,6 +23,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.ProgressParams;
 import org.eclipse.lsp4j.WorkDoneProgressBegin;
 import org.eclipse.lsp4j.WorkDoneProgressCancelParams;

@@ -26,6 +26,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.lsp4e.progress.LSPProgressManager;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
