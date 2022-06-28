@@ -141,7 +141,6 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-
 	public static @NonNull List<CompletableFuture<LanguageServer>> getInitializedLanguageServers(@NonNull IFile file,
 			@Nullable Predicate<ServerCapabilities> request) throws IOException {
 		synchronized (startedServers) {
@@ -151,12 +150,14 @@ public class LanguageServiceAccessor {
 
 	public static void disableLanguageServerContentType(
 			@NonNull ContentTypeToLanguageServerDefinition contentTypeToLSDefinition) {
-		Optional<LanguageServerWrapper> result = startedServers.stream()
-				.filter(server -> server.serverDefinition.equals(contentTypeToLSDefinition.getValue())).findFirst();
-		if (result.isPresent()) {
-			IContentType contentType = contentTypeToLSDefinition.getKey();
-			if (contentType != null) {
-				result.get().disconnectContentType(contentType);
+		synchronized (startedServers) {
+			Optional<LanguageServerWrapper> result = startedServers.stream()
+					.filter(server -> server.serverDefinition.equals(contentTypeToLSDefinition.getValue())).findFirst();
+			if (result.isPresent()) {
+				IContentType contentType = contentTypeToLSDefinition.getKey();
+				if (contentType != null) {
+					result.get().disconnectContentType(contentType);
+				}
 			}
 		}
 
@@ -272,7 +273,6 @@ public class LanguageServiceAccessor {
 				|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
 				|| capabilitiesPredicate.test(wrapper.getServerCapabilities());
 	}
-
 
 	/**
 	 * TODO we need a similar method for generic IDocument (enabling non-IFiles)
@@ -469,10 +469,12 @@ public class LanguageServiceAccessor {
 		LanguageServerWrapper get() throws IOException;
 	}
 
-	private static  @NonNull List<LanguageServerWrapper> getStartedLSWrappers(@NonNull Predicate<LanguageServerWrapper> predicate) {
-		return startedServers.stream().filter(predicate)
-				.collect(Collectors.toList());
+	private static @NonNull List<LanguageServerWrapper> getStartedLSWrappers(
+			@NonNull Predicate<LanguageServerWrapper> predicate) {
+		synchronized (startedServers) {
+			return startedServers.stream().filter(predicate).collect(Collectors.toList());
 			// TODO multi-root: also return servers which support multi-root?
+		}
 	}
 
 	private static Collection<LanguageServerWrapper> getMatchingStartedWrappers(@NonNull IFile file,
@@ -525,15 +527,17 @@ public class LanguageServiceAccessor {
 	public static List<@NonNull LanguageServer> getLanguageServers(@Nullable IProject project,
 			Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
 		List<@NonNull LanguageServer> serverInfos = new ArrayList<>();
-		for (LanguageServerWrapper wrapper : startedServers) {
-			if ((!onlyActiveLS || wrapper.isActive()) && (project == null || wrapper.canOperate(project))) {
-				@Nullable
-				LanguageServer server = wrapper.getServer();
-				if (server == null) {
-					continue;
-				}
-				if (capabilitiesComply(wrapper, request)) {
-					serverInfos.add(server);
+		synchronized (startedServers) {
+			for (LanguageServerWrapper wrapper : startedServers) {
+				if ((!onlyActiveLS || wrapper.isActive()) && (project == null || wrapper.canOperate(project))) {
+					@Nullable
+					LanguageServer server = wrapper.getServer();
+					if (server == null) {
+						continue;
+					}
+					if (capabilitiesComply(wrapper, request)) {
+						serverInfos.add(server);
+					}
 				}
 			}
 		}
@@ -598,18 +602,20 @@ public class LanguageServiceAccessor {
 			LanguageServerPlugin.logError(e);
 		}
 		return CompletableFuture.completedFuture(Collections.emptyList());
-
-
 	}
 
 	public static boolean checkCapability(LanguageServer languageServer, Predicate<ServerCapabilities> condition) {
-		return startedServers.stream().filter(wrapper -> wrapper.isActive() && wrapper.getServer() == languageServer)
-				.anyMatch(wrapper -> condition.test(wrapper.getServerCapabilities()));
+		synchronized (startedServers) {
+			return startedServers.stream()
+					.filter(wrapper -> wrapper.isActive() && wrapper.getServer() == languageServer)
+					.anyMatch(wrapper -> condition.test(wrapper.getServerCapabilities()));
+		}
 	}
 
 	public static Optional<LanguageServerDefinition> resolveServerDefinition(LanguageServer languageServer) {
 		synchronized (startedServers) {
-			return startedServers.stream().filter(wrapper -> languageServer.equals(wrapper.getServer())).findFirst().map(wrapper -> wrapper.serverDefinition);
+			return startedServers.stream().filter(wrapper -> languageServer.equals(wrapper.getServer())).findFirst()
+					.map(wrapper -> wrapper.serverDefinition);
 		}
 	}
 }
