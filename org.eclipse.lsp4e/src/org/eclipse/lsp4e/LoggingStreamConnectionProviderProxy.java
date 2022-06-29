@@ -23,6 +23,7 @@ import java.nio.file.StandardOpenOption;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
@@ -199,17 +200,17 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	}
 
 	@Override
-	public Object getInitializationOptions(URI rootUri) {
+	public Object getInitializationOptions(@Nullable URI rootUri) {
 		return provider.getInitializationOptions(rootUri);
 	}
 
 	@Override
-	public String getTrace(URI rootUri) {
+	public String getTrace(@Nullable URI rootUri) {
 		return provider.getTrace(rootUri);
 	}
 
 	@Override
-	public void handleMessage(Message message, LanguageServer languageServer, URI rootURI) {
+	public void handleMessage(Message message, LanguageServer languageServer, @Nullable URI rootURI) {
 		provider.handleMessage(message, languageServer, rootURI);
 	}
 

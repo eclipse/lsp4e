@@ -104,7 +104,7 @@ public interface StreamConnectionProvider {
 	/**
 	 * User provided initialization options.
 	 */
-	public default Object getInitializationOptions(URI rootUri){
+	public default Object getInitializationOptions(@Nullable URI rootUri){
 		return null;
 	}
 
@@ -131,7 +131,7 @@ public interface StreamConnectionProvider {
 	 * @return the initial trace level to set
 	 * @see "https://microsoft.github.io/language-server-protocol/specification#initialize"
 	 */
-	public default String getTrace(URI rootUri) {
+	public default String getTrace(@Nullable URI rootUri) {
 		return "off"; //$NON-NLS-1$
 	}
 
@@ -143,6 +143,6 @@ public interface StreamConnectionProvider {
 	 * @param languageServer the language server receiving/sending the message.
 	 * @param rootURI
 	 */
-	public default void handleMessage(Message message, LanguageServer languageServer, URI rootURI) {}
+	public default void handleMessage(Message message, LanguageServer languageServer, @Nullable URI rootURI) {}
 
 }

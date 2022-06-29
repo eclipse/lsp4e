@@ -249,8 +249,10 @@ public class LanguageServerWrapper {
 							.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(theardNameFormat).build());
 					initParams.setProcessId((int) ProcessHandle.current().pid());
 
-					initParams.setRootUri(rootURI.toString());
-					initParams.setRootPath(rootURI.getPath());
+					if(rootURI != null) {
+						initParams.setRootUri(rootURI.toString());
+						initParams.setRootPath(rootURI.getPath());
+					}
 
 					UnaryOperator<MessageConsumer> wrapper = consumer -> (message -> {
 						consumer.consume(message);
@@ -375,6 +377,7 @@ public class LanguageServerWrapper {
 		}
 	}
 
+	@Nullable
 	private URI getRootURI() {
 		final IProject project = this.initialProject;
 		if (project != null && project.exists()) {
@@ -388,9 +391,8 @@ public class LanguageServerWrapper {
 				projectDirectory = projectDirectory.getParentFile();
 			}
 			return LSPEclipseUtils.toUri(projectDirectory);
-		} else {
-			return LSPEclipseUtils.toUri(new File("/")); //$NON-NLS-1$
 		}
+		return null;
 	}
 
 	private static boolean supportsWorkspaceFolders(ServerCapabilities serverCapabilities) {
@@ -496,7 +498,7 @@ public class LanguageServerWrapper {
 	 */
 	public @Nullable CompletableFuture<LanguageServer> connect(@NonNull IFile file, IDocument document)
 			throws IOException {
-		final URI uri = LSPEclipseUtils.toUri(document);
+		final URI uri = LSPEclipseUtils.toUri(file);
 		return uri == null ? null : connect(uri, document);
 	}
 
