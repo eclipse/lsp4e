@@ -16,6 +16,7 @@
 		<ui.test.vmargs></ui.test.vmargs>
 		<target-config>target-platform-latest</target-config>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<jgit.dirtyWorkingTree>error</jgit.dirtyWorkingTree>
 	</properties>
 
 	<modules>
@@ -150,9 +151,8 @@
 					</dependencies>
 					<configuration>
 						<timestampProvider>jgit</timestampProvider>
-						<jgit.ignore>
-							pom.xml
-						</jgit.ignore>
+						<jgit.ignore>pom.xml</jgit.ignore>
+						<jgit.dirtyWorkingTree>${jgit.dirtyWorkingTree}</jgit.dirtyWorkingTree>
 					</configuration>
 				</plugin>
 				<plugin>
