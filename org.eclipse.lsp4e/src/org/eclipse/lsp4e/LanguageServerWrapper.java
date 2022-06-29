@@ -378,12 +378,12 @@ public class LanguageServerWrapper {
 	private URI getRootURI() {
 		final IProject project = this.initialProject;
 		if (project != null && project.exists()) {
-			return LSPEclipseUtils.toUri(this.initialProject);
+			return LSPEclipseUtils.toUri(project);
 		}
 
-		final IPath initialPath = this.initialPath;
-		if (initialPath != null) {
-			File projectDirectory = initialPath.toFile();
+		final IPath path = this.initialPath;
+		if (path != null) {
+			File projectDirectory = path.toFile();
 			if (projectDirectory.isFile()) {
 				projectDirectory = projectDirectory.getParentFile();
 			}
@@ -496,7 +496,8 @@ public class LanguageServerWrapper {
 	 */
 	public @Nullable CompletableFuture<LanguageServer> connect(@NonNull IFile file, IDocument document)
 			throws IOException {
-		return connect(LSPEclipseUtils.toUri(file), document);
+		final URI uri = LSPEclipseUtils.toUri(document);
+		return uri == null ? null : connect(uri, document);
 	}
 
 	/**
@@ -509,13 +510,10 @@ public class LanguageServerWrapper {
 
 		if (file != null && file.exists()) {
 			return connect(file, document);
-		} else {
-			URI uri = LSPEclipseUtils.toUri(document);
-			if (uri != null) {
-				return connect(LSPEclipseUtils.toUri(document), document);
-			}
 		}
-		return null;
+
+		final URI uri = LSPEclipseUtils.toUri(document);
+		return uri == null ? null : connect(uri, document);
 	}
 
 	private void watchProjects() {
