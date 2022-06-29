@@ -99,6 +99,7 @@ public class LanguageServiceAccessor {
 
 		/**
 		 * TODO consider directly returning a {@link TextDocumentIdentifier}
+		 *
 		 * @return
 		 */
 		public @NonNull URI getFileUri() {
@@ -174,8 +175,7 @@ public class LanguageServiceAccessor {
 					LanguageServerDefinition lsDefinition = contentTypeToLSDefinition.getValue();
 					IContentDescription contentDesc = editorFile.getContentDescription();
 					if (contentTypeToLSDefinition.isEnabled() && contentType != null && contentDesc != null
-							&& contentType.equals(contentDesc.getContentType())
-							&& lsDefinition != null) {
+							&& contentType.equals(contentDesc.getContentType()) && lsDefinition != null) {
 						try {
 							getInitializedLanguageServer(editorFile, lsDefinition, capabilities -> true);
 						} catch (IOException e) {
@@ -200,8 +200,7 @@ public class LanguageServiceAccessor {
 	 */
 	@Deprecated
 	public static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition,
-			Predicate<ServerCapabilities> capabilitiesPredicate)
-			throws IOException {
+			Predicate<ServerCapabilities> capabilitiesPredicate) throws IOException {
 		LanguageServerWrapper wrapper = getLSWrapper(file.getProject(), lsDefinition, file.getFullPath());
 		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
 			wrapper.connect(file, null);
@@ -219,8 +218,7 @@ public class LanguageServiceAccessor {
 	 *  If {@code capabilitesPredicate} does not test positive for the server's capabilities, {@code null} is returned.
 	 */
 	public static CompletableFuture<LanguageServer> getInitializedLanguageServer(@NonNull IFile file,
-			@NonNull LanguageServerDefinition lsDefinition,
-			Predicate<ServerCapabilities> capabilitiesPredicate)
+			@NonNull LanguageServerDefinition lsDefinition, Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
 		LanguageServerWrapper wrapper = getLSWrapper(file.getProject(), lsDefinition, file.getFullPath());
 		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
@@ -270,7 +268,8 @@ public class LanguageServiceAccessor {
 	private static boolean capabilitiesComply(LanguageServerWrapper wrapper,
 			Predicate<ServerCapabilities> capabilitiesPredicate) {
 		return capabilitiesPredicate == null
-				|| wrapper.getServerCapabilities() == null /* null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+				/* next null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+				|| wrapper.getServerCapabilities() == null
 				|| capabilitiesPredicate.test(wrapper.getServerCapabilities());
 	}
 
@@ -306,7 +305,8 @@ public class LanguageServiceAccessor {
 			if (contentType == null) {
 				continue;
 			}
-			for (ContentTypeToLanguageServerDefinition mapping : LanguageServersRegistry.getInstance().findProviderFor(contentType)) {
+			for (ContentTypeToLanguageServerDefinition mapping : LanguageServersRegistry.getInstance()
+					.findProviderFor(contentType)) {
 				if (mapping != null && mapping.getValue() != null && mapping.isEnabled()) {
 					LanguageServerWrapper wrapper = getLSWrapper(project, mapping.getValue(), file.getFullPath());
 					if (capabilitiesComply(wrapper, request)) {
@@ -462,7 +462,8 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
-	 * Interface to be used for passing lambdas to {@link LanguageServiceAccessor#addStartedServerSynchronized(ServerSupplier)}.
+	 * Interface to be used for passing lambdas to
+	 * {@link LanguageServiceAccessor#addStartedServerSynchronized(ServerSupplier)}.
 	 */
 	@FunctionalInterface
 	private static interface ServerSupplier {
@@ -583,21 +584,21 @@ public class LanguageServiceAccessor {
 		}
 		final List<@NonNull LanguageServer> res = Collections.synchronizedList(new ArrayList<>());
 		try {
-			return CompletableFuture.allOf(getLSWrappers(document).stream().map(wrapper ->
-						wrapper.getInitializedServer().thenComposeAsync(server -> {
-							if (server != null && (filter == null || filter.test(wrapper.getServerCapabilities()))) {
-								try {
-									return wrapper.connect(document);
-								} catch (IOException ex) {
-									LanguageServerPlugin.logError(ex);
-								}
+			return CompletableFuture.allOf(getLSWrappers(document).stream()
+					.map(wrapper -> wrapper.getInitializedServer().thenComposeAsync(server -> {
+						if (server != null && (filter == null || filter.test(wrapper.getServerCapabilities()))) {
+							try {
+								return wrapper.connect(document);
+							} catch (IOException ex) {
+								LanguageServerPlugin.logError(ex);
 							}
-							return CompletableFuture.completedFuture(null);
-						}).thenAccept(server -> {
-							if (server != null) {
-								res.add(server);
-							}
-						})).toArray(CompletableFuture[]::new)).thenApply(theVoid -> res);
+						}
+						return CompletableFuture.completedFuture(null);
+					}).thenAccept(server -> {
+						if (server != null) {
+							res.add(server);
+						}
+					})).toArray(CompletableFuture[]::new)).thenApply(theVoid -> res);
 		} catch (final Exception e) {
 			LanguageServerPlugin.logError(e);
 		}
