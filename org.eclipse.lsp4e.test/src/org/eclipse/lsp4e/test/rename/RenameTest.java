@@ -13,9 +13,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.rename;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -73,7 +71,7 @@ import org.junit.Test;
 public class RenameTest {
 
 	@Rule public AllCleanRule clear = new AllCleanRule();
-	
+
 	@Test
 	public void testRenameHandlerEnablement() throws Exception {
 		IProject project = TestUtils.createProject("blah");
@@ -82,7 +80,8 @@ public class RenameTest {
 		editor.selectAndReveal(1, 0);
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
-		assertTrue(command.isEnabled() && command.isHandled());
+		assertTrue(command.isEnabled());
+		assertTrue(command.isHandled());
 	}
 
 	@Test
@@ -91,9 +90,9 @@ public class RenameTest {
 		// this fixed value is not really an optimal solution, since it depends on the following things
 		// to happen within that time frame. Should maybe re-work this in the future towards a more
 		// precise way of steering the execution from the test here
-		
+
 		MockLanguageServer.INSTANCE.setTimeToProceedQueries(delay);
-		
+
 		IProject project = TestUtils.createProject("blah");
 		IFile file = TestUtils.createUniqueTestFile(project, "old");
 		ITextEditor editor = (ITextEditor) TestUtils.openEditor(file);
@@ -101,9 +100,10 @@ public class RenameTest {
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
 		assertFalse(command.isEnabled() && command.isHandled());
-		
+
 		Thread.sleep(delay);
-		assertTrue(command.isEnabled() && command.isHandled());
+		assertTrue(command.isEnabled());
+		assertTrue(command.isHandled());
 	}
 
 	@Test
@@ -269,7 +269,7 @@ public class RenameTest {
 			ideShell.getDisplay().removeFilter(SWT.Paint, pressOKonRenameDialogPaint);
 		}
 	}
-	
+
 	@Test
 	public void testPlaceholderUsingPlaceholderFromPrepareRenameResult() throws Exception {
 		IProject project = TestUtils.createProject("blah");
@@ -288,7 +288,7 @@ public class RenameTest {
 		}).join();
 		assertEquals("placeholder", placeholder.get());
 	}
-	
+
 	@Test
 	public void testPlaceholderUsingRangeFromPrepareRenameResult() throws Exception {
 		IProject project = TestUtils.createProject("blah");
@@ -309,7 +309,7 @@ public class RenameTest {
 		}).join();
 		assertEquals("ld", placeholder.get());
 	}
-	
+
 	private void pressOk(Shell dialogShell) {
 		try {
 			Dialog dialog = (Dialog)dialogShell.getData();
