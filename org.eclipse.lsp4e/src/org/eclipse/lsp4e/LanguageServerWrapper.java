@@ -144,7 +144,7 @@ public class LanguageServerWrapper {
 		public void stateChanging(IFileBuffer buffer) {
 			if (buffer.isDirty()) {
 				DocumentContentSynchronizer documentListener = connectedDocuments.get(LSPEclipseUtils.toUri(buffer));
-				if (documentListener != null ) {
+				if (documentListener != null) {
 					documentListener.documentAboutToBeSaved();
 				}
 			}
@@ -223,7 +223,8 @@ public class LanguageServerWrapper {
 				stop();
 			}
 		}
-		if (this.initializeFuture == null ) {
+		if (this.initializeFuture == null) {
+			final URI rootURI = getRootURI();
 			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
 				try {
 					if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
@@ -232,6 +233,7 @@ public class LanguageServerWrapper {
 					} else {
 						this.lspStreamProvider = serverDefinition.createConnectionProvider();
 					}
+					initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
 					lspStreamProvider.start();
 				} catch (Exception e) {
 					LanguageServerPlugin.logError(e);
@@ -239,47 +241,29 @@ public class LanguageServerWrapper {
 					stop();
 				}
 				return null;
-			}).thenApply((server) -> {
+			}).thenApply(unused -> {
 				try {
 					LanguageClientImpl client = serverDefinition.createLanguageClient();
-					String theardNameFormat = "LS-"+ serverDefinition.id + "-launcher-%d" ; //$NON-NLS-1$ //$NON-NLS-2$
-					ExecutorService executorService = Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(theardNameFormat).build());
-					initParams.setProcessId((int)ProcessHandle.current().pid());
+					String theardNameFormat = "LS-" + serverDefinition.id + "-launcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
+					ExecutorService executorService = Executors
+							.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(theardNameFormat).build());
+					initParams.setProcessId((int) ProcessHandle.current().pid());
 
-					URI rootURI = null;
-					IProject project = this.initialProject;
-					if (project != null && project.exists()) {
-						rootURI = LSPEclipseUtils.toUri(this.initialProject);
-						initParams.setRootUri(rootURI.toString());
-						initParams.setRootPath(rootURI.getPath());
-					} else {
-						// This is required due to overzealous static analysis. Dereferencing
-						// this.initialPath directly will trigger a "potential null"
-						// warning/error. Checking for this.initialPath == null is not
-						// enough.
-						final IPath initialPath = this.initialPath;
-						if (initialPath != null) {
-							File projectDirectory = initialPath.toFile();
-							if (projectDirectory.isFile()) {
-								projectDirectory = projectDirectory.getParentFile();
-							}
-							initParams.setRootUri(LSPEclipseUtils.toUri(projectDirectory).toString());
-						} else {
-							initParams.setRootUri(LSPEclipseUtils.toUri(new File("/")).toString()); //$NON-NLS-1$
-						}
-					}
+					initParams.setRootUri(rootURI.toString());
+					initParams.setRootPath(rootURI.getPath());
+
 					UnaryOperator<MessageConsumer> wrapper = consumer -> (message -> {
 						consumer.consume(message);
 						logMessage(message);
-						URI root = initParams.getRootUri() != null ? URI.create(initParams.getRootUri()) : null;
 						final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
 						if (currentConnectionProvider != null && isActive()) {
-							currentConnectionProvider.handleMessage(message, this.languageServer, root);
+							currentConnectionProvider.handleMessage(message, this.languageServer, rootURI);
 						}
 					});
-					initParams.setWorkspaceFolders(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects()).filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder).filter(Objects::nonNull).collect(Collectors.toList()));
-					Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder()
-							.setLocalService(client)//
+					initParams.setWorkspaceFolders(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects())
+							.filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder)
+							.filter(Objects::nonNull).collect(Collectors.toList()));
+					Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder().setLocalService(client)//
 							.setRemoteInterface(serverDefinition.getServerInterface())//
 							.setInput(lspStreamProvider.getInputStream())//
 							.setOutput(lspStreamProvider.getOutputStream())//
@@ -295,7 +279,7 @@ public class LanguageServerWrapper {
 					initializeFuture.completeExceptionally(ex);
 				}
 				return null;
-			}).thenCompose(s -> {
+			}).thenCompose(unused -> {
 				String name = "Eclipse IDE"; //$NON-NLS-1$
 				if (Platform.getProduct() != null) {
 					name = Platform.getProduct().getName();
@@ -312,22 +296,21 @@ public class LanguageServerWrapper {
 				editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
 				workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
 				TextDocumentClientCapabilities textDocumentClientCapabilities = new TextDocumentClientCapabilities();
-				CodeActionCapabilities codeAction = new CodeActionCapabilities(
-						new CodeActionLiteralSupportCapabilities(
-								new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix,
-										CodeActionKind.Refactor, CodeActionKind.RefactorExtract,
-										CodeActionKind.RefactorInline, CodeActionKind.RefactorRewrite,
-										CodeActionKind.Source, CodeActionKind.SourceOrganizeImports))),
+				CodeActionCapabilities codeAction = new CodeActionCapabilities(new CodeActionLiteralSupportCapabilities(
+						new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix, CodeActionKind.Refactor,
+								CodeActionKind.RefactorExtract, CodeActionKind.RefactorInline,
+								CodeActionKind.RefactorRewrite, CodeActionKind.Source,
+								CodeActionKind.SourceOrganizeImports))),
 						true);
 				codeAction.setDataSupport(true);
-				codeAction.setResolveSupport(new CodeActionResolveSupportCapabilities(List.of("edit")));  //$NON-NLS-1$
+				codeAction.setResolveSupport(new CodeActionResolveSupportCapabilities(List.of("edit"))); //$NON-NLS-1$
 				textDocumentClientCapabilities.setCodeAction(codeAction);
 				textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
 				textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
 				CompletionItemCapabilities completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);
-				completionItemCapabilities.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
-				textDocumentClientCapabilities
-						.setCompletion(new CompletionCapabilities(completionItemCapabilities));
+				completionItemCapabilities
+						.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
+				textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(completionItemCapabilities));
 				DefinitionCapabilities definitionCapabilities = new DefinitionCapabilities();
 				definitionCapabilities.setLinkSupport(Boolean.TRUE);
 				textDocumentClientCapabilities.setDefinition(definitionCapabilities);
@@ -338,13 +321,13 @@ public class LanguageServerWrapper {
 				textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
 				DocumentSymbolCapabilities documentSymbol = new DocumentSymbolCapabilities();
 				documentSymbol.setHierarchicalDocumentSymbolSupport(true);
-				documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.Array, SymbolKind.Boolean,
-						SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor, SymbolKind.Enum,
-						SymbolKind.EnumMember, SymbolKind.Event, SymbolKind.Field, SymbolKind.File, SymbolKind.Function,
-						SymbolKind.Interface, SymbolKind.Key, SymbolKind.Method, SymbolKind.Module, SymbolKind.Namespace,
-						SymbolKind.Null, SymbolKind.Number, SymbolKind.Object, SymbolKind.Operator, SymbolKind.Package,
-						SymbolKind.Property, SymbolKind.String, SymbolKind.Struct, SymbolKind.TypeParameter,
-						SymbolKind.Variable)));
+				documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.Array,
+						SymbolKind.Boolean, SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor,
+						SymbolKind.Enum, SymbolKind.EnumMember, SymbolKind.Event, SymbolKind.Field, SymbolKind.File,
+						SymbolKind.Function, SymbolKind.Interface, SymbolKind.Key, SymbolKind.Method, SymbolKind.Module,
+						SymbolKind.Namespace, SymbolKind.Null, SymbolKind.Number, SymbolKind.Object,
+						SymbolKind.Operator, SymbolKind.Package, SymbolKind.Property, SymbolKind.String,
+						SymbolKind.Struct, SymbolKind.TypeParameter, SymbolKind.Variable)));
 				textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
 				textDocumentClientCapabilities.setFoldingRange(new FoldingRangeCapabilities());
 				textDocumentClientCapabilities.setFormatting(new FormattingCapabilities(Boolean.TRUE));
@@ -360,18 +343,14 @@ public class LanguageServerWrapper {
 				textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
 				textDocumentClientCapabilities
 						.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
-				initParams.setCapabilities(
-						new ClientCapabilities(workspaceClientCapabilities, textDocumentClientCapabilities, lspStreamProvider.getExperimentalFeaturesPOJO()));
+				initParams.setCapabilities(new ClientCapabilities(workspaceClientCapabilities,
+						textDocumentClientCapabilities, lspStreamProvider.getExperimentalFeaturesPOJO()));
 				initParams.setClientName(name);
 
-				URI rootURI = LSPEclipseUtils.toUri(initParams.getRootUri());
-				initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
 				initParams.setTrace(this.lspStreamProvider.getTrace(rootURI));
 
-				// no then...Async future here as we want this chain of operation to be sequential and
-				// "atomic"-ish
-				return languageServer
-						.initialize(initParams);
+				// no then...Async future here as we want this chain of operation to be sequential and "atomic"-ish
+				return languageServer.initialize(initParams);
 			}).thenAccept(res -> {
 				serverCapabilities = res.getCapabilities();
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
@@ -393,6 +372,24 @@ public class LanguageServerWrapper {
 				});
 				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
 			});
+		}
+	}
+
+	private URI getRootURI() {
+		final IProject project = this.initialProject;
+		if (project != null && project.exists()) {
+			return LSPEclipseUtils.toUri(this.initialProject);
+		}
+
+		final IPath initialPath = this.initialPath;
+		if (initialPath != null) {
+			File projectDirectory = initialPath.toFile();
+			if (projectDirectory.isFile()) {
+				projectDirectory = projectDirectory.getParentFile();
+			}
+			return LSPEclipseUtils.toUri(projectDirectory);
+		} else {
+			return LSPEclipseUtils.toUri(new File("/")); //$NON-NLS-1$
 		}
 	}
 
@@ -458,7 +455,7 @@ public class LanguageServerWrapper {
 				CompletableFuture<Object> shutdown = languageServerInstance.shutdown();
 				try {
 					shutdown.get(5, TimeUnit.SECONDS);
-				} catch(InterruptedException ex) {
+				} catch (InterruptedException ex) {
 					Thread.currentThread().interrupt();
 				} catch (Exception ex) {
 					LanguageServerPlugin.logError(ex);
@@ -492,18 +489,17 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 *
 	 * @param file
 	 * @param document
 	 * @return null if not connection has happened, a future tracking the connection state otherwise
 	 * @throws IOException
 	 */
-	public @Nullable CompletableFuture<LanguageServer> connect(@NonNull IFile file, IDocument document) throws IOException {
+	public @Nullable CompletableFuture<LanguageServer> connect(@NonNull IFile file, IDocument document)
+			throws IOException {
 		return connect(LSPEclipseUtils.toUri(file), document);
 	}
 
 	/**
-	 *
 	 * @param document
 	 * @return null if not connection has happened, a future tracking the connection state otherwise
 	 * @throws IOException
@@ -531,16 +527,20 @@ public class LanguageServerWrapper {
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 				WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
-				wsFolderEvent.getAdded().addAll(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects()).filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder).filter(Objects::nonNull).collect(Collectors.toList()));
+				wsFolderEvent.getAdded()
+						.addAll(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects())
+								.filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder)
+								.filter(Objects::nonNull).collect(Collectors.toList()));
 				if (currentLS != null && currentLS == LanguageServerWrapper.this.languageServer) {
-					currentLS.getWorkspaceService().didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(wsFolderEvent));
+					currentLS.getWorkspaceService()
+							.didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(wsFolderEvent));
 				}
-				ResourcesPlugin.getWorkspace().addResourceChangeListener(workspaceFolderUpdater, IResourceChangeEvent.POST_CHANGE | IResourceChangeEvent.PRE_DELETE);
+				ResourcesPlugin.getWorkspace().addResourceChangeListener(workspaceFolderUpdater,
+						IResourceChangeEvent.POST_CHANGE | IResourceChangeEvent.PRE_DELETE);
 				return Status.OK_STATUS;
 			}
 		}.schedule();
 	}
-
 
 	/**
 	 * Check whether this LS is suitable for provided project. Starts the LS if not
@@ -769,7 +769,8 @@ public class LanguageServerWrapper {
 					registerCommands(newCommands);
 				}
 			} else if ("textDocument/formatting".equals(reg.getMethod())) { //$NON-NLS-1$
-				Either<Boolean, DocumentFormattingOptions> documentFormattingProvider = serverCapabilities.getDocumentFormattingProvider();
+				Either<Boolean, DocumentFormattingOptions> documentFormattingProvider = serverCapabilities
+						.getDocumentFormattingProvider();
 				if (documentFormattingProvider == null || documentFormattingProvider.isLeft()) {
 					serverCapabilities.setDocumentFormattingProvider(Boolean.TRUE);
 					addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider));
@@ -778,15 +779,18 @@ public class LanguageServerWrapper {
 					addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider));
 				}
 			} else if ("textDocument/rangeFormatting".equals(reg.getMethod())) { //$NON-NLS-1$
-				Either<Boolean, DocumentRangeFormattingOptions> documentRangeFormattingProvider = serverCapabilities.getDocumentRangeFormattingProvider();
+				Either<Boolean, DocumentRangeFormattingOptions> documentRangeFormattingProvider = serverCapabilities
+						.getDocumentRangeFormattingProvider();
 				if (documentRangeFormattingProvider == null || documentRangeFormattingProvider.isLeft()) {
 					serverCapabilities.setDocumentRangeFormattingProvider(Boolean.TRUE);
-					addRegistration(reg, () -> serverCapabilities.setDocumentRangeFormattingProvider(documentRangeFormattingProvider));
+					addRegistration(reg, () -> serverCapabilities
+							.setDocumentRangeFormattingProvider(documentRangeFormattingProvider));
 				} else {
 					serverCapabilities.setDocumentRangeFormattingProvider(documentRangeFormattingProvider.getRight());
-					addRegistration(reg, () -> serverCapabilities.setDocumentRangeFormattingProvider(documentRangeFormattingProvider));
+					addRegistration(reg, () -> serverCapabilities
+							.setDocumentRangeFormattingProvider(documentRangeFormattingProvider));
 				}
-			} else if ("textDocument/codeAction".equals(reg.getMethod())){ //$NON-NLS-1$
+			} else if ("textDocument/codeAction".equals(reg.getMethod())) { //$NON-NLS-1$
 				final Either<Boolean, CodeActionOptions> beforeRegistration = serverCapabilities.getCodeActionProvider();
 				serverCapabilities.setCodeActionProvider(Boolean.TRUE);
 				addRegistration(reg, () -> serverCapabilities.setCodeActionProvider(beforeRegistration));
@@ -902,18 +906,19 @@ public class LanguageServerWrapper {
 		@Override
 		public void resourceChanged(IResourceChangeEvent event) {
 			WorkspaceFoldersChangeEvent workspaceFolderEvent = toWorkspaceFolderEvent(event);
-			if (workspaceFolderEvent == null || (workspaceFolderEvent.getAdded().isEmpty() && workspaceFolderEvent.getRemoved().isEmpty())) {
+			if (workspaceFolderEvent == null
+					|| (workspaceFolderEvent.getAdded().isEmpty() && workspaceFolderEvent.getRemoved().isEmpty())) {
 				return;
 			}
 			// If shutting down, language server will be set to null, so ignore the event
 			final LanguageServer currentServer = LanguageServerWrapper.this.languageServer;
 			if (currentServer != null) {
-				currentServer.getWorkspaceService().didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(workspaceFolderEvent));
+				currentServer.getWorkspaceService()
+						.didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(workspaceFolderEvent));
 			}
 		}
 
-		private @Nullable WorkspaceFoldersChangeEvent toWorkspaceFolderEvent(
-				IResourceChangeEvent e) {
+		private @Nullable WorkspaceFoldersChangeEvent toWorkspaceFolderEvent(IResourceChangeEvent e) {
 			if (!isPostChangeEvent(e) && !isPreDeletEvent(e)) {
 				return null;
 			}
@@ -923,8 +928,7 @@ public class LanguageServerWrapper {
 			if (isPreDeletEvent(e)) {
 				final IResource resource = e.getResource();
 				if (resource instanceof IProject) {
-					wsFolderEvent.getRemoved()
-							.add(LSPEclipseUtils.toWorkspaceFolder((IProject)resource));
+					wsFolderEvent.getRemoved().add(LSPEclipseUtils.toWorkspaceFolder((IProject) resource));
 					return wsFolderEvent;
 				} else {
 					return null;
@@ -993,6 +997,7 @@ public class LanguageServerWrapper {
 
 		/**
 		 * Decode the bitmask + enum to work out if this is a project open event
+		 *
 		 * @param delta
 		 * @return True if it is a project open event
 		 */
