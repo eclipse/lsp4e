@@ -224,6 +224,7 @@ public class LanguageServerWrapper {
 			}
 		}
 		if (this.initializeFuture == null) {
+			final URI rootURI = getRootURI();
 			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
 				try {
 					if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
@@ -232,6 +233,7 @@ public class LanguageServerWrapper {
 					} else {
 						this.lspStreamProvider = serverDefinition.createConnectionProvider();
 					}
+					initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
 					lspStreamProvider.start();
 				} catch (Exception e) {
 					LanguageServerPlugin.logError(e);
@@ -239,7 +241,7 @@ public class LanguageServerWrapper {
 					stop();
 				}
 				return null;
-			}).thenApply((server) -> {
+			}).thenApply(unused -> {
 				try {
 					LanguageClientImpl client = serverDefinition.createLanguageClient();
 					String theardNameFormat = "LS-" + serverDefinition.id + "-launcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
@@ -247,35 +249,15 @@ public class LanguageServerWrapper {
 							.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(theardNameFormat).build());
 					initParams.setProcessId((int) ProcessHandle.current().pid());
 
-					URI rootURI = null;
-					IProject project = this.initialProject;
-					if (project != null && project.exists()) {
-						rootURI = LSPEclipseUtils.toUri(this.initialProject);
-						initParams.setRootUri(rootURI.toString());
-						initParams.setRootPath(rootURI.getPath());
-					} else {
-						// This is required due to overzealous static analysis. Dereferencing
-						// this.initialPath directly will trigger a "potential null"
-						// warning/error. Checking for this.initialPath == null is not
-						// enough.
-						final IPath initialPath = this.initialPath;
-						if (initialPath != null) {
-							File projectDirectory = initialPath.toFile();
-							if (projectDirectory.isFile()) {
-								projectDirectory = projectDirectory.getParentFile();
-							}
-							initParams.setRootUri(LSPEclipseUtils.toUri(projectDirectory).toString());
-						} else {
-							initParams.setRootUri(LSPEclipseUtils.toUri(new File("/")).toString()); //$NON-NLS-1$
-						}
-					}
+					initParams.setRootUri(rootURI.toString());
+					initParams.setRootPath(rootURI.getPath());
+
 					UnaryOperator<MessageConsumer> wrapper = consumer -> (message -> {
 						consumer.consume(message);
 						logMessage(message);
-						URI root = initParams.getRootUri() != null ? URI.create(initParams.getRootUri()) : null;
 						final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
 						if (currentConnectionProvider != null && isActive()) {
-							currentConnectionProvider.handleMessage(message, this.languageServer, root);
+							currentConnectionProvider.handleMessage(message, this.languageServer, rootURI);
 						}
 					});
 					initParams.setWorkspaceFolders(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects())
@@ -297,7 +279,7 @@ public class LanguageServerWrapper {
 					initializeFuture.completeExceptionally(ex);
 				}
 				return null;
-			}).thenCompose(s -> {
+			}).thenCompose(unused -> {
 				String name = "Eclipse IDE"; //$NON-NLS-1$
 				if (Platform.getProduct() != null) {
 					name = Platform.getProduct().getName();
@@ -365,8 +347,6 @@ public class LanguageServerWrapper {
 						textDocumentClientCapabilities, lspStreamProvider.getExperimentalFeaturesPOJO()));
 				initParams.setClientName(name);
 
-				URI rootURI = LSPEclipseUtils.toUri(initParams.getRootUri());
-				initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
 				initParams.setTrace(this.lspStreamProvider.getTrace(rootURI));
 
 				// no then...Async future here as we want this chain of operation to be sequential and "atomic"-ish
@@ -392,6 +372,24 @@ public class LanguageServerWrapper {
 				});
 				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
 			});
+		}
+	}
+
+	private URI getRootURI() {
+		final IProject project = this.initialProject;
+		if (project != null && project.exists()) {
+			return LSPEclipseUtils.toUri(this.initialProject);
+		}
+
+		final IPath initialPath = this.initialPath;
+		if (initialPath != null) {
+			File projectDirectory = initialPath.toFile();
+			if (projectDirectory.isFile()) {
+				projectDirectory = projectDirectory.getParentFile();
+			}
+			return LSPEclipseUtils.toUri(projectDirectory);
+		} else {
+			return LSPEclipseUtils.toUri(new File("/")); //$NON-NLS-1$
 		}
 	}
 
