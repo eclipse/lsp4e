@@ -177,7 +177,11 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 	private void updateLinkedEditing(int offset) {
 		if (sourceViewer != null  && fDocument != null  && fEnabled && linkedModel == null || !linkedModel.anyPositionContains(offset)) {
 			collectLinkedEditingRanges(fDocument, offset)
-				.thenAcceptAsync(this::applyLinkedEdit);
+				.thenAcceptAsync(r -> {
+					if (rangesContainOffset(r, offset)) {
+						applyLinkedEdit(r);
+					}
+				});
 		}
 	}
 
@@ -232,9 +236,9 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 	String getValueInRange(LinkedEditingRanges ranges, VerifyEvent event, int offset, int length) {
 		try {
 			for (Range range : ranges.getRanges()) {
-				int start = LSPEclipseUtils.toOffset(range.getStart(), fDocument);
-				int end = LSPEclipseUtils.toOffset(range.getEnd(), fDocument);
-				if (start <= offset && offset <= end) {
+				if (LSPEclipseUtils.isOffsetInRange(offset, range, fDocument)) {
+					int start = LSPEclipseUtils.toOffset(range.getStart(), fDocument);
+					int end = LSPEclipseUtils.toOffset(range.getEnd(), fDocument);
 					StringBuilder sb = new StringBuilder();
 					sb.append(fDocument.get(start, end - start)); 	// The range text before the insertion
 					String newChars = event.character == 0 ? "" : Character.toString(event.character); //$NON-NLS-1$
@@ -248,6 +252,15 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 		return null;
 	}
 
+	private boolean rangesContainOffset(LinkedEditingRanges ranges, int offset) {
+		for (Range range : ranges.getRanges()) {
+			if (LSPEclipseUtils.isOffsetInRange(offset, range, fDocument)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private LinkedPositionGroup toJFaceGroup(LinkedEditingRanges ranges) throws BadLocationException {
 		LinkedPositionGroup res = new LinkedPositionGroup();
 		for (Range range : ranges.getRanges()) {
@@ -257,5 +270,4 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 		}
 		return res;
 	}
-
 }
