@@ -101,7 +101,7 @@ public class RenameTest {
 		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
 		assertFalse(command.isEnabled() && command.isHandled());
 
-		Thread.sleep(delay);
+		Thread.sleep(2 * delay);
 		assertTrue(command.isEnabled());
 		assertTrue(command.isHandled());
 	}
