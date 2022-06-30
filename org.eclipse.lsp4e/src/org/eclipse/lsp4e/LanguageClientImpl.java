@@ -9,6 +9,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Miro Spoenemann (TypeFox) - extracted to separate file
+ *  Rubén Porras Campo (Avaloq Evolution AG) - progress creation/notification implementation
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -25,15 +26,18 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.lsp4e.progress.LSPProgressManager;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
+import org.eclipse.lsp4j.ProgressParams;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.RegistrationParams;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.UnregistrationParams;
+import org.eclipse.lsp4j.WorkDoneProgressCreateParams;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -41,6 +45,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 public class LanguageClientImpl implements LanguageClient {
 
 	private Consumer<PublishDiagnosticsParams> diagnosticConsumer;
+	private final LSPProgressManager progressManager = new LSPProgressManager();
 
 	private LanguageServer server;
 	private LanguageServerWrapper wrapper;
@@ -48,6 +53,7 @@ public class LanguageClientImpl implements LanguageClient {
 	public final void connect(LanguageServer server, LanguageServerWrapper wrapper) {
 		this.server = server;
 		this.wrapper = wrapper;
+		progressManager.connect(server);
 	}
 
 	protected void setDiagnosticsConsumer(@NonNull Consumer<PublishDiagnosticsParams> diagnosticConsumer) {
@@ -81,6 +87,18 @@ public class LanguageClientImpl implements LanguageClient {
 	@Override
 	public final void logMessage(MessageParams message) {
 		CompletableFuture.runAsync(() -> ServerMessageHandler.logMessage(wrapper, message));
+	}
+
+	@SuppressWarnings("null")
+	@Override
+	public CompletableFuture<Void> createProgress(final WorkDoneProgressCreateParams params) {
+		return progressManager.createProgress(params);
+	}
+
+	@SuppressWarnings("null")
+	@Override
+	public void notifyProgress(final ProgressParams params) {
+		progressManager.notifyProgress(params);
 	}
 
 	@Override
