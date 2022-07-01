@@ -11,11 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -93,7 +90,7 @@ public class RunningLanguageServerTest {
 	}
 
 	@Test
-	public void testBug535887DisabledWithMultipleOpenFiles() throws CoreException, InvocationTargetException {
+	public void testBug535887DisabledWithMultipleOpenFiles() throws CoreException {
 		ContentTypeToLanguageServerDefinition lsDefinition = TestUtils.getDisabledLS();
 		lsDefinition.setUserEnabled(true);
 		LanguageServiceAccessor.enableLanguageServerContentType(lsDefinition, TestUtils.getEditors());

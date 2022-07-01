@@ -11,9 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,7 +37,7 @@ import org.junit.Before;
 import org.junit.Rule;
 
 public abstract class AbstractCompletionTest {
-	
+
 	@Rule public AllCleanRule clear = new AllCleanRule();
 	protected IProject project;
 	protected LSContentAssistProcessor contentAssistProcessor;
@@ -60,7 +59,7 @@ public abstract class AbstractCompletionTest {
 		item.setTextEdit(Either.forLeft(new TextEdit(range, label)));
 		return item;
 	}
-	
+
 	protected CompletionItem createCompletionItemWithInsertReplace(String label, CompletionItemKind kind, Range insertRange, Range replaceRange) {
 		CompletionItem item = new CompletionItem();
 		item.setLabel(label);
@@ -74,7 +73,7 @@ public abstract class AbstractCompletionTest {
 	}
 
 	protected void confirmCompletionResults(String[] completions, String content, Integer cursorIndexInContent,
-			String[] expectedOrder) throws PartInitException, InvocationTargetException, CoreException {
+			String[] expectedOrder) throws PartInitException, CoreException {
 		Range range = new Range(new Position(0, 0), new Position(0, cursorIndexInContent));
 		List<CompletionItem> items = new ArrayList<>();
 		for (String string : completions) {
@@ -84,8 +83,7 @@ public abstract class AbstractCompletionTest {
 	}
 
 	protected void confirmCompletionResults(List<CompletionItem> completions, String content,
-			Integer cursorIndexInContent, String[] expectedOrder)
-			throws PartInitException, InvocationTargetException, CoreException {
+			Integer cursorIndexInContent, String[] expectedOrder) throws PartInitException, CoreException {
 
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, completions));
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));

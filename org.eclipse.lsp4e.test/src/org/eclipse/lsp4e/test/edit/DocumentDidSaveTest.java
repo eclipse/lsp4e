@@ -12,8 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
@@ -56,7 +55,7 @@ public class DocumentDidSaveTest {
 	public void testSave() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
 		// make sure that timestamp after save will differ from creation time (no better idea at the moment)
 		testFile.setLocalTimeStamp(0);
@@ -86,7 +85,7 @@ public class DocumentDidSaveTest {
 	public void testSaveExternalFile() throws Exception {
 		File file = TestUtils.createTempFile("testSaveExternalFile", ".lspt");
 		IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
 		// make sure that timestamp after save will differ from creation time (no better idea at the moment)
 //			testFile.setLocalTimeStamp(0);

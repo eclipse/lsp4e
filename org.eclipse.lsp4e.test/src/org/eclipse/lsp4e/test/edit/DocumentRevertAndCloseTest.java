@@ -11,13 +11,12 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
@@ -26,6 +25,7 @@ import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Before;
 import org.junit.Rule;
@@ -45,25 +45,25 @@ public class DocumentRevertAndCloseTest {
 	public void testShutdownLsp() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "Hello!");
 		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
 		// make sure that timestamp after save will differ from creation time (no better idea at the moment)
 		testFile.setLocalTimeStamp(0);
 
 		// Force LS to initialize and open file
 		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), capabilites -> Boolean.TRUE);
-		
+
 		viewer.getDocument().replace(0, 0, "Bye!");
 		((AbstractTextEditor)editor).doRevertToSaved();
 		((AbstractTextEditor)editor).getSite().getPage().closeEditor(editor, false);
-		
+
 		Display display = PlatformUI.getWorkbench().getDisplay();
 		assertTrue(new DisplayHelper() {
 			@Override
 			protected boolean condition() {
 				return !MockLanguageServer.INSTANCE.isRunning();
 			}
-			
+
 		}.waitForCondition(display, 3000));
 	}
 

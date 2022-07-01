@@ -11,9 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.highlight;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,7 +28,6 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
 import org.eclipse.jface.text.source.ISourceViewer;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.operations.highlight.HighlightReconcilingStrategy;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -39,6 +37,7 @@ import org.eclipse.lsp4j.DocumentHighlightKind;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -58,7 +57,7 @@ public class HighlightTest {
 	}
 
 	@Test
-	public void testHighlight() throws CoreException, InvocationTargetException {
+	public void testHighlight() throws CoreException {
 		checkGenericEditorVersion();
 
 		List<DocumentHighlight> highlights = new ArrayList<>();
@@ -113,7 +112,7 @@ public class HighlightTest {
 	}
 
 	@Test
-	public void testCheckIfOtherAnnotationsRemains() throws CoreException, InvocationTargetException {
+	public void testCheckIfOtherAnnotationsRemains() throws CoreException {
 		checkGenericEditorVersion();
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "  READ WRITE TEXT");

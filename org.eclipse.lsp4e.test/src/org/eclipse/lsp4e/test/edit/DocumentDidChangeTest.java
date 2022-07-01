@@ -12,12 +12,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.eclipse.lsp4e.test.TestUtils.numberOfChangesIs;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.eclipse.lsp4e.test.TestUtils.*;
+import static org.junit.Assert.*;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -26,6 +24,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -60,7 +59,7 @@ public class DocumentDidChangeTest {
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
@@ -127,7 +126,7 @@ public class DocumentDidChangeTest {
 		String multiLineText = "line1\nline2\nline3\n";
 		IFile testFile = TestUtils.createUniqueTestFile(project, multiLineText);
 		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
@@ -152,14 +151,14 @@ public class DocumentDidChangeTest {
 		assertEquals(Integer.valueOf(6), change0.getRangeLength());
 		assertEquals("", change0.getText());
 	}
-	
+
 	@Test
 	public void testIncrementalEditOrdering() throws Exception {
 		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
 		.setTextDocumentSync(TextDocumentSyncKind.Incremental);
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		StyledText text = viewer.getTextWidget();
 		for (int i = 0; i < 500; i++) {
 			text.append(i + "\n");
@@ -180,7 +179,7 @@ public class DocumentDidChangeTest {
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
@@ -216,7 +215,7 @@ public class DocumentDidChangeTest {
 
 		File file = TestUtils.createTempFile("testFullSyncExternalFile", ".lspt");
 		IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
@@ -254,5 +253,5 @@ public class DocumentDidChangeTest {
 		}
 		return syncKind;
 	}
-	
+
 }
