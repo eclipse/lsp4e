@@ -148,7 +148,7 @@ public class LanguageServiceAccessor {
   		 *
   		 * @see org.eclipse.lsp4e.LanguageServerWrapper#executeOnCurrentVersionAsync
   		 */
- 		public <U> @Nullable CompletableFuture<U> executeOnCurrentVersionAsync(
+ 		public <U> @Nullable CompletableFuture<VersionedResult<U>> executeOnCurrentVersionAsync(
   				Function<LanguageServer, ? extends CompletionStage<U>> fn) {
   			return this.wrapper.executeOnCurrentVersionAsync(this.fileUri, fn);
   		}

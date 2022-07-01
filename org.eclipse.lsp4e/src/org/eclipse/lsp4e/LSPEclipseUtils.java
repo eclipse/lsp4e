@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,6 +66,7 @@ import org.eclipse.core.runtime.content.IContentTypeManager;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextViewer;
@@ -433,6 +435,19 @@ public class LSPEclipseUtils {
 		if (manager != null) {
 			manager.endCompoundChange();
 		}
+	}
+
+	public static void applyEditsWithVersionCheck(IDocument document, VersionedResult<List<? extends TextEdit>> versionedEdits) throws BadLocationException {
+		if (document == null || versionedEdits == null || versionedEdits.get() == null || versionedEdits.get().isEmpty()) {
+			return;
+		}
+
+		final long modificationStamp = (document instanceof Document) ? ((Document)document).getModificationStamp() : Document.UNKNOWN_MODIFICATION_STAMP;
+
+		if (modificationStamp != Document.UNKNOWN_MODIFICATION_STAMP && modificationStamp != versionedEdits.getStamp()) {
+			throw new ConcurrentModificationException("Document changed"); //$NON-NLS-1$
+		}
+		applyEdits(document, versionedEdits.get());
 	}
 
 	@Nullable

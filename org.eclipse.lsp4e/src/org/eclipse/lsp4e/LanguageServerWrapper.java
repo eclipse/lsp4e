@@ -564,7 +564,7 @@ public class LanguageServerWrapper {
 	 * @param fn Asynchronous computation on the language server
 	 * @return Asynchronous result object.
 	 */
-	<U> @Nullable CompletableFuture< U> executeOnCurrentVersionAsync(URI uri,
+	<U> @Nullable CompletableFuture<VersionedResult<U>> executeOnCurrentVersionAsync(URI uri,
 			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
 		DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(uri);
 		if (documentContentSynchronizer != null) {
