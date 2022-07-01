@@ -15,6 +15,7 @@ package org.eclipse.lsp4e.operations.format;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -27,6 +28,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.VersionedResult;
 import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.FormattingOptions;
@@ -40,20 +42,20 @@ import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 public class LSPFormatter {
 
-	public void applyEdits(IDocument document, List<? extends TextEdit> edits) {
+	public void applyEdits(IDocument document, VersionedResult<List<? extends TextEdit>> versionedEdits) {
 		try {
-			LSPEclipseUtils.applyEdits(document, edits);
-		} catch (BadLocationException e) {
+			LSPEclipseUtils.applyEditsWithVersionCheck(document, versionedEdits);
+		} catch (BadLocationException | ConcurrentModificationException e) {
 			LanguageServerPlugin.logError(e);
 		}
 	}
 
-	public CompletableFuture<List<? extends TextEdit>> requestFormatting(@NonNull IDocument document,
+	public CompletableFuture<VersionedResult<List<? extends TextEdit>>> requestFormatting(@NonNull IDocument document,
 			@NonNull ITextSelection textSelection) {
 		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
 				LSPFormatter::supportFormatting);
 		if (infos.isEmpty()) {
-			return CompletableFuture.completedFuture(Collections.emptyList());
+			return CompletableFuture.completedFuture(new VersionedResult(Collections.emptyList(), 0L));
 		}
 		// TODO consider a better strategy for that, maybe iterate on all LS until one gives a result
 		LSPDocumentInfo info = infos.iterator().next();
@@ -62,10 +64,10 @@ public class LSPFormatter {
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}
-		return CompletableFuture.completedFuture(Collections.emptyList());
+		return CompletableFuture.completedFuture(new VersionedResult(Collections.emptyList(), 0L));
 	}
 
-	private CompletableFuture<List<? extends TextEdit>> requestFormatting(LSPDocumentInfo info,
+	private CompletableFuture<VersionedResult<List<? extends TextEdit>>> requestFormatting(LSPDocumentInfo info,
 			ITextSelection textSelection) throws BadLocationException {
 		TextDocumentIdentifier docId = new TextDocumentIdentifier(info.getFileUri().toString());
 		ServerCapabilities capabilities = info.getCapabilites();
@@ -92,8 +94,7 @@ public class LSPFormatter {
 		DocumentFormattingParams params = new DocumentFormattingParams();
 		params.setTextDocument(docId);
 		params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
-		return info.getInitializedLanguageClient()
-				.thenComposeAsync(server -> server.getTextDocumentService().formatting(params));
+		return info.executeOnCurrentVersionAsync(server -> server.getTextDocumentService().formatting(params));
 	}
 
 	private static boolean isDocumentRangeFormattingSupported(ServerCapabilities capabilities) {
