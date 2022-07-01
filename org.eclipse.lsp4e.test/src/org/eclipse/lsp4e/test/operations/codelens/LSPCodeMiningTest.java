@@ -11,9 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.operations.codelens;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -72,8 +71,7 @@ public class LSPCodeMiningTest {
 	}
 
 	@Test
-	public void testLSPCodeMiningActionClientSideHandling()
-			throws BadLocationException, CoreException, InvocationTargetException {
+	public void testLSPCodeMiningActionClientSideHandling() throws BadLocationException, CoreException {
 		String commandID = "test.command";
 		final CodeLens lens = createCodeLens(commandID);
 
@@ -110,7 +108,7 @@ public class LSPCodeMiningTest {
 	@Test
 	public void testLSPCodeMiningActionServerSideHandling()
 			throws InterruptedException, java.util.concurrent.ExecutionException, TimeoutException,
-			BadLocationException, CoreException, InvocationTargetException {
+			BadLocationException, CoreException {
 		final CodeLens lens = createCodeLens(MockLanguageServer.SUPPORTED_COMMAND_ID);
 		Command command = lens.getCommand();
 		JsonObject jsonObject = new JsonObject();

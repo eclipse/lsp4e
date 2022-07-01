@@ -12,8 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.diagnostics;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -105,7 +104,7 @@ public class DiagnosticsTest {
 		markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_INFINITE);
 		assertEquals(0, markers.length);
 	}
-	
+
 	@Test
 	public void testFileBuffersNotLeaked() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "Diagnostic Other Text");
@@ -115,11 +114,11 @@ public class DiagnosticsTest {
 		diagnostics.add(createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"));
 
 		IDocument existingDocument = LSPEclipseUtils.getExistingDocument(file);
-		
+
 		assertNull(existingDocument);
-		
+
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics));
-		
+
 		IDocument shouldHaveBeenClosed = LSPEclipseUtils.getExistingDocument(file);
 		assertNull(shouldHaveBeenClosed);
 
@@ -200,7 +199,7 @@ public class DiagnosticsTest {
 			) {
 				out.write('a');
 			}
-			ITextViewer viewer = TestUtils.getTextViewer(IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
+			ITextViewer viewer = LSPEclipseUtils.getTextViewer(IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
 			StyledText widget = viewer.getTextWidget();
 			FontData biggerFont = new FontData(); // bigger font to keep color intact in some pixe (not altered by anti-aliasing)
 			biggerFont.setHeight(40);

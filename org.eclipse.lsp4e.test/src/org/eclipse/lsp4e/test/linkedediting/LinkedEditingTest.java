@@ -11,12 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.linkedediting;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -56,18 +52,18 @@ public class LinkedEditingTest {
 	}
 
 	@Test
-	public void testLinkedEditing() throws CoreException, InvocationTargetException {
+	public void testLinkedEditing() throws CoreException {
 		List<Range> ranges = new ArrayList<>();
 		ranges.add(new Range(new Position(1, 3), new Position(1, 7)));
 		ranges.add(new Range(new Position(3, 4), new Position(3, 8)));
-		
+
 		LinkedEditingRanges linkkedEditingRanges = new LinkedEditingRanges(ranges);
 		MockLanguageServer.INSTANCE.setLinkedEditingRanges(linkkedEditingRanges);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "<html>\n  <body>\n    a body text\n  </body>\n</html>");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 
-		viewer.getTextWidget().setCaretOffset(11); 
+		viewer.getTextWidget().setCaretOffset(11);
 
 		if (!(viewer instanceof ISourceViewer)) {
 			Assert.fail();
@@ -76,7 +72,7 @@ public class LinkedEditingTest {
 		ISourceViewer sourceViewer = (ISourceViewer) viewer;
 
 		viewer.getTextWidget().setSelection(11); // 10-14 <body|>
-		
+
 		Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
 
 		new DisplayHelper() {
@@ -104,13 +100,13 @@ public class LinkedEditingTest {
 		Assert.assertNotNull(annotation);
 		assertTrue(annotation.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link"));
 	}
-	
+
 	@Test
-	public void testLinkedEditingExitPolicy() throws CoreException, InvocationTargetException {
+	public void testLinkedEditingExitPolicy() throws CoreException {
 		List<Range> ranges = new ArrayList<>();
 		ranges.add(new Range(new Position(1, 3), new Position(1, 7)));
 		ranges.add(new Range(new Position(3, 4), new Position(3, 8)));
-		
+
 		LinkedEditingRanges linkkedEditingRanges = new LinkedEditingRanges(ranges, "[:A-Z_a-z]*\\Z");
 		MockLanguageServer.INSTANCE.setLinkedEditingRanges(linkkedEditingRanges);
 
@@ -124,7 +120,7 @@ public class LinkedEditingTest {
 		ISourceViewer sourceViewer = (ISourceViewer) viewer;
 
 		// Test linked editing annotation in a tag name position
-		viewer.getTextWidget().setCaretOffset(14); 
+		viewer.getTextWidget().setCaretOffset(14);
 		viewer.getTextWidget().setSelection(14); // 10-14 <body| class="test">
 		new DisplayHelper() {
 			@Override
@@ -155,9 +151,9 @@ public class LinkedEditingTest {
 		assertNotNull(slavePosition);
 		assertEquals(viewer.getTextWidget().getTextRange(masterPosition.getOffset(), masterPosition.getLength()),
 				viewer.getTextWidget().getTextRange(slavePosition.getOffset(), slavePosition.getLength()));
-		
+
 		// Test linked editing annotation out of a tag name position (should be absent)
-		viewer.getTextWidget().setCaretOffset(15); 
+		viewer.getTextWidget().setCaretOffset(15);
 		viewer.getTextWidget().setSelection(15); // 10-14 <body |class="test">
 		new DisplayHelper() {
 			@Override
@@ -172,12 +168,12 @@ public class LinkedEditingTest {
 				return false;
 			}
 		}.waitForCondition(Display.getCurrent(), 3000);
-		
+
 		model = sourceViewer.getAnnotationModel();
 		// No "linked" annotation is to be found at this offset
 		assertFalse(findAnnotations(sourceViewer, 15).stream().anyMatch(a -> a.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")));
 	}
-	
+
 	private List<Annotation> findAnnotations(ISourceViewer sourceViewer, int offset) {
 		List<Annotation> annotations = new ArrayList<>();
 		IAnnotationModel model = sourceViewer.getAnnotationModel();
@@ -189,7 +185,7 @@ public class LinkedEditingTest {
 				annotations.add(annotation);
 			}
 		}
-		
+
 		return annotations;
 	}
 
@@ -202,7 +198,7 @@ public class LinkedEditingTest {
 				return annotation;
 			}
 		}
-		
+
 		return null;
 	}
 }

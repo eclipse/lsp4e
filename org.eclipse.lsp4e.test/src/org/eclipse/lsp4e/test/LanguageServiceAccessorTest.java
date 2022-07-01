@@ -13,14 +13,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -76,7 +72,7 @@ public class LanguageServiceAccessorTest {
 	}
 
 	@Test
-	public void testGetLSWrapper() throws IOException, CoreException {
+	public void testGetLSWrapper() throws IOException {
 		LanguageServerDefinition serverDefinition = LanguageServersRegistry.getInstance().getDefinition("org.eclipse.lsp4e.test.server");
 		assertNotNull(serverDefinition);
 		LanguageServerWrapper lsWrapper = LanguageServiceAccessor.getLSWrapper(project, serverDefinition);
@@ -90,13 +86,13 @@ public class LanguageServiceAccessorTest {
 	}
 
 	@Test
-	public void testGetLSPDocumentInfoForInvalidTextEditor() throws CoreException, InvocationTargetException {
+	public void testGetLSPDocumentInfoForInvalidTextEditor() throws CoreException {
 		IFile testFile = TestUtils.createFile(project, "not_associated_with_ls.abc", "");
 		ITextViewer textViewer = TestUtils.openTextViewer(testFile);
 		Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(textViewer.getDocument(), capabilities -> Boolean.TRUE);
 		assertTrue(infos.isEmpty());
 	}
-	
+
 	@Test
 	public void testGetLanguageServerInvalidFile() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "not_associated_with_ls.abc", "");
@@ -124,17 +120,17 @@ public class LanguageServiceAccessorTest {
 				.get(1, TimeUnit.SECONDS);
 		assertNotNull(info);
 	}
-	
+
 	@Test
 	public void testLSAsExtensionForDifferentLanguageId() throws Exception {
 		IFile testFile = TestUtils.createFile(project, "shouldUseExtension.lspt-different", "");		@NonNull
 		Collection<LanguageServerWrapper> lsWrappers = LanguageServiceAccessor.getLSWrappers(testFile,
 				capabilites -> Boolean.TRUE);
-		
+
 		assertEquals(1, lsWrappers.size());
 		LanguageServerWrapper wrapper = lsWrappers.iterator().next();
 		assertNotNull(wrapper);
-		
+
 		IContentType contentType = Platform.getContentTypeManager().getContentType("org.eclipse.lsp4e.test.content-type-different");
 		assertEquals("differentLanguageId", wrapper.getLanguageId(new IContentType[] {contentType}));
 	}
@@ -189,7 +185,7 @@ public class LanguageServiceAccessorTest {
 
 		((AbstractTextEditor) editor1).close(false);
 		((AbstractTextEditor) editor2).close(false);
-		
+
 		new LSDisplayHelper(() -> LanguageServiceAccessor.getActiveLanguageServers(capabilities -> Boolean.TRUE).size() == 0)
 				.waitForCondition(display, 5000);
 		assertEquals(0, LanguageServiceAccessor.getActiveLanguageServers(capabilities -> Boolean.TRUE).size());
@@ -287,16 +283,16 @@ public class LanguageServiceAccessorTest {
 		assertEquals(1, wrappers1.size());
 		LanguageServerWrapper wrapper1 = wrappers1.iterator().next();
 		assertTrue(wrapper1.isActive());
-		
+
 		wrapper1.disconnect(testFile1.getLocationURI());
 		assertFalse(wrapper1.isActive());
-		
+
 		Collection<LanguageServerWrapper> wrappers2 = LanguageServiceAccessor.getLSWrappers(testFile2,
 				c -> Boolean.TRUE);
 		assertEquals(1, wrappers2.size());
 		LanguageServerWrapper wrapper2 = wrappers2.iterator().next();
 		assertTrue(wrapper2.isActive());
-		
+
 		// make sure the language server for testFile1 (which is unrelated to testFile2 is not started again)
 		assertFalse(wrapper1.isActive());
 
@@ -332,7 +328,7 @@ public class LanguageServiceAccessorTest {
 		Thread.sleep(TimeUnit.SECONDS.toMillis(5));
 		assertFalse(wrapper.isActive());
 	}
-	
+
 	@Test
 	public void testLastDocumentDisconnectedTimeoutZero() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
@@ -356,7 +352,7 @@ public class LanguageServiceAccessorTest {
 		assertEquals("org.eclipse.lsp4e.test.server2", iterator.next().serverDefinition.id);
 		assertEquals("org.eclipse.lsp4e.test.server", iterator.next().serverDefinition.id);
 	}
-		
+
 	@Test
 	public void testLanguageServerHierarchy_parentContentTypeUsed() throws Exception {
 		// file with a content-type whose parent (only) is associated to one LS
@@ -398,7 +394,7 @@ public class LanguageServiceAccessorTest {
 		IFile file = TestUtils.createUniqueTestFile(project, "lspt-tester", "");
 		assertTrue(LanguageServiceAccessor.getLSWrappers(file, capabilities -> true).isEmpty());
 		MappingEnablementTester.enabled = true;
-		
+
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(file, capabilities -> true);
 		assertEquals(1, wrappers.size());
 		assertEquals("org.eclipse.lsp4e.test.server.disable", wrappers.iterator().next().serverDefinition.id);
@@ -434,7 +430,7 @@ public class LanguageServiceAccessorTest {
 		ITextEditor editor = (ITextEditor) IDE.openEditorOnFileStore(
 				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(local.toURI()));
 		Assert.assertEquals(1, LanguageServiceAccessor.getLanguageServers(
-				TestUtils.getTextViewer(editor).getDocument(), this::hasHoverCapabilities).get().size());
+				LSPEclipseUtils.getTextViewer(editor).getDocument(), this::hasHoverCapabilities).get().size());
 		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
 		// opening another file should either reuse the LS or spawn another one, but not
 		// both

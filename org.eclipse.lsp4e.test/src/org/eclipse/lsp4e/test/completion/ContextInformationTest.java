@@ -11,10 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -48,7 +46,7 @@ public class ContextInformationTest {
 	}
 
 	@Test
-	public void testNoContextInformation() throws CoreException, InvocationTargetException {
+	public void testNoContextInformation() throws CoreException {
 		MockLanguageServer.INSTANCE.setSignatureHelp(new SignatureHelp());
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
@@ -59,7 +57,7 @@ public class ContextInformationTest {
 	}
 
 	@Test
-	public void testContextInformationNoParameters() throws CoreException, InvocationTargetException {
+	public void testContextInformationNoParameters() throws CoreException {
 		SignatureHelp signatureHelp = new SignatureHelp();
 		SignatureInformation information = new SignatureInformation("label", "documentation", Collections.emptyList());
 		signatureHelp.setSignatures(Collections.singletonList(information));
@@ -78,7 +76,7 @@ public class ContextInformationTest {
 	}
 
 	@Test
-	public void testTriggerChars() throws CoreException, InvocationTargetException {
+	public void testTriggerChars() throws CoreException {
 		Set<String> triggers = new HashSet<>();
 		triggers.add("a");
 		triggers.add("b");
@@ -92,7 +90,7 @@ public class ContextInformationTest {
 	}
 
 	@Test
-	public void testTriggerCharsNullList() throws CoreException, InvocationTargetException {
+	public void testTriggerCharsNullList() throws CoreException {
 		MockLanguageServer.INSTANCE.setContextInformationTriggerChars(null);
 
 		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "First"));

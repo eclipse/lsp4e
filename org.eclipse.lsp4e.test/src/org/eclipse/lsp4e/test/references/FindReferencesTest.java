@@ -11,8 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.references;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,7 +20,6 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.operations.references.LSFindReferences;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -35,6 +33,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.services.IEvaluationService;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,13 +54,13 @@ public class FindReferencesTest {
 	}
 
 	@After
-	public void tearDown() throws CoreException {
+	public void tearDown() {
 		IViewPart searchPart = NewSearchUI.getSearchResultView();
 		if (searchPart != null) {
 			searchPart.getViewSite().getPage().hideView(searchPart);
 		}
 	}
-	
+
 	@Test
 	public void findReferencesShowsResultView() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "dummyContent");
@@ -69,15 +68,15 @@ public class FindReferencesTest {
 		MockLanguageServer.INSTANCE.getTextDocumentService().setMockReferences(
 				new Location(testFile.getLocationURI().toString(),	new Range(
 						new Position(1, 1), new Position(1, 2))));
-		
+
 		LSFindReferences handler = new LSFindReferences();
 		IEvaluationService evaluationService = PlatformUI.getWorkbench().getService(IEvaluationService.class);
 		handler.execute(new ExecutionEvent(null, new HashMap<>(), null, evaluationService.getCurrentState()));
-		
+
 		ISearchResultViewPart part = findSearchResultView(3000);
 		assertNotNull("Search results not shown", part);
 	}
-	
+
 	private ISearchResultViewPart findSearchResultView(int timeout) {
 		new DisplayHelper() {
 			@Override

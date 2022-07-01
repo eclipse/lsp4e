@@ -11,21 +11,16 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BooleanSupplier;
 
@@ -36,6 +31,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.swt.widgets.Composite;
@@ -52,8 +48,6 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
-import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
@@ -66,27 +60,9 @@ public class TestUtils {
 		// this class shouldn't be instantiated
 	}
 
-	public static ITextViewer openTextViewer(IFile file) throws InvocationTargetException, PartInitException {
+	public static ITextViewer openTextViewer(IFile file) throws PartInitException {
 		IEditorPart editor = openEditor(file);
-		return getTextViewer(editor);
-	}
-
-	public static ITextViewer getTextViewer(IEditorPart part) throws InvocationTargetException {
-		try {
-			if (part instanceof ITextEditor) {
-				ITextEditor textEditor = (ITextEditor) part;
-
-				Method getSourceViewerMethod = AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
-				getSourceViewerMethod.setAccessible(true);
-				return (ITextViewer) getSourceViewerMethod.invoke(textEditor);
-			} else {
-				fail("Unable to open editor");
-				return null;
-			}
-		} catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException e) {
-			throw new InvocationTargetException(e);
-		}
+		return LSPEclipseUtils.getTextViewer(editor);
 	}
 
 	public static IEditorPart openEditor(IFile file) throws PartInitException {
@@ -170,17 +146,17 @@ public class TestUtils {
 			}
 		}
 	}
-	
+
 	public static File createTempFile(String prefix, String suffix) throws IOException {
 		File tmp = File.createTempFile(prefix, suffix);
 		tempFiles.add(tmp);
 		return tmp;
 	}
-	
+
 	public static void addManagedTempFile(File file) {
 		tempFiles.add(file);
 	}
-	
+
 	public static void tearDown() {
 		tempFiles.forEach(file -> {
 			try {
@@ -256,10 +232,10 @@ public class TestUtils {
 			}
 		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 1000));
 	}
-	
+
 	public static class JobSynchronizer extends NullProgressMonitor {
 		private final CountDownLatch latch = new CountDownLatch(1);
-		
+
 		@Override
 		public void done() {
 			latch.countDown();
@@ -272,17 +248,17 @@ public class TestUtils {
 				latch.countDown();
 			}
 		}
-		
-		public void await() throws InterruptedException, BrokenBarrierException {
+
+		public void await() throws InterruptedException {
 			latch.await();
 		}
-		
+
 		@Override
 		public void worked(int work) {
 			latch.countDown();
 		}
 	}
-	
+
 	public static BooleanSupplier numberOfChangesIs(int changes) {
 		return () -> MockLanguageServer.INSTANCE.getDidChangeEvents().size() == changes;
 	}

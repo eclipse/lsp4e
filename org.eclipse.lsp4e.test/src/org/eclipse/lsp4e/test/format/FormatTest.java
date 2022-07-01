@@ -11,9 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.format;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +27,7 @@ import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.format.LSPFormatter;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -62,12 +62,12 @@ public class FormatTest {
 
 	@Test
 	public void testFormattingNoChanges()
-			throws CoreException, InvocationTargetException, InterruptedException, ExecutionException {
+			throws CoreException, InterruptedException, ExecutionException {
 		MockLanguageServer.INSTANCE.setFormattingTextEdits(Collections.emptyList());
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
 		IEditorPart editor = TestUtils.openEditor(file);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
 		LSPFormatter formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
@@ -85,7 +85,7 @@ public class FormatTest {
 
 	@Test
 	public void testFormatting()
-			throws CoreException, InvocationTargetException, InterruptedException, ExecutionException {
+			throws CoreException, InterruptedException, ExecutionException {
 		List<TextEdit> formattingTextEdits = new ArrayList<>();
 		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 0), new Position(0, 1)), "MyF"));
 		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 10), new Position(0, 11)), ""));
@@ -94,7 +94,7 @@ public class FormatTest {
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
 		IEditorPart editor = TestUtils.openEditor(file);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
 		LSPFormatter formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
@@ -111,8 +111,7 @@ public class FormatTest {
 	}
 
 	@Test
-	public void testNullFormatting()
-			throws CoreException, InvocationTargetException, InterruptedException, ExecutionException {
+	public void testNullFormatting() {
 		IDocument document = new Document("Formatting Other Text");
 		LSPFormatter formatter = new LSPFormatter();
 

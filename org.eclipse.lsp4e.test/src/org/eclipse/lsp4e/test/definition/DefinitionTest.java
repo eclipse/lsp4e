@@ -11,8 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.definition;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -29,6 +28,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.declaration.LSBasedHyperlink;
 import org.eclipse.lsp4e.operations.declaration.OpenDeclarationHyperlinkDetector;
 import org.eclipse.lsp4e.test.AllCleanRule;
@@ -67,7 +67,7 @@ public class DefinitionTest {
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 
 		IHyperlink[] hyperlinks = hyperlinkDetector.detectHyperlinks(viewer, new Region(1, 0), true);
-		assertEquals(1, hyperlinks.length);		
+		assertEquals(1, hyperlinks.length);
 		// TODO add location check
 	}
 
@@ -102,12 +102,12 @@ public class DefinitionTest {
 		File file = TestUtils.createTempFile("testDocumentLinkExternalFile", ".lspt");
 		ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(
 				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
 		IHyperlink[] hyperlinks = hyperlinkDetector.detectHyperlinks(viewer, new Region(0, 0), true);
 		assertEquals(1, hyperlinks.length);
 	}
-	
+
 	@Test
 	public void testDefinitionManyLocation() throws Exception {
 		List<Location> locations = new ArrayList<>();
@@ -134,7 +134,7 @@ public class DefinitionTest {
 		IHyperlink[] hyperlinks = hyperlinkDetector.detectHyperlinks(viewer, new Region(1, 0), true);
 		assertEquals(true, hyperlinks == null);
 	}
-	
+
 	@Test
 	public void testDefinitionEmptyLocations() throws Exception {
 		MockLanguageServer.INSTANCE.setDefinition(Collections.emptyList());

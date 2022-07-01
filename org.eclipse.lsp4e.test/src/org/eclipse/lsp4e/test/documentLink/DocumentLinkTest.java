@@ -11,8 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.documentLink;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -25,6 +24,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.documentLink.DocumentLinkDetector;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -83,7 +83,7 @@ public class DocumentLinkTest {
 		File file = TestUtils.createTempFile("testDocumentLinkExternalFile", ".lspt");
 		ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(
 				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
 		IHyperlink[] hyperlinks = documentLinkDetector.detectHyperlinks(viewer, new Region(13, 0), true);
 		assertEquals(1, hyperlinks.length);

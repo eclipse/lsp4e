@@ -11,15 +11,11 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.hover;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -30,6 +26,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.hover.LSPTextHover;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -59,7 +56,7 @@ public class HoverTest {
 	@Rule public AllCleanRule clear = new AllCleanRule();
 	private IProject project;
 	private LSPTextHover hover;
-	
+
 	@Before
 	public void setUp() throws CoreException {
 		project = TestUtils.createProject("HoverTest" + System.currentTimeMillis());
@@ -67,7 +64,7 @@ public class HoverTest {
 	}
 
 	@Test
-	public void testHoverRegion() throws CoreException, InvocationTargetException {
+	public void testHoverRegion() throws CoreException {
 		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
@@ -76,9 +73,9 @@ public class HoverTest {
 
 		assertEquals(new Region(0, 10), hover.getHoverRegion(viewer, 5));
 	}
-	
+
 	@Test
-	public void testHoverRegionInvalidOffset() throws CoreException, InvocationTargetException {
+	public void testHoverRegionInvalidOffset() throws CoreException {
 		MockLanguageServer.INSTANCE.setHover(null);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -86,9 +83,9 @@ public class HoverTest {
 
 		assertEquals(new Region(15, 0), hover.getHoverRegion(viewer, 15));
 	}
-	
+
 	@Test
-	public void testHoverInfo() throws CoreException, InvocationTargetException {
+	public void testHoverInfo() throws CoreException {
 		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
@@ -98,9 +95,9 @@ public class HoverTest {
 		// TODO update test when MARKDOWN to HTML will be finished
 		assertTrue(hover.getHoverInfo(viewer, new Region(0, 10)).contains("HoverContent"));
 	}
-	
+
 	@Test
-	public void testHoverInfoEmptyContentList() throws CoreException, InvocationTargetException {
+	public void testHoverInfoEmptyContentList() throws CoreException {
 		Hover hoverResponse = new Hover(Collections.emptyList(), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
@@ -109,9 +106,9 @@ public class HoverTest {
 
 		assertEquals(null, hover.getHoverInfo(viewer, new Region(0, 10)));
 	}
-	
+
 	@Test
-	public void testHoverInfoInvalidOffset() throws CoreException, InvocationTargetException {
+	public void testHoverInfoInvalidOffset() throws CoreException {
 		MockLanguageServer.INSTANCE.setHover(null);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -119,9 +116,9 @@ public class HoverTest {
 
 		assertEquals(null, hover.getHoverInfo(viewer, new Region(0, 10)));
 	}
-	
+
 	@Test
-	public void testHoverEmptyContentItem() throws CoreException, InvocationTargetException {
+	public void testHoverEmptyContentItem() throws CoreException {
 		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
@@ -132,14 +129,13 @@ public class HoverTest {
 	}
 
 	@Test
-	public void testHoverOnExternalFile()
-			throws CoreException, InvocationTargetException, IOException, InterruptedException {
+	public void testHoverOnExternalFile() throws CoreException, IOException {
 		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("blah")),
 				new Range(new Position(0, 0), new Position(0, 0)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		File file = TestUtils.createTempFile("testHoverOnExternalfile", ".lspt");
-		ITextViewer viewer = TestUtils.getTextViewer(IDE.openInternalEditorOnFileStore(
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(IDE.openInternalEditorOnFileStore(
 				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
 		Assert.assertTrue(hover.getHoverInfo(viewer, new Region(0, 0)).contains("blah"));
 	}

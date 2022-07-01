@@ -12,14 +12,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +32,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.viewers.StyledString;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
@@ -69,7 +66,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	 * file-specific LS already associated is something we want to support.
 	 */
 	@Test
-	public void testAssistForUnknownButConnectedType() throws CoreException, InvocationTargetException, IOException, InterruptedException {
+	public void testAssistForUnknownButConnectedType() throws CoreException, IOException {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
@@ -101,7 +98,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testNoPrefix() throws CoreException, InvocationTargetException {
+	public void testNoPrefix() throws CoreException {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
@@ -157,7 +154,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testPrefix() throws CoreException, InvocationTargetException {
+	public void testPrefix() throws CoreException {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
 		items.add(createCompletionItem("SecondClass", CompletionItemKind.Class));
@@ -176,7 +173,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testPrefixCaseSensitivity() throws CoreException, InvocationTargetException {
+	public void testPrefixCaseSensitivity() throws CoreException {
 		List<CompletionItem> items = new ArrayList<>();
 		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
@@ -194,7 +191,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testCompleteOnFileEnd() throws CoreException, InvocationTargetException { // bug 508842
+	public void testCompleteOnFileEnd() throws CoreException { // bug 508842
 		CompletionItem item = new CompletionItem();
 		item.setLabel("1024M");
 		item.setKind(CompletionItemKind.Value);
@@ -216,7 +213,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testCompletionWithAdditionalEdits() throws CoreException, InvocationTargetException {
+	public void testCompletionWithAdditionalEdits() throws CoreException {
 		List<CompletionItem> items = new ArrayList<>();
 		CompletionItem item = new CompletionItem("additionaEditsCompletion");
 		item.setKind(CompletionItemKind.Function);
@@ -249,7 +246,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 	@Test
 	public void testSnippetCompletionWithAdditionalEdits()
-			throws PartInitException, InvocationTargetException, CoreException {
+			throws PartInitException, CoreException {
 		CompletionItem item = new CompletionItem("snippet item");
 		item.setInsertText("$1 and ${2:foo}");
 		item.setKind(CompletionItemKind.Class);
@@ -278,7 +275,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testApplyCompletionWithPrefix() throws CoreException, InvocationTargetException {
+	public void testApplyCompletionWithPrefix() throws CoreException {
 		Range range = new Range(new Position(0, 0), new Position(0, 5));
 		List<CompletionItem> items = Collections
 				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
@@ -296,7 +293,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testApplyCompletionReplace() throws CoreException, InvocationTargetException {
+	public void testApplyCompletionReplace() throws CoreException {
 		Range range = new Range(new Position(0, 0), new Position(0, 20));
 		List<CompletionItem> items = Collections
 				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
@@ -313,7 +310,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testApplyCompletionReplaceAndTypingWithTextEdit() throws CoreException, InvocationTargetException, BadLocationException {
+	public void testApplyCompletionReplaceAndTypingWithTextEdit() throws CoreException, BadLocationException {
 		Range range = new Range(new Position(0, 0), new Position(0, 22));
 		List<CompletionItem> items = Collections
 				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
@@ -336,8 +333,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testApplyCompletionReplaceAndTyping()
-			throws CoreException, InvocationTargetException, BadLocationException {
+	public void testApplyCompletionReplaceAndTyping() throws CoreException, BadLocationException {
 		CompletionItem item = new CompletionItem("strncasecmp");
 		item.setKind(CompletionItemKind.Function);
 		item.setInsertText("strncasecmp()");
@@ -362,7 +358,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testCompletionReplace() throws CoreException, InvocationTargetException {
+	public void testCompletionReplace() throws CoreException {
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineInsertHere");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(
@@ -407,7 +403,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testBasicSnippet() throws PartInitException, InvocationTargetException, CoreException {
+	public void testBasicSnippet() throws PartInitException, CoreException {
 		CompletionItem completionItem = createCompletionItem("$1 and ${2:foo}", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
 		MockLanguageServer.INSTANCE
@@ -422,7 +418,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testDuplicateVariable() throws PartInitException, InvocationTargetException, CoreException {
+	public void testDuplicateVariable() throws PartInitException, CoreException {
 		CompletionItem completionItem = createCompletionItem("${1:foo} and ${1:foo}", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
 		MockLanguageServer.INSTANCE
@@ -437,7 +433,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testVariableReplacement() throws PartInitException, InvocationTargetException, CoreException {
+	public void testVariableReplacement() throws PartInitException, CoreException {
 		CompletionItem completionItem = createCompletionItem(
 				"${1:$TM_FILENAME_BASE} ${2:$TM_FILENAME} ${3:$TM_FILEPATH} ${4:$TM_DIRECTORY} ${5:$TM_LINE_INDEX} ${6:$TM_LINE_NUMBER} ${7:$TM_CURRENT_LINE} ${8:$TM_SELECTED_TEXT}",
 				CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
@@ -479,25 +475,25 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		IFile file = TestUtils.createUniqueTestFile(project, "Some Text Before\n<tag>tagText</tag>\nSome Text After");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 		// Create item
-		CompletionItem item = createCompletionItem("tagText", 
-				CompletionItemKind.Text, 
+		CompletionItem item = createCompletionItem("tagText",
+				CompletionItemKind.Text,
 				new Range(
-						new Position(1, "<tag>".length()), 
+						new Position(1, "<tag>".length()),
 						new Position(1,  "<tag>".length() + "tag".length())));
 		// Set additional TExtEdits on the item
 		List<TextEdit> additionalEdits = new ArrayList<>(2);
 		// Prefix to be inserted to the end of line that precedes the line to be "completed"
 		additionalEdits.add(new TextEdit(new Range(
-				new Position(1, 0), 
-				new Position(1, 0)), 
+				new Position(1, 0),
+				new Position(1, 0)),
 				"<prefix>prefixText</prefix>\n"));
 		// Postfix to be inserted to the end of line to be "completed"
 		additionalEdits.add(new TextEdit(new Range(
-				new Position(1, "<tag>tag</tag>".length()), 
-				new Position(1, "<tag>tag</tag>".length())), 
+				new Position(1, "<tag>tag</tag>".length()),
+				new Position(1, "<tag>tag</tag>".length())),
 				"\n<postfix>postfixText</postfix>"));
 		item.setAdditionalTextEdits(additionalEdits);
-		
+
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(item)));
 
 		String text = viewer.getDocument().get();
@@ -528,7 +524,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		File file = TestUtils.createTempFile("testCompletionExternalFile", ".lspt");
 		ITextEditor editor = (ITextEditor) IDE.openEditorOnFileStore(
 				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(1, proposals.length);
 		proposals[0].apply(viewer.getDocument());
@@ -576,7 +572,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertTrue(addInfo.indexOf("<p>detail</p>") >= 0);
 	}
-	
+
 	@Test
 	public void testAdditionalInformationWithEmptyDocumentation() throws Exception {
 		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();

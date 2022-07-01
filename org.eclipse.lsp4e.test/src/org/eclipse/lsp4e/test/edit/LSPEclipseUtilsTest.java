@@ -13,9 +13,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -235,7 +233,7 @@ public class LSPEclipseUtilsTest {
 	@Test
 	public void testCustomResourceToURIMapping() throws CoreException { // bug 576425
 		IProject project = null;
-	
+
 		URI uri = URI.create("other://res.txt");
 		project = TestUtils.createProject(getClass().getSimpleName() + uri.getScheme());
 		IFile file = project.getFile("res.txt");
@@ -251,7 +249,7 @@ public class LSPEclipseUtilsTest {
 		project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineInsertHere");
 		editor = TestUtils.openEditor(file);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		TextEdit textEdit = new TextEdit(new Range(new Position(1, 4), new Position(1, 4 + "InsertHere".length())), "Inserted");
 		IDocument document = viewer.getDocument();
 		LSPEclipseUtils.applyEdit(textEdit, document);
@@ -265,7 +263,7 @@ public class LSPEclipseUtilsTest {
 		project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineHERE");
 		editor = TestUtils.openEditor(file);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		TextEdit textEdit = new TextEdit(new Range(new Position(1, 4), new Position(1, 4 + "HERE".length())), "Inserted");
 		IDocument document = viewer.getDocument();
 		LSPEclipseUtils.applyEdit(textEdit, document);
@@ -279,7 +277,7 @@ public class LSPEclipseUtilsTest {
 		project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "");
 		editor = TestUtils.openEditor(file);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		TextEdit[] edits = new TextEdit[] {
 				new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), " throws "),
 				new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "Exception") };
