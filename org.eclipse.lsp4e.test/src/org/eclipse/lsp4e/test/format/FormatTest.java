@@ -11,8 +11,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.format;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
@@ -106,7 +107,7 @@ public class FormatTest {
 		
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
 		viewer.getDocument().replace(0, 0, "Hello, ");
 		viewer.getDocument().replace(6, 0, "world! ");
@@ -131,7 +132,7 @@ public class FormatTest {
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
 		IEditorPart editor = TestUtils.openEditor(file);
-		ITextViewer viewer = TestUtils.getTextViewer(editor);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		MockLanguageServer.INSTANCE.setTimeToProceedQueries(5000);
 
 		LSPFormatter formatter = new LSPFormatter();

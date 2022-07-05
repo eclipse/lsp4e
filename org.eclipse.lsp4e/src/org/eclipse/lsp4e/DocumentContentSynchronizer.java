@@ -68,6 +68,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private DidChangeTextDocumentParams changeParams;
 	private long modificationStamp;
 	private CompletableFuture<LanguageServer> lastChangeFuture;
+	private final CompletableFuture<LanguageServer> didOpenFuture;
 	private final Object guard = new Object();
 	private long documentModificationStamp = 0L;
 	private LanguageServer languageServer;
@@ -109,7 +110,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		textDocument.setLanguageId(languageId);
 		textDocument.setVersion(++version);
-		lastChangeFuture = languageServerWrapper.getInitializedServer().thenApplyAsync(ls -> {
+		didOpenFuture = lastChangeFuture = languageServerWrapper.getInitializedServer().thenApplyAsync(ls -> {
 			this.languageServer = ls;
 			ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument));
 			return ls;
@@ -136,8 +137,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 	}
 
-	CompletableFuture<LanguageServer> lastChangeFuture() {
-		return lastChangeFuture;
+	CompletableFuture<LanguageServer> didOpenFuture() {
+		return didOpenFuture;
 	}
 
 	@Override
