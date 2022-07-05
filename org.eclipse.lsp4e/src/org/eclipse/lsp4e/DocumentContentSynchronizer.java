@@ -73,6 +73,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private DidChangeTextDocumentParams changeParams;
 	private long modificationStamp;
 	private CompletableFuture<LanguageServer> lastChangeFuture;
+	private final CompletableFuture<LanguageServer> didOpenFuture;
 	private final Object guard = new Object();
 	private long documentModificationStamp = 0L;
 	private LanguageServer languageServer;
@@ -120,7 +121,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		textDocument.setLanguageId(languageId);
 		textDocument.setVersion(++version);
-		lastChangeFuture = languageServerWrapper.getInitializedServer().thenApplyAsync(ls -> {
+		didOpenFuture = lastChangeFuture = languageServerWrapper.getInitializedServer().thenApplyAsync(ls -> {
 			this.languageServer = ls;
 			ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument));
 			return ls;
@@ -147,8 +148,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 	}
 
-	CompletableFuture<LanguageServer> lastChangeFuture() {
-		return lastChangeFuture;
+	CompletableFuture<LanguageServer> didOpenFuture() {
+		return didOpenFuture;
 	}
 
 	@Override
@@ -275,7 +276,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		// Use @link{TextDocumentSaveReason.Manual} as the platform does not give enough information to be accurate
 		WillSaveTextDocumentParams params = new WillSaveTextDocumentParams(identifier, TextDocumentSaveReason.Manual);
 
-
+		List<TextEdit> edits = null;
 		try {
 			edits = executeOnCurrentVersionAsync(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
 				.get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS).get();
@@ -292,6 +293,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+		}
+		try {
+			LSPEclipseUtils.applyEdits(document, edits);
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
 		}
 	}
 

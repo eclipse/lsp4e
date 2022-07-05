@@ -670,7 +670,7 @@ public class LanguageServerWrapper {
 				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
-				return listener.lastChangeFuture();
+				return listener.didOpenFuture();
 			}
 		}).thenApply(theVoid -> languageServer);
 	}
