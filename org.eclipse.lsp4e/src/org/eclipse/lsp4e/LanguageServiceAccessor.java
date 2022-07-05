@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -61,7 +62,7 @@ public class LanguageServiceAccessor {
 		// this class shouldn't be instantiated
 	}
 
-	private static final Set<LanguageServerWrapper> startedServers = new HashSet<>();
+	private static final Set<LanguageServerWrapper> startedServers = new CopyOnWriteArraySet<>();
 	private static final Map<StreamConnectionProvider, LanguageServerDefinition> providersToLSDefinitions = new HashMap<>();
 
 	/**
@@ -69,10 +70,10 @@ public class LanguageServiceAccessor {
 	 * tests. It isn't meant to be used in production code.
 	 */
 	public static void clearStartedServers() {
-		synchronized (startedServers) {
-			startedServers.forEach(LanguageServerWrapper::stop);
-			startedServers.clear();
-		}
+		startedServers.removeIf(server -> {
+			server.stop();
+			return true;
+		});
 	}
 
 	/**
@@ -142,21 +143,18 @@ public class LanguageServiceAccessor {
 
 	public static @NonNull List<CompletableFuture<LanguageServer>> getInitializedLanguageServers(@NonNull IFile file,
 			@Nullable Predicate<ServerCapabilities> request) throws IOException {
-		synchronized (startedServers) {
-			return getLSWrappers(file, request).stream().map(LanguageServerWrapper::getInitializedServer).collect(Collectors.toList());
-		}
+		return getLSWrappers(file, request).stream().map(LanguageServerWrapper::getInitializedServer)
+				.collect(Collectors.toList());
 	}
 
 	public static void disableLanguageServerContentType(
 			@NonNull ContentTypeToLanguageServerDefinition contentTypeToLSDefinition) {
-		synchronized (startedServers) {
-			Optional<LanguageServerWrapper> result = startedServers.stream()
-					.filter(server -> server.serverDefinition.equals(contentTypeToLSDefinition.getValue())).findFirst();
-			if (result.isPresent()) {
-				IContentType contentType = contentTypeToLSDefinition.getKey();
-				if (contentType != null) {
-					result.get().disconnectContentType(contentType);
-				}
+		Optional<LanguageServerWrapper> result = startedServers.stream()
+				.filter(server -> server.serverDefinition.equals(contentTypeToLSDefinition.getValue())).findFirst();
+		if (result.isPresent()) {
+			IContentType contentType = contentTypeToLSDefinition.getKey();
+			if (contentType != null) {
+				result.get().disconnectContentType(contentType);
 			}
 		}
 	}
@@ -304,7 +302,7 @@ public class LanguageServiceAccessor {
 			}
 
 			for (final ContentTypeToLanguageServerDefinition mapping : lsRegistry.findProviderFor(contentType)) {
-				if (mapping == null || !mapping.isEnabled()) {
+				if (!mapping.isEnabled()) {
 					continue;
 				}
 				final LanguageServerDefinition serverDefinition = mapping.getValue();
@@ -335,6 +333,20 @@ public class LanguageServiceAccessor {
 
 		final var lsRegistry = LanguageServersRegistry.getInstance();
 
+		// look for already started compatible servers suitable for the given document
+		final Predicate<LanguageServerWrapper> selectServersForDocument = wrapper -> {
+			try {
+				return wrapper.isConnectedTo(uri)
+						|| (lsRegistry.matches(document, wrapper.serverDefinition) && wrapper.canOperate(document));
+			} catch (Exception ex) {
+				LanguageServerPlugin.logError(ex);
+				return false;
+			}
+		};
+		@NonNull
+		final LinkedHashSet<LanguageServerWrapper> res = startedServers.stream().filter(selectServersForDocument)
+				.collect(Collectors.toCollection(LinkedHashSet::new));
+
 		// look for running language servers via content-type
 		final var directContentTypes = LSPEclipseUtils.getDocumentContentTypes(document);
 		final var contentTypesToProcess = new ArrayDeque<IContentType>(directContentTypes);
@@ -342,54 +354,50 @@ public class LanguageServiceAccessor {
 		final var path = new Path(uri.getPath());
 		final var file = LSPEclipseUtils.getFile(document);
 
-		synchronized (startedServers) {
-			// look for already started compatible servers that fit request
-			@NonNull
-		   final LinkedHashSet<LanguageServerWrapper> res = startedServers.stream()
-					.filter(wrapper -> {
-						try {
-							return wrapper.isConnectedTo(uri)
-									|| (lsRegistry.matches(document, wrapper.serverDefinition) && wrapper.canOperate(document));
-						} catch (Exception ex) {
-							LanguageServerPlugin.logError(ex);
-							return false;
-						}
-					})
-					.collect(Collectors.toCollection(LinkedHashSet::new));
+		while (!contentTypesToProcess.isEmpty()) {
+			final var contentType = contentTypesToProcess.poll();
+			if (contentType == null || processedContentTypes.contains(contentType)) {
+				continue;
+			}
 
-			while (!contentTypesToProcess.isEmpty()) {
-				final var contentType = contentTypesToProcess.poll();
-				if (contentType == null || processedContentTypes.contains(contentType)) {
+			for (final ContentTypeToLanguageServerDefinition mapping : lsRegistry.findProviderFor(contentType)) {
+				if (!mapping.isEnabled()) {
 					continue;
 				}
-				for (final ContentTypeToLanguageServerDefinition mapping : lsRegistry.findProviderFor(contentType)) {
-					if (mapping == null || !mapping.isEnabled()) {
+				final LanguageServerDefinition serverDefinition = mapping.getValue();
+				if (serverDefinition == null) {
+					continue;
+				}
+				final Predicate<LanguageServerWrapper> selectServersWithEqualDefinition = wrapper ->
+						wrapper.serverDefinition .equals(serverDefinition);
+				if (res.stream().anyMatch(selectServersWithEqualDefinition)) {
+					// we already found a compatible LS with this definition
+					continue;
+				}
+
+				synchronized (startedServers) {
+					// check again while holding the write lock
+					startedServers.stream().filter(selectServersForDocument).forEach(res::add);
+					if (res.stream().anyMatch(selectServersWithEqualDefinition)) {
+						// we already found a compatible LS with this definition
 						continue;
 					}
-					final LanguageServerDefinition serverDefinition = mapping.getValue();
-					if (serverDefinition == null) {
-						continue;
-					}
-					if (res.stream().anyMatch(wrapper -> wrapper.serverDefinition.equals(serverDefinition)
-							&& wrapper.canOperate(document))) {
-						// we already checked a compatible LS with this definition
-						continue;
-					}
+
 					final var fileProject = file != null ? file.getProject() : null;
 					final var wrapper = fileProject != null //
-						? new LanguageServerWrapper(fileProject, serverDefinition)
-						: new LanguageServerWrapper(serverDefinition, path);
+							? new LanguageServerWrapper(fileProject, serverDefinition)
+							: new LanguageServerWrapper(serverDefinition, path);
 					startedServers.add(wrapper);
 					res.add(wrapper);
 				}
-
-				if (contentType.getBaseType() != null) {
-					contentTypesToProcess.add(contentType.getBaseType());
-				}
-				processedContentTypes.add(contentType);
 			}
-			return res;
+
+			if (contentType.getBaseType() != null) {
+			   contentTypesToProcess.add(contentType.getBaseType());
+			}
+			processedContentTypes.add(contentType);
 		}
+		return res;
 	}
 
 	/**
@@ -427,16 +435,27 @@ public class LanguageServiceAccessor {
 
 	private static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
 			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
+
+		final Predicate<LanguageServerWrapper> serverSelector = wrapper -> project != null && wrapper.canOperate(project)
+				&& wrapper.serverDefinition.equals(serverDefinition);
+
+		var matchingServer = startedServers.stream().filter(serverSelector).findFirst();
+		if (matchingServer.isPresent()) {
+			return matchingServer.get();
+		}
+
 		synchronized (startedServers) {
-			final var matchingServer = startedServers.stream().filter(wrapper -> project != null
-					&& wrapper.canOperate(project) && wrapper.serverDefinition.equals(serverDefinition)).findFirst();
+			// check again while holding the write lock
+			matchingServer = startedServers.stream().filter(serverSelector).findFirst();
 			if (matchingServer.isPresent()) {
 				return matchingServer.get();
 			}
+
 			final var wrapper = project != null //
-				? new LanguageServerWrapper(project, serverDefinition)
-				: new LanguageServerWrapper(serverDefinition, initialPath);
+					? new LanguageServerWrapper(project, serverDefinition)
+					: new LanguageServerWrapper(serverDefinition, initialPath);
 			wrapper.start();
+
 			startedServers.add(wrapper);
 			return wrapper;
 		}
@@ -444,9 +463,18 @@ public class LanguageServiceAccessor {
 
 	private static LanguageServerWrapper getLSWrapperForConnection(@NonNull IDocument document,
 			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
+
+		final Predicate<LanguageServerWrapper> serverSelector = wrapper -> wrapper.canOperate(document) 
+				&& wrapper.serverDefinition.equals(serverDefinition);
+
+		var matchingServer = startedServers.stream().filter(serverSelector).findFirst();
+		if (matchingServer.isPresent()) {
+			return matchingServer.get();
+		}
+
 		synchronized (startedServers) {
-			final var matchingServer = startedServers.stream().filter(wrapper -> wrapper.canOperate(document)
-					&& wrapper.serverDefinition.equals(serverDefinition)).findFirst();
+			// check again while holding the write lock
+			matchingServer = startedServers.stream().filter(serverSelector).findFirst();
 			if (matchingServer.isPresent()) {
 				return matchingServer.get();
 			}
@@ -469,19 +497,18 @@ public class LanguageServiceAccessor {
 
 	private static Collection<LanguageServerWrapper> getMatchingStartedWrappers(@NonNull final IFile file,
 			@Nullable final Predicate<ServerCapabilities> request) {
-		synchronized (startedServers) {
-			final var lsRegistry = LanguageServersRegistry.getInstance();
-			final var project = file.getProject();
-			final var fileURI = file.getLocationURI();
 
-			return startedServers.stream()
-					.filter(wrapper -> wrapper.isActive() && wrapper.isConnectedTo(fileURI)
-							|| (lsRegistry.matches(file, wrapper.serverDefinition)
-									&& project != null && wrapper.canOperate(project)))
-					.filter(wrapper -> request == null
-							|| (wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities())))
-					.collect(Collectors.toList());
-		}
+		final var lsRegistry = LanguageServersRegistry.getInstance();
+		final var project = file.getProject();
+		final var fileURI = file.getLocationURI();
+
+		return startedServers.stream()
+				.filter(wrapper -> wrapper.isActive() && wrapper.isConnectedTo(fileURI)
+						|| (lsRegistry.matches(file, wrapper.serverDefinition)
+								&& project != null && wrapper.canOperate(project)))
+				.filter(wrapper -> request == null
+						|| (wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities())))
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -522,17 +549,15 @@ public class LanguageServiceAccessor {
 	public static List<@NonNull LanguageServer> getLanguageServers(@Nullable IProject project,
 			Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
 		List<@NonNull LanguageServer> serverInfos = new ArrayList<>();
-		synchronized (startedServers) {
-			for (LanguageServerWrapper wrapper : startedServers) {
-				if ((!onlyActiveLS || wrapper.isActive()) && (project == null || wrapper.canOperate(project))) {
-					@Nullable
-					LanguageServer server = wrapper.getServer();
-					if (server == null) {
-						continue;
-					}
-					if (capabilitiesComply(wrapper, request)) {
-						serverInfos.add(server);
-					}
+		for (LanguageServerWrapper wrapper : startedServers) {
+			if ((!onlyActiveLS || wrapper.isActive()) && (project == null || wrapper.canOperate(project))) {
+				@Nullable
+				LanguageServer server = wrapper.getServer();
+				if (server == null) {
+					continue;
+				}
+				if (capabilitiesComply(wrapper, request)) {
+					serverInfos.add(server);
 				}
 			}
 		}
@@ -600,18 +625,14 @@ public class LanguageServiceAccessor {
 	}
 
 	public static boolean checkCapability(LanguageServer languageServer, Predicate<ServerCapabilities> condition) {
-		synchronized (startedServers) {
-			return startedServers.stream() //
-					.filter(wrapper -> wrapper.isActive() && wrapper.getServer() == languageServer)
-					.anyMatch(wrapper -> condition.test(wrapper.getServerCapabilities()));
-		}
+		return startedServers.stream() //
+				.filter(wrapper -> wrapper.isActive() && wrapper.getServer() == languageServer)
+				.anyMatch(wrapper -> condition.test(wrapper.getServerCapabilities()));
 	}
 
 	public static Optional<LanguageServerDefinition> resolveServerDefinition(LanguageServer languageServer) {
-		synchronized (startedServers) {
-			return startedServers.stream() //
-					.filter(wrapper -> languageServer.equals(wrapper.getServer())).findFirst()
-					.map(wrapper -> wrapper.serverDefinition);
-		}
+		return startedServers.stream() //
+				.filter(wrapper -> languageServer.equals(wrapper.getServer())).findFirst()
+				.map(wrapper -> wrapper.serverDefinition);
 	}
 }

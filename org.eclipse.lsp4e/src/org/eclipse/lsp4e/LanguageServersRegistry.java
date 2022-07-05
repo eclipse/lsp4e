@@ -337,7 +337,7 @@ public class LanguageServersRegistry {
 	 * @return the {@link LanguageServerDefinition}s <strong>directly</strong> associated to the given content-type.
 	 * This does <strong>not</strong> include the one that match transitively as per content-type hierarchy
 	 */
-	List<ContentTypeToLanguageServerDefinition> findProviderFor(final @NonNull IContentType contentType) {
+	List<@NonNull ContentTypeToLanguageServerDefinition> findProviderFor(final @NonNull IContentType contentType) {
 		return connections.stream()
 			.filter(entry -> entry.getKey().equals(contentType))
 			.sorted((mapping1, mapping2) -> {
