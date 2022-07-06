@@ -88,7 +88,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				checkMarkerResoultion(marker);
 				att = marker.getAttribute(LSP_REMEDIATION);
 			}
-		} catch (IOException | CoreException | ExecutionException | TimeoutException e) {
+		} catch (IOException | CoreException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 			return new IMarkerResolution[0];
 		} catch (InterruptedException e) {
@@ -115,7 +115,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		return res.toArray(new IMarkerResolution[res.size()]);
 	}
 
-	private void checkMarkerResoultion(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException, TimeoutException {
+	private void checkMarkerResoultion(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException {
 		IResource res = marker.getResource();
 		if (res != null && res.getType() == IResource.FILE) {
 			IFile file = (IFile)res;
@@ -142,7 +142,11 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				});
 			}
 			// wait a bit to avoid showing too much "Computing" without looking like a freeze
-			CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()])).get(300, TimeUnit.MILLISECONDS);
+			try {
+				CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()])).get(300, TimeUnit.MILLISECONDS);
+			} catch (TimeoutException e) {
+				LanguageServerPlugin.logWarning("Could get code actions due to timeout after 300 miliseconds in `textDocument/codeAction`", e); //$NON-NLS-1$
+			}
 		}
 	}
 

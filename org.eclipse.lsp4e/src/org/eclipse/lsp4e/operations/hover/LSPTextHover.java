@@ -74,11 +74,13 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 				if (result != null) {
 					return result;
 				}
-			} catch (ExecutionException | TimeoutException e) {
+			} catch (ExecutionException e) {
 				LanguageServerPlugin.logError(e);
 			} catch (InterruptedException e) {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
+			} catch (TimeoutException e) {
+				LanguageServerPlugin.logWarning("Could not get hover information due to timeout after 500 miliseconds", e); //$NON-NLS-1$
 			}
 		}
 		return null;
@@ -166,11 +168,13 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 				this.lastRegion = new Region(regionStartOffset[0], regionEndOffset[0] - regionStartOffset[0]);
 				return this.lastRegion;
 			}
-		} catch (ExecutionException | TimeoutException e1) {
-			LanguageServerPlugin.logError(e1);
-		} catch (InterruptedException e1) {
-			LanguageServerPlugin.logError(e1);
+		} catch (ExecutionException e) {
+			LanguageServerPlugin.logError(e);
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning("Could not get hover region due to timeout after 500 miliseconds", e); //$NON-NLS-1$
 		}
 		this.lastRegion = new Region(offset, 0);
 		return this.lastRegion;

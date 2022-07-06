@@ -92,11 +92,13 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 					}
 				})).toArray(CompletableFuture[]::new))
 			).get(500, TimeUnit.MILLISECONDS);
-		} catch (ExecutionException | TimeoutException e) {
+		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 500 miliseconds", e);  //$NON-NLS-1$
 		}
 		if (allLinks.isEmpty()) {
 			return null;

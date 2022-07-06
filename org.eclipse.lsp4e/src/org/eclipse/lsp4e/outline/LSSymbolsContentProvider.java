@@ -74,9 +74,6 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		public final ITextEditor textEditor;
 
 		@Nullable
-		private final IPath documentPath;
-
-		@Nullable
 		public final IFile documentFile;
 
 		@Nullable
@@ -84,9 +81,15 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 		public OutlineViewerInput(IDocument document, LanguageServer languageServer, @Nullable ITextEditor textEditor) {
 			this.document = document;
-			documentPath = LSPEclipseUtils.toPath(document);
-			documentFile = documentPath == null ? null : LSPEclipseUtils.getFile(documentPath);
-			documentURI = documentFile == null ? null : LSPEclipseUtils.toUri(documentFile);
+			IPath path = LSPEclipseUtils.toPath(document);
+			if (path == null) {
+				documentFile = null;
+				documentURI = null;
+			} else {
+				IFile file = LSPEclipseUtils.getFile(path);
+				documentFile = file;
+				documentURI = file == null ? null : LSPEclipseUtils.toUri(file);
+			}
 			this.languageServer = languageServer;
 			this.textEditor = textEditor;
 		}

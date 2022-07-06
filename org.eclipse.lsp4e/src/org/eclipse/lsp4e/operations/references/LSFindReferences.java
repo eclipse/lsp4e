@@ -91,11 +91,13 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 					.getLanguageServers(LSPEclipseUtils.getDocument(editor),
 							capabilities -> LSPEclipseUtils.hasCapability(capabilities.getReferencesProvider()))
 					.get(50, TimeUnit.MILLISECONDS).isEmpty();
-		} catch (TimeoutException | java.util.concurrent.ExecutionException e) {
+		} catch (java.util.concurrent.ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning("Could not get language server due to timeout after 50 miliseconds", e); //$NON-NLS-1$
 		}
 		return false;
 	}

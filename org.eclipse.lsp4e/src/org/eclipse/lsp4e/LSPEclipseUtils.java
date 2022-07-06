@@ -831,7 +831,7 @@ public class LSPEclipseUtils {
 		return toUri(absolutePath.toFile());
 	}
 
-	public static URI toUri(IResource resource) {
+	public static URI toUri(@NonNull IResource resource) {
 		URI adaptedURI = Adapters.adapt(resource, URI.class, true);
 		if (adaptedURI != null) {
 			return adaptedURI;

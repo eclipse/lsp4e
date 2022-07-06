@@ -317,11 +317,13 @@ public class LSCompletionProposal
 			try {
 				languageServer.getTextDocumentService().resolveCompletionItem(item).thenAcceptAsync(this::updateCompletionItem)
 						.get(RESOLVE_TIMEOUT, TimeUnit.MILLISECONDS);
-			} catch (ExecutionException | TimeoutException e) {
+			} catch (ExecutionException e) {
 				LanguageServerPlugin.logError(e);
 			} catch (InterruptedException e) {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
+			} catch (TimeoutException e) {
+				LanguageServerPlugin.logWarning("Could not resolve completion items due to timeout after " + RESOLVE_TIMEOUT + " miliseconds in `completionItem/resolve`", e);  //$NON-NLS-1$//$NON-NLS-2$
 			}
 		}
 

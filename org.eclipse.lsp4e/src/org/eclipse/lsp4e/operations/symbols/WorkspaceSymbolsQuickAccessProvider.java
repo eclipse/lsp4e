@@ -67,10 +67,12 @@ public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer
 							res.addAll(LSPSymbolInWorkspaceDialog.eitherToWorkspaceSymbols(symbols).stream().map(WorkspaceSymbolQuickAccessElement::new)
 									.collect(Collectors.toList()));
 						}
-					})).toArray(CompletableFuture[]::new)).get(1000, TimeUnit.MILLISECONDS);
+					})).toArray(CompletableFuture[]::new)).get(1, TimeUnit.SECONDS);
 		}
-		catch (ExecutionException | TimeoutException | InterruptedException e) {
+		catch (ExecutionException | InterruptedException e) {
 			LanguageServerPlugin.logError(e);
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning("Could not get workspace symbols due to timeout after 1 second in `workspace/symbol`", e); //$NON-NLS-1$
 		}
 
 		return res.toArray(new QuickAccessElement[res.size()]);
