@@ -562,11 +562,13 @@ public class LanguageServerWrapper {
 		if (this.initializeFuture != null) {
 			try {
 				this.initializeFuture.get(1, TimeUnit.SECONDS);
-			} catch (ExecutionException | TimeoutException e) {
+			} catch (ExecutionException e) {
 				LanguageServerPlugin.logError(e);
 			} catch (InterruptedException e) {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
+			} catch (TimeoutException e) {
+				LanguageServerPlugin.logWarning("Could not get if the workspace folder capability is supported due to timeout after 1 second", e); //$NON-NLS-1$
 			}
 		}
 		return initiallySupportsWorkspaceFolders || supportsWorkspaceFolders(serverCapabilities);

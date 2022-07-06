@@ -87,12 +87,15 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 								.map(future -> {
 									try {
 										return future.get(2, TimeUnit.SECONDS);
-									} catch (ExecutionException | TimeoutException e) {
+									} catch (ExecutionException e) {
 										LanguageServerPlugin.logError(e);
 										return null;
 									} catch (InterruptedException e) {
 										LanguageServerPlugin.logError(e);
 										Thread.currentThread().interrupt();
+										return null;
+									} catch (TimeoutException e) {
+										LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 2 seconds in `document/Link`", e); //$NON-NLS-1$
 										return null;
 									}
 								}).filter(Objects::nonNull).flatMap(List<DocumentLink>::stream).map(link -> {
@@ -117,12 +120,15 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 							return res;
 						}
 					}).get(2, TimeUnit.SECONDS);
-		} catch (ExecutionException | TimeoutException e) {
+		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 			return null;
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+			return null;
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 2 seconds", e); //$NON-NLS-1$
 			return null;
 		}
 	}

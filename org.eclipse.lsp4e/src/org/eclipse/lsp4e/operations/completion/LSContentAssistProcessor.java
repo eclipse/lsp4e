@@ -193,6 +193,15 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	}
 
+	private void initiateLanguageServers() {
+		ITextEditor textEditor = UI.getActiveTextEditor();
+		if(textEditor != null) {
+			IDocument document = LSPEclipseUtils.getDocument(textEditor);
+			if (document != null) {
+				initiateLanguageServers(document);
+			}
+		}
+	}
 	private static List<ICompletionProposal> toProposals(IDocument document,
 			int offset, Either<List<CompletionItem>, CompletionList> completionList, LanguageServer languageServer) {
 		if (completionList == null) {
@@ -230,12 +239,15 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 								}
 							})).toArray(CompletableFuture[]::new)))
 					.get(CONTEXT_INFORMATION_TIMEOUT, TimeUnit.MILLISECONDS);
-		} catch (ExecutionException | TimeoutException e) {
+		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+			return new IContextInformation[] { /* TODO? show error in context information */ };
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning("Could not compute  context information due to timeout after " + CONTEXT_INFORMATION_TIMEOUT + " miliseconds", e);  //$NON-NLS-1$//$NON-NLS-2$
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		}
 		return contextInformations.toArray(new IContextInformation[0]);
@@ -252,21 +264,17 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		return contextInformation;
 	}
 
-	@Override
-	public char[] getCompletionProposalAutoActivationCharacters() {
-		ITextEditor textEditor = UI.getActiveTextEditor();
-		if(textEditor != null) {
-			initiateLanguageServers(LSPEclipseUtils.getDocument(textEditor));
-			try {
-				this.completionLanguageServersFuture.get(TRIGGERS_TIMEOUT, TimeUnit.MILLISECONDS);
-			} catch (OperationCanceledException | TimeoutException | ExecutionException e) {
-				LanguageServerPlugin.logError(e);
-			} catch (InterruptedException e) {
-				LanguageServerPlugin.logError(e);
-				Thread.currentThread().interrupt();
-			}
+	private void getFuture(CompletableFuture<List<@NonNull LanguageServer>> future) {
+		try {
+			future.get(TRIGGERS_TIMEOUT, TimeUnit.MILLISECONDS);
+		} catch (OperationCanceledException | ExecutionException e) {
+			LanguageServerPlugin.logError(e);
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning("Could not get trigger characters due to timeout after " + TRIGGERS_TIMEOUT + " miliseconds", e); //$NON-NLS-1$//$NON-NLS-2$
 		}
-		return completionTriggerChars;
 	}
 
 	private static char[] mergeTriggers(char[] initialArray, Collection<String> additionalTriggers) {
@@ -276,7 +284,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		if (additionalTriggers == null) {
 			additionalTriggers = Collections.emptySet();
 		}
-		Set<Character> triggers = new HashSet<>();
+		Set<Character> triggers = new HashSet<>(initialArray.length);
 		for (char c : initialArray) {
 			triggers.add(c);
 		}
@@ -292,19 +300,16 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	}
 
 	@Override
+	public char[] getCompletionProposalAutoActivationCharacters() {
+		initiateLanguageServers();
+		getFuture(completionLanguageServersFuture);
+		return completionTriggerChars;
+	}
+
+	@Override
 	public char[] getContextInformationAutoActivationCharacters() {
-		ITextEditor textEditor = UI.getActiveTextEditor();
-		if(textEditor != null) {
-			initiateLanguageServers(LSPEclipseUtils.getDocument(textEditor));
-			try {
-				this.contextInformationLanguageServersFuture.get(TRIGGERS_TIMEOUT, TimeUnit.MILLISECONDS);
-			} catch (OperationCanceledException | TimeoutException | ExecutionException e) {
-				LanguageServerPlugin.logError(e);
-			} catch (InterruptedException e) {
-				LanguageServerPlugin.logError(e);
-				Thread.currentThread().interrupt();
-			}
-		}
+		initiateLanguageServers();
+		getFuture(contextInformationLanguageServersFuture);
 		return contextTriggerChars;
 	}
 
