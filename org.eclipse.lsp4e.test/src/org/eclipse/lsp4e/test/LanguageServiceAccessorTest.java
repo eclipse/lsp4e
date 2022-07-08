@@ -13,13 +13,28 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.eclipse.lsp4e.LSPEclipseUtils.*;
-import static org.eclipse.lsp4e.LanguageServiceAccessor.*;
-import static org.eclipse.lsp4e.test.TestUtils.*;
-import static org.junit.Assert.*;
+import static org.eclipse.lsp4e.LSPEclipseUtils.getDocument;
+import static org.eclipse.lsp4e.LSPEclipseUtils.getTextViewer;
+import static org.eclipse.lsp4e.LanguageServiceAccessor.getActiveLanguageServers;
+import static org.eclipse.lsp4e.LanguageServiceAccessor.getInitializedLanguageServers;
+import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSPDocumentInfosFor;
+import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSWrapper;
+import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSWrappers;
+import static org.eclipse.lsp4e.LanguageServiceAccessor.getLanguageServers;
+import static org.eclipse.lsp4e.test.TestUtils.createFile;
+import static org.eclipse.lsp4e.test.TestUtils.createProject;
+import static org.eclipse.lsp4e.test.TestUtils.createTempFile;
+import static org.eclipse.lsp4e.test.TestUtils.createUniqueTestFile;
+import static org.eclipse.lsp4e.test.TestUtils.createUniqueTestFileMultiLS;
+import static org.eclipse.lsp4e.test.TestUtils.openEditor;
+import static org.eclipse.lsp4e.test.TestUtils.openTextViewer;
+import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +50,7 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.internal.core.IInternalDebugCoreConstants;
 import org.eclipse.debug.internal.core.Preferences;
 import org.eclipse.jface.text.Document;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -371,19 +387,21 @@ public class LanguageServiceAccessorTest {
 
 		// Test with default status handler (see DebugPlugin#getStatusHandler)
 		var oldStatusHandler = isStatusHandlersEnabled();
-		getLanguageServers(getDocument(testFile), null).get(2, TimeUnit.SECONDS);
+		IDocument document = getDocument(testFile);
+		assertNotNull(document);
+		getLanguageServers(document, null).get(2, TimeUnit.SECONDS);
 		assertEquals(isStatusHandlersEnabled(), oldStatusHandler);
 
 		// Test with status handler set to false
 		setStatusHandlersEnabled(false);
 		oldStatusHandler = isStatusHandlersEnabled();
-		getLanguageServers(getDocument(testFile), null).get(2, TimeUnit.SECONDS);
+		getLanguageServers(document, null).get(2, TimeUnit.SECONDS);
 		assertEquals(isStatusHandlersEnabled(), false);
 
 		// Test with status handler set to true
 		setStatusHandlersEnabled(true);
 		oldStatusHandler = isStatusHandlersEnabled();
-		getLanguageServers(getDocument(testFile), null).get(2, TimeUnit.SECONDS);
+		getLanguageServers(document, null).get(2, TimeUnit.SECONDS);
 		assertEquals(isStatusHandlersEnabled(), true);
 	}
 
@@ -408,11 +426,15 @@ public class LanguageServiceAccessorTest {
 	@Test
 	public void testSingletonLS() throws Exception {
 		var testFile1 = createFile(project, "shouldUseSingletonLS.lsp-singletonLS", "");
-		var languageServers = getLanguageServers(getDocument(testFile1), MATCH_ALL);
+		IDocument document1 = getDocument(testFile1);
+		assertNotNull(document1);
+		var languageServers = getLanguageServers(document1, MATCH_ALL);
 
 		var project2 = createProject("project2");
 		var testFile2 = createFile(project2, "shouldUseSingletonLS2.lsp-singletonLS", "");
-		var languageServers2 = getLanguageServers(getDocument(testFile2), MATCH_ALL);
+		IDocument document2 = getDocument(testFile2);
+		assertNotNull(document2);
+		var languageServers2 = getLanguageServers(document2, MATCH_ALL);
 		assertEquals(1, languageServers.get().size());
 		assertEquals(languageServers.get(), languageServers2.get());
 	}

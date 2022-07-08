@@ -12,7 +12,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
@@ -25,6 +26,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
@@ -61,7 +63,9 @@ public class DocumentDidSaveTest {
 		testFile.setLocalTimeStamp(0);
 
 		// Force LS to initialize and open file
-		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), capabilites -> Boolean.TRUE);
+		IDocument document = LSPEclipseUtils.getDocument(testFile);
+		assertNotNull(document);
+		LanguageServiceAccessor.getLanguageServers(document, capabilites -> Boolean.TRUE);
 		CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidSaveCallback(didSaveExpectation);
 

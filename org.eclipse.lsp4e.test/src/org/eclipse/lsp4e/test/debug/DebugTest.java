@@ -28,7 +28,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-@SuppressWarnings("restriction")
 public class DebugTest {
 	@Rule public AllCleanRule clear = new AllCleanRule();
 	protected IProject project;

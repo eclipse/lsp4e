@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.test.commands;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -23,6 +24,7 @@ import java.util.function.Predicate;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
@@ -59,7 +61,9 @@ public class DynamicRegistrationTest {
 		IFile testFile = TestUtils.createFile(project, "shouldUseExtension.lspt", "");
 
 		// Make sure mock language server is created...
-		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), null).get(1,
+		IDocument document = LSPEclipseUtils.getDocument(testFile);
+		assertNotNull(document);
+		LanguageServiceAccessor.getLanguageServers(document, null).get(1,
 				TimeUnit.SECONDS);
 		getMockClient();
 	}
