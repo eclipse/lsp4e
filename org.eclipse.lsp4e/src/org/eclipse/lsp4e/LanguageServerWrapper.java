@@ -31,12 +31,14 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -518,6 +520,24 @@ public class LanguageServerWrapper {
 		return uri == null ? null : connect(uri, document);
 	}
 
+	/**
+	 * Submit an asynchronous call (i.e. to the language server) that be inserted into the current position w.r.t.
+	 * document change events
+	 *
+	 * @param <U> Computation return type
+	 * @param file Document to serialise on
+	 * @param fn Asynchronous computation on the language server
+	 * @return Asynchronous result object.
+	 */
+	<U> @Nullable CompletableFuture<VersionedResult<U>> executeOnCurrentVersionAsync(URI uri,
+			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
+		DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(uri);
+		if (documentContentSynchronizer != null) {
+			return documentContentSynchronizer.executeOnCurrentVersionAsync(fn);
+		}
+		return null;
+	}
+
 	private void watchProjects() {
 		if (!supportsWorkspaceFolderCapability()) {
 			return;
@@ -615,7 +635,7 @@ public class LanguageServerWrapper {
 				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
-				return listener.lastChangeFuture();
+				return listener.didOpenFuture();
 			}
 		}).thenApply(theVoid -> languageServer);
 	}

@@ -11,12 +11,17 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.format;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -28,12 +33,16 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.VersionedResult;
 import org.eclipse.lsp4e.operations.format.LSPFormatter;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
+import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -56,7 +65,7 @@ public class FormatTest {
 		LSPFormatter formatter = new LSPFormatter();
 		ITextSelection selection = TextSelection.emptySelection();
 
-		List<? extends TextEdit> edits = formatter.requestFormatting(new Document(), selection).get();
+		List<? extends TextEdit> edits = formatter.requestFormatting(new Document(), selection).get().get();
 		assertEquals(0, edits.size());
 	}
 
@@ -72,7 +81,7 @@ public class FormatTest {
 		LSPFormatter formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
 
-		List<? extends TextEdit> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection)
+		VersionedResult<List<? extends TextEdit>> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection)
 				.get();
 		editor.getSite().getShell().getDisplay().syncExec(() -> formatter.applyEdits(viewer.getDocument(), edits));
 
@@ -82,7 +91,76 @@ public class FormatTest {
 
 		TestUtils.closeEditor(editor, false);
 	}
+	
+	@Test
+	public void testFormattingSerializedWithUpdates() throws Exception {
+		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
+		.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+		AtomicInteger editsReceivedToDate = new AtomicInteger(0);
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			@Override
+			public CompletableFuture<List<? extends TextEdit>> formatting(DocumentFormattingParams params) {
+				editsReceivedToDate.set(this.getDidChangeEvents().size());
+				return super.formatting(params);
+			}
+		});
+		
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
+		viewer.getDocument().replace(0, 0, "Hello, ");
+		viewer.getDocument().replace(6, 0, "world! ");
+		viewer.getDocument().replace(13, 0, "Here is some extra text!");
+		
+		LSPFormatter formatter = new LSPFormatter();
+		ISelection selection = viewer.getSelectionProvider().getSelection();
+		VersionedResult<List<? extends TextEdit>> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection).get();
+		assertEquals(3, editsReceivedToDate.get());
+
+	}
+	
+	@Test(expected=ConcurrentModificationException.class)
+	public void testFormattingVersionClashDetected() throws Exception {
+		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
+		.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+		List<TextEdit> formattingTextEdits = new ArrayList<>();
+		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 0), new Position(0, 1)), "MyF"));
+		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 10), new Position(0, 11)), ""));
+		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 21), new Position(0, 21)), " Second"));
+		MockLanguageServer.INSTANCE.setFormattingTextEdits(formattingTextEdits);
+
+		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
+		IEditorPart editor = TestUtils.openEditor(file);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		MockLanguageServer.INSTANCE.setTimeToProceedQueries(5000);
+
+		LSPFormatter formatter = new LSPFormatter();
+		ISelection selection = viewer.getSelectionProvider().getSelection();
+		CompletableFuture<VersionedResult<List<? extends TextEdit>>> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection);
+
+		viewer.getDocument().replace(0, 0, "Hello, ");
+		viewer.getDocument().replace(6, 0, "world! ");
+		viewer.getDocument().replace(13, 0, "Here is some extra text!");
+		VersionedResult<List<? extends TextEdit>> formatting = edits.get();
+		final AtomicReference<Exception> thrown = new AtomicReference<>();
+		editor.getSite().getShell().getDisplay().syncExec(() -> {
+			try {
+				LSPEclipseUtils.applyEditsWithVersionCheck(viewer.getDocument(), formatting);
+			} catch (Exception e ) {
+				thrown.set(e);
+			}
+		});
+		
+		final Exception e = thrown.get();
+		if (e != null) {
+			throw e;
+		}
+
+	}
+
+	
+	
 	@Test
 	public void testFormatting()
 			throws CoreException, InterruptedException, ExecutionException {
@@ -99,7 +177,7 @@ public class FormatTest {
 		LSPFormatter formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
 
-		List<? extends TextEdit> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection)
+		VersionedResult<List<? extends TextEdit>> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection)
 				.get();
 		editor.getSite().getShell().getDisplay().syncExec(() -> formatter.applyEdits(viewer.getDocument(), edits));
 
@@ -111,7 +189,8 @@ public class FormatTest {
 	}
 
 	@Test
-	public void testNullFormatting() {
+	public void testNullFormatting()
+			throws CoreException, InvocationTargetException, InterruptedException, ExecutionException {
 		IDocument document = new Document("Formatting Other Text");
 		LSPFormatter formatter = new LSPFormatter();
 
