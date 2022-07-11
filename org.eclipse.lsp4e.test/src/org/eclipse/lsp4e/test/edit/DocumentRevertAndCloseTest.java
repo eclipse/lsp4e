@@ -11,11 +11,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
@@ -51,7 +53,9 @@ public class DocumentRevertAndCloseTest {
 		testFile.setLocalTimeStamp(0);
 
 		// Force LS to initialize and open file
-		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), capabilites -> Boolean.TRUE);
+		IDocument document = LSPEclipseUtils.getDocument(testFile);
+		assertNotNull(document);
+		LanguageServiceAccessor.getLanguageServers(document, capabilites -> Boolean.TRUE);
 
 		viewer.getDocument().replace(0, 0, "Bye!");
 		((AbstractTextEditor)editor).doRevertToSaved();

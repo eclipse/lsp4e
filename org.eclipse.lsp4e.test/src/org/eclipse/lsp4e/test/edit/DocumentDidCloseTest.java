@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
@@ -45,7 +46,9 @@ public class DocumentDidCloseTest {
 		IEditorPart editor = TestUtils.openEditor(testFile);
 
 		// Force LS to initialize and open file
-		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), capabilites -> Boolean.TRUE);
+		IDocument document = LSPEclipseUtils.getDocument(testFile);
+		assertNotNull(document);
+		LanguageServiceAccessor.getLanguageServers(document, capabilites -> Boolean.TRUE);
 
 		CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidCloseCallback(didCloseExpectation);

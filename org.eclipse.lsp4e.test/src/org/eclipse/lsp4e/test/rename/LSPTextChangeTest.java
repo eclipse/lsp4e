@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.test.rename;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -43,7 +44,9 @@ public class LSPTextChangeTest {
 		TextEdit edit = new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new");
 		PerformChangeOperation operation = new PerformChangeOperation(new LSPTextChange("test", LSPEclipseUtils.toUri(file), edit));
 		operation.run(new NullProgressMonitor());
-		assertEquals(edit.getNewText(), LSPEclipseUtils.getDocument(file).get());
+		IDocument document = LSPEclipseUtils.getDocument(file);
+		assertNotNull(document);
+		assertEquals(edit.getNewText(), document.get());
 	}
 	
 	@Test

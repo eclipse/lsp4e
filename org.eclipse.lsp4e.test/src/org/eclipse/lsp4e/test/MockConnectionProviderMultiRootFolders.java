@@ -22,7 +22,6 @@ import java.nio.channels.Pipe;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.Future;
 
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -36,7 +35,6 @@ public class MockConnectionProviderMultiRootFolders implements StreamConnectionP
 	private InputStream clientInputStream  ;
 	private OutputStream clientOutputStream;
 	private InputStream errorStream;
-	private Future<Void> listener;
 	private Collection<Closeable> streams = new ArrayList<>(4);
 	
 	@Override
@@ -51,7 +49,7 @@ public class MockConnectionProviderMultiRootFolders implements StreamConnectionP
 				serverOutputStream);
 		clientInputStream = Channels.newInputStream(serverOutputToClientInput.source());
 		clientOutputStream = Channels.newOutputStream(clientOutputToServerInput.sink());
-		listener = launcher.startListening();
+		launcher.startListening();
 		MockLanguageServer.INSTANCE.addRemoteProxy(launcher.getRemoteProxy());
 		streams.add(clientInputStream);
 		streams.add(clientOutputStream);
