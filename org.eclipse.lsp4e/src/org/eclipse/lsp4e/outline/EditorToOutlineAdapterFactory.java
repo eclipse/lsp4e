@@ -55,7 +55,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 
 				// first try to get / remove language server from cache from a previous call
 				LanguageServer server = LANG_SERVER_CACHE.remove(adaptableObject);
-				if (server != null) {
+				if (server != null && LanguageServiceAccessor.isStillRunning(server)) {
 					return adapterType.cast(createOutlinePage(editorPart, server));
 				}
 
@@ -79,7 +79,9 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 					if (!servers.isEmpty()) {
 						// TODO consider other strategies (select, merge...?)
 						LanguageServer languageServer = servers.get(0);
-						return adapterType.cast(createOutlinePage(editorPart, languageServer));
+						if (LanguageServiceAccessor.isStillRunning(languageServer)) {
+							return adapterType.cast(createOutlinePage(editorPart, languageServer));
+						}
 					}
 				}
 			}

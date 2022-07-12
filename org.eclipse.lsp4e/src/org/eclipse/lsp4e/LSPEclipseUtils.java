@@ -661,6 +661,11 @@ public class LSPEclipseUtils {
 	}
 
 	public static IDocument getDocument(IEditorInput editorInput) {
+		if (!editorInput.exists()) {
+			// Shouldn't happen too often, but happens rather a lot in testing when
+			// teardown runs when there are document setup actions still pending
+			return null;
+		}
 		if(editorInput instanceof IFileEditorInput) {
 			IFileEditorInput fileEditorInput = (IFileEditorInput)editorInput;
 				return getDocument(fileEditorInput.getFile());

@@ -159,6 +159,10 @@ public class LanguageServiceAccessor {
 		}
 	}
 
+	public static boolean isStillRunning(LanguageServer server) {
+		return startedServers.stream().anyMatch(wrapper -> wrapper.isWrapperFor(server) && wrapper.isActive());
+	}
+
 	public static void enableLanguageServerContentType(
 			@NonNull final ContentTypeToLanguageServerDefinition contentTypeToLSDefinition,
 			@NonNull final IEditorReference[] editors) {

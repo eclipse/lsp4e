@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -179,6 +180,7 @@ public class LanguageServerWrapper {
 	private LanguageServer languageServer;
 	private ServerCapabilities serverCapabilities;
 	private Timer timer;
+	private AtomicBoolean stopping = new AtomicBoolean(false);
 
 	/**
 	 * Map containing unregistration handlers for dynamic capability registrations.
@@ -437,7 +439,21 @@ public class LanguageServerWrapper {
 		}, TimeUnit.SECONDS.toMillis(this.serverDefinition.lastDocumentDisconnectedTimeout));
 	}
 
+	/**
+	 * Internal hook so that the unwrapped remote proxy can be matched to the corresponding
+	 * wrapper, which tracks things like whether it is still running or not
+	 * @param server LanguageServer to match on
+	 * @return True if this is the wrapper for the given server
+	 */
+	boolean isWrapperFor(LanguageServer server) {
+		return server == this.languageServer;
+	}
+
 	public synchronized void stop() {
+		final boolean alreadyStopping = this.stopping.getAndSet(true);
+		if (alreadyStopping) {
+			return;
+		}
 		removeStopTimer();
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
@@ -475,6 +491,7 @@ public class LanguageServerWrapper {
 			if (provider != null) {
 				provider.stop();
 			}
+			this.stopping.set(false);
 		};
 
 		CompletableFuture.runAsync(shutdownKillAndStopFutureAndProvider);

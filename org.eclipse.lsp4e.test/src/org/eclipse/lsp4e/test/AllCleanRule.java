@@ -16,6 +16,7 @@ import java.util.function.Supplier;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -25,6 +26,8 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
 public class AllCleanRule extends TestWatcher {
+	
+	private static final boolean LOG_TEST_NAMES = Boolean.getBoolean("lsp4e.log.test.names");
 	
 	private final Supplier<ServerCapabilities> serverConfigurer;
 	
@@ -43,6 +46,9 @@ public class AllCleanRule extends TestWatcher {
 		if (intro != null) {
 			PlatformUI.getWorkbench().getIntroManager().closeIntro(intro);
 		}
+		if (LOG_TEST_NAMES) {
+			System.out.println("Starting: " + description);
+		}
 		clear();
 	}
 	
@@ -53,7 +59,9 @@ public class AllCleanRule extends TestWatcher {
 	}
 
 	private void clear() {
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+		// Give the platform three attempts to shut down windows
+		for (int i = 3; i > 0 && !PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false); i--) {}
+		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 		for (IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
 			try {
 				project.delete(true, null);
@@ -61,6 +69,7 @@ public class AllCleanRule extends TestWatcher {
 				e.printStackTrace();
 			}
 		}
+		MockLanguageServer.INSTANCE.waitBeforeTearDown();
 		LanguageServiceAccessor.clearStartedServers();
 		MockLanguageServer.reset(this.serverConfigurer);
 		TestUtils.tearDown();

@@ -51,9 +51,10 @@ public class MockConnectionProvider implements StreamConnectionProvider {
 		clientOutputStream = Channels.newOutputStream(clientOutputToServerInput.sink());
 		listener = launcher.startListening();
 		MockLanguageServer.INSTANCE.addRemoteProxy(launcher.getRemoteProxy());
-		streams.add(clientInputStream);
+		
+		// Store the output streams so we can close them to clean up. The corresponding input
+		// streams should automatically receive an EOF and close.
 		streams.add(clientOutputStream);
-		streams.add(serverInputStream);
 		streams.add(serverOutputStream);
 		streams.add(errorStream);
 	}

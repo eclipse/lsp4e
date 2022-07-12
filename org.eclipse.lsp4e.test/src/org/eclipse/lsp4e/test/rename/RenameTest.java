@@ -103,10 +103,12 @@ public class RenameTest {
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
 		assertFalse(command.isEnabled() && command.isHandled());
-
-		Thread.sleep(2 * delay);
-		assertTrue(command.isEnabled());
-		assertTrue(command.isHandled());
+		
+		Thread.sleep(delay * 3);
+		
+		// Put back so shutdown doesn't time out
+		MockLanguageServer.INSTANCE.setTimeToProceedQueries(0);
+		assertTrue(command.isEnabled() && command.isHandled());
 	}
 
 	@Test

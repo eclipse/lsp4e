@@ -12,7 +12,9 @@
 package org.eclipse.lsp4e;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.core.filebuffers.IDocumentSetupParticipant;
 import org.eclipse.core.filebuffers.IDocumentSetupParticipantExtension;
@@ -23,6 +25,7 @@ import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.text.IDocument;
@@ -33,6 +36,7 @@ import org.eclipse.jface.text.IDocument;
  */
 public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumentSetupParticipant, IDocumentSetupParticipantExtension {
 	private final Map<IPath, Job> locationMap = new HashMap<>();
+	private static final Set<Job> SUBMITTED_JOBS = new HashSet<>();
 
 	public ConnectDocumentToLanguageServerSetupParticipant() {
 
@@ -72,15 +76,34 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 					return Status.CANCEL_STATUS;
 				}
 				// connect to LS so they start receiving notifications and pushing diagnostics
-				LanguageServiceAccessor.getLanguageServers(document, capabilities -> true);
-				locationMap.remove(location);
+				LanguageServiceAccessor.getLanguageServers(document, capabilities -> true)
+					.thenRun(() -> {
+						locationMap.remove(location);
+						SUBMITTED_JOBS.remove(this);
+					});
 				return Status.OK_STATUS;
 			}
 		};
+		SUBMITTED_JOBS.add(job);
 		locationMap.put(location, job);
 		job.setUser(true);
 		job.setPriority(Job.INTERACTIVE);
 		job.schedule(100); // give some time to populate doc and associate it with the IFile
+	}
+
+	/**
+	 * Testing hook to ensure teardown doesn't remove documents while the LSP has in-flight async
+	 * jobs trying to attach to them
+	 */
+	public static void waitForAll() {
+		SUBMITTED_JOBS.forEach(job -> {
+			job.cancel();
+			try {
+				job.join(1000, new NullProgressMonitor());
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logInfo("Interrupted trying to cancel document setup"); //$NON-NLS-1$;
+			}
+		});
 	}
 
 }
