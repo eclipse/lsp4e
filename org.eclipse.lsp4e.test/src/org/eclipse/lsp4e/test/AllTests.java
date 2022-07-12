@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2021 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2022 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -27,6 +27,7 @@ import org.eclipse.lsp4e.test.edit.DocumentDidChangeTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidCloseTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidOpenTest;
 import org.eclipse.lsp4e.test.edit.DocumentDidSaveTest;
+import org.eclipse.lsp4e.test.edit.DocumentEditAndUndoTest;
 import org.eclipse.lsp4e.test.edit.DocumentRevertAndCloseTest;
 import org.eclipse.lsp4e.test.edit.DocumentWillSaveWaitUntilTest;
 import org.eclipse.lsp4e.test.edit.LSPEclipseUtilsTest;
@@ -61,6 +62,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	DocumentWillSaveWaitUntilTest.class,
 	DocumentDidCloseTest.class,
 	DocumentRevertAndCloseTest.class,
+	DocumentEditAndUndoTest.class,
 	SymbolsModelTest.class,
 	LSPEclipseUtilsTest.class,
 	HoverTest.class,
