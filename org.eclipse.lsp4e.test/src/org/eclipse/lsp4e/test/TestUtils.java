@@ -11,7 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -60,8 +61,6 @@ public class TestUtils {
 		// this class shouldn't be instantiated
 	}
 	
-	private static List<File> tempFiles = new ArrayList<>();
-
 	public static ITextViewer openTextViewer(IFile file) throws PartInitException {
 		IEditorPart editor = openEditor(file);
 		return LSPEclipseUtils.getTextViewer(editor);
