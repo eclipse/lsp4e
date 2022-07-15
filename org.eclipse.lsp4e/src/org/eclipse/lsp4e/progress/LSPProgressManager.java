@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.eclipse.core.runtime.ICoreRunnable;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -40,12 +41,12 @@ public class LSPProgressManager {
 	private final Map<String, BlockingQueue<ProgressParams>> progressMap;
 	private final Map<IProgressMonitor, Integer> currentPercentageMap;
 	private LanguageServer languageServer;
-	private final Set<String> orphanSet;
+	private final Set<String> done;
 
 	public LSPProgressManager() {
 		this.progressMap = new ConcurrentHashMap<>();
 		this.currentPercentageMap = new ConcurrentHashMap<>();
-		this.orphanSet = new ConcurrentSkipListSet<>();
+		this.done = new ConcurrentSkipListSet<>();
 	}
 
 	public void connect(final LanguageServer languageServer) {
@@ -61,13 +62,14 @@ public class LSPProgressManager {
 	public @NonNull CompletableFuture<Void> createProgress(final @NonNull WorkDoneProgressCreateParams params) {
 		LinkedBlockingDeque<ProgressParams> queue = new LinkedBlockingDeque<>();
 
-		String jobIdentifier = params.getToken().getLeft();
+		String jobIdentifier = params.getToken().map(Function.identity(), Object::toString);
 		BlockingQueue<ProgressParams> oldQueue = progressMap.put(jobIdentifier, queue);
 		if (oldQueue != null) {
 			LanguageServerPlugin.logInfo(
 					"Old progress with identifier " + jobIdentifier + " discarded due to new create progress request"); //$NON-NLS-1$//$NON-NLS-2$
 		}
-		return CompletableFuture.runAsync(() -> createJob(languageServer, queue, jobIdentifier));
+		createJob(languageServer, queue, jobIdentifier);
+		return CompletableFuture.completedFuture(null);
 	}
 
 	private void createJob(final LanguageServer languageServer, final LinkedBlockingDeque<ProgressParams> queue, final String jobIdentifier) {
@@ -100,7 +102,7 @@ public class LSPProgressManager {
 								return;
 							}
 						}
-					} else if (orphanSet.remove(jobIdentifier)) {
+					} else if (done.remove(jobIdentifier)) {
 						monitor.done();
 					}
 				}
@@ -157,14 +159,14 @@ public class LSPProgressManager {
 	 *            the {@link ProgressParams} used for the progress notification
 	 */
 	public void notifyProgress(final @NonNull ProgressParams params) {
-		String jobIdentifier = params.getToken().getLeft();
+		String jobIdentifier = params.getToken().map(Function.identity(), Object::toString);
 		BlockingQueue<ProgressParams> progress = progressMap.get(jobIdentifier);
 		if (progress != null) { // may happen if the server does not wait on the return value of the future of createProgress
 			progress.add(params);
 		} else {
 			WorkDoneProgressNotification progressNotification = params.getValue().getLeft();
 			if (progressNotification != null && progressNotification.getKind() == WorkDoneProgressKind.end) {
-				orphanSet.add(jobIdentifier);
+				done.add(jobIdentifier);
 			}
 		}
 	}
