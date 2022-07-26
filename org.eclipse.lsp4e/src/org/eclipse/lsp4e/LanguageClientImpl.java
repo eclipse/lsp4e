@@ -28,19 +28,24 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.progress.LSPProgressManager;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
+import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.ProgressParams;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.RegistrationParams;
+import org.eclipse.lsp4j.ShowDocumentParams;
+import org.eclipse.lsp4j.ShowDocumentResult;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.lsp4j.UnregistrationParams;
 import org.eclipse.lsp4j.WorkDoneProgressCreateParams;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.ui.PlatformUI;
 
 public class LanguageClientImpl implements LanguageClient {
 
@@ -139,5 +144,16 @@ public class LanguageClientImpl implements LanguageClient {
 			.filter(IProject::isAccessible) //
 			.map(LSPEclipseUtils::toWorkspaceFolder) //
 			.collect(Collectors.toList()));
+	}
+
+	@Override
+	public CompletableFuture<ShowDocumentResult> showDocument(ShowDocumentParams params) {
+		return CompletableFuture.supplyAsync(() -> {
+			PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
+				var location = new Location(params.getUri(), params.getSelection());
+				LSPEclipseUtils.openInEditor(location, UI.getActivePage());
+			});
+			return new ShowDocumentResult(true);
+		});
 	}
 }

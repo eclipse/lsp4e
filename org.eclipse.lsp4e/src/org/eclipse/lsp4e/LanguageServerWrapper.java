@@ -69,6 +69,7 @@ import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ClientCapabilities;
+import org.eclipse.lsp4j.ClientInfo;
 import org.eclipse.lsp4j.CodeActionCapabilities;
 import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.CodeActionKindCapabilities;
@@ -102,6 +103,7 @@ import org.eclipse.lsp4j.RegistrationParams;
 import org.eclipse.lsp4j.RenameCapabilities;
 import org.eclipse.lsp4j.ResourceOperationKind;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.ShowDocumentCapabilities;
 import org.eclipse.lsp4j.SignatureHelpCapabilities;
 import org.eclipse.lsp4j.SymbolCapabilities;
 import org.eclipse.lsp4j.SymbolKind;
@@ -112,6 +114,8 @@ import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.TypeDefinitionCapabilities;
 import org.eclipse.lsp4j.UnregistrationParams;
+import org.eclipse.lsp4j.WindowClientCapabilities;
+import org.eclipse.lsp4j.WindowShowMessageRequestCapabilities;
 import org.eclipse.lsp4j.WorkspaceClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceEditCapabilities;
 import org.eclipse.lsp4j.WorkspaceFolder;
@@ -339,10 +343,15 @@ public class LanguageServerWrapper {
 				textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
 				textDocumentClientCapabilities
 						.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
-				initParams.setCapabilities(new ClientCapabilities(workspaceClientCapabilities,
-						textDocumentClientCapabilities, lspStreamProvider.getExperimentalFeaturesPOJO()));
-				initParams.setClientName(name);
 
+				WindowClientCapabilities windowClientCapabilities = getWindowClientCapabilities();
+				initParams.setCapabilities(new ClientCapabilities(
+						workspaceClientCapabilities,
+						textDocumentClientCapabilities,
+						windowClientCapabilities,
+						lspStreamProvider.getExperimentalFeaturesPOJO()));
+				initParams.setClientName(name);
+				initParams.setClientInfo(getClientInfo(name));
 				initParams.setTrace(this.lspStreamProvider.getTrace(rootURI));
 
 				// no then...Async future here as we want this chain of operation to be sequential and "atomic"-ish
@@ -372,6 +381,20 @@ public class LanguageServerWrapper {
 				return null;
 			});
 		}
+	}
+
+	private ClientInfo getClientInfo(String name) {
+		String pluginVersion = Platform.getBundle(LanguageServerPlugin.PLUGIN_ID).getVersion().toString();
+		ClientInfo clientInfo = new ClientInfo(name, pluginVersion);
+		return clientInfo;
+	}
+
+	private WindowClientCapabilities getWindowClientCapabilities() {
+		WindowClientCapabilities windowClientCapabilities = new WindowClientCapabilities();
+		windowClientCapabilities.setShowDocument(new ShowDocumentCapabilities(true));
+		windowClientCapabilities.setWorkDoneProgress(true);
+		windowClientCapabilities.setShowMessage(new WindowShowMessageRequestCapabilities());
+		return windowClientCapabilities;
 	}
 
 	@Nullable
