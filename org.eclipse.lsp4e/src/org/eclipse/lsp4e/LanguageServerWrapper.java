@@ -228,60 +228,52 @@ public class LanguageServerWrapper {
 		if (this.initializeFuture == null) {
 			final URI rootURI = getRootURI();
 			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
+				if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
+					this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
+							serverDefinition.createConnectionProvider(), serverDefinition.id);
+				} else {
+					this.lspStreamProvider = serverDefinition.createConnectionProvider();
+				}
+				initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
 				try {
-					if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
-						this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
-								serverDefinition.createConnectionProvider(), serverDefinition.id);
-					} else {
-						this.lspStreamProvider = serverDefinition.createConnectionProvider();
-					}
-					initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
 					lspStreamProvider.start();
-				} catch (Exception e) {
-					LanguageServerPlugin.logError(e);
-					initializeFuture.completeExceptionally(e);
-					stop();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
 				}
 				return null;
 			}).thenApply(unused -> {
-				try {
-					LanguageClientImpl client = serverDefinition.createLanguageClient();
-					String theardNameFormat = "LS-" + serverDefinition.id + "-launcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
-					ExecutorService executorService = Executors
-							.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(theardNameFormat).build());
-					initParams.setProcessId((int) ProcessHandle.current().pid());
+				LanguageClientImpl client = serverDefinition.createLanguageClient();
+				String theardNameFormat = "LS-" + serverDefinition.id + "-launcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
+				ExecutorService executorService = Executors
+						.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(theardNameFormat).build());
+				initParams.setProcessId((int) ProcessHandle.current().pid());
 
-					if(rootURI != null) {
-						initParams.setRootUri(rootURI.toString());
-						initParams.setRootPath(rootURI.getPath());
-					}
-
-					UnaryOperator<MessageConsumer> wrapper = consumer -> (message -> {
-						consumer.consume(message);
-						logMessage(message);
-						final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
-						if (currentConnectionProvider != null && isActive()) {
-							currentConnectionProvider.handleMessage(message, this.languageServer, rootURI);
-						}
-					});
-					initParams.setWorkspaceFolders(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects())
-							.filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder)
-							.filter(Objects::nonNull).collect(Collectors.toList()));
-					Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder().setLocalService(client)//
-							.setRemoteInterface(serverDefinition.getServerInterface())//
-							.setInput(lspStreamProvider.getInputStream())//
-							.setOutput(lspStreamProvider.getOutputStream())//
-							.setExecutorService(executorService)//
-							.wrapMessages(wrapper)//
-							.create();
-					this.languageServer = launcher.getRemoteProxy();
-					client.connect(languageServer, this);
-					this.launcherFuture = launcher.startListening();
-				} catch (Exception ex) {
-					LanguageServerPlugin.logError(ex);
-					stop();
-					initializeFuture.completeExceptionally(ex);
+				if (rootURI != null) {
+					initParams.setRootUri(rootURI.toString());
+					initParams.setRootPath(rootURI.getPath());
 				}
+
+				UnaryOperator<MessageConsumer> wrapper = consumer -> (message -> {
+					consumer.consume(message);
+					logMessage(message);
+					final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
+					if (currentConnectionProvider != null && isActive()) {
+						currentConnectionProvider.handleMessage(message, this.languageServer, rootURI);
+					}
+				});
+				initParams.setWorkspaceFolders(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects())
+						.filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder).filter(Objects::nonNull)
+						.collect(Collectors.toList()));
+				Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder().setLocalService(client)//
+						.setRemoteInterface(serverDefinition.getServerInterface())//
+						.setInput(lspStreamProvider.getInputStream())//
+						.setOutput(lspStreamProvider.getOutputStream())//
+						.setExecutorService(executorService)//
+						.wrapMessages(wrapper)//
+						.create();
+				this.languageServer = launcher.getRemoteProxy();
+				client.connect(languageServer, this);
+				this.launcherFuture = launcher.startListening();
 				return null;
 			}).thenCompose(unused -> {
 				String name = "Eclipse IDE"; //$NON-NLS-1$
@@ -368,13 +360,16 @@ public class LanguageServerWrapper {
 						try {
 							connect(fileToReconnect.getKey(), fileToReconnect.getValue());
 						} catch (IOException e) {
-							LanguageServerPlugin.logError(e);
-							stop();
-							initializeFuture.completeExceptionally(e);
+							throw new RuntimeException(e);
 						}
 					}
 				});
 				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
+			}).exceptionally(e -> {
+				LanguageServerPlugin.logError(e);
+				initializeFuture.completeExceptionally(e);
+				stop();
+				return null;
 			});
 		}
 	}
@@ -720,7 +715,9 @@ public class LanguageServerWrapper {
 				waitForInitialization.setSystem(false);
 				PlatformUI.getWorkbench().getProgressService().showInDialog(UI.getActiveShell(), waitForInitialization);
 			}
-			return initializeFuture.thenApply(r -> this.languageServer);
+			if (initializeFuture != null) {
+				return initializeFuture.thenApply(r -> this.languageServer);
+			}
 		}
 		return CompletableFuture.completedFuture(this.languageServer);
 	}
