@@ -13,7 +13,6 @@ package org.eclipse.lsp4e.test.edit;
 
 import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
@@ -57,17 +56,14 @@ public class DocumentEditAndUndoTest {
 
 	@Test
 	public void testDocumentEditAndUndo() throws Exception {
-		List<Range> ranges = new ArrayList<>();
-		ranges.add(new Range(new Position(0, 1), new Position(0, 2)));
-		ranges.add(new Range(new Position(0, 5), new Position(0, 6)));
-		LinkedEditingRanges linkkedEditingRanges = new LinkedEditingRanges(ranges);
-		MockLanguageServer.INSTANCE.setLinkedEditingRanges(linkkedEditingRanges);
+		MockLanguageServer.INSTANCE.setLinkedEditingRanges(new LinkedEditingRanges(List.of(
+				new Range(new Position(0, 1), new Position(0, 2)),
+				new Range(new Position(0, 5), new Position(0, 6))),
+				"[:A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02ff\\u0370-\\u037d\\u037f-\\u1fff\\u200c\\u200d\\u2070-\\u218f\\u2c00-\\u2fef\\u3001-\\udfff\\uf900-\\ufdcf\\ufdf0-\\ufffd\\u10000-\\uEFFFF][:A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02ff\\u0370-\\u037d\\u037f-\\u1fff\\u200c\\u200d\\u2070-\\u218f\\u2c00-\\u2fef\\u3001-\\udfff\\uf900-\\ufdcf\\ufdf0-\\ufffd\\u10000-\\uEFFFF\\-\\.0-9\\u00b7\\u0300-\\u036f\\u203f-\\u2040]*"));
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "<a></a>");
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
-
-
 		// Force LS to initialize and open file
 		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), capabilites -> Boolean.TRUE);
 		
@@ -79,50 +75,34 @@ public class DocumentEditAndUndoTest {
 		System.out.println("Document viewer.setSelection(2, 2)");
 
 		Display display= shell.getDisplay();
-
-		Event keyEvent= new Event();
 		Control control= viewer.getTextWidget();
-		DisplayHelper.driveEventQueue(control.getDisplay()); // Need to empty the event queue before sending events
 		DisplayHelper.sleep(display, 2000); // Give some time to the editor to update 
-		
 		display.asyncExec(new Runnable() {
 			
 			@Override
 			public void run() {
-				if (!viewer.getDocument().get().startsWith("<ab>")) {
-					control.forceFocus();
-					keyEvent.widget= control;
-					keyEvent.type= SWT.KeyDown;
-					keyEvent.character= 'b';
-					keyEvent.keyCode= 'b';
-					boolean keyDownEventGenerated = control.getDisplay().post(keyEvent);
-					System.out.println("Document key [b] is Down event: " + keyDownEventGenerated);
-					keyEvent.type= SWT.KeyUp;
-					boolean keyUpEventGenerated = control.getDisplay().post(keyEvent);
-					System.out.println("Document key [b] is Up event: " + keyUpEventGenerated);
-					DisplayHelper.driveEventQueue(control.getDisplay());
-					display.timerExec(200, this);
-				}
-				System.out.println("Document char added:\t[" + viewer.getDocument().get() + "]");
+				type(control, 'b');
+				type(control, 'c');
+			}
+
+			private void type(Control control, char c) {
+				control.forceFocus();
+				Event keyEvent= new Event();
+				keyEvent.widget= control;
+				keyEvent.type= SWT.KeyDown;
+				keyEvent.character= c;
+				keyEvent.keyCode= c;
+				display.post(keyEvent);
+				keyEvent.type= SWT.KeyUp;
+				display.post(keyEvent);
 			}
 		});
-		DisplayHelper.sleep(display, 2000); // Give some time to the editor to update 
 		assertTrue("Document isn't correctly changed", new DisplayHelper() {
-			String currentContent = "";
 			@Override
 			protected boolean condition() {
-				if (!String.valueOf(currentContent).equals(viewer.getDocument().get())) {
-					currentContent = viewer.getDocument().get();
-					System.out.println("Document update:\t[" + currentContent + "]");
-				}
-				if (viewer.getDocument().get().equals("<ab></ab>")) {
-					return true;
-				}
-				return false;
+				return viewer.getDocument().get().equals("<abc></abc>");
 			}
 		}.waitForCondition(display, 3000));
-
-		System.out.println("Document cnanged:\t[" + viewer.getDocument().get() + "]");
 		ITextOperationTarget fOperationTarget= editor.getAdapter(ITextOperationTarget.class);
 		BusyIndicator.showWhile(viewer.getTextWidget().getDisplay(),
 				() -> fOperationTarget.doOperation(ITextOperationTarget.UNDO));
