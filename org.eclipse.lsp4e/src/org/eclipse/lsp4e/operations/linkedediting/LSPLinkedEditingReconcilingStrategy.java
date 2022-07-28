@@ -20,9 +20,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.jface.text.BadLocationException;
-import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
@@ -50,7 +48,7 @@ import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.ui.progress.UIJob;
 import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
 
-public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase implements IReconcilingStrategy, IReconcilingStrategyExtension, IDocumentListener {
+public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase implements IReconcilingStrategy, IReconcilingStrategyExtension {
 	private ISourceViewer sourceViewer;
 	private IDocument fDocument;
 	private EditorSelectionChangedListener editorSelectionChangedListener;
@@ -140,15 +138,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 
 	@Override
 	public void setDocument(IDocument document) {
-		if (this.fDocument != null) {
-			this.fDocument.removeDocumentListener(this);
-		}
-
 		this.fDocument = document;
-
-		if (this.fDocument != null) {
-			this.fDocument.addDocumentListener(this);
-		}
 	}
 
 	@Override
@@ -159,15 +149,6 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 	public void reconcile(IRegion partition) {
 	}
 
-	@Override
-	public void documentAboutToBeChanged(DocumentEvent event) {
-	}
-
-	@Override
-	public void documentChanged(DocumentEvent event) {
-		updateLinkedEditing(event.getOffset());
-	}
-
 	private void updateLinkedEditing(ISelection selection) {
 		if (selection instanceof ITextSelection) {
 			updateLinkedEditing(((ITextSelection) selection).getOffset());
@@ -176,6 +157,10 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 
 	private void updateLinkedEditing(int offset) {
 		if (sourceViewer != null  && fDocument != null  && fEnabled && linkedModel == null || !linkedModel.anyPositionContains(offset)) {
+			if (linkedModel != null) {
+				linkedModel.exit(ILinkedModeListener.EXIT_ALL);
+				linkedModel = null;
+			}
 			collectLinkedEditingRanges(fDocument, offset)
 				.thenAcceptAsync(r -> {
 					if (rangesContainOffset(r, offset)) {
@@ -192,6 +177,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 		if (ranges == null) {
 			return;
 		}
+		Pattern pattern = ranges.getWordPattern() != null ? Pattern.compile(ranges.getWordPattern()) : null;
 		highlightJob = new UIJob("LSP4E Linked Editing") { //$NON-NLS-1$
 			@Override
 			public IStatus runInUIThread(IProgressMonitor monitor) {
@@ -206,19 +192,16 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 							return null;
 						}
 
-						if (ranges != null && ranges.getWordPattern()  != null) {
-							String valuee = getValueInRange(ranges, event, offset, length);
+						if (pattern != null) {
+							String valuee = getValueInRange(linkedMode.getSelectedRegion(), event, offset, length);
 							if (valuee != null) {
-								Pattern pattern = Pattern.compile(ranges.getWordPattern());
 								Matcher matcher = pattern.matcher(valuee);
 								if (matcher.matches()) {
 									return null;
 								}
 							}
-						} else {
-							if (Character.isUnicodeIdentifierPart(event.character) || event.character == '_') {
-								return null;
-							}
+						} else if (Character.isUnicodeIdentifierPart(event.character) || event.character == '_') {
+							return null;
 						}
 						return new ExitFlags(ILinkedModeListener.EXIT_ALL, true);
 					});
@@ -233,19 +216,15 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 		highlightJob.schedule();
 	}
 
-	String getValueInRange(LinkedEditingRanges ranges, VerifyEvent event, int offset, int length) {
+	String getValueInRange(IRegion selectedRegion, VerifyEvent event, int offset, int length) {
+		if (offset < selectedRegion.getOffset() || offset > selectedRegion.getOffset() + selectedRegion.getLength()) {
+			return null;
+		}
 		try {
-			for (Range range : ranges.getRanges()) {
-				if (LSPEclipseUtils.isOffsetInRange(offset, range, fDocument)) {
-					int start = LSPEclipseUtils.toOffset(range.getStart(), fDocument);
-					int end = LSPEclipseUtils.toOffset(range.getEnd(), fDocument);
-					StringBuilder sb = new StringBuilder();
-					sb.append(fDocument.get(start, end - start)); 	// The range text before the insertion
-					String newChars = event.character == 0 ? "" : Character.toString(event.character); //$NON-NLS-1$
-					sb.replace(offset - start, offset - start  + length, newChars);
-					return sb.toString();
-				}
-			}
+			StringBuilder sb = new StringBuilder(fDocument.get(selectedRegion.getOffset(), selectedRegion.getLength())); 	// The range text before the insertion
+			String newChars = event.character == 0 ? "" : Character.toString(event.character); //$NON-NLS-1$
+			sb.replace(offset - selectedRegion.getOffset(), offset - selectedRegion.getOffset() + selectedRegion.getLength(), newChars);
+			return sb.toString();
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}
