@@ -258,8 +258,8 @@ public class LanguageServerWrapper {
 				}
 
 				UnaryOperator<MessageConsumer> wrapper = consumer -> (message -> {
-					consumer.consume(message);
 					logMessage(message);
+					consumer.consume(message);
 					final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
 					if (currentConnectionProvider != null && isActive()) {
 						currentConnectionProvider.handleMessage(message, this.languageServer, rootURI);
