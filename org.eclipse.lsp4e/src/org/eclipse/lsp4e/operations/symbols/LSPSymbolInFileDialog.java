@@ -37,6 +37,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.internal.navigator.NavigatorContentService;
@@ -44,6 +45,7 @@ import org.eclipse.ui.internal.navigator.NavigatorDecoratingLabelProvider;
 import org.eclipse.ui.navigator.CommonViewerSorter;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+@SuppressWarnings("restriction")
 public class LSPSymbolInFileDialog extends PopupDialog {
 
 	private final OutlineViewerInput outlineViewerInput;
@@ -51,7 +53,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 	public LSPSymbolInFileDialog(@NonNull Shell parentShell, @NonNull ITextEditor textEditor,
 			@NonNull IDocument document, @NonNull LanguageServer languageServer) {
-		super(parentShell, PopupDialog.INFOPOPUPRESIZE_SHELLSTYLE, true, true, true, false, false, null, null);
+		super(parentShell, SWT.ON_TOP | SWT.RESIZE, true, true, true, false, true, null, null);
 		outlineViewerInput = new OutlineViewerInput(document, languageServer, textEditor);
 		this.textEditor = textEditor;
 		create();
@@ -62,7 +64,12 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		IFile documentFile = outlineViewerInput.documentFile;
 		getShell().setText(NLS.bind(Messages.symbolsInFile, documentFile == null ? null : documentFile.getName()));
 
-		FilteredTree filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false);
+		FilteredTree filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false) {
+			@Override
+			protected Text doCreateFilterText(Composite parent) {
+				return new Text(parent, SWT.NONE);
+			}
+		};
 		TreeViewer viewer = filteredTree.getViewer();
 		viewer.setData(LSSymbolsContentProvider.VIEWER_PROPERTY_IS_QUICK_OUTLINE, Boolean.TRUE);
 
