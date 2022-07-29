@@ -446,4 +446,51 @@ public class LSPEclipseUtilsTest {
 		IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
 		Assert.assertNotEquals(Collections.emptySet(), LSPEclipseUtils.findOpenEditorsFor(file.toURI()));
 	}
+
+	@Test
+	public void parseRange_shouldReturnRange_UriWithStartLineNo() {
+		Range actual = LSPEclipseUtils.parseRange("file:///a/b#L35");
+		assertEquals(34, actual.getStart().getLine());
+	}
+
+	@Test
+	public void parseRange_shouldReturnRange_UriWithStartLineNoEndLineNo() {
+		Range actual = LSPEclipseUtils.parseRange("file:///a/b#L35-L36");
+		assertEquals(34, actual.getStart().getLine());
+		assertEquals(35, actual.getEnd().getLine());
+	}
+
+	@Test
+	public void parseRange_shouldReturnRange_UriWithStartLineStartCharNoEndLineNo() {
+		Range actual = LSPEclipseUtils.parseRange("file:///a/b#L35,10");
+		assertEquals(34, actual.getStart().getLine());
+		assertEquals(9, actual.getStart().getCharacter());
+	}
+
+	@Test
+	public void parseRange_shouldReturnRange_UriWithStartLineStartCharWithEndLineNo() {
+		Range actual = LSPEclipseUtils.parseRange("file:///a/b#L35,10-L37");
+		assertEquals(34, actual.getStart().getLine());
+		assertEquals(9, actual.getStart().getCharacter());
+		assertEquals(36, actual.getEnd().getLine());
+		assertEquals(9, actual.getEnd().getCharacter());
+	}
+
+	@Test
+	public void parseRange_shouldReturnRange_UriWithStartLineStartCharWithEndLineNoWithEndChar() {
+		Range actual = LSPEclipseUtils.parseRange("file:///a/b#L35,10-L37,34");
+		assertEquals(34, actual.getStart().getLine());
+		assertEquals(9, actual.getStart().getCharacter());
+		assertEquals(36, actual.getEnd().getLine());
+		assertEquals(33, actual.getEnd().getCharacter());
+	}
+
+	@Test
+	public void parseRange_shouldReturnRange_UriWithoutLCharacter() {
+		Range actual = LSPEclipseUtils.parseRange("file:///a/b#35,10-37,34");
+		assertEquals(34, actual.getStart().getLine());
+		assertEquals(9, actual.getStart().getCharacter());
+		assertEquals(36, actual.getEnd().getLine());
+		assertEquals(33, actual.getEnd().getCharacter());
+	}
 }

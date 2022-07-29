@@ -38,6 +38,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -573,7 +575,50 @@ public class LSPEclipseUtils {
 				openHttpLocationInBrowser(uri, page);
 			}
 		} else {
+			if (optionalRange == null){
+				optionalRange = parseRange(uri);
+			}
 			openFileLocationInEditor(uri, page, optionalRange, createFile);
+		}
+	}
+
+	private static final Pattern rangeFromUriExtractionPattern = Pattern
+			.compile("^L?(\\d+)(?:,(\\d+))?(-L?(\\d+)(?:,(\\d+))?)?"); //$NON-NLS-1$
+
+	/**
+	 * Extracts the range information from a URI e.g.
+	 * file://path/to/file#L34,1-L35,3<br/>
+	 * file://path/to/file#34,1-35,3<br/>
+	 * file://path/to/file#L34,1-35,3<br/>
+	 * file://path/to/file#L34<br/>
+	 * file://path/to/file#L34,1<br/>
+	 *
+	 * @param location
+	 *            the uri to parse
+	 * @return a range object containing the information
+	 */
+	public static Range parseRange(String location) {
+		try {
+			if (!location.startsWith(LSPEclipseUtils.FILE_URI))
+				return null;
+			var uri = URI.create(location).normalize();
+			var fragment = uri.getFragment();
+			Matcher matcher = rangeFromUriExtractionPattern.matcher(fragment);
+			if (!matcher.matches())
+				return null;
+
+			int startLine = matcher.group(1) != null ? Integer.parseInt(matcher.group(1)) : 1;
+			int startChar = matcher.group(2) != null ? Integer.parseInt(matcher.group(2)) : 1;
+			int endLine = matcher.group(4) != null ? Integer.parseInt(matcher.group(4)) : startLine;
+			int endChar = matcher.group(5) != null ? Integer.parseInt(matcher.group(5)) : startChar;
+
+			// Positions are zero-based
+			Position start = new Position(startLine - 1, startChar - 1);
+			Position end = new Position(endLine - 1, endChar - 1);
+			return new Range(start, end);
+		} catch (IllegalArgumentException e) {
+			// not a valid URI, no range
+			return null;
 		}
 	}
 
@@ -878,8 +923,6 @@ public class LSPEclipseUtils {
 	 *            document URI to update
 	 * @param textEdits
 	 *            LSP text edits
-	 * @param change
-	 *            ltk change to update
 	 */
 	private static LSPTextChange[] toChanges(URI uri, List<TextEdit> textEdits) {
 		Collections.sort(textEdits, Comparator.comparing(edit -> edit.getRange().getStart(),
