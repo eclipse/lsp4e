@@ -1,0 +1,49 @@
+# This workflow will build a Java project with Maven
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+name: License check
+
+on:
+  push:
+    branches: 
+      - '*'
+  pull_request:
+    branches: 
+     - '*'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up JDK 18
+      uses: actions/setup-java@v3
+      with:
+        java-version: '18'
+        distribution: 'adopt'
+
+    - name: Cache local Maven repository
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: License check
+      run: |
+        # "excludeArtifactIds" parameter is to prevent builds from failing with:
+        # License information could not be automatically verified for the following content:
+        # p2/orbit/p2.p2.installable.unit/org.eclipse.rcp_root/4.24.0.v20220607-0700
+        # This content is either not correctly mapped by the system, or requires review.
+        # Error:  Dependency license check failed. Some dependencies need to be vetted. 
+
+        mvn -U -V -e -B -ntp \
+          org.eclipse.dash:license-tool-plugin:license-check \
+          --file pom.xml \
+          -Ddash.fail=true \
+          -DexcludeArtifactIds=org.eclipse.rcp_root
+
