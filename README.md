@@ -1,5 +1,6 @@
 # Eclipse LSP4E - Language Server Protocol client for Eclipse IDE
 
+[![Build Status](https://github.com/eclipse/lsp4e/actions/workflows/build.yml/badge.svg)](https://github.com/eclipse/lsp4e/actions/workflows/build.yml)
 [![License](https://img.shields.io/github/license/eclipse/lsp4e.svg?color=blue)](LICENSE)
 
 [![Clone to Eclipse IDE](https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/cloneToEclipseBadge.png)](https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/redirect.html)
