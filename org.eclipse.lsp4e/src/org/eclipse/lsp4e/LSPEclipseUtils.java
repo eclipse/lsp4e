@@ -179,7 +179,6 @@ public class LSPEclipseUtils {
 		Position start = toPosition(offset, document);
 		CompletionParams param = new CompletionParams();
 		param.setPosition(start);
-		param.setUri(fileUri.toString());
 		TextDocumentIdentifier id = new TextDocumentIdentifier();
 		id.setUri(fileUri.toString());
 		param.setTextDocument(id);
@@ -201,7 +200,6 @@ public class LSPEclipseUtils {
 		Position start = toPosition(offset, document);
 		TextDocumentPositionParams param = new TextDocumentPositionParams();
 		param.setPosition(start);
-		param.setUri(fileUri.toString());
 		TextDocumentIdentifier id = new TextDocumentIdentifier();
 		id.setUri(fileUri.toString());
 		param.setTextDocument(id);
@@ -215,7 +213,6 @@ public class LSPEclipseUtils {
 		param.setPosition(start);
 		TextDocumentIdentifier id = new TextDocumentIdentifier();
 		if (uri != null) {
-			param.setUri(uri.toString());
 			id.setUri(uri.toString());
 		}
 		param.setTextDocument(id);
@@ -259,9 +256,6 @@ public class LSPEclipseUtils {
 		}
 		if (genericParams.getTextDocument() != null) {
 			specificParams.setTextDocument(genericParams.getTextDocument());
-		}
-		if (genericParams.getUri() != null) {
-			specificParams.setUri(genericParams.getUri());
 		}
 		return specificParams;
 	}

@@ -30,6 +30,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4j.PrepareRenameDefaultBehavior;
 import org.eclipse.lsp4j.PrepareRenameParams;
 import org.eclipse.lsp4j.PrepareRenameResult;
 import org.eclipse.lsp4j.Range;
@@ -40,6 +41,7 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.jsonrpc.messages.Either3;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ltk.core.refactoring.Change;
@@ -64,7 +66,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	private String newName;
 
 	private WorkspaceEdit rename;
-	private Either<Range, PrepareRenameResult> prepareRenameResult;
+	private Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior> prepareRenameResult;
 
 	public LSPRenameProcessor(@NonNull IDocument document, LanguageServer languageServer, int offset) {
 		this.document = document;
@@ -123,21 +125,21 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	}
 
 	public String getPlaceholder() {
+		String placeholder = null;
 		if (prepareRenameResult != null) {
-			if (prepareRenameResult.isRight()) {
-				return prepareRenameResult.getRight().getPlaceholder();
-			} else {
-				Range range = prepareRenameResult.getLeft();
+			placeholder = prepareRenameResult.map(range -> {
 				try {
 					int startOffset = LSPEclipseUtils.toOffset(range.getStart(), document);
 					int endOffset = LSPEclipseUtils.toOffset(range.getEnd(), document);
 					return document.get(startOffset, endOffset - startOffset);
 				} catch (BadLocationException e) {
 					LanguageServerPlugin.logError(e);
+					return null;
 				}
-			}
+			}, result -> result.getPlaceholder(),
+			options -> null);
 		}
-		return "newName"; //$NON-NLS-1$
+		return placeholder != null && !placeholder.isBlank() ? placeholder :"newName"; //$NON-NLS-1$
 	}
 
 	public static boolean isPrepareRenameProvider(ServerCapabilities serverCapabilities) {
