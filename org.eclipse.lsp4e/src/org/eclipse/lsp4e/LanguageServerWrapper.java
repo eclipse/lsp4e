@@ -350,7 +350,6 @@ public class LanguageServerWrapper {
 						textDocumentClientCapabilities,
 						windowClientCapabilities,
 						lspStreamProvider.getExperimentalFeaturesPOJO()));
-				initParams.setClientName(name);
 				initParams.setClientInfo(getClientInfo(name));
 				initParams.setTrace(this.lspStreamProvider.getTrace(rootURI));
 

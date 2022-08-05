@@ -62,6 +62,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.lsp4j.services.NotebookDocumentService;
 
 public final class MockLanguageServer implements LanguageServer {
 
@@ -302,6 +303,11 @@ public final class MockLanguageServer implements LanguageServer {
 
 	public void setDocumentSymbols(DocumentSymbol... documentSymbols) {
 		this.textDocumentService.setDocumentSymbols(Arrays.asList(documentSymbols));
+	}
+
+	@Override
+	public NotebookDocumentService getNotebookDocumentService() {
+		return null;
 	}
 
 }

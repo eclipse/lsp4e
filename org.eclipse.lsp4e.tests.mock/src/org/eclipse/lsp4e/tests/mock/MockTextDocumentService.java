@@ -57,6 +57,7 @@ import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.PrepareRenameDefaultBehavior;
 import org.eclipse.lsp4j.PrepareRenameParams;
 import org.eclipse.lsp4j.PrepareRenameResult;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
@@ -71,6 +72,7 @@ import org.eclipse.lsp4j.TypeDefinitionParams;
 import org.eclipse.lsp4j.WillSaveTextDocumentParams;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.jsonrpc.messages.Either3;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.TextDocumentService;
 
@@ -100,7 +102,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<Either<Command, CodeAction>> mockCodeActions;
 	private List<ColorInformation> mockDocumentColors;
 	private WorkspaceEdit mockRenameEdit;
-	private Either<Range, PrepareRenameResult> mockPrepareRenameResult;
+	private Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior> mockPrepareRenameResult;
 	private List<DocumentSymbol> documentSymbols;
 
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
@@ -110,7 +112,8 @@ public class MockTextDocumentService implements TextDocumentService {
 		item.setLabel("Mock completion item");
 		mockCompletionList = new CompletionList(false, Collections.singletonList(item));
 		mockHover = new Hover(Collections.singletonList(Either.forLeft("Mock hover")), null);
-		mockPrepareRenameResult = Either.forRight(new PrepareRenameResult(new Range(new Position(0,0), new Position(0,0)), "placeholder"));
+		mockPrepareRenameResult = Either3
+				.forSecond(new PrepareRenameResult(new Range(new Position(0, 0), new Position(0, 0)), "placeholder"));
 		this.remoteProxies = new ArrayList<>();
 		this.documentSymbols = Collections.emptyList();
 	}
@@ -219,12 +222,9 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<Either<Range, PrepareRenameResult>> prepareRename(PrepareRenameParams params) {
-		if (this.mockPrepareRenameResult == null) {
-			return CompletableFuture.completedFuture(null);
-		} else {
-			return CompletableFuture.completedFuture(this.mockPrepareRenameResult);
-		}
+	public CompletableFuture<Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior>> prepareRename(
+			PrepareRenameParams params) {
+		return CompletableFuture.completedFuture(this.mockPrepareRenameResult);
 	}
 
 	@Override
@@ -307,7 +307,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	public void setPrepareRenameResult(Either<Range, PrepareRenameResult> result) {
-		this.mockPrepareRenameResult = result;
+		this.mockPrepareRenameResult = result == null ? null : result.map(Either3::forFirst, Either3::forSecond);
 	}
 
 	public void setMockCodeLenses(List<CodeLens> codeLenses) {

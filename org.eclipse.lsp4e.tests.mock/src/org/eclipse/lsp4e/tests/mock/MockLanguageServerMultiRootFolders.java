@@ -53,6 +53,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.lsp4j.services.NotebookDocumentService;
 import org.eclipse.lsp4j.services.WorkspaceService;
 
 public final class MockLanguageServerMultiRootFolders implements LanguageServer {
@@ -242,4 +243,8 @@ public final class MockLanguageServerMultiRootFolders implements LanguageServer 
 		return this.started;
 	}
 
+	@Override
+	public NotebookDocumentService getNotebookDocumentService() {
+		return null;
+	}
 }
