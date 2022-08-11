@@ -265,6 +265,10 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	}
 
 	private void getFuture(CompletableFuture<List<@NonNull LanguageServer>> future) {
+		if(future == null) {
+			return;
+		}
+
 		try {
 			future.get(TRIGGERS_TIMEOUT, TimeUnit.MILLISECONDS);
 		} catch (OperationCanceledException | ExecutionException e) {
