@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2020 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -26,6 +26,7 @@ import org.eclipse.core.commands.IHandler;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
@@ -50,7 +51,11 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 		if (!(part instanceof ITextEditor)) {
 			return null;
 		}
-		ISelection sel = ((ITextEditor) part).getSelectionProvider().getSelection();
+		ISelectionProvider provider = ((ITextEditor) part).getSelectionProvider();
+		if (provider == null) {
+			return null;
+		}
+		ISelection sel = provider.getSelection();
 		if (!(sel instanceof ITextSelection) || sel.isEmpty()) {
 			return null;
 		}
@@ -104,7 +109,8 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 	public void setEnabled(Object evaluationContext) {
 		var part = UI.getActivePart();
 		if (part instanceof ITextEditor) {
-			ISelection selection = ((ITextEditor) part).getSelectionProvider().getSelection();
+			ISelectionProvider provider = ((ITextEditor) part).getSelectionProvider();
+			ISelection selection = (provider == null) ? null : provider.getSelection();
 			var isEnable = selection instanceof ITextSelection && !selection.isEmpty();
 
 			IDocument document = LSPEclipseUtils.getDocument((ITextEditor) part);
