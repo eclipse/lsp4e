@@ -935,7 +935,7 @@ public class LSPEclipseUtils {
 						contentTypes.add(contentType);
 					}
 				} catch (CoreException e) {
-					if (!e.getCause() instanceof java.io.FileNotFoundException) {
+					if (!(e.getCause() instanceof java.io.FileNotFoundException)) {
 						//the content type may be based on path or file name pattern or another subsystem via the ContentTypeManager
 						// so that is not an error condition
 						//otherwise, account for some other unknown CoreException
