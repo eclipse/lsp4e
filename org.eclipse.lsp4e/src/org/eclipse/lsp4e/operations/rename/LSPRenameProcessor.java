@@ -118,8 +118,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 				}
 			}
 		} catch (Exception e) {
-			handleError(e, status);
-			return new RefactoringStatus();
+			status.addFatalError(getErrorMessage(e));
 		}
 		return status;
 	}
@@ -176,21 +175,19 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 				}
 			}
 		} catch (Exception e) {
-			handleError(e, status);
+			status.addFatalError(getErrorMessage(e));
 		}
 		return status;
 	}
 
-	private WorkspaceEdit handleError(Throwable e, RefactoringStatus status) {
+	private String getErrorMessage(Throwable e) {
 		if (e.getCause() instanceof ResponseErrorException) {
 			ResponseError responseError = ((ResponseErrorException) e.getCause()).getResponseError();
-			String message = responseError.getMessage()
+			return responseError.getMessage()
 					+ ((responseError.getData() instanceof String) ? (": " + responseError.getData()) : ""); //$NON-NLS-1$ //$NON-NLS-2$
-			status.addFatalError(message);
 		} else {
-			status.addFatalError(e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName());
+			return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
 		}
-		return null;
 	}
 
 	@Override
