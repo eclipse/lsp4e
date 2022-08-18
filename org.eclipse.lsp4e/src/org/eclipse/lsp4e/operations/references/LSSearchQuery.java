@@ -101,8 +101,13 @@ public class LSSearchQuery extends FileSearchQuery {
 						// Loop for each LSP Location and convert it to Match search.
 						for (Location loc : locs) {
 							Match match = toMatch(loc);
-							result.addMatch(match);
+							if (match != null) {
+								result.addMatch(match);
+							}
 						}
+					}).exceptionally(e -> {
+						LanguageServerPlugin.logError(e);
+						return null;
 					});
 			return Status.OK_STATUS;
 		} catch (Exception ex) {
@@ -119,10 +124,11 @@ public class LSSearchQuery extends FileSearchQuery {
 	 * @return the converted Eclipse search {@link Match}.
 	 */
 	private static Match toMatch(Location location) {
-		try {
-			IResource resource = LSPEclipseUtils.findResourceFor(location.getUri());
+		IResource resource = LSPEclipseUtils.findResourceFor(location.getUri());
+		if (resource != null) {
 			IDocument document = LSPEclipseUtils.getDocument(resource);
 			if (document != null) {
+				try {
 				int startOffset = LSPEclipseUtils.toOffset(location.getRange().getStart(), document);
 				int endOffset = LSPEclipseUtils.toOffset(location.getRange().getEnd(), document);
 
@@ -131,14 +137,14 @@ public class LSSearchQuery extends FileSearchQuery {
 						lineInformation.getOffset(),
 						document.get(lineInformation.getOffset(), lineInformation.getLength()));
 				return new FileMatch((IFile) resource, startOffset, endOffset - startOffset, lineEntry);
-
+				} catch (BadLocationException ex) {
+					LanguageServerPlugin.logError(ex);
+				}
 			}
 			Position startPosition = location.getRange().getStart();
 			LineElement lineEntry = new LineElement(resource, startPosition.getLine(), 0,
 					String.format("%s:%s", startPosition.getLine(), startPosition.getCharacter())); //$NON-NLS-1$
 			return new FileMatch((IFile) resource, 0, 0, lineEntry);
-		} catch (BadLocationException ex) {
-			LanguageServerPlugin.logError(ex);
 		}
 		return null;
 	}
