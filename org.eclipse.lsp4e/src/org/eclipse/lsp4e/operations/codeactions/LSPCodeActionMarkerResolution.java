@@ -200,8 +200,11 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 	@Override
 	public boolean hasResolutions(IMarker marker) {
 		try {
-			checkMarkerResoultion(marker);
 			Object remediation = marker.getAttribute(LSP_REMEDIATION);
+			if (remediation == null) {
+				checkMarkerResoultion(marker);
+				remediation = marker.getAttribute(LSP_REMEDIATION);
+			}
 			return remediation == COMPUTING || (remediation instanceof Collection && !((Collection<?>)remediation).isEmpty());
 		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
