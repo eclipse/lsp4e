@@ -34,9 +34,13 @@ import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.DidChangeNotebookDocumentParams;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
+import org.eclipse.lsp4j.DidCloseNotebookDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
+import org.eclipse.lsp4j.DidOpenNotebookDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
+import org.eclipse.lsp4j.DidSaveNotebookDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentLink;
@@ -307,7 +311,27 @@ public final class MockLanguageServer implements LanguageServer {
 
 	@Override
 	public NotebookDocumentService getNotebookDocumentService() {
-		return null;
+		return new NotebookDocumentService() {
+			@Override
+			public void didSave(DidSaveNotebookDocumentParams params) {
+				// TODO Auto-generated method stub
+			}
+
+			@Override
+			public void didOpen(DidOpenNotebookDocumentParams params) {
+				// TODO Auto-generated method stub
+			}
+
+			@Override
+			public void didClose(DidCloseNotebookDocumentParams params) {
+				// TODO Auto-generated method stub
+			}
+
+			@Override
+			public void didChange(DidChangeNotebookDocumentParams params) {
+				// TODO Auto-generated method stub
+			}
+		};
 	}
 
 }

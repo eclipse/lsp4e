@@ -17,8 +17,12 @@
 package org.eclipse.lsp4e.operations.completion;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -106,7 +110,13 @@ public class LSCompletionProposal
 	/** The directory of the current document */
 	private static final String TM_DIRECTORY = "TM_DIRECTORY"; //$NON-NLS-1$
 	/** The full file path of the current document */
-	private static final String TM_FILEPATH = "TM_FILEPATH"; //$NON-NLS-1$
+	private static final String TM_FILEPATH = "TM_FILEPATH"; //$NON-NLS-1$\
+
+	// This needs to be a sorted set by size because we want to match longest variable first, since some are substrings of others
+	private static SortedSet<String> ALL_VARIABLES = new TreeSet<>(Comparator.comparing(String::length).reversed().thenComparing(Comparator.naturalOrder()));
+	static {
+		ALL_VARIABLES.addAll(Set.of(TM_SELECTED_TEXT, TM_CURRENT_LINE, TM_CURRENT_WORD, TM_LINE_INDEX, TM_LINE_NUMBER, TM_FILENAME, TM_FILENAME_BASE, TM_DIRECTORY, TM_FILEPATH));
+	}
 
 	private static final Styler DEPRECATE = new Styler() {
 		@Override
@@ -473,6 +483,8 @@ public class LSCompletionProposal
 			int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
 			insertionOffset = computeNewOffset(item.getAdditionalTextEdits(), insertionOffset, document);
 			if (item.getInsertTextFormat() == InsertTextFormat.Snippet) {
+				insertText = substituteVariables(insertText);
+				// next is for tabstops, placeholders and linked edition
 				int currentSnippetOffsetInInsertText = 0;
 				while ((currentSnippetOffsetInInsertText = insertText.indexOf('$', currentSnippetOffsetInInsertText)) != -1) {
 					StringBuilder keyBuilder = new StringBuilder();
@@ -627,6 +639,15 @@ public class LSCompletionProposal
 	}
 
 	private String getVariableValue(String variableName) {
+		if (variableName.startsWith("$")) {//$NON-NLS-1$
+			variableName = variableName.substring(1);
+		}
+		if (variableName.startsWith("{")) {//$NON-NLS-1$
+			variableName = variableName.substring(1);
+		}
+		if (variableName.endsWith("}")) {//$NON-NLS-1$
+			variableName = variableName.substring(0, variableName.length() - 1);
+		}
 		switch (variableName) {
 		case TM_FILENAME_BASE:
 			IPath pathBase = LSPEclipseUtils.toPath(document).removeFileExtension();
@@ -656,30 +677,52 @@ public class LSCompletionProposal
 				return ""; //$NON-NLS-1$
 			}
 		case TM_SELECTED_TEXT:
-			Range selectedRange = getTextEditRange();
 			try {
-				int startOffset = LSPEclipseUtils.toOffset(selectedRange.getStart(), document);
-				int endOffset = LSPEclipseUtils.toOffset(selectedRange.getEnd(), document);
-				String selectedText = document.get(startOffset, endOffset - startOffset);
+				String selectedText = document.get(viewer.getSelectedRange().x, viewer.getSelectedRange().y);
 				return selectedText;
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logWarning(e.getMessage(), e);
 				return ""; //$NON-NLS-1$
 			}
 		case TM_CURRENT_WORD:
-			return ""; //$NON-NLS-1$
+			try {
+				String selectedText = document.get(viewer.getSelectedRange().x, viewer.getSelectedRange().y);
+				int beforeSelection = viewer.getSelectedRange().x - 1;
+				while (beforeSelection >= 0 && Character.isUnicodeIdentifierPart(document.getChar(beforeSelection))) {
+					selectedText = beforeSelection + selectedText;
+					beforeSelection--;
+				}
+				int afterSelection = viewer.getSelectedRange().x + viewer.getSelectedRange().y;
+				while (afterSelection < document.getLength() && Character.isUnicodeIdentifierPart(afterSelection)) {
+					selectedText = selectedText + document.getChar(afterSelection);
+					afterSelection++;
+				}
+				return selectedText;
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logWarning(e.getMessage(), e);
+				return ""; //$NON-NLS-1$
+			}
 		default:
-			return null;
+			return variableName;
 		}
 	}
 
-	private Range getTextEditRange() {
-		if (item.getTextEdit().isLeft()) {
-			return item.getTextEdit().getLeft().getRange();
-		} else {
-			// here providing insert range, currently do not know if insert or replace is requested
-			return item.getTextEdit().getRight().getInsert();
+	private String substituteVariables(String insertText) {
+		for (String variable : ALL_VARIABLES) {
+			if (insertText.contains('$' + variable) || insertText.contains("${" + variable + '}')) { //$NON-NLS-1$
+				String value = getVariableValue(variable);
+				if (value != null) {
+					insertText = insertText.replace("${" + variable + '}', value); //$NON-NLS-1$
+					insertText = insertText.replace('$' + variable, value);
+				}
+			}
 		}
+		return insertText;
+	}
+
+
+	private Range getTextEditRange() {
+		return item.getTextEdit().map(TextEdit::getRange, InsertReplaceEdit::getInsert);
 	}
 
 	/**
