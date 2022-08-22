@@ -12,7 +12,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -414,46 +417,6 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		assertEquals(1, proposals.length);
 		((LSCompletionProposal) proposals[0]).apply(viewer.getDocument());
 		assertEquals(" and foo", viewer.getDocument().get());
-		// TODO check link edit groups
-	}
-
-	@Test
-	public void testDuplicateVariable() throws PartInitException, CoreException {
-		CompletionItem completionItem = createCompletionItem("${1:foo} and ${1:foo}", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
-		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
-		MockLanguageServer.INSTANCE
-				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
-		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,""));
-		int invokeOffset = 0;
-		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
-		assertEquals(1, proposals.length);
-		((LSCompletionProposal) proposals[0]).apply(viewer.getDocument());
-		assertEquals("foo and foo", viewer.getDocument().get());
-		// TODO check link edit groups
-	}
-
-	@Test
-	public void testVariableReplacement() throws PartInitException, CoreException {
-		CompletionItem completionItem = createCompletionItem(
-				"${1:$TM_FILENAME_BASE} ${2:$TM_FILENAME} ${3:$TM_FILEPATH} ${4:$TM_DIRECTORY} ${5:$TM_LINE_INDEX} ${6:$TM_LINE_NUMBER} ${7:$TM_CURRENT_LINE} ${8:$TM_SELECTED_TEXT}",
-				CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
-		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
-		MockLanguageServer.INSTANCE
-				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
-		String content = "line1\nline2\nline3";
-		IFile testFile = TestUtils.createUniqueTestFile(project, content);
-		ITextViewer viewer = TestUtils.openTextViewer(testFile);
-		int invokeOffset = 0;
-		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
-		assertEquals(1, proposals.length);
-		((LSCompletionProposal) proposals[0]).apply(viewer.getDocument());
-
-		int lineIndex = completionItem.getTextEdit().getLeft().getRange().getStart().getLine();
-		String fileNameBase = testFile.getFullPath().removeFileExtension().lastSegment();
-		String filePath = testFile.getRawLocation().toOSString();
-		String fileDir = project.getLocation().toOSString();
-		assertEquals(String.format("%s %s %s %s %d %d %s %s%s", fileNameBase, testFile.getName(), filePath, fileDir,
-				lineIndex, lineIndex + 1, "line1", "l", content.substring(1)), viewer.getDocument().get());
 		// TODO check link edit groups
 	}
 

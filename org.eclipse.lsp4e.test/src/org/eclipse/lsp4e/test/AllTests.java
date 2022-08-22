@@ -19,6 +19,7 @@ import org.eclipse.lsp4e.test.completion.CompleteCompletionTest;
 import org.eclipse.lsp4e.test.completion.CompletionOrderingTests;
 import org.eclipse.lsp4e.test.completion.ContextInformationTest;
 import org.eclipse.lsp4e.test.completion.IncompleteCompletionTest;
+import org.eclipse.lsp4e.test.completion.VariableReplacementTest;
 import org.eclipse.lsp4e.test.debug.DebugTest;
 import org.eclipse.lsp4e.test.definition.DefinitionTest;
 import org.eclipse.lsp4e.test.diagnostics.DiagnosticsTest;
@@ -55,6 +56,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	CompleteCompletionTest.class,
 	IncompleteCompletionTest.class,
 	CompletionOrderingTests.class,
+	VariableReplacementTest.class,
 	ContextInformationTest.class,
 	DocumentDidOpenTest.class,
 	DocumentDidChangeTest.class,
