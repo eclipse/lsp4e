@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2021 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2022 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -22,6 +22,7 @@ import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
@@ -53,8 +54,9 @@ public class ServerMessageHandler {
 
 		@Override
 		protected void createContentArea(Composite parent) {
-			Label label = new Label(parent, SWT.WRAP);
-			label.setText(messageParams.getMessage());
+			Label messageLabel = new Label(parent, SWT.WRAP);
+			messageLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
+			messageLabel.setText(messageParams.getMessage());
 		}
 
 		@Override
@@ -102,7 +104,7 @@ public class ServerMessageHandler {
 	}
 
 	public static CompletableFuture<MessageActionItem> showMessageRequest(LanguageServerWrapper wrapper, ShowMessageRequestParams params) {
-		String options[] = params.getActions().stream().map(MessageActionItem::getTitle).toArray(String[]::new);
+		String[] options = params.getActions().stream().map(MessageActionItem::getTitle).toArray(String[]::new);
 		CompletableFuture<MessageActionItem> future = new CompletableFuture<>();
 
 		Display.getDefault().asyncExec(() -> {
