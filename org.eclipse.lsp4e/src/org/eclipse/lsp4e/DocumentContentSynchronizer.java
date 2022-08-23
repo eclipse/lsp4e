@@ -39,10 +39,13 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
+import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.lsp4j.MessageParams;
+import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
@@ -56,6 +59,7 @@ import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WillSaveTextDocumentParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.osgi.util.NLS;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
 
@@ -221,7 +225,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		return false;
 	}
 
-	private static final int WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS = 2;
+	private static final int WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS = 5;
 	private static final int WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD = 3;
 	private static final Map<String, Integer> WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP = new ConcurrentHashMap<>();
 
@@ -238,28 +242,28 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri);
 		// Use @link{TextDocumentSaveReason.Manual} as the platform does not give enough information to be accurate
 		WillSaveTextDocumentParams params = new WillSaveTextDocumentParams(identifier, TextDocumentSaveReason.Manual);
-		List<TextEdit> edits = null;
+
 		try {
-			edits = executeOnCurrentVersionAsync(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
+			List<TextEdit> edits = executeOnCurrentVersionAsync(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
 				.get(WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
+			try {
+				LSPEclipseUtils.applyEdits(document, edits);
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
+			}
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (TimeoutException e) {
 			Integer timeoutCount = WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.compute(uri,
 					(k, v) -> v == null ? 1 : Integer.valueOf(v + 1));
-			String message = "WillSaveWaitUntil timeouted out after " + Integer.valueOf(WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS).toString() +" seconds for " + uri;  //$NON-NLS-1$//$NON-NLS-2$
-			if (timeoutCount > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD) {
-				message = message + ", it will no longer be called for this document"; //$NON-NLS-1$
-			}
-			LanguageServerPlugin.logWarning(message, e);
+			String message = timeoutCount > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD ?
+					Messages.DocumentContentSynchronizer_TimeoutThresholdMessage:
+						Messages.DocumentContentSynchronizer_TimeoutMessage;
+			String boundMessage = NLS.bind(message, Integer.valueOf(WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS).toString(), uri);
+			ServerMessageHandler.showMessage(Messages.DocumentContentSynchronizer_OnSaveActionTimeout, new MessageParams(MessageType.Error, boundMessage));
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
-		}
-		try {
-			LSPEclipseUtils.applyEdits(document, edits);
-		} catch (BadLocationException e) {
-			LanguageServerPlugin.logError(e);
 		}
 	}
 
