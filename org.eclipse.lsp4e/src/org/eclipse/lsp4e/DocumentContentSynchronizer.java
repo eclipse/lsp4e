@@ -35,6 +35,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
@@ -73,11 +74,16 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private long modificationStamp;
 	private final AtomicReference<CompletableFuture<LanguageServer>> lastChangeFuture;
 	private LanguageServer languageServer;
+	private IPreferenceStore store;
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
 			@NonNull IDocument document, TextDocumentSyncKind syncKind) {
 		this.languageServerWrapper = languageServerWrapper;
-		this.fileUri = LSPEclipseUtils.toUri(document);
+		URI uri = LSPEclipseUtils.toUri(document);
+		if (uri == null) {
+			throw new NullPointerException();
+		}
+		this.fileUri = uri;
 		try {
 			IFileStore store = EFS.getStore(fileUri);
 			this.modificationStamp = store.fetchInfo().getLastModified();
@@ -88,6 +94,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
 
 		this.document = document;
+		this.store = LanguageServerPlugin.getDefault().getPreferenceStore();
 
 		// add a document buffer
 		TextDocumentItem textDocument = new TextDocumentItem();
@@ -225,9 +232,26 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		return false;
 	}
 
-	private static final int WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS = 5;
+	private static final String WILL_SAVE_WAIT_UNTIL_TIMEOUT__KEY = "timeout.willSaveWaitUntil"; //$NON-NLS-1$
+
 	private static final int WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD = 3;
 	private static final Map<String, Integer> WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP = new ConcurrentHashMap<>();
+
+	/**
+	 * Converts a language server ID to the preference ID to define a timeout
+	 * for willSaveWaitUntil
+	 *
+	 * @return language server's preference ID to define a timeout for willSaveWaitUntil
+	 */
+	private static @NonNull String lsToWillSaveWaitUntilTimeoutKey(String serverId) {
+		return serverId + '.' + WILL_SAVE_WAIT_UNTIL_TIMEOUT__KEY;
+	}
+
+	private int lsToWillSaveWaitUntilTimeout() {
+		int defaultWillSaveWaitUntilTimeoutInSeconds = 5;
+		int willSaveWaitUntilTimeout = store.getInt(lsToWillSaveWaitUntilTimeoutKey(languageServerWrapper.serverDefinition.id));
+		return willSaveWaitUntilTimeout != 0 ? willSaveWaitUntilTimeout : defaultWillSaveWaitUntilTimeoutInSeconds;
+	}
 
 	public void documentAboutToBeSaved() {
 		if (!serverSupportsWillSaveWaitUntil()) {
@@ -243,9 +267,10 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		// Use @link{TextDocumentSaveReason.Manual} as the platform does not give enough information to be accurate
 		WillSaveTextDocumentParams params = new WillSaveTextDocumentParams(identifier, TextDocumentSaveReason.Manual);
 
+
 		try {
 			List<TextEdit> edits = executeOnCurrentVersionAsync(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
-				.get(WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
+				.get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS);
 			try {
 				LSPEclipseUtils.applyEdits(document, edits);
 			} catch (BadLocationException e) {
@@ -259,7 +284,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			String message = timeoutCount > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD ?
 					Messages.DocumentContentSynchronizer_TimeoutThresholdMessage:
 						Messages.DocumentContentSynchronizer_TimeoutMessage;
-			String boundMessage = NLS.bind(message, Integer.valueOf(WILL_SAVE_WAIT_UNTIL_TIMEOUT_IN_SECONDS).toString(), uri);
+			String boundMessage = NLS.bind(message, Integer.valueOf(lsToWillSaveWaitUntilTimeout()).toString(), uri);
 			ServerMessageHandler.showMessage(Messages.DocumentContentSynchronizer_OnSaveActionTimeout, new MessageParams(MessageType.Error, boundMessage));
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
