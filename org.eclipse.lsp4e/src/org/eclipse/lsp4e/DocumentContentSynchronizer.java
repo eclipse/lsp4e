@@ -232,26 +232,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		return false;
 	}
 
-	private static final String WILL_SAVE_WAIT_UNTIL_TIMEOUT__KEY = "timeout.willSaveWaitUntil"; //$NON-NLS-1$
-
 	private static final int WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD = 3;
 	private static final Map<String, Integer> WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP = new ConcurrentHashMap<>();
-
-	/**
-	 * Converts a language server ID to the preference ID to define a timeout
-	 * for willSaveWaitUntil
-	 *
-	 * @return language server's preference ID to define a timeout for willSaveWaitUntil
-	 */
-	private static @NonNull String lsToWillSaveWaitUntilTimeoutKey(String serverId) {
-		return serverId + '.' + WILL_SAVE_WAIT_UNTIL_TIMEOUT__KEY;
-	}
-
-	private int lsToWillSaveWaitUntilTimeout() {
-		int defaultWillSaveWaitUntilTimeoutInSeconds = 5;
-		int willSaveWaitUntilTimeout = store.getInt(lsToWillSaveWaitUntilTimeoutKey(languageServerWrapper.serverDefinition.id));
-		return willSaveWaitUntilTimeout != 0 ? willSaveWaitUntilTimeout : defaultWillSaveWaitUntilTimeoutInSeconds;
-	}
 
 	public void documentAboutToBeSaved() {
 		if (!serverSupportsWillSaveWaitUntil()) {
@@ -270,7 +252,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		try {
 			List<TextEdit> edits = executeOnCurrentVersionAsync(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
-				.get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS);
+				.get(Timeouts.lsToWillSaveWaitUntilTimeout(store, languageServerWrapper.serverDefinition.id), TimeUnit.SECONDS);
 			try {
 				LSPEclipseUtils.applyEdits(document, edits);
 			} catch (BadLocationException e) {
@@ -284,7 +266,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			String message = timeoutCount > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD ?
 					Messages.DocumentContentSynchronizer_TimeoutThresholdMessage:
 						Messages.DocumentContentSynchronizer_TimeoutMessage;
-			String boundMessage = NLS.bind(message, Integer.valueOf(lsToWillSaveWaitUntilTimeout()).toString(), uri);
+			String boundMessage = NLS.bind(message, Integer.valueOf(Timeouts.lsToWillSaveWaitUntilTimeout(store, languageServerWrapper.serverDefinition.id)).toString(), uri);
 			ServerMessageHandler.showMessage(Messages.DocumentContentSynchronizer_OnSaveActionTimeout, new MessageParams(MessageType.Error, boundMessage));
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
