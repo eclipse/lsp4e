@@ -95,6 +95,7 @@ import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializedParams;
+import org.eclipse.lsp4j.InlayHintCapabilities;
 import org.eclipse.lsp4j.MarkupKind;
 import org.eclipse.lsp4j.RangeFormattingCapabilities;
 import org.eclipse.lsp4j.ReferencesCapabilities;
@@ -306,6 +307,7 @@ public class LanguageServerWrapper {
 				codeAction.setResolveSupport(new CodeActionResolveSupportCapabilities(List.of("edit"))); //$NON-NLS-1$
 				textDocumentClientCapabilities.setCodeAction(codeAction);
 				textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
+				textDocumentClientCapabilities.setInlayHint(new InlayHintCapabilities());
 				textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
 				CompletionItemCapabilities completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);
 				completionItemCapabilities
