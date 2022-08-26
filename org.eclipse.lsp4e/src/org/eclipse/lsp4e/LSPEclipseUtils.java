@@ -28,6 +28,7 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -491,7 +492,7 @@ public class LSPEclipseUtils {
 		if (resource != null) {
 			return getDocument(resource);
 		}
-		if (!new File(uri).isFile()) {
+		if (!fromUri(uri).isFile()) {
 			return null;
 		}
 
@@ -731,7 +732,7 @@ public class LSPEclipseUtils {
 					if (resourceOperation instanceof CreateFile) {
 						CreateFile createOperation = (CreateFile) resourceOperation;
 						URI targetURI = URI.create(createOperation.getUri());
-						File targetFile = new File(targetURI);
+						File targetFile = fromUri(targetURI);
 						if (targetFile.exists() && createOperation.getOptions() != null) {
 							if (!createOperation.getOptions().getIgnoreIfExists()) {
 								if (createOperation.getOptions().getOverwrite()) {
@@ -1079,6 +1080,30 @@ public class LSPEclipseUtils {
 
 	public static URI toUri(String uri) {
 		return LSPEclipseUtils.toUri(Path.fromPortableString(URI.create(uri).getPath()));
+	}
+
+	/**
+	 * Use nio Paths to convert a file URI to a File in order to avoid problems with UNC paths on Windows.
+	 * Java has historically generated 'unhealthy' UNC URIs so \\myserver\a\b becomes file:////myserver/a/b
+	 * The favoured representation is to encode the server as the URI authority as file://myserver/a/b
+	 * Java (and LSP4e) has kept the older representation using File.toURI() and new File(URI uri) for
+	 * backward compatibility, but supported the newer representation in nio.Path
+	 * Trying to construct a File directly with a new-style UNC URI causes it to throw with an 'authority is not null'
+	 * complaint. Going via nio.Path allows us to accept either syntax. LSP4e does not use URIs directly e.g. as
+	 * keys in lookup dictionaries so we don't have to worry about canonicalisation problems
+	 *
+	 * See https://bugs.openjdk.org/browse/JDK-4723726
+	 * https://docs.microsoft.com/en-us/archive/blogs/ie/file-uris-in-windows
+	 *
+	 * @param uri A file URI, possibly for a UNC path in the newer syntax with the server encoded in the authority
+	 * @return A file
+	 */
+	public static File fromUri(URI uri) {
+		return Paths.get(uri).toFile();
+	}
+
+	public static File fromUri(String uri) {
+		return fromUri(URI.create(uri));
 	}
 
 	public static boolean hasCapability(Either<Boolean, ? extends Object> eitherCapability) {
