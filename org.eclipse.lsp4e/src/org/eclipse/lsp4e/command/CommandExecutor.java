@@ -250,31 +250,30 @@ public class CommandExecutor {
 		URI initialUri = LSPEclipseUtils.toUri(document);
 		Pair<URI, List<TextEdit>> currentEntry = new Pair<>(initialUri, new ArrayList<>());
 		commandArguments.stream().flatMap(item -> {
-			if (item instanceof List) {
-				return ((List<?>) item).stream();
+			if (item instanceof List<?> list) {
+				return list.stream();
 			} else {
 				return Collections.singleton(item).stream();
 			}
 		}).forEach(arg -> {
-			if (arg instanceof String) {
+			if (arg instanceof String argString) {
 				changes.put(currentEntry.key.toString(), currentEntry.value);
-				IResource resource = LSPEclipseUtils.findResourceFor((String) arg);
+				IResource resource = LSPEclipseUtils.findResourceFor(argString);
 				if (resource != null) {
 					currentEntry.key = resource.getLocationURI();
 					currentEntry.value = new ArrayList<>();
 				}
-			} else if (arg instanceof WorkspaceEdit) {
-				changes.putAll(((WorkspaceEdit) arg).getChanges());
-			} else if (arg instanceof TextEdit) {
-				currentEntry.value.add((TextEdit) arg);
+			} else if (arg instanceof WorkspaceEdit wsEdit) {
+				changes.putAll(wsEdit.getChanges());
+			} else if (arg instanceof TextEdit textEdit) {
+				currentEntry.value.add(textEdit);
 			} else if (arg instanceof Map) {
 				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
 				TextEdit edit = gson.fromJson(gson.toJson(arg), TextEdit.class);
 				if (edit != null) {
 					currentEntry.value.add(edit);
 				}
-			} else if (arg instanceof JsonPrimitive) {
-				JsonPrimitive json = (JsonPrimitive) arg;
+			} else if (arg instanceof JsonPrimitive json) {
 				if (json.isString()) {
 					changes.put(currentEntry.key.toString(), currentEntry.value);
 					IResource resource = LSPEclipseUtils.findResourceFor(json.getAsString());
@@ -283,23 +282,22 @@ public class CommandExecutor {
 						currentEntry.value = new ArrayList<>();
 					}
 				}
-			} else if (arg instanceof JsonArray) {
+			} else if (arg instanceof JsonArray jsonArray) {
 				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
-				JsonArray array = (JsonArray) arg;
-				array.forEach(elt -> {
+				jsonArray.forEach(elt -> {
 					TextEdit edit = gson.fromJson(gson.toJson(elt), TextEdit.class);
 					if (edit != null) {
 						currentEntry.value.add(edit);
 					}
 				});
-			} else if (arg instanceof JsonObject) {
+			} else if (arg instanceof JsonObject jsonObject) {
 				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
-				WorkspaceEdit wEdit = gson.fromJson((JsonObject) arg, WorkspaceEdit.class);
+				WorkspaceEdit wEdit = gson.fromJson(jsonObject, WorkspaceEdit.class);
 				Map<String, List<TextEdit>> entries = wEdit.getChanges();
 				if (wEdit != null && !entries.isEmpty()) {
 					changes.putAll(entries);
 				} else {
-					TextEdit edit = gson.fromJson((JsonObject) arg, TextEdit.class);
+					TextEdit edit = gson.fromJson(jsonObject, TextEdit.class);
 					if (edit != null && edit.getRange() != null) {
 						currentEntry.value.add(edit);
 					}

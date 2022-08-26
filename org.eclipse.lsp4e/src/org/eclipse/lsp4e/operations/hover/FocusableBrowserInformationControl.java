@@ -70,9 +70,9 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 	}
 
 	private double adjust(double height, Object margin) {
-		if (margin instanceof String && ((String) margin).endsWith("px")) { //$NON-NLS-1$
+		if (margin instanceof String marginString && marginString.endsWith("px")) { //$NON-NLS-1$
 			try {
-				height += Integer.parseInt(((String) margin).substring(0, ((String) margin).length() - 2));
+				height += Integer.parseInt(marginString.substring(0, marginString.length() - 2));
 			} catch (NumberFormatException e) {}
 		}
 		return height;
@@ -125,8 +125,8 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 
 	@Override
 	public void setInput(Object input) {
-		if (input instanceof String) {
-			input = styleHtml((String)input);
+		if (input instanceof String html) {
+			input = styleHtml(html);
 		}
 		super.setInput(input);
 	}

@@ -205,7 +205,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				checkMarkerResoultion(marker);
 				remediation = marker.getAttribute(LSP_REMEDIATION);
 			}
-			return remediation == COMPUTING || (remediation instanceof Collection && !((Collection<?>)remediation).isEmpty());
+			return remediation == COMPUTING || (remediation instanceof Collection<?> collection && !collection.isEmpty());
 		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 		}

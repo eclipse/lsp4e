@@ -43,31 +43,28 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		if (! (part instanceof ITextEditor)) {
-			return null;
-		}
-		ITextEditor editor = (ITextEditor)part;
-		IDocument document = LSPEclipseUtils.getDocument(editor);
-		if (document == null) {
-			return null;
-		}
-		ISelection sel = editor.getSelectionProvider().getSelection();
-		if (!(sel instanceof ITextSelection)) {
-			return null;
-		}
-		int offset = ((ITextSelection) sel).getOffset();
-		LanguageServiceAccessor.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getReferencesProvider())).thenAcceptAsync(languageServers -> {
-			if (languageServers.isEmpty()) {
-				return;
+		if (part instanceof ITextEditor editor) {
+			IDocument document = LSPEclipseUtils.getDocument(editor);
+			if (document == null) {
+				return null;
 			}
-			LanguageServer ls = languageServers.get(0);
-			try {
-				LSSearchQuery query = new LSSearchQuery(document, offset, ls);
-				HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
-			} catch (BadLocationException e) {
-				LanguageServerPlugin.logError(e);
+			ISelection sel = editor.getSelectionProvider().getSelection();
+			if (sel instanceof ITextSelection textSelection) {
+				int offset = ((ITextSelection) sel).getOffset();
+				LanguageServiceAccessor.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getReferencesProvider())).thenAcceptAsync(languageServers -> {
+					if (languageServers.isEmpty()) {
+						return;
+					}
+					LanguageServer ls = languageServers.get(0);
+					try {
+						LSSearchQuery query = new LSSearchQuery(document, offset, ls);
+						HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
+					} catch (BadLocationException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				});
 			}
-		});
+		}
 		return null;
 	}
 
@@ -78,26 +75,24 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 			return false;
 		}
 		IEditorPart part = page.getActiveEditor();
-		if (!(part instanceof ITextEditor)) {
-			return false;
-		}
-		ITextEditor editor = (ITextEditor) part;
-		ISelection selection = editor.getSelectionProvider().getSelection();
-		if (selection.isEmpty() || !(selection instanceof ITextSelection)) {
-			return false;
-		}
-		try {
-			return !LanguageServiceAccessor
-					.getLanguageServers(LSPEclipseUtils.getDocument(editor),
-							capabilities -> LSPEclipseUtils.hasCapability(capabilities.getReferencesProvider()))
-					.get(50, TimeUnit.MILLISECONDS).isEmpty();
-		} catch (java.util.concurrent.ExecutionException e) {
-			LanguageServerPlugin.logError(e);
-		} catch (InterruptedException e) {
-			LanguageServerPlugin.logError(e);
-			Thread.currentThread().interrupt();
-		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not get language server due to timeout after 50 miliseconds", e); //$NON-NLS-1$
+		if (part instanceof ITextEditor editor) {
+			ISelection selection = editor.getSelectionProvider().getSelection();
+			if (selection.isEmpty() || !(selection instanceof ITextSelection)) {
+				return false;
+			}
+			try {
+				return !LanguageServiceAccessor
+						.getLanguageServers(LSPEclipseUtils.getDocument(editor),
+								capabilities -> LSPEclipseUtils.hasCapability(capabilities.getReferencesProvider()))
+						.get(50, TimeUnit.MILLISECONDS).isEmpty();
+			} catch (java.util.concurrent.ExecutionException e) {
+				LanguageServerPlugin.logError(e);
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+				Thread.currentThread().interrupt();
+			} catch (TimeoutException e) {
+				LanguageServerPlugin.logWarning("Could not get language server due to timeout after 50 miliseconds", e); //$NON-NLS-1$
+			}
 		}
 		return false;
 	}

@@ -108,7 +108,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		if (annotationModel == null) {
 			return;
 		}
-		if (annotationModel instanceof IAnnotationModelExtension) {
+		if (annotationModel instanceof IAnnotationModelExtension annotationModelExtension) {
 			Set<Annotation> toRemove = new HashSet<>();
 			annotationModel.getAnnotationIterator().forEachRemaining(annotation -> {
 				if (annotation instanceof DiagnosticAnnotation) {
@@ -125,7 +125,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 					LanguageServerPlugin.logError(ex);
 				}
 			});
-			((IAnnotationModelExtension)annotationModel).replaceAnnotations(toRemove.toArray(new Annotation[toRemove.size()]), toAdd);
+			annotationModelExtension.replaceAnnotations(toRemove.toArray(new Annotation[toRemove.size()]), toAdd);
 		}
 	}
 

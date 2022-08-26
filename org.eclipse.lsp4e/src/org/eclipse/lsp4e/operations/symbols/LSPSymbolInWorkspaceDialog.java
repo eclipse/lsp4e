@@ -94,11 +94,8 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 		@Override
 		public boolean matchItem(Object item) {
-			if (!(item instanceof WorkspaceSymbol)) {
-				return false;
-			}
-			WorkspaceSymbol info = (WorkspaceSymbol) item;
-			return info.getName().toLowerCase().indexOf(getPattern().toLowerCase()) != -1;
+			return item instanceof WorkspaceSymbol info && //
+					info.getName().toLowerCase().indexOf(getPattern().toLowerCase()) != -1;
 		}
 
 		@Override

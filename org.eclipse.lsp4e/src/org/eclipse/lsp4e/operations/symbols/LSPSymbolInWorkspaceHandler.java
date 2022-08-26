@@ -45,11 +45,12 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 			resource = part.getEditorInput().getAdapter(IResource.class);
 		} else {
 			IStructuredSelection selection = HandlerUtil.getCurrentStructuredSelection(event);
-			if (selection.isEmpty() || !(selection.getFirstElement() instanceof IAdaptable)) {
-				return null;
+			if (selection.getFirstElement() instanceof IAdaptable adaptable) {
+				resource = adaptable.getAdapter(IResource.class);
 			}
-			IAdaptable adaptable = (IAdaptable) selection.getFirstElement();
-			resource = adaptable.getAdapter(IResource.class);
+		}
+		if (resource == null) {
+			return null;
 		}
 
 		IProject project = resource.getProject();
@@ -75,9 +76,9 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 	@Override
 	public boolean isEnabled() {
 		IWorkbenchPart part = UI.getActivePart();
-		if (part instanceof ITextEditor) {
+		if (part instanceof ITextEditor textEditor) {
 			List<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-					LSPEclipseUtils.getDocument((ITextEditor) part),
+					LSPEclipseUtils.getDocument(textEditor),
 					capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()));
 			return !infos.isEmpty();
 		}

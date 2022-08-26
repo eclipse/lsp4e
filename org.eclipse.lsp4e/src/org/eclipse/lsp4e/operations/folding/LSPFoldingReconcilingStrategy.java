@@ -257,9 +257,7 @@ public class LSPFoldingReconcilingStrategy
 	 */
 	protected void updateAnnotations(Annotation existingAnnotation, Position newPos, List<Annotation> modifications,
 			List<FoldingAnnotation> deletions) {
-		if (existingAnnotation instanceof FoldingAnnotation) {
-			FoldingAnnotation foldingAnnotation = (FoldingAnnotation) existingAnnotation;
-
+		if (existingAnnotation instanceof FoldingAnnotation foldingAnnotation) {
 			// if a new position can be calculated then update the position of
 			// the annotation,
 			// else the annotation needs to be deleted
@@ -296,8 +294,7 @@ public class LSPFoldingReconcilingStrategy
 		if (iter != null) {
 			while (iter.hasNext()) {
 				Annotation anno = iter.next();
-				if (anno instanceof FoldingAnnotation) {
-					FoldingAnnotation folding = (FoldingAnnotation) anno;
+				if (anno instanceof FoldingAnnotation folding) {
 					Position pos = projectionAnnotationModel.getPosition(anno);
 					if (pos.length == 0) {
 						deletions.add(folding);

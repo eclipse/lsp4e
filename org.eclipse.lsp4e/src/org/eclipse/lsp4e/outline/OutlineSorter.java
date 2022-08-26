@@ -43,17 +43,17 @@ public class OutlineSorter extends ViewerComparator {
 	}
 
 	private String getName(Object element) {
-		if (element instanceof Either) {
-			element = ((Either<?, ?>) element).get();
+		if (element instanceof Either<?, ?> either) {
+			element = either.get();
 		}
-		if (element instanceof DocumentSymbolWithFile) {
-			return ((DocumentSymbolWithFile) element).symbol.getName();
+		if (element instanceof DocumentSymbolWithFile symbolWithFile) {
+			return symbolWithFile.symbol.getName();
 		}
-		if (element instanceof DocumentSymbol) {
-			return ((DocumentSymbol) element).getName();
+		if (element instanceof DocumentSymbol documentSymbol) {
+			return documentSymbol.getName();
 		}
-		if (element instanceof SymbolInformation) {
-			return ((SymbolInformation) element).getName();
+		if (element instanceof SymbolInformation symbolInformation) {
+			return symbolInformation.getName();
 		}
 		return null;
 	}

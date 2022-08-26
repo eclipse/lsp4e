@@ -38,20 +38,19 @@ public class LSPFormatHandler extends AbstractHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		if (part instanceof MultiPageEditorPart) {
-			Object selectedPage = ((MultiPageEditorPart)part).getSelectedPage();
-			if (selectedPage instanceof IEditorPart) {
-				part = (IEditorPart)selectedPage;
+		if (part instanceof MultiPageEditorPart multoPage) {
+			Object selectedPage = multoPage.getSelectedPage();
+			if (selectedPage instanceof IEditorPart editor) {
+				part = editor;
 			}
 		}
 
-		if (part instanceof ITextEditor) {
-			ITextEditor textEditor = (ITextEditor) part;
+		if (part instanceof ITextEditor textEditor) {
 			final IDocument document = LSPEclipseUtils.getDocument(textEditor);
 			final Shell shell = textEditor.getSite().getShell();
 			ISelection selection = HandlerUtil.getCurrentSelection(event);
-			if (document != null && selection instanceof ITextSelection) {
-				formatter.requestFormatting(document, (ITextSelection) selection).thenAcceptAsync(
+			if (document != null && selection instanceof ITextSelection textSelection) {
+				formatter.requestFormatting(document, textSelection).thenAcceptAsync(
 						edits -> shell.getDisplay().asyncExec(() -> formatter.applyEdits(document, edits)));
 			}
 		}
@@ -61,18 +60,18 @@ public class LSPFormatHandler extends AbstractHandler {
 	@Override
 	public boolean isEnabled() {
 		IWorkbenchPart part = UI.getActivePart();
-		if (part instanceof MultiPageEditorPart) {
-			Object selectedPage = ((MultiPageEditorPart)part).getSelectedPage();
-			if (selectedPage instanceof IWorkbenchPart) {
-				part = (IWorkbenchPart)selectedPage;
+		if (part instanceof MultiPageEditorPart multiPage) {
+			Object selectedPage = multiPage.getSelectedPage();
+			if (selectedPage instanceof IWorkbenchPart workbenchPart) {
+				part = workbenchPart;
 			}
 		}
 
-		if (part instanceof ITextEditor) {
+		if (part instanceof ITextEditor textEditor) {
 			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-					LSPEclipseUtils.getDocument((ITextEditor) part),
+					LSPEclipseUtils.getDocument(textEditor),
 					LSPFormatter::supportFormatting);
-			ISelection selection = ((ITextEditor) part).getSelectionProvider().getSelection();
+			ISelection selection = textEditor.getSelectionProvider().getSelection();
 			return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
 		}
 		return false;

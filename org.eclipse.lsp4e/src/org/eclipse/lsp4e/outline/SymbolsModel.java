@@ -54,11 +54,9 @@ public class SymbolsModel {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (!(obj instanceof DocumentSymbolWithFile)) {
-				return false;
-			}
-			DocumentSymbolWithFile other = (DocumentSymbolWithFile) obj;
-			return Objects.equals(this.symbol, other.symbol) && Objects.equals(this.file, other.file);
+			return obj instanceof DocumentSymbolWithFile other && //
+					Objects.equals(this.symbol, other.symbol) && //
+					Objects.equals(this.file, other.file);
 		}
 
 		@Override
@@ -159,8 +157,7 @@ public class SymbolsModel {
 				if (children != null && !children.isEmpty()) {
 					return children.toArray();
 				}
-			} else if (parentElement instanceof DocumentSymbolWithFile) {
-				DocumentSymbolWithFile element = (DocumentSymbolWithFile) parentElement;
+			} else if (parentElement instanceof DocumentSymbolWithFile element) {
 				List<DocumentSymbol> children = element.symbol.getChildren();
 				if (children != null && !children.isEmpty()) {
 					return element.symbol.getChildren().stream()
@@ -178,8 +175,7 @@ public class SymbolsModel {
 				if (children != null) {
 					return !children.isEmpty();
 				}
-			} else if (parentElement instanceof DocumentSymbolWithFile) {
-				DocumentSymbolWithFile element = (DocumentSymbolWithFile) parentElement;
+			} else if (parentElement instanceof DocumentSymbolWithFile element) {
 				List<DocumentSymbol> children = element.symbol.getChildren();
 				if (children != null) {
 					return !children.isEmpty();
@@ -228,11 +224,11 @@ public class SymbolsModel {
 	}
 
 	private String getName(Object segment) {
-		if (segment instanceof DocumentSymbolWithFile) {
-			segment = ((DocumentSymbolWithFile)segment).symbol;
+		if (segment instanceof DocumentSymbolWithFile symbolWithFile) {
+			segment = symbolWithFile.symbol;
 		}
-		if (segment instanceof DocumentSymbol) {
-			return ((DocumentSymbol)segment).getName();
+		if (segment instanceof DocumentSymbol documentSymbol) {
+			return documentSymbol.getName();
 		}
 		return null;
 	}

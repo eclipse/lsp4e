@@ -121,34 +121,34 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element instanceof Throwable) {
 			return LSPImages.getSharedImage(ISharedImages.IMG_OBJS_ERROR_TSK);
 		}
-		if (element instanceof Either) {
-			element = ((Either<?, ?>) element).get();
+		if (element instanceof Either<?, ?> either) {
+			element = either.get();
 		}
 		Image res = null;
-		if (element instanceof SymbolInformation) {
-			res = LSPImages.imageFromSymbolKind(((SymbolInformation) element).getKind());
-		} else if (element instanceof DocumentSymbol) {
-			res = LSPImages.imageFromSymbolKind(((DocumentSymbol) element).getKind());
-		} else if (element instanceof DocumentSymbolWithFile) {
-			res = LSPImages.imageFromSymbolKind(((DocumentSymbolWithFile) element).symbol.getKind());
+		if (element instanceof SymbolInformation info) {
+			res = LSPImages.imageFromSymbolKind(info.getKind());
+		} else if (element instanceof DocumentSymbol symbol) {
+			res = LSPImages.imageFromSymbolKind(symbol.getKind());
+		} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
+			res = LSPImages.imageFromSymbolKind(symbolWithFile.symbol.getKind());
 		}
 		IResource file = null;
-		if (element instanceof SymbolInformation) {
-			file = LSPEclipseUtils.findResourceFor(((SymbolInformation) element).getLocation().getUri());
-		} else if (element instanceof DocumentSymbolWithFile) {
-			file = ((DocumentSymbolWithFile) element).file;
+		if (element instanceof SymbolInformation symbol) {
+			file = LSPEclipseUtils.findResourceFor(symbol.getLocation().getUri());
+		} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
+			file = symbolWithFile.file;
 		}
 		/*
 		 * Implementation node: for problem decoration,m aybe consider using a ILabelDecorator/IDelayedLabelDecorator?
 		 */
 		if (file != null) {
 			Range range = null;
-			if (element instanceof SymbolInformation) {
-				range = ((SymbolInformation) element).getLocation().getRange();
-			} else if (element instanceof DocumentSymbol) {
-				range = ((DocumentSymbol) element).getRange();
-			} else if (element instanceof DocumentSymbolWithFile) {
-				range = ((DocumentSymbolWithFile) element).symbol.getRange();
+			if (element instanceof SymbolInformation symbol) {
+				range = symbol.getLocation().getRange();
+			} else if (element instanceof DocumentSymbol documentSymbol) {
+				range = documentSymbol.getRange();
+			} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
+				range = symbolWithFile.symbol.getRange();
 			}
 			if (range != null) {
 				try {
@@ -244,41 +244,41 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element == LSSymbolsContentProvider.COMPUTING) {
 			return new StyledString(Messages.outline_computingSymbols);
 		}
-		if (element instanceof Throwable) {
-			String message = ((Throwable) element).getMessage();
+		if (element instanceof Throwable throwable) {
+			String message = throwable.getMessage();
 			if (message == null) {
 				message = element.getClass().getName();
 			}
 			return new StyledString(message);
 		}
-		if (element instanceof LSPDocumentInfo) {
-			return new StyledString(((LSPDocumentInfo)element).getFileUri().getPath());
+		if (element instanceof LSPDocumentInfo info) {
+			return new StyledString(info.getFileUri().getPath());
 		}
 		StyledString res = new StyledString();
 		if (element == null){
 			return res;
 		}
-		if (element instanceof Either) {
-			element = ((Either<?, ?>) element).get();
+		if (element instanceof Either<?, ?> either) {
+			element = either.get();
 		}
 		String name = null;
 		SymbolKind kind = null;
 		URI location = null;
-		if (element instanceof SymbolInformation) {
-			name = ((SymbolInformation) element).getName();
-			kind = ((SymbolInformation) element).getKind();
+		if (element instanceof SymbolInformation symbolInformation) {
+			name = symbolInformation.getName();
+			kind = symbolInformation.getKind();
 			try {
-				location = URI.create(((SymbolInformation) element).getLocation().getUri());
+				location = URI.create(symbolInformation.getLocation().getUri());
 			} catch (IllegalArgumentException e) {
-				LanguageServerPlugin.logError("Invalid URI: " + ((SymbolInformation) element).getLocation().getUri(), e); //$NON-NLS-1$
+				LanguageServerPlugin.logError("Invalid URI: " + symbolInformation.getLocation().getUri(), e); //$NON-NLS-1$
 			}
-		} else if (element instanceof DocumentSymbol) {
-			name = ((DocumentSymbol) element).getName();
-			kind = ((DocumentSymbol) element).getKind();
-		} else if (element instanceof DocumentSymbolWithFile) {
-			name = ((DocumentSymbolWithFile) element).symbol.getName();
-			kind = ((DocumentSymbolWithFile) element).symbol.getKind();
-			IFile file = ((DocumentSymbolWithFile) element).file;
+		} else if (element instanceof DocumentSymbol documentSymbol) {
+			name = documentSymbol.getName();
+			kind = documentSymbol.getKind();
+		} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
+			name = symbolWithFile.symbol.getName();
+			kind = symbolWithFile.symbol.getKind();
+			IFile file = symbolWithFile.file;
 			if (file != null) {
 				location = file.getLocationURI();
 			}
@@ -320,8 +320,8 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (event.getKey().equals(CNFOutlinePage.SHOW_KIND_PREFERENCE)) {
 			this.showKind = Boolean.valueOf(event.getNewValue().toString());
 			for (Object listener : this.getListeners()) {
-				if (listener instanceof ILabelProviderListener) {
-					((ILabelProviderListener) listener).labelProviderChanged(new LabelProviderChangedEvent(this));
+				if (listener instanceof ILabelProviderListener labelProviderListener) {
+					labelProviderListener.labelProviderChanged(new LabelProviderChangedEvent(this));
 				}
 			}
 		}

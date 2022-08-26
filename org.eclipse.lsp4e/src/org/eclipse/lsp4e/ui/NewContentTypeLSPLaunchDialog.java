@@ -133,10 +133,9 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		contentTypesViewer.setInput(Platform.getContentTypeManager());
 		contentTypesViewer.addSelectionChangedListener(event -> {
 			IContentType newContentType = null;
-			if (event.getSelection() instanceof IStructuredSelection) {
-				IStructuredSelection sel = (IStructuredSelection)event.getSelection();
-				if (sel.size() == 1 && sel.getFirstElement() instanceof IContentType) {
-					newContentType = (IContentType)sel.getFirstElement();
+			if (event.getSelection() instanceof IStructuredSelection sel) {
+				if (sel.size() == 1 && sel.getFirstElement() instanceof IContentType contentType) {
+					newContentType = contentType;
 				}
 			}
 			contentType = newContentType;
@@ -170,10 +169,9 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		});
 		launchConfigViewer.addSelectionChangedListener(event -> {
 			ILaunchConfiguration newLaunchConfig = null;
-			if (event.getSelection() instanceof IStructuredSelection) {
-				IStructuredSelection sel = (IStructuredSelection)event.getSelection();
-				if (sel.size() == 1 && sel.getFirstElement() instanceof ILaunchConfiguration) {
-					newLaunchConfig = (ILaunchConfiguration)sel.getFirstElement();
+			if (event.getSelection() instanceof IStructuredSelection sel) {
+				if (sel.size() == 1 && sel.getFirstElement() instanceof ILaunchConfiguration launchConfig) {
+					newLaunchConfig = launchConfig;
 				}
 			}
 			launchConfig = newLaunchConfig;
@@ -184,8 +182,8 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 			ISelection sel = event.getSelection();
 			if (sel.isEmpty()) {
 				launchMode = null;
-			} else if (sel instanceof IStructuredSelection) {
-				launchMode = (Set<String>) ((IStructuredSelection)sel).getFirstElement();
+			} else if (sel instanceof IStructuredSelection structuredSel) {
+				launchMode = (Set<String>) structuredSel.getFirstElement();
 			}
 			updateButtons();
 		});

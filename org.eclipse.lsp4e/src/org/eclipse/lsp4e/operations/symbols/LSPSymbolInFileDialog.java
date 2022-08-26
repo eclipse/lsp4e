@@ -98,12 +98,12 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 			}
 
 			Range range = null;
-			if (item instanceof SymbolInformation) {
-				range = ((SymbolInformation) item).getLocation().getRange();
-			} else if (item instanceof DocumentSymbol) {
-				range = ((DocumentSymbol) item).getSelectionRange();
-			} else if (item instanceof DocumentSymbolWithFile) {
-				range = ((DocumentSymbolWithFile) item).symbol.getSelectionRange();
+			if (item instanceof SymbolInformation symbolInformation) {
+				range = symbolInformation.getLocation().getRange();
+			} else if (item instanceof DocumentSymbol documentSymbol) {
+				range = documentSymbol.getSelectionRange();
+			} else if (item instanceof DocumentSymbolWithFile documentSymbolWithFile) {
+				range = documentSymbolWithFile.symbol.getSelectionRange();
 			}
 			if (range != null) {
 				try {

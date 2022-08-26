@@ -121,8 +121,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		LSCompletionProposal[] completeProposals = new LSCompletionProposal[proposals.size()];
 		int i = 0;
 		for (ICompletionProposal proposal : proposals) {
-			if (proposal instanceof LSCompletionProposal) {
-				completeProposals[i] = (LSCompletionProposal) proposal;
+			if (proposal instanceof LSCompletionProposal completeProposal) {
+				completeProposals[i] = completeProposal;
 				i++;
 			} else {
 				return proposals.toArray(new ICompletionProposal[proposals.size()]);

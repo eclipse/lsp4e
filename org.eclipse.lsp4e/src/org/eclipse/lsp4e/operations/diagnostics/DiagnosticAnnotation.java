@@ -24,13 +24,12 @@ public class DiagnosticAnnotation extends Annotation {
 
 	@Override
 	public String getType() {
-		switch (diagnostic.getSeverity()) {
-		case Error: return "org.eclipse.ui.workbench.texteditor.error"; //$NON-NLS-1$
-		case Warning: return "org.eclipse.ui.workbench.texteditor.warning"; //$NON-NLS-1$
-		case Information: return "org.eclipse.ui.workbench.texteditor.info"; //$NON-NLS-1$
-		case Hint: return "org.eclipse.ui.workbench.texteditor.info"; //$NON-NLS-1$
-		}
-		return super.getType();
+		return switch (diagnostic.getSeverity()) {
+		case Error -> "org.eclipse.ui.workbench.texteditor.error"; //$NON-NLS-1$
+		case Warning -> "org.eclipse.ui.workbench.texteditor.warning"; //$NON-NLS-1$
+		case Information -> "org.eclipse.ui.workbench.texteditor.info"; //$NON-NLS-1$
+		case Hint ->"org.eclipse.ui.workbench.texteditor.info"; //$NON-NLS-1$
+		};
 	}
 
 	@Override

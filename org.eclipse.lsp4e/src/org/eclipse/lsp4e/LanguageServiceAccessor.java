@@ -175,8 +175,8 @@ public class LanguageServiceAccessor {
 
 		for (final IEditorReference editor : editors) {
 			try {
-				if (editor.getEditorInput() instanceof FileEditorInput) {
-					final IFile editorFile = ((FileEditorInput) editor.getEditorInput()).getFile();
+				if (editor.getEditorInput() instanceof FileEditorInput editorInput) {
+					final IFile editorFile = editorInput.getFile();
 					final IContentDescription contentDesc = editorFile.getContentDescription();
 					if(contentDesc == null)
 						continue;
@@ -468,7 +468,7 @@ public class LanguageServiceAccessor {
 	private static LanguageServerWrapper getLSWrapperForConnection(@NonNull IDocument document,
 			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
 
-		final Predicate<LanguageServerWrapper> serverSelector = wrapper -> wrapper.canOperate(document) 
+		final Predicate<LanguageServerWrapper> serverSelector = wrapper -> wrapper.canOperate(document)
 				&& wrapper.serverDefinition.equals(serverDefinition);
 
 		var matchingServer = startedServers.stream().filter(serverSelector).findFirst();

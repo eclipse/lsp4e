@@ -301,14 +301,11 @@ public class LSPEclipseUtils {
 			// if severity is empty it is up to the client to interpret diagnostics
 			return IMarker.SEVERITY_ERROR;
 		}
-		switch (lspSeverity) {
-		case Error:
-			return IMarker.SEVERITY_ERROR;
-		case Warning:
-			return IMarker.SEVERITY_WARNING;
-		default:
-			return IMarker.SEVERITY_INFO;
-		}
+		return switch (lspSeverity) {
+		case Error -> IMarker.SEVERITY_ERROR;
+		case Warning -> IMarker.SEVERITY_WARNING;
+		default -> IMarker.SEVERITY_INFO;
+		};
 	}
 
 	@Nullable
@@ -660,14 +657,11 @@ public class LSPEclipseUtils {
 			// teardown runs when there are document setup actions still pending
 			return null;
 		}
-		if(editorInput instanceof IFileEditorInput) {
-			IFileEditorInput fileEditorInput = (IFileEditorInput)editorInput;
-				return getDocument(fileEditorInput.getFile());
-		}else if(editorInput instanceof IPathEditorInput) {
-			IPathEditorInput pathEditorInput = (IPathEditorInput)editorInput;
+		if(editorInput instanceof IFileEditorInput fileEditorInput) {
+			return getDocument(fileEditorInput.getFile());
+		}else if(editorInput instanceof IPathEditorInput pathEditorInput) {
 			return getDocument(ResourcesPlugin.getWorkspace().getRoot().getFile(pathEditorInput.getPath()));
-		}else if(editorInput instanceof IURIEditorInput) {
-			IURIEditorInput uriEditorInput = (IURIEditorInput)editorInput;
+		}else if(editorInput instanceof IURIEditorInput uriEditorInput) {
 			IResource resource = findResourceFor(uriEditorInput.getURI().toString());
 			if (resource != null) {
 				return getDocument(resource);
@@ -746,8 +740,8 @@ public class LSPEclipseUtils {
 							CreateFileChange operation = new CreateFileChange(targetURI, "", null); //$NON-NLS-1$
 							change.add(operation);
 						}
-					} else if (resourceOperation instanceof DeleteFile) {
-						IResource resource = LSPEclipseUtils.findResourceFor(((DeleteFile) resourceOperation).getUri());
+					} else if (resourceOperation instanceof DeleteFile delete) {
+						IResource resource = LSPEclipseUtils.findResourceFor(delete.getUri());
 						if (resource != null) {
 							DeleteResourceChange deleteChange = new DeleteResourceChange(resource.getFullPath(), true);
 							change.add(deleteChange);
@@ -755,9 +749,9 @@ public class LSPEclipseUtils {
 							LanguageServerPlugin.logWarning(
 									"Changes outside of visible projects are not supported at the moment.", null); //$NON-NLS-1$
 						}
-					} else if (resourceOperation instanceof RenameFile) {
-						URI oldURI = URI.create(((RenameFile) resourceOperation).getOldUri());
-						URI newURI = URI.create(((RenameFile) resourceOperation).getNewUri());
+					} else if (resourceOperation instanceof RenameFile rename) {
+						URI oldURI = URI.create(rename.getOldUri());
+						URI newURI = URI.create(rename.getNewUri());
 						IFile oldFile = LSPEclipseUtils.getFileHandle(oldURI.toString());
 						IFile newFile = LSPEclipseUtils.getFileHandle(newURI.toString());
 						DeleteResourceChange removeNewFile = null;
@@ -1002,13 +996,14 @@ public class LSPEclipseUtils {
 	}
 
 	public static ITextViewer getTextViewer(@Nullable final IEditorPart editorPart) {
-		final ITextViewer textViewer = Adapters.adapt(editorPart, ITextViewer.class);
-		if (textViewer != null)
+		final @Nullable ITextViewer textViewer = Adapters.adapt(editorPart, ITextViewer.class);
+		if (textViewer != null) {
 			return textViewer;
+		}
 
-		final Object textOperationTarget = Adapters.adapt(editorPart, ITextOperationTarget.class);
-		if (textOperationTarget instanceof ITextViewer)
-			return (ITextViewer) textOperationTarget;
+		if (Adapters.adapt(editorPart, ITextOperationTarget.class) instanceof ITextViewer viewer) {
+			return viewer;
+		}
 		return null;
 	}
 
@@ -1068,11 +1063,11 @@ public class LSPEclipseUtils {
 	}
 
 	private static URI toUri(IEditorInput editorInput) {
-		if (editorInput instanceof FileEditorInput) {
-			return LSPEclipseUtils.toUri(((FileEditorInput) editorInput).getFile());
+		if (editorInput instanceof FileEditorInput fileEditorInput) {
+			return LSPEclipseUtils.toUri(fileEditorInput.getFile());
 		}
-		if (editorInput instanceof IURIEditorInput) {
-			return LSPEclipseUtils.toUri(Path.fromPortableString((((IURIEditorInput) editorInput).getURI()).getPath()));
+		if (editorInput instanceof IURIEditorInput uriEditorInput) {
+			return LSPEclipseUtils.toUri(Path.fromPortableString((uriEditorInput.getURI()).getPath()));
 		}
 		return null;
 	}

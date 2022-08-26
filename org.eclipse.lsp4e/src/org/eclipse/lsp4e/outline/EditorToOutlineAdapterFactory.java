@@ -46,9 +46,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 
 	@Override
 	public <T> T getAdapter(Object adaptableObject, Class<T> adapterType) {
-		if (adapterType == IContentOutlinePage.class && adaptableObject instanceof IEditorPart) {
-
-			final IEditorPart editorPart = (IEditorPart) adaptableObject;
+		if (adapterType == IContentOutlinePage.class && adaptableObject instanceof IEditorPart editorPart) {
 			final IEditorInput editorInput = editorPart.getEditorInput();
 
 			if (editorInput != null && LanguageServersRegistry.getInstance().canUseLanguageServer(editorInput)) {
@@ -96,8 +94,8 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 
 	private static CNFOutlinePage createOutlinePage(IEditorPart editorPart, @NonNull LanguageServer languageServer) {
 		ITextEditor textEditor = null;
-		if (editorPart instanceof ITextEditor) {
-			textEditor = (ITextEditor) editorPart;
+		if (editorPart instanceof ITextEditor thisTextEditor) {
+			textEditor = thisTextEditor;
 		}
 		return new CNFOutlinePage(languageServer, textEditor);
 	}
@@ -111,9 +109,9 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 					var page = UI.getActivePage();
 					if(page != null) {
 						IViewPart viewPart = page.findView(OUTLINE_VIEW_ID);
-						if (viewPart instanceof ContentOutline) {
+						if (viewPart instanceof ContentOutline contentOutline) {
 							LANG_SERVER_CACHE.put(editorPart, servers.get(0));
-							((ContentOutline) viewPart).partActivated(editorPart);
+							contentOutline.partActivated(editorPart);
 						}
 					}
 				});
