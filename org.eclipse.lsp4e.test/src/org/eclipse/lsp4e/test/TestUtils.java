@@ -188,10 +188,10 @@ public class TestUtils {
 	}
 
 	public static Table findCompletionSelectionControl(Widget control) {
-		if (control instanceof Table) {
-			return (Table) control;
-		} else if (control instanceof Composite) {
-			for (Widget child : ((Composite) control).getChildren()) {
+		if (control instanceof Table table) {
+			return table;
+		} else if (control instanceof Composite composite) {
+			for (Widget child : composite.getChildren()) {
 				Table res = findCompletionSelectionControl(child);
 				if (res != null) {
 					return res;

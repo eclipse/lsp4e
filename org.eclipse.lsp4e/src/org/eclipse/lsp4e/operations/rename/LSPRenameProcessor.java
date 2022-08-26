@@ -181,10 +181,10 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	}
 
 	private String getErrorMessage(Throwable e) {
-		if (e.getCause() instanceof ResponseErrorException) {
-			ResponseError responseError = ((ResponseErrorException) e.getCause()).getResponseError();
+		if (e.getCause() instanceof ResponseErrorException responseErrorException) {
+			ResponseError responseError = responseErrorException.getResponseError();
 			return responseError.getMessage()
-					+ ((responseError.getData() instanceof String) ? (": " + responseError.getData()) : ""); //$NON-NLS-1$ //$NON-NLS-2$
+					+ ((responseError.getData() instanceof String data) ? (": " + data) : ""); //$NON-NLS-1$ //$NON-NLS-2$
 		} else {
 			return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
 		}

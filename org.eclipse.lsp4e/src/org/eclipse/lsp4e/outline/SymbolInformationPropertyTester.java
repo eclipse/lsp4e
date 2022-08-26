@@ -60,22 +60,20 @@ public class SymbolInformationPropertyTester extends PropertyTester {
 
 	@Override
 	public boolean test(Object receiver, String property, Object[] args, Object expectedValue) {
-		if (receiver instanceof SymbolInformation) {
-			SymbolInformation info = (SymbolInformation) receiver;
+		if (receiver instanceof SymbolInformation info) {
 			if (info.getLocation() == null || info.getLocation().getUri() == null) {
 				return false;
 			}
 			String uri = info.getLocation().getUri();
-			switch (property) {
-			case FILE_EXTENSION:
-				return uri.endsWith("." + expectedValue.toString()); //$NON-NLS-1$
-			case CONTENT_TYPE_ID:
+			return switch (property) {
+			case FILE_EXTENSION -> uri.endsWith("." + expectedValue.toString()); //$NON-NLS-1$
+			case CONTENT_TYPE_ID -> {
 				IContentTypeManager contentTypeManager = Platform.getContentTypeManager();
 				IContentType contentType = contentTypeManager.findContentTypeFor(uri);
-				return contentType != null && contentType.getId().equals(expectedValue.toString());
-			default:
-				return false;
+				yield contentType != null && contentType.getId().equals(expectedValue.toString());
 			}
+			default -> false;
+			};
 		}
 		return false;
 	}

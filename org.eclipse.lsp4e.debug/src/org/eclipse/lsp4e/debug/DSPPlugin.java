@@ -117,11 +117,9 @@ public class DSPPlugin extends AbstractUIPlugin {
 
 	private static void log(int severity, String message, final Throwable thr) {
 		ResponseError error = null;
-		if (thr instanceof ResponseErrorException) {
-			ResponseErrorException responseErrorException = (ResponseErrorException) thr;
+		if (thr instanceof ResponseErrorException responseErrorException) {
 			error = responseErrorException.getResponseError();
-		} else if (thr != null && thr.getCause() instanceof ResponseErrorException) {
-			ResponseErrorException responseErrorException = (ResponseErrorException) thr.getCause();
+		} else if (thr != null && thr.getCause() instanceof ResponseErrorException responseErrorException) {
 			error = responseErrorException.getResponseError();
 		}
 		if (error != null) {

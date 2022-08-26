@@ -212,8 +212,8 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		InitializeRequestArguments arguments = new InitializeRequestArguments();
 		arguments.setClientID("lsp4e.debug");
 		String adapterId = "adapterId";
-		if (dspParameters.containsKey("type") && dspParameters.get("type") instanceof String) {
-			adapterId = (String) dspParameters.get("type");
+		if (dspParameters.get("type") instanceof String type) {
+			adapterId = type;
 		}
 		arguments.setAdapterID(adapterId);
 		arguments.setPathFormat("path");

@@ -108,17 +108,11 @@ public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessS
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == null) {
-			return false;
-		}
-		if (!(obj instanceof ProcessOverSocketStreamConnectionProvider)) {
-			return false;
-		}
 		if (obj == this) {
 			return true;
 		}
-		ProcessOverSocketStreamConnectionProvider other = (ProcessOverSocketStreamConnectionProvider) obj;
-		return Objects.equals(this.getCommands(), other.getCommands())
+		return obj instanceof ProcessOverSocketStreamConnectionProvider other //
+				&& Objects.equals(this.getCommands(), other.getCommands())
 				&& Objects.equals(this.getWorkingDirectory(), other.getWorkingDirectory())
 				&& Objects.equals(this.socket, other.socket);
 	}

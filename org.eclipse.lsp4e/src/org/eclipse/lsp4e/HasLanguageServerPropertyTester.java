@@ -22,14 +22,14 @@ public class HasLanguageServerPropertyTester extends PropertyTester {
 
 	@Override
 	public boolean test(Object receiver, String property, Object[] args, Object expectedValue) {
-		if (receiver instanceof IFile) {
-			return LanguageServersRegistry.getInstance().canUseLanguageServer((IFile) receiver);
-		} else if (receiver instanceof IEditorInput) {
-			return LanguageServersRegistry.getInstance().canUseLanguageServer((IEditorInput) receiver);
-		} else if (receiver instanceof IDocument) {
-			return LanguageServersRegistry.getInstance().canUseLanguageServer((IDocument) receiver);
-		} else if (receiver instanceof ITextViewer) {
-			IDocument document = ((ITextViewer) receiver).getDocument();
+		if (receiver instanceof IFile file) {
+			return LanguageServersRegistry.getInstance().canUseLanguageServer(file);
+		} else if (receiver instanceof IEditorInput editorInput) {
+			return LanguageServersRegistry.getInstance().canUseLanguageServer(editorInput);
+		} else if (receiver instanceof IDocument document) {
+			return LanguageServersRegistry.getInstance().canUseLanguageServer(document);
+		} else if (receiver instanceof ITextViewer viewer) {
+			IDocument document = viewer.getDocument();
 			if (document != null) {
 				return LanguageServersRegistry.getInstance().canUseLanguageServer(document);
 			}

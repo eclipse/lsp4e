@@ -34,8 +34,7 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		if (part instanceof ITextEditor) {
-			final ITextEditor textEditor = (ITextEditor) part;
+		if (part instanceof ITextEditor textEditor) {
 			final IDocument document = LSPEclipseUtils.getDocument(textEditor);
 			if (document == null) {
 				return null;

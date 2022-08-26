@@ -50,13 +50,12 @@ public final class UI {
 			return null;
 		}
 		var editorPart = activePage.getActiveEditor();
-		if (editorPart instanceof ITextEditor) {
-			return (ITextEditor) editorPart;
-		} else if (editorPart instanceof MultiPageEditorPart) {
-			MultiPageEditorPart multiPageEditorPart = (MultiPageEditorPart) editorPart;
+		if (editorPart instanceof ITextEditor textEditor) {
+			return textEditor;
+		} else if (editorPart instanceof MultiPageEditorPart multiPageEditorPart) {
 			Object page = multiPageEditorPart.getSelectedPage();
-			if (page instanceof ITextEditor) {
-				return (ITextEditor) page;
+			if (page instanceof ITextEditor textEditor) {
+				return textEditor;
 			}
 		}
 		return null;

@@ -262,7 +262,7 @@ public final class MockLanguageServer implements LanguageServer {
 	@Override
 	public CompletableFuture<Object> shutdown() {
 		this.started = false;
-		return buildMaybeDelayedFuture(CompletableFuture.completedFuture(Collections.emptySet()));
+		return buildMaybeDelayedFuture(Collections.emptySet());
 	}
 
 	@Override

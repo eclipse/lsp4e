@@ -86,8 +86,8 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 
 	private String getClassPath(Class<?> clazz) {
 		ClassLoader loader = clazz.getClassLoader();
-		if (loader instanceof URLClassLoader) {
-			return Arrays.asList(((URLClassLoader)loader).getURLs()).stream().map(url -> url.getFile()).collect(Collectors.joining(System.getProperty("path.separator")));
+		if (loader instanceof URLClassLoader urlClassLoader) {
+			return Arrays.asList(urlClassLoader.getURLs()).stream().map(url -> url.getFile()).collect(Collectors.joining(System.getProperty("path.separator")));
 		} else {
 			LinkedList<Bundle> toProcess = new LinkedList<>();
 			Set<Bundle> processed = new HashSet<>();

@@ -60,8 +60,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 			if (selectionProvider == null)
 				return;
 
-			if (selectionProvider instanceof IPostSelectionProvider) {
-				IPostSelectionProvider provider = (IPostSelectionProvider) selectionProvider;
+			if (selectionProvider instanceof IPostSelectionProvider provider) {
 				provider.addPostSelectionChangedListener(this);
 			} else {
 				selectionProvider.addSelectionChangedListener(this);
@@ -72,8 +71,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 			if (selectionProvider == null)
 				return;
 
-			if (selectionProvider instanceof IPostSelectionProvider) {
-				IPostSelectionProvider provider = (IPostSelectionProvider) selectionProvider;
+			if (selectionProvider instanceof IPostSelectionProvider provider) {
 				provider.removePostSelectionChangedListener(this);
 			} else {
 				selectionProvider.removeSelectionChangedListener(this);
@@ -87,14 +85,12 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 	}
 
 	public void install(ITextViewer viewer) {
-		if (!(viewer instanceof ISourceViewer)) {
-			return;
+		if (viewer instanceof ISourceViewer thisViewer) {
+			super.install();
+			this.sourceViewer = thisViewer;
+			editorSelectionChangedListener = new EditorSelectionChangedListener();
+			editorSelectionChangedListener.install(sourceViewer.getSelectionProvider());
 		}
-
-		super.install();
-		this.sourceViewer = (ISourceViewer) viewer;
-		editorSelectionChangedListener = new EditorSelectionChangedListener();
-		editorSelectionChangedListener.install(sourceViewer.getSelectionProvider());
 	}
 
 	@Override
@@ -150,8 +146,8 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 	}
 
 	private void updateLinkedEditing(ISelection selection) {
-		if (selection instanceof ITextSelection) {
-			updateLinkedEditing(((ITextSelection) selection).getOffset());
+		if (selection instanceof ITextSelection textSelection) {
+			updateLinkedEditing(textSelection.getOffset());
 		}
 	}
 

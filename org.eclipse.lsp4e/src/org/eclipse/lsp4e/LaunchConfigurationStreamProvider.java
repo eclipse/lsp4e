@@ -109,14 +109,12 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == null) {
-			return false;
+		if (obj == this) {
+			return true;
 		}
-		if (!(obj instanceof LaunchConfigurationStreamProvider)) {
-			return false;
-		}
-		LaunchConfigurationStreamProvider other = (LaunchConfigurationStreamProvider)obj;
-		return this.launchConfiguration.equals(other.launchConfiguration) && this.launchModes.equals(other.launchModes);
+		return obj instanceof LaunchConfigurationStreamProvider other && //
+			this.launchConfiguration.equals(other.launchConfiguration) && //
+			this.launchModes.equals(other.launchModes);
 	}
 
 	@Override

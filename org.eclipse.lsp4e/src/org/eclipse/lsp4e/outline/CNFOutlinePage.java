@@ -132,11 +132,11 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 		if (selection == null) {
 			return null;
 		}
-		if (selection instanceof SymbolInformation) {
-			return ((SymbolInformation) selection).getLocation().getRange();
+		if (selection instanceof SymbolInformation symbolInformation) {
+			return symbolInformation.getLocation().getRange();
 		}
-		if (selection instanceof DocumentSymbolWithFile) {
-			return ((DocumentSymbolWithFile) selection).symbol.getSelectionRange();
+		if (selection instanceof DocumentSymbolWithFile symbolWithFile) {
+			return symbolWithFile.symbol.getSelectionRange();
 		}
 		return null;
 	}
@@ -147,8 +147,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 			if (selectionProvider == null)
 				return;
 
-			if (selectionProvider instanceof IPostSelectionProvider) {
-				IPostSelectionProvider provider = (IPostSelectionProvider) selectionProvider;
+			if (selectionProvider instanceof IPostSelectionProvider provider) {
 				provider.addPostSelectionChangedListener(this);
 			} else {
 				selectionProvider.addSelectionChangedListener(this);
@@ -159,8 +158,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 			if (selectionProvider == null)
 				return;
 
-			if (selectionProvider instanceof IPostSelectionProvider) {
-				IPostSelectionProvider provider = (IPostSelectionProvider) selectionProvider;
+			if (selectionProvider instanceof IPostSelectionProvider provider) {
 				provider.removePostSelectionChangedListener(this);
 			} else {
 				selectionProvider.removeSelectionChangedListener(this);
@@ -170,17 +168,15 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 		@Override
 		public void selectionChanged(SelectionChangedEvent event) {
 			ISelection selection = event.getSelection();
-			if (!(selection instanceof ITextSelection)) {
-				return;
+			if (selection instanceof ITextSelection textSelection) {
+				if (!preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true)) {
+					return;
+				}
+				int offset = outlineViewer instanceof ITextViewerExtension5 extension5
+						? extension5.widgetOffset2ModelOffset(textSelection.getOffset())
+						: textSelection.getOffset();
+				refreshTreeSelection(outlineViewer, offset, document);
 			}
-			ITextSelection textSelection = (ITextSelection) selection;
-			if (!preferences.getBoolean(LINK_WITH_EDITOR_PREFERENCE, true)) {
-				return;
-			}
-			int offset = outlineViewer instanceof ITextViewerExtension5
-					? ((ITextViewerExtension5) outlineViewer).widgetOffset2ModelOffset(textSelection.getOffset())
-					: textSelection.getOffset();
-			refreshTreeSelection(outlineViewer, offset, document);
 		}
 	}
 
@@ -227,14 +223,14 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	private static Range toRange(Object object) {
 		Range range = null;
 		@Nullable
-		SymbolInformation symbol = object instanceof SymbolInformation ? (SymbolInformation) object
+		SymbolInformation symbol = object instanceof SymbolInformation symbolInformation ? symbolInformation
 				: Adapters.adapt(object, SymbolInformation.class);
 		if (symbol != null) {
 			range = symbol.getLocation().getRange();
 		} else {
 			@Nullable
-			DocumentSymbolWithFile documentSymbol = object instanceof DocumentSymbolWithFile
-					? (DocumentSymbolWithFile) object
+			DocumentSymbolWithFile documentSymbol = object instanceof DocumentSymbolWithFile symbolWithFile
+					? symbolWithFile
 					: Adapters.adapt(object, DocumentSymbolWithFile.class);
 			if (documentSymbol != null) {
 				range = documentSymbol.symbol.getRange();

@@ -48,44 +48,41 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		if (!(part instanceof ITextEditor)) {
-			return null;
+		if (part instanceof ITextEditor textEditor) {
+			ISelectionProvider provider = textEditor.getSelectionProvider();
+			if (provider == null) {
+				return null;
+			}
+			ISelection sel = provider.getSelection();
+			if (sel instanceof ITextSelection textSelection && !textSelection.isEmpty()) {
+				IDocument document = LSPEclipseUtils.getDocument(textEditor);
+				if (document != null) {
+					Shell shell = part.getSite().getShell();
+					return LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
+							.thenAcceptAsync(languageServers -> {
+								if (languageServers.isEmpty()) {
+									return;
+								}
+								int offset = textSelection.getOffset();
+								// TODO consider better strategy to pick LS, or iterate over LS until one gives
+								// 	a good result
+								RefactoringProcessor processor = new LSPRenameProcessor(document, languageServers.get(0), offset);
+								ProcessorBasedRefactoring refactoring = new ProcessorBasedRefactoring(processor);
+								LSPRenameRefactoringWizard wizard = new LSPRenameRefactoringWizard(refactoring);
+								RefactoringWizardOpenOperation operation = new RefactoringWizardOpenOperation(wizard);
+								shell.getDisplay().asyncExec(() -> {
+									try {
+										operation.run(shell, Messages.rename_title);
+									} catch (InterruptedException e1) {
+										LanguageServerPlugin.logError(e1);
+										Thread.currentThread().interrupt();
+									}
+								});
+							});
+				}
+			}
 		}
-		ISelectionProvider provider = ((ITextEditor) part).getSelectionProvider();
-		if (provider == null) {
-			return null;
-		}
-		ISelection sel = provider.getSelection();
-		if (!(sel instanceof ITextSelection) || sel.isEmpty()) {
-			return null;
-		}
-		ITextSelection textSelection = (ITextSelection) sel;
-		IDocument document = LSPEclipseUtils.getDocument((ITextEditor) part);
-		if (document == null) {
-			return null;
-		}
-		Shell shell = part.getSite().getShell();
-		return LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
-				.thenAcceptAsync(languageServers -> {
-					if (languageServers.isEmpty()) {
-						return;
-					}
-					int offset = textSelection.getOffset();
-					// TODO consider better strategy to pick LS, or iterate over LS until one gives
-					// a good result
-					RefactoringProcessor processor = new LSPRenameProcessor(document, languageServers.get(0), offset);
-					ProcessorBasedRefactoring refactoring = new ProcessorBasedRefactoring(processor);
-					LSPRenameRefactoringWizard wizard = new LSPRenameRefactoringWizard(refactoring);
-					RefactoringWizardOpenOperation operation = new RefactoringWizardOpenOperation(wizard);
-					shell.getDisplay().asyncExec(() -> {
-						try {
-							operation.run(shell, Messages.rename_title);
-						} catch (InterruptedException e1) {
-							LanguageServerPlugin.logError(e1);
-							Thread.currentThread().interrupt();
-						}
-					});
-				});
+		return null;
 	}
 
 	public static boolean isRenameProvider(ServerCapabilities serverCapabilities) {
@@ -108,8 +105,8 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 	@Override
 	public void setEnabled(Object evaluationContext) {
 		var part = UI.getActivePart();
-		if (part instanceof ITextEditor) {
-			ISelectionProvider provider = ((ITextEditor) part).getSelectionProvider();
+		if (part instanceof ITextEditor textEditor) {
+			ISelectionProvider provider = textEditor.getSelectionProvider();
 			ISelection selection = (provider == null) ? null : provider.getSelection();
 			var isEnable = selection instanceof ITextSelection && !selection.isEmpty();
 

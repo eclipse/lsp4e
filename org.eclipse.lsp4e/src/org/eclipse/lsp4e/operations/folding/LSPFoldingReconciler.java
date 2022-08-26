@@ -28,9 +28,9 @@ public class LSPFoldingReconciler extends MonoReconciler {
 	@Override
 	public void install(ITextViewer textViewer) {
 		super.install(textViewer);
-		if (textViewer instanceof ProjectionViewer) {
+		if (textViewer instanceof ProjectionViewer projectionViewer) {
 			((LSPFoldingReconcilingStrategy) getReconcilingStrategy(IDocument.DEFAULT_CONTENT_TYPE))
-					.install((ProjectionViewer) textViewer);
+					.install(projectionViewer);
 		}
 	}
 

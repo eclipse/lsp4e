@@ -421,10 +421,9 @@ public class LanguageServerWrapper {
 	}
 
 	private void logMessage(Message message) {
-		if (message instanceof ResponseMessage && ((ResponseMessage) message).getError() != null
-				&& ((ResponseMessage) message).getId()
+		if (message instanceof ResponseMessage responseMessage && responseMessage.getError() != null
+				&& responseMessage.getId()
 						.equals(Integer.toString(ResponseErrorCode.RequestCancelled.getValue()))) {
-			ResponseMessage responseMessage = (ResponseMessage) message;
 			LanguageServerPlugin.logError(new ResponseErrorException(responseMessage.getError()));
 		} else if (LanguageServerPlugin.DEBUG) {
 			LanguageServerPlugin.logInfo(message.getClass().getSimpleName() + '\n' + message.toString());
@@ -965,8 +964,8 @@ public class LanguageServerWrapper {
 			WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
 			if (isPreDeletEvent(e)) {
 				final IResource resource = e.getResource();
-				if (resource instanceof IProject) {
-					wsFolderEvent.getRemoved().add(LSPEclipseUtils.toWorkspaceFolder((IProject) resource));
+				if (resource instanceof IProject project) {
+					wsFolderEvent.getRemoved().add(LSPEclipseUtils.toWorkspaceFolder(project));
 					return wsFolderEvent;
 				} else {
 					return null;
@@ -976,8 +975,7 @@ public class LanguageServerWrapper {
 			// Use the visitor implementation to extract the low-level detail from delta
 			try {
 				e.getDelta().accept(delta -> {
-					if (delta.getResource() instanceof IProject) {
-						IProject project = (IProject) delta.getResource();
+					if (delta.getResource() instanceof IProject project) {
 						final WorkspaceFolder wsFolder = LSPEclipseUtils.toWorkspaceFolder(project);
 						if ((isAddEvent(delta) || isProjectOpenCloseEvent(delta))
 								&& project.isAccessible()

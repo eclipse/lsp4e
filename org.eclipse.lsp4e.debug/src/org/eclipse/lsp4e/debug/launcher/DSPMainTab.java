@@ -170,8 +170,8 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 
 	private void setEnabled(Composite composite, boolean enabled) {
 		for (Control control : composite.getChildren()) {
-			if (control instanceof Composite) {
-				setEnabled((Composite) control, enabled);
+			if (control instanceof Composite c) {
+				setEnabled(c, enabled);
 			} else {
 				control.setEnabled(enabled);
 			}

@@ -61,16 +61,12 @@ public class ServerMessageHandler {
 
 		@Override
 		public Image getPopupShellImage(int maximumHeight) {
-			switch (messageParams.getType()) {
-			case Error:
-				return LSPImages.getSharedImage(ISharedImages.IMG_OBJS_ERROR_TSK);
-			case Warning:
-				return LSPImages.getSharedImage(ISharedImages.IMG_OBJS_WARN_TSK);
-			case Info:
-				return LSPImages.getSharedImage(ISharedImages.IMG_OBJS_INFO_TSK);
-			default:
-				return null;
-			}
+			return switch (messageParams.getType()) {
+			case Error -> LSPImages.getSharedImage(ISharedImages.IMG_OBJS_ERROR_TSK);
+			case Warning -> LSPImages.getSharedImage(ISharedImages.IMG_OBJS_WARN_TSK);
+			case Info -> LSPImages.getSharedImage(ISharedImages.IMG_OBJS_INFO_TSK);
+			default -> null;
+			};
 		}
 
 	}

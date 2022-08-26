@@ -53,26 +53,24 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 	@Override
 	public String getText(Object element) {
 		StringBuilder label = new StringBuilder();
-		if (element instanceof DSPThread) {
-			DSPThread thread = (DSPThread) element;
+		if (element instanceof DSPThread thread) {
 			label.append(NLS.bind("Thread #{0} [{1}]", thread.getId(), thread.getName()));
 
 		}
 
 		if (label.length() != 0) {
-			if (element instanceof ITerminate) {
-				if (((ITerminate) element).isTerminated()) {
+			if (element instanceof ITerminate terminate) {
+				if (terminate.isTerminated()) {
 					label.insert(0, "<terminated>");
 				}
-			} else if (element instanceof IDisconnect && ((IDisconnect) element).isDisconnected()) {
+			} else if (element instanceof IDisconnect disconned && disconned.isDisconnected()) {
 				label.insert(0, "<disconnected>");
 			}
 		} else {
 			// Use default TODO should the entire default be copied here?
 			label.append(DebugUIPlugin.getDefaultLabelProvider().getText(element));
 		}
-		if (element instanceof DSPDebugElement) {
-			DSPDebugElement debugElement = (DSPDebugElement) element;
+		if (element instanceof DSPDebugElement debugElement) {
 			if (debugElement.getErrorMessage() != null) {
 				label.append(" <error:");
 				label.append(debugElement.getErrorMessage());
@@ -84,8 +82,7 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 
 	@Override
 	public Font getFont(Object element) {
-		if (element instanceof DSPDebugElement) {
-			DSPDebugElement debugElement = (DSPDebugElement) element;
+		if (element instanceof DSPDebugElement debugElement) {
 			if (debugElement.getErrorMessage() != null) {
 				return italic();
 			}
@@ -117,11 +114,11 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 
 	@Override
 	public IEditorInput getEditorInput(Object element) {
-		if (element instanceof ILineBreakpoint) {
-			return new FileEditorInput((IFile) ((ILineBreakpoint) element).getMarker().getResource());
+		if (element instanceof ILineBreakpoint lineBreakpoint) {
+			return new FileEditorInput((IFile) lineBreakpoint.getMarker().getResource());
 		}
-		if (element instanceof IFile) {
-			return new FileEditorInput((IFile) element);
+		if (element instanceof IFile file) {
+			return new FileEditorInput(file);
 		}
 
 		IFileStore fileStore = EFS.getLocalFileSystem().getStore(new Path(element.toString()));
@@ -142,12 +139,10 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 		String id = null;
 		if (input != null) {
 			IEditorDescriptor descriptor = null;
-			if (input instanceof IFileEditorInput) {
-				IFileEditorInput fileEditorInput = (IFileEditorInput) input;
+			if (input instanceof IFileEditorInput fileEditorInput) {
 				IFile file = fileEditorInput.getFile();
 				descriptor = IDE.getDefaultEditor(file);
-			} else if (input instanceof IURIEditorInput) {
-				IURIEditorInput uriEditorInput = (IURIEditorInput) input;
+			} else if (input instanceof IURIEditorInput uriEditorInput) {
 				URI uri = uriEditorInput.getURI();
 				try {
 					IFileStore fileStore = EFS.getStore(uri);

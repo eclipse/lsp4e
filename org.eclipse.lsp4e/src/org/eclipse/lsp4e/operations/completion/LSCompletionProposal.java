@@ -648,43 +648,38 @@ public class LSCompletionProposal
 		if (variableName.endsWith("}")) {//$NON-NLS-1$
 			variableName = variableName.substring(0, variableName.length() - 1);
 		}
-		switch (variableName) {
-		case TM_FILENAME_BASE:
+		return switch (variableName) {
+		case TM_FILENAME_BASE -> {
 			IPath pathBase = LSPEclipseUtils.toPath(document).removeFileExtension();
 			String fileName = pathBase.lastSegment();
-			return fileName != null ? fileName : ""; //$NON-NLS-1$
-		case TM_FILENAME:
-			return LSPEclipseUtils.toPath(document).lastSegment();
-		case TM_FILEPATH:
-			return getAbsoluteLocation(LSPEclipseUtils.toPath(document));
-		case TM_DIRECTORY:
-			IPath dirPath = LSPEclipseUtils.toPath(document).removeLastSegments(1);
-			return getAbsoluteLocation(dirPath);
-		case TM_LINE_INDEX:
-			int lineIndex = getTextEditRange().getStart().getLine();
-			return Integer.toString(lineIndex);
-		case TM_LINE_NUMBER:
-			int lineNumber = getTextEditRange().getStart().getLine();
-			return Integer.toString(lineNumber + 1);
-		case TM_CURRENT_LINE:
+			yield fileName != null ? fileName : ""; //$NON-NLS-1$
+		}
+		case TM_FILENAME -> LSPEclipseUtils.toPath(document).lastSegment();
+		case TM_FILEPATH -> getAbsoluteLocation(LSPEclipseUtils.toPath(document));
+		case TM_DIRECTORY -> getAbsoluteLocation(LSPEclipseUtils.toPath(document).removeLastSegments(1));
+		case TM_LINE_INDEX -> Integer.toString(getTextEditRange().getStart().getLine()); // TODO probably wrong, should use viewer state
+		case TM_LINE_NUMBER -> Integer.toString(getTextEditRange().getStart().getLine() + 1);  // TODO probably wrong, should use viewer state
+		case TM_CURRENT_LINE -> {  // TODO probably wrong, should use viewer state
 			int currentLineIndex = getTextEditRange().getStart().getLine();
 			try {
 				IRegion lineInformation = document.getLineInformation(currentLineIndex);
 				String line = document.get(lineInformation.getOffset(), lineInformation.getLength());
-				return line;
+				yield line;
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logWarning(e.getMessage(), e);
-				return ""; //$NON-NLS-1$
+				yield ""; //$NON-NLS-1$
 			}
-		case TM_SELECTED_TEXT:
+		}
+		case TM_SELECTED_TEXT -> {
 			try {
 				String selectedText = document.get(viewer.getSelectedRange().x, viewer.getSelectedRange().y);
-				return selectedText;
+				yield selectedText;
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logWarning(e.getMessage(), e);
-				return ""; //$NON-NLS-1$
+				yield ""; //$NON-NLS-1$
 			}
-		case TM_CURRENT_WORD:
+		}
+		case TM_CURRENT_WORD -> {
 			try {
 				String selectedText = document.get(viewer.getSelectedRange().x, viewer.getSelectedRange().y);
 				int beforeSelection = viewer.getSelectedRange().x - 1;
@@ -697,14 +692,14 @@ public class LSCompletionProposal
 					selectedText = selectedText + document.getChar(afterSelection);
 					afterSelection++;
 				}
-				return selectedText;
+				yield selectedText;
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logWarning(e.getMessage(), e);
-				return ""; //$NON-NLS-1$
+				yield ""; //$NON-NLS-1$
 			}
-		default:
-			return variableName;
 		}
+		default -> variableName;
+		};
 	}
 
 	private String substituteVariables(String insertText) {

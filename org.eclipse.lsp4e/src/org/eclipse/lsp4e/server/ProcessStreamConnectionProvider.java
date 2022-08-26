@@ -114,11 +114,8 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 		if (obj == null) {
 			return false;
 		}
-		if (!(obj instanceof ProcessStreamConnectionProvider)) {
-			return false;
-		}
-		ProcessStreamConnectionProvider other = (ProcessStreamConnectionProvider) obj;
-		return Objects.equals(this.getCommands(), other.getCommands())
+		return obj instanceof ProcessStreamConnectionProvider other
+				&& Objects.equals(this.getCommands(), other.getCommands())
 				&& Objects.equals(this.getWorkingDirectory(), other.getWorkingDirectory());
 	}
 

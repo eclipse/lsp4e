@@ -23,7 +23,6 @@ import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.CompletionItem;
-import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
@@ -161,93 +160,52 @@ public class LSPImages {
 		if (kind == null) {
 			return EMPTY_IMAGE;
 		}
-		switch (kind) {
-		case Array:
-			return getImage(IMG_ARRAY);
-		case Boolean:
-			return getImage(IMG_BOOLEAN);
-		case Class:
-			return getImage(IMG_CLASS);
-		case Constant:
-			return getImage(IMG_CONSTANT);
-		case Constructor:
-			return getImage(IMG_CONSTRUCTOR);
-		case Enum:
-			return getImage(IMG_ENUM);
-		case Field:
-			return getImage(IMG_FIELD);
-		case File:
-			return getSharedImage(ISharedImages.IMG_OBJ_FILE);
-		case Function:
-			return getImage(IMG_FUNCTION);
-		case Interface:
-			return getImage(IMG_INTERACE);
-		case Method:
-			return getImage(IMG_METHOD);
-		case Module:
-			return getImage(IMG_MODULE);
-		case Namespace:
-			return getImage(IMG_NAMESPACE);
-		case Number:
-			return getImage(IMG_NUMBER);
-		case Package:
-			return getImage(IMG_PACKAGE);
-		case Property:
-			return getImage(IMG_PROPERTY);
-		case String:
-			return getImage(IMG_STRING);
-		case Variable:
-			return getImage(IMG_VARIABLE);
-		default:
-			// when the SymbolKind is out the cases above
-			return EMPTY_IMAGE;
-		}
+		return switch (kind) {
+		case Array -> getImage(IMG_ARRAY);
+		case Boolean -> getImage(IMG_BOOLEAN);
+		case Class -> getImage(IMG_CLASS);
+		case Constant -> getImage(IMG_CONSTANT);
+		case Constructor -> getImage(IMG_CONSTRUCTOR);
+		case Enum -> getImage(IMG_ENUM);
+		case Field -> getImage(IMG_FIELD);
+		case File -> getSharedImage(ISharedImages.IMG_OBJ_FILE);
+		case Function -> getImage(IMG_FUNCTION);
+		case Interface -> getImage(IMG_INTERACE);
+		case Method -> getImage(IMG_METHOD);
+		case Module -> getImage(IMG_MODULE);
+		case Namespace -> getImage(IMG_NAMESPACE);
+		case Number -> getImage(IMG_NUMBER);
+		case Package -> getImage(IMG_PACKAGE);
+		case Property -> getImage(IMG_PROPERTY);
+		case String -> getImage(IMG_STRING);
+		case Variable -> getImage(IMG_VARIABLE);
+		default -> EMPTY_IMAGE; // when the SymbolKind is out the cases above
+		};
 	}
 
 	public static Image imageFromCompletionItem(CompletionItem completionItem) {
-		CompletionItemKind kind = completionItem.getKind();
-		switch (kind) {
-		case Text:
-			return getImage(IMG_TEXT);
-		case Method:
-			return getImage(IMG_METHOD);
-		case Function:
-			return getImage(IMG_FUNCTION);
-		case Constructor:
-			return getImage(IMG_CONSTRUCTOR);
-		case Field:
-			return getImage(IMG_FIELD);
-		case Variable:
-			return getImage(IMG_VARIABLE);
-		case Class:
-			return getImage(IMG_CLASS);
-		case Interface:
-			return getImage(IMG_INTERACE);
-		case Module:
-			return getImage(IMG_MODULE);
-		case Property:
-			return getImage(IMG_PROPERTY);
-		case Unit:
-			return getImage(IMG_UNIT);
-		case Value:
-			return getImage(IMG_VALUE);
-		case Enum:
-			return getImage(IMG_ENUM);
-		case Keyword:
-			return getImage(IMG_KEYWORD);
-		case Snippet:
-			return getImage(IMG_SNIPPET);
-		case Color:
-			return getImageForColor(completionItem);
-		case File:
-			return getSharedImage(ISharedImages.IMG_OBJ_FILE);
-		case Folder:
-			return getSharedImage(ISharedImages.IMG_OBJ_FOLDER);
-		case Reference:
-			return getImage(IMG_REFERENCE);
-		default:
-			return null;
-		}
+		return switch (completionItem.getKind()) {
+		case Text -> getImage(IMG_TEXT);
+		case Method -> getImage(IMG_METHOD);
+		case Function -> getImage(IMG_FUNCTION);
+		case Constructor -> getImage(IMG_CONSTRUCTOR);
+		case Field -> getImage(IMG_FIELD);
+		case Variable -> getImage(IMG_VARIABLE);
+		case Class -> getImage(IMG_CLASS);
+		case Interface -> getImage(IMG_INTERACE);
+		case Module -> getImage(IMG_MODULE);
+		case Property -> getImage(IMG_PROPERTY);
+		case Unit -> getImage(IMG_UNIT);
+		case Value -> getImage(IMG_VALUE);
+		case Enum -> getImage(IMG_ENUM);
+		case Keyword -> getImage(IMG_KEYWORD);
+		case Snippet -> getImage(IMG_SNIPPET);
+		case Color -> getImageForColor(completionItem);
+		case File -> getSharedImage(ISharedImages.IMG_OBJ_FILE);
+		case Folder -> getSharedImage(ISharedImages.IMG_OBJ_FOLDER);
+		case Reference -> getImage(IMG_REFERENCE);
+		default -> null;
+		};
 	}
 
 	private static Image getImageForColor(CompletionItem completionItem) {

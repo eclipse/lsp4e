@@ -323,9 +323,9 @@ public class LanguageServersRegistry {
 			builder.deleteCharAt(builder.length() - 1);
 		}
 		this.preferenceStore.setValue(CONTENT_TYPE_TO_LSP_LAUNCH_PREF_KEY, builder.toString());
-		if (this.preferenceStore instanceof IPersistentPreferenceStore) {
+		if (this.preferenceStore instanceof IPersistentPreferenceStore persistentStore) {
 			try {
-				((IPersistentPreferenceStore) this.preferenceStore).save();
+				persistentStore.save();
 			} catch (IOException e) {
 				LanguageServerPlugin.logError(e);
 			}

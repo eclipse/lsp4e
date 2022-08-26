@@ -18,8 +18,7 @@ public class HasCNFOutlinePage extends PropertyTester {
 
 	@Override
 	public boolean test(Object receiver, String property, Object[] args, Object expectedValue) {
-		if (receiver instanceof ContentOutline) {
-			ContentOutline outline = (ContentOutline) receiver;
+		if (receiver instanceof ContentOutline outline) {
 			return outline.getCurrentPage() instanceof CNFOutlinePage;
 		}
 		return false;

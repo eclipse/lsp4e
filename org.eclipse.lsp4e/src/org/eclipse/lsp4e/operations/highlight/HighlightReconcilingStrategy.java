@@ -87,8 +87,7 @@ public class HighlightReconcilingStrategy
 			if (selectionProvider == null)
 				return;
 
-			if (selectionProvider instanceof IPostSelectionProvider) {
-				IPostSelectionProvider provider = (IPostSelectionProvider) selectionProvider;
+			if (selectionProvider instanceof IPostSelectionProvider provider) {
 				provider.addPostSelectionChangedListener(this);
 			} else {
 				selectionProvider.addSelectionChangedListener(this);
@@ -99,8 +98,7 @@ public class HighlightReconcilingStrategy
 			if (selectionProvider == null)
 				return;
 
-			if (selectionProvider instanceof IPostSelectionProvider) {
-				IPostSelectionProvider provider = (IPostSelectionProvider) selectionProvider;
+			if (selectionProvider instanceof IPostSelectionProvider provider) {
 				provider.removePostSelectionChangedListener(this);
 			} else {
 				selectionProvider.removeSelectionChangedListener(this);
@@ -114,30 +112,27 @@ public class HighlightReconcilingStrategy
 	}
 
 	private void updateHighlights(ISelection selection) {
-		if (!(selection instanceof ITextSelection)) {
-			return;
+		if (selection instanceof ITextSelection textSelection) {
+			if (highlightJob != null) {
+				highlightJob.cancel();
+			}
+			highlightJob = Job.createSystem("LSP4E Highlight", //$NON-NLS-1$
+					(ICoreRunnable)(monitor -> collectHighlights(textSelection.getOffset(), monitor)));
+			highlightJob.schedule();
 		}
-		ITextSelection textSelection = (ITextSelection) selection;
-		if (highlightJob != null) {
-			highlightJob.cancel();
-		}
-		highlightJob = Job.createSystem("LSP4E Highlight", //$NON-NLS-1$
-				(ICoreRunnable)(monitor -> collectHighlights(textSelection.getOffset(), monitor)));
-		highlightJob.schedule();
 	}
 
 	private EditorSelectionChangedListener editorSelectionChangedListener;
 
 	public void install(ITextViewer viewer) {
-		if (!(viewer instanceof ISourceViewer)) {
-			return;
+		if (viewer instanceof ISourceViewer thisSourceViewer) {
+			IEclipsePreferences preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
+			preferences.addPreferenceChangeListener(this);
+			this.enabled = preferences.getBoolean(TOGGLE_HIGHLIGHT_PREFERENCE, true);
+			this.sourceViewer = thisSourceViewer;
+			editorSelectionChangedListener = new EditorSelectionChangedListener();
+			editorSelectionChangedListener.install(sourceViewer.getSelectionProvider());
 		}
-		IEclipsePreferences preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
-		preferences.addPreferenceChangeListener(this);
-		this.enabled = preferences.getBoolean(TOGGLE_HIGHLIGHT_PREFERENCE, true);
-		this.sourceViewer = (ISourceViewer) viewer;
-		editorSelectionChangedListener = new EditorSelectionChangedListener();
-		editorSelectionChangedListener.install(sourceViewer.getSelectionProvider());
 	}
 
 	public void uninstall() {
@@ -245,8 +240,8 @@ public class HighlightReconcilingStrategy
 		}
 
 		synchronized (getLockObject(annotationModel)) {
-			if (annotationModel instanceof IAnnotationModelExtension) {
-				((IAnnotationModelExtension) annotationModel).replaceAnnotations(fOccurrenceAnnotations, annotationMap);
+			if (annotationModel instanceof IAnnotationModelExtension modelExtension) {
+				modelExtension.replaceAnnotations(fOccurrenceAnnotations, annotationMap);
 			} else {
 				removeOccurrenceAnnotations();
 				Iterator<Entry<Annotation, org.eclipse.jface.text.Position>> iter = annotationMap.entrySet().iterator();
@@ -267,8 +262,8 @@ public class HighlightReconcilingStrategy
 	 * @return the annotation model's lock object
 	 */
 	private Object getLockObject(IAnnotationModel annotationModel) {
-		if (annotationModel instanceof ISynchronizable) {
-			Object lock = ((ISynchronizable) annotationModel).getLockObject();
+		if (annotationModel instanceof ISynchronizable sync) {
+			Object lock = sync.getLockObject();
 			if (lock != null)
 				return lock;
 		}
@@ -281,8 +276,8 @@ public class HighlightReconcilingStrategy
 			return;
 
 		synchronized (getLockObject(annotationModel)) {
-			if (annotationModel instanceof IAnnotationModelExtension) {
-				((IAnnotationModelExtension) annotationModel).replaceAnnotations(fOccurrenceAnnotations, null);
+			if (annotationModel instanceof IAnnotationModelExtension modelExtension) {
+				modelExtension.replaceAnnotations(fOccurrenceAnnotations, null);
 			} else {
 				for (Annotation fOccurrenceAnnotation : fOccurrenceAnnotations)
 					annotationModel.removeAnnotation(fOccurrenceAnnotation);
@@ -292,14 +287,11 @@ public class HighlightReconcilingStrategy
 	}
 
 	private String kindToAnnotationType(DocumentHighlightKind kind) {
-		switch (kind) {
-		case Read:
-			return READ_ANNOTATION_TYPE;
-		case Write:
-			return WRITE_ANNOTATION_TYPE;
-		default:
-			return TEXT_ANNOTATION_TYPE;
-		}
+		return switch (kind) {
+		case Read -> READ_ANNOTATION_TYPE;
+		case Write -> WRITE_ANNOTATION_TYPE;
+		default -> TEXT_ANNOTATION_TYPE;
+		};
 	}
 
 	@Override

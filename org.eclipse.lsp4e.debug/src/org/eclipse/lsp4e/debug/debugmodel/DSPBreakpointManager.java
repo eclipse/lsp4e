@@ -152,8 +152,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 
 	private void addBreakpointToMap(IBreakpoint breakpoint) {
 		Assert.isTrue(supportsBreakpoint(breakpoint) && breakpoint instanceof ILineBreakpoint);
-		if (breakpoint instanceof ILineBreakpoint) {
-			ILineBreakpoint lineBreakpoint = (ILineBreakpoint) breakpoint;
+		if (breakpoint instanceof ILineBreakpoint lineBreakpoint) {
 			IMarker marker = lineBreakpoint.getMarker();
 			IResource resource = marker.getResource();
 			IPath location = resource.getLocation();
@@ -180,8 +179,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 
 	private void deleteBreakpointFromMap(IBreakpoint breakpoint) {
 		Assert.isTrue(supportsBreakpoint(breakpoint) && breakpoint instanceof ILineBreakpoint);
-		if (breakpoint instanceof ILineBreakpoint) {
-			ILineBreakpoint lineBreakpoint = (ILineBreakpoint) breakpoint;
+		if (breakpoint instanceof ILineBreakpoint lineBreakpoint) {
 			IResource resource = lineBreakpoint.getMarker().getResource();
 			IPath location = resource.getLocation();
 			String path = location.toOSString();

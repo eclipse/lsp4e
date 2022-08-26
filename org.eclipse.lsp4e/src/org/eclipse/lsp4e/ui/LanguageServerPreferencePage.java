@@ -60,8 +60,8 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		contentTypeLinkListener = new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				if (getContainer() instanceof IWorkbenchPreferenceContainer) {
-					((IWorkbenchPreferenceContainer)getContainer()).openPage("org.eclipse.ui.preferencePages.ContentTypes", null); //$NON-NLS-1$
+				if (getContainer() instanceof IWorkbenchPreferenceContainer preferenceContainer) {
+					preferenceContainer.openPage("org.eclipse.ui.preferencePages.ContentTypes", null); //$NON-NLS-1$
 				}
 			}
 		};
@@ -162,10 +162,8 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				ISelection sel = viewer.getSelection();
-				if (!sel.isEmpty() && sel instanceof IStructuredSelection) {
-					for (Object item : ((IStructuredSelection)sel).toArray()) {
-						workingCopy.remove(item);
-					}
+				if (!sel.isEmpty() && sel instanceof IStructuredSelection structuredSel) {
+					structuredSel.forEach(workingCopy::remove);
 					viewer.refresh();
 				}
 			}
@@ -263,9 +261,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 				.filter(ContentTypeToLanguageServerDefinition::isUserEnabled).toArray());
 
 		checkboxViewer.addCheckStateListener(event -> {
-			if (event.getElement() instanceof ContentTypeToLanguageServerDefinition) {
-				ContentTypeToLanguageServerDefinition contentTypeToLanguageServerDefinition = (ContentTypeToLanguageServerDefinition) event
-						.getElement();
+			if (event.getElement() instanceof ContentTypeToLanguageServerDefinition contentTypeToLanguageServerDefinition) {
 				contentTypeToLanguageServerDefinition.setUserEnabled(event.getChecked());
 				changedDefinitions.add(contentTypeToLanguageServerDefinition);
 			}
