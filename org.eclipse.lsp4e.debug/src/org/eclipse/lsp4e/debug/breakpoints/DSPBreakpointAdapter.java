@@ -18,6 +18,7 @@ import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 public class DSPBreakpointAdapter implements IToggleBreakpointsTarget {
@@ -33,8 +34,9 @@ public class DSPBreakpointAdapter implements IToggleBreakpointsTarget {
 						.getBreakpoints(DSPPlugin.ID_DSP_DEBUG_MODEL);
 				for (int i = 0; i < breakpoints.length; i++) {
 					IBreakpoint breakpoint = breakpoints[i];
-					if (breakpoint instanceof ILineBreakpoint && resource.equals(breakpoint.getMarker().getResource())
-							&& ((ILineBreakpoint) breakpoint).getLineNumber() == (lineNumber + 1)) {
+					if (breakpoint instanceof ILineBreakpoint lineBreakpoint
+							&& resource.equals(breakpoint.getMarker().getResource())
+							&& lineBreakpoint.getLineNumber() == (lineNumber + 1)) {
 						// remove
 						breakpoint.delete();
 						return;
@@ -54,8 +56,12 @@ public class DSPBreakpointAdapter implements IToggleBreakpointsTarget {
 	}
 
 	private ITextEditor getEditor(IWorkbenchPart part) {
-		if (part instanceof ITextEditor) {
-			return (ITextEditor) part;
+		if (part instanceof ITextEditor textEditor) {
+			return textEditor;
+		}
+		if (part instanceof MultiPageEditorPart multiPageEditorPart
+				&& ((MultiPageEditorPart) part).getSelectedPage() instanceof ITextEditor textEditor) {
+			return textEditor;
 		}
 		return null;
 	}

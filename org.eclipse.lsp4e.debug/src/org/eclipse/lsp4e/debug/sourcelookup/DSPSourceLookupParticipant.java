@@ -16,11 +16,11 @@ public class DSPSourceLookupParticipant extends AbstractSourceLookupParticipant 
 
 	@Override
 	public String getSourceName(Object object) throws CoreException {
-		if (object instanceof String) {
-			return (String) object;
+		if (object instanceof String string) {
+			return string;
 		}
-		if (object instanceof DSPStackFrame) {
-			return ((DSPStackFrame) object).getSourceName();
+		if (object instanceof DSPStackFrame stackFrame) {
+			return stackFrame.getSourceName();
 		}
 		return null;
 	}
