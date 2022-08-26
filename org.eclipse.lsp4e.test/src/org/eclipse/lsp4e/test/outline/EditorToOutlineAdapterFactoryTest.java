@@ -14,13 +14,13 @@ package org.eclipse.lsp4e.test.outline;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.views.contentoutline.ContentOutline;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -41,8 +41,8 @@ public class EditorToOutlineAdapterFactoryTest {
 				.findView("org.eclipse.ui.views.ContentOutline"); //$NON-NLS-1$
 
 		// implicitly checks for null
-		if (viewPart instanceof ContentOutline) {
-			outline = (ContentOutline) viewPart;
+		if (viewPart instanceof ContentOutline thisOutline) {
+			outline = thisOutline;
 		}
 
 		Assert.assertNotNull(outline);

@@ -249,8 +249,8 @@ public class RenameTest {
 			if (renameDialogOkPressed.get()) {
 				return;
 			}
-			if(event.widget instanceof Composite) {
-				Shell shell = ((Composite)event.widget).getShell();
+			if(event.widget instanceof Composite composite) {
+				Shell shell = composite.getShell();
 				if(shell != ideShell && "Rename".equals(shell.getText())) {
 					event.widget.getDisplay().asyncExec(() -> pressOk(shell));
 					renameDialogOkPressed.set(true);
