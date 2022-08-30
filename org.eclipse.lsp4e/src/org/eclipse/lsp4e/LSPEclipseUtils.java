@@ -1098,12 +1098,8 @@ public class LSPEclipseUtils {
 	 * @param uri A file URI, possibly for a UNC path in the newer syntax with the server encoded in the authority
 	 * @return A file
 	 */
-	public static File fromUri(URI uri) {
+	private static File fromUri(URI uri) {
 		return Paths.get(uri).toFile();
-	}
-
-	public static File fromUri(String uri) {
-		return fromUri(URI.create(uri));
 	}
 
 	public static boolean hasCapability(Either<Boolean, ? extends Object> eitherCapability) {
