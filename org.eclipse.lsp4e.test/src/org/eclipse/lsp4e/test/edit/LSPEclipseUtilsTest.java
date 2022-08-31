@@ -13,7 +13,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -293,6 +295,17 @@ public class LSPEclipseUtilsTest {
 		Assert.assertEquals("file:///test%20with%20space", LSPEclipseUtils.toUri(new File("/test with space")).toString());
 	}
 
+	@Test
+	public void testUNCwindowsURI() {
+		Assume.assumeTrue(Platform.OS_WIN32.equals(Platform.getOS()));
+		URI preferredURI = URI.create("file://localhost/c$/Windows");
+		URI javaURI = URI.create("file:////localhost/c$/Windows");
+		
+		File file1 = LSPEclipseUtils.fromUri(preferredURI);
+		File file2 = LSPEclipseUtils.fromUri(javaURI);
+		Assert.assertEquals(file1, file2);
+	}
+	
 	@Test
 	public void testToWorkspaceFolder() throws Exception {
 		IProject project = TestUtils.createProject("testToWorkspaceFolder");

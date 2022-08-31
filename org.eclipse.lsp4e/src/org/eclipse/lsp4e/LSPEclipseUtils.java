@@ -1098,7 +1098,7 @@ public class LSPEclipseUtils {
 	 * @param uri A file URI, possibly for a UNC path in the newer syntax with the server encoded in the authority
 	 * @return A file
 	 */
-	private static File fromUri(URI uri) {
+	public static File fromUri(URI uri) {
 		return Paths.get(uri).toFile();
 	}
 
