@@ -25,6 +25,7 @@ import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.InlayHint;
 import org.eclipse.lsp4j.InlayHintLabelPart;
+import org.eclipse.lsp4j.InlayHintRegistrationOptions;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -68,7 +69,12 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 	}
 
 	private static boolean canResolveInlayHint(ServerCapabilities capabilities) {
-		return capabilities.getInlayHintProvider().map(Function.identity(), (r) -> r.getResolveProvider());
+		Either<Boolean, InlayHintRegistrationOptions> inlayProvider = capabilities.getInlayHintProvider();
+		if (inlayProvider != null && inlayProvider.isRight()) {
+			InlayHintRegistrationOptions options = inlayProvider.getRight();
+			return options.getResolveProvider() != null && options.getResolveProvider().booleanValue();
+		}
+		return false;
 	}
 
 	/**
