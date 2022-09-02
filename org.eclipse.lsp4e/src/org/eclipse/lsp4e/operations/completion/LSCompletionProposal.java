@@ -71,6 +71,7 @@ import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.InsertReplaceEdit;
 import org.eclipse.lsp4j.InsertTextFormat;
+import org.eclipse.lsp4j.InsertTextMode;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
@@ -482,6 +483,9 @@ public class LSCompletionProposal
 			LinkedHashMap<String, List<LinkedPosition>> regions = new LinkedHashMap<>();
 			int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
 			insertionOffset = computeNewOffset(item.getAdditionalTextEdits(), insertionOffset, document);
+			if (item.getInsertTextMode() == InsertTextMode.AdjustIndentation) {
+				insertText = adjustIndentation(document, insertText, insertionOffset);
+			}
 			if (item.getInsertTextFormat() == InsertTextFormat.Snippet) {
 				insertText = substituteVariables(insertText);
 				// next is for tabstops, placeholders and linked edition
@@ -613,6 +617,18 @@ public class LSCompletionProposal
 		} catch (BadLocationException ex) {
 			LanguageServerPlugin.logError(ex);
 		}
+	}
+
+	private String adjustIndentation(IDocument document, String insertText, int insertionOffset) throws BadLocationException {
+		StringBuilder whitespacesBeforeInsertion = new StringBuilder();
+		int whitespaceOffset = insertionOffset - 1;
+		while (whitespaceOffset >= 0 && document.getChar(whitespaceOffset) != '\n' && Character.isWhitespace(document.getChar(whitespaceOffset))) {
+			whitespacesBeforeInsertion.append(document.getChar(whitespaceOffset));
+			whitespaceOffset--;
+		}
+		whitespacesBeforeInsertion.append('\n');
+		whitespacesBeforeInsertion.reverse();
+		return insertText.replace("\n", whitespacesBeforeInsertion.toString()); //$NON-NLS-1$
 	}
 
 	private int computeNewOffset(List<TextEdit> additionalTextEdits, int insertionOffset, IDocument doc) {
