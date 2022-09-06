@@ -28,6 +28,7 @@ import org.eclipse.jface.text.TextUtilities;
 import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LSPRequest;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.UI;
@@ -69,6 +70,8 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 
 	}
 
+	private LSPRequest request;
+
 	@Override
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
 		final IDocument document = textViewer.getDocument();
@@ -78,48 +81,51 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 		}
 		final DocumentLinkParams params = new DocumentLinkParams(new TextDocumentIdentifier(uri.toString()));
 		try {
-			return LanguageServiceAccessor
-					.getLanguageServers(textViewer.getDocument(),
-							capabilities -> capabilities.getDocumentLinkProvider() != null)
-					.thenApplyAsync(languageServers -> {
-						IHyperlink[] res = languageServers.stream()
-								.map(languageServer -> languageServer.getTextDocumentService().documentLink(params))
-								.map(future -> {
-									try {
-										return future.get(2, TimeUnit.SECONDS);
-									} catch (ExecutionException e) {
-										LanguageServerPlugin.logError(e);
-										return null;
-									} catch (InterruptedException e) {
-										LanguageServerPlugin.logError(e);
-										Thread.currentThread().interrupt();
-										return null;
-									} catch (TimeoutException e) {
-										LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 2 seconds in `document/Link`", e); //$NON-NLS-1$
-										return null;
-									}
-								}).filter(Objects::nonNull).flatMap(List<DocumentLink>::stream).map(link -> {
-									DocumentHyperlink jfaceLink = null;
-									try {
-										int start = LSPEclipseUtils.toOffset(link.getRange().getStart(),
-												textViewer.getDocument());
-										int end = LSPEclipseUtils.toOffset(link.getRange().getEnd(),
-												textViewer.getDocument());
-										IRegion linkRegion = new Region(start, end - start);
-										if (TextUtilities.overlaps(region, linkRegion) && link.getTarget() != null) {
-											jfaceLink = new DocumentHyperlink(link.getTarget(), linkRegion);
-										}
-									} catch (BadLocationException ex) {
-										LanguageServerPlugin.logError(ex);
-									}
-									return jfaceLink;
-								}).filter(Objects::nonNull).toArray(IHyperlink[]::new);
-						if (res.length == 0) {
-							return null;
-						} else {
-							return res;
-						}
-					}).get(2, TimeUnit.SECONDS);
+			if (request != null) {
+				request.cancel();
+			}
+			LSPRequest request = this.request = LanguageServiceAccessor.request(textViewer.getDocument(),
+					capabilities -> capabilities.getDocumentLinkProvider() != null);
+			return request.thenApplyAsync(languageServers -> {
+				IHyperlink[] res = languageServers.stream()
+						.map(languageServer -> request.documentLink(languageServer, params))
+						.map(future -> {
+							try {
+								return future.get(2, TimeUnit.SECONDS);
+							} catch (ExecutionException e) {
+								LanguageServerPlugin.logError(e);
+								return null;
+							} catch (InterruptedException e) {
+								LanguageServerPlugin.logError(e);
+								Thread.currentThread().interrupt();
+								return null;
+							} catch (TimeoutException e) {
+								LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 2 seconds in `document/Link`", e); //$NON-NLS-1$
+								return null;
+							}
+						}).filter(Objects::nonNull).flatMap(List<DocumentLink>::stream).map(link -> {
+							request.checkCanceled();
+							DocumentHyperlink jfaceLink = null;
+							try {
+								int start = LSPEclipseUtils.toOffset(link.getRange().getStart(),
+										textViewer.getDocument());
+								int end = LSPEclipseUtils.toOffset(link.getRange().getEnd(),
+										textViewer.getDocument());
+								IRegion linkRegion = new Region(start, end - start);
+								if (TextUtilities.overlaps(region, linkRegion) && link.getTarget() != null) {
+									jfaceLink = new DocumentHyperlink(link.getTarget(), linkRegion);
+								}
+							} catch (BadLocationException ex) {
+								LanguageServerPlugin.logError(ex);
+							}
+							return jfaceLink;
+						}).filter(Objects::nonNull).toArray(IHyperlink[]::new);
+				if (res.length == 0) {
+					return null;
+				} else {
+					return res;
+				}
+			}).get(2, TimeUnit.SECONDS);
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 			return null;

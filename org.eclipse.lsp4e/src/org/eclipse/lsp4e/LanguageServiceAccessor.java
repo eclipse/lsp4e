@@ -591,6 +591,11 @@ public class LanguageServiceAccessor {
 		return res;
 	}
 
+	public static LSPRequest request(@NonNull IDocument document,
+			Predicate<ServerCapabilities> filter) {
+		return new LSPRequest(getLanguageServers(document, filter));
+	}
+
 	/**
 	 *
 	 * @param document
