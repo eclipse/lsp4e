@@ -37,7 +37,15 @@ public class InlayHintProvider extends AbstractCodeMiningProvider {
 	private CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(@NonNull IDocument document) {
 		URI docURI = LSPEclipseUtils.toUri(document);
 		if (docURI != null) {
-			Range viewPortRange = new Range(new Position(0,0), new Position(0,0));
+			// Eclipse seems to request minings only when the document is loaded (or changed), rather than
+			// whenever the viewport [displayed area] changes, so request minings for the whole document in one go.
+			Position end = new Position(0,0);
+			try {
+				end = LSPEclipseUtils.toPosition(document.getLength(), document);
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logWarning("Unable to compute end of document", e); //$NON-NLS-1$
+			}
+			Range viewPortRange = new Range(new Position(0,0), end);
 			InlayHintParams param = new InlayHintParams(new TextDocumentIdentifier(docURI.toString()), viewPortRange);
 			List<LSPLineContentCodeMining> inlayHintResults = Collections.synchronizedList(new ArrayList<>());
 			return LanguageServiceAccessor
