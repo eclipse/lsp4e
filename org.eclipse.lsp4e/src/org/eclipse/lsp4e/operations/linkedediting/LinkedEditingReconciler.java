@@ -14,15 +14,15 @@ package org.eclipse.lsp4e.operations.linkedediting;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.reconciler.IReconciler;
-import org.eclipse.jface.text.reconciler.MonoReconciler;
+import org.eclipse.lsp4e.operations.NoThreadReconciler;
 
 /**
  * {@link IReconciler} implementation to Linked Editing.
  */
-public class LinkedEditingReconciler extends MonoReconciler {
+public class LinkedEditingReconciler extends NoThreadReconciler {
 
 	public LinkedEditingReconciler() {
-		super(new LSPLinkedEditingReconcilingStrategy(), false);
+		super(new LSPLinkedEditingReconcilingStrategy());
 	}
 
 	@Override

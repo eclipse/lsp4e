@@ -15,15 +15,15 @@ package org.eclipse.lsp4e.operations.highlight;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.reconciler.IReconciler;
-import org.eclipse.jface.text.reconciler.MonoReconciler;
+import org.eclipse.lsp4e.operations.NoThreadReconciler;
 
 /**
  * {@link IReconciler} implementation to Highlight Symbol (mark occurrences like).
  */
-public class HighlightReconciler extends MonoReconciler {
+public class HighlightReconciler extends NoThreadReconciler {
 
 	public HighlightReconciler() {
-		super(new HighlightReconcilingStrategy(), false);
+		super(new HighlightReconcilingStrategy());
 	}
 
 	@Override
