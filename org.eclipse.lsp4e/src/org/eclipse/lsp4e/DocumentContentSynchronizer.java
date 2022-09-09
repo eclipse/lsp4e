@@ -72,10 +72,22 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private int version = 0;
 	private DidChangeTextDocumentParams changeParams;
 	private long modificationStamp;
-	private CompletableFuture<LanguageServer> lastChangeFuture;
 	private final CompletableFuture<LanguageServer> didOpenFuture;
+
+	/**
+	 * Ensures atomic read/write of <code>documentModificationStamp</code> and
+	 * <code>lastChangeFuture</code>
+	 */
 	private final Object guard = new Object();
+	/**
+	 * Caches (opaque) version stamp of last document update event sent to the server
+	 */
 	private long documentModificationStamp = 0L;
+	/** Caches handle to the last call made to the server for this document, allowing
+	 * calls to be chained sequentially. Protected by <code>this.guard</code>
+	 */
+	private CompletableFuture<LanguageServer> lastChangeFuture;
+
 	private LanguageServer languageServer;
 	private IPreferenceStore store;
 
