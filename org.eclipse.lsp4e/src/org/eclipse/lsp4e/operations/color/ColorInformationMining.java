@@ -82,22 +82,24 @@ public class ColorInformationMining extends LineContentCodeMining {
 				// get LSP color presentation list for the picked color
 				ColorPresentationParams params = new ColorPresentationParams(textDocumentIdentifier,
 						LSPEclipseUtils.toColor(rgb), colorInformation.getRange());
-				this.languageServer.getTextDocumentService().colorPresentation(params).thenAcceptAsync(presentations -> {
-					if (presentations.isEmpty()) {
-						return;
-					}
-					// As ColorDialog cannot be customized (to choose the color presentation (rgb,
-					// hexa, ....) we pick the first color presentation.
-					try {
-						TextEdit textEdit = presentations.get(0).getTextEdit();
-						LSPEclipseUtils.applyEdit(textEdit, document);
-					} catch (BadLocationException e) {
-						LanguageServerPlugin.logError(e);
-					}
-				});
+				this.languageServer.getTextDocumentService().colorPresentation(params)
+						.thenAcceptAsync(presentations -> {
+							if (presentations.isEmpty()) {
+								return;
+							}
+							// As ColorDialog cannot be customized (to choose the color presentation (rgb,
+							// hexa, ....) we pick the first color presentation.
+							TextEdit textEdit = presentations.get(0).getTextEdit();
+							styledText.getDisplay().asyncExec(() -> {
+								try {
+									LSPEclipseUtils.applyEdit(textEdit, document);
+								} catch (BadLocationException e) {
+									LanguageServerPlugin.logError(e);
+								}
+							});
+						});
 			}
 		}
-
 	}
 
 	public ColorInformationMining(ColorInformation colorInformation, @NonNull IDocument document,
@@ -154,7 +156,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 	 * Returns the Eclipse position from the given LSP range.
 	 *
 	 * @param range
-	 *                     the LSP range to convert
+	 *            the LSP range to convert
 	 * @param document
 	 * @return the Eclipse position from the given LSP range.
 	 * @throws BadLocationException
