@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -230,7 +231,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 		return null;
 	}
 
-	private boolean rangesContainOffset(LinkedEditingRanges ranges, int offset) {
+	private boolean rangesContainOffset(@NonNull LinkedEditingRanges ranges, int offset) {
 		for (Range range : ranges.getRanges()) {
 			if (LSPEclipseUtils.isOffsetInRange(offset, range, fDocument)) {
 				return true;
@@ -239,7 +240,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 		return false;
 	}
 
-	private LinkedPositionGroup toJFaceGroup(LinkedEditingRanges ranges) throws BadLocationException {
+	private LinkedPositionGroup toJFaceGroup(@NonNull LinkedEditingRanges ranges) throws BadLocationException {
 		LinkedPositionGroup res = new LinkedPositionGroup();
 		for (Range range : ranges.getRanges()) {
 			int startOffset = LSPEclipseUtils.toOffset(range.getStart(), fDocument);
