@@ -35,7 +35,7 @@
 							<goal>wget</goal>
 						</goals>
 						<configuration>
-							<url>https://unpkg.com/@highlightjs/cdn-assets@11.2.0/highlight.min.js</url>
+							<url>https://unpkg.com/@highlightjs/cdn-assets@11.6.0/highlight.min.js</url>
 							<unpack>false</unpack>
 							<overwrite>true</overwrite>
 							<skipCache>true</skipCache>
@@ -49,7 +49,7 @@
 							<goal>wget</goal>
 						</goals>
 						<configuration>
-							<url>https://unpkg.com/@highlightjs/cdn-assets@11.2.0/styles/default.min.css</url>
+							<url>https://unpkg.com/@highlightjs/cdn-assets@11.6.0/styles/default.min.css</url>
 							<unpack>false</unpack>
 							<overwrite>true</overwrite>
 							<skipCache>true</skipCache>
@@ -63,7 +63,7 @@
 							<goal>wget</goal>
 						</goals>
 						<configuration>
-							<url>https://unpkg.com/@highlightjs/cdn-assets@11.2.0/styles/dark.min.css</url>
+							<url>https://unpkg.com/@highlightjs/cdn-assets@11.6.0/styles/dark.min.css</url>
 							<unpack>false</unpack>
 							<overwrite>true</overwrite>
 							<skipCache>true</skipCache>
