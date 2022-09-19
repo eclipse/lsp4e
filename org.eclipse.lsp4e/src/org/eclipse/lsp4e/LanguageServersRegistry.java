@@ -233,6 +233,13 @@ public class LanguageServersRegistry {
 		public StreamConnectionProvider createConnectionProvider() {
 			return new LaunchConfigurationStreamProvider(this.launchConfiguration, launchModes);
 		}
+
+		@Override
+		public LanguageClientImpl createLanguageClient() {
+			LanguageClientImpl client = super.createLanguageClient();
+			client.setDiagnosticsConsumer(new LSPDiagnosticsToMarkers(id, null, null));
+			return client;
+		}
 	}
 
 	private static final class LazyHolder {
