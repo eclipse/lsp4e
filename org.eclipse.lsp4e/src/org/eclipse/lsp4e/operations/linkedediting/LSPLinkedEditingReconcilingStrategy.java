@@ -159,10 +159,13 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 			}
 			collectLinkedEditingRanges(fDocument, offset)
 				.thenAcceptAsync(r -> {
-					if (rangesContainOffset(r, offset)) {
+					if (r != null && rangesContainOffset(r, offset)) {
 						applyLinkedEdit(r);
 					}
-				});
+				}).exceptionally(e -> {
+				LanguageServerPlugin.logError(e);
+				return null;
+			});;
 		}
 	}
 
