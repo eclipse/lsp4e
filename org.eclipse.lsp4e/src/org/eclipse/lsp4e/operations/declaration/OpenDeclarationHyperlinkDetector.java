@@ -14,14 +14,12 @@
 package org.eclipse.lsp4e.operations.declaration;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -66,40 +64,30 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 		}
 		IRegion r = findWord(textViewer.getDocument(), region.getOffset());
 		final IRegion linkRegion = r != null ? r : region;
-		Map<Either<Location, LocationLink>,LSBasedHyperlink> allLinks = Collections.synchronizedMap(new LinkedHashMap<>());
+		Map<Either<Location, LocationLink>,LSBasedHyperlink> allLinks = new LinkedHashMap<>();
+
 		try {
-			// Collect definitions
-			Collection<CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>>> allFutures = Collections.synchronizedCollection(new ArrayList<>());
-			CompletableFuture.allOf(
-				LanguageServiceAccessor
-					.getLanguageServers(textViewer.getDocument(), capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDefinitionProvider()))
-					.thenAcceptAsync(languageServers ->
-						languageServers.stream().map(ls -> ls.getTextDocumentService().definition(LSPEclipseUtils.toDefinitionParams(params))).forEach(allFutures::add)
-					),
-				LanguageServiceAccessor
-					.getLanguageServers(textViewer.getDocument(), OpenDeclarationHyperlinkDetector::isTypeDefinitionProvider)
-					.thenAcceptAsync(languageServers ->
-						languageServers.stream().map(ls -> ls.getTextDocumentService().typeDefinition(LSPEclipseUtils.toTypeDefinitionParams(params))).forEach(allFutures::add)
-					)
-			).thenCompose(theVoid ->
-				CompletableFuture.allOf(allFutures.stream().map(future ->
-				future.thenAccept(locations -> {
-					Collection<LSBasedHyperlink> links = toHyperlinks(document, linkRegion, locations);
-					synchronized (allLinks) {
-						links.forEach(link -> {
-							allLinks.putIfAbsent(link.getLocation(), link);
-						});
-					}
-				})).toArray(CompletableFuture[]::new))
-			).get(500, TimeUnit.MILLISECONDS);
-		} catch (ExecutionException e) {
-			LanguageServerPlugin.logError(e);
+			LanguageServiceAccessor.concatResults(
+				LanguageServiceAccessor.computeOnServers(
+									textViewer.getDocument(),
+									capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDefinitionProvider()),
+									ls -> ls.getTextDocumentService().definition(LSPEclipseUtils.toDefinitionParams(params))),
+				LanguageServiceAccessor.computeOnServers(
+									textViewer.getDocument(),
+									capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDefinitionProvider()),
+									ls -> ls.getTextDocumentService().definition(LSPEclipseUtils.toDefinitionParams(params))))
+				.get(500, TimeUnit.MILLISECONDS)
+				.stream().flatMap(locations -> toHyperlinks(document, linkRegion, locations).stream())
+				.forEach(link -> allLinks.putIfAbsent(link.getLocation(), link));
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+		} catch (ExecutionException e) {
+			LanguageServerPlugin.logError(e);
 		} catch (TimeoutException e) {
 			LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 500 miliseconds", e);  //$NON-NLS-1$
 		}
+
 		if (allLinks.isEmpty()) {
 			return null;
 		}

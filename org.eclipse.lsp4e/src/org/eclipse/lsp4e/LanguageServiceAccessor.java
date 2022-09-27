@@ -28,8 +28,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -626,6 +628,73 @@ public class LanguageServiceAccessor {
 			LanguageServerPlugin.logError(e);
 		}
 		return CompletableFuture.completedFuture(Collections.emptyList());
+	}
+
+	static void shutdownAllDispatchers() {
+		startedServers.forEach(s -> s.stopDispatcher());
+	}
+
+	/**
+	 * Make a call to the language server(s), aggregating the responses into a single CompletableFuture if
+	 * more than one language server is applicable. The call will be enqueued such that it will be sent to the
+	 * language servers after any previous calls using this framework and before any subsequent calls. More
+	 * specifically, if called from the UI thread then all document updates to date are guaranteed to have
+	 * been seen by any server before it sees this request, and before it sees any further
+	 * document updates.
+	 *
+	 * <p/>The returned result will complete when all language servers have responded,
+	 * and will return its result in a pool thread to avoid blocking the inbound message readers.
+	 *
+	 * @param <T> Return type of method being called on lang server
+	 * @param document Document on which the request is being made
+	 * @param filter Restriction on capabilities of the language servers we're interested in
+	 * @param fn A single method invocation on <code>LanguageServer</code>
+	 * @return Async result aggregated over all applicable lang servers, filtering out nulls.
+	 */
+	public static <T> CompletableFuture<List<T>> computeOnServers(@NonNull IDocument document, Predicate<ServerCapabilities> filter,
+			Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+
+		// Out-of-line so we can declare it as List rather than ArrayList to avoid type errors below
+		CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
+
+		return getLSWrappers(document).stream()
+			// Ensure wrappers are started, connected to the document, and filter for capabilities
+			.map(wrapper -> wrapper.connectIf(document, filter)
+				// Call fn on lang servers, excluding null servers (that failed to start/connect or do not have the required capability)
+				.thenCompose(w -> w == null ? CompletableFuture.completedFuture((T)null) : w.executeOnLatestVersion(fn)))
+
+			// Transform individual async results into a single async with the aggregate result
+			.reduce(init, LanguageServiceAccessor::combine, LanguageServiceAccessor::concatResults)
+
+			// Ensure any subsequent computation added by caller does not block further incoming messages from language servers
+			.thenApplyAsync(t -> t);
+	}
+
+	/**
+	 * Accumulator that appends the result of an async computation onto an async aggregate result. Nulls will be excluded.
+	 * @param <T> Result type
+	 * @param result Async aggregate result
+	 * @param next Pending result to include
+	 * @return
+	 */
+	static <T> CompletableFuture<List<T>> combine(CompletableFuture<? extends List<T>> result, CompletableFuture<T> next) {
+		return result.thenCombine(next, (List<T> a, T b) -> {
+			if (b != null) {
+				a.add(b);
+			}
+			return a;
+		});
+	}
+
+	/**
+	 * Merges two async sets of results into a single async result
+	 * @param <T> Result type
+	 * @param a First async result
+	 * @param b Second async result
+	 * @return Async combined result
+	 */
+	public static <T> CompletableFuture<List<T>> concatResults(CompletableFuture<List<T>> a, CompletableFuture<List<T>> b) {
+		return a.thenCombine(b, (c, d) -> { c.addAll(d); return c; });
 	}
 
 	public static boolean checkCapability(LanguageServer languageServer, Predicate<ServerCapabilities> condition) {

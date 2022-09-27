@@ -18,14 +18,10 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
@@ -72,7 +68,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private int version = 0;
 	private DidChangeTextDocumentParams changeParams;
 	private long modificationStamp;
-	private final AtomicReference<CompletableFuture<LanguageServer>> lastChangeFuture;
+//	private final AtomicReference<CompletableFuture<LanguageServer>> lastChangeFuture;
 	private LanguageServer languageServer;
 	private IPreferenceStore store;
 
@@ -115,36 +111,37 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		textDocument.setLanguageId(languageId);
 		textDocument.setVersion(++version);
-		lastChangeFuture = new AtomicReference<>(languageServerWrapper.getInitializedServer().thenApplyAsync(ls -> {
-			this.languageServer = ls;
-			ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument));
-			return ls;
-		}));
+//		lastChangeFuture = new AtomicReference<>(languageServerWrapper.getInitializedServer().thenApplyAsync(ls -> {
+//			this.languageServer = ls;
+//			ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument));
+//			return ls;
+//		}));
+		this.languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
 	}
 
-	/**
- 	 * Submit an asynchronous call (i.e. to the language server) that be inserted into the current position w.r.t.
- 	 * document change events
- 	 *
- 	 * @param <U> Computation return type
- 	 * @param fn Asynchronous computation on the language server
- 	 * @return Asynchronous result object.
- 	 */
-	private <U> @NonNull CompletableFuture<U> executeOnCurrentVersionAsync(
-			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
-		AtomicReference<CompletableFuture<U>> resValueFuture = new AtomicReference<>();
-		lastChangeFuture.updateAndGet(f -> {
-			CompletableFuture<U> valueFuture = f.thenComposeAsync(fn);
-			resValueFuture.set(valueFuture);
-			// We ignore any exceptions that happen when executing the given future
-			return valueFuture.handle((value, error) -> this.languageServer);
-		});
-		return resValueFuture.get();
-	}
+//	/**
+// 	 * Submit an asynchronous call (i.e. to the language server) that be inserted into the current position w.r.t.
+// 	 * document change events
+// 	 *
+// 	 * @param <U> Computation return type
+// 	 * @param fn Asynchronous computation on the language server
+// 	 * @return Asynchronous result object.
+// 	 */
+//	private <U> @NonNull CompletableFuture<U> executeOnCurrentVersionAsync(
+//			Function<LanguageServer, ? extends CompletionStage<U>> fn) {
+//		AtomicReference<CompletableFuture<U>> resValueFuture = new AtomicReference<>();
+//		lastChangeFuture.updateAndGet(f -> {
+//			CompletableFuture<U> valueFuture = f.thenComposeAsync(fn);
+//			resValueFuture.set(valueFuture);
+//			// We ignore any exceptions that happen when executing the given future
+//			return valueFuture.handle((value, error) -> this.languageServer);
+//		});
+//		return resValueFuture.get();
+//	}
 
-	CompletableFuture<LanguageServer> lastChangeFuture() {
-		return lastChangeFuture.get();
-	}
+//	CompletableFuture<LanguageServer> lastChangeFuture() {
+//		return lastChangeFuture.get();
+//	}
 
 	@Override
 	public void documentChanged(DocumentEvent event) {
@@ -158,10 +155,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			changeParams = null;
 
 			changeParamsToSend.getTextDocument().setVersion(++version);
-			lastChangeFuture.updateAndGet(f -> f.thenApplyAsync(ls -> {
-				ls.getTextDocumentService().didChange(changeParamsToSend);
-				return ls;
-			}));
+//			lastChangeFuture.updateAndGet(f -> f.thenApplyAsync(ls -> {
+//				ls.getTextDocumentService().didChange(changeParamsToSend);
+//				return ls;
+//			}));
+			this.languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
 		}
 	}
 
@@ -269,7 +267,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 
 		try {
-			List<TextEdit> edits = executeOnCurrentVersionAsync(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
+			List<TextEdit> edits = this.languageServerWrapper.executeOnLatestVersion(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
 				.get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS);
 			try {
 				LSPEclipseUtils.applyEdits(document, edits);
@@ -304,10 +302,12 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
-		lastChangeFuture.updateAndGet(f -> f.thenApplyAsync(ls -> {
-  			ls.getTextDocumentService().didSave(params);
-  			return ls;
-  		}));
+//		lastChangeFuture.updateAndGet(f -> f.thenApplyAsync(ls -> {
+//  			ls.getTextDocumentService().didSave(params);
+//  			return ls;
+//  		}));
+		this.languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didSave(params));
+
 	}
 
 	public void documentClosed() {
@@ -318,7 +318,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		if (languageServerWrapper.isActive()) {
 			TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri);
 			DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
-			lastChangeFuture.get().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
+			languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didClose(params));
 		}
 	}
 
