@@ -252,7 +252,7 @@ public class LanguageServerWrapper {
 				LanguageClientImpl client = serverDefinition.createLanguageClient();
 				String theardNameFormat = "LS-" + serverDefinition.id + "-launcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
 				ExecutorService executorService = Executors
-						.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(theardNameFormat).build());
+						.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(theardNameFormat).build());
 				initParams.setProcessId((int) ProcessHandle.current().pid());
 
 				if (rootURI != null) {
