@@ -289,6 +289,7 @@ public class LanguageServerWrapper {
 				}
 				WorkspaceClientCapabilities workspaceClientCapabilities = new WorkspaceClientCapabilities();
 				workspaceClientCapabilities.setApplyEdit(Boolean.TRUE);
+				workspaceClientCapabilities.setConfiguration(Boolean.TRUE);
 				workspaceClientCapabilities.setExecuteCommand(new ExecuteCommandCapabilities(Boolean.TRUE));
 				workspaceClientCapabilities.setSymbol(new SymbolCapabilities(Boolean.TRUE));
 				workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);

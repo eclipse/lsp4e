@@ -14,6 +14,7 @@
 package org.eclipse.lsp4e;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -31,6 +32,7 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
+import org.eclipse.lsp4j.ConfigurationParams;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.MessageActionItem;
 import org.eclipse.lsp4j.MessageParams;
@@ -67,6 +69,12 @@ public class LanguageClientImpl implements LanguageClient {
 
 	protected final LanguageServer getLanguageServer() {
 		return server;
+	}
+
+	@Override
+	public CompletableFuture<List<Object>> configuration(ConfigurationParams configurationParams) {
+		// override as needed
+		return CompletableFuture.completedFuture(Collections.emptyList());
 	}
 
 	@Override
