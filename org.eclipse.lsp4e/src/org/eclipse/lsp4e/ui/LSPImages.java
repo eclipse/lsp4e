@@ -54,6 +54,7 @@ public class LSPImages {
 	public static final String IMG_FIELD = "IMG_FIELD"; //$NON-NLS-1$
 	public static final String IMG_CONSTRUCTOR = "IMG_CONSTRUCTOR"; //$NON-NLS-1$
 	public static final String IMG_ENUM = "IMG_ENUM"; //$NON-NLS-1$
+	public static final String IMG_ENUM_MEMBER = "IMG_ENUM_MEMBER"; //$NON-NLS-1$
 	public static final String IMG_INTERACE = "IMG_INTERFACE"; //$NON-NLS-1$
 	public static final String IMG_FUNCTION = "IMG_FUNCTION"; //$NON-NLS-1$
 	public static final String IMG_VARIABLE = "IMG_VARIABLE"; //$NON-NLS-1$
@@ -82,6 +83,7 @@ public class LSPImages {
 		declareRegistryImage(IMG_FIELD, OBJECT + "field.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_CONSTRUCTOR, OBJECT + "constructor.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_ENUM, OBJECT + "enum.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_ENUM_MEMBER, OBJECT + "enum_member.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_INTERACE, OBJECT + "interface.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_FUNCTION, OBJECT + "function.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_VARIABLE, OBJECT + "variable.png"); //$NON-NLS-1$
@@ -167,6 +169,7 @@ public class LSPImages {
 		case Constant -> getImage(IMG_CONSTANT);
 		case Constructor -> getImage(IMG_CONSTRUCTOR);
 		case Enum -> getImage(IMG_ENUM);
+		case EnumMember -> getImage(IMG_ENUM_MEMBER);
 		case Field -> getImage(IMG_FIELD);
 		case File -> getSharedImage(ISharedImages.IMG_OBJ_FILE);
 		case Function -> getImage(IMG_FUNCTION);
@@ -198,6 +201,7 @@ public class LSPImages {
 		case Unit -> getImage(IMG_UNIT);
 		case Value -> getImage(IMG_VALUE);
 		case Enum -> getImage(IMG_ENUM);
+		case EnumMember -> getImage(IMG_ENUM_MEMBER);
 		case Keyword -> getImage(IMG_KEYWORD);
 		case Snippet -> getImage(IMG_SNIPPET);
 		case Color -> getImageForColor(completionItem);
