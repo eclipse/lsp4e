@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -73,6 +74,7 @@ public class LanguageServiceAccessor {
 	 */
 	public static void clearStartedServers() {
 		startedServers.removeIf(server -> {
+			server.stopDispatcher();
 			server.stop();
 			return true;
 		});
@@ -694,7 +696,21 @@ public class LanguageServiceAccessor {
 	 * @return Async combined result
 	 */
 	public static <T> CompletableFuture<List<T>> concatResults(CompletableFuture<List<T>> a, CompletableFuture<List<T>> b) {
-		return a.thenCombine(b, (c, d) -> { c.addAll(d); return c; });
+		return a.thenCombine(b, (c, d) -> {
+			c.addAll(d);
+			return c;
+		});
+	}
+
+	/**
+	 * Safely generate a stream that can be e.g. used with flatMap: caters for null (rather than empty)
+	 * results from language servers that failed to start or were filtered out when invoked from <code>computeOnServers()</code>
+	 * @param <T> Result type
+	 * @param col
+	 * @return A stream (empty if col is null)
+	 */
+	public static <T> Stream<T> streamSafely(Collection<T> col) {
+		return col == null ? Stream.<T>of() : col.stream();
 	}
 
 	public static boolean checkCapability(LanguageServer languageServer, Predicate<ServerCapabilities> condition) {

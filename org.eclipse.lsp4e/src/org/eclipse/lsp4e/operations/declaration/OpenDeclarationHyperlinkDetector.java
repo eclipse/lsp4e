@@ -75,7 +75,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 				LanguageServiceAccessor.computeOnServers(
 									textViewer.getDocument(),
 									capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDefinitionProvider()),
-									ls -> ls.getTextDocumentService().definition(LSPEclipseUtils.toDefinitionParams(params))))
+									ls -> ls.getTextDocumentService().typeDefinition(LSPEclipseUtils.toTypeDefinitionParams(params))))
 				.get(500, TimeUnit.MILLISECONDS)
 				.stream().flatMap(locations -> toHyperlinks(document, linkRegion, locations).stream())
 				.forEach(link -> allLinks.putIfAbsent(link.getLocation(), link));

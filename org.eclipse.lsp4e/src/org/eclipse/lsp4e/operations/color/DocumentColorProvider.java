@@ -12,11 +12,10 @@
 package org.eclipse.lsp4e.operations.color;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -58,14 +57,17 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 		if (docURI != null) {
 			TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(docURI.toString());
 			DocumentColorParams param = new DocumentColorParams(textDocumentIdentifier);
-			final List<ColorInformationMining> colorResults = Collections.synchronizedList(new ArrayList<>());
+
 
 			return LanguageServiceAccessor
 				.computeOnServers(document,
 						DocumentColorProvider::isColorProvider,
-							ls -> ls.getTextDocumentService().documentColor(param)
-									.thenApply(colors -> colors.stream().map(color -> toMining(color, document, textDocumentIdentifier, ls))))
-			 		.thenApply(res -> res.stream().flatMap(s -> s).collect(Collectors.toList()));
+						// Need to do some of the result processing inside the function we supply to computeOnServers(...)
+						// as need the LS to construct the ColorInformationMining
+						ls -> ls.getTextDocumentService().documentColor(param)
+									.thenApply(colors -> LanguageServiceAccessor.streamSafely(colors)
+											.map(color -> toMining(color, document, textDocumentIdentifier, ls))))
+			 		.thenApply(res -> res.stream().flatMap(s -> s).filter(Objects::nonNull).collect(Collectors.toList()));
 		} else {
 			return null;
 		}
