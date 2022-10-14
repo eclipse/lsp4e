@@ -768,7 +768,7 @@ public class LanguageServerWrapper {
 	 * @return Async result
 	 */
 	<T> CompletableFuture<T> executeOnLatestVersion(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
-		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
+ 		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
 	}
 	/**
 	 * Sends a notification to the LS on a single executor thread tied to this server. Use of this guarantees that the server
@@ -800,7 +800,7 @@ public class LanguageServerWrapper {
 				}
 			}
 			return CompletableFuture.completedFuture(null);
-		}, this.dispatcher).thenApply(server -> this);
+		}, this.dispatcher).thenApply(server -> server == null ? null : this);
 	}
 
 	/**
