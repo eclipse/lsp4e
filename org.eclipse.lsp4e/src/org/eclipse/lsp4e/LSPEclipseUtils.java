@@ -365,7 +365,7 @@ public class LSPEclipseUtils {
 		}
 	}
 
-	private static IFile findMostNested(IFile[] files) {
+	public static IFile findMostNested(IFile[] files) {
 		int shortestLen = Integer.MAX_VALUE;
 		IFile shortest = null;
 		for (IFile file : files) {
@@ -378,6 +378,7 @@ public class LSPEclipseUtils {
 				IPath path = file.getFullPath();
 				if (path.segmentCount() < shortestLen) {
 					shortest = file;
+					shortestLen = path.segmentCount();
 				}
 			}
 		}
