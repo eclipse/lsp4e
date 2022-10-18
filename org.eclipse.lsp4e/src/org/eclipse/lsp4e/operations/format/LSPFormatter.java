@@ -40,9 +40,9 @@ import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 public class LSPFormatter {
 
-	public void applyEdits(IDocument document, List<? extends TextEdit> edits) {
+	public void applyEdits(IDocument document, final long expectedModificationStamp, List<? extends TextEdit> edits) {
 		try {
-			LSPEclipseUtils.applyEdits(document, edits);
+			LSPEclipseUtils.applyEditsWithVersionCheck(document, expectedModificationStamp, edits);
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}
@@ -86,15 +86,13 @@ public class LSPFormatter {
 					fullFormat ? info.getDocument().getLength() : textSelection.getOffset() + textSelection.getLength(),
 					info.getDocument());
 			params.setRange(new Range(start, end));
-			return info.getInitializedLanguageClient()
-					.thenComposeAsync(server -> server.getTextDocumentService().rangeFormatting(params));
+			return info.computeOnLatestVersion(server -> server.getTextDocumentService().rangeFormatting(params));
 		}
 
 		DocumentFormattingParams params = new DocumentFormattingParams();
 		params.setTextDocument(docId);
 		params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
-		return info.getInitializedLanguageClient()
-				.thenComposeAsync(server -> server.getTextDocumentService().formatting(params));
+		return info.computeOnLatestVersion(server -> server.getTextDocumentService().formatting(params));
 	}
 
 	private static boolean isDocumentRangeFormattingSupported(ServerCapabilities capabilities) {

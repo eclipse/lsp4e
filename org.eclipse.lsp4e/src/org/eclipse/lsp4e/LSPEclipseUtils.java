@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -66,6 +67,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IDocumentExtension4;
 import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.RewriteSessionEditProcessor;
@@ -432,6 +434,16 @@ public class LSPEclipseUtils {
 		}
 		if (manager != null) {
 			manager.endCompoundChange();
+		}
+	}
+
+	public static void applyEditsWithVersionCheck(IDocument document, final long expectedModificationStamp, List<? extends TextEdit> edits) throws BadLocationException {
+		final long currentModificationStamp = getDocumentModificationStamp(document);
+
+		if (currentModificationStamp == expectedModificationStamp) {
+			applyEdits(document, edits);
+		} else {
+			throw new ConcurrentModificationException();
 		}
 	}
 
@@ -1107,6 +1119,21 @@ public class LSPEclipseUtils {
 		} else {
 			return false;
 		}
+	}
+
+	/**
+	 * Gets the modificatino stamp for the supplied document, or returns -1 if not available.
+	 *
+	 * In practice just a sanity-checked downcast of a legacy API: should expect the platfom to be instantiating
+	 * Documents that implement the later interfaces.
+	 *
+	 * Should be called on UI thread
+	 *
+	 * @param document Document to check
+	 * @return Opaque version stamp, or -1 if not available
+	 */
+	public static long getDocumentModificationStamp(@Nullable IDocument document) {
+		return document instanceof IDocumentExtension4 ? ((IDocumentExtension4) document).getModificationStamp() : -1;
 	}
 
 }

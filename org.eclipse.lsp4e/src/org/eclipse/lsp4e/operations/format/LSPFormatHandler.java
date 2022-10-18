@@ -13,6 +13,7 @@
 package org.eclipse.lsp4e.operations.format;
 
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -21,6 +22,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.UI;
@@ -50,8 +52,15 @@ public class LSPFormatHandler extends AbstractHandler {
 			final Shell shell = textEditor.getSite().getShell();
 			ISelection selection = HandlerUtil.getCurrentSelection(event);
 			if (document != null && selection instanceof ITextSelection textSelection) {
+				final long originalStamp = LSPEclipseUtils.getDocumentModificationStamp(document);
 				formatter.requestFormatting(document, textSelection).thenAcceptAsync(
-						edits -> shell.getDisplay().asyncExec(() -> formatter.applyEdits(document, edits)));
+						edits -> shell.getDisplay().asyncExec(() -> {
+							try {
+								formatter.applyEdits(document, originalStamp, edits);
+							} catch (ConcurrentModificationException e) {
+								LanguageServerPlugin.logInfo("Document changed subsequent to format request"); //$NON-NLS-1$
+							}
+						}));
 			}
 		}
 		return null;

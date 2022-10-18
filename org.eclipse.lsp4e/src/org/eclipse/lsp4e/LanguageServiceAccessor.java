@@ -140,6 +140,16 @@ public class LanguageServiceAccessor {
 			return this.wrapper.getServerCapabilities();
 		}
 
+		/**
+		 * Make a request to the language server such that it will be received only after any pending document updates, and before any subsequent changes
+		 * @param <T> Result type
+		 * @param fn language server operation
+		 * @return Async result
+		 */
+		public @NonNull <T> CompletableFuture<@Nullable T> computeOnLatestVersion(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+			return this.wrapper.executeOnLatestVersion(fn);
+		}
+
 		public boolean isActive() {
 			return this.wrapper.isActive();
 		}
