@@ -767,7 +767,8 @@ public class LanguageServerWrapper {
 	 * @param fn LS method to invoke
 	 * @return Async result
 	 */
-	<T> CompletableFuture<T> executeOnLatestVersion(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+	@NonNull
+	<T> CompletableFuture<T> executeOnLatestVersion(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
  		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
 	}
 	/**
@@ -775,7 +776,7 @@ public class LanguageServerWrapper {
 	 * will have seen all previous such requests/notifications (and document updates).
 	 * @param fn LS notification to send
 	 */
-	void notifyOnLatestVersion(Consumer<LanguageServer> fn) {
+	void notifyOnLatestVersion(@NonNull Consumer<LanguageServer> fn) {
 		getInitializedServer().thenAcceptAsync(fn, this.dispatcher);
 	}
 
@@ -790,7 +791,7 @@ public class LanguageServerWrapper {
 	 * @return Async result that guarantees the wrapped server will be active and connected to the document. Wraps
 	 * null if the server does not support the requested capabilities or could not be started.
 	 */
-	CompletableFuture<LanguageServerWrapper> connectIf(IDocument document, Predicate<ServerCapabilities> filter) {
+	@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connectIf(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> filter) {
 		return getInitializedServer().thenComposeAsync(server -> {
 			if (server != null && (filter == null || filter.test(getServerCapabilities()))) {
 				try {

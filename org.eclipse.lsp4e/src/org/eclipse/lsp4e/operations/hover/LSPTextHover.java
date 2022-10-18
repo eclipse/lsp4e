@@ -191,7 +191,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 	 *            the hovered offset.
 	 */
 	private void initiateHoverRequest(@NonNull ITextViewer viewer, int offset) {
-		final IDocument document = viewer.getDocument();
+		final @NonNull IDocument document = viewer.getDocument();
 		this.lastViewer = viewer;
 		try {
 			HoverParams params = LSPEclipseUtils.toHoverParams(offset, document);

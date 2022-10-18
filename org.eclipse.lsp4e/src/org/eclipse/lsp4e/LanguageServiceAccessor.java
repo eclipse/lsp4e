@@ -653,11 +653,12 @@ public class LanguageServiceAccessor {
 	 * @param fn A single method invocation on <code>LanguageServer</code>
 	 * @return Async result aggregated over all applicable lang servers, filtering out nulls.
 	 */
-	public static <T> CompletableFuture<List<T>> computeOnServers(@NonNull IDocument document, Predicate<ServerCapabilities> filter,
+	@NonNull
+	public static <T> CompletableFuture<@NonNull List<@NonNull T>> computeOnServers(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> filter,
 			Function<LanguageServer, ? extends CompletionStage<T>> fn) {
 
 		// Out-of-line so we can declare it as List rather than ArrayList to avoid type errors below
-		CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
+		final CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 
 		return getLSWrappers(document).stream()
 			// Ensure wrappers are started, connected to the document, and filter for capabilities
@@ -679,7 +680,8 @@ public class LanguageServiceAccessor {
 	 * @param next Pending result to include
 	 * @return
 	 */
-	static <T> CompletableFuture<List<T>> combine(CompletableFuture<? extends List<T>> result, CompletableFuture<T> next) {
+	@NonNull
+	static <T> CompletableFuture<@NonNull List<@NonNull T>> combine(@NonNull CompletableFuture<? extends List<@NonNull T>> result, @NonNull CompletableFuture<@Nullable T> next) {
 		return result.thenCombine(next, (List<T> a, T b) -> {
 			if (b != null) {
 				a.add(b);
@@ -691,12 +693,13 @@ public class LanguageServiceAccessor {
 	/**
 	 * Merges two async sets of results into a single async result
 	 * @param <T> Result type
-	 * @param a First async result
-	 * @param b Second async result
+	 * @param first First async result
+	 * @param second Second async result
 	 * @return Async combined result
 	 */
-	public static <T> CompletableFuture<List<T>> concatResults(CompletableFuture<List<T>> a, CompletableFuture<List<T>> b) {
-		return a.thenCombine(b, (c, d) -> {
+	@NonNull
+	public static <T> CompletableFuture<@NonNull List<T>> concatResults(@NonNull CompletableFuture<@NonNull List<T>> first, @NonNull CompletableFuture<@NonNull List<T>> second) {
+		return first.thenCombine(second, (c, d) -> {
 			c.addAll(d);
 			return c;
 		});
@@ -709,7 +712,8 @@ public class LanguageServiceAccessor {
 	 * @param col
 	 * @return A stream (empty if col is null)
 	 */
-	public static <T> Stream<T> streamSafely(Collection<T> col) {
+	@NonNull
+	public static <T> Stream<T> streamSafely(@Nullable Collection<T> col) {
 		return col == null ? Stream.<T>of() : col.stream();
 	}
 
