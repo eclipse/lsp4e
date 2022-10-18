@@ -152,24 +152,6 @@ public class LSPEclipseUtilsTest {
 	}
 	
 	@Test
-	public void testURIToResourceMappingWithNestedProject() throws CoreException { // like maven nested modules
-		IProject project1 = null;
-		IProject project2 = null;
-		project1 = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		project2 = TestUtils.createNestedProject(project1, project1.getName() + "suffix");
-		
-		IFile file = project2.getFile("res");
-		file.create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
-		
-		IFile sameFile = project1.getFile(project1.getName() + "suffix/res");
-		
-		Assert.assertTrue(sameFile.exists());
-		
-		Assert.assertEquals(file, LSPEclipseUtils.findResourceFor(file.getLocationURI().toString()));
-		Assert.assertEquals(sameFile, LSPEclipseUtils.findResourceFor(sameFile.getLocationURI().toString()));
-	}
-	
-	@Test
 	public void testReturnMostNestedFileRegardlessArrayOrder() throws CoreException { // like maven nested modules
 		IProject project1 = null;
 		project1 = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
@@ -188,8 +170,6 @@ public class LSPEclipseUtilsTest {
 		Assert.assertEquals(mostNestedFile, LSPEclipseUtils.findMostNested(new IFile[] {someFile, mostNestedFile}));
 	}
 	
-	
-
 	@Test
 	public void testLinkedResourceURIToResourceMapping() throws CoreException, IOException { // bug 577159
 		IProject project1 = null;
