@@ -150,7 +150,26 @@ public class LSPEclipseUtilsTest {
 		Assert.assertEquals(project2, LSPEclipseUtils.findResourceFor(project2.getLocationURI().toString()));
 
 	}
-
+	
+	@Test
+	public void testReturnMostNestedFileRegardlessArrayOrder() throws CoreException { // like maven nested modules
+		IProject project1 = null;
+		project1 = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
+		
+		IFile mostNestedFile = project1.getFile("res");
+		mostNestedFile.create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
+		
+		IFolder folder = project1.getFolder("folder");
+		folder.create(true, true, new NullProgressMonitor());
+		
+		IFile someFile = project1.getFile("folder/res");
+		someFile.create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
+		
+		
+		Assert.assertEquals(mostNestedFile, LSPEclipseUtils.findMostNested(new IFile[] {mostNestedFile, someFile}));
+		Assert.assertEquals(mostNestedFile, LSPEclipseUtils.findMostNested(new IFile[] {someFile, mostNestedFile}));
+	}
+	
 	@Test
 	public void testLinkedResourceURIToResourceMapping() throws CoreException, IOException { // bug 577159
 		IProject project1 = null;

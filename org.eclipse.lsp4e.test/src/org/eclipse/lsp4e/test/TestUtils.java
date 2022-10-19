@@ -26,7 +26,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.BooleanSupplier;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -88,6 +90,25 @@ public class TestUtils {
 			return project;
 		}
 		project.create(null);
+		project.open(null);
+		// configure nature
+		return project;
+	}
+	
+	public static IProject createNestedProject(IProject parent, String projectName) throws CoreException {
+		
+		IFolder nestedFolder = parent.getFolder(projectName);
+		nestedFolder.create(true, true, new NullProgressMonitor());
+		
+		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
+		if (project.exists()) {
+			return project;
+		}
+		
+		IProjectDescription desc = ResourcesPlugin.getWorkspace().newProjectDescription(projectName);
+		desc.setLocation(nestedFolder.getLocation());
+			
+		project.create(desc, null);
 		project.open(null);
 		// configure nature
 		return project;
