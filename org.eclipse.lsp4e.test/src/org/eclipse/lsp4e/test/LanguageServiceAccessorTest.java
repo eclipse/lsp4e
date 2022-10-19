@@ -37,10 +37,20 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Vector;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import org.eclipse.core.filesystem.EFS;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -53,6 +63,7 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServerMultiRootFolders;
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -439,6 +450,111 @@ public class LanguageServiceAccessorTest {
 		assertEquals(languageServers.get(), languageServers2.get());
 	}
 
+	@Test
+	public void testSequentialProcessing() throws Exception {
+		IFile testFile1 = TestUtils.createUniqueTestFile(project, "Some code");
+		IDocument document1 = getDocument(testFile1);
+		
+		ExecutorService randomizer = Executors.newFixedThreadPool(4);
+		
+		AtomicInteger numberer = new AtomicInteger();
+		Set<Thread> dispatchers = new HashSet<>();
+		Vector<Integer> ordering = new Vector<>();
+		List<CompletableFuture<?>> lsResults = new Vector<>();
+		List<Future<?>> dispatchResults = new Vector<>();
+		
+		for (int i = 0; i < 30; i++) {
+			dispatchResults.add(randomizer.submit(() -> {
+				lsResults.add(LanguageServiceAccessor.computeOnServers(document1, MATCH_ALL, ls -> {
+					ordering.add(numberer.getAndIncrement());
+					dispatchers.add(Thread.currentThread());
+					
+					return CompletableFuture.completedFuture("Result");
+				}));
+				try {
+					Thread.sleep((int)(Math.random() * 300));
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}, "Submitted"));
+		}
+		randomizer.shutdown();
+		randomizer.awaitTermination(20, TimeUnit.SECONDS);
+
+		lsResults.forEach(f -> f.join());
+		
+		// Requests should all be on the same thread
+		assertEquals(1, dispatchers.size());
+		
+		// Requests should be dispatched in order of submitting
+		assertEquals(30, ordering.size());
+		for (int i = 0; i < 30; i++) {
+			assertEquals(i, (int)ordering.get(i));
+		}
+		
+	}
+	
+	@Test
+	public void testResultAggregation() throws Exception {
+		IFile testFile1 = TestUtils.createUniqueTestFileMultiLS(project, "Some code");
+		IDocument document1 = getDocument(testFile1);
+		AtomicInteger counter = new AtomicInteger();
+		
+		CompletableFuture<List<String>> asyncResult = LanguageServiceAccessor.computeOnServers(document1, MATCH_ALL, ls -> {
+			return CompletableFuture.completedFuture("Result" + counter.incrementAndGet());
+		});
+		
+		final List<String> result = asyncResult.join();
+		
+		assertTrue(result.contains("Result1"));
+		assertTrue(result.contains("Result2"));
+
+	}
+	
+	@Test
+	public void testResultAggregationNullsExcluded() throws Exception {
+		IFile testFile1 = TestUtils.createUniqueTestFileMultiLS(project, "Some code");
+		IDocument document1 = getDocument(testFile1);
+		AtomicInteger counter = new AtomicInteger();
+		
+		CompletableFuture<List<String>> asyncResult = LanguageServiceAccessor.computeOnServers(document1, MATCH_ALL, ls -> {
+			final String result = (counter.incrementAndGet() == 2) ? "Result" : null;
+			return CompletableFuture.completedFuture(result);
+		});
+		
+		final List<String> result = asyncResult.join();
+		
+		assertTrue(result.contains("Result"));
+		assertEquals(1, result.size());
+	}
+	
+	@Test
+	public void testNonMatchingLSexcluded() throws Exception {
+		IFile testFile1 = TestUtils.createUniqueTestFileMultiLS(project, "Some code");
+		IDocument document1 = getDocument(testFile1);
+		AtomicInteger counter = new AtomicInteger();
+		
+		Predicate<ServerCapabilities> aleatoricFilter = (ServerCapabilities s) -> {
+			return counter.incrementAndGet() % 2 == 0;
+		};
+		
+		Vector<Integer> serversCalled = new Vector<>();
+		
+		CompletableFuture<List<String>> asyncResult = LanguageServiceAccessor.computeOnServers(document1, aleatoricFilter, ls -> {
+			final int i = counter.get();
+			serversCalled.add(i);
+			return CompletableFuture.completedFuture("Result" +i);
+		});
+		
+		final List<String> result = asyncResult.join();
+		
+		assertTrue(result.contains("Result2"));
+		assertEquals(1, result.size());
+		assertTrue(serversCalled.contains(2));
+		assertFalse(serversCalled.contains(1));
+	}
+	
 	private static boolean isStatusHandlersEnabled() {
 		return Platform.getPreferencesService().getBoolean(DebugPlugin.getUniqueIdentifier(),
 				IInternalDebugCoreConstants.PREF_ENABLE_STATUS_HANDLERS, true, null);
