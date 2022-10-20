@@ -5,10 +5,6 @@
 	<version>0.13.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
-	<prerequisites>
-		<maven>3.6.3</maven>
-	</prerequisites>
-
 	<properties>
 		<tycho-version>3.0.0</tycho-version>
 		<sonar.jacoco.reportPath>../target/jacoco.exec</sonar.jacoco.reportPath>
@@ -17,6 +13,8 @@
 		<target-config>target-platform-latest</target-config>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jgit.dirtyWorkingTree>error</jgit.dirtyWorkingTree>
+		<enforcer.plugin.version>3.0.0</enforcer.plugin.version>
+		<maven-enforcer-rule.version>3.6.3</maven-enforcer-rule.version>
 	</properties>
 
 	<modules>
@@ -31,6 +29,27 @@
 
 	<build>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>${enforcer.plugin.version}</version>
+				<executions>
+					<execution>
+						<id>enforce</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<fail>true</fail>
+							<rules>
+								<requireMavenVersion>
+									<version>${maven-enforcer-rule.version}</version>
+								</requireMavenVersion>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-maven-plugin</artifactId>
