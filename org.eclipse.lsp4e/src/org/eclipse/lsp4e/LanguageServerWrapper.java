@@ -666,7 +666,7 @@ public class LanguageServerWrapper {
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
 				return CompletableFuture.completedFuture(languageServer);
 			}
-		}, this.dispatcher).thenApply(theVoid -> languageServer);
+		}, dispatcher).thenApply(theVoid -> languageServer);
 	}
 
 	public void disconnect(URI uri) {
@@ -801,7 +801,7 @@ public class LanguageServerWrapper {
 				}
 			}
 			return CompletableFuture.completedFuture(null);
-		}, this.dispatcher).thenApply(server -> server == null ? null : this);
+		}, dispatcher).thenApply(server -> server == null ? null : this);
 	}
 
 	/**
