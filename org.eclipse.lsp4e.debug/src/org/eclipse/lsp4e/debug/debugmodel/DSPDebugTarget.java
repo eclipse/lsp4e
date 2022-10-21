@@ -226,7 +226,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 		monitor.subTask("Initializing connection to debug adapter");
 		boolean isLaunchRequest = "launch".equals(dspParameters.getOrDefault("request", "launch"));
-		CompletableFuture<?> future = getDebugProtocolServer().initialize(arguments)
+		CompletableFuture<?> launchAttachFuture = getDebugProtocolServer().initialize(arguments)
 				.thenAccept((Capabilities capabilities) -> {
 					monitor.worked(10);
 					this.capabilities = capabilities;
@@ -250,8 +250,9 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 					}
 					return q;
 				});
+		final CompletableFuture<Void> configurationDoneFuture;
 		if (ILaunchManager.DEBUG_MODE.equals(launch.getLaunchMode())) {
-			future = CompletableFuture.allOf(future, initialized.thenRun(() -> {
+			configurationDoneFuture = initialized.thenRun(() -> {
 				monitor.worked(10);
 			}).thenCompose(v -> {
 				monitor.worked(10);
@@ -266,9 +267,12 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 					return getDebugProtocolServer().configurationDone(new ConfigurationDoneArguments());
 				}
 				return CompletableFuture.completedFuture(null);
-			}));
+			});
+		} else {
+			// No debug mode, so just the launching itself happening
+			configurationDoneFuture = CompletableFuture.completedFuture(null);
 		}
-		return future;
+		return CompletableFuture.allOf(launchAttachFuture, configurationDoneFuture);
 	}
 
 	private void terminated() {
