@@ -304,6 +304,14 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		}
 		if (debugProtocolFuture != null) {
 			debugProtocolFuture.cancel(true);
+			/*
+			 * If the debugProtocolFuture is running the message loop on the same thread we
+			 * are in currently, the cancel call will set the interrupt flag. That isn't
+			 * necessary as the message loop isn't waiting on anything (since this code is
+			 * running). The interrupt flag may affect future processing, like terminating
+			 * processes. Therefore clear the flag. See lsp4e#264
+			 */
+			java.lang.Thread.interrupted();
 		}
 		try {
 			in.close();
