@@ -98,7 +98,15 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	private final ILaunch launch;
 	private Future<?> debugProtocolFuture;
 	private IDebugProtocolServer debugProtocolServer;
-	private Capabilities capabilities;
+	/**
+	 * Debug adapters are not supposed to send initialized event until after
+	 * replying to initializeRequest with Capabilities. However some debug adapters
+	 * don't respect this (or didn't in the past). Even if they do respect this,
+	 * sometimes due to the multithreaded event handling, the initialized event
+	 * arrives before the capabilities are stored. Therefore use a future to guard
+	 * reading the capabilities before they are ready.
+	 */
+	private final CompletableFuture<Capabilities> capabilitiesFuture = new CompletableFuture<>();
 	/**
 	 * Once we have received initialized event, this member will be "done" as a flag
 	 */
@@ -229,7 +237,14 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		CompletableFuture<?> launchAttachFuture = getDebugProtocolServer().initialize(arguments)
 				.thenAccept((Capabilities capabilities) -> {
 					monitor.worked(10);
-					this.capabilities = capabilities;
+					if (capabilities == null) {
+						DSPPlugin.logError(
+								"Debug adapter unexpectedly returned 'null' Capabilities from initializeRequest. "
+										+ "A default Capabilities will be used instead.",
+								null);
+						capabilities = new Capabilities();
+					}
+					capabilitiesFuture.complete(capabilities);
 				}).thenRun(() -> {
 					process = new DSPProcess(this);
 					if (isLaunchRequest) {
@@ -252,18 +267,19 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				});
 		final CompletableFuture<Void> configurationDoneFuture;
 		if (ILaunchManager.DEBUG_MODE.equals(launch.getLaunchMode())) {
-			configurationDoneFuture = initialized.thenRun(() -> {
+			var initializedAndCapable = CompletableFuture.allOf(initialized, capabilitiesFuture);
+			configurationDoneFuture = initializedAndCapable.thenRun(() -> {
 				monitor.worked(10);
 			}).thenCompose(v -> {
 				monitor.worked(10);
 				monitor.subTask("Sending breakpoints");
 				breakpointManager = new DSPBreakpointManager(getBreakpointManager(), getDebugProtocolServer(),
-						capabilities);
+						getCapabilities());
 				return breakpointManager.initialize();
 			}).thenCompose(v -> {
 				monitor.worked(30);
 				monitor.subTask("Sending configuration done");
-				if (Boolean.TRUE.equals(capabilities.getSupportsConfigurationDoneRequest())) {
+				if (Boolean.TRUE.equals(getCapabilities().getSupportsConfigurationDoneRequest())) {
 					return getDebugProtocolServer().configurationDone(new ConfigurationDoneArguments());
 				}
 				return CompletableFuture.completedFuture(null);
@@ -711,7 +727,16 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		return debugProtocolServer;
 	}
 
+	/**
+	 * Return the Capabilities of the currently attached debug adapter.
+	 *
+	 * Clients should not call this method until after the debug adapter has been
+	 * initialized.
+	 *
+	 * @return the current capabilities if they have been retrieved, or else
+	 *         return @{code null}
+	 */
 	public Capabilities getCapabilities() {
-		return capabilities;
+		return capabilitiesFuture.getNow(null);
 	}
 }
