@@ -656,13 +656,13 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		final var cmd = new StringBuilder();
 		for (String arg : args.getArgs()) {
 			if (arg.contains(" ")) {
-				cmd.append("\"");
+				cmd.append('"');
 				cmd.append(arg);
-				cmd.append("\"");
+				cmd.append('"');
 			} else {
 				cmd.append(arg);
 			}
-			cmd.append(" ");
+			cmd.append(' ');
 		}
 		if (cmd.length() > 0) {
 			cmd.setLength(cmd.length() - 1);
