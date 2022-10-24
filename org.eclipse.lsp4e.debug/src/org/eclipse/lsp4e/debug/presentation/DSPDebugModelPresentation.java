@@ -74,7 +74,7 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 			if (debugElement.getErrorMessage() != null) {
 				label.append(" <error:");
 				label.append(debugElement.getErrorMessage());
-				label.append(">");
+				label.append('>');
 			}
 		}
 		return label.toString();
