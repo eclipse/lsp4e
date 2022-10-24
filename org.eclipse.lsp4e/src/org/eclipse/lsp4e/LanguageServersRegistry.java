@@ -321,7 +321,7 @@ public class LanguageServersRegistry {
 	}
 
 	private void persistContentTypeToLaunchConfigurationMapping() {
-		StringBuilder builder = new StringBuilder();
+		final var builder = new StringBuilder();
 		for (ContentTypeToLSPLaunchConfigEntry entry : getContentTypeToLSPLaunches()) {
 			entry.appendPreferenceTo(builder);
 			builder.append(',');

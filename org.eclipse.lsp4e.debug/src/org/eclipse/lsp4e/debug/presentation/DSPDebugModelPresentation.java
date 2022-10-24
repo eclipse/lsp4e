@@ -52,7 +52,7 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 
 	@Override
 	public String getText(Object element) {
-		StringBuilder label = new StringBuilder();
+		final var label = new StringBuilder();
 		if (element instanceof DSPThread thread) {
 			label.append(NLS.bind("Thread #{0} [{1}]", thread.getId(), thread.getName()));
 

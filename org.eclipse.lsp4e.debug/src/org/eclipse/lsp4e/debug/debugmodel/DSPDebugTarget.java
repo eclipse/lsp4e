@@ -653,7 +653,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		}
 		// TODO use a "real" terminal (like the one in TMF?) for
 		// RunInTerminalRequestArgumentsKind.INTEGRATED terminal
-		StringBuilder cmd = new StringBuilder();
+		final var cmd = new StringBuilder();
 		for (String arg : args.getArgs()) {
 			if (arg.contains(" ")) {
 				cmd.append("\"");

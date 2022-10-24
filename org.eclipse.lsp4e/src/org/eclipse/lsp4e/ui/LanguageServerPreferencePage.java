@@ -125,7 +125,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		launchModeColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
 			public String getText(Object element) {
-				StringBuilder res = new StringBuilder();
+				final var res = new StringBuilder();
 				for (String s : ((ContentTypeToLSPLaunchConfigEntry)element).getLaunchModes()) {
 					res.append(s);
 					res.append(',');

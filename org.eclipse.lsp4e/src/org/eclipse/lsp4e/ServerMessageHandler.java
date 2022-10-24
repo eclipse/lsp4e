@@ -72,7 +72,7 @@ public class ServerMessageHandler {
 	}
 
 	public static void logMessage(LanguageServerWrapper wrapper, MessageParams params) {
-		StringBuilder log = new StringBuilder();
+		final var log = new StringBuilder();
 		log.append('[');
 		log.append(params.getType().toString());
 		log.append(']');

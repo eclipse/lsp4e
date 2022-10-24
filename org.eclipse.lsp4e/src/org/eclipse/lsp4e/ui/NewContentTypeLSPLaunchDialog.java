@@ -156,7 +156,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		launchModeViewer.setLabelProvider(new LabelProvider() {
 			@Override
 			public String getText(Object o) {
-				StringBuilder res = new StringBuilder();
+				final var res = new StringBuilder();
 				for (String s : (Set<String>)o) {
 					res.append(s);
 					res.append(',');
