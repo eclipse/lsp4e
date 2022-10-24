@@ -338,7 +338,7 @@ public class LSCompletionProposal
 			}
 		}
 
-		StringBuilder res = new StringBuilder();
+		final var res = new StringBuilder();
 		if (this.item.getDetail() != null && !this.item.getDetail().isEmpty()) {
 			res.append("<p>" + this.item.getDetail() + "</p>"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
@@ -491,7 +491,7 @@ public class LSCompletionProposal
 				// next is for tabstops, placeholders and linked edition
 				int currentSnippetOffsetInInsertText = 0;
 				while ((currentSnippetOffsetInInsertText = insertText.indexOf('$', currentSnippetOffsetInInsertText)) != -1) {
-					StringBuilder keyBuilder = new StringBuilder();
+					final var keyBuilder = new StringBuilder();
 					boolean isChoice = false;
 					List<String> snippetProposals = new ArrayList<>();
 					int offsetInSnippet = 1;
@@ -513,7 +513,7 @@ public class LSCompletionProposal
 							}
 						}
 						boolean close = false;
-						StringBuilder valueBuilder = new StringBuilder();
+						var valueBuilder = new StringBuilder();
 						while (currentSnippetOffsetInInsertText + offsetInSnippet < insertText.length() && !close) {
 							char currentChar = insertText.charAt(currentSnippetOffsetInInsertText + offsetInSnippet);
 							if (valueBuilder.length() > 0 &&
@@ -620,7 +620,7 @@ public class LSCompletionProposal
 	}
 
 	private String adjustIndentation(IDocument document, String insertText, int insertionOffset) throws BadLocationException {
-		StringBuilder whitespacesBeforeInsertion = new StringBuilder();
+		final var whitespacesBeforeInsertion = new StringBuilder();
 		int whitespaceOffset = insertionOffset - 1;
 		while (whitespaceOffset >= 0 && document.getChar(whitespaceOffset) != '\n' && Character.isWhitespace(document.getChar(whitespaceOffset))) {
 			whitespacesBeforeInsertion.append(document.getChar(whitespaceOffset));
