@@ -164,8 +164,8 @@ public class LanguageServerWrapper {
 				return;
 			}
 			DocumentContentSynchronizer documentListener = connectedDocuments.get(LSPEclipseUtils.toUri(buffer));
-			if (documentListener != null && documentListener.getModificationStamp() < buffer.getModificationStamp()) {
-				documentListener.documentSaved(buffer.getModificationStamp());
+			if (documentListener != null) {
+				documentListener.documentSaved(buffer);
 			}
 		}
 
@@ -716,10 +716,16 @@ public class LanguageServerWrapper {
 		}
 	}
 
+	private CompletableFuture<?> allDocumentsAreUpToDate() {
+		return CompletableFuture.allOf(connectedDocuments.values().stream().map(DocumentContentSynchronizer::lastChangeFuture).toArray(CompletableFuture<?>[]::new));
+	}
+
 	/**
-	 * Starts the language server and returns a CompletableFuture waiting for the
-	 * server to be initialized. If done in the UI stream, a job will be created
-	 * displaying that the server is being initialized
+	 * Starts the language serverm, ensure it's and returns a CompletableFuture waiting for the
+	 * server to be initialized and up-to-date (all related pending document changes
+	 * notifications are sent).
+	 * <p>If done in the UI stream, a job will be created
+	 * displaying that the server is being initialized</p>
 	 */
 	@NonNull
 	public CompletableFuture<LanguageServer> getInitializedServer() {
@@ -743,10 +749,10 @@ public class LanguageServerWrapper {
 				PlatformUI.getWorkbench().getProgressService().showInDialog(UI.getActiveShell(), waitForInitialization);
 			}
 			if (initializeFuture != null) {
-				return initializeFuture.thenApply(r -> this.languageServer);
+				return initializeFuture.thenCompose(r -> allDocumentsAreUpToDate()).thenApply(r -> this.languageServer);
 			}
 		}
-		return CompletableFuture.completedFuture(this.languageServer);
+		return allDocumentsAreUpToDate().thenApply(r -> this.languageServer);
 	}
 
 	/**

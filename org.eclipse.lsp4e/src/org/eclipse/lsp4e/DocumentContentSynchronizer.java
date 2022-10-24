@@ -27,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.runtime.Assert;
@@ -71,7 +72,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 	private int version = 0;
 	private DidChangeTextDocumentParams changeParams;
-	private long modificationStamp;
+	private long openSaveStamp;
 	private final AtomicReference<CompletableFuture<LanguageServer>> lastChangeFuture;
 	private LanguageServer languageServer;
 	private IPreferenceStore store;
@@ -86,10 +87,10 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		this.fileUri = uri;
 		try {
 			IFileStore store = EFS.getStore(fileUri);
-			this.modificationStamp = store.fetchInfo().getLastModified();
+			this.openSaveStamp = store.fetchInfo().getLastModified();
 		} catch (CoreException e) {
 			LanguageServerPlugin.logError(e);
-			this.modificationStamp = new File(fileUri).lastModified();
+			this.openSaveStamp = new File(fileUri).lastModified();
 		}
 		this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
 
@@ -292,8 +293,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 	}
 
-	public void documentSaved(long timestamp) {
-		this.modificationStamp = timestamp;
+	public void documentSaved(IFileBuffer buffer) {
+		if (openSaveStamp >= buffer.getModificationStamp()) {
+			return;
+		}
+		this.openSaveStamp = buffer.getModificationStamp();
 		ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
 		if (serverCapabilities != null) {
 			Either<TextDocumentSyncKind, TextDocumentSyncOptions> textDocumentSync = serverCapabilities
@@ -331,10 +335,6 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	 */
 	private TextDocumentSyncKind getTextDocumentSyncKind() {
 		return syncKind;
-	}
-
-	protected long getModificationStamp() {
-		return modificationStamp;
 	}
 
 	public IDocument getDocument() {
