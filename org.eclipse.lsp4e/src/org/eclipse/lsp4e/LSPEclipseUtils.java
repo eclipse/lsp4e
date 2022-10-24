@@ -387,8 +387,8 @@ public class LSPEclipseUtils {
 
 	public static void applyEdit(TextEdit textEdit, IDocument document) throws BadLocationException {
 		document.replace(
-				LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document),
-				LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document),
+				toOffset(textEdit.getRange().getStart(), document),
+				toOffset(textEdit.getRange().getEnd(), document) - toOffset(textEdit.getRange().getStart(), document),
 				textEdit.getNewText());
 	}
 
@@ -410,8 +410,8 @@ public class LSPEclipseUtils {
 		MultiTextEdit edit = new MultiTextEdit();
 		for (TextEdit textEdit : edits) {
 			if (textEdit != null) {
-				int offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
-				int length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
+				int offset = toOffset(textEdit.getRange().getStart(), document);
+				int length = toOffset(textEdit.getRange().getEnd(), document) - offset;
 				if (length < 0) {
 					// Must be a bad location: we bail out to avoid corrupting the document.
 					throw new BadLocationException("Invalid location information found applying edits"); //$NON-NLS-1$
@@ -585,7 +585,7 @@ public class LSPEclipseUtils {
 	protected static void openFileLocationInEditor(String uri, IWorkbenchPage page, Range optionalRange) {
 		IEditorPart part = null;
 		IDocument targetDocument = null;
-		IResource targetResource = LSPEclipseUtils.findResourceFor(uri);
+		IResource targetResource = findResourceFor(uri);
 		try {
 			if (targetResource != null && targetResource.getType() == IResource.FILE) {
 				part = IDE.openEditor(page, (IFile) targetResource);
@@ -614,8 +614,8 @@ public class LSPEclipseUtils {
 			{
 				ISelectionProvider selectionProvider = part.getEditorSite().getSelectionProvider();
 
-				int offset = LSPEclipseUtils.toOffset(optionalRange.getStart(), targetDocument);
-				int endOffset = LSPEclipseUtils.toOffset(optionalRange.getEnd(), targetDocument);
+				int offset = toOffset(optionalRange.getStart(), targetDocument);
+				int endOffset = toOffset(optionalRange.getEnd(), targetDocument);
 				selectionProvider.setSelection(new TextSelection(offset, endOffset > offset ? endOffset - offset : 0));
 			}
 
@@ -743,7 +743,7 @@ public class LSPEclipseUtils {
 							change.add(operation);
 						}
 					} else if (resourceOperation instanceof DeleteFile delete) {
-						IResource resource = LSPEclipseUtils.findResourceFor(delete.getUri());
+						IResource resource = findResourceFor(delete.getUri());
 						if (resource != null) {
 							DeleteResourceChange deleteChange = new DeleteResourceChange(resource.getFullPath(), true);
 							change.add(deleteChange);
@@ -754,8 +754,8 @@ public class LSPEclipseUtils {
 					} else if (resourceOperation instanceof RenameFile rename) {
 						URI oldURI = URI.create(rename.getOldUri());
 						URI newURI = URI.create(rename.getNewUri());
-						IFile oldFile = LSPEclipseUtils.getFileHandle(oldURI.toString());
-						IFile newFile = LSPEclipseUtils.getFileHandle(newURI.toString());
+						IFile oldFile = getFileHandle(oldURI.toString());
+						IFile newFile = getFileHandle(newURI.toString());
 						DeleteResourceChange removeNewFile = null;
 						if (newFile != null && newFile.exists()) {
 							if (((RenameFile) resourceOperation).getOptions().getOverwrite()) {
@@ -1066,7 +1066,7 @@ public class LSPEclipseUtils {
 			.flatMap(Arrays::stream)
 			.filter(ref -> {
 				try {
-					return uri.equals(LSPEclipseUtils.toUri(ref.getEditorInput()));
+					return uri.equals(toUri(ref.getEditorInput()));
 				} catch (PartInitException e) {
 					LanguageServerPlugin.logError(e);
 					return false;
@@ -1077,16 +1077,16 @@ public class LSPEclipseUtils {
 
 	private static URI toUri(IEditorInput editorInput) {
 		if (editorInput instanceof FileEditorInput fileEditorInput) {
-			return LSPEclipseUtils.toUri(fileEditorInput.getFile());
+			return toUri(fileEditorInput.getFile());
 		}
 		if (editorInput instanceof IURIEditorInput uriEditorInput) {
-			return LSPEclipseUtils.toUri(Path.fromPortableString((uriEditorInput.getURI()).getPath()));
+			return toUri(Path.fromPortableString((uriEditorInput.getURI()).getPath()));
 		}
 		return null;
 	}
 
 	public static URI toUri(String uri) {
-		return LSPEclipseUtils.toUri(Path.fromPortableString(URI.create(uri).getPath()));
+		return toUri(Path.fromPortableString(URI.create(uri).getPath()));
 	}
 
 	/**
