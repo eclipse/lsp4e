@@ -452,7 +452,7 @@ public class LanguageServerWrapper {
 						.equals(Integer.toString(ResponseErrorCode.RequestCancelled.getValue()))) {
 			LanguageServerPlugin.logError(new ResponseErrorException(responseMessage.getError()));
 		} else if (LanguageServerPlugin.DEBUG) {
-			LanguageServerPlugin.logInfo(message.getClass().getSimpleName() + '\n' + message.toString());
+			LanguageServerPlugin.logInfo(message.getClass().getSimpleName() + '\n' + message);
 		}
 	}
 

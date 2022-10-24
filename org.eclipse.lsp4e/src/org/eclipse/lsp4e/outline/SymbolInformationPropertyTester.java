@@ -66,7 +66,7 @@ public class SymbolInformationPropertyTester extends PropertyTester {
 			}
 			String uri = info.getLocation().getUri();
 			return switch (property) {
-			case FILE_EXTENSION -> uri.endsWith("." + expectedValue.toString()); //$NON-NLS-1$
+			case FILE_EXTENSION -> uri.endsWith("." + expectedValue); //$NON-NLS-1$
 			case CONTENT_TYPE_ID -> {
 				IContentTypeManager contentTypeManager = Platform.getContentTypeManager();
 				IContentType contentType = contentTypeManager.findContentTypeFor(uri);

@@ -155,8 +155,8 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 					"/resources/highlight.min.js/styles/dark.min.css" : //$NON-NLS-1$
 					"/resources/highlight.min.js/styles/default.min.css")); //$NON-NLS-1$
 			if (urlHJScript != null && urlHJCss != null) {
-				hlStyle = "<link rel='stylesheet' href='" + urlHJCss.toString() + "'>" + //$NON-NLS-1$ //$NON-NLS-2$
-						"<script src='" + urlHJScript.toString() + "'></script>" + //$NON-NLS-1$ //$NON-NLS-2$
+				hlStyle = "<link rel='stylesheet' href='" + urlHJCss + "'>" + //$NON-NLS-1$ //$NON-NLS-2$
+						"<script src='" + urlHJScript + "'></script>" + //$NON-NLS-1$ //$NON-NLS-2$
 						"<script>hljs.highlightAll();</script>"; //$NON-NLS-1$
 			}
 		} catch (IOException e) {
@@ -179,13 +179,13 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 		return (color.red * 0.299 + color.green * 0.587+ color.blue *0.114) < 128; //turn to grey and check the level
 	}
 
-	private static @NonNull String toHTMLrgb(RGB rgb) {
+	private static @NonNull CharSequence toHTMLrgb(RGB rgb) {
 		StringBuilder builder = new StringBuilder(7);
 		builder.append('#');
 		appendAsHexString(builder, rgb.red);
 		appendAsHexString(builder, rgb.green);
 		appendAsHexString(builder, rgb.blue);
-		return builder.toString();
+		return builder;
 	}
 
 	private static void appendAsHexString(StringBuilder buffer, int intValue) {

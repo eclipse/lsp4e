@@ -144,7 +144,7 @@ public class CreateFileChange extends ResourceChange {
 				File file = new File(this.uri);
 				Files.createDirectories(file.getParentFile().toPath());
 				if (!file.createNewFile()) {
-					throw new IOException(String.format("Failed to create file '%s'",file.toString())); //$NON-NLS-1$
+					throw new IOException(String.format("Failed to create file '%s'",file)); //$NON-NLS-1$
 				}
 			}
 		} catch (Exception e) {

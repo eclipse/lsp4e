@@ -47,14 +47,14 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 	@Override
 	public void start() throws IOException {
 		if (this.commands == null || this.commands.isEmpty() || this.commands.stream().anyMatch(Objects::isNull)) {
-			throw new IOException("Unable to start language server: " + this.toString()); //$NON-NLS-1$
+			throw new IOException("Unable to start language server: " + this); //$NON-NLS-1$
 		}
 
 		ProcessBuilder builder = createProcessBuilder();
 		Process p = builder.start();
 		this.process = p;
 		if (!p.isAlive()) {
-			throw new IOException("Unable to start language server: " + this.toString()); //$NON-NLS-1$
+			throw new IOException("Unable to start language server: " + this); //$NON-NLS-1$
 		}
 	}
 
