@@ -83,7 +83,7 @@ public class CreateFileChange extends ResourceChange {
 
 	@Override
 	protected IFile getModifiedResource() {
-		return LSPEclipseUtils.getFileHandle(this.uri.toString());
+		return LSPEclipseUtils.getFileHandle(this.uri);
 	}
 
 	@Override
@@ -106,7 +106,7 @@ public class CreateFileChange extends ResourceChange {
 
 		try (InputStream is= new ByteArrayInputStream(fSource.getBytes(fEncoding))) {
 
-			IFile ifile = LSPEclipseUtils.getFileHandle(this.uri.toString());
+			IFile ifile = LSPEclipseUtils.getFileHandle(this.uri);
 
 			if (ifile != null) {
 				List<IFolder> foldersToCreate = new ArrayList<>();

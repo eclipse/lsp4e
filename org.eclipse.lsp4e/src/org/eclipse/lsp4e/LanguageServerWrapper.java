@@ -646,7 +646,7 @@ public class LanguageServerWrapper {
 			return null;
 		}
 		if (document == null) {
-			IFile docFile = (IFile) LSPEclipseUtils.findResourceFor(uri.toString());
+			IFile docFile = (IFile) LSPEclipseUtils.findResourceFor(uri);
 			document = LSPEclipseUtils.getDocument(docFile);
 		}
 		if (document == null) {
