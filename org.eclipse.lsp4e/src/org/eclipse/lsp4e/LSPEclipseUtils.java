@@ -155,7 +155,7 @@ public class LSPEclipseUtils {
 	}
 
 	public static Position toPosition(int offset, IDocument document) throws BadLocationException {
-		Position res = new Position();
+		final var res = new Position();
 		res.setLine(document.getLineOfOffset(offset));
 		res.setCharacter(offset - document.getLineInformationOfOffset(offset).getOffset());
 		return res;
@@ -178,9 +178,9 @@ public class LSPEclipseUtils {
 	public static CompletionParams toCompletionParams(URI fileUri, int offset, IDocument document)
 			throws BadLocationException {
 		Position start = toPosition(offset, document);
-		CompletionParams param = new CompletionParams();
+		final var param = new CompletionParams();
 		param.setPosition(start);
-		TextDocumentIdentifier id = new TextDocumentIdentifier();
+		final var id = new TextDocumentIdentifier();
 		id.setUri(fileUri.toString());
 		param.setTextDocument(id);
 		return param;
@@ -199,9 +199,9 @@ public class LSPEclipseUtils {
 	public static TextDocumentPositionParams toTextDocumentPosistionParams(URI fileUri, int offset, IDocument document)
 			throws BadLocationException {
 		Position start = toPosition(offset, document);
-		TextDocumentPositionParams param = new TextDocumentPositionParams();
+		final var param = new TextDocumentPositionParams();
 		param.setPosition(start);
-		TextDocumentIdentifier id = new TextDocumentIdentifier();
+		final var id = new TextDocumentIdentifier();
 		id.setUri(fileUri.toString());
 		param.setTextDocument(id);
 		return param;
@@ -212,7 +212,7 @@ public class LSPEclipseUtils {
 		URI uri = toUri(document);
 		Position start = toPosition(offset, document);
 		param.setPosition(start);
-		TextDocumentIdentifier id = new TextDocumentIdentifier();
+		final var id = new TextDocumentIdentifier();
 		if (uri != null) {
 			id.setUri(uri.toString());
 		}
@@ -407,7 +407,7 @@ public class LSPEclipseUtils {
 			return;
 		}
 
-		MultiTextEdit edit = new MultiTextEdit();
+		final var edit = new MultiTextEdit();
 		for (TextEdit textEdit : edits) {
 			if (textEdit != null) {
 				int offset = toOffset(textEdit.getRange().getStart(), document);
@@ -425,7 +425,7 @@ public class LSPEclipseUtils {
 			manager.beginCompoundChange();
 		}
 		try {
-			RewriteSessionEditProcessor editProcessor = new RewriteSessionEditProcessor(document, edit,
+			final var editProcessor = new RewriteSessionEditProcessor(document, edit,
 					org.eclipse.text.edits.TextEdit.NONE);
 			editProcessor.performEdits();
 		} catch (MalformedTreeException | BadLocationException e) {
@@ -561,7 +561,7 @@ public class LSPEclipseUtils {
 	protected static void openHttpLocationInBrowser(final String uri, IWorkbenchPage page) {
 		page.getWorkbenchWindow().getShell().getDisplay().asyncExec(() -> {
 			try {
-				URL url = new URL(uri);
+				final var url = new URL(uri);
 
 				IWorkbenchBrowserSupport browserSupport = page.getWorkbenchWindow().getWorkbench()
 						.getBrowserSupport();
@@ -692,7 +692,7 @@ public class LSPEclipseUtils {
 	public static void applyWorkspaceEdit(WorkspaceEdit wsEdit, String label) {
 		String name = label == null ? DEFAULT_LABEL : label;
 		CompositeChange change = toCompositeChange(wsEdit, name);
-		PerformChangeOperation changeOperation = new PerformChangeOperation(change);
+		final var changeOperation = new PerformChangeOperation(change);
 		changeOperation.setUndoManager(RefactoringCore.getUndoManager(), name);
 		try {
 			ResourcesPlugin.getWorkspace().run(changeOperation, new NullProgressMonitor());
@@ -709,7 +709,7 @@ public class LSPEclipseUtils {
 	 * @return a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
 	 */
 	public static CompositeChange toCompositeChange(WorkspaceEdit wsEdit, String name) {
-		CompositeChange change = new CompositeChange(name);
+		final var change = new CompositeChange(name);
 		List<Either<TextDocumentEdit, ResourceOperation>> documentChanges = wsEdit.getDocumentChanges();
 		if (documentChanges != null) {
 			// documentChanges are present, the latter are preferred over changes
@@ -731,7 +731,7 @@ public class LSPEclipseUtils {
 						if (targetFile.exists() && createOperation.getOptions() != null) {
 							if (!createOperation.getOptions().getIgnoreIfExists()) {
 								if (createOperation.getOptions().getOverwrite()) {
-									TextEdit edit = new TextEdit(null, ""); //$NON-NLS-1$
+									final var edit = new TextEdit(null, ""); //$NON-NLS-1$
 									change.add(new LSPTextChange("Overwrite", //$NON-NLS-1$
 											targetURI, edit));
 								} else {
@@ -739,13 +739,13 @@ public class LSPEclipseUtils {
 								}
 							}
 						} else {
-							CreateFileChange operation = new CreateFileChange(targetURI, "", null); //$NON-NLS-1$
+							final var operation = new CreateFileChange(targetURI, "", null); //$NON-NLS-1$
 							change.add(operation);
 						}
 					} else if (resourceOperation instanceof DeleteFile delete) {
 						IResource resource = findResourceFor(delete.getUri());
 						if (resource != null) {
-							DeleteResourceChange deleteChange = new DeleteResourceChange(resource.getFullPath(), true);
+							final var deleteChange = new DeleteResourceChange(resource.getFullPath(), true);
 							change.add(deleteChange);
 						} else {
 							LanguageServerPlugin.logWarning(
@@ -767,8 +767,7 @@ public class LSPEclipseUtils {
 						String content = ""; //$NON-NLS-1$
 						String encoding = null;
 						if (oldFile != null && oldFile.exists()) {
-							try (ByteArrayOutputStream stream = new ByteArrayOutputStream(
-									(int) oldFile.getLocation().toFile().length());
+							try (var stream = new ByteArrayOutputStream((int) oldFile.getLocation().toFile().length());
 									InputStream inputStream = oldFile.getContents();) {
 								FileUtil.transferStreams(inputStream, stream, newURI.toString(), null);
 								content = new String(stream.toByteArray());
@@ -777,13 +776,13 @@ public class LSPEclipseUtils {
 								LanguageServerPlugin.logError(e);
 							}
 						}
-						CreateFileChange createFileChange = new CreateFileChange(newURI, content, encoding);
+						final var createFileChange = new CreateFileChange(newURI, content, encoding);
 						change.add(createFileChange);
 						if (removeNewFile != null) {
 							change.add(removeNewFile);
 						}
 						if (oldFile != null) {
-							DeleteResourceChange removeOldFile = new DeleteResourceChange(oldFile.getFullPath(), true);
+							final var removeOldFile = new DeleteResourceChange(oldFile.getFullPath(), true);
 							change.add(removeOldFile);
 						} else {
 							change.add(new DeleteExternalFile(new File(oldURI)));
@@ -889,7 +888,7 @@ public class LSPEclipseUtils {
 
 	@NonNull
 	public static WorkspaceFolder toWorkspaceFolder(@NonNull IProject project) {
-		WorkspaceFolder folder = new WorkspaceFolder();
+		final var folder = new WorkspaceFolder();
 		URI folderUri = toUri(project);
 		folder.setUri(folderUri != null ? folderUri.toString() : ""); //$NON-NLS-1$
 		folder.setName(project.getName());
@@ -899,7 +898,7 @@ public class LSPEclipseUtils {
 	@NonNull
 	public static List<IContentType> getFileContentTypes(@NonNull IFile file) {
 		IContentTypeManager contentTypeManager = Platform.getContentTypeManager();
-		List<IContentType> contentTypes = new ArrayList<>();
+		final var contentTypes = new ArrayList<IContentType>();
 		if (file.exists()) {
 			try (InputStream contents = file.getContents()) {
 				// TODO consider using document as inputstream
@@ -929,7 +928,7 @@ public class LSPEclipseUtils {
 
 	@NonNull
 	public static List<IContentType> getDocumentContentTypes(@NonNull IDocument document) {
-		List<IContentType> contentTypes = new ArrayList<>();
+		final var contentTypes = new ArrayList<IContentType>();
 
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
 		if (bufferManager != null) {
@@ -954,7 +953,7 @@ public class LSPEclipseUtils {
 
 		String fileName = getFileName(document);
 		if (fileName != null) {
-			try (InputStream contents = new DocumentInputStream(document)) {
+			try (var contents = new DocumentInputStream(document)) {
 				contentTypes
 						.addAll(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, fileName)));
 			} catch (IOException e) {
@@ -1021,7 +1020,7 @@ public class LSPEclipseUtils {
 	}
 
 	private static String htmlParagraph(String text) {
-		StringBuilder sb = new StringBuilder();
+		final var sb = new StringBuilder();
 		sb.append("<p>"); //$NON-NLS-1$
 		sb.append(text);
 		sb.append("</p>"); //$NON-NLS-1$
