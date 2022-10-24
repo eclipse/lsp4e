@@ -628,7 +628,7 @@ public class LSCompletionProposal
 		}
 		whitespacesBeforeInsertion.append('\n');
 		whitespacesBeforeInsertion.reverse();
-		return insertText.replace("\n", whitespacesBeforeInsertion.toString()); //$NON-NLS-1$
+		return insertText.replace("\n", whitespacesBeforeInsertion); //$NON-NLS-1$
 	}
 
 	private int computeNewOffset(List<TextEdit> additionalTextEdits, int insertionOffset, IDocument doc) {

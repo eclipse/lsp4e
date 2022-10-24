@@ -263,7 +263,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		if (!logFile.exists()) {
 			try {
 				if (!logFile.createNewFile()) {
-					throw new IOException(String.format("Failed to create file %s", logFile.toString())); //$NON-NLS-1$
+					throw new IOException(String.format("Failed to create file %s", logFile)); //$NON-NLS-1$
 				}
 			} catch (IOException e) {
 				LanguageServerPlugin.logError(e);

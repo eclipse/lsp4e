@@ -74,7 +74,7 @@ public class ServerMessageHandler {
 	public static void logMessage(LanguageServerWrapper wrapper, MessageParams params) {
 		final var log = new StringBuilder();
 		log.append('[');
-		log.append(params.getType().toString());
+		log.append(params.getType());
 		log.append(']');
 		log.append('\t');
 		log.append(params.getMessage());

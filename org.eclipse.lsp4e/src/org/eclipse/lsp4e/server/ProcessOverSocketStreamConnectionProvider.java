@@ -71,7 +71,7 @@ public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessS
 		}
 
 		if (socket == null) {
-			throw new IOException("Unable to make socket connection: " + toString()); //$NON-NLS-1$
+			throw new IOException("Unable to make socket connection: " + this); //$NON-NLS-1$
 		}
 
 		inputStream = socket.getInputStream();
