@@ -13,15 +13,11 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -148,10 +144,7 @@ public class LanguageClientImpl implements LanguageClient {
 
 	@Override
 	public CompletableFuture<List<WorkspaceFolder>> workspaceFolders() {
-		return CompletableFuture.completedFuture(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects()) //
-			.filter(IProject::isAccessible) //
-			.map(LSPEclipseUtils::toWorkspaceFolder) //
-			.collect(Collectors.toList()));
+		return CompletableFuture.completedFuture(LSPEclipseUtils.getWorkspaceFolders());
 	}
 
 	@Override

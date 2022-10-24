@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
@@ -39,7 +38,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.IFileBuffer;
@@ -185,6 +183,7 @@ public class LanguageServerWrapper {
 	private Future<?> launcherFuture;
 	private CompletableFuture<Void> initializeFuture;
 	private LanguageServer languageServer;
+	private LanguageClientImpl languageClient;
 	private ServerCapabilities serverCapabilities;
 	private Timer timer;
 	private AtomicBoolean stopping = new AtomicBoolean(false);
@@ -212,6 +211,28 @@ public class LanguageServerWrapper {
 		this.initialPath = initialPath;
 		this.serverDefinition = serverDefinition;
 		this.connectedDocuments = new HashMap<>();
+	}
+
+	/**
+	 * @return the workspace folder to be announced to the language server
+	 */
+	private List<WorkspaceFolder> getRelevantWorkspaceFolders() {
+		final var languageClient = this.languageClient;
+		List<WorkspaceFolder> folders = null;
+		if (languageClient != null) {
+			try {
+				folders = languageClient.workspaceFolders().get(5, TimeUnit.SECONDS);
+			} catch (final ExecutionException | TimeoutException ex) {
+				LanguageServerPlugin.logError(ex);
+			} catch (final InterruptedException ex) {
+				LanguageServerPlugin.logError(ex);
+				Thread.currentThread().interrupt();
+			}
+		}
+		if (folders == null) {
+			folders = LSPEclipseUtils.getWorkspaceFolders();
+		}
+		return folders;
 	}
 
 	/**
@@ -249,7 +270,7 @@ public class LanguageServerWrapper {
 				}
 				return null;
 			}).thenApply(unused -> {
-				LanguageClientImpl client = serverDefinition.createLanguageClient();
+				languageClient = serverDefinition.createLanguageClient();
 				String theardNameFormat = "LS-" + serverDefinition.id + "-launcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
 				ExecutorService executorService = Executors
 						.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(theardNameFormat).build());
@@ -268,10 +289,9 @@ public class LanguageServerWrapper {
 						currentConnectionProvider.handleMessage(message, this.languageServer, rootURI);
 					}
 				});
-				initParams.setWorkspaceFolders(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects())
-						.filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder).filter(Objects::nonNull)
-						.collect(Collectors.toList()));
-				Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder().setLocalService(client)//
+				initParams.setWorkspaceFolders(getRelevantWorkspaceFolders());
+				Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder() //
+						.setLocalService(languageClient)//
 						.setRemoteInterface(serverDefinition.getServerInterface())//
 						.setInput(lspStreamProvider.getInputStream())//
 						.setOutput(lspStreamProvider.getOutputStream())//
@@ -279,7 +299,7 @@ public class LanguageServerWrapper {
 						.wrapMessages(wrapper)//
 						.create();
 				this.languageServer = launcher.getRemoteProxy();
-				client.connect(languageServer, this);
+				languageClient.connect(languageServer, this);
 				this.launcherFuture = launcher.startListening();
 				return null;
 			}).thenCompose(unused -> {
@@ -566,10 +586,7 @@ public class LanguageServerWrapper {
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 				WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
-				wsFolderEvent.getAdded()
-						.addAll(Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects())
-								.filter(IProject::isAccessible).map(LSPEclipseUtils::toWorkspaceFolder)
-								.filter(Objects::nonNull).collect(Collectors.toList()));
+				wsFolderEvent.getAdded().addAll(getRelevantWorkspaceFolders());
 				if (currentLS != null && currentLS == LanguageServerWrapper.this.languageServer) {
 					currentLS.getWorkspaceService()
 							.didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(wsFolderEvent));
@@ -979,11 +996,13 @@ public class LanguageServerWrapper {
 			}
 
 			// Use the visitor implementation to extract the low-level detail from delta
+			var relevantFolders = getRelevantWorkspaceFolders();
 			try {
 				e.getDelta().accept(delta -> {
 					if (delta.getResource() instanceof IProject project) {
 						final WorkspaceFolder wsFolder = LSPEclipseUtils.toWorkspaceFolder(project);
-						if ((isAddEvent(delta) || isProjectOpenCloseEvent(delta))
+						if (relevantFolders.contains(wsFolder)
+								&& (isAddEvent(delta) || isProjectOpenCloseEvent(delta))
 								&& project.isAccessible()
 								&& isValid(wsFolder)) {
 							wsFolderEvent.getAdded().add(wsFolder);
