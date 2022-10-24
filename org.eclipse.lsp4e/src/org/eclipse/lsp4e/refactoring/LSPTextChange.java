@@ -68,7 +68,7 @@ public class LSPTextChange extends TextChange {
 			return fBuffer.getDocument();
 		}
 
-		IFile iFile = LSPEclipseUtils.getFileHandle(this.fileUri.toString());
+		IFile iFile = LSPEclipseUtils.getFileHandle(this.fileUri);
 		if (iFile != null) {
 			this.file = Either.forLeft(iFile);
 		} else {
@@ -151,7 +151,7 @@ public class LSPTextChange extends TextChange {
 
 	@Override
 	public Object getModifiedElement() {
-		IFile file = LSPEclipseUtils.getFileHandle(this.fileUri.toString());
+		IFile file = LSPEclipseUtils.getFileHandle(this.fileUri);
 		if (file != null) {
 			return file;
 		}

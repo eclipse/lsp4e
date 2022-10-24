@@ -310,18 +310,30 @@ public class LSPEclipseUtils {
 	}
 
 	@Nullable
+	public static IFile getFileHandle(@Nullable URI uri) {
+		if (uri == null) {
+			return null;
+		}
+		if (FILE_SCHEME.equals(uri.getScheme())) {
+			IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
+			IFile[] files = wsRoot.findFilesForLocationURI(uri);
+			if (files.length > 0) {
+				return files[0];
+			}
+			return null;
+		} else {
+			return Adapters.adapt(uri.toString(), IFile.class, true);
+		}
+	}
+
+	@Nullable
 	public static IFile getFileHandle(@Nullable String uri) {
 		if (uri == null || uri.isEmpty()) {
 			return null;
 		}
 		if (uri.startsWith(FILE_SLASH)) {
 			URI uriObj = URI.create(uri);
-			IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
-			IFile[] files = wsRoot.findFilesForLocationURI(uriObj);
-			if (files.length > 0) {
-				return files[0];
-			}
-			return null;
+			return getFileHandle(uriObj);
 		} else {
 			return Adapters.adapt(uri, IFile.class, true);
 		}
@@ -486,7 +498,7 @@ public class LSPEclipseUtils {
 		if (uri == null) {
 			return null;
 		}
-		IResource resource = findResourceFor(uri.toString());
+		IResource resource = findResourceFor(uri);
 		if (resource != null) {
 			return getDocument(resource);
 		}
@@ -664,7 +676,7 @@ public class LSPEclipseUtils {
 		}else if(editorInput instanceof IPathEditorInput pathEditorInput) {
 			return getDocument(ResourcesPlugin.getWorkspace().getRoot().getFile(pathEditorInput.getPath()));
 		}else if(editorInput instanceof IURIEditorInput uriEditorInput) {
-			IResource resource = findResourceFor(uriEditorInput.getURI().toString());
+			IResource resource = findResourceFor(uriEditorInput.getURI());
 			if (resource != null) {
 				return getDocument(resource);
 			} else {
@@ -754,8 +766,8 @@ public class LSPEclipseUtils {
 					} else if (resourceOperation instanceof RenameFile rename) {
 						URI oldURI = URI.create(rename.getOldUri());
 						URI newURI = URI.create(rename.getNewUri());
-						IFile oldFile = getFileHandle(oldURI.toString());
-						IFile newFile = getFileHandle(newURI.toString());
+						IFile oldFile = getFileHandle(oldURI);
+						IFile newFile = getFileHandle(newURI);
 						DeleteResourceChange removeNewFile = null;
 						if (newFile != null && newFile.exists()) {
 							if (((RenameFile) resourceOperation).getOptions().getOverwrite()) {
