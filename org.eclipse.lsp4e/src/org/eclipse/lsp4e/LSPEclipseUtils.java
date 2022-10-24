@@ -876,6 +876,17 @@ public class LSPEclipseUtils {
 		}
 	}
 
+	/**
+	 * @return a list of folder objects for all open projects of the current workspace
+	 */
+	@NonNull
+	public static List<@NonNull WorkspaceFolder> getWorkspaceFolders() {
+		return Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects())
+		.filter(IProject::isAccessible) //
+		.map(LSPEclipseUtils::toWorkspaceFolder) //
+		.toList();
+	}
+
 	@NonNull
 	public static WorkspaceFolder toWorkspaceFolder(@NonNull IProject project) {
 		WorkspaceFolder folder = new WorkspaceFolder();
