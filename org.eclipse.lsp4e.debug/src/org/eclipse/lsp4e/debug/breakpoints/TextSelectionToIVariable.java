@@ -37,7 +37,7 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 	@Override
 	public <T> T getAdapter(Object adaptableObject, Class<T> adapterType) {
 		if (adaptableObject instanceof TextSelection textSelection && IVariable.class.isAssignableFrom(adapterType)) {
-			return (T) getVariableFor(textSelection);
+			return adapterType.cast(getVariableFor(textSelection));
 		}
 		return null;
 	}
