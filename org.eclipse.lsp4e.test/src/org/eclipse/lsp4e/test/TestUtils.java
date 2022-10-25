@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.BooleanSupplier;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
@@ -57,12 +56,17 @@ import com.google.common.io.RecursiveDeleteOption;
 
 public class TestUtils {
 
+	@FunctionalInterface
+	public interface Condition {
+		boolean isMet() throws Exception;
+	}
+
 	private static Set<File> tempFiles = new HashSet<>();
 
 	private TestUtils() {
 		// this class shouldn't be instantiated
 	}
-	
+
 	public static ITextViewer openTextViewer(IFile file) throws PartInitException {
 		IEditorPart editor = openEditor(file);
 		return LSPEclipseUtils.getTextViewer(editor);
@@ -94,20 +98,20 @@ public class TestUtils {
 		// configure nature
 		return project;
 	}
-	
+
 	public static IProject createNestedProject(IProject parent, String projectName) throws CoreException {
-		
+
 		IFolder nestedFolder = parent.getFolder(projectName);
 		nestedFolder.create(true, true, new NullProgressMonitor());
-		
+
 		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
 		if (project.exists()) {
 			return project;
 		}
-		
+
 		IProjectDescription desc = ResourcesPlugin.getWorkspace().newProjectDescription(projectName);
 		desc.setLocation(nestedFolder.getLocation());
-			
+
 		project.create(desc, null);
 		project.open(null);
 		// configure nature
@@ -233,17 +237,66 @@ public class TestUtils {
 		return null;
 	}
 
-	public static boolean waitForCondition(int timeout_ms, BooleanSupplier condition) {
+	public static void waitForAndAssertCondition(int timeout_ms, Condition condition) {
+		assertTrue("Condition not met within expected time.",
+				waitForCondition(timeout_ms, condition));
+	}
+
+	public static void waitForAndAssertCondition(int timeout_ms, Display display, Condition condition) {
+		assertTrue("Condition not met within expected time.",
+				waitForCondition(timeout_ms, display, condition));
+	}
+
+	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Condition condition) {
+		assertTrue(errorMessage, waitForCondition(timeout_ms, condition));
+	}
+
+	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Display display, Condition condition) {
+		var ex = new Exception[1];
+		var isConditionMet = new DisplayHelper() {
+			@Override
+			protected boolean condition() {
+				try {
+					var isMet = condition.isMet();
+					ex[0] = null;
+					return isMet;
+				} catch (Exception e) {
+					ex[0] = e;
+					return false;
+				}
+			}
+		}.waitForCondition(display, timeout_ms, 50);
+		if (ex[0] != null) {
+			// if the condition was not met because of an exception throw it
+			throw new AssertionError(errorMessage, ex[0]);
+		}
+		assertTrue(errorMessage, isConditionMet);
+	}
+
+	public static boolean waitForCondition(int timeout_ms, Condition condition) {
 		return waitForCondition(timeout_ms, PlatformUI.getWorkbench().getDisplay(), condition);
 	}
 
-	public static boolean waitForCondition(int timeout_ms, Display display, BooleanSupplier condition) {
-		return new DisplayHelper() {
+	public static boolean waitForCondition(int timeout_ms, Display display, Condition condition) {
+		var ex = new Exception[1];
+		var isConditionMet = new DisplayHelper() {
 			@Override
 			protected boolean condition() {
-				return condition.getAsBoolean();
+				try {
+					var isMet = condition.isMet();
+					ex[0] = null;
+					return isMet;
+				} catch (Exception e) {
+					ex[0] = e;
+					return false;
+				}
 			}
-		}.waitForCondition(display, timeout_ms);
+		}.waitForCondition(display, timeout_ms, 50);
+		if (ex[0] != null) {
+			// if the condition was not met because of an exception log it
+			ex[0].printStackTrace();
+		}
+		return isConditionMet;
 	}
 
 	public void waitForLanguageServerNotRunning(MockLanguageServer server) {
@@ -281,7 +334,7 @@ public class TestUtils {
 		}
 	}
 
-	public static BooleanSupplier numberOfChangesIs(int changes) {
+	public static Condition numberOfChangesIs(int changes) {
 		return () -> MockLanguageServer.INSTANCE.getDidChangeEvents().size() == changes;
 	}
 }

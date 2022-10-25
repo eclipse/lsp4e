@@ -11,7 +11,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.references;
 
-import static org.junit.Assert.*;
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,11 +31,9 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.search.ui.ISearchResultViewPart;
 import org.eclipse.search.ui.NewSearchUI;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.services.IEvaluationService;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -78,12 +78,7 @@ public class FindReferencesTest {
 	}
 
 	private ISearchResultViewPart findSearchResultView(int timeout) {
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return  NewSearchUI.getSearchResultView() != null;
-			}
-		}.waitForCondition(Display.getCurrent(), timeout);
+		waitForAndAssertCondition(timeout, () -> NewSearchUI.getSearchResultView() != null);
 		return NewSearchUI.getSearchResultView();
 	}
 

@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.linkedediting;
 
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
@@ -34,8 +35,6 @@ import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -75,19 +74,16 @@ public class LinkedEditingTest {
 
 		Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
 
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				Iterator<Annotation> iterator = sourceViewer.getAnnotationModel().getAnnotationIterator();
-				while (iterator.hasNext()) {
-					Annotation annotation = iterator.next();
-					if (annotation.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")) {
-						return true;
-					}
+		waitForAndAssertCondition(3_000, () -> {
+			Iterator<Annotation> iterator = sourceViewer.getAnnotationModel().getAnnotationIterator();
+			while (iterator.hasNext()) {
+				Annotation annotation = iterator.next();
+				if (annotation.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")) {
+					return true;
 				}
-				return false;
 			}
-		}.waitForCondition(Display.getCurrent(), 3000);
+			return false;
+		});
 
 		IAnnotationModel model = sourceViewer.getAnnotationModel();
 		final Iterator<Annotation> iterator = model.getAnnotationIterator();
@@ -122,20 +118,17 @@ public class LinkedEditingTest {
 		// Test linked editing annotation in a tag name position
 		viewer.getTextWidget().setCaretOffset(14);
 		viewer.getTextWidget().setSelection(14); // 10-14 <body| class="test">
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				Iterator<Annotation> iterator = sourceViewer.getAnnotationModel().getAnnotationIterator();
-				while (iterator.hasNext()) {
-					Annotation annotation = iterator.next();
-					if (annotation.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")) {
-//						System.out.println("testLinkedEditingExitPolicy: Wait for annotation succeeded: " + annotation.getType());
-						return true;
-					}
+		waitForAndAssertCondition(3_000, () -> {
+			Iterator<Annotation> iterator = sourceViewer.getAnnotationModel().getAnnotationIterator();
+			while (iterator.hasNext()) {
+				Annotation annotation = iterator.next();
+				if (annotation.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")) {
+//					System.out.println("testLinkedEditingExitPolicy: Wait for annotation succeeded: " + annotation.getType());
+					return true;
 				}
-				return false;
 			}
-		}.waitForCondition(Display.getCurrent(), 3000);
+			return false;
+		});
 
 		IAnnotationModel model = sourceViewer.getAnnotationModel();
 		List<Annotation> annotations = findAnnotations(sourceViewer, 14).stream().filter(a -> a.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")).collect(Collectors.toList());
@@ -155,19 +148,16 @@ public class LinkedEditingTest {
 		// Test linked editing annotation out of a tag name position (should be absent)
 		viewer.getTextWidget().setCaretOffset(15);
 		viewer.getTextWidget().setSelection(15); // 10-14 <body |class="test">
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				Iterator<Annotation> iterator = sourceViewer.getAnnotationModel().getAnnotationIterator();
-				while (iterator.hasNext()) {
-					Annotation annotation = iterator.next();
-					if (annotation.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")) {
-						return true;
-					}
+		waitForAndAssertCondition(3_000, () -> {
+			Iterator<Annotation> iterator = sourceViewer.getAnnotationModel().getAnnotationIterator();
+			while (iterator.hasNext()) {
+				Annotation annotation = iterator.next();
+				if (annotation.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")) {
+					return true;
 				}
-				return false;
 			}
-		}.waitForCondition(Display.getCurrent(), 3000);
+			return false;
+		});
 
 		model = sourceViewer.getAnnotationModel();
 		// No "linked" annotation is to be found at this offset

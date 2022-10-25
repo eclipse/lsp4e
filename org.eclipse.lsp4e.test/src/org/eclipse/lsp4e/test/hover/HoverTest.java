@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.hover;
 
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.*;
 
 import java.io.File;
@@ -44,7 +45,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -207,12 +207,8 @@ public class HoverTest {
 
 			browser.setText(hoverContent);
 
-			assertTrue("action didn't close editor", new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					return completed.get() && (viewer.getTextWidget() == null || viewer.getTextWidget().isDisposed());
-				}
-			}.waitForCondition(browser.getDisplay(), 10000));
+			waitForAndAssertCondition("action didn't close editor", 10_000, browser.getDisplay(),
+					() -> completed.get() && (viewer.getTextWidget() == null || viewer.getTextWidget().isDisposed()));
 		} finally {
 			if (control != null) {
 				control.dispose();

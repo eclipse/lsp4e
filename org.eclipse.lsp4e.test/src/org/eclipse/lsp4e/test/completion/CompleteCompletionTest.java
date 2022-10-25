@@ -12,12 +12,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.net.URI;
@@ -59,15 +55,12 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.ST;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
-import org.junit.Assert;
 import org.junit.Test;
 
 import com.google.gson.JsonPrimitive;
@@ -94,13 +87,7 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
 		lsWrapper.connect(testFile, null);
 
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return lsWrapper.isConnectedTo(fileLocation);
-			}
-		}.waitForCondition(Display.getCurrent(), 3000);
-		Assert.assertTrue(lsWrapper.isConnectedTo(fileLocation));
+		waitForAndAssertCondition(3_000, () -> lsWrapper.isConnectedTo(fileLocation));
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(items.size(), proposals.length);
@@ -222,12 +209,10 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		String content = "First";
 		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return Arrays.equals(new char[]{ 'a', 'b'}, contentAssistProcessor.getCompletionProposalAutoActivationCharacters());
-			}
-		}.waitForCondition(Display.getDefault(), 3000));
+		waitForAndAssertCondition(3_000, () -> Arrays.equals(
+			new char[] { 'a', 'b'},
+			contentAssistProcessor.getCompletionProposalAutoActivationCharacters()
+		));
 	}
 
 	@Test

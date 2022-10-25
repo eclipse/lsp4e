@@ -11,7 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.junit.Assert.assertTrue;
+import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
+import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
@@ -66,19 +67,19 @@ public class DocumentEditAndUndoTest {
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		// Force LS to initialize and open file
 		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), capabilites -> Boolean.TRUE);
-		
+
 		System.out.println("Document initial:\t[" + viewer.getDocument().get() + "]");
-	
+
 		// Initialize Linked Editing by setting up the text cursor position
-		viewer.getTextWidget().setCaretOffset(2); 
-		((TextViewer)viewer).setSelection(new TextSelection(viewer.getDocument(), 2, 0), true); 
+		viewer.getTextWidget().setCaretOffset(2);
+		((TextViewer)viewer).setSelection(new TextSelection(viewer.getDocument(), 2, 0), true);
 		System.out.println("Document viewer.setSelection(2, 2)");
 
 		Display display= shell.getDisplay();
 		Control control= viewer.getTextWidget();
-		DisplayHelper.sleep(display, 2000); // Give some time to the editor to update 
+		DisplayHelper.sleep(display, 2000); // Give some time to the editor to update
 		display.asyncExec(new Runnable() {
-			
+
 			@Override
 			public void run() {
 				type(control, 'b');
@@ -97,22 +98,15 @@ public class DocumentEditAndUndoTest {
 				display.post(keyEvent);
 			}
 		});
-		assertTrue("Document isn't correctly changed", new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return viewer.getDocument().get().equals("<abc></abc>");
-			}
-		}.waitForCondition(display, 3000));
+
+		waitForCondition(3_000, () -> viewer.getDocument().get().equals("<abc></abc>"));
+		assertEquals("Document isn't correctly changed", "<abc></abc>", viewer.getDocument().get());
+
 		ITextOperationTarget fOperationTarget= editor.getAdapter(ITextOperationTarget.class);
 		BusyIndicator.showWhile(viewer.getTextWidget().getDisplay(),
 				() -> fOperationTarget.doOperation(ITextOperationTarget.UNDO));
-		
-		System.out.println("Document restored:\t[" + viewer.getDocument().get() + "]");
-		assertTrue("Document isn't correctly restored", new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return viewer.getDocument().get().equals("<a></a>");
-			}
-		}.waitForCondition(display, 3000));
+
+		waitForCondition(3_000, () -> viewer.getDocument().get().equals("<a></a>"));
+		assertEquals("Document isn't correctly restored", "<a></a>", viewer.getDocument().get());
 	}
 }

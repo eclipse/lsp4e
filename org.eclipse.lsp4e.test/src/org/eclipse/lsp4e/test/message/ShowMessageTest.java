@@ -8,7 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.message;
 
-import static org.junit.Assert.assertTrue;
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 
 import java.util.List;
 import java.util.Set;
@@ -19,7 +19,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.LSDisplayHelper;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.MessageParams;
@@ -46,7 +45,8 @@ public class ShowMessageTest {
 		Set<Shell> currentShells = Stream.of(display.getShells()).filter(Shell::isVisible).collect(Collectors.toSet());
 		List<LanguageClient> remoteProxies = MockLanguageServer.INSTANCE.getRemoteProxies();
 		remoteProxies.forEach(client -> client.showMessage(message));
-		assertTrue(new LSDisplayHelper(() -> Stream.of(display.getShells()).filter(Shell::isVisible).count() > currentShells.size()).waitForCondition(display, 3000));
+		waitForAndAssertCondition(3_000,
+				() -> Stream.of(display.getShells()).filter(Shell::isVisible).count() > currentShells.size());
 	}
 
 }

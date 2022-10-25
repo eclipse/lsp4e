@@ -11,7 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.highlight;
 
-import static org.junit.Assert.*;
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,8 +37,6 @@ import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentHighlightKind;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -82,12 +81,7 @@ public class HighlightTest {
 
 		Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
 
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return sourceViewer.getAnnotationModel().getAnnotationIterator().hasNext();
-			}
-		}.waitForCondition(Display.getCurrent(), 3000);
+		waitForAndAssertCondition(3_000, () -> sourceViewer.getAnnotationModel().getAnnotationIterator().hasNext());
 
 		IAnnotationModel model = sourceViewer.getAnnotationModel();
 		final Iterator<Annotation> iterator = model.getAnnotationIterator();
@@ -137,30 +131,25 @@ public class HighlightTest {
 		// emulate cursor move
 		viewer.getTextWidget().setCaretOffset(1);
 
-		Assert.assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				IAnnotationModel annotationModel = sourceViewer.getAnnotationModel();
-				Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
-				annotationModel.getAnnotationIterator().forEachRemaining(ann -> annotations.put(model.getPosition(ann), ann));
-				if (annotations.size() != 2) {
-					return false;
-				}
-				{
-					Annotation annotation = annotations.get(new org.eclipse.jface.text.Position(2, 4));
-					if (annotation == null || !HighlightReconcilingStrategy.READ_ANNOTATION_TYPE.equals(annotation.getType())) {
-						return false;
-					}
-				}
-				{
-					Annotation annotation = annotations.get(fakeAnnotationPosition);
-					if (annotation == null || !fakeAnnotationType.equals(annotation.getType())) {
-						return false;
-					}
-				}
-				return true;
+		waitForAndAssertCondition(3_000, () -> {
+			IAnnotationModel annotationModel = sourceViewer.getAnnotationModel();
+			Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
+			annotationModel.getAnnotationIterator().forEachRemaining(ann -> annotations.put(model.getPosition(ann), ann));
+			if (annotations.size() != 2) {
+				return false;
 			}
-		}.waitForCondition(Display.getCurrent(), 3000));
+
+			Annotation annotation = annotations.get(new org.eclipse.jface.text.Position(2, 4));
+			if (annotation == null || !HighlightReconcilingStrategy.READ_ANNOTATION_TYPE.equals(annotation.getType())) {
+				return false;
+			}
+
+			annotation = annotations.get(fakeAnnotationPosition);
+			if (annotation == null || !fakeAnnotationType.equals(annotation.getType())) {
+				return false;
+			}
+			return true;
+		});
 	}
 
 	private void checkGenericEditorVersion() {

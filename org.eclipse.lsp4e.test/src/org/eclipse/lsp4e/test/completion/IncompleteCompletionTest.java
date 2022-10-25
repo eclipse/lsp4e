@@ -12,10 +12,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,7 +56,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Test;
 
@@ -84,12 +81,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
 		lsWrapper.connect(testFile, null);
 
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return lsWrapper.isConnectedTo(fileLocation);
-			}
-		}.waitForCondition(Display.getCurrent(), 3000);
+		waitForAndAssertCondition(3_000, () -> lsWrapper.isConnectedTo(fileLocation));
 
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(items.size(), proposals.length);

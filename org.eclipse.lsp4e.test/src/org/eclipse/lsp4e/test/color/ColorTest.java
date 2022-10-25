@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.color;
 
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Collections;
@@ -33,8 +35,6 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,12 +54,7 @@ public class ColorTest {
 	public void testColorProvider() throws Exception {
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(TestUtils.createProject("testColorProvider"), "\u2588\u2588\u2588\u2588\u2588"));
 		StyledText widget = viewer.getTextWidget();
-		Assert.assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return containsColor(widget, color, 10);
-			}
-		}.waitForCondition(widget.getDisplay(), 3000));
+		waitForAndAssertCondition(3_000, widget.getDisplay(), () -> containsColor(widget, color, 10));
 	}
 
 	@Test
@@ -72,12 +67,7 @@ public class ColorTest {
 		}
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
 		StyledText widget = viewer.getTextWidget();
-		Assert.assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return containsColor(widget, color, 10);
-			}
-		}.waitForCondition(widget.getDisplay(), 3000));
+		waitForAndAssertCondition(3_000, widget.getDisplay(), () -> containsColor(widget, color, 10));
 	}
 
 	/**
