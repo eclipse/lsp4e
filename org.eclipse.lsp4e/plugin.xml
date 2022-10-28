@@ -527,23 +527,23 @@
    </extension>
    <extension
          point="org.eclipse.ui.genericeditor.highlightReconcilers">
-      <highlightReconciler
-            class="org.eclipse.lsp4e.operations.highlight.HighlightReconciler"
+      <highlightReconcilingStrategy
+            class="org.eclipse.lsp4e.operations.highlight.HighlightReconcilingStrategy"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
             <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
-      </highlightReconciler>
+      </highlightReconcilingStrategy>
    </extension>
    <extension
          point="org.eclipse.ui.genericeditor.foldingReconcilers">
-      <foldingReconciler
-            class="org.eclipse.lsp4e.operations.folding.LSPFoldingReconciler"
+      <foldingReconcilingStrategy
+            class="org.eclipse.lsp4e.operations.folding.LSPFoldingReconcilingStrategy"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
             <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
-      </foldingReconciler>
+      </foldingReconcilingStrategy>
    </extension>
    <extension
          point="org.eclipse.ui.workbench.texteditor.codeMiningProviders">
@@ -605,33 +605,33 @@
    </extension>
    <extension
          point="org.eclipse.ui.genericeditor.reconcilers">
-      <reconciler
-            class="org.eclipse.lsp4e.operations.linkedediting.LinkedEditingReconciler"
+      <reconcilingStrategy
+            class="org.eclipse.lsp4e.operations.linkedediting.LSPLinkedEditingReconcilingStrategy"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
             <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
-      </reconciler>
+      </reconcilingStrategy>
    </extension>
    <extension
          point="org.eclipse.ui.genericeditor.reconcilers">
-      <reconciler
-            class="org.eclipse.lsp4e.operations.documentLink.LSPDocumentLinkPresentationReconciler"
+      <reconcilingStrategy
+            class="org.eclipse.lsp4e.operations.documentLink.LSPDocumentLinkPresentationReconcilingStrategy"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
             <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
-      </reconciler>
+      </reconcilingStrategy>
    </extension>
    <extension
          point="org.eclipse.ui.genericeditor.reconcilers">
-      <reconciler
-            class="org.eclipse.lsp4e.operations.semanticTokens.SemanticHighlightReconciler"
+      <reconcilingStrategy
+            class="org.eclipse.lsp4e.operations.semanticTokens.SemanticHighlightReconcilerStrategy"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
             <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
-      </reconciler>
+      </reconcilingStrategy>
    </extension>
    <extension
          point="org.eclipse.ui.views">

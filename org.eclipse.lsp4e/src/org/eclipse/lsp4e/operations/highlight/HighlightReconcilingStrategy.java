@@ -32,6 +32,7 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ISynchronizable;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.ITextViewerLifecycle;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategy;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategyExtension;
@@ -60,7 +61,7 @@ import org.eclipse.swt.custom.StyledText;
  *
  */
 public class HighlightReconcilingStrategy
-		implements IReconcilingStrategy, IReconcilingStrategyExtension, IPreferenceChangeListener {
+		implements IReconcilingStrategy, IReconcilingStrategyExtension, IPreferenceChangeListener, ITextViewerLifecycle {
 
 	public static final String TOGGLE_HIGHLIGHT_PREFERENCE = "org.eclipse.ui.genericeditor.togglehighlight"; //$NON-NLS-1$
 
@@ -123,6 +124,7 @@ public class HighlightReconcilingStrategy
 
 	private EditorSelectionChangedListener editorSelectionChangedListener;
 
+	@Override
 	public void install(ITextViewer viewer) {
 		if (viewer instanceof ISourceViewer thisSourceViewer) {
 			IEclipsePreferences preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
@@ -134,6 +136,7 @@ public class HighlightReconcilingStrategy
 		}
 	}
 
+	@Override
 	public void uninstall() {
 		if (sourceViewer != null) {
 			editorSelectionChangedListener.uninstall(sourceViewer.getSelectionProvider());

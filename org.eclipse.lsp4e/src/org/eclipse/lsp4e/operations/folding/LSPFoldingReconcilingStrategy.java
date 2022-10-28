@@ -23,6 +23,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
+import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.ITextViewerLifecycle;
 import org.eclipse.jface.text.Position;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategy;
@@ -48,7 +50,7 @@ import org.eclipse.swt.widgets.Canvas;
  *
  */
 public class LSPFoldingReconcilingStrategy
-		implements IReconcilingStrategy, IReconcilingStrategyExtension, IProjectionListener {
+		implements IReconcilingStrategy, IReconcilingStrategyExtension, IProjectionListener, ITextViewerLifecycle {
 
 	private IDocument document;
 	private ProjectionAnnotationModel projectionAnnotationModel;
@@ -163,15 +165,17 @@ public class LSPFoldingReconcilingStrategy
 		}
 	}
 
-	public void install(ProjectionViewer viewer) {
+	@Override
+	public void install(ITextViewer viewer) {
 		if (this.viewer != null) {
 			this.viewer.removeProjectionListener(this);
 		}
-		this.viewer = viewer;
+		this.viewer = (ProjectionViewer) viewer;
 		this.viewer.addProjectionListener(this);
 		this.projectionAnnotationModel = this.viewer.getProjectionAnnotationModel();
 	}
 
+	@Override
 	public void uninstall() {
 		setDocument(null);
 		if (viewer != null) {
