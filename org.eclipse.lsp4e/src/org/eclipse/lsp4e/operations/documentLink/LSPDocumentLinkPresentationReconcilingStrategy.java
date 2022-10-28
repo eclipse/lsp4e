@@ -18,6 +18,7 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.ITextViewerLifecycle;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.TextPresentation;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
@@ -40,7 +41,7 @@ import org.eclipse.swt.widgets.Display;
  *
  */
 public class LSPDocumentLinkPresentationReconcilingStrategy
-		implements IReconcilingStrategy, IReconcilingStrategyExtension {
+		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextViewerLifecycle {
 
 	/** The target viewer. */
 	private ITextViewer viewer;
@@ -49,10 +50,12 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 
 	private IDocument document;
 
+	@Override
 	public void install(@Nullable ITextViewer viewer) {
 		this.viewer = viewer;
 	}
 
+	@Override
 	public void uninstall() {
 		this.viewer = null;
 		cancel();

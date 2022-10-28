@@ -25,6 +25,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.ITextViewerLifecycle;
 import org.eclipse.jface.text.link.ILinkedModeListener;
 import org.eclipse.jface.text.link.LinkedModeModel;
 import org.eclipse.jface.text.link.LinkedModeUI;
@@ -50,7 +51,7 @@ import org.eclipse.ui.progress.UIJob;
 import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
 
 public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
-		implements IReconcilingStrategy, IReconcilingStrategyExtension {
+		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextViewerLifecycle {
 	private ISourceViewer sourceViewer;
 	private IDocument fDocument;
 	private EditorSelectionChangedListener editorSelectionChangedListener;
@@ -86,6 +87,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 		}
 	}
 
+	@Override
 	public void install(ITextViewer viewer) {
 		if (viewer instanceof ISourceViewer thisViewer) {
 			super.install();

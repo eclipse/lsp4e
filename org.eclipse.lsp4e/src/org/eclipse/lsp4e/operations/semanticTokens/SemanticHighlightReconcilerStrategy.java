@@ -25,6 +25,7 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextListener;
 import org.eclipse.jface.text.ITextPresentationListener;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.ITextViewerLifecycle;
 import org.eclipse.jface.text.TextPresentation;
 import org.eclipse.jface.text.TextViewer;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
@@ -78,7 +79,7 @@ import org.eclipse.swt.custom.StyledText;
  * {@literal semanticHighlightReconciler.disabled} until fix is provided.
  */
 public class SemanticHighlightReconcilerStrategy
-		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextPresentationListener {
+		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextPresentationListener, ITextViewerLifecycle {
 
 	private final boolean disabled;
 
@@ -116,7 +117,8 @@ public class SemanticHighlightReconcilerStrategy
 	 * @param textViewer
 	 *            the viewer on which the reconciler is installed
 	 */
-	public void install(@NonNull final ITextViewer textViewer) {
+	@Override
+	public void install(final ITextViewer textViewer) {
 		if (disabled) {
 			return;
 		}
@@ -135,6 +137,7 @@ public class SemanticHighlightReconcilerStrategy
 	 * Removes the reconciler from the text viewer it has previously been installed
 	 * on.
 	 */
+	@Override
 	public void uninstall() {
 		if (disabled) {
 			return;
