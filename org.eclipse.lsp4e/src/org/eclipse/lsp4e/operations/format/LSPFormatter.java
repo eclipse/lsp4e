@@ -38,13 +38,14 @@ import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 public class LSPFormatter {
-	public CompletableFuture<Optional<VersionedEdits>> requestFormatting(@NonNull IDocument document, @NonNull ITextSelection textSelection) throws BadLocationException {
+
+	public CompletableFuture<Optional<VersionedEdits>> requestFormatting(@NonNull IDocument document, @NonNull ITextSelection textSelection, IPreferenceStore preferenceStore) throws BadLocationException {
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
 			return CompletableFuture.completedFuture(Optional.empty());
 		}
 		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPFormatter::supportsFormatting);
-		FormattingOptions formatOptions = getFormatOptions();
+		FormattingOptions formatOptions = getFormatOptions(preferenceStore);
 		TextDocumentIdentifier docId = new TextDocumentIdentifier(uri.toString());
 
 		DocumentRangeFormattingParams rangeParams = getRangeFormattingParams(document, textSelection, formatOptions,
@@ -90,11 +91,24 @@ public class LSPFormatter {
 		return rangeParams;
 	}
 
-	private FormattingOptions getFormatOptions() {
-		IPreferenceStore store = EditorsUI.getPreferenceStore();
-		int tabWidth = store.getInt(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);
-		boolean insertSpaces = store.getBoolean(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SPACES_FOR_TABS);
+	private static FormattingOptions getFormatOptions(IPreferenceStore editorPreferenceStore) {
+		int tabWidth = getInt(editorPreferenceStore, AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);
+		boolean insertSpaces = getBoolean(editorPreferenceStore, AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SPACES_FOR_TABS);
 		return new FormattingOptions(tabWidth, insertSpaces);
+	}
+
+	private static int getInt(IPreferenceStore editorPreferenceStore, String name) {
+		if (editorPreferenceStore != null && editorPreferenceStore.contains(name)) {
+			return editorPreferenceStore.getInt(name);
+		}
+		return EditorsUI.getPreferenceStore().getInt(name);
+	}
+
+	private static boolean getBoolean(IPreferenceStore editorPreferenceStore, String name) {
+		if (editorPreferenceStore != null && editorPreferenceStore.contains(name)) {
+			return editorPreferenceStore.getBoolean(name);
+		}
+		return EditorsUI.getPreferenceStore().getBoolean(name);
 	}
 
 	private static boolean isDocumentRangeFormattingSupported(ServerCapabilities capabilities) {
