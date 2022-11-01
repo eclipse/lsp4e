@@ -12,8 +12,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.eclipse.lsp4e.test.TestUtils.*;
-import static org.junit.Assert.*;
+import static org.eclipse.lsp4e.test.TestUtils.numberOfChangesIs;
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.util.List;
@@ -71,7 +73,7 @@ public class DocumentDidChangeTest {
 
 		// Test initial insert
 		viewer.getDocument().replace(0, 0, "Hello");
-		TestUtils.waitForCondition(1000,  numberOfChangesIs(1));
+		waitForAndAssertCondition(1_000,  numberOfChangesIs(1));
 		DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
@@ -87,7 +89,7 @@ public class DocumentDidChangeTest {
 
 		// Test additional insert
 		viewer.getDocument().replace(5, 0, " ");
-		TestUtils.waitForCondition(1000,  numberOfChangesIs(2));
+		waitForAndAssertCondition(1_000,  numberOfChangesIs(2));
 		lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(1);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
@@ -103,7 +105,7 @@ public class DocumentDidChangeTest {
 
 		// test replace
 		viewer.getDocument().replace(0, 5, "Hallo");
-		TestUtils.waitForCondition(1000,  numberOfChangesIs(3));
+		waitForAndAssertCondition(1_000,  numberOfChangesIs(3));
 		lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(2);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
@@ -137,7 +139,7 @@ public class DocumentDidChangeTest {
 
 		// Test initial insert
 		viewer.getDocument().replace("line1\nline2\n".length(), "line3\n".length(), "");
-		TestUtils.waitForCondition(1000,  numberOfChangesIs(1));
+		waitForAndAssertCondition(1_000,  numberOfChangesIs(1));
 		DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
@@ -163,7 +165,7 @@ public class DocumentDidChangeTest {
 		for (int i = 0; i < 500; i++) {
 			text.append(i + "\n");
 		}
-		TestUtils.waitForCondition(10000,  numberOfChangesIs(500));
+		waitForAndAssertCondition(10_000,  numberOfChangesIs(500));
 		List<DidChangeTextDocumentParams> changes = MockLanguageServer.INSTANCE.getDidChangeEvents();
 		for (int i = 0; i < 500; i++) {
 			String delta = changes.get(i).getContentChanges().get(0).getText();
@@ -190,7 +192,7 @@ public class DocumentDidChangeTest {
 		// Test initial insert
 		String text = "Hello";
 		viewer.getDocument().replace(0, 0, text);
-		TestUtils.waitForCondition(1000,  numberOfChangesIs(1));
+		waitForAndAssertCondition(1_000,  numberOfChangesIs(1));
 		DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
@@ -200,7 +202,7 @@ public class DocumentDidChangeTest {
 		// Test additional insert
 
 		viewer.getDocument().replace(5, 0, " World");
-		TestUtils.waitForCondition(1000,  numberOfChangesIs(2));
+		waitForAndAssertCondition(1_000,  numberOfChangesIs(2));
 		lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(1);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
@@ -226,7 +228,7 @@ public class DocumentDidChangeTest {
         // Test initial insert
         String text = "Hello";
         viewer.getDocument().replace(0, 0, text);
-        TestUtils.waitForCondition(1000,  numberOfChangesIs(1));
+        waitForAndAssertCondition(1_000,  numberOfChangesIs(1));
         DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
@@ -235,7 +237,7 @@ public class DocumentDidChangeTest {
 
         // Test additional insert
         viewer.getDocument().replace(5, 0, " World");
-        TestUtils.waitForCondition(1000,  numberOfChangesIs(2));
+        waitForAndAssertCondition(1_000,  numberOfChangesIs(2));
         lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(1);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());

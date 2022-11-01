@@ -64,7 +64,7 @@ public final class MockLanguageServerMultiRootFolders implements LanguageServer 
 	private MockWorkspaceService workspaceService = new MockWorkspaceService(this::buildMaybeDelayedFuture);
 	private InitializeResult initializeResult = new InitializeResult();
 	private long delay = 0;
-	private boolean started;
+	private volatile boolean started;
 
 	public static void reset() {
 		INSTANCE = new MockLanguageServerMultiRootFolders();
@@ -76,7 +76,7 @@ public final class MockLanguageServerMultiRootFolders implements LanguageServer 
 
 	/**
 	 * Starts the language server on stdin/stdout
-	 * 
+	 *
 	 * @throws ExecutionException
 	 * @throws InterruptedException
 	 */

@@ -9,8 +9,8 @@
 package org.eclipse.lsp4e.test.outline;
 
 import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,23 +78,23 @@ public class OutlineContentTest {
 		Tree tree = (Tree) outlinePage.getControl();
 
 		// wait for tree to render
-		assertTrue(waitForCondition(5_000, tree.getDisplay(), //
+		waitForAndAssertCondition(5_000, tree.getDisplay(), //
 				() -> Arrays.asList(symbolCow, symbolFox, symbolCat) //
 						.equals(Arrays.stream(tree.getItems())
 								.map(e -> ((DocumentSymbolWithFile) e.getData()).symbol)
 								.collect(Collectors.toList())) //
-		));
+		);
 
 		// enable outline sorting
 		prefs.putBoolean(CNFOutlinePage.SORT_OUTLINE_PREFERENCE, true);
 
 		// wait for tree being sorted
-		assertTrue(waitForCondition(5_000, tree.getDisplay(), //
+		waitForAndAssertCondition(5_000, tree.getDisplay(), //
 				() -> Arrays.asList(symbolCat, symbolCow, symbolFox) //
 						.equals(Arrays.stream(tree.getItems())
 								.map(e -> ((DocumentSymbolWithFile) e.getData()).symbol)
 								.collect(Collectors.toList())) //
-		));
+		);
 
 		shell.close();
 
@@ -121,9 +121,9 @@ public class OutlineContentTest {
 		DisplayHelper.sleep(tree.getDisplay(), 500);
 
 		editor.getSelectionProvider().setSelection(new TextSelection(4, 0));
-		assertTrue(waitForCondition(2_000, tree.getDisplay(), //
+		waitForAndAssertCondition(2_000, tree.getDisplay(), //
 				() -> itemBselectedAndVisibile(tree) //
-		));
+		);
 
 		editor.getSelectionProvider().setSelection(new TextSelection(3, 0));
 
@@ -157,9 +157,9 @@ public class OutlineContentTest {
 		DisplayHelper.sleep(tree.getDisplay(), 500);
 
 		editor.getSelectionProvider().setSelection(new TextSelection(4, 0));
-		assertTrue(waitForCondition(2_000, tree.getDisplay(), //
+		waitForAndAssertCondition(2_000, tree.getDisplay(), //
 				() -> tree.getItems().length > 0 && tree.getItem(0).getExpanded() //
-		));
+		);
 
 		IDocument document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
 		editor.selectAndReveal(document.getLength(), 0);

@@ -11,8 +11,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
+
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -24,10 +25,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Before;
 import org.junit.Rule;
@@ -61,14 +59,7 @@ public class DocumentRevertAndCloseTest {
 		((AbstractTextEditor)editor).doRevertToSaved();
 		((AbstractTextEditor)editor).getSite().getPage().closeEditor(editor, false);
 
-		Display display = PlatformUI.getWorkbench().getDisplay();
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return !MockLanguageServer.INSTANCE.isRunning();
-			}
-
-		}.waitForCondition(display, 3000));
+		waitForAndAssertCondition(3_000, () -> !MockLanguageServer.INSTANCE.isRunning());
 	}
 
 }

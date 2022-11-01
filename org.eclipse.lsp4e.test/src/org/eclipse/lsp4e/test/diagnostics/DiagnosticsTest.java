@@ -12,7 +12,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.diagnostics;
 
-import static org.junit.Assert.*;
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -49,12 +51,9 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.RGB;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.MarkerUtilities;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -209,12 +208,7 @@ public class DiagnosticsTest {
 			font = new Font(widget.getDisplay(), biggerFont);
 			widget.setFont(font);
 			RGB warningColor = new RGB(244, 200, 45); // from org.eclipse.ui.editors/plugin.xml/extension[@point='org.eclipse.ui.editors.markerAnnotationSpecification']/specification[@annotationType="org.eclipse.ui.workbench.texteditor.warning"]@colorPreferenceValue
-			Assert.assertTrue(new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					return ColorTest.containsColor(widget, warningColor, 10);
-				}
-			}.waitForCondition(widget.getDisplay(), 3000));
+			waitForAndAssertCondition(3_000, widget.getDisplay(), () -> ColorTest.containsColor(widget, warningColor, 10));
 		} finally {
 			if (font != null) {
 				font.dispose();
@@ -254,23 +248,16 @@ public class DiagnosticsTest {
 		try {
 			diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(),
 					Collections.singletonList(diagnostic)));
-			new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					try {
-						IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
-								IResource.DEPTH_INFINITE);
-						for (IMarker marker : markers) {
-							if (marker.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC).equals(diagnostic)) {
-								return true;
-							}
-						}
-					} catch (CoreException e) {
-						// Caught with False return
+			waitForAndAssertCondition(5_000, () -> {
+				IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
+						IResource.DEPTH_INFINITE);
+				for (IMarker marker : markers) {
+					if (marker.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC).equals(diagnostic)) {
+						return true;
 					}
-					return false;
 				}
-			}.waitForCondition(Display.getCurrent(), 5000);
+				return false;
+			});
 			assertEquals(expectedChanges, redrawCountListener.getAsInt());
 		} finally {
 			workspace.removeResourceChangeListener(redrawCountListener);

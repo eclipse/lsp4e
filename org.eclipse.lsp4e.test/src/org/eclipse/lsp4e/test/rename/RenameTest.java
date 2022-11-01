@@ -13,10 +13,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.rename;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -66,7 +64,6 @@ import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Rule;
 import org.junit.Test;
@@ -103,9 +100,9 @@ public class RenameTest {
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
 		assertFalse(command.isEnabled() && command.isHandled());
-		
+
 		Thread.sleep(delay * 3);
-		
+
 		// Put back so shutdown doesn't time out
 		MockLanguageServer.INSTANCE.setTimeToProceedQueries(0);
 		assertTrue(command.isEnabled() && command.isHandled());
@@ -261,19 +258,10 @@ public class RenameTest {
 			display.addFilter(SWT.Paint, pressOKonRenameDialogPaint);
 			ExecutionEvent executionEvent = handlerService.createExecutionEvent(command, e);
 			command.executeWithChecks(executionEvent);
-			assertTrue("Rename dialog not shown", new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					return renameDialogOkPressed.get();
-				}
-			}.waitForCondition(display, 3000));
+			waitForAndAssertCondition("Rename dialog not shown", 3_000, display, () -> renameDialogOkPressed.get());
 			IDocument document = LSPEclipseUtils.getDocument(editor);
-			assertTrue("document not modified, rename not applied", new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					return "new".equals(document.get());
-				}
-			}.waitForCondition(display, 3000));
+			waitForAndAssertCondition("document not modified, rename not applied", 3_000, display,
+					() -> "new".equals(document.get()));
 		} finally {
 			ideShell.getDisplay().removeFilter(SWT.Paint, pressOKonRenameDialogPaint);
 		}

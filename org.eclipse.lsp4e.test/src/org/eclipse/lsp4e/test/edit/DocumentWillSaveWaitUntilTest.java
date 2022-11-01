@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.Collections;
@@ -26,15 +27,12 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.LSDisplayHelper;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,7 +59,6 @@ public class DocumentWillSaveWaitUntilTest {
 		String oldText = "Hello";
 		String newText = "hello";
 
-
 		MockLanguageServer.INSTANCE.setWillSaveWaitUntil(createSingleTextEditAtFileStart(newText));
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
@@ -78,12 +75,12 @@ public class DocumentWillSaveWaitUntilTest {
 		editor.doSave(new NullProgressMonitor());
 
 		// wait for will save wait until to apply the text edit
-		Assert.assertTrue("Text has not been lowercased", new LSDisplayHelper(() -> {
+		waitForAndAssertCondition("Text has not been lowercased", 2_000, () -> {
 			try {
 				return newText.equals(viewer.getDocument().get(0, newText.length()));
 			} catch (BadLocationException e) {
 				return false;
 			}
-		}).waitForCondition(Display.getCurrent(), 2000));
+		});
 	}
 }

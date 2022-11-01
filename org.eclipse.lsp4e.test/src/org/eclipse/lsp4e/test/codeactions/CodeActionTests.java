@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.codeactions;
 
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -25,7 +27,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.test.AllCleanRule;
@@ -43,7 +44,6 @@ import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
@@ -51,7 +51,6 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditorActionConstants;
 import org.eclipse.ui.texteditor.TextOperationAction;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -115,13 +114,7 @@ public class CodeActionTests {
 
 	private void checkCompletionContent(final Table completionProposalList) {
 		// should be instantaneous, but happens to go asynchronous on CI so let's allow a wait
-		  assertTrue("No item found", new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return completionProposalList.getItemCount() == 1;
-			}
-		}.waitForCondition(completionProposalList.getDisplay(), 100));
-
+		waitForAndAssertCondition("No item found", 100, () -> completionProposalList.getItemCount() > 0);
 		assertEquals(1, completionProposalList.getItemCount());
 		final TableItem quickAssistItem = completionProposalList.getItem(0);
 		assertTrue("Missing quick assist proposal", quickAssistItem.getText().contains("fixme")); //$NON-NLS-1$ //$NON-NLS-2$
@@ -198,48 +191,33 @@ public class CodeActionTests {
 	}
 
 	public static IMarker assertDiagnostics(IFile f, String markerMessage, String resolutionLabel) throws CoreException {
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					IMarker [] markers = f.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO);
-					// seems we need the second condition as the attributes aren't loaded immediately
-					return markers.length > 0 && markers[0].getAttribute(IMarker.MESSAGE) != null;
-				} catch (CoreException e) {
-					return false;
-				}
-			}
-		}.waitForCondition(Display.getCurrent(), 2000);
+		waitForAndAssertCondition(2_000, () -> {
+			IMarker[] markers = f.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true,
+					IResource.DEPTH_ZERO);
+			// seems we need the second condition as the attributes aren't loaded immediately
+			return markers.length > 0 && markers[0].getAttribute(IMarker.MESSAGE) != null;
+		});
 		final IMarker m = f.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO)[0];
-		Assert.assertEquals(markerMessage, m.getAttribute(IMarker.MESSAGE));
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return
-					IDE.getMarkerHelpRegistry().hasResolutions(m) &&
-					// need this 2nd condition because async introduces a dummy resolution that's not the one we want
-					IDE.getMarkerHelpRegistry().getResolutions(m)[0].getLabel().equals(resolutionLabel);
-			}
-		}.waitForCondition(Display.getCurrent(), 2000);
+		assertEquals(markerMessage, m.getAttribute(IMarker.MESSAGE));
+
+		waitForAndAssertCondition(2_000, () ->
+				IDE.getMarkerHelpRegistry().hasResolutions(m) &&
+				// need this 2nd condition because async introduces a dummy resolution that's
+				// not the one we want
+				IDE.getMarkerHelpRegistry().getResolutions(m)[0].getLabel().equals(resolutionLabel));
 		return m;
 	}
 
 	public static void assertResolution(AbstractTextEditor editor, IMarker m, String newText) {
 		IDE.getMarkerHelpRegistry().getResolutions(m)[0].run(m);
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return newText.equals(editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
-			}
-		}.waitForCondition(Display.getCurrent(), 1000);
-		Assert.assertEquals(newText, editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return newText.equals(((StyledText) editor.getAdapter(Control.class)).getText());
-			}
-		}.waitForCondition(Display.getCurrent(), 1000);
-		Assert.assertEquals(newText, ((StyledText) editor.getAdapter(Control.class)).getText());
+
+		waitForCondition(1_000,
+				() -> newText.equals(editor.getDocumentProvider().getDocument(editor.getEditorInput()).get()));
+		assertEquals(newText, editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
+
+		waitForCondition(1_000,
+				() -> newText.equals(((StyledText) editor.getAdapter(Control.class)).getText()));
+		assertEquals(newText, ((StyledText) editor.getAdapter(Control.class)).getText());
 	}
 
 }

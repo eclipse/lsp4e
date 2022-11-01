@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -54,10 +55,8 @@ public class LanguageServerWrapperTest {
 		assertEquals(1, wrappers.size());
 
 		LanguageServerWrapper wrapper = wrappers.iterator().next();
-		for(int i = 0; i < 10 && !wrapper.isActive(); i++) {
-			Thread.sleep(100);
-		}
-		
+		waitForAndAssertCondition(2_000, () -> wrapper.isActive());
+
 		assertTrue(wrapper.isConnectedTo(testFile1.getLocationURI()));
 		assertTrue(wrapper.isConnectedTo(testFile2.getLocationURI()));
 

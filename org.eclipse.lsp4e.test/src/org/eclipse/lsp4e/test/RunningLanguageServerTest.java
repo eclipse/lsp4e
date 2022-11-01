@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.*;
 
 import java.util.List;
@@ -23,14 +24,12 @@ import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.services.LanguageServer;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 
 public class RunningLanguageServerTest {
 
@@ -50,26 +49,24 @@ public class RunningLanguageServerTest {
 	@Test
 	public void testOpenCloseLanguageServer() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
-		Display display = Display.getCurrent();
 
 		// open and close the editor several times
 		for(int i = 0; i < 10; i++) {
 			IEditorPart editor = TestUtils.openEditor(testFile);
 			LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilities -> Boolean.TRUE).iterator()
 					.next();
-			assertTrue("language server is started for iteration #" + i,
-					new LSDisplayHelper(() -> MockLanguageServer.INSTANCE.isRunning()).waitForCondition(display, 5000));
+			waitForAndAssertCondition("language server should be started for iteration #" + i, 5_000,
+					() -> MockLanguageServer.INSTANCE.isRunning());
 
 			((AbstractTextEditor)editor).close(false);
-			assertTrue("language server is closed for iteration #" + i,
-					new LSDisplayHelper(() -> !MockLanguageServer.INSTANCE.isRunning()).waitForCondition(display, 5000));
+			waitForAndAssertCondition("language server should be closed after iteration #" + i, 5_000,
+					() -> !MockLanguageServer.INSTANCE.isRunning());
 		}
 	}
 
 	@Test
 	public void testDisabledLanguageServer() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "lspt-disabled", "");
-		Display display = Display.getCurrent();
 
 		ContentTypeToLanguageServerDefinition lsDefinition = TestUtils.getDisabledLS();
 		lsDefinition.setUserEnabled(false);
@@ -85,8 +82,8 @@ public class RunningLanguageServerTest {
 		lsDefinition.setUserEnabled(true);
 		LanguageServiceAccessor.enableLanguageServerContentType(lsDefinition, TestUtils.getEditors());
 
-		assertTrue("language server should be started",
-				new LSDisplayHelper(() -> MockLanguageServer.INSTANCE.isRunning()).waitForCondition(display, 5000));
+		waitForAndAssertCondition("language server should be started", 5_000,
+				() -> MockLanguageServer.INSTANCE.isRunning());
 	}
 
 	@Test

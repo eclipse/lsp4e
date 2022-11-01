@@ -29,9 +29,11 @@ import static org.eclipse.lsp4e.test.TestUtils.createUniqueTestFileMultiLS;
 import static org.eclipse.lsp4e.test.TestUtils.openEditor;
 import static org.eclipse.lsp4e.test.TestUtils.openTextViewer;
 import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -185,7 +187,7 @@ public class LanguageServiceAccessorTest {
 		editor1 = openEditor(testFile1);
 		assertNotEmpty(getInitializedLanguageServers(testFile1, MATCH_ALL));
 
-		waitForCondition(5_000, () -> getActiveLanguageServers(MATCH_ALL).size() == 1);
+		waitForCondition(5_000, () -> getActiveLanguageServers(MATCH_ALL).size() > 0);
 		assertEquals(1, getActiveLanguageServers(MATCH_ALL).size());
 	}
 
@@ -195,14 +197,14 @@ public class LanguageServiceAccessorTest {
 
 		openEditor(testFile1);
 		assertNotEmpty(getInitializedLanguageServers(testFile1, MATCH_ALL));
-		waitForCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
+		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 
 		var wrappers = getLSWrappers(testFile1, MATCH_ALL);
 		var wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
 		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
-		waitForCondition(5_000, () -> !MockLanguageServer.INSTANCE.isRunning());
+		waitForAndAssertCondition(5_000, () -> !MockLanguageServer.INSTANCE.isRunning());
 
 		project.delete(true, true, new NullProgressMonitor());
 
@@ -211,7 +213,7 @@ public class LanguageServiceAccessorTest {
 
 		openEditor(testFile2);
 		assertNotEmpty(getInitializedLanguageServers(testFile2, MATCH_ALL));
-		waitForCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
+		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 
 		wrappers = getLSWrappers(testFile2, MATCH_ALL);
 		var wrapper2 = wrappers.iterator().next();
@@ -220,20 +222,25 @@ public class LanguageServiceAccessorTest {
 		assertTrue(wrapper1 != wrapper2);
 	}
 
+	/**
+	 * TODO this test case is broken. The {@link MockLanguageServerMultiRootFolders#INSTANCE} is never running,
+	 * There is no code that calls {@link MockLanguageServerMultiRootFolders#addRemoteProxy} method which would
+	 * put the server in the running state.
+	 */
 	@Test
 	public void testReuseMultirootFolderLSAfterInitialProjectGotDeleted() throws Exception {
 		var testFile1 = createUniqueTestFile(project, "lsptWithMultiRoot", "");
 
 		openEditor(testFile1);
 		assertNotEmpty(getInitializedLanguageServers(testFile1, MATCH_ALL));
-		waitForCondition(5_000, () -> MockLanguageServerMultiRootFolders.INSTANCE.isRunning());
+		// FIXME waitForCondition(5_000, () -> MockLanguageServerMultiRootFolders.INSTANCE.isRunning());
 
 		var wrappers = getLSWrappers(testFile1, MATCH_ALL);
 		var wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
 		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
-		waitForCondition(5_000, () -> !MockLanguageServerMultiRootFolders.INSTANCE.isRunning());
+		waitForAndAssertCondition(5_000, () -> !MockLanguageServerMultiRootFolders.INSTANCE.isRunning());
 
 		project.delete(true, true, new NullProgressMonitor());
 
@@ -242,13 +249,13 @@ public class LanguageServiceAccessorTest {
 
 		openEditor(testFile2);
 		assertNotEmpty(getInitializedLanguageServers(testFile2, MATCH_ALL));
-		waitForCondition(5_000, () -> MockLanguageServerMultiRootFolders.INSTANCE.isRunning());
+		// FIXME waitForAndAssertCondition(5_000, () -> MockLanguageServerMultiRootFolders.INSTANCE.isRunning());
 
 		wrappers = getLSWrappers(testFile2, MATCH_ALL);
 		var wrapper2 = wrappers.iterator().next();
 		assertTrue(wrapper2.isActive());
 
-		assertTrue(wrapper1 == wrapper2);
+		assertSame(wrapper1, wrapper2);
 	}
 
 	@Test
@@ -307,8 +314,7 @@ public class LanguageServiceAccessorTest {
 		wrapper.disconnect(testFile.getLocationURI());
 		assertTrue(wrapper.isActive());
 
-		Thread.sleep(TimeUnit.SECONDS.toMillis(5));
-		assertFalse(wrapper.isActive());
+		waitForAndAssertCondition(5_000, () -> !wrapper.isActive());
 	}
 
 	@Test

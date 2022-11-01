@@ -12,14 +12,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
+import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -31,11 +30,9 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.LSDisplayHelper;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
@@ -73,16 +70,12 @@ public class DocumentDidSaveTest {
 		viewer.getDocument().replace(0, 0, "Hello");
 		editor.doSave(new NullProgressMonitor());
 
-		new LSDisplayHelper(() -> {
-			try {
-				DidSaveTextDocumentParams lastChange = didSaveExpectation.get(10, TimeUnit.MILLISECONDS);
-				assertNotNull(lastChange.getTextDocument());
-				assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
-				return true;
-			} catch (TimeoutException | InterruptedException | ExecutionException e) {
-				return false;
-			}
-		}).waitForCondition(Display.getCurrent(), 2000);
+		waitForAndAssertCondition(2_000, () -> {
+			DidSaveTextDocumentParams lastChange = didSaveExpectation.get(10, TimeUnit.MILLISECONDS);
+			assertNotNull(lastChange.getTextDocument());
+			assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
+			return true;
+		});
 	}
 
 	@Test
@@ -103,15 +96,11 @@ public class DocumentDidSaveTest {
 		viewer.getDocument().replace(0, 0, "Hello");
 		editor.doSave(new NullProgressMonitor());
 
-		new LSDisplayHelper(() -> {
-			try {
-				DidSaveTextDocumentParams lastChange = didSaveExpectation.get(10, TimeUnit.MILLISECONDS);
-				assertNotNull(lastChange.getTextDocument());
-				assertEquals(LSPEclipseUtils.toUri(file).toString(), lastChange.getTextDocument().getUri());
-				return true;
-			} catch (TimeoutException | InterruptedException | ExecutionException e) {
-				return false;
-			}
-		}).waitForCondition(Display.getCurrent(), 2000);
+		waitForAndAssertCondition(2_000, () -> {
+			DidSaveTextDocumentParams lastChange = didSaveExpectation.get(10, TimeUnit.MILLISECONDS);
+			assertNotNull(lastChange.getTextDocument());
+			assertEquals(LSPEclipseUtils.toUri(file).toString(), lastChange.getTextDocument().getUri());
+			return true;
+		});
 	}
 }
