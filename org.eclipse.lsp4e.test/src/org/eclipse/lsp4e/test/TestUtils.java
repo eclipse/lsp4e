@@ -36,6 +36,7 @@ import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
@@ -73,7 +74,7 @@ public class TestUtils {
 	}
 
 	public static IEditorPart openEditor(IFile file) throws PartInitException {
-		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
 		IEditorInput input = new FileEditorInput(file);
 
@@ -83,7 +84,7 @@ public class TestUtils {
 	}
 
 	public static boolean closeEditor(IEditorPart editor, boolean save) {
-		IWorkbenchWindow workbenchWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
 		return page.closeEditor(editor, save);
 	}
@@ -227,7 +228,7 @@ public class TestUtils {
 	}
 
 	public static IEditorReference[] getEditors() {
-		IWorkbenchWindow wWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		IWorkbenchWindow wWindow = UI.getActiveWindow();
 		if (wWindow != null) {
 			IWorkbenchPage wPage = wWindow.getActivePage();
 			if (wPage != null) {

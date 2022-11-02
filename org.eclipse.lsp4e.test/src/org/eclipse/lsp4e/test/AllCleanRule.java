@@ -19,6 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.intro.IIntroPart;
@@ -60,7 +61,7 @@ public class AllCleanRule extends TestWatcher {
 
 	private void clear() {
 		// Give the platform three attempts to shut down windows
-		for (int i = 3; i > 0 && !PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false); i--) {}
+		for (int i = 3; i > 0 && !UI.getActivePage().closeAllEditors(false); i--) {}
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 		for (IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
 			try {

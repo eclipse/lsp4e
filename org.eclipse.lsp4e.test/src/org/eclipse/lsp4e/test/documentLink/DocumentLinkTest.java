@@ -29,10 +29,10 @@ import org.eclipse.lsp4e.operations.documentLink.DocumentLinkDetector;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Before;
@@ -81,8 +81,7 @@ public class DocumentLinkTest {
 		MockLanguageServer.INSTANCE.setDocumentLinks(links);
 
 		File file = TestUtils.createTempFile("testDocumentLinkExternalFile", ".lspt");
-		ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(
-				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+		ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
 		IHyperlink[] hyperlinks = documentLinkDetector.detectHyperlinks(viewer, new Region(13, 0), true);

@@ -46,6 +46,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.NoErrorLoggedRule;
 import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CreateFile;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
@@ -62,7 +63,6 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Assert;
@@ -77,10 +77,9 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testOpenInEditorExternalFile() throws Exception {
-		IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
 		File externalFile = TestUtils.createTempFile("externalFile", ".txt");
 		Location location = new Location(LSPEclipseUtils.toUri(externalFile).toString(), new Range(new Position(0, 0), new Position(0, 0)));
-		LSPEclipseUtils.openInEditor(location, page);
+		LSPEclipseUtils.openInEditor(location, UI.getActivePage());
 
 	}
 
@@ -408,7 +407,7 @@ public class LSPEclipseUtilsTest {
 		IProject project = TestUtils.createProject("testTextEditDoesntAutomaticallySaveOpenFiles");
 		IFile targetFile = project.getFile("blah.txt");
 		targetFile.create(new ByteArrayInputStream("".getBytes()), true, null);
-		IEditorPart editor = IDE.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(),
+		IEditorPart editor = IDE.openEditor(UI.getActivePage(),
 				targetFile,
 				"org.eclipse.ui.genericeditor.GenericEditor");
 		TextEdit te = new TextEdit();
@@ -426,8 +425,7 @@ public class LSPEclipseUtilsTest {
 	@Test
 	public void testTextEditDoesntAutomaticallySaveOpenExternalFiles() throws Exception {
 		File file = TestUtils.createTempFile("testTextEditDoesntAutomaticallySaveOpenExternalFiles", ".whatever");
-		IEditorPart editor = IDE.openInternalEditorOnFileStore(
-				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+		IEditorPart editor = IDE.openInternalEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
 		TextEdit te = new TextEdit();
 		te.setRange(new Range(new Position(0, 0), new Position(0, 0)));
 		te.setNewText("abc\ndef");
@@ -446,7 +444,7 @@ public class LSPEclipseUtilsTest {
 		try (FileOutputStream out = new FileOutputStream(file)) {
 			out.write('a');
 		}
-		IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+		IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
 		Assert.assertNotEquals(Collections.emptySet(), LSPEclipseUtils.findOpenEditorsFor(file.toURI()));
 	}
 }

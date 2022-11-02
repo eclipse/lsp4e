@@ -32,12 +32,12 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.TestUtils.JobSynchronizer;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockWorkspaceService;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
-import org.eclipse.ui.PlatformUI;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -67,7 +67,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		LanguageServerWrapper wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+		UI.getActivePage().closeAllEditors(false);
 		waitForAndAssertCondition(5_000, () -> !MockLanguageServer.INSTANCE.isRunning());
 
 		project.delete(true, true, new NullProgressMonitor());
@@ -104,7 +104,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		LanguageServerWrapper wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+		UI.getActivePage().closeAllEditors(false);
 		waitForAndAssertCondition(5_000, () -> !MockLanguageServer.INSTANCE.isRunning());
 
 		final MockWorkspaceService mockWorkspaceService = MockLanguageServer.INSTANCE.getWorkspaceService();

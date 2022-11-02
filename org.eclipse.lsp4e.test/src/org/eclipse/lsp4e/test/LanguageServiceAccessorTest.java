@@ -57,8 +57,8 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServerMultiRootFolders;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -203,7 +203,7 @@ public class LanguageServiceAccessorTest {
 		var wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+		UI.getActivePage().closeAllEditors(false);
 		waitForAndAssertCondition(5_000, () -> !MockLanguageServer.INSTANCE.isRunning());
 
 		project.delete(true, true, new NullProgressMonitor());
@@ -239,7 +239,7 @@ public class LanguageServiceAccessorTest {
 		var wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+		UI.getActivePage().closeAllEditors(false);
 		waitForAndAssertCondition(5_000, () -> !MockLanguageServerMultiRootFolders.INSTANCE.isRunning());
 
 		project.delete(true, true, new NullProgressMonitor());
@@ -413,7 +413,7 @@ public class LanguageServiceAccessorTest {
 
 	@Test
 	public void testLSforExternalThenLocalFile() throws Exception {
-		var wb = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+		var wb = UI.getActiveWindow();
 		var local = createTempFile("testLSforExternalThenLocalFile", ".lspt");
 		var editor = (ITextEditor) IDE.openEditorOnFileStore(wb.getActivePage(), EFS.getStore(local.toURI()));
 
