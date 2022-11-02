@@ -41,6 +41,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
@@ -60,7 +61,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 import org.junit.Test;
 
 import com.google.gson.JsonPrimitive;
@@ -450,7 +450,7 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		lsCompletionProposal.apply(viewer, '\n', 0, 0);
 		assertEquals(new Point("FirstClass".length(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));
 
-		PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().closeAllEditors(false);
+		UI.getActivePage().closeAllEditors(false);
 		MockLanguageServer.reset();
 
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, items));

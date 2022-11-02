@@ -23,6 +23,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Color;
 import org.eclipse.lsp4j.ColorInformation;
 import org.eclipse.lsp4j.Position;
@@ -33,7 +34,6 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.junit.Before;
 import org.junit.Rule;
@@ -65,7 +65,7 @@ public class ColorTest {
 		) {
 			out.write("\u2588\u2588\u2588\u2588\u2588".getBytes());
 		}
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI())));
 		StyledText widget = viewer.getTextWidget();
 		waitForAndAssertCondition(3_000, widget.getDisplay(), () -> containsColor(widget, color, 10));
 	}

@@ -42,6 +42,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
 import org.eclipse.lsp4j.CompletionList;
@@ -52,9 +53,7 @@ import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Test;
@@ -134,8 +133,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 			StyleRange styleRange = simpleStyledStr.getStyleRanges()[0];
 			assertTrue(styleRange.strikeout);
 
-			boldStyleProvider = new BoldStylerProvider(
-					Display.getDefault().getActiveShell().getFont());
+			boldStyleProvider = new BoldStylerProvider(UI.getActiveShell().getFont());
 			StyledString styledStr = proposal.getStyledDisplayString(viewer.getDocument(), 4, boldStyleProvider);
 			assertTrue(styledStr.getStyleRanges().length > 1);
 			for (StyleRange sr : styledStr.getStyleRanges()) {
@@ -477,8 +475,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		File file = TestUtils.createTempFile("testCompletionExternalFile", ".lspt");
-		ITextEditor editor = (ITextEditor) IDE.openEditorOnFileStore(
-				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+		ITextEditor editor = (ITextEditor) IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
 		assertEquals(1, proposals.length);
