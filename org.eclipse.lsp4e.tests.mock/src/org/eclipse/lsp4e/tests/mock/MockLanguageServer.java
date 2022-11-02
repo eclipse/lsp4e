@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
@@ -86,7 +87,7 @@ public final class MockLanguageServer implements LanguageServer {
 
 	private List<LanguageClient> remoteProxies = new ArrayList<>();
 
-	private List<CompletableFuture<?>> inFlight = new ArrayList<>();
+	private List<CompletableFuture<?>> inFlight = new CopyOnWriteArrayList<>();
 
 	public static void reset() {
 		INSTANCE = new MockLanguageServer(MockLanguageServer::defaultServerCapabilities);
@@ -114,7 +115,7 @@ public final class MockLanguageServer implements LanguageServer {
 	}
 
 	public void waitBeforeTearDown() {
-		this.inFlight.forEach(future -> {
+		inFlight.forEach(future -> {
 			try {
 				future.join();
 			} catch (CancellationException | CompletionException e) {
@@ -174,6 +175,7 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setLinkedEditingRangeProvider(new LinkedEditingRangeRegistrationOptions());
 		return capabilities;
 	}
+
 	@Override
 	public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
 		return buildMaybeDelayedFuture(initializeResult);
