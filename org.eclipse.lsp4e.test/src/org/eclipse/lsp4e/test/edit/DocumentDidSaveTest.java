@@ -63,7 +63,7 @@ public class DocumentDidSaveTest {
 		IDocument document = LSPEclipseUtils.getDocument(testFile);
 		assertNotNull(document);
 		LanguageServiceAccessor.getLanguageServers(document, capabilites -> Boolean.TRUE);
-		CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
+		final var didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidSaveCallback(didSaveExpectation);
 
 		// simulate change in file
@@ -89,7 +89,7 @@ public class DocumentDidSaveTest {
 
 		// Force LS to initialize and open file
 		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(editor.getEditorInput()), capabilites -> Boolean.TRUE);
-		CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
+		final var didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidSaveCallback(didSaveExpectation);
 
 		// simulate change in file

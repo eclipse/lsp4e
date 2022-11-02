@@ -62,7 +62,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Assert;
@@ -102,7 +101,7 @@ public class LSPEclipseUtilsTest {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile f = TestUtils.createFile(p, "dummy", "Here\nHere2");
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
-		LinkedList<TextEdit> edits = new LinkedList<TextEdit>();
+		final var edits = new LinkedList<TextEdit>();
 		// order the TextEdits from the top of the document to the bottom
 		edits.add(new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "abc"));
 		edits.add(new TextEdit(new Range(new Position(1, 0), new Position(1, 0)), "abc"));
@@ -149,26 +148,26 @@ public class LSPEclipseUtilsTest {
 		Assert.assertEquals(project2, LSPEclipseUtils.findResourceFor(project2.getLocationURI().toString()));
 
 	}
-	
+
 	@Test
 	public void testReturnMostNestedFileRegardlessArrayOrder() throws CoreException { // like maven nested modules
 		IProject project1 = null;
 		project1 = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		
+
 		IFile mostNestedFile = project1.getFile("res");
 		mostNestedFile.create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
-		
+
 		IFolder folder = project1.getFolder("folder");
 		folder.create(true, true, new NullProgressMonitor());
-		
+
 		IFile someFile = project1.getFile("folder/res");
 		someFile.create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
-		
-		
+
+
 		Assert.assertEquals(mostNestedFile, LSPEclipseUtils.findMostNested(new IFile[] {mostNestedFile, someFile}));
 		Assert.assertEquals(mostNestedFile, LSPEclipseUtils.findMostNested(new IFile[] {someFile, mostNestedFile}));
 	}
-	
+
 	@Test
 	public void testLinkedResourceURIToResourceMapping() throws CoreException, IOException { // bug 577159
 		IProject project1 = null;
@@ -318,12 +317,12 @@ public class LSPEclipseUtilsTest {
 		Assume.assumeTrue(Platform.OS_WIN32.equals(Platform.getOS()));
 		URI preferredURI = URI.create("file://localhost/c$/Windows");
 		URI javaURI = URI.create("file:////localhost/c$/Windows");
-		
+
 		File file1 = LSPEclipseUtils.fromUri(preferredURI);
 		File file2 = LSPEclipseUtils.fromUri(javaURI);
 		Assert.assertEquals(file1, file2);
 	}
-	
+
 	@Test
 	public void testToWorkspaceFolder() throws Exception {
 		IProject project = TestUtils.createProject("testToWorkspaceFolder");

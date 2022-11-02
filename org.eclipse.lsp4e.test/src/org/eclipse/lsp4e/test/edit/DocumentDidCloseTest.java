@@ -50,7 +50,7 @@ public class DocumentDidCloseTest {
 		assertNotNull(document);
 		LanguageServiceAccessor.getLanguageServers(document, capabilites -> Boolean.TRUE);
 
-		CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
+		final var didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidCloseCallback(didCloseExpectation);
 
 		TestUtils.closeEditor(editor, false);
@@ -67,7 +67,7 @@ public class DocumentDidCloseTest {
 		// Force LS to initialize and open file
 		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(editor.getEditorInput()), capabilites -> Boolean.TRUE);
 
-		CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
+		final var didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidCloseCallback(didCloseExpectation);
 
 		TestUtils.closeEditor(editor, false);
