@@ -18,25 +18,37 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
+import java.net.URI;
+import java.util.Collections;
 import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
+import org.eclipse.lsp4j.Hover;
+import org.eclipse.lsp4j.HoverParams;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.ide.IDE;
@@ -156,8 +168,7 @@ public class DocumentDidChangeTest {
 
 	@Test
 	public void testIncrementalEditOrdering() throws Exception {
-		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
-		.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities().setTextDocumentSync(TextDocumentSyncKind.Incremental);
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
@@ -171,7 +182,84 @@ public class DocumentDidChangeTest {
 			String delta = changes.get(i).getContentChanges().get(0).getText();
 			assertEquals(i + "\n", delta);
 		}
+	}
+	
+	@Test
+	public void editInterleavingTortureTest() throws Exception {
+		
+		final AtomicInteger orderedCount = new AtomicInteger();
+		final AtomicInteger unorderedCount = new AtomicInteger();
+		final AtomicInteger updateCount = new AtomicInteger();
 
+		final Vector<Integer> outOfOrder = new Vector<>();
+		
+		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
+		.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			@Override
+			public synchronized void didChange(DidChangeTextDocumentParams params) {
+				super.didChange(params);
+				updateCount.incrementAndGet();
+			}
+			
+			@Override
+			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
+				final int current = position.getPosition().getCharacter();
+				if (current == updateCount.get()) {
+					orderedCount.incrementAndGet();
+				} else {
+					unorderedCount.incrementAndGet();
+					outOfOrder.add(current);
+				}
+				
+				return super.hover(position);
+			}
+		});
+		
+		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		MockLanguageServer.INSTANCE.setHover(hoverResponse);
+		CompletableFuture<?> initial = CompletableFuture.completedFuture(null);
+		
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		final IDocument document = viewer.getDocument();
+		final URI uri = LSPEclipseUtils.toUri(document);
+		StyledText text = viewer.getTextWidget();
+		Thread.sleep(1000);
+		updateCount.set(0);
+		
+		for (int i = 0; i < 500; i++) {
+			final int current = i + 1;
+			text.append(i + "\n");
+			final HoverParams params = new HoverParams();
+			final Position position = new Position();
+			position.setCharacter(current);
+			position.setLine(0);
+			params.setPosition(position);
+			
+			CompletableFuture<?> hoverFuture = LanguageServiceAccessor.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+			.thenApplyAsync(languageServers -> // Async is very important here, otherwise the LS Client thread is in
+												// deadlock and doesn't read bytes from LS
+			languageServers.stream()
+				.map(languageServer -> {
+					try {
+						return languageServer.getTextDocumentService().hover(params);
+					} catch (Exception e) {
+						
+					}
+					return CompletableFuture.completedFuture(null);
+				}).collect(Collectors.toList()));
+			initial = CompletableFuture.allOf(initial, hoverFuture);
+		}
+		
+		initial.join();
+		System.out.println("Completed: " + updateCount.get());
+		System.out.println("Ordered: " + orderedCount.get());
+		System.out.println("Unordered: " + unorderedCount.get());
+		outOfOrder.forEach(i -> System.err.println("Out of order: " + i));
+		
+		assertEquals(updateCount.get(), orderedCount.get());
 	}
 
 	@Test
