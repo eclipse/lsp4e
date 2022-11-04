@@ -58,6 +58,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		boolean launchNotConnect;
 		String debugCmd;
 		List<String> debugCmdArgs;
+		String[] debugCmdEnvVars;
 		boolean monitorDebugAdapter;
 		String server;
 		int port;
@@ -99,9 +100,21 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		}
 
 		public DSPLaunchDelegateLaunchBuilder setLaunchDebugAdapter(String debugCmd, List<String> debugCmdArgs) {
+			return setLaunchDebugAdapter(debugCmd, debugCmdArgs, (String[]) null);
+		}
+
+		public DSPLaunchDelegateLaunchBuilder setLaunchDebugAdapter(String debugCmd, List<String> debugCmdArgs,
+				Map<String, String> envVars) {
+			return setLaunchDebugAdapter(debugCmd, debugCmdArgs, envVars == null ? null
+					: envVars.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).toArray(String[]::new));
+		}
+
+		public DSPLaunchDelegateLaunchBuilder setLaunchDebugAdapter(String debugCmd, List<String> debugCmdArgs,
+				String[] envVars) {
 			this.launchNotConnect = true;
 			this.debugCmd = debugCmd;
 			this.debugCmdArgs = debugCmdArgs;
+			this.debugCmdEnvVars = envVars;
 			return this;
 		}
 
@@ -150,6 +163,10 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 			return debugCmdArgs;
 		}
 
+		public String[] getDebugCmdEnvVars() {
+			return debugCmdEnvVars;
+		}
+
 		public boolean isMonitorDebugAdapter() {
 			return monitorDebugAdapter;
 		}
@@ -170,10 +187,10 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		public String toString() {
 			return "DSPLaunchDelegateLaunchBuilder [configuration=" + configuration + ", mode=" + mode + ", launch="
 					+ launch + ", monitor=" + monitor + ", launchNotConnect=" + launchNotConnect + ", debugCmd="
-					+ debugCmd + ", debugCmdArgs=" + debugCmdArgs + ", monitorDebugAdapter=" + monitorDebugAdapter
-					+ ", server=" + server + ", port=" + port + ", dspParameters=" + dspParameters + "]";
+					+ debugCmd + ", debugCmdArgs=" + debugCmdArgs + ", debugCmdEnvVars=" + List.of(debugCmdEnvVars)
+					+ ", monitorDebugAdapter=" + monitorDebugAdapter + ", server=" + server + ", port=" + port
+					+ ", dspParameters=" + dspParameters + "]";
 		}
-
 	}
 
 	@Override
@@ -185,6 +202,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 				.equals(configuration.getAttribute(DSPPlugin.ATTR_DSP_MODE, DSPPlugin.DSP_MODE_LAUNCH));
 		builder.debugCmd = configuration.getAttribute(DSPPlugin.ATTR_DSP_CMD, (String) null);
 		builder.debugCmdArgs = configuration.getAttribute(DSPPlugin.ATTR_DSP_ARGS, (List<String>) null);
+		builder.debugCmdEnvVars = DebugPlugin.getDefault().getLaunchManager().getEnvironment(configuration);
 		builder.monitorDebugAdapter = configuration.getAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, false);
 		builder.server = configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, (String) null);
 		builder.port = configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_PORT, 0);
@@ -220,6 +238,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 					.equals(builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_MODE, DSPPlugin.DSP_MODE_LAUNCH));
 			builder.debugCmd = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_CMD, (String) null);
 			builder.debugCmdArgs = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_ARGS, (List<String>) null);
+			builder.debugCmdEnvVars = DebugPlugin.getDefault().getLaunchManager().getEnvironment(builder.configuration);
 			builder.monitorDebugAdapter = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER,
 					false);
 			builder.server = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, (String) null);
@@ -259,10 +278,10 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 					command.addAll(builder.debugCmdArgs);
 				}
 
-				ProcessBuilder processBuilder = new ProcessBuilder(command);
 				subMonitor
 						.subTask(NLS.bind("Launching debug adapter: {0}", "\"" + String.join("\" \"", command) + "\""));
-				Process debugAdapterProcess = processBuilder.start();
+				Process debugAdapterProcess = DebugPlugin.exec(command.toArray(String[]::new), null,
+						builder.debugCmdEnvVars);
 				if (builder.monitorDebugAdapter) {
 					// Uglish workaround: should instead have a dedicated ProcessFactory reading
 					// process attribute rather than launch one
@@ -382,5 +401,4 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	private void abort(String message, Throwable e) throws CoreException {
 		throw new CoreException(new Status(IStatus.ERROR, DSPPlugin.PLUGIN_ID, 0, message, e));
 	}
-
 }
