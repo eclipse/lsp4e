@@ -42,6 +42,7 @@ import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.test.color.ColorTest;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.Position;
@@ -51,7 +52,6 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.RGB;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.MarkerUtilities;
 import org.junit.Before;
@@ -198,7 +198,7 @@ public class DiagnosticsTest {
 			) {
 				out.write('a');
 			}
-			ITextViewer viewer = LSPEclipseUtils.getTextViewer(IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
+			ITextViewer viewer = LSPEclipseUtils.getTextViewer(IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI())));
 			StyledText widget = viewer.getTextWidget();
 			FontData biggerFont = new FontData(); // bigger font to keep color intact in some pixe (not altered by anti-aliasing)
 			biggerFont.setHeight(40);

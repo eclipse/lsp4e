@@ -32,6 +32,7 @@ import org.eclipse.lsp4e.operations.hover.LSPTextHover;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
@@ -136,7 +137,7 @@ public class HoverTest {
 
 		File file = TestUtils.createTempFile("testHoverOnExternalfile", ".lspt");
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(IDE.openInternalEditorOnFileStore(
-				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI())));
+				UI.getActivePage(), EFS.getStore(file.toURI())));
 		Assert.assertTrue(hover.getHoverInfo(viewer, new Region(0, 0)).contains("blah"));
 	}
 

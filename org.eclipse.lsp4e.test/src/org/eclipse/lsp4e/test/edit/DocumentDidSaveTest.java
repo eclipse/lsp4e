@@ -32,9 +32,9 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.junit.Before;
 import org.junit.Rule;
@@ -63,7 +63,7 @@ public class DocumentDidSaveTest {
 		IDocument document = LSPEclipseUtils.getDocument(testFile);
 		assertNotNull(document);
 		LanguageServiceAccessor.getLanguageServers(document, capabilites -> Boolean.TRUE);
-		CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
+		final var didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidSaveCallback(didSaveExpectation);
 
 		// simulate change in file
@@ -81,7 +81,7 @@ public class DocumentDidSaveTest {
 	@Test
 	public void testSaveExternalFile() throws Exception {
 		File file = TestUtils.createTempFile("testSaveExternalFile", ".lspt");
-		IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(file.toURI()));
+		IEditorPart editor = IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
 		// make sure that timestamp after save will differ from creation time (no better idea at the moment)
@@ -89,7 +89,7 @@ public class DocumentDidSaveTest {
 
 		// Force LS to initialize and open file
 		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(editor.getEditorInput()), capabilites -> Boolean.TRUE);
-		CompletableFuture<DidSaveTextDocumentParams> didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
+		final var didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidSaveCallback(didSaveExpectation);
 
 		// simulate change in file

@@ -27,9 +27,9 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,7 +50,7 @@ public class DocumentDidCloseTest {
 		assertNotNull(document);
 		LanguageServiceAccessor.getLanguageServers(document, capabilites -> Boolean.TRUE);
 
-		CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
+		final var didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidCloseCallback(didCloseExpectation);
 
 		TestUtils.closeEditor(editor, false);
@@ -62,12 +62,12 @@ public class DocumentDidCloseTest {
 	@Test
 	public void testCloseExternalFile() throws Exception {
 		File testFile = TestUtils.createTempFile("testCloseExternalFile", ".lspt");
-		IEditorPart editor = IDE.openEditorOnFileStore(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), EFS.getStore(testFile.toURI()));
+		IEditorPart editor = IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(testFile.toURI()));
 
 		// Force LS to initialize and open file
 		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(editor.getEditorInput()), capabilites -> Boolean.TRUE);
 
-		CompletableFuture<DidCloseTextDocumentParams> didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
+		final var didCloseExpectation = new CompletableFuture<DidCloseTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidCloseCallback(didCloseExpectation);
 
 		TestUtils.closeEditor(editor, false);

@@ -21,12 +21,12 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,7 +38,7 @@ public class ShowMessageTest {
 	public void testShowMessage() throws CoreException {
 		IProject project = TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "");
-		IDE.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
+		IDE.openEditor(UI.getActivePage(), file);
 		String messageContent = "test notification " + System.currentTimeMillis();
 		MessageParams message = new MessageParams(MessageType.Error, messageContent);
 		Display display = Display.getDefault();
