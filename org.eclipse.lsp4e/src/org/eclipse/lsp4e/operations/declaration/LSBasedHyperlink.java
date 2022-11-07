@@ -19,7 +19,6 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.ui.Messages;
-import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -71,9 +70,9 @@ public class LSBasedHyperlink implements IHyperlink {
 	@Override
 	public void open() {
 		if (location.isLeft()) {
-			LSPEclipseUtils.openInEditor(location.getLeft(), UI.getActivePage());
+			LSPEclipseUtils.openInEditor(location.getLeft());
 		} else {
-			LSPEclipseUtils.openInEditor(location.getRight(), UI.getActivePage());
+			LSPEclipseUtils.openInEditor(location.getRight());
 		}
 	}
 
