@@ -68,7 +68,7 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 	@Override
 	public final Consumer<MouseEvent> getAction() {
 		final Command command = codeLens.getCommand();
-		if(command != null && command.getCommand() != null) {
+		if(command != null && command.getCommand() != null && !command.getCommand().isEmpty()) {
 			return this::performAction;
 		} else {
 			return null;
