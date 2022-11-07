@@ -14,7 +14,9 @@ package org.eclipse.lsp4e.test.outline;
 import static org.junit.Assert.assertEquals;
 
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
+import org.eclipse.lsp4e.outline.SymbolsModel;
 import org.eclipse.lsp4e.test.AllCleanRule;
+import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
@@ -62,5 +64,47 @@ public class SymbolsLabelProviderTest {
 		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, false);
 		SymbolInformation info = new SymbolInformation("Foo", SymbolKind.Class, INVALID_LOCATION);
 		assertEquals("Foo", labelProvider.getStyledText(info).getString());
+	}
+	
+	@Test
+	public void testDocumentSymbolDetail () {
+		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, false);
+		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
+				new Range(new Position(1, 0), new Position(1, 2)),
+				new Range(new Position(1, 0), new Position(1, 2)),
+				" : additional detail");
+		assertEquals("Foo : additional detail", labelProvider.getStyledText(info).getString());		
+	}
+
+	@Test
+	public void testDocumentSymbolDetailWithKind () {
+		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, true);
+		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
+				new Range(new Position(1, 0), new Position(1, 2)),
+				new Range(new Position(1, 0), new Position(1, 2)),
+				" : additional detail");
+		assertEquals("Foo : additional detail :Class", labelProvider.getStyledText(info).getString());		
+	}
+
+	@Test
+	public void testDocumentSymbolWithFileDetail () {
+		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, false);
+		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
+				new Range(new Position(1, 0), new Position(1, 2)),
+				new Range(new Position(1, 0), new Position(1, 2)),
+				" : additional detail");
+		SymbolsModel.DocumentSymbolWithFile infoWithFile = new SymbolsModel.DocumentSymbolWithFile(info, null);
+		assertEquals("Foo : additional detail", labelProvider.getStyledText(infoWithFile).getString());		
+	}
+
+	@Test
+	public void testDocumentSymbolDetailWithFileWithKind () {
+		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, true);
+		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
+				new Range(new Position(1, 0), new Position(1, 2)),
+				new Range(new Position(1, 0), new Position(1, 2)),
+				" : additional detail");
+		SymbolsModel.DocumentSymbolWithFile infoWithFile = new SymbolsModel.DocumentSymbolWithFile(info, null);
+		assertEquals("Foo : additional detail :Class", labelProvider.getStyledText(infoWithFile).getString());		
 	}
 }
