@@ -71,6 +71,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.RewriteSessionEditProcessor;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
+import org.eclipse.lsp4e.operations.references.LSSearchQuery;
 import org.eclipse.lsp4e.refactoring.CreateFileChange;
 import org.eclipse.lsp4e.refactoring.DeleteExternalFile;
 import org.eclipse.lsp4e.refactoring.LSPTextChange;
@@ -99,6 +100,7 @@ import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
 import org.eclipse.ltk.core.refactoring.DocumentChange;
 import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
@@ -106,8 +108,10 @@ import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.ltk.core.refactoring.resource.DeleteResourceChange;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
+import org.eclipse.search.ui.NewSearchUI;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.RGBA;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.text.edits.MalformedTreeException;
 import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
@@ -1132,4 +1136,32 @@ public class LSPEclipseUtils {
 		}
 	}
 
+	/**
+	 * Execute Eclipse Search UI to search LSP references from the given document and
+	 * offset.
+	 *
+	 * @param document
+	 *            the document.
+	 * @param offset
+	 *            the offset.
+	 * @param display
+	 *            the display to use to execute the search.
+	 */
+	public static void searchLSPReferences(@NonNull IDocument document, int offset, Display display) {
+		LanguageServiceAccessor
+				.getLanguageServers(document,
+						capabilities -> hasCapability(capabilities.getReferencesProvider())) //
+				.thenAcceptAsync(languageServers -> {
+					if (languageServers.isEmpty()) {
+						return;
+					}
+					LanguageServer ls = languageServers.get(0);
+					try {
+						LSSearchQuery query = new LSSearchQuery(document, offset, ls);
+						display.asyncExec(() -> NewSearchUI.runQueryInBackground(query));
+					} catch (BadLocationException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				});
+	}
 }

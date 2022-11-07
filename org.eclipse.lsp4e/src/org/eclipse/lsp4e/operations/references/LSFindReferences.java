@@ -20,7 +20,6 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -28,8 +27,6 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.UI;
-import org.eclipse.lsp4j.services.LanguageServer;
-import org.eclipse.search.ui.NewSearchUI;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -51,18 +48,7 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 			ISelection sel = editor.getSelectionProvider().getSelection();
 			if (sel instanceof ITextSelection textSelection) {
 				int offset = ((ITextSelection) sel).getOffset();
-				LanguageServiceAccessor.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getReferencesProvider())).thenAcceptAsync(languageServers -> {
-					if (languageServers.isEmpty()) {
-						return;
-					}
-					LanguageServer ls = languageServers.get(0);
-					try {
-						LSSearchQuery query = new LSSearchQuery(document, offset, ls);
-						HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
-					} catch (BadLocationException e) {
-						LanguageServerPlugin.logError(e);
-					}
-				});
+				LSPEclipseUtils.searchLSPReferences(document, offset, HandlerUtil.getActiveShell(event).getDisplay());
 			}
 		}
 		return null;
