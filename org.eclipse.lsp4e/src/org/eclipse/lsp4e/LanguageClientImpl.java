@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.progress.LSPProgressManager;
 import org.eclipse.lsp4e.ui.Messages;
-import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
 import org.eclipse.lsp4j.ConfigurationParams;
@@ -152,7 +151,7 @@ public class LanguageClientImpl implements LanguageClient {
 		return CompletableFuture.supplyAsync(() -> {
 			PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
 				var location = new Location(params.getUri(), params.getSelection());
-				LSPEclipseUtils.openInEditor(location, UI.getActivePage());
+				LSPEclipseUtils.openInEditor(location);
 			});
 			return new ShowDocumentResult(true);
 		});

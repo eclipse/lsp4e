@@ -69,7 +69,7 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 		SymbolInformation symbolInformation = (SymbolInformation) dialog.getFirstResult();
 		Location location = symbolInformation.getLocation();
 
-		LSPEclipseUtils.openInEditor(location, UI.getActivePage());
+		LSPEclipseUtils.openInEditor(location);
 		return null;
 	}
 

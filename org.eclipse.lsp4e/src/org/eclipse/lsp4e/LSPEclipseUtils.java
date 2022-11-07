@@ -74,6 +74,7 @@ import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.lsp4e.refactoring.CreateFileChange;
 import org.eclipse.lsp4e.refactoring.DeleteExternalFile;
 import org.eclipse.lsp4e.refactoring.LSPTextChange;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Color;
 import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.CreateFile;
@@ -536,13 +537,24 @@ public class LSPEclipseUtils {
 		return document;
 	}
 
+	public static void openInEditor(Location location) {
+		openInEditor(location, UI.getActivePage());
+	}
+
 	public static void openInEditor(Location location, IWorkbenchPage page) {
 		open(location.getUri(), page, location.getRange());
 	}
 
+	public static void openInEditor(LocationLink link) {
+		openInEditor(link, UI.getActivePage());
+	}
+
 	public static void openInEditor(LocationLink link, IWorkbenchPage page) {
 		open(link.getTargetUri(), page, link.getTargetSelectionRange());
+	}
 
+	public static void open(String uri, Range optionalRange) {
+		open(uri, UI.getActivePage(), optionalRange);
 	}
 
 	public static void open(String uri, IWorkbenchPage page, Range optionalRange) {

@@ -290,7 +290,7 @@ public class SymbolsLabelProvider extends LabelProvider
 			res.append(name, null);
 		}
 
-		if (detail != null && !detail.isBlank()) {
+		if (detail != null) {
 			res.append(detail, StyledString.DECORATIONS_STYLER);
 		}
 
