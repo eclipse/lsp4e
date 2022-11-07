@@ -26,7 +26,6 @@ import org.eclipse.jface.text.IInformationControlCreator;
 import org.eclipse.jface.util.Util;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.swt.browser.Browser;
 import org.eclipse.swt.browser.LocationEvent;
 import org.eclipse.swt.browser.LocationListener;
@@ -50,7 +49,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 		@Override
 		public void changing(LocationEvent event) {
 			if (!"about:blank".equals(event.location)) { //$NON-NLS-1$
-				LSPEclipseUtils.open(event.location, UI.getActivePage(), null);
+				LSPEclipseUtils.open(event.location, null);
 				event.doit = false;
 			}
 		}
