@@ -30,6 +30,7 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
@@ -63,7 +64,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 
 		@Override
 		public void open() {
-			LSPEclipseUtils.open(uri, null);
+			LSPEclipseUtils.open(uri, UI.getActivePage(), null, true);
 		}
 
 	}
@@ -71,6 +72,9 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 	@Override
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
 		final IDocument document = textViewer.getDocument();
+		if (document == null) {
+			return null;
+		}
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
 			return null;
@@ -78,7 +82,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 		final DocumentLinkParams params = new DocumentLinkParams(new TextDocumentIdentifier(uri.toString()));
 		try {
 			return LanguageServiceAccessor
-					.getLanguageServers(textViewer.getDocument(),
+					.getLanguageServers(document,
 							capabilities -> capabilities.getDocumentLinkProvider() != null)
 					.thenApplyAsync(languageServers -> {
 						IHyperlink[] res = languageServers.stream()

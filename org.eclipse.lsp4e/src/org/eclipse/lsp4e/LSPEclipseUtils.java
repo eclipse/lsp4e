@@ -20,10 +20,12 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -64,6 +66,7 @@ import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.core.runtime.content.IContentTypeManager;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextOperationTarget;
@@ -74,6 +77,7 @@ import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.lsp4e.refactoring.CreateFileChange;
 import org.eclipse.lsp4e.refactoring.DeleteExternalFile;
 import org.eclipse.lsp4e.refactoring.LSPTextChange;
+import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Color;
 import org.eclipse.lsp4j.CompletionParams;
@@ -558,6 +562,10 @@ public class LSPEclipseUtils {
 	}
 
 	public static void open(String uri, IWorkbenchPage page, Range optionalRange) {
+		open(uri, page, optionalRange, false);
+	}
+
+	public static void open(String uri, IWorkbenchPage page, Range optionalRange, boolean createFile) {
 		if (uri.startsWith(HTTP)) {
 			if (uri.startsWith(INTRO_URL)) {
 				openIntroURL(uri);
@@ -565,7 +573,7 @@ public class LSPEclipseUtils {
 				openHttpLocationInBrowser(uri, page);
 			}
 		} else {
-			openFileLocationInEditor(uri, page, optionalRange);
+			openFileLocationInEditor(uri, page, optionalRange, createFile);
 		}
 	}
 
@@ -606,45 +614,80 @@ public class LSPEclipseUtils {
 		});
 	}
 
-	protected static void openFileLocationInEditor(String uri, IWorkbenchPage page, Range optionalRange) {
+	protected static void openFileLocationInEditor(String uri, IWorkbenchPage page, Range optionalRange,
+			boolean createFile) {
+		// Open file uri in an editor
 		IEditorPart part = null;
 		IDocument targetDocument = null;
 		IResource targetResource = findResourceFor(uri);
 		try {
 			if (targetResource != null && targetResource.getType() == IResource.FILE) {
+				if (!targetResource.exists() && createFile) {
+					// The file to open is not found, open a confirm dialog to ask if the file must
+					// be created.
+					if (MessageDialog.openQuestion(UI.getActiveShell(), Messages.CreateFile_confirm_title,
+							Messages.bind(Messages.CreateFile_confirm_message, uri))) {
+						try (final ByteArrayInputStream input = new ByteArrayInputStream("".getBytes())) //$NON-NLS-1$
+						{
+							((IFile) targetResource).create(input, IResource.KEEP_HISTORY, null);
+						} catch (Exception e) {
+							LanguageServerPlugin.logError(e);
+						}
+					} else {
+						return;
+					}
+				}
 				part = IDE.openEditor(page, (IFile) targetResource);
 			} else {
 				URI fileUri = URI.create(uri).normalize();
-				IFileStore fileStore =  EFS.getLocalFileSystem().getStore(fileUri);
+				IFileStore fileStore = EFS.getLocalFileSystem().getStore(fileUri);
 				IFileInfo fetchInfo = fileStore.fetchInfo();
-				if (!fetchInfo.isDirectory() && fetchInfo.exists()) {
+				if (!fetchInfo.isDirectory()) {
+					if (!fetchInfo.exists() && createFile) {
+						// The file to open is not found, open a confirm dialog to ask if the file must
+						// be created.
+						if (MessageDialog.openQuestion(UI.getActiveShell(), Messages.CreateFile_confirm_title,
+								Messages.bind(Messages.CreateFile_confirm_message, uri))) {
+							try {
+								fileStore.getParent().mkdir(EFS.NONE, null);
+								try (final OutputStream out = fileStore.openOutputStream(EFS.NONE, null)) {
+									out.write("".getBytes()); //$NON-NLS-1$
+								}
+							} catch (Exception e) {
+								LanguageServerPlugin.logError(e);
+							}
+						} else {
+							return;
+						}
+					}
+
 					part = IDE.openEditorOnFileStore(page, fileStore);
 				}
-			}
-
-
-			ITextEditor textEditor = Adapters.adapt(part, ITextEditor.class);
-			if (textEditor != null) {
-				targetDocument = textEditor.getDocumentProvider().getDocument(textEditor.getEditorInput());
 			}
 
 		} catch (PartInitException e) {
 			LanguageServerPlugin.logError(e);
 		}
-		try {
-			if (targetDocument != null
-				&& part != null && part.getEditorSite() != null && part.getEditorSite().getSelectionProvider() != null
-				&& optionalRange != null)
-			{
-				ISelectionProvider selectionProvider = part.getEditorSite().getSelectionProvider();
 
-				int offset = toOffset(optionalRange.getStart(), targetDocument);
-				int endOffset = toOffset(optionalRange.getEnd(), targetDocument);
-				selectionProvider.setSelection(new TextSelection(offset, endOffset > offset ? endOffset - offset : 0));
+		// Update selection (if needed) from the given range
+		if (optionalRange != null && part != null && part.getEditorSite() != null
+				&& part.getEditorSite().getSelectionProvider() != null) {
+			ITextEditor textEditor = Adapters.adapt(part, ITextEditor.class);
+			if (textEditor != null) {
+				targetDocument = textEditor.getDocumentProvider().getDocument(textEditor.getEditorInput());
 			}
 
-		} catch (BadLocationException e) {
-			LanguageServerPlugin.logError(e);
+			try {
+				if (targetDocument != null) {
+					ISelectionProvider selectionProvider = part.getEditorSite().getSelectionProvider();
+					int offset = toOffset(optionalRange.getStart(), targetDocument);
+					int endOffset = toOffset(optionalRange.getEnd(), targetDocument);
+					selectionProvider
+							.setSelection(new TextSelection(offset, endOffset > offset ? endOffset - offset : 0));
+				}
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
+			}
 		}
 	}
 
