@@ -646,10 +646,10 @@ public class LanguageServerWrapper {
 			return null;
 		}
 		final IDocument theDocument = document;
-		return initializeFuture.thenComposeAsync(theVoid -> {
+		return initializeFuture.thenApplyAsync(theVoid -> {
 			synchronized (connectedDocuments) {
 				if (this.connectedDocuments.containsKey(uri)) {
-					return CompletableFuture.completedFuture(null);
+					return null;
 				}
 				Either<TextDocumentSyncKind, TextDocumentSyncOptions> syncOptions = initializeFuture == null ? null
 						: this.serverCapabilities.getTextDocumentSync();
@@ -661,12 +661,13 @@ public class LanguageServerWrapper {
 						syncKind = syncOptions.getLeft();
 					}
 				}
-				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
+
+				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, languageServer, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
-				return CompletableFuture.completedFuture(languageServer);
+				return languageServer;
 			}
-		}, dispatcher).thenApply(theVoid -> languageServer);
+		}).thenApply(theVoid -> languageServer);
 	}
 
 	public void disconnect(URI uri) {
@@ -792,7 +793,7 @@ public class LanguageServerWrapper {
 	 * null if the server does not support the requested capabilities or could not be started.
 	 */
 	@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connectIf(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> filter) {
-		return getInitializedServer().thenComposeAsync(server -> {
+		return getInitializedServer().thenCompose(server -> {
 			if (server != null && (filter == null || filter.test(getServerCapabilities()))) {
 				try {
 					return connect(document);
@@ -801,7 +802,7 @@ public class LanguageServerWrapper {
 				}
 			}
 			return CompletableFuture.completedFuture(null);
-		}, dispatcher).thenApply(server -> server == null ? null : this);
+		}).thenApply(server -> server == null ? null : this);
 	}
 
 	/**
