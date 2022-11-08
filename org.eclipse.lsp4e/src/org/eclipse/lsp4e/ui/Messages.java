@@ -77,6 +77,8 @@ public class Messages extends NLS {
 	public static String DocumentContentSynchronizer_OnSaveActionTimeout;
 	public static String DocumentContentSynchronizer_TimeoutMessage;
 	public static String DocumentContentSynchronizer_TimeoutThresholdMessage;
+	public static String CreateFile_confirm_title;
+	public static String CreateFile_confirm_message;
 
 	static {
 		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$
