@@ -263,6 +263,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		}
 		String name = null;
 		SymbolKind kind = null;
+		String detail = null;
 		URI location = null;
 		if (element instanceof SymbolInformation symbolInformation) {
 			name = symbolInformation.getName();
@@ -275,9 +276,11 @@ public class SymbolsLabelProvider extends LabelProvider
 		} else if (element instanceof DocumentSymbol documentSymbol) {
 			name = documentSymbol.getName();
 			kind = documentSymbol.getKind();
+			detail = documentSymbol.getDetail();
 		} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
 			name = symbolWithFile.symbol.getName();
 			kind = symbolWithFile.symbol.getKind();
+			detail = symbolWithFile.symbol.getDetail();
 			IFile file = symbolWithFile.file;
 			if (file != null) {
 				location = file.getLocationURI();
@@ -286,6 +289,11 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (name != null) {
 			res.append(name, null);
 		}
+
+		if (detail != null) {
+			res.append(detail, StyledString.DECORATIONS_STYLER);
+		}
+
 		if (showKind && kind != null) {
 			res.append(" :", null); //$NON-NLS-1$
 			res.append(kind.toString(), StyledString.DECORATIONS_STYLER);
