@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021 Vegard IT GmbH and others.
+ * Copyright (c) 2021, 2022 Vegard IT GmbH and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.ui;
 
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -57,6 +58,15 @@ public final class UI {
 			if (page instanceof ITextEditor textEditor) {
 				return textEditor;
 			}
+		}
+		return null;
+	}
+
+	@Nullable
+	public static ITextViewer getActiveTextViewer() {
+		ITextEditor editor = getActiveTextEditor();
+		if (editor != null) {
+			return editor.getAdapter(ITextViewer.class);
 		}
 		return null;
 	}
