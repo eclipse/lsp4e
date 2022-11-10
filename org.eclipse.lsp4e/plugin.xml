@@ -404,12 +404,6 @@
             contentTypeId="org.eclipse.core.runtime.text">
       </participant>
    </extension>
-   <extension
-         point="org.eclipse.ui.startup">
-      <startup
-            class="org.eclipse.lsp4e.DisableShortcutsWorkaround">
-      </startup>
-   </extension>
    <extension point="org.eclipse.ui.editors.annotationTypes">
       <type name="org.eclipse.lsp4e.read"></type>
       <type name="org.eclipse.lsp4e.write"></type>
