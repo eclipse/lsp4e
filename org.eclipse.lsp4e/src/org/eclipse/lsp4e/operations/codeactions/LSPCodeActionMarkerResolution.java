@@ -210,19 +210,17 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 			// Quick assist proposals popup case
 			if (textViewer instanceof ISourceViewerExtension3) {
 				IQuickAssistAssistant quickAssistant = ((ISourceViewerExtension3)textViewer).getQuickAssistAssistant();
+				if (quickAssistant != null) {
 					Field f = QuickAssistAssistant.class.getDeclaredField("fQuickAssistAssistantImpl"); //$NON-NLS-1$
-					if (f != null) {
-						f.setAccessible(true);
-						ContentAssistant ca = (ContentAssistant) f.get(quickAssistant);
-						Method m = ContentAssistant.class.getDeclaredMethod("isProposalPopupActive"); //$NON-NLS-1$
-						if (m != null) {
-							m.setAccessible(true);
-							boolean isProposalPopupActive = (Boolean) m.invoke(ca);
-							if (isProposalPopupActive) {
-								quickAssistant.showPossibleQuickAssists();
-							}
-						}
+					f.setAccessible(true);
+					ContentAssistant ca = (ContentAssistant) f.get(quickAssistant);
+					Method m = ContentAssistant.class.getDeclaredMethod("isProposalPopupActive"); //$NON-NLS-1$
+					m.setAccessible(true);
+					boolean isProposalPopupActive = (Boolean) m.invoke(ca);
+					if (isProposalPopupActive) {
+						quickAssistant.showPossibleQuickAssists();
 					}
+				}
 			}
 			// Hover case
 			if (textViewer instanceof ITextViewerExtension2) {
@@ -230,12 +228,10 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				boolean hoverShowing = hover != null;
 				if (hoverShowing) {
 					Field f = TextViewer.class.getDeclaredField("fTextHoverManager"); //$NON-NLS-1$
-					if (f != null) {
-						f.setAccessible(true);
-						AbstractInformationControlManager manager = (AbstractInformationControlManager) f.get(textViewer);
-						if (manager != null) {
-							manager.showInformation();
-						}
+					f.setAccessible(true);
+					AbstractInformationControlManager manager = (AbstractInformationControlManager) f.get(textViewer);
+					if (manager != null) {
+						manager.showInformation();
 					}
 				}
 			}
