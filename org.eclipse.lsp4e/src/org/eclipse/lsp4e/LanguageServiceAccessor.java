@@ -465,6 +465,20 @@ public class LanguageServiceAccessor {
 		}
 	}
 
+	public static @NonNull LanguageServerWrapper startLanguageServer(@NonNull LanguageServerDefinition serverDefinition) throws IOException {
+		synchronized (startedServers) {
+			LanguageServerWrapper wrapper = startedServers.stream().filter(w -> w.serverDefinition == serverDefinition).findFirst().orElseGet(() -> {
+				LanguageServerWrapper w = new LanguageServerWrapper(serverDefinition, null);
+				startedServers.add(w);
+				return w;
+			});
+			if (!wrapper.isActive()) {
+				wrapper.start();
+			}
+			return wrapper;
+		}
+	}
+
 	private static LanguageServerWrapper getLSWrapperForConnection(@NonNull IDocument document,
 			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
 
