@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2020 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.completion;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -87,11 +88,17 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
 		IDocument document = viewer.getDocument();
+
+		URI uri = LSPEclipseUtils.toUri(document);
+		if (uri == null) {
+			return new LSCompletionProposal[0];
+		}
+
 		initiateLanguageServers(document);
 		CompletionParams param;
 
 		try {
-			param = LSPEclipseUtils.toCompletionParams(LSPEclipseUtils.toUri(document), offset, document);
+			param = LSPEclipseUtils.toCompletionParams(uri, offset, document);
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 			this.errorMessage = createErrorMessage(offset, e);
