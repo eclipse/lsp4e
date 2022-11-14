@@ -28,7 +28,6 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.UI;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.search.ui.NewSearchUI;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.handlers.HandlerUtil;
@@ -55,9 +54,8 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 					if (languageServers.isEmpty()) {
 						return;
 					}
-					LanguageServer ls = languageServers.get(0);
 					try {
-						LSSearchQuery query = new LSSearchQuery(document, offset, ls);
+						LSSearchQuery query = new LSSearchQuery(document, offset, languageServers);
 						HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
 					} catch (BadLocationException e) {
 						LanguageServerPlugin.logError(e);

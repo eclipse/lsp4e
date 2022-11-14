@@ -14,7 +14,6 @@
 package org.eclipse.lsp4e.operations.references;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
@@ -53,14 +52,12 @@ import org.eclipse.search.ui.text.Match;
 public class LSSearchQuery extends FileSearchQuery {
 
 	private final @NonNull IDocument document;
-	private final @NonNull LanguageServer languageServer;
+	private final @NonNull List<@NonNull LanguageServer> languageServers;
 	private final Position position;
 	private final String filename;
 
 	private LSSearchResult result;
 	private long startTime;
-
-	private CompletableFuture<List<? extends Location>> references;
 
 	/**
 	 * LSP search query to "Find references" from the given offset of the given
@@ -68,14 +65,14 @@ public class LSSearchQuery extends FileSearchQuery {
 	 *
 	 * @param document
 	 * @param offset
-	 * @param languageServer
+	 * @param languageServers
 	 * @throws BadLocationException
 	 */
-	public LSSearchQuery(@NonNull IDocument document, int offset, @NonNull LanguageServer languageServer)
+	public LSSearchQuery(@NonNull IDocument document, int offset, List<@NonNull LanguageServer> languageServers)
 			throws BadLocationException {
 		super("", false, false, null); //$NON-NLS-1$
 		this.document = document;
-		this.languageServer = languageServer;
+		this.languageServers = languageServers;
 		this.position = LSPEclipseUtils.toPosition(offset, document);
 		this.filename = Path.fromPortableString(LSPEclipseUtils.toUri(document).getPath()).lastSegment();
 	}
@@ -83,32 +80,34 @@ public class LSSearchQuery extends FileSearchQuery {
 	@Override
 	public IStatus run(IProgressMonitor monitor) throws OperationCanceledException {
 		startTime = System.currentTimeMillis();
-		// Cancel last references future if needed.
-		if (references != null) {
-			references.cancel(true);
-		}
 		AbstractTextSearchResult textResult = (AbstractTextSearchResult) getSearchResult();
 		textResult.removeAll();
 
 		try {
 			// Execute LSP "references" service
 			ReferenceParams params = new ReferenceParams();
-			params.setContext(new ReferenceContext(true));
+			params.setContext(new ReferenceContext(false));
 			params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString()));
 			params.setPosition(position);
-			languageServer.getTextDocumentService().references(params)
-					.thenAcceptAsync(locs -> {
-						// Loop for each LSP Location and convert it to Match search.
-						for (Location loc : locs) {
-							Match match = toMatch(loc);
-							if (match != null) {
-								result.addMatch(match);
-							}
+
+			for (LanguageServer languageServer : languageServers) {
+				languageServer.getTextDocumentService().references(params)
+				.thenAcceptAsync(locations -> {
+					if (locations == null) {
+						return;
+					}
+					// Loop for each LSP Location and convert it to Match search.
+					for (Location loc : locations) {
+						Match match = toMatch(loc);
+						if (match != null) {
+							result.addMatch(match);
 						}
-					}).exceptionally(e -> {
-						LanguageServerPlugin.logError(e);
-						return null;
-					});
+					}
+				}).exceptionally(e -> {
+					LanguageServerPlugin.logError(e);
+					return null;
+				});
+			}
 			return Status.OK_STATUS;
 		} catch (Exception ex) {
 			return new Status(IStatus.ERROR, LanguageServerPlugin.getDefault().getBundle().getSymbolicName(),
