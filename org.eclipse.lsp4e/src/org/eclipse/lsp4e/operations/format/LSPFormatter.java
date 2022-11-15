@@ -24,6 +24,7 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageClientConfigurationProvider;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
@@ -69,9 +70,8 @@ public class LSPFormatter {
 			ITextSelection textSelection) throws BadLocationException {
 		TextDocumentIdentifier docId = new TextDocumentIdentifier(info.getFileUri().toString());
 		ServerCapabilities capabilities = info.getCapabilites();
-		IPreferenceStore store = EditorsUI.getPreferenceStore();
-		int tabWidth = store.getInt(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);
-		boolean insertSpaces = store.getBoolean(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SPACES_FOR_TABS);
+
+		FormattingOptions formattingOptions = createFormattingOptions(docId, info.getLanguageId(), info.getLanguageClientConfigurationProvider());
 		// use range formatting if standard formatting is not supported or text is selected
 		if (capabilities != null
 				&& isDocumentRangeFormattingSupported(capabilities)
@@ -79,7 +79,7 @@ public class LSPFormatter {
 						|| textSelection.getLength() != 0)) {
 			DocumentRangeFormattingParams params = new DocumentRangeFormattingParams();
 			params.setTextDocument(docId);
-			params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
+			params.setOptions(formattingOptions);
 			boolean fullFormat = textSelection.getLength() == 0;
 			Position start = LSPEclipseUtils.toPosition(fullFormat ? 0 : textSelection.getOffset(), info.getDocument());
 			Position end = LSPEclipseUtils.toPosition(
@@ -92,9 +92,20 @@ public class LSPFormatter {
 
 		DocumentFormattingParams params = new DocumentFormattingParams();
 		params.setTextDocument(docId);
-		params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
+		params.setOptions(formattingOptions);
 		return info.getInitializedLanguageClient()
 				.thenComposeAsync(server -> server.getTextDocumentService().formatting(params));
+	}
+
+	private static FormattingOptions createFormattingOptions(TextDocumentIdentifier identifier, String languageId, LanguageClientConfigurationProvider languageClientConfigurationProvider) {
+		IPreferenceStore store = EditorsUI.getPreferenceStore();
+		int tabWidth = store.getInt(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);
+		boolean insertSpaces = store.getBoolean(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SPACES_FOR_TABS);
+		FormattingOptions formattingOptions = new FormattingOptions(tabWidth, insertSpaces);
+		if (languageClientConfigurationProvider != null) {
+			languageClientConfigurationProvider.collectFormatting(formattingOptions, identifier, languageId);
+		}
+		return formattingOptions;
 	}
 
 	private static boolean isDocumentRangeFormattingSupported(ServerCapabilities capabilities) {

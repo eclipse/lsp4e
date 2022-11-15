@@ -84,6 +84,7 @@ public class LanguageServiceAccessor {
 		private final @NonNull URI fileUri;
 		private final @NonNull IDocument document;
 		private final @NonNull LanguageServerWrapper wrapper;
+		private @Nullable String languageId;
 
 		private LSPDocumentInfo(@NonNull URI fileUri, @NonNull IDocument document,
 				@NonNull LanguageServerWrapper wrapper) {
@@ -124,6 +125,14 @@ public class LanguageServiceAccessor {
 			}
 		}
 
+		public String getLanguageId() {
+			if (languageId == null) {
+				List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(this.document);
+				languageId = wrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
+			}
+			return languageId;
+		}
+
 		public int getVersion() {
 			return wrapper.getVersion(fileUri);
 		}
@@ -138,6 +147,10 @@ public class LanguageServiceAccessor {
 
 		public boolean isActive() {
 			return this.wrapper.isActive();
+		}
+
+		public LanguageClientConfigurationProvider getLanguageClientConfigurationProvider() {
+			return wrapper.serverDefinition.getLanguageClientConfigurationProvider();
 		}
 	}
 
