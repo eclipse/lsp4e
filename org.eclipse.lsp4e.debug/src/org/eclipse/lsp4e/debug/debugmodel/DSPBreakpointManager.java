@@ -104,9 +104,14 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 		IBreakpoint[] breakpoints = platformBreakpointManager.getBreakpoints();
 		for (IBreakpoint breakpoint : breakpoints) {
 			if (supportsBreakpoint(breakpoint)) {
-				if (enabled) {
-					addBreakpointToMap(breakpoint);
-				} else {
+				try {
+					if (enabled && breakpoint.isEnabled()) {
+						addBreakpointToMap(breakpoint);
+					} else {
+						deleteBreakpointFromMap(breakpoint);
+					}
+				} catch (CoreException e) {
+					DSPPlugin.logError(e);
 					deleteBreakpointFromMap(breakpoint);
 				}
 			}
