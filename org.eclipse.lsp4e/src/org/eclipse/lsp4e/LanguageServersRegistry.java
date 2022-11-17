@@ -43,6 +43,7 @@ import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.enablement.EnablementTester;
+import org.eclipse.lsp4e.enablement.InputEnablementTester;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
@@ -86,6 +87,7 @@ public class LanguageServersRegistry {
 	private static final String LAUNCHER_BUILDER_ATTRIBUTE = "launcherBuilder"; //$NON-NLS-1$
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_ATTRIBUTE = "enabledWhen"; //$NON-NLS-1$
+	private static final String ENABLED_WHEN_INPUT_ATTRIBUTE = "enabledInputWhen"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_DESC = "description"; //$NON-NLS-1$
 
 	public abstract static class LanguageServerDefinition {
@@ -297,8 +299,26 @@ public class LanguageServersRegistry {
 							}
 						}
 					}
+					InputEnablementTester inputExpression = null;
+					if (extension.getChildren(ENABLED_WHEN_INPUT_ATTRIBUTE) != null) {
+						IConfigurationElement[] enabledWhenElements = extension.getChildren(ENABLED_WHEN_INPUT_ATTRIBUTE);
+						if (enabledWhenElements.length == 1) {
+							IConfigurationElement enabledWhen = enabledWhenElements[0];
+							IConfigurationElement[] enabledWhenChildren = enabledWhen.getChildren();
+							if (enabledWhenChildren.length == 1) {
+								try {
+									String description = enabledWhen.getAttribute(ENABLED_WHEN_DESC);
+									inputExpression = new InputEnablementTester(this::evaluationContext,
+											ExpressionConverter.getDefault().perform(enabledWhenChildren[0]),
+											description);
+								} catch (CoreException e) {
+									LanguageServerPlugin.logWarning(e.getMessage(), e);
+								}
+							}
+						}
+					}
 					if (contentType != null) {
-						contentTypes.add(new ContentTypeMapping(contentType, id, languageId, expression));
+						contentTypes.add(new ContentTypeMapping(contentType, id, languageId, expression, inputExpression));
 					}
 				}
 			}
@@ -307,7 +327,7 @@ public class LanguageServersRegistry {
 		for (ContentTypeMapping mapping : contentTypes) {
 			LanguageServerDefinition lsDefinition = servers.get(mapping.id);
 			if (lsDefinition != null) {
-				registerAssociation(mapping.contentType, lsDefinition, mapping.languageId, mapping.enablement);
+				registerAssociation(mapping.contentType, lsDefinition, mapping.languageId, mapping.enablement, mapping.inputEnablement);
 			} else {
 				LanguageServerPlugin.logWarning("server '" + mapping.id + "' not available", null); //$NON-NLS-1$ //$NON-NLS-2$
 			}
@@ -370,12 +390,12 @@ public class LanguageServersRegistry {
 
 	public void registerAssociation(@NonNull IContentType contentType,
 			@NonNull LanguageServerDefinition serverDefinition, @Nullable String languageId,
-			EnablementTester enablement) {
+			EnablementTester enablement, InputEnablementTester inputEnablement) {
 		if (languageId != null) {
 			serverDefinition.registerAssociation(contentType, languageId);
 		}
 
-		connections.add(new ContentTypeToLanguageServerDefinition(contentType, serverDefinition, enablement));
+		connections.add(new ContentTypeToLanguageServerDefinition(contentType, serverDefinition, enablement, inputEnablement));
 	}
 
 	public void setAssociations(List<ContentTypeToLSPLaunchConfigEntry> wc) {
@@ -411,13 +431,16 @@ public class LanguageServersRegistry {
 		@Nullable public final String languageId;
 		@Nullable
 		public final EnablementTester enablement;
+		@Nullable
+		public final InputEnablementTester inputEnablement;
 
 		public ContentTypeMapping(@NonNull IContentType contentType, @NonNull String id, @Nullable String languageId,
-				@Nullable EnablementTester enablement) {
+				@Nullable EnablementTester enablement, InputEnablementTester inputEnablement) {
 			this.contentType = contentType;
 			this.id = id;
 			this.languageId = languageId;
 			this.enablement = enablement;
+			this.inputEnablement = inputEnablement;
 		}
 
 	}
@@ -428,7 +451,7 @@ public class LanguageServersRegistry {
 	 * @return whether the given serverDefinition is suitable for the file
 	 */
 	public boolean matches(@NonNull IFile file, @NonNull LanguageServerDefinition serverDefinition) {
-		return getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file)).contains(serverDefinition);
+		return getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file), file).contains(serverDefinition);
 	}
 
 	/**
@@ -437,12 +460,12 @@ public class LanguageServersRegistry {
 	 * @return whether the given serverDefinition is suitable for the file
 	 */
 	public boolean matches(@NonNull IDocument document, @NonNull LanguageServerDefinition serverDefinition) {
-		return getAvailableLSFor(LSPEclipseUtils.getDocumentContentTypes(document)).contains(serverDefinition);
+		return getAvailableLSFor(LSPEclipseUtils.getDocumentContentTypes(document), document).contains(serverDefinition);
 	}
 
 	public boolean canUseLanguageServer(@NonNull IEditorInput editorInput) {
 		return !getAvailableLSFor(
-				Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(editorInput.getName()))).isEmpty();
+				Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(editorInput.getName())), editorInput).isEmpty();
 	}
 
 	public boolean canUseLanguageServer(@NonNull IDocument document) {
@@ -452,11 +475,11 @@ public class LanguageServersRegistry {
 			return false;
 		}
 
-		return !getAvailableLSFor(contentTypes).isEmpty();
+		return !getAvailableLSFor(contentTypes, document).isEmpty();
 	}
 
 	public boolean canUseLanguageServer(@NonNull IFile file) {
-		return !getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file)).isEmpty();
+		return !getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file), file).isEmpty();
 	}
 
 	/**
@@ -464,11 +487,11 @@ public class LanguageServersRegistry {
 	 * @param contentTypes content-types to check against LS registry. Base types are checked too.
 	 * @return definitions that can support the following content-types
 	 */
-	private Set<LanguageServerDefinition> getAvailableLSFor(Collection<IContentType> contentTypes) {
+	private Set<LanguageServerDefinition> getAvailableLSFor(Collection<IContentType> contentTypes, Object input) {
 		Set<LanguageServerDefinition> res = new HashSet<>();
 		contentTypes = expandToSuperTypes(contentTypes);
 		for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
-			if (mapping.isEnabled() && contentTypes.contains(mapping.getKey())) {
+			if (mapping.isEnabledFor(input) && contentTypes.contains(mapping.getKey())) {
 				res.add(mapping.getValue());
 			}
 		}
