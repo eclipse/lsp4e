@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2022 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -15,6 +15,7 @@ package org.eclipse.lsp4e.operations.format;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -40,29 +41,47 @@ import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 public class LSPFormatter {
 
-	public void applyEdits(IDocument document, List<? extends TextEdit> edits) {
-		try {
-			LSPEclipseUtils.applyEdits(document, edits);
-		} catch (BadLocationException e) {
-			LanguageServerPlugin.logError(e);
+	public record VersionedFormatRequest(int version, CompletableFuture<List<? extends TextEdit>> edits) {
+		public VersionedFormatRequest() {
+			this(-1, CompletableFuture.completedFuture(Collections.emptyList()));
 		}
 	}
 
-	public CompletableFuture<List<? extends TextEdit>> requestFormatting(@NonNull IDocument document,
+	private @NonNull LSPDocumentInfo getLSPDocumentInfo(Collection<@NonNull LSPDocumentInfo> infos) {
+		// TODO consider a better strategy for that, maybe iterate on all LS until one
+		// gives a result
+		return infos.iterator().next();
+	}
+
+	public void applyEdits(@NonNull IDocument document, List<? extends TextEdit> edits, int version)
+			throws ConcurrentModificationException {
+		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
+				LSPFormatter::supportFormatting);
+		if (getLSPDocumentInfo(infos).getVersion() != version) {
+			throw new ConcurrentModificationException();
+		} else {
+			try {
+				LSPEclipseUtils.applyEdits(document, edits);
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
+	}
+
+	public VersionedFormatRequest versionedRequestFormatting(@NonNull IDocument document,
 			@NonNull ITextSelection textSelection) {
 		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
 				LSPFormatter::supportFormatting);
 		if (infos.isEmpty()) {
-			return CompletableFuture.completedFuture(Collections.emptyList());
+			return new VersionedFormatRequest();
 		}
-		// TODO consider a better strategy for that, maybe iterate on all LS until one gives a result
-		LSPDocumentInfo info = infos.iterator().next();
+		LSPDocumentInfo info = getLSPDocumentInfo(infos);
 		try {
-			return requestFormatting(info, textSelection);
+			return new VersionedFormatRequest(info.getVersion(), requestFormatting(info, textSelection));
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}
-		return CompletableFuture.completedFuture(Collections.emptyList());
+		return new VersionedFormatRequest();
 	}
 
 	private CompletableFuture<List<? extends TextEdit>> requestFormatting(LSPDocumentInfo info,
