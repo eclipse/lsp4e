@@ -31,6 +31,13 @@ public final class DSPValue extends DSPDebugElement implements IValue {
 		this.value = value;
 	}
 
+	public DSPValue(DSPDebugTarget debugger, Integer variablesReference, String value) {
+		super(debugger);
+		this.modelVariable = null;
+		this.variablesReference = variablesReference;
+		this.value = value;
+	}
+
 	@Override
 	public IVariable[] getVariables() throws DebugException {
 		if (!hasVariables()) {
@@ -44,7 +51,7 @@ public final class DSPValue extends DSPDebugElement implements IValue {
 
 			List<DSPVariable> variables = new ArrayList<>();
 			for (Variable variable : targetVariables) {
-				variables.add(new DSPVariable(modelVariable.getDebugTarget(), variablesReference, variable.getName(),
+				variables.add(new DSPVariable(getDebugTarget(), variablesReference, variable.getName(),
 						variable.getValue(), variable.getVariablesReference()));
 			}
 
@@ -55,8 +62,10 @@ public final class DSPValue extends DSPDebugElement implements IValue {
 
 	@Override
 	public String getReferenceTypeName() throws DebugException {
-		// TODO
-		return modelVariable.getName();
+		if (modelVariable != null) {
+			return modelVariable.getName();
+		}
+		return null;
 	}
 
 	@Override
