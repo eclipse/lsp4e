@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -13,6 +13,7 @@
 package org.eclipse.lsp4e.operations.format;
 
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -23,7 +24,12 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.ServerMessageHandler;
+import org.eclipse.lsp4e.operations.format.LSPFormatter.VersionedFormatRequest;
+import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
+import org.eclipse.lsp4j.MessageParams;
+import org.eclipse.lsp4j.MessageType;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
@@ -50,8 +56,20 @@ public class LSPFormatHandler extends AbstractHandler {
 			final Shell shell = textEditor.getSite().getShell();
 			ISelection selection = HandlerUtil.getCurrentSelection(event);
 			if (document != null && selection instanceof ITextSelection textSelection) {
-				formatter.requestFormatting(document, textSelection).thenAcceptAsync(
-						edits -> shell.getDisplay().asyncExec(() -> formatter.applyEdits(document, edits)));
+				VersionedFormatRequest versionedEdits = formatter.versionedRequestFormatting(document, textSelection);
+				versionedEdits.edits().thenAcceptAsync(edits -> {
+					if (!edits.isEmpty()) {
+						shell.getDisplay().asyncExec(() -> {
+							try {
+								formatter.applyEdits(document, edits, versionedEdits.version());
+							} catch (ConcurrentModificationException e) {
+								ServerMessageHandler.showMessage(Messages.LSPFormatHandler_DiscardedFormat, //
+										new MessageParams(MessageType.Error,
+												Messages.LSPFormatHandler_DiscardedFormatResponse));
+							}
+						});
+					}
+				});
 			}
 		}
 		return null;
