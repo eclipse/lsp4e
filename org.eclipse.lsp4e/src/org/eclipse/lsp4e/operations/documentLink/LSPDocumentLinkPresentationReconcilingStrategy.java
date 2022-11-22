@@ -86,7 +86,7 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 	}
 
 	private void underline(List<DocumentLink> links) {
-		if (document == null) {
+		if (document == null || links == null) {
 			return;
 		}
 		for (DocumentLink link : links) {
