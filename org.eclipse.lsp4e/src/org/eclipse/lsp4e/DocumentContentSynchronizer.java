@@ -159,7 +159,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			changeParams = null;
 
 			changeParamsToSend.getTextDocument().setVersion(++version);
-			lastChangeFuture.updateAndGet(f -> f.thenApplyAsync(ls -> {
+			lastChangeFuture.updateAndGet(f -> f.thenApply(ls -> { // no `Async` here! We want didChange to go ASAP.
 				ls.getTextDocumentService().didChange(changeParamsToSend);
 				return ls;
 			}));
