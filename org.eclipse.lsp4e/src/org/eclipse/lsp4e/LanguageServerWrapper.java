@@ -79,6 +79,7 @@ import org.eclipse.lsp4j.ColorProviderCapabilities;
 import org.eclipse.lsp4j.CompletionCapabilities;
 import org.eclipse.lsp4j.CompletionItemCapabilities;
 import org.eclipse.lsp4j.CompletionItemInsertTextModeSupportCapabilities;
+import org.eclipse.lsp4j.CompletionItemResolveSupportCapabilities;
 import org.eclipse.lsp4j.DefinitionCapabilities;
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
 import org.eclipse.lsp4j.DocumentFormattingOptions;
@@ -336,6 +337,7 @@ public class LanguageServerWrapper {
 				completionItemCapabilities
 						.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
 				completionItemCapabilities.setInsertTextModeSupport(new CompletionItemInsertTextModeSupportCapabilities(List.of(InsertTextMode.AsIs, InsertTextMode.AdjustIndentation)));
+				completionItemCapabilities.setResolveSupport(new CompletionItemResolveSupportCapabilities(List.of("documentation", "detail", "additionalTextEdits"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(completionItemCapabilities));
 				DefinitionCapabilities definitionCapabilities = new DefinitionCapabilities();
 				definitionCapabilities.setLinkSupport(Boolean.TRUE);
