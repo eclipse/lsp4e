@@ -16,6 +16,7 @@ import static org.eclipse.lsp4e.test.TestUtils.numberOfChangesIs;
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.net.URI;
@@ -23,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -187,31 +187,27 @@ public class DocumentDidChangeTest {
 	@Test
 	public void editInterleavingTortureTest() throws Exception {
 		
-		final AtomicInteger orderedCount = new AtomicInteger();
-		final AtomicInteger unorderedCount = new AtomicInteger();
-		final AtomicInteger updateCount = new AtomicInteger();
-
-		final Vector<Integer> outOfOrder = new Vector<>();
+		final Vector<Integer> tooEarlyHover = new Vector<>();
+		final Vector<Integer> tooLateHover = new Vector<>();
 		
 		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
 		.setTextDocumentSync(TextDocumentSyncKind.Incremental);
 		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			int changeVersion = 0;
 			@Override
 			public synchronized void didChange(DidChangeTextDocumentParams params) {
 				super.didChange(params);
-				updateCount.incrementAndGet();
+				changeVersion++;
 			}
 			
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				final int current = position.getPosition().getCharacter();
-				if (current == updateCount.get()) {
-					orderedCount.incrementAndGet();
-				} else {
-					unorderedCount.incrementAndGet();
-					outOfOrder.add(current);
+				final int targetVersionForRequest = position.getPosition().getCharacter();
+				if (targetVersionForRequest < changeVersion) {
+					tooLateHover.add(targetVersionForRequest);
+				} else if (targetVersionForRequest > changeVersion){
+					tooEarlyHover.add(targetVersionForRequest);
 				}
-				
 				return super.hover(position);
 			}
 		});
@@ -227,9 +223,8 @@ public class DocumentDidChangeTest {
 		final URI uri = LSPEclipseUtils.toUri(document);
 		StyledText text = viewer.getTextWidget();
 		Thread.sleep(1000);
-		updateCount.set(0);
 		
-		for (int i = 0; i < 500; i++) {
+		for (int i = 0; i < 5000; i++) {
 			final int current = i + 1;
 			text.append(i + "\n");
 			final HoverParams params = new HoverParams();
@@ -254,12 +249,21 @@ public class DocumentDidChangeTest {
 		}
 		
 		initial.join();
-		System.out.println("Completed: " + updateCount.get());
-		System.out.println("Ordered: " + orderedCount.get());
-		System.out.println("Unordered: " + unorderedCount.get());
-		outOfOrder.forEach(i -> System.err.println("Out of order: " + i));
-		
-		assertEquals(updateCount.get(), orderedCount.get());
+		StringBuilder message = new StringBuilder();
+		message.append("Too Early hover requests: "); message.append(tooEarlyHover.size());
+		message.append(System.lineSeparator());
+		tooEarlyHover.forEach(i -> {
+			message.append("  Too Early ");
+			message.append(i);
+			message.append(System.lineSeparator());
+		});
+		message.append("Too Late hover requests: "); message.append(tooLateHover.size());
+		message.append(System.lineSeparator());
+		tooLateHover.forEach(i -> {
+			message.append("  Too Late " );message.append(i);
+			message.append(System.lineSeparator());
+		});
+		assertTrue(message.toString(), tooEarlyHover.isEmpty() && tooLateHover.isEmpty());
 	}
 
 	@Test
