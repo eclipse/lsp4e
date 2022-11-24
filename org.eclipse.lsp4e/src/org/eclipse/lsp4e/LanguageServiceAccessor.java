@@ -622,7 +622,7 @@ public class LanguageServiceAccessor {
 		final List<@NonNull LanguageServer> res = Collections.synchronizedList(new ArrayList<>());
 		try {
 			return CompletableFuture.allOf(getLSWrappers(document).stream()
-					.map(wrapper -> wrapper.getInitializedServer().thenComposeAsync(server -> {
+					.map(wrapper -> wrapper.getInitializedServer().thenCompose(server -> {
 						if (server != null && (filter == null || filter.test(wrapper.getServerCapabilities()))) {
 							try {
 								return wrapper.connect(document);

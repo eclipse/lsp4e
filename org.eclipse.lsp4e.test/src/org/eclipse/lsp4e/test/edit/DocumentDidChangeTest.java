@@ -234,7 +234,7 @@ public class DocumentDidChangeTest {
 			params.setPosition(position);
 			
 			CompletableFuture<?> hoverFuture = LanguageServiceAccessor.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
-			.thenApplyAsync(languageServers -> // Async is very important here, otherwise the LS Client thread is in
+			.thenApply(languageServers -> // Async is very important here, otherwise the LS Client thread is in
 												// deadlock and doesn't read bytes from LS
 			languageServers.stream()
 				.map(languageServer -> {
