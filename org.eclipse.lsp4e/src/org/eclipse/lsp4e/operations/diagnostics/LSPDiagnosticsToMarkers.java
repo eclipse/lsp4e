@@ -86,7 +86,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		try {
 			String uri = diagnostics.getUri();
 			IResource resource = LSPEclipseUtils.findResourceFor(uri);
-			if (resource != null && resource.exists()) {
+			if (resource != null && resource.isAccessible()) {
 				updateMarkers(diagnostics, resource);
 			} else {
 				LSPEclipseUtils.findOpenEditorsFor(LSPEclipseUtils.toUri(uri)).stream()
@@ -169,7 +169,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 					}
 				});
 			} catch (CoreException e) {
-				if (resource.exists()) {
+				if (resource.isAccessible()) {
 					LanguageServerPlugin.logError(e);
 				}
 			} finally {
