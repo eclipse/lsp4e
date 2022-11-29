@@ -194,19 +194,25 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 		this.lastViewer = viewer;
 		this.request = LanguageServiceAccessor
 			.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
-				.thenApplyAsync(languageServers -> // Async is very important here, otherwise the LS Client thread is in
-													// deadlock and doesn't read bytes from LS
+				.thenApply(languageServers ->
 				languageServers.stream()
 					.map(languageServer -> {
 						try {
-								return languageServer.getTextDocumentService()
-										.hover(LSPEclipseUtils.toHoverParams(offset, document)).get();
-						} catch (ExecutionException | BadLocationException e) {
+							return languageServer.getTextDocumentService().hover(LSPEclipseUtils.toHoverParams(offset, document));
+						} catch (BadLocationException e) {
 							LanguageServerPlugin.logError(e);
 							return null;
+						}
+					// Async is very important here, otherwise the LS Client main thread will wait for server response
+					}).filter(Objects::nonNull).collect(Collectors.toList())).thenApplyAsync(futures -> futures.stream().map(hover -> {
+						try {
+							return hover.get();
 						} catch (InterruptedException e) {
 							LanguageServerPlugin.logError(e);
 							Thread.currentThread().interrupt();
+							return null;
+						} catch (ExecutionException e) {
+							LanguageServerPlugin.logError(e);
 							return null;
 						}
 					}).filter(Objects::nonNull).collect(Collectors.toList()));
