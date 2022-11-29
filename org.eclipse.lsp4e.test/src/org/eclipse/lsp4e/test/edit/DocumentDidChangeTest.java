@@ -47,6 +47,7 @@ import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
@@ -263,6 +264,117 @@ public class DocumentDidChangeTest {
 		}
 		
 		assertEquals(updateCount.get(), orderedCount.get());
+	}
+	
+	@Test
+	public void testBlockingServerBlocksUIThread() throws Exception {
+
+		final Vector<Integer> tooEarlyHover = new Vector<>();
+		final Vector<Integer> tooLateHover = new Vector<>();
+		final AtomicInteger uiDispatchCount = new AtomicInteger();
+		
+		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
+		.setTextDocumentSync(TextDocumentSyncKind.Incremental);
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			int changeVersion = 0;
+			@Override
+			public synchronized void didChange(DidChangeTextDocumentParams params) {
+				super.didChange(params);
+				changeVersion++;
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			
+			@Override
+			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
+				final int targetVersionForRequest = position.getPosition().getCharacter();
+				if (targetVersionForRequest < changeVersion) {
+					tooLateHover.add(targetVersionForRequest);
+				} else if (targetVersionForRequest > changeVersion){
+					tooEarlyHover.add(targetVersionForRequest);
+				}
+				return super.hover(position);
+			}
+		});
+		
+		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		MockLanguageServer.INSTANCE.setHover(hoverResponse);
+		CompletableFuture<?> initial = CompletableFuture.completedFuture(null);
+		
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		final IDocument document = viewer.getDocument();
+		final URI uri = LSPEclipseUtils.toUri(document);
+		StyledText text = viewer.getTextWidget();
+		Thread.sleep(1000);
+		
+		final long startTime = System.currentTimeMillis();
+		
+		final StringBuilder bulkyText = new StringBuilder();
+		
+		// Construct a reasonably bulky payload for the document updates: if the
+		// payload is small then buffering will mitigate any back-pressure from the server
+		// (typically 8k for a unix pipe)
+		for (int i = 0; i < 1000; i++) {
+			bulkyText.append("Some Text; ");
+		}
+		
+		final String content = bulkyText.toString();
+		
+		for (int i = 0; i < 20; i++) {
+			final int current = i + 1;
+			text.append(content + "\n");
+			final HoverParams params = new HoverParams();
+			final Position position = new Position();
+			position.setCharacter(current);
+			position.setLine(0);
+			params.setPosition(position);
+			
+//			CompletableFuture<?> hoverFuture = LanguageServiceAccessor.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+//			.thenApply(languageServers -> // Async is very important here, otherwise the LS Client thread is in
+//												// deadlock and doesn't read bytes from LS
+//			languageServers.stream()
+//				.map(languageServer -> {
+//					if (Display.getCurrent() != null) {
+//						uiDispatchCount.incrementAndGet();
+//					}
+//					try {
+//						return languageServer.getTextDocumentService().hover(params);
+//					} catch (Exception e) {
+//						
+//					}
+//					return CompletableFuture.completedFuture(null);
+//				}).collect(Collectors.toList()));
+//			initial = CompletableFuture.allOf(initial, hoverFuture);
+			CompletableFuture<?> hoverFuture = LanguageServiceAccessor.computeOnServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()), languageServer -> {
+				try {
+					if (Display.getCurrent() != null) {
+					uiDispatchCount.incrementAndGet();
+				}
+					return languageServer.getTextDocumentService().hover(params);
+				} catch (Exception e) {
+					
+				}
+				return CompletableFuture.completedFuture(null);
+			});
+		initial = CompletableFuture.allOf(initial, hoverFuture);
+		}
+		
+		final long dispatchTime = System.currentTimeMillis();
+		
+		initial.join();
+		
+		final long finishTime = System.currentTimeMillis();
+		
+		System.err.println("Dispatch time = " + (dispatchTime - startTime)/ 1000.0);
+		System.err.println("Test time = " + (finishTime - startTime)/ 1000.0);
+		
+		System.err.println("UI dispatch count = " + uiDispatchCount.get());
+		
 	}
 
 	@Test
