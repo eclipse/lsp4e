@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.time.OffsetDateTime;
 
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
@@ -108,6 +109,29 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		this.logFile = getLogFile();
 	}
 
+
+	private String message(String direction, byte[] payload) {
+		String now = OffsetDateTime.now().toString();
+		StringBuilder builder = new StringBuilder(payload.length + id.length() + direction.length() + now.length() + 10);
+		builder.append("\n["); //$NON-NLS-1$
+		builder.append(now);
+		builder.append("] "); //$NON-NLS-1$
+		builder.append(direction);
+		builder.append(' ');
+		builder.append(id);
+		builder.append(":\n"); //$NON-NLS-1$
+		builder.append(payload);
+		return builder.toString();
+	}
+
+	private String infoMessage(byte[] payload) {
+		return message("LSP4E to", payload);  //$NON-NLS-1$
+	}
+
+	private String errorMessage(byte[] payload) {
+		return message("Error from", payload);  //$NON-NLS-1$
+	}
+
 	@Override
 	public InputStream getInputStream() {
 		if (inputStream != null) {
@@ -121,7 +145,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 					byte[] payload = new byte[bytes];
 					System.arraycopy(b, off, payload, 0, bytes);
 					if (logToConsole || logToFile) {
-						String s = "\n[t=" + System.currentTimeMillis() + "] " + id + " to LSP4E:\n" + new String(payload); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+						String s = infoMessage(payload);
 						if (logToConsole) {
 							logToConsole(s);
 						}
@@ -149,7 +173,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 					byte[] payload = new byte[bytes];
 					System.arraycopy(b, off, payload, 0, bytes);
 					if (logToConsole || logToFile) {
-						String s = "\n[t=" + System.currentTimeMillis() + "] Error from " + id + ":\n" + new String(payload); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+						String s = errorMessage(payload);
 						if (logToConsole) {
 							logToConsole(s);
 						}
@@ -174,7 +198,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 				@Override
 				public void write(byte[] b) throws IOException {
 					if (logToConsole || logToFile) {
-						String s = "\n[t=" + System.currentTimeMillis() + "] LSP4E to " + id + ":\n" + new String(b);  //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+						String s = infoMessage(b);
 						if (logToConsole) {
 							logToConsole(s);
 						}
