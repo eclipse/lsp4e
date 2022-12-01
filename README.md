@@ -12,6 +12,13 @@
 * http://download.eclipse.org/lsp4e/releases/latest/ for latest release
 * http://download.eclipse.org/lsp4e/snapshots/ for latest CI build (usually of decent quality)
 
+## Installation requirements
+
+LSP4E currently requires JRE 17. The easiest way to obtain it for your Eclipse installation is to use a bundled JRE from [JustJ](https://www.eclipse.org/justj/).
+
+* Add this update site: https://download.eclipse.org/justj/jres/17/updates/release
+* Choose the "JustJ Adoptium OpenJDK Hotspot JRE Base" version 17" package.
+
 ## Preview
 
 ### Language Server in Eclipse in the Eclipse IDE
