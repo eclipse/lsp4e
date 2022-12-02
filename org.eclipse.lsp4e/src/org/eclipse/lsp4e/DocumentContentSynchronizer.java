@@ -314,7 +314,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
   		}));
 	}
 
-	public void documentClosed() {
+	public CompletableFuture<Void> documentClosed() {
 		String uri = fileUri.toString();
 		WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.remove(uri);
 		// When LS is shut down all documents are being disconnected. No need to send
@@ -322,8 +322,9 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		if (languageServerWrapper.isActive()) {
 			TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri);
 			DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
-			lastChangeFuture.get().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
+			return lastChangeFuture.get().thenAcceptAsync(ls -> ls.getTextDocumentService().didClose(params));
 		}
+		return CompletableFuture.completedFuture(null);
 	}
 
 	/**

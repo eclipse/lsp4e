@@ -678,11 +678,16 @@ public class LanguageServerWrapper {
 		}).thenApply(theVoid -> languageServer);
 	}
 
-	public void disconnect(URI uri) {
+	/**
+	 * @param uri
+	 * @return null if not disconnection has happened, a future tracking the disconnection state otherwise
+	 */
+	public CompletableFuture<Void> disconnect(URI uri) {
 		DocumentContentSynchronizer documentListener = this.connectedDocuments.remove(uri);
+		CompletableFuture<Void> documentClosedFuture = null;
 		if (documentListener != null) {
 			documentListener.getDocument().removeDocumentListener(documentListener);
-			documentListener.documentClosed();
+			documentClosedFuture = documentListener.documentClosed();
 		}
 		if (this.connectedDocuments.isEmpty()) {
 			if (this.serverDefinition.lastDocumentDisconnectedTimeout != 0) {
@@ -692,6 +697,7 @@ public class LanguageServerWrapper {
 				stop();
 			}
 		}
+		return documentClosedFuture;
 	}
 
 	public void disconnectContentType(@NonNull IContentType contentType) {
