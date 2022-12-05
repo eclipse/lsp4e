@@ -12,11 +12,16 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4j.Command;
@@ -40,10 +45,18 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 	@Override
 	public void run(IMarker marker) {
 		IResource resource = marker.getResource();
+		boolean disconnect = LSPEclipseUtils.getExistingDocument(resource) == null;
 		IDocument document = LSPEclipseUtils.getDocument(resource);
 		String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
 		if(document != null) {
 			CommandExecutor.executeCommand(command, document, languageServerId);
+		}
+		if (disconnect) {
+			try {
+				FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
+			} catch (CoreException e) {
+				LanguageServerPlugin.logError(e);
+			}
 		}
 	}
 
