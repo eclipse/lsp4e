@@ -15,10 +15,14 @@ package org.eclipse.lsp4e.operations.references;
 
 import java.util.List;
 
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
@@ -125,7 +129,15 @@ public class LSSearchQuery extends FileSearchQuery {
 	private static Match toMatch(Location location) {
 		IResource resource = LSPEclipseUtils.findResourceFor(location.getUri());
 		if (resource != null) {
+			boolean disconnect = LSPEclipseUtils.getExistingDocument(resource) == null;
 			IDocument document = LSPEclipseUtils.getDocument(resource);
+			if (disconnect) {
+				try {
+					FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
+				} catch (CoreException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			}
 			if (document != null) {
 				try {
 				int startOffset = LSPEclipseUtils.toOffset(location.getRange().getStart(), document);
