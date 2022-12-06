@@ -45,17 +45,20 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 	@Override
 	public void run(IMarker marker) {
 		IResource resource = marker.getResource();
-		boolean disconnect = LSPEclipseUtils.getExistingDocument(resource) == null;
-		IDocument document = LSPEclipseUtils.getDocument(resource);
-		String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
-		if(document != null) {
-			CommandExecutor.executeCommand(command, document, languageServerId);
+		IDocument document = LSPEclipseUtils.getExistingDocument(resource);
+		boolean temporaryLoadDocument = document == null;
+		if (temporaryLoadDocument) {
+			document = LSPEclipseUtils.getDocument(resource);
 		}
-		if (disconnect) {
-			try {
-				FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
-			} catch (CoreException e) {
-				LanguageServerPlugin.logError(e);
+		if(document != null) {
+			String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
+			CommandExecutor.executeCommand(command, document, languageServerId);
+			if (temporaryLoadDocument) {
+				try {
+					FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
+				} catch (CoreException e) {
+					LanguageServerPlugin.logError(e);
+				}
 			}
 		}
 	}

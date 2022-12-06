@@ -129,9 +129,10 @@ public class LSSearchQuery extends FileSearchQuery {
 	private static Match toMatch(Location location) {
 		IResource resource = LSPEclipseUtils.findResourceFor(location.getUri());
 		if (resource != null) {
-			boolean disconnect = LSPEclipseUtils.getExistingDocument(resource) == null;
-			IDocument document = LSPEclipseUtils.getDocument(resource);
-			if (disconnect) {
+			IDocument document = LSPEclipseUtils.getExistingDocument(resource);
+			boolean temporaryLoadDocument = document == null;
+			if (temporaryLoadDocument) {
+				document = LSPEclipseUtils.getDocument(resource);
 				try {
 					FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
 				} catch (CoreException e) {
@@ -140,14 +141,14 @@ public class LSSearchQuery extends FileSearchQuery {
 			}
 			if (document != null) {
 				try {
-				int startOffset = LSPEclipseUtils.toOffset(location.getRange().getStart(), document);
-				int endOffset = LSPEclipseUtils.toOffset(location.getRange().getEnd(), document);
+					int startOffset = LSPEclipseUtils.toOffset(location.getRange().getStart(), document);
+					int endOffset = LSPEclipseUtils.toOffset(location.getRange().getEnd(), document);
 
-				IRegion lineInformation = document.getLineInformationOfOffset(startOffset);
-				LineElement lineEntry = new LineElement(resource, document.getLineOfOffset(startOffset),
-						lineInformation.getOffset(),
-						document.get(lineInformation.getOffset(), lineInformation.getLength()));
-				return new FileMatch((IFile) resource, startOffset, endOffset - startOffset, lineEntry);
+					IRegion lineInformation = document.getLineInformationOfOffset(startOffset);
+					LineElement lineEntry = new LineElement(resource, document.getLineOfOffset(startOffset),
+							lineInformation.getOffset(),
+							document.get(lineInformation.getOffset(), lineInformation.getLength()));
+					return new FileMatch((IFile) resource, startOffset, endOffset - startOffset, lineEntry);
 				} catch (BadLocationException ex) {
 					LanguageServerPlugin.logError(ex);
 				}

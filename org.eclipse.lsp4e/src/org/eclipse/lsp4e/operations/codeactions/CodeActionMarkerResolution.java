@@ -60,17 +60,20 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 		}
 		if (codeAction.getCommand() != null) {
 			IResource resource = marker.getResource();
-			boolean disconnect = LSPEclipseUtils.getExistingDocument(resource) == null;
-			IDocument document = LSPEclipseUtils.getDocument(resource);
+			IDocument document = LSPEclipseUtils.getExistingDocument(resource);
+			boolean temporaryLoadDocument = document == null;
+			if (temporaryLoadDocument) {
+				document = LSPEclipseUtils.getDocument(resource);
+			}
 			if (document != null) {
 				String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
 				CommandExecutor.executeCommand(codeAction.getCommand(), document, languageServerId);
-			}
-			if (disconnect) {
-				try {
-					FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
-				} catch (CoreException e) {
-					LanguageServerPlugin.logError(e);
+				if (temporaryLoadDocument) {
+					try {
+						FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
+					} catch (CoreException e) {
+						LanguageServerPlugin.logError(e);
+					}
 				}
 			}
 		}
