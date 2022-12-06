@@ -140,8 +140,10 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		// A language server can scan the whole project and generate diagnostics for files that are not currently open in the IDE
 		// (the markers will show up in the problem view). If so, need to open the document temporarily but be sure to release it
 		// when we're done
-		final boolean disconnect = !diagnostics.getDiagnostics().isEmpty() && LSPEclipseUtils.getExistingDocument(resource) == null;
-		IDocument document = diagnostics.getDiagnostics().isEmpty() ? null : LSPEclipseUtils.getDocument(resource);
+		IDocument existingDocument = LSPEclipseUtils.getExistingDocument(resource);
+		final boolean hasDiagnostics = !diagnostics.getDiagnostics().isEmpty();
+		final boolean temporaryLoadDocument = existingDocument == null;
+		IDocument document = (hasDiagnostics && temporaryLoadDocument) ? LSPEclipseUtils.getDocument(resource): existingDocument;
 		for (Diagnostic diagnostic : diagnostics.getDiagnostics()) {
 			IMarker associatedMarker = getExistingMarkerFor(document, diagnostic, toDeleteMarkers);
 			if (associatedMarker == null) {
@@ -173,7 +175,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 					LanguageServerPlugin.logError(e);
 				}
 			} finally {
-				if (document != null && disconnect) {
+				if (document != null && temporaryLoadDocument) {
 					try {
 						FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
 					} catch (CoreException e) {
