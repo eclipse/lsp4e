@@ -770,11 +770,17 @@ public class LanguageServerWrapper {
 	 * @return Async result
 	 */
 	@NonNull
-	<T> CompletableFuture<T> executeOnLatestVersion(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+	 <T> CompletableFuture<T> executeOnLatestVersion(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
  		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
 	}
 
-	<T> CompletableFuture<T> execute(BiFunction<LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+	@NonNull
+	public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+		return getInitializedServer().thenComposeAsync(fn, this.dispatcher).thenApplyAsync(Function.identity());
+	}
+
+	@NonNull
+	public <T> CompletableFuture<T> execute(BiFunction<LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		return getInitializedServer().thenComposeAsync(ls -> fn.apply(this, ls), this.dispatcher);
 	}
 	/**

@@ -39,8 +39,8 @@ import org.eclipse.jface.text.ITextHoverExtension;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LSPExecutor;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.MarkedString;
@@ -195,10 +195,10 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 		this.lastViewer = viewer;
 		try {
 			HoverParams params = LSPEclipseUtils.toHoverParams(offset, document);
-			this.request = LanguageServiceAccessor.computeOnServers(document,
-					capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()),
-					languageServer -> languageServer.getTextDocumentService().hover(params));
 
+			this.request = LSPExecutor.forDocument(document)
+				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.collectAll((wapper, server) -> server.getTextDocumentService().hover(params));
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}

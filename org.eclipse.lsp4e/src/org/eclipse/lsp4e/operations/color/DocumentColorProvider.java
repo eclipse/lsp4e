@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -27,13 +28,14 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.codemining.AbstractCodeMiningProvider;
 import org.eclipse.jface.text.codemining.ICodeMining;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LSPExecutor;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.ColorInformation;
 import org.eclipse.lsp4j.DocumentColorParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.widgets.Display;
@@ -58,25 +60,24 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 			TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(docURI.toString());
 			DocumentColorParams param = new DocumentColorParams(textDocumentIdentifier);
 
-
-			return LanguageServiceAccessor
-				.computeOnServers(document,
-						DocumentColorProvider::isColorProvider,
+			return LSPExecutor.forDocument(document)
+				.withFilter(DocumentColorProvider::isColorProvider)
+				.collectAll(
 						// Need to do some of the result processing inside the function we supply to computeOnServers(...)
 						// as need the LS to construct the ColorInformationMining
-						ls -> ls.getTextDocumentService().documentColor(param)
+						(wrapper, ls) -> ls.getTextDocumentService().documentColor(param)
 									.thenApply(colors -> LanguageServiceAccessor.streamSafely(colors)
-											.map(color -> toMining(color, document, textDocumentIdentifier, ls))))
-			 		.thenApply(res -> res.stream().flatMap(s -> s).filter(Objects::nonNull).collect(Collectors.toList()));
+											.map(color -> toMining(color, document, textDocumentIdentifier, wrapper))))
+			 		.thenApply(res -> res.stream().flatMap(Function.identity()).filter(Objects::nonNull).collect(Collectors.toList()));
 		} else {
 			return null;
 		}
 	}
 
-	private ColorInformationMining toMining(ColorInformation color, IDocument document, TextDocumentIdentifier textDocumentIdentifier, LanguageServer server) {
+	private ColorInformationMining toMining(ColorInformation color, IDocument document, TextDocumentIdentifier textDocumentIdentifier, LanguageServerWrapper wrapper) {
 		try {
 			return new ColorInformationMining(color, document,
-					textDocumentIdentifier, server,
+					textDocumentIdentifier, wrapper,
 					DocumentColorProvider.this);
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
