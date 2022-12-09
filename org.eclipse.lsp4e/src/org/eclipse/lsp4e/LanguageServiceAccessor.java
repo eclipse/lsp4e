@@ -343,7 +343,7 @@ public class LanguageServiceAccessor {
 	}
 
 	@NonNull
-	private static Collection<LanguageServerWrapper> getLSWrappers(@NonNull final IDocument document) {
+	static Collection<LanguageServerWrapper> getLSWrappers(@NonNull final IDocument document) {
 		final URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
 			return Collections.emptyList();
@@ -580,6 +580,32 @@ public class LanguageServiceAccessor {
 			}
 		}
 		return serverInfos;
+	}
+
+
+	/**
+	 * Internal variant of getLanguageServers(IProject, Predicate<ServerCapabilities>, boolean)
+	 *
+	 * TODO: this doesn't replicate the behaviour with inactive LS: we return an async for the restarting server
+	 * that will only schedule further work after it completes. The older method calls wrapper.getServer() which
+	 * returns null on the event thread but blocks till completion on any other thread - does it matter?
+	 *
+	 * @param project
+	 * @param request
+	 * @param onlyActiveLS
+	 * @return
+	 */
+	@NonNull
+	static List<@NonNull CompletableFuture<LanguageServerWrapper>> getWrappers(@Nullable IProject project, Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
+		List<@NonNull CompletableFuture<LanguageServerWrapper>> result = new ArrayList<>();
+		for (LanguageServerWrapper wrapper : startedServers) {
+			if ((!onlyActiveLS || wrapper.isActive()) && (project == null || wrapper.canOperate(project))) {
+				if (capabilitiesComply(wrapper, request)) {
+					result.add(wrapper.getInitializedServer().thenApply(ls -> wrapper));
+				}
+			}
+		}
+		return result;
 	}
 
 	protected static LanguageServerDefinition getLSDefinition(@NonNull StreamConnectionProvider provider) {

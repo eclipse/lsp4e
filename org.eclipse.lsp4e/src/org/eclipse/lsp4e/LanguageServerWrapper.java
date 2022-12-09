@@ -39,6 +39,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -771,6 +772,10 @@ public class LanguageServerWrapper {
 	@NonNull
 	<T> CompletableFuture<T> executeOnLatestVersion(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
  		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
+	}
+
+	<T> CompletableFuture<T> execute(BiFunction<LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		return getInitializedServer().thenComposeAsync(ls -> fn.apply(this, ls), this.dispatcher);
 	}
 	/**
 	 * Sends a notification to the LS on a single executor thread tied to this server. Use of this guarantees that the server
