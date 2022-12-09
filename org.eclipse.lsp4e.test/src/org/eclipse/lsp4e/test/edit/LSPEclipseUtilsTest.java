@@ -499,4 +499,9 @@ public class LSPEclipseUtilsTest {
 		Range actual = LSPEclipseUtils.parseRange("file:///a/b#");
 		assertTrue(actual == null);
 	}
+	@Test
+	public void parseRange_shouldReturnNullRange_NoFragment() {
+		Range actual = LSPEclipseUtils.parseRange("file:///a/b");
+		assertTrue(actual == null);
+	}
 }
