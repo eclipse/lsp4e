@@ -15,6 +15,7 @@ package org.eclipse.lsp4e.test.edit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -492,5 +493,16 @@ public class LSPEclipseUtilsTest {
 		assertEquals(9, actual.getStart().getCharacter());
 		assertEquals(36, actual.getEnd().getLine());
 		assertEquals(33, actual.getEnd().getCharacter());
+	}
+	
+	@Test
+	public void parseRange_shouldReturnNullRange_BlankFragment() {
+		Range actual = LSPEclipseUtils.parseRange("file:///a/b#");
+		assertNull(actual);
+	}
+	@Test
+	public void parseRange_shouldReturnNullRange_NoFragment() {
+		Range actual = LSPEclipseUtils.parseRange("file:///a/b");
+		assertNull(actual);
 	}
 }

@@ -603,6 +603,7 @@ public class LSPEclipseUtils {
 				return null;
 			var uri = URI.create(location).normalize();
 			var fragment = uri.getFragment();
+			if (fragment == null || fragment.isBlank()) return null;
 			Matcher matcher = rangeFromUriExtractionPattern.matcher(fragment);
 			if (!matcher.matches())
 				return null;
