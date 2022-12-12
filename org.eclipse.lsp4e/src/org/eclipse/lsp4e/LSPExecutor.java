@@ -134,6 +134,14 @@ public abstract class LSPExecutor {
 		return this;
 	}
 
+	/**
+	 *
+	 * @return True if there is a language server for this project/document & server capabilities
+	 */
+	public boolean anyMatching() {
+		return !getServers().isEmpty();
+	}
+
 
 	/**
 	 * Executor that will run requests on the set of language servers appropriate for the supplied document
@@ -158,6 +166,7 @@ public abstract class LSPExecutor {
 				.map(wrapper -> wrapper.connectIf(this.document, getFilter()))
 				.collect(Collectors.toList());
 		}
+
 	}
 
 	/**
