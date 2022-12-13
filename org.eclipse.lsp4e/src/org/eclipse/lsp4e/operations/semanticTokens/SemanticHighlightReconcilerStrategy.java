@@ -8,69 +8,95 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.semanticTokens;
 
-import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
+import org.eclipse.jface.text.ITextListener;
 import org.eclipse.jface.text.ITextPresentationListener;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.TextPresentation;
 import org.eclipse.jface.text.TextViewer;
 import org.eclipse.jface.text.reconciler.DirtyRegion;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategy;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategyExtension;
-import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServerWrapper;
-import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.Position;
-import org.eclipse.lsp4j.SemanticTokenModifiers;
 import org.eclipse.lsp4j.SemanticTokens;
 import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.lsp4j.SemanticTokensParams;
-import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.services.LanguageServer;
-import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyleRange;
-import org.eclipse.tm4e.ui.TMUIPlugin;
-import org.eclipse.tm4e.ui.themes.ITheme;
+import org.eclipse.swt.custom.StyledText;
 
 /**
- * A reconciler strategy using semantic highlighting as defined by LSP.
+ * A semantic reconciler strategy using LSP.
+ * <p>
+ * This strategy applies semantic highlight on top of the syntactic highlight
+ * provided by TM4E by implementing {@link ITextPresentationListener}. Because
+ * semantic highlight involves remote calls, it is expected to be slower than
+ * syntactic highlight. Thus we execute semantic highlight processing in a
+ * separate reconciler thread that will never block TM4E.
+ * <p>
+ * This strategy records the version of the document when the semantic highlight
+ * is sent to the LS and when TM4E highlight is applied. If the response for a
+ * particular document version comes after the TM4E highlight has been applied,
+ * the text presentation is invalidated so that highlight is extended with the
+ * results.
+ * <p>
+ * To avoid flickering, {@link StyleRangeHolder} implement {@link ITextListener}
+ * to adapt recorded semantic highlights and apply those instead of nothing
+ * where needed.
+ * <p>
+ * If the response comes before, the data is saved and applied later on top of
+ * the presentation provided by TM4E. The results from our reconciler are
+ * recorded
+ * <p>
+ * For simplicity, out-dated responses are discarded, as we know we shall get
+ * newer ones.
  */
 public class SemanticHighlightReconcilerStrategy
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextPresentationListener {
 
-	private @Nullable ITextViewer viewer;
-
-	private @Nullable ITheme theme;
+	private ITextViewer viewer;
 
 	private IDocument document;
 
-	private Map<String, SemanticTokensLegend> semanticTokensLegendMap;
+	private StyleRangeHolder styleRangeHolder;
 
-	private List<StyleRange> previousRanges;
+	private SemanticTokensDataStreamProcessor semanticTokensDataStreamProcessor;
+
+	private SemanticTokensLegendProvider semanticTokensLegendProvider;
+
+	/**
+	 * Written in {@link this.class#applyTextPresentation(TextPresentation)}
+	 * applyTextPresentation and read in the lambda in
+	 * {@link this.class#semanticTokensFull(LanguageServer, int)}, the lambda and
+	 * the former method are executed in the display thread, thus serializing access
+	 * using volatile without using explicit synchronized blocks is enough to avoid
+	 * that org.eclipse.jface.text.ITextViewer.invalidateTextPresentation() is
+	 * called by use while the presentation is being updated.
+	 */
+	private volatile int documentVersionAtLastAppliedTextPresentation;
+
+	private CompletableFuture<Void> semanticTokensFullFuture;
 
 	/**
 	 * Installs the reconciler on the given text viewer. After this method has been
@@ -82,11 +108,15 @@ public class SemanticHighlightReconcilerStrategy
 	 */
 	public void install(final ITextViewer textViewer) {
 		viewer = textViewer;
-		theme = TMUIPlugin.getThemeManager().getDefaultTheme();
-		if (textViewer instanceof TextViewer viewer) {
-			viewer.addTextPresentationListener(this);
+		styleRangeHolder = new StyleRangeHolder();
+		semanticTokensDataStreamProcessor = new SemanticTokensDataStreamProcessor(new TokenTypeMapper(viewer),
+				offsetMapper());
+		semanticTokensLegendProvider = new SemanticTokensLegendProvider();
+
+		if (viewer instanceof TextViewer) {
+			((TextViewer) viewer).addTextPresentationListener(this);
 		}
-		previousRanges = new ArrayList<>();
+		viewer.addTextListener(styleRangeHolder);
 	}
 
 	/**
@@ -94,35 +124,24 @@ public class SemanticHighlightReconcilerStrategy
 	 * on.
 	 */
 	public void uninstall() {
-		theme = null;
-		ITextViewer textViewer = viewer;
-		if (textViewer instanceof TextViewer viewer) {
-			viewer.removeTextPresentationListener(this);
+		semanticTokensDataStreamProcessor = null;
+		if (viewer instanceof TextViewer) {
+			((TextViewer) viewer).removeTextPresentationListener(this);
 		}
+		viewer.removeTextListener(styleRangeHolder);
 		viewer = null;
-		previousRanges = null;
-		semanticTokensLegendMap = null;
-
+		styleRangeHolder = null;
+		semanticTokensLegendProvider = null;
 	}
 
-	private void initSemanticTokensLegendMap() {
-		IFile file = LSPEclipseUtils.getFile(document);
-		if (file != null) {
+	private Function<Position, Integer> offsetMapper() {
+		return (p) -> {
 			try {
-				semanticTokensLegendMap = new HashMap<>();
-				for (LanguageServerWrapper wrapper: LanguageServiceAccessor.getLSWrappers(file, x -> true)) {
-					ServerCapabilities serverCapabilities = wrapper.getServerCapabilities();
-					if (serverCapabilities != null) {
-						SemanticTokensWithRegistrationOptions semanticTokensProvider = serverCapabilities.getSemanticTokensProvider();
-						if (semanticTokensProvider != null) {
-							semanticTokensLegendMap.put(wrapper.serverDefinition.id, semanticTokensProvider.getLegend());
-						}
-					}
-				}
-			} catch (IOException e) {
-				LanguageServerPlugin.logError(e);
+				return LSPEclipseUtils.toOffset(p, document);
+			} catch (BadLocationException e) {
+				throw new RuntimeException(e);
 			}
-		}
+		};
 	}
 
 	private SemanticTokensParams getSemanticTokensParams() {
@@ -141,157 +160,10 @@ public class SemanticHighlightReconcilerStrategy
 		}
 		List<Integer> dataStream = semanticTokens.getData();
 		if (!dataStream.isEmpty()) {
-			try {
-				List<StyleRange> styleRanges = getStyleRanges(dataStream, semanticTokensLegend);
-				saveStyles(styleRanges);
-			} catch (BadLocationException e) {
-				LanguageServerPlugin.logError(e);
-			}
+			List<StyleRange> styleRanges = semanticTokensDataStreamProcessor.getStyleRanges(dataStream,
+					semanticTokensLegend);
+			styleRangeHolder.saveStyles(styleRanges);
 		}
-	}
-
-	private StyleRange clone(final StyleRange styleRange) {
-		StyleRange clonedStyleRange = new StyleRange(styleRange.start, styleRange.length, styleRange.foreground,
-				styleRange.background, styleRange.fontStyle);
-		clonedStyleRange.strikeout = styleRange.strikeout;
-		return clonedStyleRange;
-	}
-
-	private void mergeStyles(final TextPresentation textPresentation, final List<StyleRange> styleRanges) {
-		StyleRange[] array = new StyleRange[styleRanges.size()];
-		array = styleRanges.toArray(array);
-		textPresentation.replaceStyleRanges(array);
-	}
-
-	private boolean overlaps(final StyleRange range, final IRegion region) {
-		return isContained(range.start, region) || isContained(range.start + range.length, region)
-				|| isContained(region.getOffset(), range);
-	}
-
-	private boolean isContained(final int offset, final StyleRange range) {
-		return offset >= range.start && offset < (range.start + range.length);
-	}
-
-	private boolean isContained(final int offset, final IRegion region) {
-		return offset >= region.getOffset() && offset < (region.getOffset() + region.getLength());
-	}
-
-	private void saveStyles(final List<StyleRange> styleRanges) {
-		synchronized (previousRanges) {
-			previousRanges.clear();
-			previousRanges.addAll(styleRanges);
-			previousRanges.sort(Comparator.comparing(s -> s.start));
-		}
-	}
-
-	private List<StyleRange> getStyleRanges(final List<Integer> dataStream,
-			final SemanticTokensLegend semanticTokensLegend) throws BadLocationException {
-		List<StyleRange> styleRanges = new ArrayList<>(dataStream.size() / 5);
-
-		int idx = 0;
-		int prevLine = 0;
-		int line = 0;
-		int offset = 0;
-		int length = 0;
-		String tokenType = null;
-		for (Integer data : dataStream) {
-			switch (idx % 5) {
-			case 0: // line
-				line += data;
-				break;
-			case 1: // offset
-				if (line == prevLine) {
-					offset += data;
-				} else {
-					offset = LSPEclipseUtils.toOffset(new Position(line, data), document);
-				}
-				break;
-			case 2: // length
-				length = data;
-				break;
-			case 3: // token type
-				tokenType = tokenType(data, semanticTokensLegend.getTokenTypes());
-				break;
-			case 4: // token modifier
-				prevLine = line;
-				List<String> tokenModifiers = tokenModifiers(data, semanticTokensLegend.getTokenModifiers());
-				StyleRange styleRange = getStyleRange(offset, length, textAttribute(tokenType));
-				if (tokenModifiers.stream().anyMatch(x -> x.equals(SemanticTokenModifiers.Deprecated))) {
-					styleRange.strikeout = true;
-				}
-				styleRanges.add(styleRange);
-				break;
-			}
-			idx++;
-		}
-		return styleRanges;
-	}
-
-	private String tokenType(final Integer data, final List<String> legend) {
-		try {
-			return legend.get(data - 1);
-		} catch (IndexOutOfBoundsException e) {
-			return null; // no match
-		}
-	}
-
-	private List<String> tokenModifiers(final Integer data, final List<String> legend) {
-		if (data.intValue() == 0) {
-			return Collections.emptyList();
-		}
-		BitSet bitSet = BitSet.valueOf(new long[] { data });
-		List<String> tokenModifiers = new ArrayList<>();
-		for (int i = bitSet.nextSetBit(0); i >= 0; i = bitSet.nextSetBit(i + 1)) {
-			try {
-				tokenModifiers.add(legend.get(i));
-			} catch (IndexOutOfBoundsException e) {
-				// no match
-			}
-		}
-
-		return tokenModifiers;
-	}
-
-	private TextAttribute textAttribute(final String tokenType) {
-		ITheme localTheme = theme;
-		if (localTheme != null && tokenType != null) {
-			IToken token = localTheme.getToken(tokenType);
-			if (token != null) {
-				Object data = token.getData();
-				if (data instanceof TextAttribute textAttribute) {
-					return textAttribute;
-				}
-			}
-		}
-		return null;
-	}
-
-	/**
-	 * Gets a style range for the given inputs.
-	 *
-	 * @param offset
-	 *            the offset of the range to be styled
-	 * @param length
-	 *            the length of the range to be styled
-	 * @param attr
-	 *            the attribute describing the style of the range to be styled
-	 */
-	private StyleRange getStyleRange(final int offset, final int length, final TextAttribute attr) {
-		final StyleRange styleRange;
-		if (attr != null) {
-			final int style = attr.getStyle();
-			final int fontStyle = style & (SWT.ITALIC | SWT.BOLD | SWT.NORMAL);
-			styleRange = new StyleRange(offset, length, attr.getForeground(), attr.getBackground(), fontStyle);
-			styleRange.strikeout = (style & TextAttribute.STRIKETHROUGH) != 0;
-			styleRange.underline = (style & TextAttribute.UNDERLINE) != 0;
-			styleRange.font = attr.getFont();
-			return styleRange;
-		} else {
-			styleRange = new StyleRange();
-			styleRange.start = offset;
-			styleRange.length = length;
-		}
-		return styleRange;
 	}
 
 	@Override
@@ -301,16 +173,7 @@ public class SemanticHighlightReconcilerStrategy
 	@Override
 	public void setDocument(final IDocument document) {
 		this.document = document;
-		initSemanticTokensLegendMap();
-	}
-
-	private SemanticTokensLegend getSemanticTokensLegend(final LanguageServer languageSever) {
-		Optional<LanguageServerDefinition> serverDefinition = LanguageServiceAccessor
-				.resolveServerDefinition(languageSever);
-		if (serverDefinition.isPresent()) {
-			return semanticTokensLegendMap.get(serverDefinition.get().id);
-		}
-		return null;
+		semanticTokensLegendProvider.setDocument(document);
 	}
 
 	private boolean hasSemanticTokensFull(final ServerCapabilities serverCapabilities) {
@@ -318,26 +181,66 @@ public class SemanticHighlightReconcilerStrategy
 				&& serverCapabilities.getSemanticTokensProvider().getFull().getLeft();
 	}
 
-	private CompletableFuture<Void> semanticTokensFull(final List<LanguageServer> languageServers) {
-		return CompletableFuture
-				.allOf(languageServers.stream().map(this::semanticTokensFull).toArray(CompletableFuture[]::new));
+	private CompletableFuture<Void> semanticTokensFull(final List<LanguageServer> languageServers, final int version) {
+		return CompletableFuture.allOf(
+				languageServers.stream().map(ls -> semanticTokensFull(ls, version)).toArray(CompletableFuture[]::new));
 	}
 
-	private CompletableFuture<Void> semanticTokensFull(final LanguageServer languageServer) {
+	private boolean isRequestCancelledException(final Throwable throwable) {
+		if (throwable instanceof CompletionException) {
+			Throwable cause = ((CompletionException) throwable).getCause();
+			if (cause instanceof ResponseErrorException) {
+				ResponseError responseError = ((ResponseErrorException) cause).getResponseError();
+				return responseError != null
+						&& responseError.getCode() == ResponseErrorCode.RequestCancelled.getValue();
+			}
+		}
+		return false;
+	}
+
+	private CompletableFuture<Void> semanticTokensFull(final LanguageServer languageServer, final int version) {
 		SemanticTokensParams semanticTokensParams = getSemanticTokensParams();
 		return languageServer.getTextDocumentService().semanticTokensFull(semanticTokensParams)
 				.thenAccept(semanticTokens -> {
-					saveStyle(semanticTokens, getSemanticTokensLegend(languageServer));
+					if (getDocumentVersion() == version) {
+						saveStyle(semanticTokens, semanticTokensLegendProvider.getSemanticTokensLegend(languageServer));
+						StyledText textWidget = viewer.getTextWidget();
+						textWidget.getDisplay().asyncExec(() -> {
+							if (!textWidget.isDisposed() && documentVersionAtLastAppliedTextPresentation == version) {
+								viewer.invalidateTextPresentation();
+							}
+						});
+					}
 				}).exceptionally(e -> {
-					LanguageServerPlugin.logError(e);
+					if (!isRequestCancelledException(e)) {
+						LanguageServerPlugin.logError(e);
+					}
 					return null;
 				});
 	}
 
+	private int getDocumentVersion() {
+		Iterator<@NonNull LSPDocumentInfo> iterator = LanguageServiceAccessor
+				.getLSPDocumentInfosFor(document, this::hasSemanticTokensFull).iterator();
+		if (iterator.hasNext()) {
+			return iterator.next().getVersion();
+		}
+		return -1;
+	}
+
+	private void cancelSemanticTokensFull() {
+		if (semanticTokensFullFuture != null) {
+			semanticTokensFullFuture.cancel(true);
+		}
+	}
+
 	private void fullReconcile() {
+		cancelSemanticTokensFull();
 		try {
-			LanguageServiceAccessor.getLanguageServers(document, this::hasSemanticTokensFull)//
-					.thenAccept(this::semanticTokensFull).get();
+			int version = getDocumentVersion();
+			semanticTokensFullFuture = LanguageServiceAccessor.getLanguageServers(document, this::hasSemanticTokensFull)//
+					.thenAccept(ls -> semanticTokensFull(ls, version));
+			semanticTokensFullFuture.get();
 		} catch (InterruptedException | ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		}
@@ -358,19 +261,9 @@ public class SemanticHighlightReconcilerStrategy
 		fullReconcile();
 	}
 
-	private List<StyleRange> appliedRanges(final TextPresentation textPresentation) {
-		synchronized (previousRanges) {
-			// we need to create new styles because the text presentation might change a
-			// style when applied to the presentation
-			// and we want the ones saved from the reconciling as immutable
-			return previousRanges.stream()//
-					.filter(r -> overlaps(r, textPresentation.getExtent()))//
-					.map(this::clone).collect(Collectors.toList());
-		}
-	}
-
 	@Override
 	public void applyTextPresentation(final TextPresentation textPresentation) {
-		mergeStyles(textPresentation, appliedRanges(textPresentation));
+		documentVersionAtLastAppliedTextPresentation = getDocumentVersion();
+		textPresentation.replaceStyleRanges(styleRangeHolder.overlappingRanges(textPresentation.getExtent()));
 	}
 }
