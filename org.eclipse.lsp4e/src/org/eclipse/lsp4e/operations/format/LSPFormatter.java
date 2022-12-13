@@ -16,6 +16,7 @@ package org.eclipse.lsp4e.operations.format;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -24,6 +25,7 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LSPExecutor.LSPDocumentExecutor;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
@@ -50,6 +52,7 @@ public class LSPFormatter {
 
 	public CompletableFuture<List<? extends TextEdit>> requestFormatting(@NonNull IDocument document,
 			@NonNull ITextSelection textSelection) {
+
 		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
 				LSPFormatter::supportFormatting);
 		if (infos.isEmpty()) {
@@ -93,6 +96,48 @@ public class LSPFormatter {
 		params.setTextDocument(docId);
 		params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
 		return info.computeOnLatestVersion(server -> server.getTextDocumentService().formatting(params));
+	}
+
+	public CompletableFuture<Optional<List<? extends TextEdit>>> requestFormatting(final LSPDocumentExecutor executor,
+			ITextSelection textSelection) throws BadLocationException {
+		final FormattingOptions formatOptions = getFormatOptions();
+
+		final IDocument document = executor.getDocument();
+		TextDocumentIdentifier docId = new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString());
+
+		DocumentRangeFormattingParams rangeParams = new DocumentRangeFormattingParams();
+		rangeParams.setTextDocument(docId);
+		rangeParams.setOptions(formatOptions);
+		boolean fullFormat = textSelection.getLength() == 0;
+		Position start = LSPEclipseUtils.toPosition(fullFormat ? 0 : textSelection.getOffset(), document);
+		Position end = LSPEclipseUtils.toPosition(
+				fullFormat ? document.getLength() : textSelection.getOffset() + textSelection.getLength(),
+				document);
+		rangeParams.setRange(new Range(start, end));
+
+		DocumentFormattingParams params = new DocumentFormattingParams();
+		params.setTextDocument(docId);
+		params.setOptions(formatOptions);
+
+		// TODO: Could refine this algorithm: at present this grabs the first non-null response but the most functional
+		// implementation (if a text selection is present) would try all the servers in turn to see if they
+		return executor.computeFirst((w, ls) -> {
+			final ServerCapabilities capabilities = w.getServerCapabilities();
+			if (isDocumentRangeFormattingSupported(capabilities)
+					&& (!isDocumentFormattingSupported(capabilities)
+							|| textSelection.getLength() != 0)) {
+				return ls.getTextDocumentService().rangeFormatting(rangeParams);
+			}
+
+			return ls.getTextDocumentService().formatting(params);
+		});
+	}
+
+	private FormattingOptions getFormatOptions() {
+		IPreferenceStore store = EditorsUI.getPreferenceStore();
+		int tabWidth = store.getInt(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);
+		boolean insertSpaces = store.getBoolean(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SPACES_FOR_TABS);
+		return new FormattingOptions(tabWidth, insertSpaces);
 	}
 
 	private static boolean isDocumentRangeFormattingSupported(ServerCapabilities capabilities) {

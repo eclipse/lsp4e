@@ -12,19 +12,19 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.format;
 
-import java.util.Collection;
 import java.util.ConcurrentModificationException;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LSPExecutor;
+import org.eclipse.lsp4e.LSPExecutor.LSPDocumentExecutor;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
@@ -53,14 +53,20 @@ public class LSPFormatHandler extends AbstractHandler {
 			ISelection selection = HandlerUtil.getCurrentSelection(event);
 			if (document != null && selection instanceof ITextSelection textSelection) {
 				final long originalStamp = LSPEclipseUtils.getDocumentModificationStamp(document);
-				formatter.requestFormatting(document, textSelection).thenAcceptAsync(
-						edits -> shell.getDisplay().asyncExec(() -> {
-							try {
-								formatter.applyEdits(document, originalStamp, edits);
-							} catch (ConcurrentModificationException e) {
-								LanguageServerPlugin.logInfo("Document changed subsequent to format request"); //$NON-NLS-1$
-							}
-						}));
+				final LSPDocumentExecutor executor = LSPExecutor.forDocument(document);
+				executor.withFilter(LSPFormatter::supportFormatting);
+				try {
+					formatter.requestFormatting(executor, textSelection).thenAccept(res -> res.ifPresent(edits -> shell.getDisplay().asyncExec(() -> {
+						try {
+							formatter.applyEdits(document, originalStamp, edits);
+						} catch (ConcurrentModificationException e) {
+							LanguageServerPlugin.logInfo("Document changed subsequent to format request"); //$NON-NLS-1$
+						}
+					})));
+				} catch (BadLocationException e) {
+					LanguageServerPlugin.logError(e);
+				}
+
 			}
 		}
 		return null;
@@ -77,11 +83,13 @@ public class LSPFormatHandler extends AbstractHandler {
 		}
 
 		if (part instanceof ITextEditor textEditor) {
-			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-					LSPEclipseUtils.getDocument(textEditor),
-					LSPFormatter::supportFormatting);
+			final boolean canFormat = LSPDocumentExecutor
+					.forDocument(LSPEclipseUtils.getDocument(textEditor))
+					.withFilter(LSPFormatter::supportFormatting)
+					.anyMatching();
+
 			ISelection selection = textEditor.getSelectionProvider().getSelection();
-			return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
+			return canFormat && !selection.isEmpty() && selection instanceof ITextSelection;
 		}
 		return false;
 	}
