@@ -32,12 +32,14 @@ import org.eclipse.jface.text.reconciler.IReconcilingStrategy;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategyExtension;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.SemanticTokens;
 import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.lsp4j.SemanticTokensParams;
+import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
@@ -84,8 +86,6 @@ public class SemanticHighlightReconcilerStrategy
 
 	private SemanticTokensDataStreamProcessor semanticTokensDataStreamProcessor;
 
-	private SemanticTokensLegendProvider semanticTokensLegendProvider;
-
 	/**
 	 * Written in {@link this.class#applyTextPresentation(TextPresentation)}
 	 * applyTextPresentation and read in the lambda in
@@ -112,7 +112,6 @@ public class SemanticHighlightReconcilerStrategy
 		styleRangeHolder = new StyleRangeHolder();
 		semanticTokensDataStreamProcessor = new SemanticTokensDataStreamProcessor(new TokenTypeMapper(textViewer),
 				offsetMapper());
-		semanticTokensLegendProvider = new SemanticTokensLegendProvider();
 
 		if (viewer instanceof TextViewer) {
 			((TextViewer) viewer).addTextPresentationListener(this);
@@ -132,7 +131,6 @@ public class SemanticHighlightReconcilerStrategy
 		viewer.removeTextListener(styleRangeHolder);
 		viewer = null;
 		styleRangeHolder = null;
-		semanticTokensLegendProvider = null;
 	}
 
 	private @NonNull Function<Position, Integer> offsetMapper() {
@@ -174,7 +172,6 @@ public class SemanticHighlightReconcilerStrategy
 	@Override
 	public void setDocument(final IDocument document) {
 		this.document = document;
-		semanticTokensLegendProvider.setDocument(document);
 	}
 
 	private boolean hasSemanticTokensFull(final ServerCapabilities serverCapabilities) {
@@ -199,15 +196,33 @@ public class SemanticHighlightReconcilerStrategy
 		return false;
 	}
 
+	private @Nullable SemanticTokensLegend getSemanticTokensLegend(final LanguageServerWrapper wrapper) {
+		ServerCapabilities serverCapabilities = wrapper.getServerCapabilities();
+		if (serverCapabilities != null) {
+			SemanticTokensWithRegistrationOptions semanticTokensProvider = serverCapabilities
+					.getSemanticTokensProvider();
+			if (semanticTokensProvider != null) {
+				return semanticTokensProvider.getLegend();
+			}
+		}
+		return null;
+	}
+
+	// public for testing
+	public @Nullable SemanticTokensLegend getSemanticTokensLegend(@NonNull final LanguageServer languageSever) {
+		return LanguageServiceAccessor.resolveLanguageServerWrapper(languageSever)
+				.map(this::getSemanticTokensLegend).orElse(null);
+	}
+
 	private CompletableFuture<Void> semanticTokensFull(final LanguageServer languageServer, final int version) {
 		SemanticTokensParams semanticTokensParams = getSemanticTokensParams();
 		return languageServer.getTextDocumentService().semanticTokensFull(semanticTokensParams)
 				.thenAccept(semanticTokens -> {
 					if (getDocumentVersion() == version) {
-						saveStyle(semanticTokens, semanticTokensLegendProvider.getSemanticTokensLegend(languageServer));
+						saveStyle(semanticTokens, getSemanticTokensLegend(languageServer));
 						StyledText textWidget = viewer.getTextWidget();
 						textWidget.getDisplay().asyncExec(() -> {
-							if (!textWidget.isDisposed() && documentVersionAtLastAppliedTextPresentation == version) {
+							if (!textWidget.isDisposed() && (documentVersionAtLastAppliedTextPresentation == 0 || documentVersionAtLastAppliedTextPresentation == version )) {
 								viewer.invalidateTextPresentation();
 							}
 						});
