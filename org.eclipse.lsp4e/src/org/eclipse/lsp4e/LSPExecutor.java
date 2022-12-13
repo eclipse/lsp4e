@@ -19,7 +19,7 @@ import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.services.LanguageServer;
 
-public abstract class LSPExecutor {
+public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 
 
 	// Pluggable strategy for getting the set of LSWrappers to dispatch operations on
@@ -135,9 +135,9 @@ public abstract class LSPExecutor {
 	}
 
 
-	public LSPExecutor withFilter(final @NonNull Predicate<ServerCapabilities> filter) {
+	public E withFilter(final @NonNull Predicate<ServerCapabilities> filter) {
 		this.filter = filter;
-		return this;
+		return (E)this;
 	}
 
 	/**
@@ -153,7 +153,7 @@ public abstract class LSPExecutor {
 	 * Executor that will run requests on the set of language servers appropriate for the supplied document
 	 *
 	 */
-	public static class LSPDocumentExecutor extends LSPExecutor {
+	public static class LSPDocumentExecutor extends LSPExecutor<LSPDocumentExecutor> {
 
 		private long startVersion;
 
@@ -190,7 +190,7 @@ public abstract class LSPExecutor {
 	 * Executor that will run requests on the set of language servers appropriate for the supplied project
 	 *
 	 */
-	public static class LSPProjectExecutor extends LSPExecutor {
+	public static class LSPProjectExecutor extends LSPExecutor<LSPProjectExecutor> {
 
 		private final IProject project;
 

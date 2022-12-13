@@ -71,8 +71,8 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 				return;
 			}
 
-			executor = LSPExecutor.forDocument(document);
-			executor.withFilter(LSPCodeActionMarkerResolution::providesCodeActions);
+			executor = LSPExecutor.forDocument(document)
+				.withFilter(LSPCodeActionMarkerResolution::providesCodeActions);
 			ITextSelection selection = (ITextSelection) textEditor.getSelectionProvider().getSelection();
 			try {
 				this.range = new Range(LSPEclipseUtils.toPosition(selection.getOffset(), document),

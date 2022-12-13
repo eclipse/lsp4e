@@ -50,8 +50,8 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 		}
 
 		IProject project = resource.getProject();
-		final LSPProjectExecutor executor = LSPExecutor.forProject(project);
-		executor.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()));
+		final LSPProjectExecutor executor = LSPExecutor.forProject(project)
+				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()));
 
 		if (!executor.anyMatching()) {
 			return null;
