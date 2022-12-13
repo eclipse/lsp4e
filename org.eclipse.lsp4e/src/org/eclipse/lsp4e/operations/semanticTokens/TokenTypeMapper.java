@@ -24,12 +24,15 @@ import org.eclipse.tm4e.ui.themes.ITokenProvider;
 public class TokenTypeMapper implements Function<String, IToken> {
 	private @NonNull final ITextViewer viewer;
 
-	public TokenTypeMapper(final ITextViewer viewer) {
+	public TokenTypeMapper(@NonNull final ITextViewer viewer) {
 		this.viewer = viewer;
 	}
 
 	@Override
 	public IToken apply(final String tokenType) {
+		if (tokenType == null) {
+			return null;
+		}
 		TMPresentationReconciler tmPresentationReconciler = TMPresentationReconciler
 				.getTMPresentationReconciler(viewer);
 

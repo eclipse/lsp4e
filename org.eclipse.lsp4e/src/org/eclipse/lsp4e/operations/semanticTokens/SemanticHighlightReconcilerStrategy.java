@@ -18,6 +18,7 @@ import java.util.function.Function;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -106,10 +107,10 @@ public class SemanticHighlightReconcilerStrategy
 	 * @param textViewer
 	 *            the viewer on which the reconciler is installed
 	 */
-	public void install(final ITextViewer textViewer) {
+	public void install(@NonNull final ITextViewer textViewer) {
 		viewer = textViewer;
 		styleRangeHolder = new StyleRangeHolder();
-		semanticTokensDataStreamProcessor = new SemanticTokensDataStreamProcessor(new TokenTypeMapper(viewer),
+		semanticTokensDataStreamProcessor = new SemanticTokensDataStreamProcessor(new TokenTypeMapper(textViewer),
 				offsetMapper());
 		semanticTokensLegendProvider = new SemanticTokensLegendProvider();
 
@@ -134,7 +135,7 @@ public class SemanticHighlightReconcilerStrategy
 		semanticTokensLegendProvider = null;
 	}
 
-	private Function<Position, Integer> offsetMapper() {
+	private @NonNull Function<Position, Integer> offsetMapper() {
 		return (p) -> {
 			try {
 				return LSPEclipseUtils.toOffset(p, document);
@@ -220,10 +221,16 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private int getDocumentVersion() {
-		Iterator<@NonNull LSPDocumentInfo> iterator = LanguageServiceAccessor
-				.getLSPDocumentInfosFor(document, this::hasSemanticTokensFull).iterator();
-		if (iterator.hasNext()) {
-			return iterator.next().getVersion();
+		IDocument theDocument = document;
+		if (theDocument != null) {
+			Iterator<@NonNull LSPDocumentInfo> iterator = LanguageServiceAccessor
+					.getLSPDocumentInfosFor(theDocument, this::hasSemanticTokensFull).iterator();
+			if (iterator.hasNext()) {
+				@Nullable LSPDocumentInfo documentInfo = iterator.next();
+				if (documentInfo != null) {
+					return documentInfo.getVersion();
+				}
+			}
 		}
 		return -1;
 	}
@@ -235,14 +242,17 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void fullReconcile() {
+		IDocument theDocument = document;
 		cancelSemanticTokensFull();
-		try {
-			int version = getDocumentVersion();
-			semanticTokensFullFuture = LanguageServiceAccessor.getLanguageServers(document, this::hasSemanticTokensFull)//
-					.thenAccept(ls -> semanticTokensFull(ls, version));
-			semanticTokensFullFuture.get();
-		} catch (InterruptedException | ExecutionException e) {
-			LanguageServerPlugin.logError(e);
+		if (theDocument != null) {
+			try {
+				int version = getDocumentVersion();
+				semanticTokensFullFuture = LanguageServiceAccessor.getLanguageServers(theDocument, this::hasSemanticTokensFull)//
+						.thenAccept(ls -> semanticTokensFull(ls, version));
+				semanticTokensFullFuture.get();
+			} catch (InterruptedException | ExecutionException e) {
+				LanguageServerPlugin.logError(e);
+			}
 		}
 	}
 
@@ -264,6 +274,9 @@ public class SemanticHighlightReconcilerStrategy
 	@Override
 	public void applyTextPresentation(final TextPresentation textPresentation) {
 		documentVersionAtLastAppliedTextPresentation = getDocumentVersion();
-		textPresentation.replaceStyleRanges(styleRangeHolder.overlappingRanges(textPresentation.getExtent()));
+		IRegion extent = textPresentation.getExtent();
+		if (extent != null) {
+			textPresentation.replaceStyleRanges(styleRangeHolder.overlappingRanges(extent));
+		}
 	}
 }

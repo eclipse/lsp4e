@@ -8,6 +8,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.semanticTokens;
 
+import java.util.Objects;
+
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.reconciler.MonoReconciler;
@@ -23,6 +25,7 @@ public class SemanticHighlightReconciler extends MonoReconciler {
 		super.install(textViewer);
 		// no need to do that if https://bugs.eclipse.org/bugs/show_bug.cgi?id=521326 is
 		// accepted
+		Objects.requireNonNull(textViewer);
 		((SemanticHighlightReconcilerStrategy) getReconcilingStrategy(IDocument.DEFAULT_CONTENT_TYPE))
 				.install(textViewer);
 	}
