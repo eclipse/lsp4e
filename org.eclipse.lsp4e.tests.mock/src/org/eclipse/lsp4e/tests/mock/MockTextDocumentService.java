@@ -282,6 +282,11 @@ public class MockTextDocumentService implements TextDocumentService {
 		return CompletableFuture.completedFuture(Either.forRight(this.mockTypeDefinitions));
 	}
 
+	@Override
+	public CompletableFuture<CodeAction> resolveCodeAction(CodeAction unresolved) {
+		return CompletableFuture.completedFuture(unresolved);
+	}
+
 	public void setMockCompletionList(CompletionList completionList) {
 		this.mockCompletionList = completionList;
 	}

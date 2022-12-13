@@ -45,8 +45,7 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 		}
 	}
 
-	private boolean isCodeActionResolveSupported() {
-		ServerCapabilities capabilities = this.finfo.getCapabilites();
+	static boolean isCodeActionResolveSupported(ServerCapabilities capabilities) {
 		if (capabilities != null) {
 			Either<Boolean, CodeActionOptions> caProvider = capabilities.getCodeActionProvider();
 			if (caProvider.isRight()) {
@@ -60,7 +59,7 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 	@Override
 	public void apply(IDocument document) {
 		if (fcodeAction != null) {
-			if (isCodeActionResolveSupported() && fcodeAction.getEdit() == null) {
+			if (isCodeActionResolveSupported(finfo.getCapabilites()) && fcodeAction.getEdit() == null) {
 				// Unresolved code action "edit" property. Resolve it.
 				finfo.getInitializedLanguageClient().thenComposeAsync(ls -> ls.getTextDocumentService().resolveCodeAction(fcodeAction)).thenAccept(this::apply);
 			} else {
