@@ -16,6 +16,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 public abstract class LSPExecutor {
@@ -23,6 +24,8 @@ public abstract class LSPExecutor {
 
 	// Pluggable strategy for getting the set of LSWrappers to dispatch operations on
 	protected abstract List<CompletableFuture<LanguageServerWrapper>> getServers();
+
+	protected void computeVersion() {}
 
 	private @NonNull Predicate<ServerCapabilities> filter = s -> true;
 
@@ -39,6 +42,7 @@ public abstract class LSPExecutor {
 	 */
 	@NonNull
 	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		computeVersion();
 		final CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 		return getServers().stream()
 			.map(wrapperFuture -> wrapperFuture
@@ -62,6 +66,7 @@ public abstract class LSPExecutor {
 	 */
 	@NonNull
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		computeVersion();
 		return getServers().stream()
 				.map(wrapperFuture -> wrapperFuture
 						.thenCompose(w -> w == null ? null : w.execute(fn).thenApplyAsync(Function.identity())))
@@ -81,6 +86,7 @@ public abstract class LSPExecutor {
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
 	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		computeVersion();
 		final List<CompletableFuture<LanguageServerWrapper>> servers = getServers();
 		if (servers.isEmpty()) {
 			return CompletableFuture.completedFuture(Optional.empty());
@@ -149,6 +155,8 @@ public abstract class LSPExecutor {
 	 */
 	public static class LSPDocumentExecutor extends LSPExecutor {
 
+		private long startVersion;
+
 		private final @NonNull IDocument document;
 
 		private LSPDocumentExecutor(final @NonNull IDocument document) {
@@ -165,6 +173,15 @@ public abstract class LSPExecutor {
 			return LanguageServiceAccessor.getLSWrappers(this.document).stream()
 				.map(wrapper -> wrapper.connectIf(this.document, getFilter()))
 				.collect(Collectors.toList());
+		}
+
+		@Override
+		protected void computeVersion() {
+			this.startVersion = LSPEclipseUtils.getDocumentModificationStamp(this.document);
+		}
+
+		public VersionedEdits wrap(List<? extends TextEdit> rawResult) {
+			return new VersionedEdits(this.startVersion, rawResult);
 		}
 
 	}
@@ -209,6 +226,23 @@ public abstract class LSPExecutor {
 
 	private static <T> boolean isEmpty(final T t) {
 		return t == null || ((t instanceof List) && ((List<?>)t).isEmpty());
+	}
+
+	public static class VersionedEdits {
+		private final long version;
+		private final List<? extends TextEdit> edits;
+		public VersionedEdits(final long version, final List<? extends TextEdit> edits) {
+			this.version = version;
+			this.edits = edits;
+		}
+
+		public long getVersion() {
+			return this.version;
+		}
+
+		public List<? extends TextEdit> getEdits() {
+			return this.edits;
+		}
 	}
 
 }

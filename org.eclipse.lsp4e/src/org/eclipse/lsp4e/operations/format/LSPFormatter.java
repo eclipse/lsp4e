@@ -26,6 +26,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LSPExecutor.LSPDocumentExecutor;
+import org.eclipse.lsp4e.LSPExecutor.VersionedEdits;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
@@ -42,7 +43,15 @@ import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 public class LSPFormatter {
 
-	public void applyEdits(IDocument document, final long expectedModificationStamp, List<? extends TextEdit> edits) {
+	public void applyEdits(IDocument document, VersionedEdits edits) {
+		try {
+			LSPEclipseUtils.applyEditsWithVersionCheck(document, edits.getVersion(), edits.getEdits());
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+		}
+	}
+
+	public void applyEdits(IDocument document, long expectedModificationStamp, List<? extends TextEdit> edits) {
 		try {
 			LSPEclipseUtils.applyEditsWithVersionCheck(document, expectedModificationStamp, edits);
 		} catch (BadLocationException e) {
@@ -98,7 +107,7 @@ public class LSPFormatter {
 		return info.computeOnLatestVersion(server -> server.getTextDocumentService().formatting(params));
 	}
 
-	public CompletableFuture<Optional<List<? extends TextEdit>>> requestFormatting(final LSPDocumentExecutor executor,
+	public CompletableFuture<Optional<VersionedEdits>> requestFormatting(final LSPDocumentExecutor executor,
 			ITextSelection textSelection) throws BadLocationException {
 		final FormattingOptions formatOptions = getFormatOptions();
 
@@ -126,10 +135,10 @@ public class LSPFormatter {
 			if (isDocumentRangeFormattingSupported(capabilities)
 					&& (!isDocumentFormattingSupported(capabilities)
 							|| textSelection.getLength() != 0)) {
-				return ls.getTextDocumentService().rangeFormatting(rangeParams);
+				return ls.getTextDocumentService().rangeFormatting(rangeParams).thenApply(executor::wrap);
 			}
 
-			return ls.getTextDocumentService().formatting(params);
+			return ls.getTextDocumentService().formatting(params).thenApply(executor::wrap);
 		});
 	}
 

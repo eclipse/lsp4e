@@ -52,13 +52,12 @@ public class LSPFormatHandler extends AbstractHandler {
 			final Shell shell = textEditor.getSite().getShell();
 			ISelection selection = HandlerUtil.getCurrentSelection(event);
 			if (document != null && selection instanceof ITextSelection textSelection) {
-				final long originalStamp = LSPEclipseUtils.getDocumentModificationStamp(document);
 				final LSPDocumentExecutor executor = LSPExecutor.forDocument(document);
 				executor.withFilter(LSPFormatter::supportFormatting);
 				try {
 					formatter.requestFormatting(executor, textSelection).thenAccept(res -> res.ifPresent(edits -> shell.getDisplay().asyncExec(() -> {
 						try {
-							formatter.applyEdits(document, originalStamp, edits);
+							formatter.applyEdits(document,edits);
 						} catch (ConcurrentModificationException e) {
 							LanguageServerPlugin.logInfo("Document changed subsequent to format request"); //$NON-NLS-1$
 						}
