@@ -113,31 +113,15 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 						} else if (t != null) {
 							for (Either<Command, CodeAction> command : t) {
 								if (command != null) {
-									if (command.isLeft()) {
-										final MenuItem item = new MenuItem(menu, SWT.NONE, index);
-										item.setText(command.getLeft().getTitle());
-										item.addSelectionListener(new SelectionAdapter() {
-											@Override
-											public void widgetSelected(SelectionEvent e) {
-												executeCommand(info, command.getLeft());
-											}
-										});
-									} else if (command.isRight()) {
-										CodeAction codeAction = command.getRight();
-										final MenuItem item = new MenuItem(menu, SWT.NONE, index);
-										item.setText(codeAction.getTitle());
-										item.addSelectionListener(new SelectionAdapter() {
-											@Override
-											public void widgetSelected(SelectionEvent e) {
-												if (codeAction.getEdit() != null) {
-													LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
-												}
-												if (codeAction.getCommand() != null) {
-													executeCommand(info, codeAction.getCommand());
-												}
-											}
-										});
-									}
+									final MenuItem item = new MenuItem(menu, SWT.NONE, index);
+									CodeActionCompletionProposal proposal = new CodeActionCompletionProposal(command, info);
+									item.setText(proposal.getDisplayString());
+									item.addSelectionListener(new SelectionAdapter() {
+										@Override
+										public void widgetSelected(SelectionEvent e) {
+											proposal.apply(info.getDocument());
+										}
+									});
 								}
 							}
 						}

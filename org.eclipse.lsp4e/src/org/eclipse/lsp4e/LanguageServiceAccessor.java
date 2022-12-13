@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.content.IContentDescription;
@@ -217,10 +218,10 @@ public class LanguageServiceAccessor {
 	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request.
 	 *  If {@code capabilitesPredicate} does not test positive for the server's capabilities, {@code null} is returned.
 	 */
-	public static CompletableFuture<LanguageServer> getInitializedLanguageServer(@NonNull IFile file,
+	public static CompletableFuture<LanguageServer> getInitializedLanguageServer(@NonNull IResource resource,
 			@NonNull LanguageServerDefinition lsDefinition, Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
-		LanguageServerWrapper wrapper = getLSWrapper(file.getProject(), lsDefinition, file.getFullPath());
+		LanguageServerWrapper wrapper = getLSWrapper(resource.getProject(), lsDefinition, resource.getFullPath());
 		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
 			return wrapper.getInitializedServer();
 		}

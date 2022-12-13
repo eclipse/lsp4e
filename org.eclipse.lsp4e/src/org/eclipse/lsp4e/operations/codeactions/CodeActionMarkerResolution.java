@@ -12,7 +12,11 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
+import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.LocationKind;
@@ -23,6 +27,10 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4j.CodeAction;
@@ -32,7 +40,7 @@ import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
 
 public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implements IMarkerResolution {
 
-	private final CodeAction codeAction;
+	private CodeAction codeAction;
 
 	public CodeActionMarkerResolution(CodeAction codeAction) {
 		this.codeAction = codeAction;
@@ -55,6 +63,18 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 
 	@Override
 	public void run(IMarker marker) {
+		String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
+		if (codeAction.getEdit() == null) {
+			LanguageServerDefinition definition = languageServerId != null ? LanguageServersRegistry.getInstance().getDefinition(languageServerId) : null;
+			try {
+				LanguageServerWrapper wrapper = definition != null ? LanguageServiceAccessor.getLSWrapper(marker.getResource().getProject(), definition) : null;
+				if (wrapper != null && CodeActionCompletionProposal.isCodeActionResolveSupported(wrapper.getServerCapabilities())) {
+					this.codeAction = wrapper.getInitializedServer().thenComposeAsync(theLs -> theLs.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
+				}
+			} catch (IOException | TimeoutException | ExecutionException | InterruptedException ex) {
+				LanguageServerPlugin.logError(ex);
+			}
+		}
 		if (codeAction.getEdit() != null) {
 			LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
 		}
@@ -66,7 +86,6 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 				document = LSPEclipseUtils.getDocument(resource);
 			}
 			if (document != null) {
-				String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
 				CommandExecutor.executeCommand(codeAction.getCommand(), document, languageServerId);
 				if (temporaryLoadDocument) {
 					try {
