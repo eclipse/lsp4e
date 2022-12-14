@@ -28,13 +28,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -270,7 +267,7 @@ public class LanguageServiceAccessor {
 	 *         {@code capabilitiesPredicate == null} or
 	 *         {@code wrapper.getServerCapabilities() == null}
 	 */
-	private static boolean capabilitiesComply(LanguageServerWrapper wrapper,
+	private static boolean capabilitiesComply(ILSWrapper wrapper,
 			Predicate<ServerCapabilities> capabilitiesPredicate) {
 		return capabilitiesPredicate == null
 				/* next null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
@@ -441,7 +438,7 @@ public class LanguageServiceAccessor {
 	 * @deprecated
 	 */
 	@Deprecated
-	public static LanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project,
+	public static ILSWrapper getLSWrapperForConnection(@NonNull IProject project,
 			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
 		return getLSWrapper(project, serverDefinition);
 	}
@@ -475,7 +472,7 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-	public static @NonNull LanguageServerWrapper startLanguageServer(@NonNull LanguageServerDefinition serverDefinition) throws IOException {
+	public static @NonNull ILSWrapper startLanguageServer(@NonNull LanguageServerDefinition serverDefinition) throws IOException {
 		synchronized (startedServers) {
 			LanguageServerWrapper wrapper = startedServers.stream().filter(w -> w.serverDefinition == serverDefinition).findFirst().orElseGet(() -> {
 				LanguageServerWrapper w = new LanguageServerWrapper(serverDefinition, null);
@@ -520,7 +517,7 @@ public class LanguageServiceAccessor {
 	 */
 	@FunctionalInterface
 	private static interface ServerSupplier {
-		LanguageServerWrapper get() throws IOException;
+		ILSWrapper get() throws IOException;
 	}
 
 	@NonNull
@@ -673,96 +670,6 @@ public class LanguageServiceAccessor {
 
 	static void shutdownAllDispatchers() {
 		startedServers.forEach(LanguageServerWrapper::stopDispatcher);
-	}
-
-	/**
-	 * TODO: Remove - becomes part of new API
-	 *
-	 * Make a call to the language server(s), aggregating the responses into a single CompletableFuture if
-	 * more than one language server is applicable. The call will be enqueued such that it will be sent to the
-	 * language servers after any previous calls using this framework and before any subsequent calls. More
-	 * specifically, if called from the UI thread then all document updates to date are guaranteed to have
-	 * been seen by any server before it sees this request, and before it sees any further
-	 * document updates.
-	 *
-	 * <p/>The returned result will complete when all language servers have responded,
-	 * and will return its result in a pool thread to avoid blocking the inbound message readers.
-	 *
-	 * @param <T> Return type of method being called on lang server
-	 * @param document Document on which the request is being made
-	 * @param filter Restriction on capabilities of the language servers we're interested in
-	 * @param fn A single method invocation on <code>LanguageServer</code>
-	 * @return Async result aggregated over all applicable lang servers, filtering out nulls.
-	 */
-	@NonNull
-	public static <T> CompletableFuture<@NonNull List<@NonNull T>> computeOnServers(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> filter,
-			Function<LanguageServer, ? extends CompletionStage<T>> fn) {
-
-		// Out-of-line so we can declare it as List rather than ArrayList to avoid type errors below
-		final CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
-
-		return getLSWrappers(document).stream()
-			// Ensure wrappers are started, connected to the document, and filter for capabilities
-			.map(wrapper -> wrapper.connectIf(document, filter)
-				// Call fn on lang servers, excluding null servers (that failed to start/connect or do not have the required capability)
-				.thenCompose(w -> w == null ? CompletableFuture.completedFuture((T)null) : w.executeOnLatestVersion(fn)))
-
-			// Transform individual async results into a single async with the aggregate result
-			.reduce(init, LanguageServiceAccessor::combine, LanguageServiceAccessor::concatResults)
-
-			// Ensure any subsequent computation added by caller does not block further incoming messages from language servers
-			.thenApplyAsync(t -> t);
-	}
-
-	/**
-	 *
-	 * TODO: Move to new API
-	 *
-	 * Accumulator that appends the result of an async computation onto an async aggregate result. Nulls will be excluded.
-	 * @param <T> Result type
-	 * @param result Async aggregate result
-	 * @param next Pending result to include
-	 * @return
-	 */
-	@NonNull
-	static <T> CompletableFuture<@NonNull List<@NonNull T>> combine(@NonNull CompletableFuture<? extends List<@NonNull T>> result, @NonNull CompletableFuture<@Nullable T> next) {
-		return result.thenCombine(next, (List<T> a, T b) -> {
-			if (b != null) {
-				a.add(b);
-			}
-			return a;
-		});
-	}
-
-	/**
-	 * TODO: Move to new API
-	 *
-	 * Merges two async sets of results into a single async result
-	 * @param <T> Result type
-	 * @param first First async result
-	 * @param second Second async result
-	 * @return Async combined result
-	 */
-	@NonNull
-	public static <T> CompletableFuture<@NonNull List<T>> concatResults(@NonNull CompletableFuture<@NonNull List<T>> first, @NonNull CompletableFuture<@NonNull List<T>> second) {
-		return first.thenCombine(second, (c, d) -> {
-			c.addAll(d);
-			return c;
-		});
-	}
-
-	/**
-	 * TODO: Move to new API
-	 *
-	 * Safely generate a stream that can be e.g. used with flatMap: caters for null (rather than empty)
-	 * results from language servers that failed to start or were filtered out when invoked from <code>computeOnServers()</code>
-	 * @param <T> Result type
-	 * @param col
-	 * @return A stream (empty if col is null)
-	 */
-	@NonNull
-	public static <T> Stream<T> streamSafely(@Nullable Collection<T> col) {
-		return col == null ? Stream.<T>of() : col.stream();
 	}
 
 	public static boolean checkCapability(LanguageServer languageServer, Predicate<ServerCapabilities> condition) {

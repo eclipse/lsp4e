@@ -18,13 +18,10 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.services.LanguageServer;
 
+/**
+ *
+ */
 public abstract class LSPExecutor<E extends LSPExecutor<E>> {
-
-
-	// Pluggable strategy for getting the set of LSWrappers to dispatch operations on
-	protected abstract List<CompletableFuture<LanguageServerWrapper>> getServers();
-
-	private @NonNull Predicate<ServerCapabilities> filter = s -> true;
 
 	/**
 	 * Runs an operation on all applicable language servers, returning an async result that will consist
@@ -32,22 +29,38 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 	 *
 	 * @param <T> Type of result being computed on the language server(s)
 	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
-	 * will return a <code>CompletableFuture&lt;T&gt;</code>. Note that the supplied fn will receive two arguments, the wrapper for the language server,
-	 * as well as the language server itself.
+	 * will return a <code>CompletableFuture&lt;T&gt;</code>
+	 *
+	 * @return Async result
+	 */
+	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+		return collectAll((w, ls) -> fn.apply(ls));
+	}
+
+	/**
+	 * Runs an operation on all applicable language servers, returning an async result that will consist
+	 * of all non-empty individual results
+	 *
+	 * @param <T> Type of result being computed on the language server(s)
+	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
+	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link ILSWrapper }
+	 * allowing fine-grained interrogation of server capabilities, or the construction of objects that can use this
+	 * handle to make further calls on the same server
 	 *
 	 * @return Async result
 	 */
 	@NonNull
-	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super ILSWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		final CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 		return getServers().stream()
 			.map(wrapperFuture -> wrapperFuture
-					.thenCompose(w -> w == null ? CompletableFuture.completedFuture((T) null) : w.execute(fn)))
-			.reduce(init, LanguageServiceAccessor::combine, LanguageServiceAccessor::concatResults)
+					.thenCompose(w -> w == null ? CompletableFuture.completedFuture((T) null) : w.executeImpl(ls -> fn.apply(w, ls))))
+			.reduce(init, LanguageServers::combine, LanguageServers::concatResults)
 
 			// Ensure any subsequent computation added by caller does not block further incoming messages from language servers
 			.thenApplyAsync(Function.identity());
 	}
+
 
 	/**
 	 * Runs an operation on all applicable language servers, returning a list of asynchronous responses that can
@@ -55,16 +68,33 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 	 *
 	 * @param <T> Type of result being computed on the language server(s)
 	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
-	 * will return a <code>CompletableFuture&lt;T&gt;</code>. Note that the supplied fn will receive two arguments, the wrapper for the language server,
-	 * as well as the language server itself.
+	 * will return a <code>CompletableFuture&lt;T&gt;</code>.
 	 *
-	 * @return
+	 * @return A list of pending results (note that these may be null or empty)
 	 */
 	@NonNull
-	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+		return computeAll((w, ls) -> fn.apply(ls));
+	}
+
+
+	/**
+	 * Runs an operation on all applicable language servers, returning a list of asynchronous responses that can
+	 * be used to instigate further processing as they complete individually
+	 *
+	 * @param <T> Type of result being computed on the language server(s)
+	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
+	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link ILSWrapper }
+	 * allowing fine-grained interrogation of server capabilities, or the construction of objects that can use this
+	 * handle to make further calls on the same server
+	 *
+	 * @return A list of pending results (note that these may be null or empty)
+	 */
+	@NonNull
+	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super ILSWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		return getServers().stream()
 				.map(wrapperFuture -> wrapperFuture
-						.thenCompose(w -> w == null ? null : w.execute(fn).thenApplyAsync(Function.identity())))
+						.thenCompose(w -> w == null ? null : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
 				.filter(Objects::nonNull)
 				.collect(Collectors.toList());
 	}
@@ -74,13 +104,28 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 	 * non-null response
 	 * @param <T> Type of result being computed on the language server(s)
 	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
-	 * will return a <code>CompletableFuture&lt;T&gt;</code>. Note that the supplied fn will receive two arguments, the wrapper for the language server,
-	 * as well as the language server itself.
+	 * will return a <code>CompletableFuture&lt;T&gt;</code>.
 	 *
 	 * @return An asynchronous result that will complete with a populated <code>Optional&lt;T&gt;</code> from the first
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
-	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> CompletableFuture<Optional<T>> computeFirst(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+		return computeFirst((w, ls) -> fn.apply(ls));
+	}
+
+	/**
+	 * Runs an operation on all applicable language servers, returning an async result that will receive the first
+	 * non-null response
+	 * @param <T> Type of result being computed on the language server(s)
+	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
+	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link ILSWrapper }
+	 * allowing fine-grained interrogation of server capabilities, or the construction of objects that can use this
+	 * handle to make further calls on the same server
+	 *
+	 * @return An asynchronous result that will complete with a populated <code>Optional&lt;T&gt;</code> from the first
+	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
+	 */
+	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super ILSWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		final List<CompletableFuture<LanguageServerWrapper>> servers = getServers();
 		if (servers.isEmpty()) {
 			return CompletableFuture.completedFuture(Optional.empty());
@@ -93,7 +138,7 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 		// a quickly-returned null to trump a slowly-returned result
 		final List<CompletableFuture<T>> intermediate = servers.stream()
 				.map(wrapperFuture -> wrapperFuture
-						.thenCompose(w -> w == null ? null : w.execute(fn)))
+						.thenCompose(w -> w == null ? null : w.executeImpl(ls -> fn.apply(w, ls))))
 				.filter(Objects::nonNull)
 				.map(cf -> cf.thenApply(t -> {
 					if (!isEmpty(t)) { // TODO: Does this need to be a supplied function to handle all cases?
@@ -111,27 +156,21 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 	}
 
 	/**
-	 *
-	 * @param project
-	 * @return Executor that will run requests on servers appropriate to the supplied project
+	 * Specifies the capabilities that a server must have to process this request
+	 * @param filter Server capabilities predicate
+	 * @return
 	 */
-	public static LSPProjectExecutor forProject(final IProject project) {
-		return new LSPProjectExecutor(project);
+	public E withFilter(final @NonNull Predicate<ServerCapabilities> filter) {
+		this.filter = filter;
+		return (E)this;
 	}
 
 	/**
 	 *
-	 * @param document
-	 * @return Executor that will run requests on servers appropriate to the supplied document
+	 * @return Predicate that will be used to determine which servers this executor will use
 	 */
-	public static LSPDocumentExecutor forDocument(final @NonNull IDocument document) {
-		return new LSPDocumentExecutor(document);
-	}
-
-
-	public E withFilter(final @NonNull Predicate<ServerCapabilities> filter) {
-		this.filter = filter;
-		return (E)this;
+	public @NonNull Predicate<ServerCapabilities> getFilter() {
+		return this.filter;
 	}
 
 	/**
@@ -151,7 +190,7 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 
 		private final @NonNull IDocument document;
 
-		private LSPDocumentExecutor(final @NonNull IDocument document) {
+		LSPDocumentExecutor(final @NonNull IDocument document) {
 			this.document = document;
 		}
 
@@ -196,19 +235,21 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 		@Override
 		protected List<CompletableFuture<LanguageServerWrapper>> getServers() {
 			// Compute list of servers from project & filter
-
 			return LanguageServiceAccessor.getWrappers(this.project, getFilter(), !this.restartStopped);
 		}
-
 	}
 
-
-	public Predicate<ServerCapabilities> getFilter() {
-		return this.filter;
-	}
 
 	private static <T> boolean isEmpty(final T t) {
 		return t == null || ((t instanceof List) && ((List<?>)t).isEmpty());
 	}
+
+
+
+	// Pluggable strategy for getting the set of LSWrappers to dispatch operations on
+	protected abstract List<CompletableFuture<LanguageServerWrapper>> getServers();
+
+	private @NonNull Predicate<ServerCapabilities> filter = s -> true;
+
 
 }

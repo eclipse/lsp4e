@@ -38,7 +38,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -145,7 +144,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
-public class LanguageServerWrapper {
+public class LanguageServerWrapper implements ILSWrapper {
 
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
@@ -491,6 +490,7 @@ public class LanguageServerWrapper {
 	/**
 	 * @return whether the underlying connection to language server is still active
 	 */
+	@Override
 	public boolean isActive() {
 		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
 	}
@@ -637,6 +637,7 @@ public class LanguageServerWrapper {
 	 * @return whether this language server can operate on the given project
 	 * @since 0.5
 	 */
+	@Override
 	public boolean canOperate(@NonNull IProject project) {
 		return project.equals(this.initialProject) || serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
 	}
@@ -798,34 +799,53 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Dispatches a LS request on a single executor thread tied to this server. Use of this guarantees that the server
-	 * will have seen all previous such requests (and document updates), and will not receive any further updates
-	 * prior to receiving this one.
+	 * Sends a notification to the wrapped language server
+	 *
+	 * @param fn LS notification to send
+	 */
+	@Override
+	public void sendNotification(@NonNull Consumer<LanguageServer> fn) {
+		// Enqueues a notification on the dispatch thread associated with the wrapped language server. This
+		// ensures the interleaving of document updates and other requests in the UI is mirrored in the
+		// order in which they get dispatched to the server
+		getInitializedServer().thenAcceptAsync(fn, this.dispatcher);
+	}
+
+	@Override
+	/**
+	 * Runs a request on the language server
+	 *
+	 * @param <T> LS response type
+	 * @param fn Code block that will be supplied the LS in a state where it is guaranteed to have been initialized
+	 *
+	 * @return Async result
+	 */
+	@NonNull
+	public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+		// Send the request on the dispatch thread, then additionally make sure the response is delivered
+		// on a thread from the default ForkJoinPool. This makes sure the user can't chain on an arbitrary
+		// long-running block of code that would tie up the server response listener and prevent any more
+		// inbound messages being read
+		return executeImpl(fn).thenApplyAsync(Function.identity());
+	}
+
+	/**
+	 * Runs a request on the language server. Internal hook for the LSPexecutor implementations
+	 *
 	 * @param <T> LS response type
 	 * @param fn LS method to invoke
 	 * @return Async result
 	 */
 	@NonNull
-	 <T> CompletableFuture<T> executeOnLatestVersion(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
- 		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
-	}
-
-	@NonNull
-	public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
-		return getInitializedServer().thenComposeAsync(fn, this.dispatcher).thenApplyAsync(Function.identity());
-	}
-
-	@NonNull
-	public <T> CompletableFuture<T> execute(BiFunction<LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
-		return getInitializedServer().thenComposeAsync(ls -> fn.apply(this, ls), this.dispatcher);
-	}
-	/**
-	 * Sends a notification to the LS on a single executor thread tied to this server. Use of this guarantees that the server
-	 * will have seen all previous such requests/notifications (and document updates).
-	 * @param fn LS notification to send
-	 */
-	void notifyOnLatestVersion(@NonNull Consumer<LanguageServer> fn) {
-		getInitializedServer().thenAcceptAsync(fn, this.dispatcher);
+	 <T> CompletableFuture<T> executeImpl(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+		// Run the supplied function, ensuring that it is enqueued on the dispatch thread associated with the
+		// wrapped language server, and is thus guarannteed to be seen in the correct order with respect
+		// to e.g. previous document changes
+		//
+		// Note this doesn't get the .thenApplyAsync(Function.identity()) chained on additionally, unlike
+		// the public-facing version of this method, because we trust the LSPExecutor implementations to
+		// make sure the server response thread doesn't get blocked by any further work
+		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
 	}
 
 	/**
@@ -852,6 +872,7 @@ public class LanguageServerWrapper {
 		}).thenApply(server -> server == null ? null : this);
 	}
 
+	@Override
 	/**
 	 * Warning: this is a long running operation
 	 *
@@ -874,6 +895,7 @@ public class LanguageServerWrapper {
 		return this.serverCapabilities;
 	}
 
+	@Override
 	/**
 	 * @return The language ID that this wrapper is dealing with if defined in the
 	 *         content type mapping for the language server

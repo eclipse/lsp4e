@@ -127,7 +127,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			changeParams = null;
 
 			changeParamsToSend.getTextDocument().setVersion(++version);
-			languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
+			languageServerWrapper.sendNotification(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
 		}
 	}
 
@@ -234,7 +234,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 
 		try {
-			List<TextEdit> edits = languageServerWrapper.executeOnLatestVersion(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
+			List<TextEdit> edits = languageServerWrapper.executeImpl(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
 				.get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS);
 			try {
 				LSPEclipseUtils.applyEdits(document, edits);
@@ -273,7 +273,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(fileUri);
 		final var params = new DidSaveTextDocumentParams(identifier, document.get());
 
-		languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didSave(params));
+		languageServerWrapper.sendNotification(ls -> ls.getTextDocumentService().didSave(params));
 
 	}
 
@@ -284,7 +284,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		// "didClose" message to the LS that is being shut down or not yet started
 		if (languageServerWrapper.isActive()) {
 			final var params = new DidCloseTextDocumentParams(identifier);
-			languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didClose(params));
+			languageServerWrapper.sendNotification(ls -> ls.getTextDocumentService().didClose(params));
 		}
 		return CompletableFuture.completedFuture(null);
 	}
