@@ -30,6 +30,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,6 +38,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -190,6 +194,8 @@ public class LanguageServerWrapper {
 	private Timer timer;
 	private AtomicBoolean stopping = new AtomicBoolean(false);
 
+	private final ExecutorService dispatcher;
+
 	/**
 	 * Map containing unregistration handlers for dynamic capability registrations.
 	 */
@@ -213,6 +219,14 @@ public class LanguageServerWrapper {
 		this.initialPath = initialPath;
 		this.serverDefinition = serverDefinition;
 		this.connectedDocuments = new HashMap<>();
+		String threadNameFormat = "LS-" + serverDefinition.id + "-dispatcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
+		this.dispatcher = Executors
+				.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(threadNameFormat).build());
+
+	}
+
+	void stopDispatcher() {
+		this.dispatcher.shutdownNow();
 	}
 
 	/**
@@ -667,7 +681,7 @@ public class LanguageServerWrapper {
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
 			}
-		}).thenApply(theVoid -> languageServer);
+		}, this.dispatcher).thenApply(theVoid -> languageServer);
 	}
 
 	/**
@@ -733,10 +747,6 @@ public class LanguageServerWrapper {
 		}
 	}
 
-	private CompletableFuture<?> allDocumentsAreUpToDate() {
-		return CompletableFuture.allOf(connectedDocuments.values().stream().map(DocumentContentSynchronizer::lastChangeFuture).toArray(CompletableFuture<?>[]::new));
-	}
-
 	/**
 	 * Starts the language serverm, ensure it's and returns a CompletableFuture waiting for the
 	 * server to be initialized and up-to-date (all related pending document changes
@@ -766,10 +776,54 @@ public class LanguageServerWrapper {
 				PlatformUI.getWorkbench().getProgressService().showInDialog(UI.getActiveShell(), waitForInitialization);
 			}
 			if (initializeFuture != null) {
-				return initializeFuture.thenCompose(r -> allDocumentsAreUpToDate()).thenApply(r -> this.languageServer);
+				return initializeFuture.thenApply(r -> this.languageServer);
 			}
 		}
-		return allDocumentsAreUpToDate().thenApply(r -> this.languageServer);
+		return CompletableFuture.completedFuture(this.languageServer);
+	}
+
+	/**
+	 * Dispatches a LS request on a single executor thread tied to this server. Use of this guarantees that the server
+	 * will have seen all previous such requests (and document updates), and will not receive any further updates
+	 * prior to receiving this one.
+	 * @param <T> LS response type
+	 * @param fn LS method to invoke
+	 * @return Async result
+	 */
+	<T> CompletableFuture<T> executeOnLatestVersion(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
+	}
+	/**
+	 * Sends a notification to the LS on a single executor thread tied to this server. Use of this guarantees that the server
+	 * will have seen all previous such requests/notifications (and document updates).
+	 * @param fn LS notification to send
+	 */
+	void notifyOnLatestVersion(Consumer<LanguageServer> fn) {
+		getInitializedServer().thenAcceptAsync(fn, this.dispatcher);
+	}
+
+	/**
+	 * Test whether this server supports the requested <code>ServerCapabilities</code>, and ensure
+	 * that it is connected to the document if so.
+	 *
+	 * NB result is a future on this <emph>wrapper</emph> rather than the wrapped language server directly,
+	 * to support accessing the server on the single-threaded dispatch queue.
+	 * @param document Document to connect
+	 * @param filter Constraint on server capabilities
+	 * @return Async result that guarantees the wrapped server will be active and connected to the document. Wraps
+	 * null if the server does not support the requested capabilities or could not be started.
+	 */
+	CompletableFuture<LanguageServerWrapper> connectIf(IDocument document, Predicate<ServerCapabilities> filter) {
+		return getInitializedServer().thenComposeAsync(server -> {
+			if (server != null && (filter == null || filter.test(getServerCapabilities()))) {
+				try {
+					return connect(document);
+				} catch (IOException ex) {
+					LanguageServerPlugin.logError(ex);
+				}
+			}
+			return CompletableFuture.completedFuture(null);
+		}, this.dispatcher).thenApply(server -> this);
 	}
 
 	/**
