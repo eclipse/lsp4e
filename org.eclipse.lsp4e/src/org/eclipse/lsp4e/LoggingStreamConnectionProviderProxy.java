@@ -120,7 +120,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		builder.append(' ');
 		builder.append(id);
 		builder.append(":\n"); //$NON-NLS-1$
-		builder.append(payload);
+		builder.append(new String(payload));
 		return builder.toString();
 	}
 
