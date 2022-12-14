@@ -48,7 +48,9 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 	static boolean isCodeActionResolveSupported(ServerCapabilities capabilities) {
 		if (capabilities != null) {
 			Either<Boolean, CodeActionOptions> caProvider = capabilities.getCodeActionProvider();
-			if (caProvider.isRight()) {
+			if (caProvider.isLeft()) {
+				return caProvider.getLeft();
+			} else if (caProvider.isRight()) {
 				CodeActionOptions options = caProvider.getRight();
 				return options.getResolveProvider().booleanValue();
 			}
