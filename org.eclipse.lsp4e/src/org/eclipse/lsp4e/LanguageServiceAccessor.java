@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -74,6 +75,7 @@ public class LanguageServiceAccessor {
 	 */
 	public static void clearStartedServers() {
 		startedServers.removeIf(server -> {
+			server.stopDispatcher();
 			server.stop();
 			server.stopDispatcher();
 			return true;
@@ -335,7 +337,7 @@ public class LanguageServiceAccessor {
 	}
 
 	@NonNull
-	private static Collection<LanguageServerWrapper> getLSWrappers(@NonNull final IDocument document) {
+	static Collection<LanguageServerWrapper> getLSWrappers(@NonNull final IDocument document) {
 		final URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
 			return Collections.emptyList();
@@ -583,6 +585,32 @@ public class LanguageServiceAccessor {
 		return servers;
 	}
 
+
+	/**
+	 * Internal variant of getLanguageServers(IProject, Predicate<ServerCapabilities>, boolean)
+	 *
+	 * TODO: this doesn't replicate the behaviour with inactive LS: we return an async for the restarting server
+	 * that will only schedule further work after it completes. The older method calls wrapper.getServer() which
+	 * returns null on the event thread but blocks till completion on any other thread - does it matter?
+	 *
+	 * @param project
+	 * @param request
+	 * @param onlyActiveLS
+	 * @return
+	 */
+	@NonNull
+	static List<@NonNull CompletableFuture<LanguageServerWrapper>> getWrappers(@Nullable IProject project, Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
+		List<@NonNull CompletableFuture<LanguageServerWrapper>> result = new ArrayList<>();
+		for (LanguageServerWrapper wrapper : startedServers) {
+			if ((!onlyActiveLS || wrapper.isActive()) && (project == null || wrapper.canOperate(project))) {
+				if (capabilitiesComply(wrapper, request)) {
+					result.add(wrapper.getInitializedServer().thenApply(ls -> wrapper));
+				}
+			}
+		}
+		return result;
+	}
+
 	protected static LanguageServerDefinition getLSDefinition(@NonNull StreamConnectionProvider provider) {
 		return providersToLSDefinitions.get(provider);
 	}
@@ -648,6 +676,8 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
+	 * TODO: Remove - becomes part of new API
+	 *
 	 * Make a call to the language server(s), aggregating the responses into a single CompletableFuture if
 	 * more than one language server is applicable. The call will be enqueued such that it will be sent to the
 	 * language servers after any previous calls using this framework and before any subsequent calls. More
@@ -664,7 +694,8 @@ public class LanguageServiceAccessor {
 	 * @param fn A single method invocation on <code>LanguageServer</code>
 	 * @return Async result aggregated over all applicable lang servers, filtering out nulls.
 	 */
-	public static <T> CompletableFuture<List<T>> computeOnServers(@NonNull IDocument document, Predicate<ServerCapabilities> filter,
+	@NonNull
+	public static <T> CompletableFuture<@NonNull List<@NonNull T>> computeOnServers(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> filter,
 			Function<LanguageServer, ? extends CompletionStage<T>> fn) {
 
 		// Out-of-line so we can declare it as List rather than ArrayList to avoid type errors below
@@ -684,13 +715,17 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
+	 *
+	 * TODO: Move to new API
+	 *
 	 * Accumulator that appends the result of an async computation onto an async aggregate result. Nulls will be excluded.
 	 * @param <T> Result type
 	 * @param result Async aggregate result
 	 * @param next Pending result to include
 	 * @return
 	 */
-	private static <T> CompletableFuture<List<T>> combine(CompletableFuture<? extends List<T>> result, CompletableFuture<T> next) {
+	@NonNull
+	static <T> CompletableFuture<@NonNull List<@NonNull T>> combine(@NonNull CompletableFuture<? extends List<@NonNull T>> result, @NonNull CompletableFuture<@Nullable T> next) {
 		return result.thenCombine(next, (List<T> a, T b) -> {
 			if (b != null) {
 				a.add(b);
@@ -700,14 +735,34 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
+	 * TODO: Move to new API
+	 *
 	 * Merges two async sets of results into a single async result
 	 * @param <T> Result type
-	 * @param a First async result
-	 * @param b Second async result
+	 * @param first First async result
+	 * @param second Second async result
 	 * @return Async combined result
 	 */
-	private static <T> CompletableFuture<List<T>> concatResults(CompletableFuture<List<T>> a, CompletableFuture<List<T>> b) {
-		return a.thenCombine(b, (c, d) -> { c.addAll(d); return c; });
+	@NonNull
+	public static <T> CompletableFuture<@NonNull List<T>> concatResults(@NonNull CompletableFuture<@NonNull List<T>> first, @NonNull CompletableFuture<@NonNull List<T>> second) {
+		return first.thenCombine(second, (c, d) -> {
+			c.addAll(d);
+			return c;
+		});
+	}
+
+	/**
+	 * TODO: Move to new API
+	 *
+	 * Safely generate a stream that can be e.g. used with flatMap: caters for null (rather than empty)
+	 * results from language servers that failed to start or were filtered out when invoked from <code>computeOnServers()</code>
+	 * @param <T> Result type
+	 * @param col
+	 * @return A stream (empty if col is null)
+	 */
+	@NonNull
+	public static <T> Stream<T> streamSafely(@Nullable Collection<T> col) {
+		return col == null ? Stream.<T>of() : col.stream();
 	}
 
 	public static boolean checkCapability(LanguageServer languageServer, Predicate<ServerCapabilities> condition) {

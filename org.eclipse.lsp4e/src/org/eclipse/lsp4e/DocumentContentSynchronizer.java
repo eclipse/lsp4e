@@ -56,6 +56,7 @@ import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WillSaveTextDocumentParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.osgi.util.NLS;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
@@ -71,6 +72,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private IPreferenceStore store;
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
+			@NonNull LanguageServer languageServer,
 			@NonNull IDocument document, TextDocumentSyncKind syncKind) {
 		this.languageServerWrapper = languageServerWrapper;
 		URI uri = LSPEclipseUtils.toUri(document);
@@ -109,8 +111,9 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		textDocument.setLanguageId(languageId);
 		textDocument.setVersion(++version);
-		this.languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
+		languageServer.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument));
 	}
+
 
 	@Override
 	public void documentChanged(DocumentEvent event) {
@@ -124,7 +127,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			changeParams = null;
 
 			changeParamsToSend.getTextDocument().setVersion(++version);
-			this.languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
+			languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
 		}
 	}
 
@@ -231,7 +234,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 
 		try {
-			List<TextEdit> edits = this.languageServerWrapper.executeOnLatestVersion(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
+			List<TextEdit> edits = languageServerWrapper.executeOnLatestVersion(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
 				.get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS);
 			try {
 				LSPEclipseUtils.applyEdits(document, edits);
@@ -269,11 +272,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(fileUri);
 		final var params = new DidSaveTextDocumentParams(identifier, document.get());
-//		lastChangeFuture.updateAndGet(f -> f.thenApplyAsync(ls -> {
-//  			ls.getTextDocumentService().didSave(params);
-//  			return ls;
-//  		}));
-		this.languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didSave(params));
+
+		languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didSave(params));
 
 	}
 

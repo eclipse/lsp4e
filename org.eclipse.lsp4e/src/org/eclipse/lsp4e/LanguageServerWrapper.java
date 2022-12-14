@@ -38,6 +38,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -691,11 +692,11 @@ public class LanguageServerWrapper {
 				}
 				TextDocumentSyncKind syncKind = initializeFuture == null ? null
 						: serverCapabilities.getTextDocumentSync().map(Functions.identity(), TextDocumentSyncOptions::getChange);
-				final var listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
+				final var listener = new DocumentContentSynchronizer(this, languageServer, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
 			}
-		}, this.dispatcher).thenApply(theVoid -> languageServer);
+		}).thenApply(theVoid -> languageServer);
 	}
 
 	/**
@@ -804,15 +805,26 @@ public class LanguageServerWrapper {
 	 * @param fn LS method to invoke
 	 * @return Async result
 	 */
-	<T> CompletableFuture<T> executeOnLatestVersion(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
-		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
+	@NonNull
+	 <T> CompletableFuture<T> executeOnLatestVersion(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+ 		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
+	}
+
+	@NonNull
+	public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+		return getInitializedServer().thenComposeAsync(fn, this.dispatcher).thenApplyAsync(Function.identity());
+	}
+
+	@NonNull
+	public <T> CompletableFuture<T> execute(BiFunction<LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		return getInitializedServer().thenComposeAsync(ls -> fn.apply(this, ls), this.dispatcher);
 	}
 	/**
 	 * Sends a notification to the LS on a single executor thread tied to this server. Use of this guarantees that the server
 	 * will have seen all previous such requests/notifications (and document updates).
 	 * @param fn LS notification to send
 	 */
-	void notifyOnLatestVersion(Consumer<LanguageServer> fn) {
+	void notifyOnLatestVersion(@NonNull Consumer<LanguageServer> fn) {
 		getInitializedServer().thenAcceptAsync(fn, this.dispatcher);
 	}
 
@@ -827,8 +839,8 @@ public class LanguageServerWrapper {
 	 * @return Async result that guarantees the wrapped server will be active and connected to the document. Wraps
 	 * null if the server does not support the requested capabilities or could not be started.
 	 */
-	CompletableFuture<LanguageServerWrapper> connectIf(IDocument document, Predicate<ServerCapabilities> filter) {
-		return getInitializedServer().thenComposeAsync(server -> {
+	@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connectIf(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> filter) {
+		return getInitializedServer().thenCompose(server -> {
 			if (server != null && (filter == null || filter.test(getServerCapabilities()))) {
 				try {
 					return connect(document);
@@ -837,7 +849,7 @@ public class LanguageServerWrapper {
 				}
 			}
 			return CompletableFuture.completedFuture(null);
-		}, this.dispatcher).thenApply(server -> this);
+		}).thenApply(server -> server == null ? null : this);
 	}
 
 	/**
