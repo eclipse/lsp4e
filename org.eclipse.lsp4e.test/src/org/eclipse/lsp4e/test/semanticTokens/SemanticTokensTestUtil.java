@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * Copyright (c) 2022 Avaloq Group AG.
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
 package org.eclipse.lsp4e.test.semanticTokens;
 
 import java.util.ArrayList;
@@ -17,7 +25,7 @@ import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.swt.graphics.Color;
 
-public class SemanticTokensUtil {
+public class SemanticTokensTestUtil {
 	public static final String keywordText =
 			"type foo {\n" +
 			"	\n" +

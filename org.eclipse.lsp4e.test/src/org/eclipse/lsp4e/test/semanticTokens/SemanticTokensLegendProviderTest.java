@@ -47,7 +47,7 @@ public class SemanticTokensLegendProviderTest {
 		// Setup Server Capabilities
 		List<String> tokenTypes = Arrays.asList("keyword","other");
 		List<String> tokenModifiers = Arrays.asList("obsolete");
-		SemanticTokensUtil.setSemanticTokensLegend(tokenTypes, tokenModifiers);
+		SemanticTokensTestUtil.setSemanticTokensLegend(tokenTypes, tokenModifiers);
 
 		// Setup test data
 		IFile file = TestUtils.createUniqueTestFile(project, "lspt", "test content");

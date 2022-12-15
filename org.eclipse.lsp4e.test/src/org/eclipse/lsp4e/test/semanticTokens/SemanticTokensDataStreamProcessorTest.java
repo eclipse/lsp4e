@@ -28,16 +28,16 @@ public class SemanticTokensDataStreamProcessorTest {
 
 	@Test
 	public void testKeyword() throws InterruptedException, ExecutionException {
-		Document document = new Document(SemanticTokensUtil.keywordText);
+		Document document = new Document(SemanticTokensTestUtil.keywordText);
 
-		SemanticTokensDataStreamProcessor processor = new SemanticTokensDataStreamProcessor(SemanticTokensUtil
-				.keywordTokenTypeMapper(SemanticTokensUtil.RED_TOKEN), SemanticTokensUtil.offsetMapper(document));
+		SemanticTokensDataStreamProcessor processor = new SemanticTokensDataStreamProcessor(SemanticTokensTestUtil
+				.keywordTokenTypeMapper(SemanticTokensTestUtil.RED_TOKEN), SemanticTokensTestUtil.offsetMapper(document));
 
-		List<Integer> expectedStream = SemanticTokensUtil.keywordSemanticTokens();
+		List<Integer> expectedStream = SemanticTokensTestUtil.keywordSemanticTokens();
 		List<StyleRange> expectedStyleRanges = Arrays.asList(//
-				new StyleRange(0, 4, SemanticTokensUtil.RED, null), //
-				new StyleRange(15, 4, SemanticTokensUtil.RED, null), //
-				new StyleRange(24, 7, SemanticTokensUtil.RED, null)//
+				new StyleRange(0, 4, SemanticTokensTestUtil.RED, null), //
+				new StyleRange(15, 4, SemanticTokensTestUtil.RED, null), //
+				new StyleRange(24, 7, SemanticTokensTestUtil.RED, null)//
 				);
 
 		List<StyleRange> styleRanges = processor.getStyleRanges(expectedStream, getSemanticTokensLegend());

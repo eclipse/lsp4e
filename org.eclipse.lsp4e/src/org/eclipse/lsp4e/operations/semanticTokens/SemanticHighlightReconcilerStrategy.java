@@ -19,6 +19,7 @@ import java.util.function.Function;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -74,9 +75,14 @@ import org.eclipse.swt.custom.StyledText;
  * <p>
  * For simplicity, out-dated responses are discarded, as we know we shall get
  * newer ones.
+ * <p>
+ * In case the reconciler produces bogus results, it can be disabled with the key
+ * {@literal semanticHighlightReconciler.disabled} until fix is provided.
  */
 public class SemanticHighlightReconcilerStrategy
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextPresentationListener {
+
+    private final boolean disabled;
 
 	private ITextViewer viewer;
 
@@ -99,6 +105,11 @@ public class SemanticHighlightReconcilerStrategy
 
 	private CompletableFuture<Void> semanticTokensFullFuture;
 
+	public SemanticHighlightReconcilerStrategy() {
+	    IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
+		disabled = store.getBoolean("semanticHighlightReconciler.disabled"); //$NON-NLS-1$
+	}
+
 	/**
 	 * Installs the reconciler on the given text viewer. After this method has been
 	 * finished, the reconciler is operational, i.e., it works without requesting
@@ -108,6 +119,9 @@ public class SemanticHighlightReconcilerStrategy
 	 *            the viewer on which the reconciler is installed
 	 */
 	public void install(@NonNull final ITextViewer textViewer) {
+		if (disabled) {
+			return;
+		}
 		viewer = textViewer;
 		styleRangeHolder = new StyleRangeHolder();
 		semanticTokensDataStreamProcessor = new SemanticTokensDataStreamProcessor(new TokenTypeMapper(textViewer),
@@ -124,6 +138,9 @@ public class SemanticHighlightReconcilerStrategy
 	 * on.
 	 */
 	public void uninstall() {
+		if (disabled) {
+			return;
+		}
 		semanticTokensDataStreamProcessor = null;
 		if (viewer instanceof TextViewer) {
 			((TextViewer) viewer).removeTextPresentationListener(this);
@@ -214,6 +231,16 @@ public class SemanticHighlightReconcilerStrategy
 				.map(this::getSemanticTokensLegend).orElse(null);
 	}
 
+	/** The presentation is invalidated if applyTextPresentation has never been called (e.g. there is
+	 * no syntactic reconciler as in our unit tests) or the syntactic reconciler has already been applied
+	 * for the given document. Otherwise the style rages will be applied when applyTextPresentation is
+	 * called as part of the syntactic reconciliation.
+	 */
+	private boolean invalidateTextPresentation(final int version) {
+		return documentVersionAtLastAppliedTextPresentation == 0
+				|| documentVersionAtLastAppliedTextPresentation == version;
+	}
+
 	private CompletableFuture<Void> semanticTokensFull(final LanguageServer languageServer, final int version) {
 		SemanticTokensParams semanticTokensParams = getSemanticTokensParams();
 		return languageServer.getTextDocumentService().semanticTokensFull(semanticTokensParams)
@@ -222,7 +249,7 @@ public class SemanticHighlightReconcilerStrategy
 						saveStyle(semanticTokens, getSemanticTokensLegend(languageServer));
 						StyledText textWidget = viewer.getTextWidget();
 						textWidget.getDisplay().asyncExec(() -> {
-							if (!textWidget.isDisposed() && (documentVersionAtLastAppliedTextPresentation == 0 || documentVersionAtLastAppliedTextPresentation == version )) {
+							if (!textWidget.isDisposed() && invalidateTextPresentation(version)) {
 								viewer.invalidateTextPresentation();
 							}
 						});
@@ -257,6 +284,9 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void fullReconcile() {
+		if (disabled) {
+			return;
+		}
 		IDocument theDocument = document;
 		cancelSemanticTokensFull();
 		if (theDocument != null) {

@@ -397,7 +397,7 @@ public class LanguageServiceAccessor {
 			}
 
 			if (contentType.getBaseType() != null) {
-			contentTypesToProcess.add(contentType.getBaseType());
+				contentTypesToProcess.add(contentType.getBaseType());
 			}
 			processedContentTypes.add(contentType);
 		}

@@ -45,17 +45,17 @@ public class SemanticHighlightReconcilerStrategyTest {
 		// Setup Server Capabilities
 		List<String> tokenTypes = Arrays.asList("keyword");
 		List<String> tokenModifiers = Arrays.asList("obsolete");
-		SemanticTokensUtil.setSemanticTokensLegend(tokenTypes, tokenModifiers);
+		SemanticTokensTestUtil.setSemanticTokensLegend(tokenTypes, tokenModifiers);
 	}
 
 	@Test
 	public void testKeyword() throws InterruptedException, ExecutionException, CoreException {
 		SemanticTokens semanticTokens = new SemanticTokens();
-		semanticTokens.setData(SemanticTokensUtil.keywordSemanticTokens());
+		semanticTokens.setData(SemanticTokensTestUtil.keywordSemanticTokens());
 
 		MockLanguageServer.INSTANCE.getTextDocumentService().setSemanticTokens(semanticTokens);
 
-		IFile file = TestUtils.createUniqueTestFile(project, "lspt", SemanticTokensUtil.keywordText);
+		IFile file = TestUtils.createUniqueTestFile(project, "lspt", SemanticTokensTestUtil.keywordText);
 		ITextViewer textViewer = TestUtils.openTextViewer(file);
 
 		Display display = shell.getDisplay();
@@ -64,9 +64,9 @@ public class SemanticHighlightReconcilerStrategyTest {
 		StyleRange[] styleRanges = textViewer.getTextWidget().getStyleRanges();
 
 		List<StyleRange> expectedStyleRanges = Arrays.asList(//
-				new StyleRange(0, 4, SemanticTokensUtil.GREEN, null), //
-				new StyleRange(15, 4, SemanticTokensUtil.GREEN, null), //
-				new StyleRange(24, 7, SemanticTokensUtil.GREEN, null)//
+				new StyleRange(0, 4, SemanticTokensTestUtil.GREEN, null), //
+				new StyleRange(15, 4, SemanticTokensTestUtil.GREEN, null), //
+				new StyleRange(24, 7, SemanticTokensTestUtil.GREEN, null)//
 		);
 		assertArrayEquals(expectedStyleRanges.toArray(), styleRanges);
 	}
