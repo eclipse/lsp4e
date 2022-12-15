@@ -94,8 +94,7 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super ILSWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		return getServers().stream()
 				.map(wrapperFuture -> wrapperFuture
-						.thenCompose(w -> w == null ? null : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
-				.filter(Objects::nonNull)
+						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
 				.collect(Collectors.toList());
 	}
 
@@ -127,9 +126,7 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 	 */
 	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super ILSWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		final List<CompletableFuture<LanguageServerWrapper>> servers = getServers();
-		if (servers.isEmpty()) {
-			return CompletableFuture.completedFuture(Optional.empty());
-		}
+
 		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
 
 		// Dispatch the request to the servers, appending a step to each such that
@@ -138,8 +135,7 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 		// a quickly-returned null to trump a slowly-returned result
 		final List<CompletableFuture<T>> intermediate = servers.stream()
 				.map(wrapperFuture -> wrapperFuture
-						.thenCompose(w -> w == null ? null : w.executeImpl(ls -> fn.apply(w, ls))))
-				.filter(Objects::nonNull)
+						.thenCompose(w -> w == null ? CompletableFuture.completedFuture((T) null) : w.executeImpl(ls -> fn.apply(w, ls))))
 				.map(cf -> cf.thenApply(t -> {
 					if (!isEmpty(t)) { // TODO: Does this need to be a supplied function to handle all cases?
 						result.complete(Optional.of(t));
@@ -147,10 +143,16 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 					return t;
 				})).collect(Collectors.toList());
 
-		// Make sure that if the servers all return null then we give up and supply an empty result
+		// Make sure that if the servers all return null - or complete exceptionally - then we give up and supply an empty result
 		// rather than potentially waiting forever...
-		final CompletableFuture<?> fallback = CompletableFuture.allOf(intermediate.toArray(new CompletableFuture[intermediate.size()]));
-		fallback.thenRun(() -> result.complete(Optional.empty()));
+		CompletableFuture<Void> fallback = CompletableFuture.allOf(intermediate.toArray(new CompletableFuture[intermediate.size()]));
+		fallback.whenComplete((v, t) -> {
+			if (t != null) {
+				result.completeExceptionally(t);
+			} else {
+				result.complete(Optional.empty());
+			}
+		});
 
 		return result.thenApplyAsync(Function.identity());
 	}
@@ -178,7 +180,9 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 	 * @return True if there is a language server for this project/document & server capabilities
 	 */
 	public boolean anyMatching() {
-		return !getServers().isEmpty();
+		// TODO: should maybe have a default timeout for this...?
+		// Use CF::getNow with a default null?
+		return getServers().stream().map(CompletableFuture::join).anyMatch(Objects::nonNull);
 	}
 
 
