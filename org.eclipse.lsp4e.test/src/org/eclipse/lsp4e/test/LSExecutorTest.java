@@ -1,7 +1,13 @@
 package org.eclipse.lsp4e.test;
 
+import static org.eclipse.lsp4e.LanguageServiceAccessor.getActiveLanguageServers;
+import static org.eclipse.lsp4e.test.TestUtils.createUniqueTestFile;
+import static org.eclipse.lsp4e.test.TestUtils.openEditor;
+import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
@@ -13,6 +19,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
@@ -20,6 +27,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.ILSWrapper;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LSPExecutor.LSPDocumentExecutor;
 import org.eclipse.lsp4e.LanguageServers;
@@ -30,11 +38,14 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
@@ -46,6 +57,8 @@ public class LSExecutorTest {
 	public AllCleanRule clear = new AllCleanRule();
 
 	private IProject project;
+
+	private final Predicate<ServerCapabilities> MATCH_ALL = sc -> true;
 
 	@Before
 	public void setUp() throws CoreException {
@@ -610,6 +623,15 @@ public class LSExecutorTest {
 		
 		Optional<?> result = executor.computeFirst(ls -> ls.getTextDocumentService().hover(params)).get(10, TimeUnit.SECONDS);
 		assertFalse("Should not have had a result", result.isPresent());
+		
+		List<?> collectedResult = executor.collectAll(ls -> ls.getTextDocumentService().hover(params)).get(10, TimeUnit.SECONDS);
+		assertTrue("Should not have had a result", collectedResult.isEmpty());
+		
+		List<CompletableFuture<Hover>> allResults = executor.computeAll(ls -> ls.getTextDocumentService().hover(params));
+		for (CompletableFuture<Hover> f : allResults) {
+			Hover h = f.get(10, TimeUnit.SECONDS);
+			assertNull(h);
+		}
 	}
 
 	@Test(expected=CompletionException.class)
@@ -644,5 +666,115 @@ public class LSExecutorTest {
 				.computeFirst(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h == null ? null : h.getContents().getLeft().get(0).getLeft()));
 		
 		response.join();
+	}
+	
+	/**
+	 * The LSExecutor request methods can optionally supply an ILSWrapper as well as the raw language server
+	 * proxy to the consuming functions. This is intended to support constructing objects that need access to 
+	 * the same language server for follow-up calls 
+	 */
+	@Test
+	public void testWrapperWrapsSameLS() throws Exception {
+		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		MockLanguageServer.INSTANCE.setHover(hoverResponse);
+		
+		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		final IDocument document = viewer.getDocument();
+		
+		final HoverParams params = new HoverParams();
+		final Position position = new Position();
+		position.setCharacter(10);
+		position.setLine(0);
+		params.setPosition(position);
+		
+		CompletableFuture<List<LSWPair>> async = LanguageServers.forDocument(document)
+				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.collectAll((w, ls) -> ls.getTextDocumentService().hover(params).thenApply(h -> new LSWPair(w, ls)));
+		
+		final List<LSWPair> result = async.join();
+		
+		final AtomicInteger matching = new AtomicInteger();
+		
+		assertEquals("Should have had two responses", 2, result.size());
+		assertNotEquals("LS should have been different proxies", result.get(0).server, result.get(1).server);
+		result.forEach(p -> {
+			p.wrapper.execute(ls -> {
+				if (ls == p.server) {
+					matching.incrementAndGet();
+				}
+				return CompletableFuture.completedFuture(null);
+			}).join();
+		});
+		
+		assertEquals("Wrapper should have used same LS", 2, matching.get());
+
+	}
+	
+	/**
+	 * Project-level executors work slightly differently: there's (currently) no direct way
+	 * of associating a LS with a project directly, and you can't find out a server's capabilties
+	 * until it has started, so LSP4e relies on a document within the project having previously
+	 * triggered a server to start. A server may shut down after inactivity, but capabilities are
+	 * still available. Candidate LS for a project-level operation may include only currently-running LS,
+	 * or can restart any previously-started ones that match the filter.
+	 */
+	@Test
+	public void testProjectExecutor() throws Exception {
+		var testFile1 = createUniqueTestFile(project, "");
+		var testFile2 = createUniqueTestFile(project, "lspt-different", "");
+
+		var editor1 = openEditor(testFile1);
+		var editor2 = openEditor(testFile2);
+
+		final AtomicInteger serverCounter = new AtomicInteger();
+		
+		final List<String> serversForProject = LanguageServers.forProject(project).collectAll(ls -> CompletableFuture.completedFuture("Server" + serverCounter.incrementAndGet())).join();
+		assertTrue(serversForProject.contains("Server1"));
+		assertTrue(serversForProject.contains("Server2"));
+
+		((AbstractTextEditor) editor1).close(false);
+		((AbstractTextEditor) editor2).close(false);
+
+		waitForCondition(5_000, () -> getActiveLanguageServers(MATCH_ALL).isEmpty());
+		
+		serverCounter.set(0);
+		final List<String> serversForProject2 = LanguageServers.forProject(project).excludeInactive().collectAll(ls -> CompletableFuture.completedFuture("Server" + serverCounter.incrementAndGet())).join();
+		assertTrue(serversForProject2.isEmpty());
+
+		serverCounter.set(0);
+		editor1 = openEditor(testFile1);
+		final List<String> serversForProject3 = LanguageServers.forProject(project).excludeInactive().collectAll(ls -> CompletableFuture.completedFuture("Server" + serverCounter.incrementAndGet())).join();
+		assertTrue(serversForProject3.contains("Server1"));
+		assertFalse(serversForProject3.contains("Server2"));
+
+		serverCounter.set(0);
+		final List<String> serversForProject4 = LanguageServers.forProject(project).collectAll(ls -> CompletableFuture.completedFuture("Server" + serverCounter.incrementAndGet())).join();
+		assertTrue(serversForProject4.contains("Server1"));
+		assertTrue(serversForProject4.contains("Server2"));
+	}
+	
+	@Test
+	public void testGetDocument() throws Exception {
+		
+		IFile testFile = TestUtils.createUniqueTestFile(project, "Here is some content");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		final IDocument document = viewer.getDocument();
+		
+		final LSPDocumentExecutor executor = LanguageServers.forDocument(document);
+		
+		assertEquals(document, executor.getDocument());
+	}
+	
+	private static class LSWPair {
+		public final ILSWrapper wrapper;
+		public final LanguageServer server;
+		
+		public LSWPair(final ILSWrapper w, final LanguageServer s) {
+			this.wrapper = w;
+			this.server = s;
+		}
 	}
 }

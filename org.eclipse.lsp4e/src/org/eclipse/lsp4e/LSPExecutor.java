@@ -214,7 +214,13 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 
 	/**
 	 * Executor that will run requests on the set of language servers appropriate for the supplied project
-	 *
+	 * <p>
+	 * Project-level executors work slightly differently: there's (currently) no direct way
+	 * of associating a LS with a project, and you can't find out a server's capabilities
+	 * until it has started, so LSP4e relies on a document within the project having previously
+	 * triggered a server to start. A server may shut down after inactivity, but capabilities are
+	 * still available. Candidate LS for a project-level operation may include only currently-running LS,
+	 * or can restart any previously-started ones that match the filter.
 	 */
 	public static class LSPProjectExecutor extends LSPExecutor<LSPProjectExecutor> {
 
@@ -227,8 +233,8 @@ public abstract class LSPExecutor<E extends LSPExecutor<E>> {
 		}
 
 		/**
-		 * If called, this executor will not attempt to any servers that previously started in this session
-		 * but have since shut down
+		 * If called, this executor will not attempt to restart any matching servers that previously started
+		 * in this session but have since shut down
 		 * @return
 		 */
 		public LSPProjectExecutor excludeInactive() {
