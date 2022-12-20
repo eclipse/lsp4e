@@ -56,7 +56,6 @@ import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WillSaveTextDocumentParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.osgi.util.NLS;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
@@ -72,7 +71,6 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private IPreferenceStore store;
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
-			@NonNull LanguageServer languageServer,
 			@NonNull IDocument document, TextDocumentSyncKind syncKind) {
 		this.languageServerWrapper = languageServerWrapper;
 		URI uri = LSPEclipseUtils.toUri(document);
@@ -111,7 +109,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		textDocument.setLanguageId(languageId);
 		textDocument.setVersion(++version);
-		languageServer.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument));
+		languageServerWrapper.sendNotification(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
 	}
 
 

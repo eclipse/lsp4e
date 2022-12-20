@@ -97,6 +97,7 @@ import org.eclipse.lsp4j.FoldingRangeCapabilities;
 import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
+import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.InitializedParams;
 import org.eclipse.lsp4j.InlayHintCapabilities;
 import org.eclipse.lsp4j.InsertTextMode;
@@ -135,6 +136,8 @@ import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.lsp4j.services.TextDocumentService;
+import org.eclipse.lsp4j.services.WorkspaceService;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 
@@ -143,7 +146,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
-public class LanguageServerWrapper {
+public class LanguageServerWrapper implements LanguageServer {
 
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
@@ -690,7 +693,7 @@ public class LanguageServerWrapper {
 				}
 				TextDocumentSyncKind syncKind = initializeFuture == null ? null
 						: serverCapabilities.getTextDocumentSync().map(Functions.identity(), TextDocumentSyncOptions::getChange);
-				final var listener = new DocumentContentSynchronizer(this, languageServer, theDocument, syncKind);
+				final var listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
 			}
@@ -796,9 +799,9 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Sends a notification to the wrapped language server.
+	 * Sends a notification to language server. The LS in a state where it is guaranteed to have been initialized.
 	 *
-	 * @param fn LS notification to send
+	 * @param fn the notification
 	 */
 	public void sendNotification(@NonNull Consumer<LanguageServer> fn) {
 		// Enqueues a notification on the dispatch thread associated with the wrapped language server. This
@@ -827,7 +830,7 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Warning: this is a long running operation
+	 * Warning: this is a long running operation if the server has not been yet initialized
 	 *
 	 * @return the server capabilities, or null if initialization job didn't
 	 *         complete
@@ -1133,6 +1136,32 @@ public class LanguageServerWrapper {
 			return wsFolder != null && wsFolder.getUri() != null && !wsFolder.getUri().isEmpty();
 		}
 
+	}
+
+	@Override
+	public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public CompletableFuture<Object> shutdown() {
+		return languageServer.shutdown();
+	}
+
+	@Override
+	public void exit() {
+		languageServer.exit();
+
+	}
+
+	@Override
+	public TextDocumentService getTextDocumentService() {
+		return languageServer.getTextDocumentService();
+	}
+
+	@Override
+	public WorkspaceService getWorkspaceService() {
+		return languageServer.getWorkspaceService();
 	}
 
 }

@@ -61,8 +61,8 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 				.withFilter(DocumentColorProvider::isColorProvider)
 				.collectAll(
 					// Need to do some of the result processing inside the function we supply to collectAll(...)
-					// as need the LSW to construct the ColorInformationMining
-					(wrapper, ls) -> ls.getTextDocumentService().documentColor(param)
+					// as need the LS to construct the ColorInformationMining
+					wrapper -> wrapper.getTextDocumentService().documentColor(param)
 								.thenApply(colors -> LanguageServers.streamSafely(colors)
 										.map(color -> toMining(color, document, textDocumentIdentifier, wrapper))))
 				.thenApply(res -> res.stream().flatMap(Function.identity()).filter(Objects::nonNull).toList());

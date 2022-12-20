@@ -702,17 +702,17 @@ public class LanguageServersTest {
 
 		CompletableFuture<List<LSWPair>> async = LanguageServers.forDocument(document)
 				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
-				.collectAll((w, ls) -> ls.getTextDocumentService().hover(params).thenApply(h -> new LSWPair(w, ls)));
+				.collectAll(w -> w.getTextDocumentService().hover(params).thenApply(h -> new LSWPair(w, w.getServer())));
 
 		final List<LSWPair> result = async.join();
 
 		final AtomicInteger matching = new AtomicInteger();
 
 		assertEquals("Should have had two responses", 2, result.size());
-		assertNotEquals("LS should have been different proxies", result.get(0).server, result.get(1).server);
+		assertNotEquals("LS should have been different proxies", result.get(0).wrapper, result.get(1).wrapper);
 		result.forEach(p -> {
 			p.wrapper.execute(ls -> {
-				if (ls == p.server) {
+				if (ls == p.wrapper.getServer()) {
 					matching.incrementAndGet();
 				}
 				return CompletableFuture.completedFuture(null);
