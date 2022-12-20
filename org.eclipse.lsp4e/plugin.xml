@@ -657,4 +657,21 @@
          </enabledWhen>
       </reconciler>
    </extension>   
+   <extension
+         point="org.eclipse.ui.genericeditor.reconcilers">
+      <reconciler
+            class="org.eclipse.lsp4e.operations.semanticTokens.SemanticHighlightReconciler"
+            contentType="org.eclipse.core.runtime.text">
+         <enabledWhen>
+           <or>
+             <with variable="editorInput">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+             <with variable="viewer">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+             </with>
+           </or>
+         </enabledWhen>
+      </reconciler>
+   </extension> 
 </plugin>

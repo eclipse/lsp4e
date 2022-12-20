@@ -398,7 +398,7 @@ public class LanguageServiceAccessor {
 			}
 
 			if (contentType.getBaseType() != null) {
-			   contentTypesToProcess.add(contentType.getBaseType());
+				contentTypesToProcess.add(contentType.getBaseType());
 			}
 			processedContentTypes.add(contentType);
 		}
@@ -649,9 +649,12 @@ public class LanguageServiceAccessor {
 				.anyMatch(wrapper -> condition.test(wrapper.getServerCapabilities()));
 	}
 
-	public static Optional<LanguageServerDefinition> resolveServerDefinition(LanguageServer languageServer) {
+	public static Optional<LanguageServerWrapper> resolveLanguageServerWrapper(LanguageServer languageServer) {
 		return startedServers.stream() //
-				.filter(wrapper -> languageServer.equals(wrapper.getServer())).findFirst()
-				.map(wrapper -> wrapper.serverDefinition);
+				.filter(wrapper -> languageServer.equals(wrapper.getServer())).findFirst();
+	}
+
+	public static Optional<LanguageServerDefinition> resolveServerDefinition(LanguageServer languageServer) {
+		return resolveLanguageServerWrapper(languageServer).map(w -> w.serverDefinition);
 	}
 }

@@ -44,6 +44,10 @@ import org.eclipse.lsp4e.test.outline.SymbolsLabelProviderTest;
 import org.eclipse.lsp4e.test.references.FindReferencesTest;
 import org.eclipse.lsp4e.test.rename.LSPTextChangeTest;
 import org.eclipse.lsp4e.test.rename.RenameTest;
+import org.eclipse.lsp4e.test.semanticTokens.SemanticHighlightReconcilerStrategyTest;
+import org.eclipse.lsp4e.test.semanticTokens.SemanticTokensDataStreamProcessorTest;
+import org.eclipse.lsp4e.test.semanticTokens.SemanticTokensLegendProviderTest;
+import org.eclipse.lsp4e.test.semanticTokens.StyleRangeHolderTest;
 import org.eclipse.lsp4e.test.symbols.SymbolsModelTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -88,7 +92,11 @@ import org.junit.runners.Suite.SuiteClasses;
 	LSPCodeMiningTest.class,
 	ShowMessageTest.class,
 	WorkspaceFoldersTest.class,
-	DebugTest.class
+	DebugTest.class,
+	SemanticHighlightReconcilerStrategyTest.class,
+	SemanticTokensDataStreamProcessorTest.class,
+	SemanticTokensLegendProviderTest.class,
+	StyleRangeHolderTest.class
 })
 public class AllTests {
 
