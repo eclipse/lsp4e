@@ -135,6 +135,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 
+import com.google.common.base.Functions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -655,25 +656,16 @@ public class LanguageServerWrapper {
 			return null;
 		}
 		final IDocument theDocument = document;
-		return initializeFuture.thenComposeAsync(theVoid -> {
+		return initializeFuture.thenAcceptAsync(theVoid -> {
 			synchronized (connectedDocuments) {
 				if (this.connectedDocuments.containsKey(uri)) {
-					return CompletableFuture.completedFuture(null);
+					return;
 				}
-				Either<TextDocumentSyncKind, TextDocumentSyncOptions> syncOptions = initializeFuture == null ? null
-						: this.serverCapabilities.getTextDocumentSync();
-				TextDocumentSyncKind syncKind = null;
-				if (syncOptions != null) {
-					if (syncOptions.isRight()) {
-						syncKind = syncOptions.getRight().getChange();
-					} else if (syncOptions.isLeft()) {
-						syncKind = syncOptions.getLeft();
-					}
-				}
+				TextDocumentSyncKind syncKind = initializeFuture == null ? null
+						: serverCapabilities.getTextDocumentSync().map(Functions.identity(), TextDocumentSyncOptions::getChange);
 				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
-				return listener.lastChangeFuture();
 			}
 		}).thenApply(theVoid -> languageServer);
 	}
