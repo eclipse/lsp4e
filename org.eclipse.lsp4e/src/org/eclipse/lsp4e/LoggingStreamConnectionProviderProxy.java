@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.OffsetDateTime;
@@ -120,7 +121,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		builder.append(' ');
 		builder.append(id);
 		builder.append(":\n"); //$NON-NLS-1$
-		builder.append(new String(payload));
+		builder.append(new String(payload, StandardCharsets.UTF_8));
 		return builder.toString();
 	}
 
@@ -294,7 +295,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 			}
 		}
 		try {
-			Files.write(logFile.toPath(), string.getBytes(), StandardOpenOption.APPEND);
+			Files.write(logFile.toPath(), string.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
 		} catch (IOException e) {
 			LanguageServerPlugin.logError(e);
 		}
