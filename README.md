@@ -53,6 +53,8 @@ Examples of integration contain:
 * [language-servers-for-eclipse](https://github.com/eclipselabs/language-servers-for-eclipse) Binds various language servers to the Eclipse IDE.
 * [Solargraph](https://github.com/PyvesB/eclipse-solargraph) Binds a **Ruby** language server to the Eclipse IDE.
 * [Quarkus Tools](https://github.com/jbosstools/jbosstools-quarkus) Based on the Eclipse [LSP4MP](https://github.com/eclipse/lsp4mp) language server, extended for Quarkus specifics and binds to application.properties and Java files.
+* [dart4e](https://github.com/dart4e/dart4e): Provides [Dart](https://dart.dev/) programming language support for the Eclipse IDE using [LSP4E](https://github.com/eclipse/lsp4e), [TM4E](https://github.com/eclipse/tm4e).
+* [haxe4e](https://github.com/haxe4e/haxe4e): Provides [Haxe](https://haxe.org/) programming language support for the Eclipse IDE using [LSP4E](https://github.com/eclipse/lsp4e), [TM4E](https://github.com/eclipse/tm4e) and the [haxe-language-server](https://github.com/vshaxe/haxe-language-server).
 
 All those examples are good for usage as they provide advanced edition features, and great for showcase of the LSP4E project.
 
