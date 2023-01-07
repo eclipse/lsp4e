@@ -185,8 +185,7 @@
                commandId="org.eclipse.lsp4e.togglelinkwitheditor"
                label="Link with Editor"
                style="toggle">
-            <visibleWhen
-                  checkEnabled="false">
+            <visibleWhen>
                <reference definitionId="org.eclipse.lsp4e.activePartHasCNFOutlinePage" />
             </visibleWhen>
          </command>
@@ -198,8 +197,7 @@
                commandId="org.eclipse.lsp4e.showkindinoutline"
                label="Show Kind"
                style="toggle">
-            <visibleWhen
-                  checkEnabled="false">
+            <visibleWhen>
                <reference definitionId="org.eclipse.lsp4e.activePartHasCNFOutlinePage" />
             </visibleWhen>
          </command>
@@ -207,15 +205,12 @@
       <menuContribution
             allPopups="true"
             locationURI="popup:org.eclipse.ui.genericeditor.source.menu?after=additions">
-         <command
-               commandId="org.eclipse.lsp4e.format"
-               style="push">
+         <command commandId="org.eclipse.lsp4e.format">
          </command>
       </menuContribution>
       <menuContribution allPopups="false" locationURI="toolbar:org.eclipse.ui.views.ContentOutline?after=additions">
          <command commandId="org.eclipse.lsp4e.toggleSortOutline" style="toggle" label="%command.toggle.outline.sort.label">
-            <visibleWhen
-                  checkEnabled="false">
+            <visibleWhen>
                <reference definitionId="org.eclipse.lsp4e.activePartHasCNFOutlinePage" />
             </visibleWhen>
          </command>
