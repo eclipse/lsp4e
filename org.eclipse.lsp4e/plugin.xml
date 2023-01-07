@@ -92,60 +92,21 @@
             class="org.eclipse.lsp4e.operations.references.LSFindReferences"
             commandId="org.eclipse.ui.genericeditor.findReferences">
          <activeWhen>
-            <and>
-               <with
-                     variable="selection">
-                  <instanceof
-                        value="org.eclipse.jface.text.ITextSelection">
-                  </instanceof>
-               </with>
-               <with
-                     variable="activeEditorInput">
-                  <test
-                        property="org.eclipse.lsp4e.hasLanguageServer">
-                  </test>
-               </with>
-            </and>
+            <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
          </activeWhen>
       </handler>
       <handler
             class="org.eclipse.lsp4e.operations.rename.LSPRenameHandler"
             commandId="org.eclipse.ui.edit.rename">
          <activeWhen>
-            <and>
-               <with
-                     variable="selection">
-                  <instanceof
-                        value="org.eclipse.jface.text.ITextSelection">
-                  </instanceof>
-               </with>
-               <with
-                     variable="activeEditorInput">
-                  <test
-                        property="org.eclipse.lsp4e.hasLanguageServer">
-                  </test>
-               </with>
-            </and>
+            <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
          </activeWhen>
       </handler>
       <handler
             class="org.eclipse.lsp4e.operations.format.LSPFormatHandler"
             commandId="org.eclipse.lsp4e.format">
          <activeWhen>
-            <and>
-               <with
-                     variable="selection">
-                  <instanceof
-                        value="org.eclipse.jface.text.ITextSelection">
-                  </instanceof>
-               </with>
-               <with
-                     variable="activeEditorInput">
-                  <test
-                        property="org.eclipse.lsp4e.hasLanguageServer">
-                  </test>
-               </with>
-            </and>
+            <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
          </activeWhen>
       </handler>
       <handler
@@ -226,19 +187,7 @@
                style="toggle">
             <visibleWhen
                   checkEnabled="false">
-               <and>
-	              <with variable="activePart">
-	                 <instanceof
-                           value="org.eclipse.ui.views.contentoutline.ContentOutline">
-                     </instanceof>
-	              </with>
-	              <with
-	                    variable="activePart">
-	                 <test
-	                       property="org.eclipse.lsp4e.hasCNFOutlinePage">
-	                 </test>
-	              </with>
-	           </and>
+               <reference definitionId="org.eclipse.lsp4e.activePartHasCNFOutlinePage" />
             </visibleWhen>
          </command>
       </menuContribution>
@@ -251,19 +200,7 @@
                style="toggle">
             <visibleWhen
                   checkEnabled="false">
-               <and>
-	              <with variable="activePart">
-	                 <instanceof
-                           value="org.eclipse.ui.views.contentoutline.ContentOutline">
-                     </instanceof>
-	              </with>
-	              <with
-	                    variable="activePart">
-	                 <test
-	                       property="org.eclipse.lsp4e.hasCNFOutlinePage">
-	                 </test>
-	              </with>
-	           </and>
+               <reference definitionId="org.eclipse.lsp4e.activePartHasCNFOutlinePage" />
             </visibleWhen>
          </command>
       </menuContribution>
@@ -279,19 +216,7 @@
          <command commandId="org.eclipse.lsp4e.toggleSortOutline" style="toggle" label="%command.toggle.outline.sort.label">
             <visibleWhen
                   checkEnabled="false">
-               <and>
-	              <with variable="activePart">
-	                 <instanceof
-                           value="org.eclipse.ui.views.contentoutline.ContentOutline">
-                     </instanceof>
-	              </with>
-	              <with
-	                    variable="activePart">
-	                 <test
-	                       property="org.eclipse.lsp4e.hasCNFOutlinePage">
-	                 </test>
-	              </with>
-	           </and>
+               <reference definitionId="org.eclipse.lsp4e.activePartHasCNFOutlinePage" />
             </visibleWhen>
          </command>
       </menuContribution>
@@ -509,14 +434,7 @@
             class="org.eclipse.lsp4e.operations.highlight.HighlightReconciler"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
-           <or>
-             <with variable="editorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-             <with variable="viewer">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-           </or>
+            <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
       </highlightReconciler>
    </extension>
@@ -526,14 +444,7 @@
             class="org.eclipse.lsp4e.operations.folding.LSPFoldingReconciler"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
-           <or>
-             <with variable="editorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-             <with variable="viewer">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-           </or>
+            <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
       </foldingReconciler>
    </extension>
@@ -544,14 +455,7 @@
             id="org.eclipse.lsp4e.codelens"
             label="CodeLens">
          <enabledWhen>
-           <or>
-             <with variable="editorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-             <with variable="viewer">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-           </or>
+            <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
       </codeMiningProvider>
       <codeMiningProvider
@@ -559,14 +463,7 @@
             id="org.eclipse.lsp4e.documentColor"
             label="Color">
          <enabledWhen>
-           <or>
-             <with variable="editorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-             <with variable="viewer">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-           </or>
+            <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
       </codeMiningProvider>
       <codeMiningProvider
@@ -574,16 +471,9 @@
             id="org.eclipse.lsp4e.inlayhint"
             label="InlayHint">
          <enabledWhen>
-           <or>
-             <with variable="editorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-             <with variable="viewer">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-           </or>
+            <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
-      </codeMiningProvider>      
+      </codeMiningProvider>
    </extension>
    <extension
          point="org.eclipse.ui.genericeditor.reconcilers">
@@ -629,14 +519,7 @@
             class="org.eclipse.lsp4e.operations.linkedediting.LinkedEditingReconciler"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
-           <or>
-             <with variable="editorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-             <with variable="viewer">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-           </or>
+            <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
       </reconciler>
    </extension>
@@ -646,32 +529,50 @@
             class="org.eclipse.lsp4e.operations.documentLink.LSPDocumentLinkPresentationReconciler"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
-           <or>
-             <with variable="editorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-             <with variable="viewer">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-           </or>
+            <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
       </reconciler>
-   </extension>   
+   </extension>
    <extension
          point="org.eclipse.ui.genericeditor.reconcilers">
       <reconciler
             class="org.eclipse.lsp4e.operations.semanticTokens.SemanticHighlightReconciler"
             contentType="org.eclipse.core.runtime.text">
          <enabledWhen>
-           <or>
-             <with variable="editorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-             <with variable="viewer">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
-             </with>
-           </or>
+            <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
       </reconciler>
-   </extension> 
+   </extension>
+
+   <!-- reusable expression definitions, see https://wiki.eclipse.org/Command_Core_Expressions -->
+   <extension point="org.eclipse.core.expressions.definitions">
+      <definition id="org.eclipse.lsp4e.activePartHasCNFOutlinePage">
+         <with variable="activePart">
+            <and>
+               <instanceof value="org.eclipse.ui.views.contentoutline.ContentOutline" />
+               <test property="org.eclipse.lsp4e.hasCNFOutlinePage" />
+            </and>
+         </with>
+      </definition>
+      <definition id="org.eclipse.lsp4e.editorHasLanguageServer">
+         <or>
+            <with variable="editorInput">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+            </with>
+            <with variable="viewer">
+               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+            </with>
+         </or>
+      </definition>
+      <definition id="org.eclipse.lsp4e.textSelectionHasLanguageServer">
+         <and>
+            <with variable="selection">
+               <instanceof value="org.eclipse.jface.text.ITextSelection" />
+            </with>
+            <with variable="activeEditorInput">
+               <test property="org.eclipse.lsp4e.hasLanguageServer" />
+            </with>
+         </and>
+      </definition>
+   </extension>
 </plugin>
