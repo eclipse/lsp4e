@@ -748,7 +748,7 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Starts the language serverm, ensure it's and returns a CompletableFuture waiting for the
+	 * Starts the language server, ensure it's and returns a CompletableFuture waiting for the
 	 * server to be initialized and up-to-date (all related pending document changes
 	 * notifications are sent).
 	 * <p>If done in the UI stream, a job will be created
