@@ -9,6 +9,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *  Michał Niewrzał (Rogue Wave Software Inc.)
+ *  Sebastian Thomschke (Vegard IT GmbH)
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.format;
 
@@ -30,11 +31,7 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.handlers.HandlerUtil;
-import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPFormatHandler extends AbstractHandler {
@@ -42,57 +39,52 @@ public class LSPFormatHandler extends AbstractHandler {
 	private final LSPFormatter formatter = new LSPFormatter();
 
 	@Override
-	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		if (part instanceof MultiPageEditorPart multoPage) {
-			Object selectedPage = multoPage.getSelectedPage();
-			if (selectedPage instanceof IEditorPart editor) {
-				part = editor;
-			}
-		}
+	public Object execute(final ExecutionEvent event) throws ExecutionException {
+		final ITextEditor textEditor = UI.getActiveTextEditor();
+		if (textEditor == null)
+			return null;
 
-		if (part instanceof ITextEditor textEditor) {
-			final IDocument document = LSPEclipseUtils.getDocument(textEditor);
-			final Shell shell = textEditor.getSite().getShell();
-			ISelection selection = HandlerUtil.getCurrentSelection(event);
-			if (document != null && selection instanceof ITextSelection textSelection) {
-				VersionedFormatRequest versionedEdits = formatter.versionedRequestFormatting(document, textSelection);
-				versionedEdits.edits().thenAcceptAsync(edits -> {
-					if (!edits.isEmpty()) {
-						shell.getDisplay().asyncExec(() -> {
-							try {
-								formatter.applyEdits(document, edits, versionedEdits.version());
-							} catch (ConcurrentModificationException e) {
-								ServerMessageHandler.showMessage(Messages.LSPFormatHandler_DiscardedFormat, //
-										new MessageParams(MessageType.Error,
-												Messages.LSPFormatHandler_DiscardedFormatResponse));
-							}
-						});
-					}
-				});
-			}
+		final ISelection selection = HandlerUtil.getCurrentSelection(event);
+		if (selection instanceof final ITextSelection textSelection && !textSelection.isEmpty()) {
+
+			final IDocument doc = LSPEclipseUtils.getDocument(textEditor);
+			if (doc == null)
+				return null;
+
+			final VersionedFormatRequest versionedEdits = formatter.versionedRequestFormatting(doc, textSelection);
+			versionedEdits.edits().thenAcceptAsync(edits -> {
+				if (!edits.isEmpty()) {
+					UI.getDisplay().asyncExec(() -> {
+						try {
+							formatter.applyEdits(doc, edits, versionedEdits.version());
+						} catch (final ConcurrentModificationException ex) {
+							ServerMessageHandler.showMessage(Messages.LSPFormatHandler_DiscardedFormat,
+									new MessageParams(MessageType.Error,
+											Messages.LSPFormatHandler_DiscardedFormatResponse));
+						}
+					});
+				}
+			});
 		}
 		return null;
 	}
 
 	@Override
 	public boolean isEnabled() {
-		IWorkbenchPart part = UI.getActivePart();
-		if (part instanceof MultiPageEditorPart multiPage) {
-			Object selectedPage = multiPage.getSelectedPage();
-			if (selectedPage instanceof IWorkbenchPart workbenchPart) {
-				part = workbenchPart;
-			}
-		}
+		final ITextEditor textEditor = UI.getActiveTextEditor();
+		if (textEditor == null)
+			return false;
 
-		if (part instanceof ITextEditor textEditor) {
-			Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-					LSPEclipseUtils.getDocument(textEditor),
-					LSPFormatter::supportsFormatting);
-			ISelection selection = textEditor.getSelectionProvider().getSelection();
-			return !infos.isEmpty() && !selection.isEmpty() && selection instanceof ITextSelection;
-		}
-		return false;
+		final ISelection selection = textEditor.getSelectionProvider().getSelection();
+		if (!(selection instanceof ITextSelection) || selection.isEmpty())
+			return false;
+
+		final IDocument doc = LSPEclipseUtils.getDocument(textEditor);
+		if (doc == null)
+			return false;
+
+		final Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(doc,
+				LSPFormatter::supportsFormatting);
+		return !infos.isEmpty();
 	}
-
 }
