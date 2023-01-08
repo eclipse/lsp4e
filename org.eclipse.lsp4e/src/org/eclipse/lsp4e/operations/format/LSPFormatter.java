@@ -56,7 +56,7 @@ public class LSPFormatter {
 	public void applyEdits(@NonNull IDocument document, List<? extends TextEdit> edits, int version)
 			throws ConcurrentModificationException {
 		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-				LSPFormatter::supportFormatting);
+				LSPFormatter::supportsFormatting);
 		if (getLSPDocumentInfo(infos).getVersion() != version) {
 			throw new ConcurrentModificationException();
 		} else {
@@ -71,7 +71,7 @@ public class LSPFormatter {
 	public VersionedFormatRequest versionedRequestFormatting(@NonNull IDocument document,
 			@NonNull ITextSelection textSelection) {
 		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-				LSPFormatter::supportFormatting);
+				LSPFormatter::supportsFormatting);
 		if (infos.isEmpty()) {
 			return new VersionedFormatRequest();
 		}
@@ -124,7 +124,7 @@ public class LSPFormatter {
 		return LSPEclipseUtils.hasCapability(capabilities.getDocumentFormattingProvider());
 	}
 
-	public static boolean supportFormatting(ServerCapabilities capabilities) {
+	public static boolean supportsFormatting(ServerCapabilities capabilities) {
 		return isDocumentFormattingSupported(capabilities)
 				|| isDocumentRangeFormattingSupported(capabilities);
 	}
