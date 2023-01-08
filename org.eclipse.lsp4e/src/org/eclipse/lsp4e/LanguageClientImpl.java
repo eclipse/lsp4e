@@ -25,6 +25,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.progress.LSPProgressManager;
 import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
 import org.eclipse.lsp4j.ConfigurationParams;
@@ -42,7 +43,6 @@ import org.eclipse.lsp4j.WorkDoneProgressCreateParams;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
-import org.eclipse.ui.PlatformUI;
 
 public class LanguageClientImpl implements LanguageClient {
 
@@ -149,7 +149,7 @@ public class LanguageClientImpl implements LanguageClient {
 	@Override
 	public CompletableFuture<ShowDocumentResult> showDocument(ShowDocumentParams params) {
 		return CompletableFuture.supplyAsync(() -> {
-			PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
+			UI.getDisplay().syncExec(() -> {
 				var location = new Location(params.getUri(), params.getSelection());
 				LSPEclipseUtils.openInEditor(location);
 			});
