@@ -62,7 +62,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.IMarkerResolution2;
 import org.eclipse.ui.IMarkerResolutionGenerator2;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.internal.progress.ProgressInfoItem;
 
 public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator2 {
@@ -150,7 +149,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				codeAction.thenAcceptAsync(actions -> {
 					try {
 						marker.setAttribute(LSP_REMEDIATION, actions);
-						Display display = PlatformUI.getWorkbench().getDisplay();
+						Display display = UI.getDisplay();
 						display.asyncExec(() -> {
 							ITextViewer textViewer = UI.getActiveTextViewer();
 							if (textViewer != null) {

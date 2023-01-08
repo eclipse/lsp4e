@@ -43,7 +43,7 @@ public class LSPImages {
 	private static final Map<java.awt.Color, Image> colorToImageCache = new HashMap<>();
 	private static final String ICONS_PATH = "$nl$/icons/full/"; //$NON-NLS-1$
 	private static final String OBJECT = ICONS_PATH + "obj16/"; // basic colors - size 16x16 //$NON-NLS-1$
-	private static final Image EMPTY_IMAGE = new Image(PlatformUI.getWorkbench().getDisplay(), 16, 16);
+	private static final Image EMPTY_IMAGE = new Image(UI.getDisplay(), 16, 16);
 
 	public static final String IMG_MODULE = "IMG_MODULE"; //$NON-NLS-1$
 	public static final String IMG_NAMESPACE = "IMG_NAMESPACE"; //$NON-NLS-1$

@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.ui;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
@@ -74,6 +75,20 @@ public final class UI {
 	@Nullable
 	public static IWorkbenchWindow getActiveWindow() {
 		return PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+	}
+
+	/**
+	 * @return the current display
+	 */
+	public static Display getDisplay() {
+		if (PlatformUI.isWorkbenchRunning())
+			return PlatformUI.getWorkbench().getDisplay();
+
+		final var display = Display.getCurrent();
+		if (display != null)
+			return display;
+
+		return Display.getDefault();
 	}
 
 	private UI() {
