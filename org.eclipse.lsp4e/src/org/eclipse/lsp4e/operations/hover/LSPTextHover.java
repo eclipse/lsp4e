@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2020 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2022 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -57,6 +57,7 @@ import org.eclipse.swt.widgets.Shell;
 public class LSPTextHover implements ITextHover, ITextHoverExtension {
 
 	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage(true));
+	private static final int GET_TIMEOUT_MS = 1000;
 
 	private IRegion lastRegion;
 	private ITextViewer lastViewer;
@@ -70,7 +71,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 		CompletableFuture<String> hoverInfoFuture = getHoverInfoFuture(textViewer, hoverRegion);
 		if (hoverInfoFuture != null) {
 			try {
-				String result = hoverInfoFuture.get(500, TimeUnit.MILLISECONDS);
+				String result = hoverInfoFuture.get(GET_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 				if (result != null) {
 					return result;
 				}
@@ -80,7 +81,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
 			} catch (TimeoutException e) {
-				LanguageServerPlugin.logWarning("Could not get hover information due to timeout after 500 miliseconds", e); //$NON-NLS-1$
+				LanguageServerPlugin.logWarning("Could not get hover information due to timeout after " + GET_TIMEOUT_MS + " miliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 		return null;
@@ -149,7 +150,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 			boolean[] oneHoverAtLeast = new boolean[] { false };
 			int[] regionStartOffset = new int[] { 0 };
 			int[] regionEndOffset = new int[] { document.getLength() };
-			this.request.get(500, TimeUnit.MILLISECONDS).stream()
+			this.request.get(GET_TIMEOUT_MS, TimeUnit.MILLISECONDS).stream()
 				.filter(Objects::nonNull)
 				.map(Hover::getRange)
 				.filter(Objects::nonNull)
@@ -174,7 +175,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not get hover region due to timeout after 500 miliseconds", e); //$NON-NLS-1$
+			LanguageServerPlugin.logWarning("Could not get hover region due to timeout after " + GET_TIMEOUT_MS + " miliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		this.lastRegion = new Region(offset, 0);
 		return this.lastRegion;
@@ -200,13 +201,17 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 					.map(languageServer -> {
 						try {
 								return languageServer.getTextDocumentService()
-										.hover(LSPEclipseUtils.toHoverParams(offset, document)).get();
+										.hover(LSPEclipseUtils.toHoverParams(offset, document))
+										.get(GET_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 						} catch (ExecutionException | BadLocationException e) {
 							LanguageServerPlugin.logError(e);
 							return null;
 						} catch (InterruptedException e) {
 							LanguageServerPlugin.logError(e);
 							Thread.currentThread().interrupt();
+							return null;
+						} catch (TimeoutException e) {
+							LanguageServerPlugin.logWarning("Could not get hover due to timeout after " + GET_TIMEOUT_MS + " miliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
 							return null;
 						}
 					}).filter(Objects::nonNull).collect(Collectors.toList()));
