@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019, 2022 Red Hat Inc. and others.
+ * Copyright (c) 2019, 2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -227,7 +227,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		params.setTextDocument(new TextDocumentIdentifier(infos.get(0).getFileUri().toString()));
 		try {
 			params.setRange(new Range(LSPEclipseUtils.toPosition(offset, infos.get(0).getDocument()), LSPEclipseUtils
-					.toPosition(offset + length, infos.get(0).getDocument())));
+					.toPosition(offset + (length > 0 ? length : 0), infos.get(0).getDocument())));
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}
