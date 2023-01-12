@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -81,6 +83,8 @@ import org.eclipse.swt.custom.StyledText;
  */
 public class SemanticHighlightReconcilerStrategy
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextPresentationListener {
+
+    private static final int FULL_RECONCILE_TIMEOUT_S = 10;
 
     private final boolean disabled;
 
@@ -294,9 +298,14 @@ public class SemanticHighlightReconcilerStrategy
 				int version = getDocumentVersion();
 				semanticTokensFullFuture = LanguageServiceAccessor.getLanguageServers(theDocument, this::hasSemanticTokensFull)//
 						.thenAccept(ls -> semanticTokensFull(ls, version));
-				semanticTokensFullFuture.get();
-			} catch (InterruptedException | ExecutionException e) {
+				semanticTokensFullFuture.get(FULL_RECONCILE_TIMEOUT_S, TimeUnit.SECONDS);
+			} catch (ExecutionException e) {
 				LanguageServerPlugin.logError(e);
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+				Thread.currentThread().interrupt();
+			} catch (TimeoutException e) {
+				LanguageServerPlugin.logWarning("Could not get semantic tokens due to timeout after " + FULL_RECONCILE_TIMEOUT_S + " seconds", e); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 	}
