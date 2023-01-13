@@ -23,7 +23,7 @@ updates:
       include: scope
     labels:
       - dependencies
-        - package-ecosystem: maven
+  - package-ecosystem: maven
     directory: /repository
     schedule:
       interval: daily
