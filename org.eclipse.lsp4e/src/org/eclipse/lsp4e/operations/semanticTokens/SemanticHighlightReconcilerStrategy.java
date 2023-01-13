@@ -197,7 +197,7 @@ public class SemanticHighlightReconcilerStrategy
 
 	private boolean hasSemanticTokensFull(final ServerCapabilities serverCapabilities) {
 		return serverCapabilities.getSemanticTokensProvider() != null
-				&& serverCapabilities.getSemanticTokensProvider().getFull().getLeft();
+				&& LSPEclipseUtils.hasCapability(serverCapabilities.getSemanticTokensProvider().getFull());
 	}
 
 	private CompletableFuture<Void> semanticTokensFull(final List<LanguageServer> languageServers, final int version) {
