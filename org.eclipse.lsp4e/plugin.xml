@@ -51,6 +51,11 @@
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
+            id="org.eclipse.lsp4e.formatfile"
+            name="%format.command.name">
+      </command>
+      <command
+            categoryId="org.eclipse.lsp4e.category"
             id="org.eclipse.lsp4e.symbolinfile"
             name="%commands.symbolsInFile.name">
       </command>
@@ -108,6 +113,10 @@
          <activeWhen>
             <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
          </activeWhen>
+      </handler>
+      <handler
+            class="org.eclipse.lsp4e.operations.format.LSPFormatFilesHandler"
+            commandId="org.eclipse.lsp4e.formatfile">
       </handler>
       <handler
             class="org.eclipse.lsp4e.operations.symbols.LSPSymbolInFileHandler"
@@ -221,6 +230,25 @@
                 <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
             </visibleWhen>
          </command>
+      </menuContribution>
+      <menuContribution locationURI="popup:org.eclipse.ui.popup.any?endof=group.generate">
+         <!-- https://github.com/eclipse-mirrors/org.eclipse.ui/blob/master/bundles/org.eclipse.ui.navigator/src/org/eclipse/ui/navigator/ICommonMenuConstants.java -->
+         <!-- "Source/Format" menu entry in navigator popup menu -->
+         <menu label="Source" mnemonic="S" >
+            <command commandId="org.eclipse.lsp4e.formatfile">
+               <visibleWhen>
+                  <iterate>
+                     <or>
+                         <adapt type="org.eclipse.core.resources.IFile">
+                            <test property="org.eclipse.lsp4e.hasLanguageServer" />
+                         </adapt>
+                         <adapt type="org.eclipse.core.resources.IFolder" />
+                         <adapt type="org.eclipse.core.resources.IProject" />
+                     </or>
+                  </iterate>
+               </visibleWhen>
+            </command>
+         </menu>
       </menuContribution>
       <menuContribution allPopups="false" locationURI="toolbar:org.eclipse.ui.views.ContentOutline?after=additions">
          <command commandId="org.eclipse.lsp4e.toggleSortOutline" style="toggle" label="%command.toggle.outline.sort.label">
