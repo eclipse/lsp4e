@@ -1,8 +1,30 @@
-# https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+# Separated roots are subject to be replaced with the single '/'-root directory as soon as 
+# https://github.com/dependabot/dependabot-core/issues/4364 issue is fixed 
 version: 2
 updates:
   - package-ecosystem: maven
-    directory: /
+    directory: /org.eclipse.lsp4e
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
+    labels:
+      - dependencies
+  - package-ecosystem: maven
+    directory: /org.eclipse.lsp4e.test
+    schedule:
+      interval: daily
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+      include: scope
+    labels:
+      - dependencies
+        - package-ecosystem: maven
+    directory: /repository
     schedule:
       interval: daily
     commit-message:
