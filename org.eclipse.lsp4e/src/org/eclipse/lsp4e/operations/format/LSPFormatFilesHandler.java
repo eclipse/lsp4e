@@ -35,8 +35,10 @@ import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.operations.format.LSPFormatter.VersionedFormatRequest;
+import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.DocumentProviderRegistry;
 import org.eclipse.ui.texteditor.IDocumentProvider;
@@ -48,7 +50,7 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
 		if (event.getApplicationContext() instanceof final ExpressionContext ctx) {
-			final var job = Job.create("Formatting selected files...", monitor -> { //$NON-NLS-1$
+			final var job = Job.create(Messages.LSPFormatFilesHandler_FormattingSelectedFiles, monitor -> {
 				final var selectedFiles = getSelectedFiles(ctx);
 				final var subMonitor = SubMonitor.convert(monitor, selectedFiles.size());
 				for (final IFile file : selectedFiles) {
@@ -74,7 +76,7 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 			if (doc == null)
 				return;
 
-			monitor.setTaskName("Formatting " + file.getFullPath() + "..."); //$NON-NLS-1$//$NON-NLS-2$
+			monitor.setTaskName(NLS.bind(Messages.LSPFormatFilesHandler_FormattingFile, file.getFullPath()));
 			final VersionedFormatRequest formatRequest = formatter.versionedRequestFormatting(doc,
 					new TextSelection(0, 0));
 
