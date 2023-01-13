@@ -55,10 +55,13 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 				final var selectedFiles = getSelectedFiles(ctx);
 				final var subMonitor = SubMonitor.convert(monitor, selectedFiles.size());
 				for (final IFile file : selectedFiles) {
-					subMonitor.worked(1);
+					if (subMonitor.isCanceled()) {
+						return;
+					}
 					formatFile(file, monitor);
-					subMonitor.done();
+					subMonitor.worked(1);
 				}
+				subMonitor.done();
 			});
 			job.setPriority(Job.BUILD);
 			job.schedule();
