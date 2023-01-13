@@ -20,6 +20,7 @@ import java.util.Set;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -124,7 +125,7 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 								files.add(file);
 								return false;
 							}
-							return childResource instanceof final IFolder;
+							return true;
 						});
 					}
 				}
@@ -153,7 +154,7 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 			}
 
 			// if the selection contains more than one entry or a folder, enable the handler
-			if (selection.size() > 1 || selection.stream().anyMatch(IFolder.class::isInstance)) {
+			if (selection.size() > 1 || selection.stream().anyMatch(IContainer.class::isInstance)) {
 				setBaseEnabled(true);
 				return;
 			}
