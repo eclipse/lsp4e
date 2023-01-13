@@ -52,6 +52,8 @@ public class Messages extends NLS {
 	public static String initializeLanguageServer_job;
 	public static String computing;
 	public static String notImplemented;
+	public static String LSPFormatFilesHandler_FormattingFile;
+	public static String LSPFormatFilesHandler_FormattingSelectedFiles;
 	public static String LSPFormatHandler_DiscardedFormat;
 	public static String LSPFormatHandler_DiscardedFormatResponse;
 	public static String LSPSymbolInWorkspaceDialog_DialogLabel;
