@@ -43,7 +43,6 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
-import org.eclipse.lsp4j.TypeDefinitionRegistrationOptions;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector {
@@ -150,16 +149,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 	}
 
 	private static boolean isTypeDefinitionProvider(ServerCapabilities capabilities) {
-		 Either<Boolean, TypeDefinitionRegistrationOptions> typeDefinitionProvider = capabilities.getTypeDefinitionProvider();
-		 if (typeDefinitionProvider == null) {
-			 return false;
-		 }
-		 if (typeDefinitionProvider.isLeft()) {
-			return Boolean.TRUE.equals(typeDefinitionProvider.getLeft());
-		 } else if (typeDefinitionProvider.isRight()) {
-			return true;
-		}
-		return false;
+		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getTypeDefinitionProvider());
 	}
 
 	/**

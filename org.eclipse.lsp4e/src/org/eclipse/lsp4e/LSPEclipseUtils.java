@@ -1219,16 +1219,10 @@ public class LSPEclipseUtils {
 		return Paths.get(uri).toFile();
 	}
 
-	public static boolean hasCapability(Either<Boolean, ? extends Object> eitherCapability) {
-		if(eitherCapability != null) {
-			if (eitherCapability.isLeft()) {
-				return eitherCapability.getLeft();
-			} else {
-				return eitherCapability.getRight() != null;
-			}
-		} else {
+	public static boolean hasCapability(final @Nullable Either<Boolean, ? extends Object> eitherCapability) {
+		if(eitherCapability == null) {
 			return false;
 		}
+		return eitherCapability.isRight() || eitherCapability.getLeft();
 	}
-
 }

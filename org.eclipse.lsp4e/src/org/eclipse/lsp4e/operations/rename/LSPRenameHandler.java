@@ -32,9 +32,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
-import org.eclipse.lsp4j.RenameOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ltk.core.refactoring.participants.ProcessorBasedRefactoring;
 import org.eclipse.ltk.core.refactoring.participants.RefactoringProcessor;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
@@ -85,21 +83,8 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 		return null;
 	}
 
-	public static boolean isRenameProvider(ServerCapabilities serverCapabilities) {
-		if (serverCapabilities == null) {
-			return false;
-		}
-		Either<Boolean, RenameOptions> renameProvider = serverCapabilities.getRenameProvider();
-		if (renameProvider == null) {
-			return false;
-		}
-		if (renameProvider.isLeft()) {
-			return renameProvider.getLeft() != null && renameProvider.getLeft();
-		}
-		if (renameProvider.isRight()) {
-			return renameProvider.getRight() != null;
-		}
-		return false;
+	public static boolean isRenameProvider(final ServerCapabilities capabilities) {
+		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getRenameProvider());
 	}
 
 	@Override
