@@ -27,6 +27,8 @@ import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.ProgressParams;
 import org.eclipse.lsp4j.WorkDoneProgressBegin;
 import org.eclipse.lsp4j.WorkDoneProgressCancelParams;
@@ -41,6 +43,7 @@ public class LSPProgressManager {
 	private final Map<String, BlockingQueue<ProgressParams>> progressMap;
 	private final Map<IProgressMonitor, Integer> currentPercentageMap;
 	private LanguageServer languageServer;
+	private LanguageServerDefinition languageServerDefinition;
 	private final Set<String> done;
 
 	public LSPProgressManager() {
@@ -49,8 +52,9 @@ public class LSPProgressManager {
 		this.done = new ConcurrentSkipListSet<>();
 	}
 
-	public void connect(final LanguageServer languageServer) {
+	public void connect(final LanguageServer languageServer, LanguageServerDefinition languageServerDefinition) {
 		this.languageServer = languageServer;
+		this.languageServerDefinition = languageServerDefinition;
 	}
 	/**
 	 * Creates the progress.
@@ -68,12 +72,19 @@ public class LSPProgressManager {
 			LanguageServerPlugin.logInfo(
 					"Old progress with identifier " + jobIdentifier + " discarded due to new create progress request"); //$NON-NLS-1$//$NON-NLS-2$
 		}
-		createJob(languageServer, queue, jobIdentifier);
+		createJob(queue, jobIdentifier);
 		return CompletableFuture.completedFuture(null);
 	}
 
-	private void createJob(final LanguageServer languageServer, final LinkedBlockingDeque<ProgressParams> queue, final String jobIdentifier) {
-		Job job = Job.create("Language Server Background Job", (ICoreRunnable) monitor -> { //$NON-NLS-1$
+	private void createJob(final LinkedBlockingDeque<ProgressParams> queue, final String jobIdentifier) {
+		final var languageServer = this.languageServer;
+		final var languageServerDefinition = this.languageServerDefinition;
+
+		final var jobName = languageServerDefinition == null //
+				|| languageServerDefinition.label == null || languageServerDefinition.label.isBlank() //
+				? Messages.LSPProgressManager_BackgroundJobName
+				: languageServerDefinition.label;
+		Job job = Job.create(jobName, (ICoreRunnable) monitor -> {
 			try {
 				while (true) {
 					if (monitor.isCanceled()) {

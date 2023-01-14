@@ -55,7 +55,7 @@ public class LanguageClientImpl implements LanguageClient {
 	public final void connect(LanguageServer server, LanguageServerWrapper wrapper) {
 		this.server = server;
 		this.wrapper = wrapper;
-		progressManager.connect(server);
+		progressManager.connect(server, wrapper.serverDefinition);
 	}
 
 	protected void setDiagnosticsConsumer(@NonNull Consumer<PublishDiagnosticsParams> diagnosticConsumer) {

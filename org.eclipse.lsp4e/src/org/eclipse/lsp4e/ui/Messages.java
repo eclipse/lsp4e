@@ -83,6 +83,7 @@ public class Messages extends NLS {
 	public static String DocumentContentSynchronizer_TimeoutThresholdMessage;
 	public static String CreateFile_confirm_title;
 	public static String CreateFile_confirm_message;
+	public static String LSPProgressManager_BackgroundJobName;
 
 	static {
 		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$
