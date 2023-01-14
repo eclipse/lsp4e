@@ -168,11 +168,8 @@ public class LSPFoldingReconcilingStrategy
 		}
 	}
 
-	private static boolean canFold(ServerCapabilities capabilities) {
-		return capabilities.getFoldingRangeProvider() != null
-				&& ((capabilities.getFoldingRangeProvider().getLeft() != null
-						&& capabilities.getFoldingRangeProvider().getLeft())
-						|| capabilities.getFoldingRangeProvider().getRight() != null);
+	private static boolean canFold(final ServerCapabilities capabilities) {
+		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getFoldingRangeProvider());
 	}
 
 	public void install(ProjectionViewer viewer) {

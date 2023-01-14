@@ -101,10 +101,8 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 		return colorTable.computeIfAbsent(rgba, key -> new Color(display, rgba));
 	}
 
-	private static boolean isColorProvider(ServerCapabilities capabilities) {
-		return capabilities != null && capabilities.getColorProvider() != null
-				&& ((capabilities.getColorProvider().getLeft() != null && capabilities.getColorProvider().getLeft())
-						|| capabilities.getColorProvider().getRight() != null);
+	private static boolean isColorProvider(final ServerCapabilities capabilities) {
+		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getColorProvider());
 	}
 
 }

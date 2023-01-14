@@ -49,7 +49,6 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
-import org.eclipse.lsp4j.CodeActionOptions;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
@@ -177,10 +176,8 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		if (languageServerId != null) { // try to use same LS as the one that created the marker
 			LanguageServerDefinition definition = LanguageServersRegistry.getInstance().getDefinition(languageServerId);
 			if (definition != null) {
-				CompletableFuture<LanguageServer> serverFuture = LanguageServiceAccessor
-						.getInitializedLanguageServer(file, definition,
-								serverCapabilities -> serverCapabilities == null
-										|| providesCodeActions(serverCapabilities));
+				CompletableFuture<LanguageServer> serverFuture = LanguageServiceAccessor.getInitializedLanguageServer(
+						file, definition, LSPCodeActionMarkerResolution::providesCodeActions);
 				if (serverFuture != null) {
 					languageServerFutures.add(serverFuture);
 				}
@@ -188,18 +185,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		}
 		if (languageServerFutures.isEmpty()) { // if it's not there, try any other server
 			languageServerFutures.addAll(LanguageServiceAccessor.getInitializedLanguageServers(file,
-					capabilities -> {
-						Either<Boolean, CodeActionOptions> codeActionProvider = capabilities
-								.getCodeActionProvider();
-						if (codeActionProvider == null) {
-							return false;
-						} else if (codeActionProvider.isLeft()) {
-							return Boolean.TRUE.equals(codeActionProvider.getLeft());
-						} else if (codeActionProvider.isRight()) {
-							return true;
-						}
-						return false;
-					}));
+					LSPCodeActionMarkerResolution::providesCodeActions));
 		}
 		return languageServerFutures;
 	}
@@ -239,18 +225,8 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		}
 	}
 
-	static boolean providesCodeActions(@NonNull ServerCapabilities serverCapabilities) {
-		Either<Boolean, CodeActionOptions> codeActionProvider = serverCapabilities.getCodeActionProvider();
-		if (codeActionProvider == null) {
-			return false;
-		}
-		if (codeActionProvider.isLeft()) {
-			return codeActionProvider.getLeft() != null && codeActionProvider.getLeft();
-		}
-		if (codeActionProvider.isRight()) {
-			return codeActionProvider.getRight() != null;
-		}
-		return false;
+	static boolean providesCodeActions(final ServerCapabilities capabilities) {
+		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getCodeActionProvider());
 	}
 
 	@Override
