@@ -135,7 +135,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 					LanguageServerPlugin.logError(e);
 					return null;
 				}
-			}, result -> result.getPlaceholder(),
+			}, PrepareRenameResult::getPlaceholder,
 			options -> null);
 		}
 		return placeholder != null && !placeholder.isBlank() ? placeholder :"newName"; //$NON-NLS-1$
