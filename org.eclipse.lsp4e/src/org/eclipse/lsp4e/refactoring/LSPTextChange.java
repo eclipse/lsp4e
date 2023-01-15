@@ -53,8 +53,6 @@ public class LSPTextChange extends TextChange {
 	private int fAcquireCount;
 	private ITextFileBuffer fBuffer;
 
-	private TextChange delegate;
-
 	public LSPTextChange(@NonNull String name, @NonNull URI fileUri, @NonNull TextEdit textEdit) {
 		super(name);
 		this.fileUri = fileUri;
@@ -175,6 +173,8 @@ public class LSPTextChange extends TextChange {
 				offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
 				length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
 			}
+
+			final TextChange delegate;
 			if (this.file.isRight()) {
 				delegate = new DocumentChange("Change in document " + fileUri.getPath(), document); //$NON-NLS-1$
 			} else {
