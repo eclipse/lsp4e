@@ -28,7 +28,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.annotation.NonNull;
@@ -39,7 +38,6 @@ import org.eclipse.jface.text.contentassist.CompletionProposal;
 import org.eclipse.jface.text.contentassist.ContextInformation;
 import org.eclipse.jface.text.contentassist.ContextInformationValidator;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
-import org.eclipse.jface.text.contentassist.ICompletionProposalExtension2;
 import org.eclipse.jface.text.contentassist.IContentAssistProcessor;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.jface.text.contentassist.IContextInformationValidator;
@@ -220,8 +218,9 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 				.filter(Objects::nonNull)
 				.map(item -> new LSCompletionProposal(document, offset, item,
 							languageServer, isIncomplete))
-				.filter(proposal -> ((ICompletionProposalExtension2)proposal).validate(document, offset, null))
-				.collect(Collectors.toList());
+				.filter(proposal -> proposal.validate(document, offset, null))
+				.map(ICompletionProposal.class::cast)
+				.toList();
 	}
 
 	@Override

@@ -17,7 +17,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
@@ -191,7 +190,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 	private static List<WorkspaceSymbol> toWorkspaceSymbols(List<? extends SymbolInformation> source) {
 		return source == null ?
 				List.of() :
-				source.stream().map(LSPSymbolInWorkspaceDialog::toWorkspaceSymbol).collect(Collectors.toList());
+				source.stream().map(LSPSymbolInWorkspaceDialog::toWorkspaceSymbol).toList();
 	}
 
 	private static WorkspaceSymbol toWorkspaceSymbol(SymbolInformation symbolinformation) {

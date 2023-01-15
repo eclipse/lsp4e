@@ -146,8 +146,7 @@ public class LanguageServiceAccessor {
 
 	public static @NonNull List<CompletableFuture<LanguageServer>> getInitializedLanguageServers(@NonNull IFile file,
 			@Nullable Predicate<ServerCapabilities> request) throws IOException {
-		return getLSWrappers(file, request).stream().map(LanguageServerWrapper::getInitializedServer)
-				.collect(Collectors.toList());
+		return getLSWrappers(file, request).stream().map(LanguageServerWrapper::getInitializedServer).toList();
 	}
 
 	public static void disableLanguageServerContentType(
@@ -529,7 +528,7 @@ public class LanguageServiceAccessor {
 								&& project != null && wrapper.canOperate(project)))
 				.filter(wrapper -> request == null
 						|| (wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities())))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 	/**

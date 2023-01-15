@@ -385,11 +385,11 @@ public class LanguageServersRegistry {
 	}
 
 	public List<ContentTypeToLSPLaunchConfigEntry> getContentTypeToLSPLaunches() {
-		return this.connections.stream().filter(ContentTypeToLSPLaunchConfigEntry.class::isInstance).map(ContentTypeToLSPLaunchConfigEntry.class::cast).collect(Collectors.toList());
+		return this.connections.stream().filter(ContentTypeToLSPLaunchConfigEntry.class::isInstance).map(ContentTypeToLSPLaunchConfigEntry.class::cast).toList();
 	}
 
 	public List<ContentTypeToLanguageServerDefinition> getContentTypeToLSPExtensions() {
-		return this.connections.stream().filter(mapping -> mapping.getValue() instanceof ExtensionLanguageServerDefinition).collect(Collectors.toList());
+		return this.connections.stream().filter(mapping -> mapping.getValue() instanceof ExtensionLanguageServerDefinition).toList();
 	}
 
 	public @Nullable LanguageServerDefinition getDefinition(@NonNull String languageServerId) {

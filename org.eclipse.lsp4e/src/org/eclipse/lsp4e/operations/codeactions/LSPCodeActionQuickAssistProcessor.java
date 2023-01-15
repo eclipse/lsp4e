@@ -19,7 +19,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.BadLocationException;
@@ -118,7 +117,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 				.map(info -> info.getInitializedLanguageClient()
 						.thenComposeAsync(ls -> ls.getTextDocumentService().codeAction(params).thenAcceptAsync(
 								actions -> actions.stream().filter(Objects::nonNull).forEach(possibleProposals::add))))
-				.collect(Collectors.toList());
+				.toList();
 
 		CompletableFuture<?> aggregateFutures = CompletableFuture
 				.allOf(futures.toArray(new CompletableFuture[futures.size()]));
@@ -172,7 +171,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 										.thenAcceptAsync(actions -> actions.stream().filter(Objects::nonNull)
 												.map(action -> new CodeActionCompletionProposal(action, info))
 												.forEach(p -> processNewProposal(invocationContext, p)))))
-								.collect(Collectors.toList());
+								.toList();
 
 				CompletableFuture<?> aggregateFutures = CompletableFuture
 						.allOf(futures.toArray(new CompletableFuture[futures.size()]));
