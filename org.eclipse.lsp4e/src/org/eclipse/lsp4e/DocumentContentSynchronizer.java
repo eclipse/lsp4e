@@ -248,7 +248,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			String message = timeoutCount > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD ?
 					Messages.DocumentContentSynchronizer_TimeoutThresholdMessage:
 						Messages.DocumentContentSynchronizer_TimeoutMessage;
-			String boundMessage = NLS.bind(message, Integer.valueOf(lsToWillSaveWaitUntilTimeout()).toString(), uri);
+			String boundMessage = NLS.bind(message, Integer.toString(lsToWillSaveWaitUntilTimeout()), uri);
 			ServerMessageHandler.showMessage(Messages.DocumentContentSynchronizer_OnSaveActionTimeout, new MessageParams(MessageType.Error, boundMessage));
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
