@@ -32,14 +32,14 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 	private List<String> commands;
 	private @Nullable String workingDir;
 
-	public ProcessStreamConnectionProvider() {
+	protected ProcessStreamConnectionProvider() {
 	}
 
-	public ProcessStreamConnectionProvider(List<String> commands) {
+	protected ProcessStreamConnectionProvider(List<String> commands) {
 		this.commands = commands;
 	}
 
-	public ProcessStreamConnectionProvider(List<String> commands, String workingDir) {
+	protected ProcessStreamConnectionProvider(List<String> commands, String workingDir) {
 		this.commands = commands;
 		this.workingDir = workingDir;
 	}

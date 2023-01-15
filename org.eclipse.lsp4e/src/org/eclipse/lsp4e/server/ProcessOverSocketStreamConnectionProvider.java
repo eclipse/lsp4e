@@ -34,12 +34,12 @@ public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessS
 	private InputStream inputStream;
 	private OutputStream outputStream;
 
-	public ProcessOverSocketStreamConnectionProvider(List<String> commands, int port) {
+	protected ProcessOverSocketStreamConnectionProvider(List<String> commands, int port) {
 		super(commands);
 		this.port = port;
 	}
 
-	public ProcessOverSocketStreamConnectionProvider(List<String> commands, String workingDir, int port) {
+	protected ProcessOverSocketStreamConnectionProvider(List<String> commands, String workingDir, int port) {
 		super(commands, workingDir);
 		this.port = port;
 	}
