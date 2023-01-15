@@ -93,8 +93,8 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 			}
 
 			Object item = selection.getFirstElement();
-			if (item instanceof Either<?, ?>) {
-				item = ((Either<?, ?>) item).get();
+			if (item instanceof final Either<?, ?> either) {
+				item = either.get();
 			}
 
 			Range range = null;

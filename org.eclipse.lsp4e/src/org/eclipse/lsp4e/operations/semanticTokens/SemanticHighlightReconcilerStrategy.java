@@ -131,8 +131,8 @@ public class SemanticHighlightReconcilerStrategy
 		semanticTokensDataStreamProcessor = new SemanticTokensDataStreamProcessor(new TokenTypeMapper(textViewer),
 				offsetMapper());
 
-		if (viewer instanceof TextViewer) {
-			((TextViewer) viewer).addTextPresentationListener(this);
+		if (viewer instanceof final TextViewer textViewerImpl) {
+			textViewerImpl.addTextPresentationListener(this);
 		}
 		viewer.addTextListener(styleRangeHolder);
 	}
@@ -146,8 +146,8 @@ public class SemanticHighlightReconcilerStrategy
 			return;
 		}
 		semanticTokensDataStreamProcessor = null;
-		if (viewer instanceof TextViewer) {
-			((TextViewer) viewer).removeTextPresentationListener(this);
+		if (viewer instanceof final TextViewer textViewerImpl) {
+			textViewerImpl.removeTextPresentationListener(this);
 		}
 		viewer.removeTextListener(styleRangeHolder);
 		viewer = null;
@@ -206,10 +206,10 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private boolean isRequestCancelledException(final Throwable throwable) {
-		if (throwable instanceof CompletionException) {
-			Throwable cause = ((CompletionException) throwable).getCause();
-			if (cause instanceof ResponseErrorException) {
-				ResponseError responseError = ((ResponseErrorException) cause).getResponseError();
+		if (throwable instanceof final CompletionException completionException) {
+			Throwable cause = completionException.getCause();
+			if (cause instanceof final ResponseErrorException responseErrorException) {
+				ResponseError responseError = responseErrorException.getResponseError();
 				return responseError != null
 						&& responseError.getCode() == ResponseErrorCode.RequestCancelled.getValue();
 			}

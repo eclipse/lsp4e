@@ -193,8 +193,8 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 	private void reinvokeQuickfixProposalsIfNecessary(ITextViewer textViewer) {
 		try {
 			// Quick assist proposals popup case
-			if (textViewer instanceof ISourceViewerExtension3) {
-				IQuickAssistAssistant quickAssistant = ((ISourceViewerExtension3)textViewer).getQuickAssistAssistant();
+			if (textViewer instanceof final ISourceViewerExtension3 textViewer3) {
+				IQuickAssistAssistant quickAssistant = textViewer3.getQuickAssistAssistant();
 				if (quickAssistant != null) {
 					Field f = QuickAssistAssistant.class.getDeclaredField("fQuickAssistAssistantImpl"); //$NON-NLS-1$
 					f.setAccessible(true);
@@ -208,8 +208,8 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				}
 			}
 			// Hover case
-			if (textViewer instanceof ITextViewerExtension2) {
-				ITextHover hover = ((ITextViewerExtension2) textViewer).getCurrentTextHover();
+			if (textViewer instanceof final ITextViewerExtension2 textViewer2) {
+				ITextHover hover = textViewer2.getCurrentTextHover();
 				boolean hoverShowing = hover != null;
 				if (hoverShowing) {
 					Field f = TextViewer.class.getDeclaredField("fTextHoverManager"); //$NON-NLS-1$
