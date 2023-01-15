@@ -61,8 +61,7 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 	@Override
 	public boolean isEnabled() {
 		IWorkbenchPart part = UI.getActivePart();
-		if (part instanceof ITextEditor) {
-			final ITextEditor textEditor = (ITextEditor) part;
+		if (part instanceof final ITextEditor textEditor) {
 			final IDocument document = LSPEclipseUtils.getDocument(textEditor);
 			if (document == null) {
 				return false;

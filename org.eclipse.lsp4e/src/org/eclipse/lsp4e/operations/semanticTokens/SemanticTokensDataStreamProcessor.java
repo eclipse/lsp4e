@@ -125,8 +125,8 @@ public class SemanticTokensDataStreamProcessor {
 			IToken token = tokenTypeMapper.apply(tokenType);
 			if (token != null) {
 				Object data = token.getData();
-				if (data instanceof TextAttribute) {
-					return (TextAttribute) data;
+				if (data instanceof final TextAttribute textAttribute) {
+					return textAttribute;
 				}
 			}
 		}

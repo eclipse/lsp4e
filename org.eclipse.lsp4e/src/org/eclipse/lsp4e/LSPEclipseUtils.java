@@ -837,8 +837,7 @@ public class LSPEclipseUtils {
 					change.addAll(toChanges(uri, textEdits));
 				} else if (action.isRight()) {
 					ResourceOperation resourceOperation = action.getRight();
-					if (resourceOperation instanceof CreateFile) {
-						CreateFile createOperation = (CreateFile) resourceOperation;
+					if (resourceOperation instanceof final CreateFile createOperation) {
 						URI targetURI = URI.create(createOperation.getUri());
 						File targetFile = fromUri(targetURI);
 						if (targetFile.exists() && createOperation.getOptions() != null) {
