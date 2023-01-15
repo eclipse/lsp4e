@@ -870,9 +870,9 @@ public class LSPEclipseUtils {
 						IFile newFile = getFileHandle(newURI);
 						DeleteResourceChange removeNewFile = null;
 						if (newFile != null && newFile.exists()) {
-							if (((RenameFile) resourceOperation).getOptions().getOverwrite()) {
+							if (rename.getOptions().getOverwrite()) {
 								removeNewFile = new DeleteResourceChange(newFile.getFullPath(), true);
-							} else if (((RenameFile) resourceOperation).getOptions().getIgnoreIfExists()) {
+							} else if (rename.getOptions().getIgnoreIfExists()) {
 								return;
 							}
 						}
