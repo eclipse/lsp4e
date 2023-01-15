@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -126,7 +125,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 			return locations.getLeft().stream()
 					.filter(Objects::nonNull)
 					.map(location -> new LSBasedHyperlink(location, linkRegion))
-					.collect(Collectors.toList());
+					.toList();
 		} else if (locations.isRight()) {
 			return locations.getRight().stream().filter(Objects::nonNull).map(locationLink -> {
 						IRegion selectionRegion = linkRegion;
@@ -143,7 +142,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 							}
 						}
 						return new LSBasedHyperlink(locationLink, selectionRegion);
-					}).collect(Collectors.toList());
+					}).toList();
 		}
 		return Collections.emptyList();
 	}
