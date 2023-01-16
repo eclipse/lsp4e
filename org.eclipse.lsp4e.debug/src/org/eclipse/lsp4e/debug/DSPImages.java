@@ -21,7 +21,7 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.graphics.Image;
 
-public class DSPImages {
+public final class DSPImages {
 	private DSPImages() {
 		// private constructor to avoid instances, requested by sonar
 	}

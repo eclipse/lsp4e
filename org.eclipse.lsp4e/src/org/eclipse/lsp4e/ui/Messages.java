@@ -15,7 +15,7 @@ package org.eclipse.lsp4e.ui;
 
 import org.eclipse.osgi.util.NLS;
 
-public class Messages extends NLS {
+public final class Messages extends NLS {
 
 	public static String hyperlinkLabel;
 	public static String PreferencesPage_Intro;
@@ -87,5 +87,8 @@ public class Messages extends NLS {
 
 	static {
 		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$
+	}
+
+	private Messages() {
 	}
 }

@@ -25,7 +25,8 @@ import org.eclipse.jface.text.IDocument;
 /*
  * All this is mostly copied from LSPEclipseUtils.
  */
-public class DocumentUtils {
+final class DocumentUtils {
+
 	private static ITextFileBuffer toBuffer(IDocument document) {
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
 		if (bufferManager == null)
@@ -102,5 +103,8 @@ public class DocumentUtils {
 		} else {
 			return null;
 		}
+	}
+
+	private DocumentUtils() {
 	}
 }

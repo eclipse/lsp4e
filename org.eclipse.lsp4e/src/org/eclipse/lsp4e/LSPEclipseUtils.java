@@ -142,7 +142,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 /**
  * Some utility methods to convert between Eclipse and LS-API types
  */
-public class LSPEclipseUtils {
+public final class LSPEclipseUtils {
 
 	private static final String DEFAULT_LABEL = "LSP Workspace Edit"; //$NON-NLS-1$
 	public static final String HTTP = "http"; //$NON-NLS-1$
