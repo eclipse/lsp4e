@@ -35,7 +35,7 @@ public class ServerMessageHandler {
 		// this class shouldn't be instantiated
 	}
 
-	private static class LSPNotification extends AbstractNotificationPopup {
+	private static final class LSPNotification extends AbstractNotificationPopup {
 
 		private final String label;
 		private final MessageParams messageParams;

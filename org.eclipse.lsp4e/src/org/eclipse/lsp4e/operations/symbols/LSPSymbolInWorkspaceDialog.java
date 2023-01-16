@@ -51,7 +51,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	private static final String DIALOG_SETTINGS = LSPSymbolInWorkspaceDialog.class.getName();
 
-	private static class InternalSymbolsLabelProvider extends SymbolsLabelProvider {
+	private static final class InternalSymbolsLabelProvider extends SymbolsLabelProvider {
 
 		private String pattern;
 		private final BoldStylerProvider stylerProvider;
@@ -89,7 +89,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		}
 	}
 
-	private class InternalItemsFilter extends ItemsFilter {
+	private final class InternalItemsFilter extends ItemsFilter {
 
 		@Override
 		public boolean matchItem(Object item) {

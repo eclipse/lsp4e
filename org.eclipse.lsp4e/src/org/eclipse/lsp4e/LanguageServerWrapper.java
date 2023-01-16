@@ -1022,7 +1022,7 @@ public class LanguageServerWrapper {
 	 * Resource listener that translates Eclipse resource events into LSP workspace folder events
 	 * and dispatches them if the language server is still active
 	 */
-	private class WorkspaceFolderListener implements IResourceChangeListener {
+	private final class WorkspaceFolderListener implements IResourceChangeListener {
 		@Override
 		public void resourceChanged(IResourceChangeEvent event) {
 			WorkspaceFoldersChangeEvent workspaceFolderEvent = toWorkspaceFolderEvent(event);

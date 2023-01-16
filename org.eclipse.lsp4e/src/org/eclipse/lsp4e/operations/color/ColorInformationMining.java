@@ -53,7 +53,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 	 * text color declaration.
 	 *
 	 */
-	private static class UpdateColorWithDialog implements Consumer<MouseEvent> {
+	private static final class UpdateColorWithDialog implements Consumer<MouseEvent> {
 
 		private final TextDocumentIdentifier textDocumentIdentifier;
 		private final ColorInformation colorInformation;
