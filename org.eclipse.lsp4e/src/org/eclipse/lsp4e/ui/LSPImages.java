@@ -32,8 +32,7 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 import org.osgi.framework.Bundle;
 
-public class LSPImages {
-
+public final class LSPImages {
 
 	private LSPImages() {
 		// this class shouldn't be instantiated
@@ -246,5 +245,4 @@ public class LSPImages {
 			return image;
 		});
 	}
-
 }
