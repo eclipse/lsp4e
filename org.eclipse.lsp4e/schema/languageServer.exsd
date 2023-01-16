@@ -158,6 +158,7 @@ If set to a number bigger than zero, the server will run until the timeout is re
       <complexType>
          <sequence>
             <element ref="enabledWhen" minOccurs="0" maxOccurs="1"/>
+            <element ref="enabledInputWhen" minOccurs="0" maxOccurs="1"/>
          </sequence>
          <attribute name="id" type="string" use="required">
             <annotation>
@@ -193,6 +194,38 @@ If set to a number bigger than zero, the server will run until the timeout is re
       <annotation>
          <documentation>
             A core Expression that controls the enablement of the ContentTypeToLanguageServer mapping
+         </documentation>
+      </annotation>
+      <complexType>
+         <choice minOccurs="0" maxOccurs="1">
+            <element ref="not"/>
+            <element ref="or"/>
+            <element ref="and"/>
+            <element ref="instanceof"/>
+            <element ref="test"/>
+            <element ref="systemTest"/>
+            <element ref="equals"/>
+            <element ref="count"/>
+            <element ref="with"/>
+            <element ref="resolve"/>
+            <element ref="adapt"/>
+            <element ref="iterate"/>
+            <element ref="reference"/>
+         </choice>
+         <attribute name="description" type="string" use="required">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="enabledInputWhen">
+      <annotation>
+         <documentation>
+            A core Expression that controls the enablement of the ContentTypeToLanguageServer mapping for a given input
          </documentation>
       </annotation>
       <complexType>

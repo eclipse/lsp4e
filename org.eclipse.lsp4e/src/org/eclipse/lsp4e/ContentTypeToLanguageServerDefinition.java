@@ -19,17 +19,20 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.enablement.EnablementTester;
+import org.eclipse.lsp4e.enablement.InputEnablementTester;
 
 public class ContentTypeToLanguageServerDefinition extends SimpleEntry<IContentType, LanguageServerDefinition> {
 
 	private static final long serialVersionUID = 6002703726009331762L;
 	private final EnablementTester enablement;
+	private final InputEnablementTester inputEnablement;
 
 	public ContentTypeToLanguageServerDefinition(@NonNull IContentType contentType,
 			@NonNull LanguageServerDefinition provider,
-			@Nullable EnablementTester enablement) {
+			@Nullable EnablementTester enablement, InputEnablementTester inputEnablement) {
 		super(contentType, provider);
 		this.enablement = enablement;
+		this.inputEnablement = inputEnablement;
 	}
 
 	public boolean isEnabled() {
@@ -38,6 +41,10 @@ public class ContentTypeToLanguageServerDefinition extends SimpleEntry<IContentT
 
 	public void setUserEnabled(boolean enabled) {
 		LanguageServerPlugin.getDefault().getPreferenceStore().setValue(getPreferencesKey(), String.valueOf(enabled));
+	}
+
+	public boolean isEnabledFor(Object o) {
+		return isEnabled() && (inputEnablement == null || inputEnablement.evaluate(o));
 	}
 
 	public boolean isUserEnabled() {
@@ -49,7 +56,6 @@ public class ContentTypeToLanguageServerDefinition extends SimpleEntry<IContentT
 
 	public boolean isExtensionEnabled() {
 		return enablement != null ? enablement.evaluate() : true;
-
 	}
 
 	public EnablementTester getEnablementCondition() {
