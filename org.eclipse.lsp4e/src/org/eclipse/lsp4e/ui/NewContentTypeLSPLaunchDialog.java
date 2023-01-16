@@ -58,7 +58,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 	////
 	// copied from ContentTypesPreferencePage
 
-	private static class ContentTypesLabelProvider extends LabelProvider {
+	private static final class ContentTypesLabelProvider extends LabelProvider {
 		@Override
 		public String getText(Object element) {
 			IContentType contentType = (IContentType) element;
@@ -66,7 +66,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		}
 	}
 
-	private static class ContentTypesContentProvider implements ITreeContentProvider {
+	private static final class ContentTypesContentProvider implements ITreeContentProvider {
 
 		private IContentTypeManager manager;
 

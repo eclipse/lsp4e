@@ -404,7 +404,7 @@ public class LanguageServersRegistry {
 	/**
 	 * internal class to capture content-type mappings for language servers
 	 */
-	private static class ContentTypeMapping {
+	private static final class ContentTypeMapping {
 
 		@NonNull public final String id;
 		@NonNull public final IContentType contentType;
