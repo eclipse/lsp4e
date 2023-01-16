@@ -187,7 +187,7 @@ public class LanguageServerWrapper {
 
 	protected StreamConnectionProvider lspStreamProvider;
 	private Future<?> launcherFuture;
-	private CompletableFuture<Void> initializeFuture;
+	private volatile CompletableFuture<Void> initializeFuture;
 	private LanguageServer languageServer;
 	private LanguageClientImpl languageClient;
 	private ServerCapabilities serverCapabilities;
@@ -405,20 +405,26 @@ public class LanguageServerWrapper {
 				this.languageServer.initialized(new InitializedParams());
 			}).thenRun(() -> {
 				final Map<URI, IDocument> toReconnect = filesToReconnect;
-				initializeFuture.thenRunAsync(() -> {
-					watchProjects();
-					for (Entry<URI, IDocument> fileToReconnect : toReconnect.entrySet()) {
-						try {
-							connect(fileToReconnect.getKey(), fileToReconnect.getValue());
-						} catch (IOException e) {
-							throw new RuntimeException(e);
+				final var initializeFuture = this.initializeFuture;
+				if (initializeFuture != null) {
+					initializeFuture.thenRunAsync(() -> {
+						watchProjects();
+						for (Entry<URI, IDocument> fileToReconnect : toReconnect.entrySet()) {
+							try {
+								connect(fileToReconnect.getKey(), fileToReconnect.getValue());
+							} catch (IOException e) {
+								throw new RuntimeException(e);
+							}
 						}
-					}
-				});
-				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
+					});
+					FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
+				}
 			}).exceptionally(e -> {
 				LanguageServerPlugin.logError(e);
-				initializeFuture.completeExceptionally(e);
+				final var initializeFuture = this.initializeFuture;
+				if (initializeFuture != null) {
+					initializeFuture.completeExceptionally(e);
+				}
 				stop();
 				return null;
 			});
@@ -632,9 +638,10 @@ public class LanguageServerWrapper {
 	 * @since 0.6
 	 */
 	private boolean supportsWorkspaceFolderCapability() {
-		if (this.initializeFuture != null) {
+		final var initializeFuture = this.initializeFuture;
+		if (initializeFuture != null) {
 			try {
-				this.initializeFuture.get(1, TimeUnit.SECONDS);
+				initializeFuture.get(1, TimeUnit.SECONDS);
 			} catch (ExecutionException e) {
 				LanguageServerPlugin.logError(e);
 			} catch (InterruptedException e) {
@@ -762,7 +769,8 @@ public class LanguageServerWrapper {
 			LanguageServerPlugin.logError(ex);
 		}
 
-		if (initializeFuture != null && !this.initializeFuture.isDone()) {
+		final var initializeFuture = this.initializeFuture;
+		if (initializeFuture != null && !initializeFuture.isDone()) {
 			if (Display.getCurrent() != null) { // UI Thread
 				Job waitForInitialization = new Job(Messages.initializeLanguageServer_job) {
 					@Override
@@ -793,6 +801,7 @@ public class LanguageServerWrapper {
 	<T> CompletableFuture<T> executeOnLatestVersion(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
 		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
 	}
+
 	/**
 	 * Sends a notification to the LS on a single executor thread tied to this server. Use of this guarantees that the server
 	 * will have seen all previous such requests/notifications (and document updates).
