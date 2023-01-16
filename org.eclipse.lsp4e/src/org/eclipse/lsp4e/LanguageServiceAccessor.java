@@ -691,7 +691,7 @@ public class LanguageServiceAccessor {
 	 * @param next Pending result to include
 	 * @return
 	 */
-	static <T> CompletableFuture<List<T>> combine(CompletableFuture<? extends List<T>> result, CompletableFuture<T> next) {
+	private static <T> CompletableFuture<List<T>> combine(CompletableFuture<? extends List<T>> result, CompletableFuture<T> next) {
 		return result.thenCombine(next, (List<T> a, T b) -> {
 			if (b != null) {
 				a.add(b);
@@ -707,7 +707,7 @@ public class LanguageServiceAccessor {
 	 * @param b Second async result
 	 * @return Async combined result
 	 */
-	public static <T> CompletableFuture<List<T>> concatResults(CompletableFuture<List<T>> a, CompletableFuture<List<T>> b) {
+	private static <T> CompletableFuture<List<T>> concatResults(CompletableFuture<List<T>> a, CompletableFuture<List<T>> b) {
 		return a.thenCombine(b, (c, d) -> { c.addAll(d); return c; });
 	}
 
