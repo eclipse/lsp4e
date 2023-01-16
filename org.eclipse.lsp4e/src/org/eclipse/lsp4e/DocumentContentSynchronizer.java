@@ -92,7 +92,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		this.store = LanguageServerPlugin.getDefault().getPreferenceStore();
 
 		// add a document buffer
-		TextDocumentItem textDocument = new TextDocumentItem();
+		final var textDocument = new TextDocumentItem();
 		textDocument.setUri(fileUri.toString());
 		textDocument.setText(document.get());
 
@@ -169,7 +169,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			int length = event.getLength();
 			try {
 				// try to convert the Eclipse start/end offset to LS range.
-				Range range = new Range(LSPEclipseUtils.toPosition(offset, document),
+				final var range = new Range(LSPEclipseUtils.toPosition(offset, document),
 						LSPEclipseUtils.toPosition(offset + length, document));
 				changeEvent.setRange(range);
 				changeEvent.setText(newText);
@@ -227,9 +227,9 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			return;
 		}
 
-		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri);
+		final var identifier = new TextDocumentIdentifier(uri);
 		// Use @link{TextDocumentSaveReason.Manual} as the platform does not give enough information to be accurate
-		WillSaveTextDocumentParams params = new WillSaveTextDocumentParams(identifier, TextDocumentSaveReason.Manual);
+		final var params = new WillSaveTextDocumentParams(identifier, TextDocumentSaveReason.Manual);
 
 
 		try {
@@ -269,8 +269,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 				return;
 			}
 		}
-		TextDocumentIdentifier identifier = new TextDocumentIdentifier(fileUri.toString());
-		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(identifier, document.get());
+		final var identifier = new TextDocumentIdentifier(fileUri.toString());
+		final var params = new DidSaveTextDocumentParams(identifier, document.get());
 //		lastChangeFuture.updateAndGet(f -> f.thenApplyAsync(ls -> {
 //  			ls.getTextDocumentService().didSave(params);
 //  			return ls;
@@ -285,8 +285,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		// When LS is shut down all documents are being disconnected. No need to send
 		// "didClose" message to the LS that is being shut down or not yet started
 		if (languageServerWrapper.isActive()) {
-			TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri);
-			DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(identifier);
+			final var identifier = new TextDocumentIdentifier(uri);
+			final var params = new DidCloseTextDocumentParams(identifier);
 			languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didClose(params));
 		}
 		return CompletableFuture.completedFuture(null);

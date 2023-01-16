@@ -235,9 +235,9 @@ public final class LSPImages {
 
 		return colorToImageCache.computeIfAbsent(decodedColor, key -> {
 			// TODO most probably some scaling should be done for HIDPI
-			Image image = new Image(Display.getDefault(), 16, 16);
-			GC gc = new GC(image);
-			Color color = new Color(Display.getDefault(), key.getRed(), key.getGreen(),
+			final var image = new Image(Display.getDefault(), 16, 16);
+			final var gc = new GC(image);
+			final var color = new Color(Display.getDefault(), key.getRed(), key.getGreen(),
 					key.getBlue(), key.getAlpha());
 			gc.setBackground(color);
 			gc.fillRectangle(0, 0, 16, 16);

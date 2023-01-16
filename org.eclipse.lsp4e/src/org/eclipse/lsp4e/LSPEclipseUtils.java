@@ -614,8 +614,8 @@ public final class LSPEclipseUtils {
 			int endChar = matcher.group(5) != null ? Integer.parseInt(matcher.group(5)) : startChar;
 
 			// Positions are zero-based
-			Position start = new Position(startLine - 1, startChar - 1);
-			Position end = new Position(endLine - 1, endChar - 1);
+			final var start = new Position(startLine - 1, startChar - 1);
+			final var end = new Position(endLine - 1, endChar - 1);
 			return new Range(start, end);
 		} catch (IllegalArgumentException e) {
 			// not a valid URI, no range
@@ -757,7 +757,7 @@ public final class LSPEclipseUtils {
 			try {
 				Method getSourceViewerMethod= AbstractTextEditor.class.getDeclaredMethod("getSourceViewer"); //$NON-NLS-1$
 				getSourceViewerMethod.setAccessible(true);
-				ITextViewer viewer = (ITextViewer) getSourceViewerMethod.invoke(editor);
+				final var viewer = (ITextViewer) getSourceViewerMethod.invoke(editor);
 				return (viewer == null) ? null : viewer.getDocument();
 			} catch (Exception ex) {
 				LanguageServerPlugin.logError(ex);

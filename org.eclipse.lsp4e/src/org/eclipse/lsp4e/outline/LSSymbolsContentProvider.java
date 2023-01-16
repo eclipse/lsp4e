@@ -303,7 +303,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			symbols.cancel(true);
 		}
 
-		DocumentSymbolParams params = new DocumentSymbolParams(new TextDocumentIdentifier(documentURI.toString()));
+		final var params = new DocumentSymbolParams(new TextDocumentIdentifier(documentURI.toString()));
 		symbols = outlineViewerInput.languageServer.getTextDocumentService().documentSymbol(params);
 		symbols.thenAcceptAsync(response -> {
 			symbolsModel.update(response);
@@ -332,7 +332,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 				if (linkWithEditor) {
 					ITextEditor editor = UI.getActiveTextEditor();
 					if (editor != null) {
-						ITextSelection selection = (ITextSelection) editor.getSelectionProvider().getSelection();
+						final var selection = (ITextSelection) editor.getSelectionProvider().getSelection();
 						CNFOutlinePage.refreshTreeSelection(viewer, selection.getOffset(), outlineViewerInput.document);
 					}
 				}

@@ -13,7 +13,6 @@ package org.eclipse.lsp4e.ui;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -61,7 +60,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 	private static final class ContentTypesLabelProvider extends LabelProvider {
 		@Override
 		public String getText(Object element) {
-			IContentType contentType = (IContentType) element;
+			final var contentType = (IContentType) element;
 			return contentType.getName();
 		}
 	}
@@ -72,8 +71,8 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 
 		@Override
 		public Object[] getChildren(Object parentElement) {
-			List<IContentType> elements = new ArrayList<>();
-			IContentType baseType = (IContentType) parentElement;
+			final var elements = new ArrayList<IContentType>();
+			final var baseType = (IContentType) parentElement;
 			IContentType[] contentTypes = manager.getAllContentTypes();
 			for (int i = 0; i < contentTypes.length; i++) {
 				IContentType type = contentTypes[i];
@@ -86,7 +85,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 
 		@Override
 		public Object getParent(Object element) {
-			IContentType contentType = (IContentType) element;
+			final var contentType = (IContentType) element;
 			return contentType.getBaseType();
 		}
 
@@ -119,12 +118,12 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 
 	@Override
 	protected Control createDialogArea(Composite parent) {
-		Composite res = (Composite)super.createDialogArea(parent);
+		final var res = (Composite)super.createDialogArea(parent);
 		res.setLayout(new GridLayout(2, false));
 		new Label(res, SWT.NONE).setText(Messages.NewContentTypeLSPLaunchDialog_associateContentType);
 		new Label(res, SWT.NONE).setText(Messages.NewContentTypeLSPLaunchDialog_withLSPLaunch);
 		// copied from ContentTypesPreferencePage
-		FilteredTree contentTypesFilteredTree = new FilteredTree(res, SWT.BORDER, new PatternFilter(), true, false);
+		final var contentTypesFilteredTree = new FilteredTree(res, SWT.BORDER, new PatternFilter(), true, false);
 		TreeViewer contentTypesViewer = contentTypesFilteredTree.getViewer();
 		contentTypesFilteredTree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		contentTypesViewer.setContentProvider(new ContentTypesContentProvider());
@@ -142,7 +141,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 			updateButtons();
 		});
 		// copied from LaunchConfigurationDialog : todo use LaunchConfigurationFilteredTree
-		FilteredTree launchersFilteredTree = new FilteredTree(res, SWT.BORDER, new PatternFilter(), true, false);
+		final var launchersFilteredTree = new FilteredTree(res, SWT.BORDER, new PatternFilter(), true, false);
 		TreeViewer launchConfigViewer = launchersFilteredTree.getViewer();
 		launchersFilteredTree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		launchConfigViewer.setLabelProvider(new DecoratingLabelProvider(DebugUITools.newDebugModelPresentation(), PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator()));

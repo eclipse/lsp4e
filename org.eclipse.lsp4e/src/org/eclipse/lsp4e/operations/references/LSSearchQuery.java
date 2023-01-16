@@ -84,17 +84,17 @@ public class LSSearchQuery extends FileSearchQuery {
 	@Override
 	public IStatus run(IProgressMonitor monitor) throws OperationCanceledException {
 		startTime = System.currentTimeMillis();
-		AbstractTextSearchResult textResult = (AbstractTextSearchResult) getSearchResult();
+		final var textResult = (AbstractTextSearchResult) getSearchResult();
 		textResult.removeAll();
 
 		try {
 			// Execute LSP "references" service
-			ReferenceParams params = new ReferenceParams();
+			final var params = new ReferenceParams();
 			params.setContext(new ReferenceContext(false));
 			params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString()));
 			params.setPosition(position);
 
-			for (LanguageServer languageServer : languageServers) {
+			for (final LanguageServer languageServer : languageServers) {
 				languageServer.getTextDocumentService().references(params)
 				.thenAcceptAsync(locations -> {
 					if (locations == null) {
@@ -145,7 +145,7 @@ public class LSSearchQuery extends FileSearchQuery {
 					int endOffset = LSPEclipseUtils.toOffset(location.getRange().getEnd(), document);
 
 					IRegion lineInformation = document.getLineInformationOfOffset(startOffset);
-					LineElement lineEntry = new LineElement(resource, document.getLineOfOffset(startOffset),
+					final var lineEntry = new LineElement(resource, document.getLineOfOffset(startOffset),
 							lineInformation.getOffset(),
 							document.get(lineInformation.getOffset(), lineInformation.getLength()));
 					return new FileMatch((IFile) resource, startOffset, endOffset - startOffset, lineEntry);
@@ -154,7 +154,7 @@ public class LSSearchQuery extends FileSearchQuery {
 				}
 			}
 			Position startPosition = location.getRange().getStart();
-			LineElement lineEntry = new LineElement(resource, startPosition.getLine(), 0,
+			final var lineEntry = new LineElement(resource, startPosition.getLine(), 0,
 					String.format("%s:%s", startPosition.getLine(), startPosition.getCharacter())); //$NON-NLS-1$
 			return new FileMatch((IFile) resource, 0, 0, lineEntry);
 		}

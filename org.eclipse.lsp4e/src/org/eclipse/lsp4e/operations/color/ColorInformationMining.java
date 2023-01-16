@@ -70,8 +70,8 @@ public class ColorInformationMining extends LineContentCodeMining {
 
 		@Override
 		public void accept(MouseEvent event) {
-			StyledText styledText = (StyledText) event.widget;
-			Shell shell = new Shell(styledText.getDisplay());
+			final var styledText = (StyledText) event.widget;
+			final var shell = new Shell(styledText.getDisplay());
 			Rectangle location = Geometry.toDisplay(styledText, new Rectangle(event.x, event.y, 1, 1));
 			shell.setLocation(location.x, location.y);
 			// Open color dialog
@@ -80,7 +80,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 			RGB rgb = dialog.open();
 			if (rgb != null) {
 				// get LSP color presentation list for the picked color
-				ColorPresentationParams params = new ColorPresentationParams(textDocumentIdentifier,
+				final var params = new ColorPresentationParams(textDocumentIdentifier,
 						LSPEclipseUtils.toColor(rgb), colorInformation.getRange());
 				this.languageServer.getTextDocumentService().colorPresentation(params)
 						.thenAcceptAsync(presentations -> {
@@ -120,7 +120,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 		int size = getSquareSize(fontMetrics);
 		x += fontMetrics.getLeading();
 		y += fontMetrics.getDescent();
-		Rectangle rect = new Rectangle(x, y, size, size);
+		final var rect = new Rectangle(x, y, size, size);
 		// Fill square
 		gc.setBackground(colorProvider.getColor(this.rgba, textWidget.getDisplay()));
 		gc.fillRectangle(rect);

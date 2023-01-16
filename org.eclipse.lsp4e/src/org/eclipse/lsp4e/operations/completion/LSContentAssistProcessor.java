@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -123,7 +122,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			return createErrorProposal(offset, e);
 		}
 
-		LSCompletionProposal[] completeProposals = new LSCompletionProposal[proposals.size()];
+		final var completeProposals = new LSCompletionProposal[proposals.size()];
 		int i = 0;
 		for (ICompletionProposal proposal : proposals) {
 			if (proposal instanceof LSCompletionProposal completeProposal) {
@@ -260,13 +259,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	}
 
 	private static IContextInformation toContextInformation(SignatureInformation information) {
-		StringBuilder signature = new StringBuilder(information.getLabel());
+		final var signature = new StringBuilder(information.getLabel());
 		String docString = LSPEclipseUtils.getDocString(information.getDocumentation());
 		if (docString!=null && !docString.isEmpty()) {
 			signature.append('\n').append(docString);
 		}
-		IContextInformation contextInformation = new ContextInformation(
-				information.getLabel(), signature.toString());
+		final var contextInformation = new ContextInformation(information.getLabel(), signature.toString());
 		return contextInformation;
 	}
 
@@ -294,7 +292,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		if (additionalTriggers == null) {
 			additionalTriggers = Collections.emptySet();
 		}
-		Set<Character> triggers = new HashSet<>(initialArray.length);
+		final var triggers = new HashSet<Character>(initialArray.length);
 		for (char c : initialArray) {
 			triggers.add(c);
 		}

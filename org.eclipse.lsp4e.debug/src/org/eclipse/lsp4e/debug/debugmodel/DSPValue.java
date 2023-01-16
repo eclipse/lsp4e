@@ -9,7 +9,6 @@
 package org.eclipse.lsp4e.debug.debugmodel;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IValue;
@@ -44,12 +43,12 @@ public final class DSPValue extends DSPDebugElement implements IValue {
 			return new IVariable[0];
 		}
 		if (cachedVariables == null) {
-			VariablesArguments arguments = new VariablesArguments();
+			final var arguments = new VariablesArguments();
 			arguments.setVariablesReference(variablesReference);
 			Variable[] targetVariables = complete(getDebugTarget().getDebugProtocolServer().variables(arguments))
 					.getVariables();
 
-			List<DSPVariable> variables = new ArrayList<>();
+			final var variables = new ArrayList<DSPVariable>();
 			for (Variable variable : targetVariables) {
 				variables.add(new DSPVariable(getDebugTarget(), variablesReference, variable.getName(),
 						variable.getValue(), variable.getVariablesReference()));

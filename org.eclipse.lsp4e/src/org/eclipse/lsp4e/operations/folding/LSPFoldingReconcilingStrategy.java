@@ -121,8 +121,8 @@ public class LSPFoldingReconcilingStrategy
 		if (uri == null) {
 			return;
 		}
-		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri.toString());
-		FoldingRangeRequestParams params = new FoldingRangeRequestParams(identifier);
+		final var identifier = new TextDocumentIdentifier(uri.toString());
+		final var params = new FoldingRangeRequestParams(identifier);
 		LanguageServiceAccessor.getLanguageServers(document, LSPFoldingReconcilingStrategy::canFold).thenAcceptAsync(servers -> {
 			if (servers.isEmpty()) {
 				return;
@@ -136,10 +136,10 @@ public class LSPFoldingReconcilingStrategy
 	private void applyFolding(List<FoldingRange> ranges) {
 		// these are what are passed off to the annotation model to
 		// actually create and maintain the annotations
-		List<Annotation> modifications = new ArrayList<>();
-		List<FoldingAnnotation> deletions = new ArrayList<>();
-		List<FoldingAnnotation> existing = new ArrayList<>();
-		Map<Annotation, Position> additions = new HashMap<>();
+		final var modifications = new ArrayList<Annotation>();
+		final var deletions = new ArrayList<FoldingAnnotation>();
+		final var existing = new ArrayList<FoldingAnnotation>();
+		final var additions = new HashMap<Annotation, Position>();
 
 		// find and mark all folding annotations with length 0 for deletion
 		markInvalidAnnotationsForDeletion(deletions, existing);
@@ -229,7 +229,7 @@ public class LSPFoldingReconcilingStrategy
 			throws BadLocationException {
 		int startOffset = document.getLineOffset(line);
 		int endOffset = document.getLineOffset(endLineNumber) + document.getLineLength(endLineNumber);
-		Position newPos = new Position(startOffset, endOffset - startOffset);
+		final var newPos = new Position(startOffset, endOffset - startOffset);
 		if (!existing.isEmpty()) {
 			FoldingAnnotation existingAnnotation = existing.remove(existing.size() - 1);
 			updateAnnotations(existingAnnotation, newPos, modifications, deletions);

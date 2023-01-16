@@ -26,7 +26,7 @@ public class DAPWatchExpression implements IWatchExpressionDelegate {
 	@Override
 	public void evaluateExpression(String expression, IDebugElement context, IWatchExpressionListener listener) {
 		if (context.getDebugTarget() instanceof DSPDebugTarget dapDebugger) {
-			EvaluateArguments args = new EvaluateArguments();
+			final var args = new EvaluateArguments();
 			args.setExpression(expression);
 			DSPStackFrame frame = Adapters.adapt(context, DSPStackFrame.class);
 			args.setFrameId(frame.getFrameId());

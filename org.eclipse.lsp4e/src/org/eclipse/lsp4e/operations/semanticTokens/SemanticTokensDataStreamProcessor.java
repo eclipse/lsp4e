@@ -54,7 +54,7 @@ public class SemanticTokensDataStreamProcessor {
 	 */
 	public @NonNull List<StyleRange> getStyleRanges(@NonNull final List<Integer> dataStream,
 			@NonNull final SemanticTokensLegend semanticTokensLegend) {
-		List<StyleRange> styleRanges = new ArrayList<>(dataStream.size() / 5);
+		final var styleRanges = new ArrayList<StyleRange>(dataStream.size() / 5);
 
 		int idx = 0;
 		int prevLine = 0;
@@ -107,8 +107,8 @@ public class SemanticTokensDataStreamProcessor {
 		if (data.intValue() == 0) {
 			return Collections.emptyList();
 		}
-		BitSet bitSet = BitSet.valueOf(new long[] { data });
-		List<String> tokenModifiers = new ArrayList<>();
+		final var bitSet = BitSet.valueOf(new long[] { data });
+		final var tokenModifiers = new ArrayList<String>();
 		for (int i = bitSet.nextSetBit(0); i >= 0; i = bitSet.nextSetBit(i + 1)) {
 			try {
 				tokenModifiers.add(legend.get(i));

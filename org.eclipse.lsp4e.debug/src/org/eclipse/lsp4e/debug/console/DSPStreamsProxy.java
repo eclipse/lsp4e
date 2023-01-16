@@ -51,7 +51,7 @@ public class DSPStreamsProxy implements IStreamsProxy2 {
 	public void write(String input) throws IOException {
 		String trimmed = input.trim();
 		if (!trimmed.isEmpty()) {
-			EvaluateArguments args = new EvaluateArguments();
+			final var args = new EvaluateArguments();
 			args.setContext(EvaluateArgumentsContext.REPL);
 			args.setExpression(trimmed);
 			IAdaptable adaptable = DebugUITools.getDebugContext();

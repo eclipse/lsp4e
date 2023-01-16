@@ -112,7 +112,7 @@ public class LanguageClientImpl implements LanguageClient {
 	@Override
 	public final CompletableFuture<ApplyWorkspaceEditResponse> applyEdit(ApplyWorkspaceEditParams params) {
 		return CompletableFuture.supplyAsync(() -> {
-			Job job = new Job(Messages.serverEdit) {
+			final var job = new Job(Messages.serverEdit) {
 				@Override
 				public IStatus run(IProgressMonitor monitor) {
 					LSPEclipseUtils.applyWorkspaceEdit(params.getEdit(), params.getLabel());

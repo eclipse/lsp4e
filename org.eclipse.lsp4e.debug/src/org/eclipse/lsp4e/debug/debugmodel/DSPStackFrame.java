@@ -10,7 +10,6 @@ package org.eclipse.lsp4e.debug.debugmodel;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
@@ -135,10 +134,10 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 	@Override
 	public IVariable[] getVariables() throws DebugException {
 		if (cachedVariables == null) {
-			ScopesArguments arguments = new ScopesArguments();
+			final var arguments = new ScopesArguments();
 			arguments.setFrameId(stackFrame.getId());
 			Scope[] scopes = complete(getDebugTarget().getDebugProtocolServer().scopes(arguments)).getScopes();
-			List<DSPVariable> vars = new ArrayList<>();
+			final var vars = new ArrayList<DSPVariable>();
 			for (Scope scope : scopes) {
 				DSPVariable variable = new DSPVariable(getDebugTarget(), -1, scope.getName(), "",
 						scope.getVariablesReference());
@@ -228,7 +227,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 	 * @return future with an IVariable that has the result
 	 */
 	public CompletableFuture<IVariable> evaluate(String expression) {
-		EvaluateArguments args = new EvaluateArguments();
+		final var args = new EvaluateArguments();
 		args.setContext(EvaluateArgumentsContext.HOVER);
 		args.setFrameId(getFrameId());
 		args.setExpression(expression);

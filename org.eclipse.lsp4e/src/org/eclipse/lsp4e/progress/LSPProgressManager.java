@@ -64,7 +64,7 @@ public class LSPProgressManager {
 	 * @return the completable future
 	 */
 	public @NonNull CompletableFuture<Void> createProgress(final @NonNull WorkDoneProgressCreateParams params) {
-		LinkedBlockingDeque<ProgressParams> queue = new LinkedBlockingDeque<>();
+		final var queue = new LinkedBlockingDeque<ProgressParams>();
 
 		String jobIdentifier = params.getToken().map(Function.identity(), Object::toString);
 		BlockingQueue<ProgressParams> oldQueue = progressMap.put(jobIdentifier, queue);
@@ -91,7 +91,7 @@ public class LSPProgressManager {
 						progressMap.remove(jobIdentifier);
 						currentPercentageMap.remove(monitor);
 						if (languageServer != null) {
-							WorkDoneProgressCancelParams workDoneProgressCancelParams = new WorkDoneProgressCancelParams();
+							final var workDoneProgressCancelParams = new WorkDoneProgressCancelParams();
 							workDoneProgressCancelParams.setToken(jobIdentifier);
 							languageServer.cancelProgress(workDoneProgressCancelParams);
 						}

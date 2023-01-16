@@ -28,7 +28,7 @@ public class DSPBreakpointAdapter implements IToggleBreakpointsTarget {
 		if (textEditor != null) {
 			IResource resource = textEditor.getEditorInput().getAdapter(IResource.class);
 			if (resource != null) {
-				ITextSelection textSelection = (ITextSelection) selection;
+				final var textSelection = (ITextSelection) selection;
 				int lineNumber = textSelection.getStartLine();
 				IBreakpoint[] breakpoints = DebugPlugin.getDefault().getBreakpointManager()
 						.getBreakpoints(DSPPlugin.ID_DSP_DEBUG_MODEL);
@@ -43,7 +43,7 @@ public class DSPBreakpointAdapter implements IToggleBreakpointsTarget {
 					}
 				}
 				// create line breakpoint (doc line numbers start at 0)
-				DSPLineBreakpoint lineBreakpoint = new DSPLineBreakpoint(resource, lineNumber + 1);
+				final var lineBreakpoint = new DSPLineBreakpoint(resource, lineNumber + 1);
 				DebugPlugin.getDefault().getBreakpointManager().addBreakpoint(lineBreakpoint);
 			}
 		}

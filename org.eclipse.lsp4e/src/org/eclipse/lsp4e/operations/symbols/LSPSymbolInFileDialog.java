@@ -62,7 +62,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		IFile documentFile = outlineViewerInput.documentFile;
 		getShell().setText(NLS.bind(Messages.symbolsInFile, documentFile == null ? null : documentFile.getName()));
 
-		FilteredTree filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false);
+		final var filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false);
 		TreeViewer viewer = filteredTree.getViewer();
 		viewer.setData(LSSymbolsContentProvider.VIEWER_PROPERTY_IS_QUICK_OUTLINE, Boolean.TRUE);
 
@@ -71,7 +71,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		final var contentProvider = contentService.createCommonContentProvider();
 		viewer.setContentProvider(contentProvider);
 
-		var sorter = new CommonViewerSorter();
+		final var sorter = new CommonViewerSorter();
 		sorter.setContentService(contentService);
 		viewer.setComparator(sorter);
 
@@ -87,7 +87,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 				return;
 			}
 
-			IStructuredSelection selection = (IStructuredSelection) event.getSelection();
+			final var selection = (IStructuredSelection) event.getSelection();
 			if (selection.isEmpty()) {
 				return;
 			}

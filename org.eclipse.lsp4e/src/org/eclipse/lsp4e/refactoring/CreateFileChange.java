@@ -21,7 +21,6 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileInfo;
@@ -88,7 +87,7 @@ public class CreateFileChange extends ResourceChange {
 
 	@Override
 	public RefactoringStatus isValid(IProgressMonitor pm) throws CoreException {
-		RefactoringStatus result= new RefactoringStatus();
+		final var result= new RefactoringStatus();
 
 		IFileInfo jFile = EFS.getStore(this.uri).fetchInfo();
 		if (jFile.exists()) {
@@ -109,7 +108,7 @@ public class CreateFileChange extends ResourceChange {
 			IFile ifile = LSPEclipseUtils.getFileHandle(this.uri);
 
 			if (ifile != null) {
-				List<IFolder> foldersToCreate = new ArrayList<>();
+				final var foldersToCreate = new ArrayList<IFolder>();
 				IContainer parent = ifile.getParent();
 				while (!parent.exists() && parent.getType() == IResource.FOLDER) {
 					foldersToCreate.add((IFolder) parent);
@@ -141,7 +140,7 @@ public class CreateFileChange extends ResourceChange {
 					return undoChange;
 				}
 			} else {
-				File file = new File(this.uri);
+				final var file = new File(this.uri);
 				Files.createDirectories(file.getParentFile().toPath());
 				if (!file.createNewFile()) {
 					throw new IOException(String.format("Failed to create file '%s'",file)); //$NON-NLS-1$

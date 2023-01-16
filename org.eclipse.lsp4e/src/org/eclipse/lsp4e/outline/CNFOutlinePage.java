@@ -14,7 +14,6 @@
 package org.eclipse.lsp4e.outline;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
@@ -183,13 +182,13 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	private EditorSelectionChangedListener editorSelectionChangedListener;
 
 	public static void refreshTreeSelection(TreeViewer viewer, int offset, IDocument document) {
-		ITreeContentProvider contentProvider = (ITreeContentProvider) viewer.getContentProvider();
+		final var contentProvider = (ITreeContentProvider) viewer.getContentProvider();
 		if (contentProvider == null) {
 			return;
 		}
 
 		Object[] objects = contentProvider.getElements(null);
-		List<Object> path = new ArrayList<>();
+		final var path = new ArrayList<Object>();
 		while (objects != null && objects.length > 0) {
 			boolean found = false;
 			for (final Object object : objects) {
@@ -212,7 +211,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 				return;
 			}
 			Display.getDefault().asyncExec(() -> {
-				TreePath treePath = new TreePath(path.toArray());
+				final var treePath = new TreePath(path.toArray());
 				viewer.reveal(treePath);
 				viewer.setSelection(new TreeSelection(treePath), true);
 			});

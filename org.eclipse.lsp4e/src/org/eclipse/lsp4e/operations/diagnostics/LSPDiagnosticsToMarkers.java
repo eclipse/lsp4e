@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
@@ -109,13 +108,13 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			return;
 		}
 		if (annotationModel instanceof IAnnotationModelExtension annotationModelExtension) {
-			Set<Annotation> toRemove = new HashSet<>();
+			final var toRemove = new HashSet<Annotation>();
 			annotationModel.getAnnotationIterator().forEachRemaining(annotation -> {
 				if (annotation instanceof DiagnosticAnnotation) {
 					toRemove.add(annotation);
 				}
 			});
-			Map<Annotation, Position> toAdd = new HashMap<>(diagnostics.getDiagnostics().size(), 1.f);
+			final var toAdd = new HashMap<Annotation, Position>(diagnostics.getDiagnostics().size(), 1.f);
 			diagnostics.getDiagnostics().forEach(diagnostic -> {
 				try {
 					int startOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), sourceViewer.getDocument());
@@ -130,12 +129,12 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	}
 
 	private void updateMarkers(PublishDiagnosticsParams diagnostics, IResource resource) throws CoreException {
-		Set<IMarker> toDeleteMarkers = new HashSet<>(
+		final var toDeleteMarkers = new HashSet<IMarker>(
 				Arrays.asList(resource.findMarkers(markerType, false, IResource.DEPTH_ONE)));
 		toDeleteMarkers
 				.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
-		List<Diagnostic> newDiagnostics = new ArrayList<>();
-		Map<IMarker, Diagnostic> toUpdate = new HashMap<>();
+		final var newDiagnostics = new ArrayList<Diagnostic>();
+		final var toUpdate = new HashMap<IMarker, Diagnostic>();
 
 		// A language server can scan the whole project and generate diagnostics for files that are not currently open in the IDE
 		// (the markers will show up in the problem view). If so, need to open the document temporarily but be sure to release it
@@ -220,7 +219,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 
 	private @NonNull Map<String, Object> computeMarkerAttributes(@Nullable IDocument document,
 			@NonNull Diagnostic diagnostic, @NonNull IResource resource) {
-		Map<String, Object> attributes = new HashMap<>(8);
+		final var attributes = new HashMap<String, Object>(8);
 		attributes.put(LSP_DIAGNOSTIC, diagnostic);
 		attributes.put(LANGUAGE_SERVER_ID, languageServerId);
 		attributes.put(IMarker.MESSAGE, diagnostic.getMessage());

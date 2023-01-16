@@ -117,7 +117,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	@Override
 	protected ItemsFilter createFilter() {
-		InternalItemsFilter itemsFilter = new InternalItemsFilter();
+		final var itemsFilter = new InternalItemsFilter();
 		labelProvider.setPattern(itemsFilter.getPattern());
 		return itemsFilter;
 	}
@@ -134,7 +134,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 				return;
 			}
 
-			WorkspaceSymbolParams params = new WorkspaceSymbolParams(itemsFilter.getPattern());
+			final var params = new WorkspaceSymbolParams(itemsFilter.getPattern());
 			try {
 				List<? extends WorkspaceSymbol> items = server.getWorkspaceService() //
 						.symbol(params) //
@@ -197,7 +197,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		if (symbolinformation == null) {
 			return null;
 		}
-		WorkspaceSymbol res = new WorkspaceSymbol();
+		final var res = new WorkspaceSymbol();
 		res.setName(symbolinformation.getName());
 		res.setLocation(Either.forLeft(symbolinformation.getLocation()));
 		res.setKind(symbolinformation.getKind());

@@ -221,7 +221,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 			return null;
 		}
 		try {
-			StringBuilder sb = new StringBuilder(fDocument.get(selectedRegion.getOffset(), selectedRegion.getLength())); 	// The range text before the insertion
+			final var sb = new StringBuilder(fDocument.get(selectedRegion.getOffset(), selectedRegion.getLength())); 	// The range text before the insertion
 			String newChars = event.character == 0 ? "" : Character.toString(event.character); //$NON-NLS-1$
 			sb.replace(offset - selectedRegion.getOffset(), offset - selectedRegion.getOffset() + selectedRegion.getLength(), newChars);
 			return sb.toString();
@@ -241,7 +241,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 	}
 
 	private LinkedPositionGroup toJFaceGroup(@NonNull LinkedEditingRanges ranges) throws BadLocationException {
-		LinkedPositionGroup res = new LinkedPositionGroup();
+		final var res = new LinkedPositionGroup();
 		for (Range range : ranges.getRanges()) {
 			int startOffset = LSPEclipseUtils.toOffset(range.getStart(), fDocument);
 			int length = LSPEclipseUtils.toOffset(range.getEnd(), fDocument) - startOffset;

@@ -43,7 +43,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		if (root == null) {
 			return null;
 		}
-		File logFolder = new File(root.addTrailingSeparator().toPortableString(), "languageServers-log"); //$NON-NLS-1$
+		final var logFolder = new File(root.addTrailingSeparator().toPortableString(), "languageServers-log"); //$NON-NLS-1$
 		if (!(logFolder.exists() || logFolder.mkdirs()) || !logFolder.isDirectory() || !logFolder.canWrite()) {
 			return null;
 		}
@@ -113,7 +113,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 
 	private String message(String direction, byte[] payload) {
 		String now = OffsetDateTime.now().toString();
-		StringBuilder builder = new StringBuilder(payload.length + id.length() + direction.length() + now.length() + 10);
+		final var builder = new StringBuilder(payload.length + id.length() + direction.length() + now.length() + 10);
 		builder.append("\n["); //$NON-NLS-1$
 		builder.append(now);
 		builder.append("] "); //$NON-NLS-1$
@@ -143,7 +143,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 				@Override
 				public int read(byte[] b, int off, int len) throws IOException {
 					int bytes = super.read(b, off, len);
-					byte[] payload = new byte[bytes];
+					final var payload = new byte[bytes];
 					System.arraycopy(b, off, payload, 0, bytes);
 					if (logToConsole || logToFile) {
 						String s = infoMessage(payload);
@@ -171,7 +171,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 				@Override
 				public int read(byte[] b, int off, int len) throws IOException {
 					int bytes = super.read(b, off, len);
-					byte[] payload = new byte[bytes];
+					final var payload = new byte[bytes];
 					System.arraycopy(b, off, payload, 0, bytes);
 					if (logToConsole || logToFile) {
 						String s = errorMessage(payload);
@@ -276,7 +276,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 			if (LanguageServerPlugin.PLUGIN_ID.equals(existing[i].getName()))
 				return (MessageConsole) existing[i];
 		// no console found, so create a new one
-		MessageConsole myConsole = new MessageConsole(LanguageServerPlugin.PLUGIN_ID, null);
+		final var myConsole = new MessageConsole(LanguageServerPlugin.PLUGIN_ID, null);
 		conMan.addConsoles(new IConsole[] { myConsole });
 		return myConsole;
 	}
@@ -309,7 +309,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		if (logFolder == null) {
 			return null;
 		}
-		File file = new File(logFolder, id + ".log"); //$NON-NLS-1$
+		final var file = new File(logFolder, id + ".log"); //$NON-NLS-1$
 		if (file.exists() && !(file.isFile() && file.canWrite())) {
 			return null;
 		}

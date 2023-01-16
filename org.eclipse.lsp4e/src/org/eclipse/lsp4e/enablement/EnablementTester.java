@@ -58,7 +58,7 @@ public final class EnablementTester {
 	 */
 	public boolean evaluate() {
 		try {
-			EvaluationContext context = new EvaluationContext(parent.get(), new Object());
+			final var context = new EvaluationContext(parent.get(), new Object());
 			context.setAllowPluginActivation(true);
 			return expression.evaluate(context).equals(EvaluationResult.TRUE);
 		} catch (CoreException e) {

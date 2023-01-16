@@ -15,7 +15,6 @@ package org.eclipse.lsp4e.operations.codeactions;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -63,14 +62,14 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 	public void initialize(IServiceLocator serviceLocator) {
 		IEditorPart editor = UI.getActiveTextEditor();
 		if (editor != null) {
-			ITextEditor textEditor = (ITextEditor) editor;
+			final var textEditor = (ITextEditor) editor;
 			IDocument document = LSPEclipseUtils.getDocument(textEditor);
 			if (document == null) {
 				return;
 			}
 			infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
 					LSPCodeActionMarkerResolution::providesCodeActions);
-			ITextSelection selection = (ITextSelection) textEditor.getSelectionProvider().getSelection();
+			final var selection = (ITextSelection) textEditor.getSelectionProvider().getSelection();
 			try {
 				this.range = new Range(LSPEclipseUtils.toPosition(selection.getOffset(), document),
 						LSPEclipseUtils.toPosition(selection.getOffset() + selection.getLength(), document));
@@ -82,7 +81,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 
 	@Override
 	public void fill(final Menu menu, int index) {
-		final MenuItem item = new MenuItem(menu, SWT.NONE, index);
+		final var item = new MenuItem(menu, SWT.NONE, index);
 		item.setEnabled(false);
 		if (infos.isEmpty()) {
 			item.setText(Messages.notImplemented);
@@ -90,31 +89,31 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		}
 
 		item.setText(Messages.computing);
-		CodeActionContext context = new CodeActionContext(Collections.emptyList());
-		CodeActionParams params = new CodeActionParams();
+		final var context = new CodeActionContext(Collections.emptyList());
+		final var params = new CodeActionParams();
 		params.setTextDocument(new TextDocumentIdentifier(infos.get(0).getFileUri().toString()));
 		params.setRange(this.range);
 		params.setContext(context);
-		Set<CompletableFuture<?>> runningFutures = new HashSet<>();
-		for (LSPDocumentInfo info : this.infos) {
+		final var runningFutures = new HashSet<CompletableFuture<?>>();
+		for (final LSPDocumentInfo info : this.infos) {
 			final CompletableFuture<List<Either<Command, CodeAction>>> codeActions = info.getInitializedLanguageClient()
 					.thenComposeAsync(languageServer -> languageServer.getTextDocumentService().codeAction(params));
 			runningFutures.add(codeActions);
 			codeActions.whenComplete((t, u) -> {
 				runningFutures.remove(codeActions);
-				UIJob job = new UIJob(menu.getDisplay(), Messages.updateCodeActions_menu) {
+				final var job = new UIJob(menu.getDisplay(), Messages.updateCodeActions_menu) {
 					@Override
 					public IStatus runInUIThread(IProgressMonitor monitor) {
 						if (u != null) {
-							final MenuItem item = new MenuItem(menu, SWT.NONE, index);
+							final var item = new MenuItem(menu, SWT.NONE, index);
 							item.setText(u.getMessage());
 							item.setImage(LSPImages.getSharedImage(ISharedImages.IMG_DEC_FIELD_ERROR));
 							item.setEnabled(false);
 						} else if (t != null) {
 							for (Either<Command, CodeAction> command : t) {
 								if (command != null) {
-									final MenuItem item = new MenuItem(menu, SWT.NONE, index);
-									CodeActionCompletionProposal proposal = new CodeActionCompletionProposal(command, info);
+									final var item = new MenuItem(menu, SWT.NONE, index);
+									final var proposal = new CodeActionCompletionProposal(command, info);
 									item.setText(proposal.getDisplayString());
 									item.addSelectionListener(new SelectionAdapter() {
 										@Override
@@ -144,7 +143,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		if (capabilities != null) {
 			ExecuteCommandOptions provider = capabilities.getExecuteCommandProvider();
 			if (provider != null && provider.getCommands().contains(command.getCommand())) {
-				ExecuteCommandParams params = new ExecuteCommandParams();
+				final var params = new ExecuteCommandParams();
 				params.setCommand(command.getCommand());
 				params.setArguments(command.getArguments());
 				info.getInitializedLanguageClient()

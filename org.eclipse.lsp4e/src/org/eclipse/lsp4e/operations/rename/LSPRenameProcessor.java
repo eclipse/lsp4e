@@ -97,7 +97,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	@Override
 	public RefactoringStatus checkInitialConditions(IProgressMonitor pm)
 			throws CoreException, OperationCanceledException {
-		RefactoringStatus status = new RefactoringStatus();
+		final var status = new RefactoringStatus();
 
 		if (document == null) {
 			return status;
@@ -107,8 +107,8 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 			for (LanguageServer serverToTry : serverList.get(500, TimeUnit.MILLISECONDS)) {
 				// check if prepareRename is supported by the active LSP
 				if (languageServer.equals(serverToTry)) {
-					TextDocumentIdentifier identifier = new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString());
-					PrepareRenameParams params = new PrepareRenameParams();
+					final var identifier = new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString());
+					final var params = new PrepareRenameParams();
 					params.setTextDocument(identifier);
 					params.setPosition(LSPEclipseUtils.toPosition(offset, document));
 					prepareRenameResult = languageServer.getTextDocumentService().prepareRename(params).get(1000, TimeUnit.MILLISECONDS);
@@ -159,11 +159,11 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	@Override
 	public RefactoringStatus checkFinalConditions(IProgressMonitor pm, CheckConditionsContext context)
 			throws CoreException, OperationCanceledException {
-		RefactoringStatus status = new RefactoringStatus();
+		final var status = new RefactoringStatus();
 		try {
-			RenameParams params = new RenameParams();
+			final var params = new RenameParams();
 			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
-			TextDocumentIdentifier identifier = new TextDocumentIdentifier();
+			final var identifier = new TextDocumentIdentifier();
 			identifier.setUri(LSPEclipseUtils.toUri(document).toString());
 			params.setTextDocument(identifier);
 			params.setNewName(newName);

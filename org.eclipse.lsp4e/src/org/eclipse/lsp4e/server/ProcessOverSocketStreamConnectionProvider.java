@@ -46,8 +46,8 @@ public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessS
 
 	@Override
 	public void start() throws IOException {
-		final ServerSocket serverSocket = new ServerSocket(port);
-		Thread socketThread = new Thread(() -> {
+		final var serverSocket = new ServerSocket(port);
+		final var socketThread = new Thread(() -> {
 			try {
 				socket = serverSocket.accept();
 			} catch (IOException e) {

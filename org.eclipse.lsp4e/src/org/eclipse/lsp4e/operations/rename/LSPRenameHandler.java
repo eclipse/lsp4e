@@ -34,7 +34,6 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.ltk.core.refactoring.participants.ProcessorBasedRefactoring;
-import org.eclipse.ltk.core.refactoring.participants.RefactoringProcessor;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
@@ -64,10 +63,10 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 								int offset = textSelection.getOffset();
 								// TODO consider better strategy to pick LS, or iterate over LS until one gives
 								// 	a good result
-								RefactoringProcessor processor = new LSPRenameProcessor(document, languageServers.get(0), offset);
-								ProcessorBasedRefactoring refactoring = new ProcessorBasedRefactoring(processor);
-								LSPRenameRefactoringWizard wizard = new LSPRenameRefactoringWizard(refactoring);
-								RefactoringWizardOpenOperation operation = new RefactoringWizardOpenOperation(wizard);
+								final var processor = new LSPRenameProcessor(document, languageServers.get(0), offset);
+								final var refactoring = new ProcessorBasedRefactoring(processor);
+								final var wizard = new LSPRenameRefactoringWizard(refactoring);
+								final var operation = new RefactoringWizardOpenOperation(wizard);
 								shell.getDisplay().asyncExec(() -> {
 									try {
 										operation.run(shell, Messages.rename_title);
@@ -105,9 +104,9 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 					// in case the language servers take longer to kick in, defer the enablement to
 					// a later time
 					LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
-							.thenAccept((languageServer) -> {
+							.thenAccept(languageServer -> {
 								boolean enabled = !languageServer.isEmpty();
-								HandlerEvent handleEvent = new HandlerEvent(this, enabled, false);
+								final var handleEvent = new HandlerEvent(this, enabled, false);
 								fireHandlerChanged(handleEvent);
 							});
 

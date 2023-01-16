@@ -35,8 +35,8 @@ public class CodeLensProvider extends AbstractCodeMiningProvider {
 	private CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(@NonNull IDocument document) {
 		URI docURI = LSPEclipseUtils.toUri(document);
 		if (docURI != null) {
-			CodeLensParams param = new CodeLensParams(new TextDocumentIdentifier(docURI.toString()));
-			List<LSPCodeMining> codeLensResults = Collections.synchronizedList(new ArrayList<>());
+			final var param = new CodeLensParams(new TextDocumentIdentifier(docURI.toString()));
+			final var codeLensResults = Collections.synchronizedList(new ArrayList<LSPCodeMining>());
 			return LanguageServiceAccessor
 					.getLanguageServers(document, capabilities -> capabilities.getCodeLensProvider() != null)
 					.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()

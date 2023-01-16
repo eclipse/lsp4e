@@ -54,7 +54,7 @@ public class ServerMessageHandler {
 
 		@Override
 		protected void createContentArea(Composite parent) {
-			Label messageLabel = new Label(parent, SWT.WRAP);
+			final var messageLabel = new Label(parent, SWT.WRAP);
 			messageLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
 			messageLabel.setText(messageParams.getMessage());
 		}
@@ -93,7 +93,7 @@ public class ServerMessageHandler {
 
 	public static void showMessage(String title, MessageParams params) {
 		Display.getDefault().asyncExec(() -> {
-			AbstractNotificationPopup notification = new LSPNotification(String.format("LSP (%s)", title), //$NON-NLS-1$
+			final var notification = new LSPNotification(String.format("LSP (%s)", title), //$NON-NLS-1$
 					params);
 			notification.open();
 		});
@@ -101,13 +101,13 @@ public class ServerMessageHandler {
 
 	public static CompletableFuture<MessageActionItem> showMessageRequest(LanguageServerWrapper wrapper, ShowMessageRequestParams params) {
 		String[] options = params.getActions().stream().map(MessageActionItem::getTitle).toArray(String[]::new);
-		CompletableFuture<MessageActionItem> future = new CompletableFuture<>();
+		final var future = new CompletableFuture<MessageActionItem>();
 
 		Display.getDefault().asyncExec(() -> {
-			Shell shell = new Shell(Display.getCurrent());
-			MessageDialog dialog = new MessageDialog(shell, wrapper.serverDefinition.label,
+			final var shell = new Shell(Display.getCurrent());
+			final var dialog = new MessageDialog(shell, wrapper.serverDefinition.label,
 					null, params.getMessage(), MessageDialog.INFORMATION, 0, options);
-			MessageActionItem result = new MessageActionItem();
+			final var result = new MessageActionItem();
 			int dialogResult = dialog.open();
 			if (dialogResult != SWT.DEFAULT) { // the dialog was not dismissed without pressing a button (ESC key, close box, etc.)
 				result.setTitle(options[dialogResult]);

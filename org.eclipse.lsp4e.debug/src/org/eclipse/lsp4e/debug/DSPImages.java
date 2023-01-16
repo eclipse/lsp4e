@@ -66,7 +66,7 @@ public final class DSPImages {
 	}
 
 	private static URL makeIconFileURL(String prefix, String name) {
-		StringBuilder buffer = new StringBuilder(prefix);
+		final var buffer = new StringBuilder(prefix);
 		buffer.append(name);
 		try {
 			return new URL(fgIconBaseURL, buffer.toString());

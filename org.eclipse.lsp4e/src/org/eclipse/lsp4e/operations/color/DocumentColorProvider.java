@@ -54,9 +54,9 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 		URI docURI = LSPEclipseUtils.toUri(document);
 
 		if (docURI != null) {
-			TextDocumentIdentifier textDocumentIdentifier = new TextDocumentIdentifier(docURI.toString());
-			DocumentColorParams param = new DocumentColorParams(textDocumentIdentifier);
-			final List<ColorInformationMining> colorResults = Collections.synchronizedList(new ArrayList<>());
+			final var textDocumentIdentifier = new TextDocumentIdentifier(docURI.toString());
+			final var param = new DocumentColorParams(textDocumentIdentifier);
+			final var colorResults = Collections.synchronizedList(new ArrayList<ColorInformationMining>());
 			return LanguageServiceAccessor.getLanguageServers(document, DocumentColorProvider::isColorProvider)
 					.thenComposeAsync(languageServers -> CompletableFuture
 							.allOf(languageServers.stream().map(languageServer -> languageServer

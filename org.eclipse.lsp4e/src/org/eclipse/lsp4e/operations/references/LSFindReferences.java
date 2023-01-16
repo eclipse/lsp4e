@@ -55,7 +55,7 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 						return;
 					}
 					try {
-						LSSearchQuery query = new LSSearchQuery(document, offset, languageServers);
+						final var query = new LSSearchQuery(document, offset, languageServers);
 						HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
 					} catch (BadLocationException e) {
 						LanguageServerPlugin.logError(e);
