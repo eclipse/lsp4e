@@ -59,7 +59,7 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 	}
 
 	protected ProcessBuilder createProcessBuilder() {
-		ProcessBuilder builder = new ProcessBuilder(getCommands());
+		final var builder = new ProcessBuilder(getCommands());
 		if (getWorkingDirectory() != null) {
 			builder.directory(new File(getWorkingDirectory()));
 		}

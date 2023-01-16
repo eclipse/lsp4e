@@ -167,7 +167,7 @@ public class SemanticHighlightReconcilerStrategy
 	private SemanticTokensParams getSemanticTokensParams() {
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri != null) {
-			SemanticTokensParams semanticTokensParams = new SemanticTokensParams();
+			final var semanticTokensParams = new SemanticTokensParams();
 			semanticTokensParams.setTextDocument(new TextDocumentIdentifier(uri.toString()));
 			return semanticTokensParams;
 		}

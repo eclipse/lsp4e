@@ -568,7 +568,7 @@ public class LanguageServiceAccessor {
 	@NonNull
 	public static List<@NonNull LanguageServer> getLanguageServers(@Nullable IProject project,
 			Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
-		List<@NonNull LanguageServer> serverInfos = new ArrayList<>();
+		final var serverInfos = new ArrayList<@NonNull LanguageServer>();
 		for (LanguageServerWrapper wrapper : startedServers) {
 			if ((!onlyActiveLS || wrapper.isActive()) && (project == null || wrapper.canOperate(project))) {
 				@Nullable
@@ -590,7 +590,7 @@ public class LanguageServiceAccessor {
 
 	@NonNull public static List<@NonNull LSPDocumentInfo> getLSPDocumentInfosFor(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> capabilityRequest) {
 		URI fileUri = LSPEclipseUtils.toUri(document);
-		List<LSPDocumentInfo> res = new ArrayList<>();
+		final var res = new ArrayList<LSPDocumentInfo>();
 		try {
 			getLSWrappers(document).stream().filter(wrapper -> wrapper.getServerCapabilities() == null
 					|| capabilityRequest.test(wrapper.getServerCapabilities())).forEach(wrapper -> {
@@ -621,7 +621,7 @@ public class LanguageServiceAccessor {
 		if (uri == null) {
 			return CompletableFuture.completedFuture(Collections.emptyList());
 		}
-		final List<@NonNull LanguageServer> res = Collections.synchronizedList(new ArrayList<>());
+		final var res = Collections.synchronizedList(new ArrayList<@NonNull LanguageServer>());
 		try {
 			return CompletableFuture.allOf(getLSWrappers(document).stream()
 					.map(wrapper -> wrapper.getInitializedServer().thenComposeAsync(server -> {
@@ -669,7 +669,7 @@ public class LanguageServiceAccessor {
 			Function<LanguageServer, ? extends CompletionStage<T>> fn) {
 
 		// Out-of-line so we can declare it as List rather than ArrayList to avoid type errors below
-		CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
+		final CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 
 		return getLSWrappers(document).stream()
 			// Ensure wrappers are started, connected to the document, and filter for capabilities

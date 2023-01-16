@@ -59,12 +59,12 @@ public class LSPRenameRefactoringWizard extends RefactoringWizard {
 
 		@Override
 		public void createControl(Composite parent) {
-			Composite composite = new Composite(parent, SWT.NONE);
+			final var composite = new Composite(parent, SWT.NONE);
 			composite.setLayout(new GridLayout(2, false));
 			composite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 			composite.setFont(parent.getFont());
 
-			Label label = new Label(composite, SWT.NONE);
+			final var label = new Label(composite, SWT.NONE);
 			label.setLayoutData(new GridData());
 			label.setText(Messages.rename_label);
 

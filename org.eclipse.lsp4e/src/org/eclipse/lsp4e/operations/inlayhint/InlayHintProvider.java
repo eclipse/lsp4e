@@ -39,7 +39,7 @@ public class InlayHintProvider extends AbstractCodeMiningProvider {
 		if (docURI != null) {
 			// Eclipse seems to request minings only when the document is loaded (or changed), rather than
 			// whenever the viewport [displayed area] changes, so request minings for the whole document in one go.
-			Position end = new Position(0,0);
+			var end = new Position(0,0);
 			try {
 				end = LSPEclipseUtils.toPosition(document.getLength(), document);
 			} catch (BadLocationException e) {

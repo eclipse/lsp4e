@@ -80,11 +80,11 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 	@Override
 	protected void createContent(Composite parent) {
 		super.createContent(parent);
-		Browser b = (Browser) (parent.getChildren()[0]);
+		final var b = (Browser) (parent.getChildren()[0]);
 		b.addProgressListener(ProgressListener.completedAdapter(event -> {
 			if (getInput() == null)
 				return;
-			Browser browser = (Browser) event.getSource();
+			final var browser = (Browser) event.getSource();
 			@Nullable
 			Point constraints = getSizeConstraints();
 			Point hint = computeSizeHint();
@@ -163,7 +163,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 		}
 
 		int headIndex = html.indexOf(HEAD);
-		StringBuilder builder = new StringBuilder(html.length() + style.length());
+		final var builder = new StringBuilder(html.length() + style.length());
 		builder.append(html.substring(0, headIndex + HEAD.length()));
 		builder.append(style);
 		if (hlStyle != null) {
@@ -179,7 +179,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 	}
 
 	private static @NonNull CharSequence toHTMLrgb(RGB rgb) {
-		StringBuilder builder = new StringBuilder(7);
+		final var builder = new StringBuilder(7);
 		builder.append('#');
 		appendAsHexString(builder, rgb.red);
 		appendAsHexString(builder, rgb.green);
@@ -199,8 +199,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 	public IInformationControlCreator getInformationPresenterControlCreator() {
 		return parent -> {
 			if (BrowserInformationControl.isAvailable(parent)) {
-				BrowserInformationControl res = new FocusableBrowserInformationControl(parent, JFaceResources.DEFAULT_FONT,
-						true);
+				final var res = new FocusableBrowserInformationControl(parent, JFaceResources.DEFAULT_FONT, true);
 				res.addLocationListener(HYPER_LINK_LISTENER);
 				return res;
 			} else {

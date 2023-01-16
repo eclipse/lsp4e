@@ -16,7 +16,6 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 
@@ -192,8 +191,8 @@ public class HighlightReconcilingStrategy
 		if(uri == null) {
 			return;
 		}
-		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri.toString());
-		DocumentHighlightParams params = new DocumentHighlightParams(identifier, position);
+		final var identifier = new TextDocumentIdentifier(uri.toString());
+		final var params = new DocumentHighlightParams(identifier, position);
 		request = LanguageServiceAccessor.getLanguageServers(document,
 				capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDocumentHighlightProvider()))
 				.thenAcceptAsync(languageServers ->
@@ -225,7 +224,7 @@ public class HighlightReconcilingStrategy
 	 *            annotation model to update.
 	 */
 	private void updateAnnotations(List<? extends DocumentHighlight> highlights, IAnnotationModel annotationModel) {
-		Map<Annotation, org.eclipse.jface.text.Position> annotationMap = new HashMap<>(highlights.size());
+		final var annotationMap = new HashMap<Annotation, org.eclipse.jface.text.Position>(highlights.size());
 		for (DocumentHighlight h : highlights) {
 			if (h != null) {
 				try {

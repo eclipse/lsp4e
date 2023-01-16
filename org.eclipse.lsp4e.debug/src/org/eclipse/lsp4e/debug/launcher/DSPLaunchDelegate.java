@@ -11,7 +11,6 @@ package org.eclipse.lsp4e.debug.launcher;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Type;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -196,8 +195,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	@Override
 	public void launch(ILaunchConfiguration configuration, String mode, ILaunch launch, IProgressMonitor monitor)
 			throws CoreException {
-		DSPLaunchDelegateLaunchBuilder builder = new DSPLaunchDelegateLaunchBuilder(configuration, mode, launch,
-				monitor);
+		final var builder = new DSPLaunchDelegateLaunchBuilder(configuration, mode, launch, monitor);
 		builder.launchNotConnect = DSPPlugin.DSP_MODE_LAUNCH
 				.equals(configuration.getAttribute(DSPPlugin.ATTR_DSP_MODE, DSPPlugin.DSP_MODE_LAUNCH));
 		builder.debugCmd = configuration.getAttribute(DSPPlugin.ATTR_DSP_CMD, (String) null);
@@ -214,8 +212,8 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	}
 
 	private Map<String, Object> jsonToMap(String dspParametersJson) {
-		Gson gson = new Gson();
-		Type type = new TypeToken<Map<String, Object>>() {
+		final var gson = new Gson();
+		final var type = new TypeToken<Map<String, Object>>() {
 		}.getType();
 		Map<String, Object> dspParameters = gson.fromJson(dspParametersJson, type);
 		if (dspParameters == null) {
@@ -227,7 +225,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	public void launch(DSPLaunchDelegateLaunchBuilder builder) throws CoreException {
 		// Make a copy so we can modify locally as needed.
 		builder = new DSPLaunchDelegateLaunchBuilder(builder);
-		SubMonitor subMonitor = SubMonitor.convert(builder.monitor, 100);
+		final var subMonitor = SubMonitor.convert(builder.monitor, 100);
 		builder.dspParameters = new HashMap<>(builder.dspParameters);
 
 		boolean customDebugAdapter = builder.configuration.getAttribute(DSPPlugin.ATTR_CUSTOM_DEBUG_ADAPTER, false);
@@ -268,7 +266,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		try {
 
 			if (builder.launchNotConnect) {
-				List<String> command = new ArrayList<>();
+				final var command = new ArrayList<String>();
 
 				if (builder.debugCmd == null) {
 					abort("Debug command unspecified.", null); //$NON-NLS-1$
@@ -291,7 +289,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 							"Debug Adapter");
 					builder.launch.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, initialCaptureOutput);
 
-					List<Byte> bytes = Collections.synchronizedList(new LinkedList<>());
+					final var bytes = Collections.synchronizedList(new LinkedList<Byte>());
 					inputStream = new InputStream() {
 						@Override
 						public int read() throws IOException {
@@ -385,7 +383,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	 */
 	protected IDebugTarget createDebugTarget(SubMonitor subMonitor, Runnable cleanup, InputStream inputStream,
 			OutputStream outputStream, ILaunch launch, Map<String, Object> dspParameters) throws CoreException {
-		DSPDebugTarget target = new DSPDebugTarget(launch, cleanup, inputStream, outputStream, dspParameters);
+		final var target = new DSPDebugTarget(launch, cleanup, inputStream, outputStream, dspParameters);
 		target.initialize(subMonitor.split(80));
 		return target;
 	}

@@ -170,7 +170,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 				lineNumber = -1;
 			}
 
-			Source source = new Source();
+			final var source = new Source();
 			source.setName(name);
 			source.setPath(path);
 
@@ -211,7 +211,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 	}
 
 	private CompletableFuture<Void> sendBreakpoints() {
-		List<CompletableFuture<Void>> all = new ArrayList<>();
+		final var all = new ArrayList<CompletableFuture<Void>>();
 		for (Iterator<Entry<Source, List<SourceBreakpoint>>> iterator = targetBreakpoints.entrySet()
 				.iterator(); iterator.hasNext();) {
 			Entry<Source, List<SourceBreakpoint>> entry = iterator.next();
@@ -221,7 +221,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 			int[] lines = bps.stream().mapToInt(SourceBreakpoint::getLine).toArray();
 			SourceBreakpoint[] sourceBps = bps.toArray(new SourceBreakpoint[bps.size()]);
 
-			SetBreakpointsArguments arguments = new SetBreakpointsArguments();
+			final var arguments = new SetBreakpointsArguments();
 			arguments.setSource(source);
 			arguments.setLines(lines);
 			arguments.setBreakpoints(sourceBps);

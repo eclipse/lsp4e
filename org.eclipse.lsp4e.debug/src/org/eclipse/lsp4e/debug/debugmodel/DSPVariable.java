@@ -35,7 +35,7 @@ public class DSPVariable extends DSPDebugElement implements IVariable {
 
 	@Override
 	public void setValue(String expression) throws DebugException {
-		SetVariableArguments setVariableArgs = new SetVariableArguments();
+		final var setVariableArgs = new SetVariableArguments();
 		setVariableArgs.setVariablesReference(parentVariablesReference);
 		setVariableArgs.setValue(expression);
 		setVariableArgs.setName(getName());

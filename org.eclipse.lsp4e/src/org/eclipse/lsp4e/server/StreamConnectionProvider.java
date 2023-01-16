@@ -71,7 +71,7 @@ public interface StreamConnectionProvider {
 		if (output == null)
 			return input;
 
-		FilterInputStream filterInput = new FilterInputStream(input) {
+		final var filterInput = new FilterInputStream(input) {
 			@Override
 			public int read() throws IOException {
 				int res = super.read();
@@ -82,7 +82,7 @@ public interface StreamConnectionProvider {
 			@Override
 			public int read(byte[] b, int off, int len) throws IOException {
 				int bytes = super.read(b, off, len);
-				byte[] payload = new byte[bytes];
+				final var payload = new byte[bytes];
 				System.arraycopy(b, off, payload, 0, bytes);
 				output.write(payload, 0, payload.length);
 				return bytes;
@@ -91,7 +91,7 @@ public interface StreamConnectionProvider {
 			@Override
 			public int read(byte[] b) throws IOException {
 				int bytes = super.read(b);
-				byte[] payload = new byte[bytes];
+				final var payload = new byte[bytes];
 				System.arraycopy(b, 0, payload, 0, bytes);
 				output.write(payload, 0, payload.length);
 				return bytes;

@@ -64,10 +64,10 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 		if(uri == null) {
 			return CompletableFuture.completedFuture(null);
 		}
-		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri.toString());
-		TextDocumentPositionParams params = new TextDocumentPositionParams(identifier, position);
+		final var identifier = new TextDocumentIdentifier(uri.toString());
+		final var params = new TextDocumentPositionParams(identifier, position);
 
-		AtomicReference<LinkedEditingRanges> range = new AtomicReference<>();
+		final var range = new AtomicReference<LinkedEditingRanges>();
 		return LanguageServiceAccessor.getLanguageServers(document,
 					capabilities -> LSPEclipseUtils.hasCapability(capabilities.getLinkedEditingRangeProvider()))
 				.thenComposeAsync(languageServers ->

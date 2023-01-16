@@ -113,8 +113,8 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		} else if (att == null) {
 			return new IMarkerResolution[0];
 		}
-		List<Either<Command, CodeAction>> commands = (List<Either<Command, CodeAction>>) att;
-		List<IMarkerResolution> res = new ArrayList<>(commands.size());
+		final var commands = (List<Either<Command, CodeAction>>) att;
+		final var res = new ArrayList<IMarkerResolution>(commands.size());
 		for (Either<Command, CodeAction> command : commands) {
 			if (command != null) {
 				if (command.isLeft()) {
@@ -130,15 +130,15 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 	private void checkMarkerResoultion(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException {
 		IResource res = marker.getResource();
 		if (res != null && res.getType() == IResource.FILE) {
-			IFile file = (IFile)res;
+			final var file = (IFile) res;
 			Object[] attributes = marker.getAttributes(new String[]{LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC});
-			String languageServerId = (String) attributes[0];
-			List<CompletableFuture<?>> futures = new ArrayList<>();
-			Diagnostic diagnostic = (Diagnostic) attributes[1];
+			final var languageServerId = (String) attributes[0];
+			final var futures = new ArrayList<CompletableFuture<?>>();
+			final var diagnostic = (Diagnostic) attributes[1];
 			for (CompletableFuture<LanguageServer> lsf : getLanguageServerFutures(file, languageServerId)) {
 				marker.setAttribute(LSP_REMEDIATION, COMPUTING);
-				CodeActionContext context = new CodeActionContext(Collections.singletonList(diagnostic));
-				CodeActionParams params = new CodeActionParams();
+				final var context = new CodeActionContext(Collections.singletonList(diagnostic));
+				final var params = new CodeActionParams();
 				params.setContext(context);
 				params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(res).toString()));
 				params.setRange(diagnostic.getRange());
@@ -198,7 +198,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				if (quickAssistant != null) {
 					Field f = QuickAssistAssistant.class.getDeclaredField("fQuickAssistAssistantImpl"); //$NON-NLS-1$
 					f.setAccessible(true);
-					ContentAssistant ca = (ContentAssistant) f.get(quickAssistant);
+					final var ca = (ContentAssistant) f.get(quickAssistant);
 					Method m = ContentAssistant.class.getDeclaredMethod("isProposalPopupActive"); //$NON-NLS-1$
 					m.setAccessible(true);
 					boolean isProposalPopupActive = (Boolean) m.invoke(ca);
@@ -214,7 +214,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				if (hoverShowing) {
 					Field f = TextViewer.class.getDeclaredField("fTextHoverManager"); //$NON-NLS-1$
 					f.setAccessible(true);
-					AbstractInformationControlManager manager = (AbstractInformationControlManager) f.get(textViewer);
+					final var manager = (AbstractInformationControlManager) f.get(textViewer);
 					if (manager != null) {
 						manager.showInformation();
 					}

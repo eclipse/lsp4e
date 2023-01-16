@@ -51,11 +51,11 @@ public abstract class LSPCommandHandler extends AbstractHandler {
 
 	@Override
 	public final Object execute(ExecutionEvent event) throws ExecutionException {
-		Command command = (Command) event.getObjectParameterForExecution(LSP_COMMAND_PARAMETER_ID);
+		final var command = (Command) event.getObjectParameterForExecution(LSP_COMMAND_PARAMETER_ID);
 		if (command == null) {
 			return null;
 		}
-		IPath path = (IPath) event.getObjectParameterForExecution(LSP_PATH_PARAMETER_ID);
+		final var path = (IPath) event.getObjectParameterForExecution(LSP_PATH_PARAMETER_ID);
 		if (path == null) {
 			return null;
 		}

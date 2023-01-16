@@ -480,7 +480,7 @@ public class LSCompletionProposal
 				textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + commonSize);
 			}
 			insertText = textEdit.getNewText();
-			LinkedHashMap<String, List<LinkedPosition>> regions = new LinkedHashMap<>();
+			final var regions = new LinkedHashMap<String, List<LinkedPosition>>();
 			int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
 			insertionOffset = computeNewOffset(item.getAdditionalTextEdits(), insertionOffset, document);
 			if (item.getInsertTextMode() == InsertTextMode.AdjustIndentation) {
@@ -493,7 +493,7 @@ public class LSCompletionProposal
 				while ((currentSnippetOffsetInInsertText = insertText.indexOf('$', currentSnippetOffsetInInsertText)) != -1) {
 					final var keyBuilder = new StringBuilder();
 					boolean isChoice = false;
-					List<String> snippetProposals = new ArrayList<>();
+					final var snippetProposals = new ArrayList<String>();
 					int offsetInSnippet = 1;
 					while (currentSnippetOffsetInInsertText + offsetInSnippet < insertText.length() && Character.isDigit(insertText.charAt(currentSnippetOffsetInInsertText + offsetInSnippet))) {
 						keyBuilder.append(insertText.charAt(currentSnippetOffsetInInsertText + offsetInSnippet));
@@ -561,7 +561,7 @@ public class LSCompletionProposal
 			textEdit.setNewText(insertText); // insertText now has placeholder removed
 			List<TextEdit> additionalEdits = item.getAdditionalTextEdits();
 			if (additionalEdits != null && !additionalEdits.isEmpty()) {
-				List<TextEdit> allEdits = new ArrayList<>();
+				final var allEdits = new ArrayList<TextEdit>();
 				allEdits.add(textEdit);
 				additionalEdits.stream().forEach(te -> {
 					int shift = offset - this.initialOffset;
@@ -587,9 +587,9 @@ public class LSCompletionProposal
 
 			boolean onlyPlaceCaret = regions.size() == 1 && regions.values().iterator().next().size() == 1 && regions.values().iterator().next().stream().noneMatch(ProposalPosition.class::isInstance);
 			if (viewer != null && !regions.isEmpty() && !onlyPlaceCaret) {
-				LinkedModeModel model = new LinkedModeModel();
+				final var model = new LinkedModeModel();
 				for (List<LinkedPosition> positions: regions.values()) {
-					LinkedPositionGroup group = new LinkedPositionGroup();
+					final var group = new LinkedPositionGroup();
 					for (LinkedPosition position : positions) {
 						group.addPosition(position);
 					}
@@ -597,7 +597,7 @@ public class LSCompletionProposal
 				}
 				model.forceInstall();
 
-				LinkedModeUI ui = new EditorLinkedModeUI(model, viewer);
+				final var ui = new EditorLinkedModeUI(model, viewer);
 				// ui.setSimpleMode(true);
 				// ui.setExitPolicy(new ExitPolicy(closingCharacter, document));
 				// ui.setExitPosition(getTextViewer(), exit, 0, Integer.MAX_VALUE);

@@ -72,7 +72,7 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 			return;
 		}
 		cancel();
-		final DocumentLinkParams params = new DocumentLinkParams(new TextDocumentIdentifier(uri.toString()));
+		final var params = new DocumentLinkParams(new TextDocumentIdentifier(uri.toString()));
 		request = LanguageServiceAccessor
 				.getLanguageServers(document, capabilities -> capabilities.getDocumentLinkProvider() != null)
 				.thenAcceptAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
@@ -95,7 +95,7 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 				int start = LSPEclipseUtils.toOffset(link.getRange().getStart(), document);
 				int end = LSPEclipseUtils.toOffset(link.getRange().getEnd(), document);
 				int length = end - start;
-				IRegion linkRegion = new Region(start, length);
+				final var linkRegion = new Region(start, length);
 
 				// Update existing style range with underline or create a new style range with
 				// underline
@@ -107,7 +107,7 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 					for (StyleRange s : styleRanges) {
 						s.underline = true;
 					}
-					TextPresentation presentation = new TextPresentation(linkRegion, 100);
+					final var presentation = new TextPresentation(linkRegion, 100);
 					presentation.replaceStyleRanges(styleRanges);
 					viewer.changeTextPresentation(presentation, false);
 
@@ -118,7 +118,7 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 					styleRange.start = start;
 					styleRange.length = length;
 
-					TextPresentation presentation = new TextPresentation(linkRegion, 100);
+					final var presentation = new TextPresentation(linkRegion, 100);
 					presentation.replaceStyleRange(styleRange);
 					viewer.changeTextPresentation(presentation, false);
 				}

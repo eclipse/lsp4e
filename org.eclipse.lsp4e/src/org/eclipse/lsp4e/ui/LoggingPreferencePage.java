@@ -17,9 +17,7 @@ import static org.eclipse.swt.events.SelectionListener.widgetSelectedAdapter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -65,7 +63,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 
 		@Override
 		protected void setValue(Object element, Object value) {
-			ContentTypeToLanguageServerDefinition server = (ContentTypeToLanguageServerDefinition)element;
+			final var server = (ContentTypeToLanguageServerDefinition) element;
 			map.put(server.getValue().id, (Boolean)value);
 			hasLoggingBeenChanged = true;
 			getViewer().refresh(element);
@@ -73,7 +71,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 
 		@Override
 		protected Object getValue(Object element) {
-			ContentTypeToLanguageServerDefinition server = (ContentTypeToLanguageServerDefinition)element;
+			final var server = (ContentTypeToLanguageServerDefinition) element;
 			return map.get(server.getValue().id);
 		}
 
@@ -118,7 +116,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 
 	@Override
 	protected Control createContents(Composite parent) {
-		Composite res = new Composite(parent, SWT.NONE);
+		final var res = new Composite(parent, SWT.NONE);
 		res.setLayout(new GridLayout(1, false));
 
 		createStaticServersTable(res);
@@ -133,7 +131,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		languageServerViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		languageServerViewer.setContentProvider(new ArrayContentProvider());
 
-		TableViewerColumn launchConfigColumn = new TableViewerColumn(languageServerViewer, SWT.NONE);
+		final var launchConfigColumn = new TableViewerColumn(languageServerViewer, SWT.NONE);
 		launchConfigColumn.getColumn().setText(Messages.PreferencesPage_languageServer);
 		launchConfigColumn.getColumn().setWidth(300);
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -153,7 +151,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		launchConfigurationViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		launchConfigurationViewer.setContentProvider(new ArrayContentProvider());
 
-		TableViewerColumn launchConfigColumn = new TableViewerColumn(launchConfigurationViewer, SWT.NONE);
+		final var launchConfigColumn = new TableViewerColumn(launchConfigurationViewer, SWT.NONE);
 		launchConfigColumn.getColumn().setText(Messages.PreferencesPage_LaunchConfiguration);
 		launchConfigColumn.getColumn().setWidth(300);
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -169,13 +167,13 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 	}
 
 	private void addLoggingColumnsToViewer(TableViewer viewer) {
-		TableViewerColumn logToFileColumn = new TableViewerColumn(viewer, SWT.NONE);
+		final var logToFileColumn = new TableViewerColumn(viewer, SWT.NONE);
 		logToFileColumn.getColumn().setText(Messages.PreferencesPage_logging_toFile_title);
 		logToFileColumn.getColumn().setWidth(100);
 		logToFileColumn.setLabelProvider(new BooleanMapLabelProvider(serverEnableLoggingToFile));
 		logToFileColumn.setEditingSupport(new BooleanMapEditingSupport(viewer, serverEnableLoggingToFile));
 
-		TableViewerColumn logToConsoleColumn = new TableViewerColumn(viewer, SWT.NONE);
+		final var logToConsoleColumn = new TableViewerColumn(viewer, SWT.NONE);
 		logToConsoleColumn.getColumn().setText(Messages.PreferencesPage_logging_toConsole_title);
 		logToConsoleColumn.getColumn().setWidth(125);
 		logToConsoleColumn.setLabelProvider(new BooleanMapLabelProvider(serverEnableLoggingToConsole));
@@ -183,14 +181,14 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 	}
 
 	private void createLoggingContents(Composite res) {
-		Composite loggingComposite = new Composite(res, SWT.NONE);
+		final var loggingComposite = new Composite(res, SWT.NONE);
 		loggingComposite.setLayout(new GridLayout(3, false));
 		loggingComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true, 2, 1));
 
-		Label infoLabel = new Label(loggingComposite, SWT.NONE);
+		final var infoLabel = new Label(loggingComposite, SWT.NONE);
 		infoLabel.setText(Messages.preferencesPage_logging_info);
 		infoLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 3, 1));
-		Link logFolderLabel = new Link(loggingComposite, SWT.NONE);
+		final var logFolderLabel = new Link(loggingComposite, SWT.NONE);
 		logFolderLabel.setText(NLS.bind(Messages.preferencesPage_logging_fileLogsLocation, LoggingStreamConnectionProviderProxy.getLogDirectory()));
 		logFolderLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 3, 1));
 		logFolderLabel.addSelectionListener(widgetSelectedAdapter(e -> {
@@ -199,7 +197,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			WizardDialog dialog = new WizardDialog(logFolderLabel.getShell(), importWizard);
 			dialog.open();
 		}));
-		Label fileLoggingLabel = new Label(loggingComposite, SWT.NONE);
+		final var fileLoggingLabel = new Label(loggingComposite, SWT.NONE);
 		fileLoggingLabel.setText(Messages.PreferencesPage_logging_toFile_description);
 		Button disableFileLogging = new Button(loggingComposite, SWT.NONE);
 		disableFileLogging.setText(Messages.PreferencePage_enablementCondition_disableAll);
@@ -209,7 +207,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			languageServerViewer.refresh();
 			launchConfigurationViewer.refresh();
 		}));
-		Button enableFileLogging = new Button(loggingComposite, SWT.NONE);
+		final var enableFileLogging = new Button(loggingComposite, SWT.NONE);
 		enableFileLogging.setText(Messages.PreferencePage_enablementCondition_enableAll);
 		enableFileLogging.addSelectionListener(widgetSelectedAdapter(e -> {
 			serverEnableLoggingToFile.forEach((s, b) -> serverEnableLoggingToFile.put(s, true));
@@ -218,7 +216,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			launchConfigurationViewer.refresh();
 		}));
 
-		Label consoleLoggingLabel = new Label(loggingComposite, SWT.NONE);
+		final var consoleLoggingLabel = new Label(loggingComposite, SWT.NONE);
 		consoleLoggingLabel.setText(Messages.PreferencesPage_logging_toConsole_description);
 		Button disableConsoleLogging = new Button(loggingComposite, SWT.NONE);
 		disableConsoleLogging.setText(Messages.PreferencePage_enablementCondition_disableAll);
@@ -228,7 +226,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 			languageServerViewer.refresh();
 			launchConfigurationViewer.refresh();
 		}));
-		Button enableConsoleLogging = new Button(loggingComposite, SWT.NONE);
+		final var enableConsoleLogging = new Button(loggingComposite, SWT.NONE);
 		enableConsoleLogging.setText(Messages.PreferencePage_enablementCondition_enableAll);
 		enableConsoleLogging.addSelectionListener(widgetSelectedAdapter(e -> {
 			serverEnableLoggingToConsole.forEach((s, b) -> serverEnableLoggingToConsole.put(s, true));
@@ -259,7 +257,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 	public boolean performOk() {
 		if (hasLoggingBeenChanged) {
 			applyLoggingEnablment();
-			MessageDialog dialog = new MessageDialog(getShell(), Messages.PreferencesPage_restartWarning_title, null,
+			final var dialog = new MessageDialog(getShell(), Messages.PreferencesPage_restartWarning_title, null,
 					Messages.PreferencesPage_restartWarning_message, MessageDialog.WARNING,
 					new String[] { IDialogConstants.NO_LABEL, Messages.PreferencesPage_restartWarning_restart }, 1);
 			if (dialog.open() == 1) {
@@ -276,8 +274,8 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 	}
 
 	private void updateInputs() {
-		Set<String> languageServerIDs = new HashSet<>();
-		List<ContentTypeToLSPLaunchConfigEntry> contentTypeToLSPLaunchConfigEntries = new ArrayList<>();
+		final var languageServerIDs = new HashSet<String>();
+		final var contentTypeToLSPLaunchConfigEntries = new ArrayList<ContentTypeToLSPLaunchConfigEntry>();
 		LanguageServersRegistry.getInstance().getContentTypeToLSPLaunches().forEach(o -> {
 			String id = o.getValue().id;
 			if (languageServerIDs.add(id)) {
@@ -293,7 +291,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		launchConfigurationViewer.refresh();
 
 		languageServerIDs.clear();
-		List<ContentTypeToLanguageServerDefinition> contentTypeToLanguageServerDefinitions = new ArrayList<>();
+		final var contentTypeToLanguageServerDefinitions = new ArrayList<ContentTypeToLanguageServerDefinition>();
 		LanguageServersRegistry.getInstance().getContentTypeToLSPExtensions().forEach(o -> {
 			String id = o.getValue().id;
 			if (languageServerIDs.add(id)) {

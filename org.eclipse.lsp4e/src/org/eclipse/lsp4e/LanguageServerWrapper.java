@@ -258,7 +258,7 @@ public class LanguageServerWrapper {
 	 * @throws IOException
 	 */
 	public synchronized void start() throws IOException {
-		final Map<URI, IDocument> filesToReconnect = new HashMap<>();
+		final var filesToReconnect = new HashMap<URI, IDocument>();
 		if (this.languageServer != null) {
 			if (isActive()) {
 				return;
@@ -323,7 +323,7 @@ public class LanguageServerWrapper {
 				if (Platform.getProduct() != null) {
 					name = Platform.getProduct().getName();
 				}
-				WorkspaceClientCapabilities workspaceClientCapabilities = new WorkspaceClientCapabilities();
+				final var workspaceClientCapabilities = new WorkspaceClientCapabilities();
 				workspaceClientCapabilities.setApplyEdit(Boolean.TRUE);
 				workspaceClientCapabilities.setConfiguration(Boolean.TRUE);
 				workspaceClientCapabilities.setExecuteCommand(new ExecuteCommandCapabilities(Boolean.TRUE));
@@ -335,8 +335,8 @@ public class LanguageServerWrapper {
 						ResourceOperationKind.Delete, ResourceOperationKind.Rename));
 				editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
 				workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
-				TextDocumentClientCapabilities textDocumentClientCapabilities = new TextDocumentClientCapabilities();
-				CodeActionCapabilities codeAction = new CodeActionCapabilities(new CodeActionLiteralSupportCapabilities(
+				final var textDocumentClientCapabilities = new TextDocumentClientCapabilities();
+				final var codeAction = new CodeActionCapabilities(new CodeActionLiteralSupportCapabilities(
 						new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix, CodeActionKind.Refactor,
 								CodeActionKind.RefactorExtract, CodeActionKind.RefactorInline,
 								CodeActionKind.RefactorRewrite, CodeActionKind.Source,
@@ -348,21 +348,21 @@ public class LanguageServerWrapper {
 				textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
 				textDocumentClientCapabilities.setInlayHint(new InlayHintCapabilities());
 				textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
-				CompletionItemCapabilities completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);
+				final var completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);
 				completionItemCapabilities
 						.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
 				completionItemCapabilities.setInsertTextModeSupport(new CompletionItemInsertTextModeSupportCapabilities(List.of(InsertTextMode.AsIs, InsertTextMode.AdjustIndentation)));
 				completionItemCapabilities.setResolveSupport(new CompletionItemResolveSupportCapabilities(List.of("documentation", "detail", "additionalTextEdits"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(completionItemCapabilities));
-				DefinitionCapabilities definitionCapabilities = new DefinitionCapabilities();
+				final var definitionCapabilities = new DefinitionCapabilities();
 				definitionCapabilities.setLinkSupport(Boolean.TRUE);
 				textDocumentClientCapabilities.setDefinition(definitionCapabilities);
-				TypeDefinitionCapabilities typeDefinitionCapabilities = new TypeDefinitionCapabilities();
+				final var typeDefinitionCapabilities = new TypeDefinitionCapabilities();
 				typeDefinitionCapabilities.setLinkSupport(Boolean.TRUE);
 				textDocumentClientCapabilities.setTypeDefinition(typeDefinitionCapabilities);
 				textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
 				textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
-				DocumentSymbolCapabilities documentSymbol = new DocumentSymbolCapabilities();
+				final var documentSymbol = new DocumentSymbolCapabilities();
 				documentSymbol.setHierarchicalDocumentSymbolSupport(true);
 				documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.Array,
 						SymbolKind.Boolean, SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor,
@@ -374,7 +374,7 @@ public class LanguageServerWrapper {
 				textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
 				textDocumentClientCapabilities.setFoldingRange(new FoldingRangeCapabilities());
 				textDocumentClientCapabilities.setFormatting(new FormattingCapabilities(Boolean.TRUE));
-				HoverCapabilities hoverCapabilities = new HoverCapabilities();
+				final var hoverCapabilities = new HoverCapabilities();
 				hoverCapabilities.setContentFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
 				textDocumentClientCapabilities.setHover(hoverCapabilities);
 				textDocumentClientCapabilities.setOnTypeFormatting(null); // TODO
@@ -427,12 +427,12 @@ public class LanguageServerWrapper {
 
 	private ClientInfo getClientInfo(String name) {
 		String pluginVersion = Platform.getBundle(LanguageServerPlugin.PLUGIN_ID).getVersion().toString();
-		ClientInfo clientInfo = new ClientInfo(name, pluginVersion);
+		final var clientInfo = new ClientInfo(name, pluginVersion);
 		return clientInfo;
 	}
 
 	private WindowClientCapabilities getWindowClientCapabilities() {
-		WindowClientCapabilities windowClientCapabilities = new WindowClientCapabilities();
+		final var windowClientCapabilities = new WindowClientCapabilities();
 		windowClientCapabilities.setShowDocument(new ShowDocumentCapabilities(true));
 		windowClientCapabilities.setWorkDoneProgress(true);
 		windowClientCapabilities.setShowMessage(new WindowShowMessageRequestCapabilities());
@@ -663,7 +663,7 @@ public class LanguageServerWrapper {
 			return null;
 		}
 		if (document == null) {
-			IFile docFile = (IFile) LSPEclipseUtils.findResourceFor(uri);
+			final var docFile = (IFile) LSPEclipseUtils.findResourceFor(uri);
 			document = LSPEclipseUtils.getDocument(docFile);
 		}
 		if (document == null) {
@@ -677,7 +677,7 @@ public class LanguageServerWrapper {
 				}
 				TextDocumentSyncKind syncKind = initializeFuture == null ? null
 						: serverCapabilities.getTextDocumentSync().map(Functions.identity(), TextDocumentSyncOptions::getChange);
-				DocumentContentSynchronizer listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
+				final var listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
 			}
@@ -707,7 +707,7 @@ public class LanguageServerWrapper {
 	}
 
 	public void disconnectContentType(@NonNull IContentType contentType) {
-		List<URI> urisToDisconnect = new ArrayList<>();
+		final var urisToDisconnect = new ArrayList<URI>();
 		for (URI uri : connectedDocuments.keySet()) {
 			IFile[] foundFiles = ResourcesPlugin.getWorkspace().getRoot()
 					.findFilesForLocationURI(uri);
@@ -764,7 +764,7 @@ public class LanguageServerWrapper {
 
 		if (initializeFuture != null && !this.initializeFuture.isDone()) {
 			if (Display.getCurrent() != null) { // UI Thread
-				Job waitForInitialization = new Job(Messages.initializeLanguageServer_job) {
+				final var waitForInitialization = new Job(Messages.initializeLanguageServer_job) {
 					@Override
 					protected IStatus run(IProgressMonitor monitor) {
 						initializeFuture.join();
@@ -880,7 +880,7 @@ public class LanguageServerWrapper {
 					setWorkspaceFoldersEnablement(true);
 				}
 			} else if ("workspace/executeCommand".equals(reg.getMethod())) { //$NON-NLS-1$
-				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
+				final var gson = new Gson(); // TODO? retrieve the GSon used by LS
 				ExecuteCommandOptions executeCommandOptions = gson.fromJson((JsonObject) reg.getRegisterOptions(),
 						ExecuteCommandOptions.class);
 				List<String> newCommands = executeCommandOptions.getCommands();
@@ -1044,7 +1044,7 @@ public class LanguageServerWrapper {
 			}
 
 			// If a project delete then the delta is null, but we get the project in the top-level resource
-			WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
+			final var wsFolderEvent = new WorkspaceFoldersChangeEvent();
 			if (isPreDeletEvent(e)) {
 				final IResource resource = e.getResource();
 				if (resource instanceof IProject project) {

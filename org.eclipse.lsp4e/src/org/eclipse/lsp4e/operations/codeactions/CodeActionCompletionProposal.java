@@ -115,7 +115,7 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 		if (capabilities != null) {
 			ExecuteCommandOptions provider = capabilities.getExecuteCommandProvider();
 			if (provider != null && provider.getCommands().contains(command.getCommand())) {
-				ExecuteCommandParams params = new ExecuteCommandParams();
+				final var params = new ExecuteCommandParams();
 				params.setCommand(command.getCommand());
 				params.setArguments(command.getArguments());
 				this.finfo.getInitializedLanguageClient()

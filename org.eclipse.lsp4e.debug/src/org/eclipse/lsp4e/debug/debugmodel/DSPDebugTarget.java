@@ -217,7 +217,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	}
 
 	private CompletableFuture<?> initialize(Map<String, Object> dspParameters, IProgressMonitor monitor) {
-		InitializeRequestArguments arguments = new InitializeRequestArguments();
+		final var arguments = new InitializeRequestArguments();
 		arguments.setClientID("lsp4e.debug");
 		String adapterId = "adapterId";
 		if (dspParameters.get("type") instanceof String type) {
@@ -404,7 +404,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			fSentTerminateRequest = true;
 			getDebugProtocolServer().terminate(new TerminateArguments()).thenRunAsync(this::terminated);
 		} else {
-			DisconnectArguments arguments = new DisconnectArguments();
+			final var arguments = new DisconnectArguments();
 			arguments.setTerminateDebuggee(true);
 			getDebugProtocolServer().disconnect(arguments).thenRunAsync(this::terminated);
 		}
@@ -534,7 +534,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			CompletableFuture<ThreadsResponse> threads2 = getDebugProtocolServer().threads();
 			CompletableFuture<DSPThread[]> future = threads2.thenApplyAsync(threadsResponse -> {
 				synchronized (threads) {
-					Map<Integer, DSPThread> lastThreads = new TreeMap<>(threads);
+					final var lastThreads = new TreeMap<Integer, DSPThread>(threads);
 					threads.clear();
 					Thread[] body = threadsResponse.getThreads();
 					for (Thread thread : body) {
@@ -667,7 +667,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		if (cmd.length() > 0) {
 			cmd.setLength(cmd.length() - 1);
 		}
-		ProcessBuilder processBuilder = new ProcessBuilder(args.getArgs());
+		final var processBuilder = new ProcessBuilder(args.getArgs());
 		// processBuilder.inheritIO();
 		if (args.getCwd() != null) {
 			processBuilder.directory(new File(args.getCwd()));
@@ -698,7 +698,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			} catch (InterruptedException e) {
 				java.lang.Thread.currentThread().interrupt();
 			}
-			RunInTerminalResponse response = new RunInTerminalResponse();
+			final var response = new RunInTerminalResponse();
 			// TODO, no standard way of getting ID. Can via reflection and/or custom
 			// launcher like CDT does.
 			response.setProcessId(null); // Explicitly indicate we don't know the process id

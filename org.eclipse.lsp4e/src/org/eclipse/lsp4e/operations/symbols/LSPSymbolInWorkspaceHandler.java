@@ -62,11 +62,11 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 		if (site == null) {
 			return null;
 		}
-		LSPSymbolInWorkspaceDialog dialog = new LSPSymbolInWorkspaceDialog(site.getShell(), languageServers);
+		final var dialog = new LSPSymbolInWorkspaceDialog(site.getShell(), languageServers);
 		if (dialog.open() != IDialogConstants.OK_ID) {
 			return null;
 		}
-		SymbolInformation symbolInformation = (SymbolInformation) dialog.getFirstResult();
+		final var symbolInformation = (SymbolInformation) dialog.getFirstResult();
 		Location location = symbolInformation.getLocation();
 
 		LSPEclipseUtils.openInEditor(location);

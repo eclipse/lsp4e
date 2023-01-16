@@ -83,16 +83,16 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 
 	@Override
 	protected Control createContents(Composite parent) {
-		Composite res = new Composite(parent, SWT.NONE);
+		final var res = new Composite(parent, SWT.NONE);
 		res.setLayout(new GridLayout(2, false));
-		Link intro = new Link(res, SWT.WRAP);
+		final var intro = new Link(res, SWT.WRAP);
 		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.TOP).grab(true, false).span(2, 1).hint(400, SWT.DEFAULT).applyTo(intro);
 		intro.setText(Messages.PreferencesPage_Intro);
 		intro.addSelectionListener(this.contentTypeLinkListener);
 
 		createStaticServersTable(res);
 
-		Link manualServersIntro = new Link(res, SWT.WRAP);
+		final var manualServersIntro = new Link(res, SWT.WRAP);
 		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.TOP).grab(true, false).span(2, 1).hint(400, SWT.DEFAULT).applyTo(manualServersIntro);
 		manualServersIntro.setText(Messages.PreferencesPage_manualServers);
 		manualServersIntro.addSelectionListener(this.contentTypeLinkListener);
@@ -101,7 +101,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		viewer.setContentProvider(new ArrayContentProvider());
 		workingCopy = new ArrayList<>();
 		workingCopy.addAll(LanguageServersRegistry.getInstance().getContentTypeToLSPLaunches());
-		TableViewerColumn contentTypeColumn = new TableViewerColumn(viewer, SWT.NONE);
+		final var contentTypeColumn = new TableViewerColumn(viewer, SWT.NONE);
 		contentTypeColumn.getColumn().setText(Messages.PreferencesPage_contentType);
 		contentTypeColumn.getColumn().setWidth(200);
 		contentTypeColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -110,7 +110,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 				return ((ContentTypeToLanguageServerDefinition)element).getKey().getName();
 			}
 		});
-		TableViewerColumn launchConfigColumn = new TableViewerColumn(viewer, SWT.NONE);
+		final var launchConfigColumn = new TableViewerColumn(viewer, SWT.NONE);
 		launchConfigColumn.getColumn().setText(Messages.PreferencesPage_LaunchConfiguration);
 		launchConfigColumn.getColumn().setWidth(300);
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -119,7 +119,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 				return ((ContentTypeToLSPLaunchConfigEntry)element).getLaunchConfiguration().getName();
 			}
 		});
-		TableViewerColumn launchModeColumn = new TableViewerColumn(viewer, SWT.NONE);
+		final var launchModeColumn = new TableViewerColumn(viewer, SWT.NONE);
 		launchModeColumn.getColumn().setText(Messages.PreferencesPage_LaunchMode);
 		launchModeColumn.getColumn().setWidth(100);
 		launchModeColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -138,9 +138,9 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		});
 		viewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		viewer.getTable().setHeaderVisible(true);
-		Composite buttonComposite = new Composite(res, SWT.NONE);
+		final var buttonComposite = new Composite(res, SWT.NONE);
 		buttonComposite.setLayout(new GridLayout(1, false));
-		Button addButton = new Button(buttonComposite, SWT.PUSH);
+		final var addButton = new Button(buttonComposite, SWT.PUSH);
 		addButton.setLayoutData(new GridData(SWT.FILL, SWT.NONE, true, false));
 		addButton.setText(Messages.PreferencesPage_Add);
 		addButton.addSelectionListener(new SelectionAdapter() {
@@ -175,7 +175,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 	}
 
 	private void createStaticServersTable(Composite res) {
-		Link staticServersIntro = new Link(res, SWT.WRAP);
+		final var staticServersIntro = new Link(res, SWT.WRAP);
 		GridDataFactory.swtDefaults().align(SWT.FILL, SWT.TOP).grab(true, false).span(2, 1).hint(400, SWT.DEFAULT).applyTo(staticServersIntro);
 		staticServersIntro.setText(Messages.PreferencesPage_staticServers);
 		staticServersIntro.addSelectionListener(this.contentTypeLinkListener);
@@ -183,7 +183,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		checkboxViewer.getControl().setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		checkboxViewer.setContentProvider(new ArrayContentProvider());
 
-		TableViewerColumn enablementColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
+		final var enablementColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
 		enablementColumn.getColumn().setText(Messages.PreferencesPage_Enabled);
 		enablementColumn.getColumn().setWidth(70);
 		enablementColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -193,7 +193,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 			}
 		});
 
-		TableViewerColumn contentTypeColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
+		final var contentTypeColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
 		contentTypeColumn.getColumn().setText(Messages.PreferencesPage_contentType);
 		contentTypeColumn.getColumn().setWidth(200);
 		contentTypeColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -203,7 +203,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 			}
 		});
 
-		TableViewerColumn launchConfigColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
+		final var launchConfigColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
 		launchConfigColumn.getColumn().setText(Messages.PreferencesPage_languageServer);
 		launchConfigColumn.getColumn().setWidth(300);
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -218,7 +218,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		if (contentTypeToLanguageServerDefinitions.stream()
 				.anyMatch(definition -> definition.getEnablementCondition() != null)) {
 
-			TableViewerColumn conditionColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
+			final var conditionColumn = new TableViewerColumn(checkboxViewer, SWT.NONE);
 			conditionColumn.getColumn().setText(Messages.PreferencesPage_enablementCondition);
 			conditionColumn.getColumn().setWidth(150);
 			conditionColumn.setLabelProvider(new ColumnLabelProvider() {
@@ -275,7 +275,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 	@Override
 	public boolean performOk() {
 		this.registry.setAssociations(this.workingCopy);
-		EnableDisableLSJob enableDisableLSJob = new EnableDisableLSJob(changedDefinitions, getEditors());
+		final var enableDisableLSJob = new EnableDisableLSJob(changedDefinitions, getEditors());
 		enableDisableLSJob.schedule();
 		return super.performOk();
 	}

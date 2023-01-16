@@ -112,7 +112,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		}
 
 		CodeActionParams params = prepareCodeActionParams(infos, invocationContext.getOffset(), invocationContext.getLength());
-		List<Either<Command, CodeAction>> possibleProposals = Collections.synchronizedList(new ArrayList<>());
+		final var possibleProposals = Collections.synchronizedList(new ArrayList<Either<Command, CodeAction>>());
 		List<CompletableFuture<Void>> futures = infos.stream()
 				.map(info -> info.getInitializedLanguageClient()
 						.thenComposeAsync(ls -> ls.getTextDocumentService().codeAction(params).thenAcceptAsync(
@@ -221,8 +221,8 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 	}
 
 	private static CodeActionParams prepareCodeActionParams(List<LSPDocumentInfo> infos, int offset, int length) {
-		CodeActionContext context = new CodeActionContext(Collections.emptyList());
-		CodeActionParams params = new CodeActionParams();
+		final var context = new CodeActionContext(Collections.emptyList());
+		final var params = new CodeActionParams();
 		params.setTextDocument(new TextDocumentIdentifier(infos.get(0).getFileUri().toString()));
 		try {
 			params.setRange(new Range(LSPEclipseUtils.toPosition(offset, infos.get(0).getDocument()), LSPEclipseUtils

@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,8 +71,8 @@ public class SymbolsModel {
 			childrenMap = Collections.emptyMap();
 			rootSymbols = Collections.emptyList();
 		} else {
-			final Map<SymbolInformation, List<SymbolInformation>> newChildrenMap = new HashMap<>();
-			final List<DocumentSymbol> newRootSymbols = new ArrayList<>();
+			final var newChildrenMap = new HashMap<SymbolInformation, List<SymbolInformation>>();
+			final var newRootSymbols = new ArrayList<DocumentSymbol>();
 
 			Collections.sort(response, Comparator.comparing(
 					either -> either.isLeft() ? either.getLeft().getLocation().getRange().getStart()
@@ -82,7 +81,7 @@ public class SymbolsModel {
 					Comparator.comparingInt(pos -> ((Position) pos).getLine())
 							.thenComparingInt(pos -> ((Position) pos).getCharacter())));
 
-			Deque<SymbolInformation> parentStack = new ArrayDeque<>();
+			final var parentStack = new ArrayDeque<SymbolInformation>();
 			parentStack.push(ROOT_SYMBOL_INFORMATION);
 			SymbolInformation previousSymbol = null;
 			for (Either<SymbolInformation, DocumentSymbol> either : response) {
@@ -141,7 +140,7 @@ public class SymbolsModel {
 	}
 
 	public Object[] getElements() {
-		List<Object> res = new ArrayList<>(Arrays.asList(getChildren(ROOT_SYMBOL_INFORMATION)));
+		final var res = new ArrayList<Object>(Arrays.asList(getChildren(ROOT_SYMBOL_INFORMATION)));
 		final IFile current = this.file;
 		Function<DocumentSymbol, Object> mapper = current != null ?
 				symbol -> new DocumentSymbolWithFile(symbol, current) :
@@ -209,7 +208,7 @@ public class SymbolsModel {
 	}
 
 	public TreePath toUpdatedSymbol(TreePath initialSymbol) {
-		List<Object> res = new ArrayList<>(initialSymbol.getSegmentCount());
+		final var res = new ArrayList<Object>(initialSymbol.getSegmentCount());
 		Object currentSymbol = null;
 		for (int i = 0; i < initialSymbol.getSegmentCount(); i++) {
 			String name = getName(initialSymbol.getSegment(i));

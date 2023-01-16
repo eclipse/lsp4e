@@ -129,7 +129,7 @@ public class CommandExecutor {
 			}
 			// Server can handle command
 			return languageServerFuture.thenApplyAsync(server -> {
-				ExecuteCommandParams params = new ExecuteCommandParams();
+				final var params = new ExecuteCommandParams();
 				params.setCommand(command.getCommand());
 				params.setArguments(command.getArguments());
 				return server.getWorkspaceService().executeCommand(params);
@@ -220,7 +220,7 @@ public class CommandExecutor {
 			coreCommand.define(commandId, null, category, parameters);
 		}
 
-		Map<Object, Object> parameters = new HashMap<>();
+		final var parameters = new HashMap<Object, Object>();
 		parameters.put(LSP_COMMAND_PARAMETER_ID, command);
 		parameters.put(LSP_PATH_PARAMETER_ID, context);
 		ParameterizedCommand parameterizedCommand = ParameterizedCommand.generateCommand(coreCommand, parameters);
@@ -244,11 +244,11 @@ public class CommandExecutor {
 	 * workspace edit...
 	 */
 	private static WorkspaceEdit createWorkspaceEdit(List<Object> commandArguments, IDocument document) {
-		WorkspaceEdit res = new WorkspaceEdit();
-		Map<String, List<TextEdit>> changes = new HashMap<>();
+		final var res = new WorkspaceEdit();
+		final var changes = new HashMap<String, List<TextEdit>>();
 		res.setChanges(changes);
 		URI initialUri = LSPEclipseUtils.toUri(document);
-		Pair<URI, List<TextEdit>> currentEntry = new Pair<>(initialUri, new ArrayList<>());
+		final var currentEntry = new Pair<URI, List<TextEdit>>(initialUri, new ArrayList<>());
 		commandArguments.stream().flatMap(item -> {
 			if (item instanceof List<?> list) {
 				return list.stream();
@@ -268,7 +268,7 @@ public class CommandExecutor {
 			} else if (arg instanceof TextEdit textEdit) {
 				currentEntry.value.add(textEdit);
 			} else if (arg instanceof Map) {
-				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
+				final var gson = new Gson(); // TODO? retrieve the GSon used by LS
 				TextEdit edit = gson.fromJson(gson.toJson(arg), TextEdit.class);
 				if (edit != null) {
 					currentEntry.value.add(edit);
@@ -283,7 +283,7 @@ public class CommandExecutor {
 					}
 				}
 			} else if (arg instanceof JsonArray jsonArray) {
-				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
+				final var gson = new Gson(); // TODO? retrieve the GSon used by LS
 				jsonArray.forEach(elt -> {
 					TextEdit edit = gson.fromJson(gson.toJson(elt), TextEdit.class);
 					if (edit != null) {
@@ -291,7 +291,7 @@ public class CommandExecutor {
 					}
 				});
 			} else if (arg instanceof JsonObject jsonObject) {
-				Gson gson = new Gson(); // TODO? retrieve the GSon used by LS
+				final var gson = new Gson(); // TODO? retrieve the GSon used by LS
 				WorkspaceEdit wEdit = gson.fromJson(jsonObject, WorkspaceEdit.class);
 				Map<String, List<TextEdit>> entries = wEdit.getChanges();
 				if (wEdit != null && !entries.isEmpty()) {

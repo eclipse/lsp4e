@@ -79,7 +79,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 		if (uri == null) {
 			return null;
 		}
-		final DocumentLinkParams params = new DocumentLinkParams(new TextDocumentIdentifier(uri.toString()));
+		final var params = new DocumentLinkParams(new TextDocumentIdentifier(uri.toString()));
 		try {
 			return LanguageServiceAccessor
 					.getLanguageServers(document,
@@ -108,7 +108,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 												textViewer.getDocument());
 										int end = LSPEclipseUtils.toOffset(link.getRange().getEnd(),
 												textViewer.getDocument());
-										IRegion linkRegion = new Region(start, end - start);
+										final var linkRegion = new Region(start, end - start);
 										if (TextUtilities.overlaps(region, linkRegion) && link.getTarget() != null) {
 											jfaceLink = new DocumentHyperlink(link.getTarget(), linkRegion);
 										}

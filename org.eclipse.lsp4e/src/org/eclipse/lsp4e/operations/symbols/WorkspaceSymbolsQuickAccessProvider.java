@@ -57,8 +57,8 @@ public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer
 		if (usedLanguageServers.isEmpty()) {
 			return new QuickAccessElement[0];
 		}
-		WorkspaceSymbolParams params = new WorkspaceSymbolParams(query);
-		List<QuickAccessElement> res = Collections.synchronizedList(new ArrayList<>());
+		final var params = new WorkspaceSymbolParams(query);
+		final var res = Collections.synchronizedList(new ArrayList<QuickAccessElement>());
 
 		try {
 			CompletableFuture.allOf(usedLanguageServers.stream()

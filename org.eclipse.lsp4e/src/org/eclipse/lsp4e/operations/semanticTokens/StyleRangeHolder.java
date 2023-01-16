@@ -68,7 +68,7 @@ public class StyleRangeHolder implements ITextListener {
 	}
 
 	private StyleRange clone(final StyleRange styleRange) {
-		StyleRange clonedStyleRange = new StyleRange(styleRange.start, styleRange.length, styleRange.foreground,
+		final var clonedStyleRange = new StyleRange(styleRange.start, styleRange.length, styleRange.foreground,
 				styleRange.background, styleRange.fontStyle);
 		clonedStyleRange.strikeout = styleRange.strikeout;
 		return clonedStyleRange;

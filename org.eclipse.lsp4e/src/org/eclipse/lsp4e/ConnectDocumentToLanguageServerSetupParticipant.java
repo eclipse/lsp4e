@@ -65,7 +65,7 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 		if (document == null) {
 			return;
 		}
-		Job job = new Job("Initialize Language Servers for " + location.toFile().getName()) { //$NON-NLS-1$
+		final var job = new Job("Initialize Language Servers for " + location.toFile().getName()) { //$NON-NLS-1$
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				ITextFileBuffer buffer = ITextFileBufferManager.DEFAULT.getTextFileBuffer(document);

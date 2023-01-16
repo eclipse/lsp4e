@@ -65,7 +65,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 
 	@Override
 	public void createControl(Composite parent) {
-		Composite comp = new Composite(parent, SWT.NONE);
+		final var comp = new Composite(parent, SWT.NONE);
 		setControl(comp);
 		PlatformUI.getWorkbench().getHelpSystem().setHelp(getControl(), getHelpContextId());
 		comp.setLayout(new GridLayout(1, true));
@@ -91,7 +91,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		debugAdapterSettingsGroup.setLayout(new GridLayout(2, false));
 		debugAdapterSettingsGroup.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 
-		Label debugText = new Label(debugAdapterSettingsGroup, SWT.NONE);
+		final var debugText = new Label(debugAdapterSettingsGroup, SWT.NONE);
 		debugText.setText("Launch specific debug adapters using these settings.");
 		debugText.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).create());
 
@@ -101,13 +101,13 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		launchDebugServer.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).create());
 		launchDebugServer.setSelection(true);
 
-		Label programLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
+		final var programLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
 		programLabel.setText("&Command:");
 		programLabel.setLayoutData(new GridData(GridData.BEGINNING));
 		debugCommandText = new Text(debugAdapterSettingsGroup, SWT.SINGLE | SWT.BORDER);
 		debugCommandText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		debugCommandText.addModifyListener(e -> updateLaunchConfigurationDialog());
-		Label argsLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
+		final var argsLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
 		argsLabel.setText("&Arguments:");
 		argsLabel.setLayoutData(new GridData(GridData.BEGINNING));
 
@@ -115,7 +115,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		debugArgsText.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		debugArgsText.addModifyListener(e -> updateLaunchConfigurationDialog());
 
-		Composite filler = new Composite(debugAdapterSettingsGroup, SWT.NONE);
+		final var filler = new Composite(debugAdapterSettingsGroup, SWT.NONE);
 		filler.setLayoutData(new GridData(0, 0));
 		monitorAdapterLauncherProcessCheckbox = new Button(debugAdapterSettingsGroup, SWT.CHECK);
 		GridData layoutData = new GridData(SWT.LEFT, SWT.DEFAULT, true, false);
@@ -129,14 +129,14 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		connectDebugServer.addSelectionListener(widgetSelectedAdapter(e -> updateLaunchConfigurationDialog()));
 		connectDebugServer.setLayoutData(GridDataFactory.fillDefaults().span(2, 1).create());
 
-		Label serverHostLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
+		final var serverHostLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
 		serverHostLabel.setText("Server &Host:");
 		serverHostLabel.setLayoutData(new GridData(GridData.BEGINNING));
 		serverHost = new Text(debugAdapterSettingsGroup, SWT.SINGLE | SWT.BORDER);
 		serverHost.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
 		serverHost.addModifyListener(e -> updateLaunchConfigurationDialog());
 
-		Label serverPortLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
+		final var serverPortLabel = new Label(debugAdapterSettingsGroup, SWT.NONE);
 		serverPortLabel.setText("Server &Port:");
 		serverPortLabel.setLayoutData(new GridData(GridData.BEGINNING));
 		serverPort = new Text(debugAdapterSettingsGroup, SWT.SINGLE | SWT.BORDER);
@@ -158,7 +158,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		launchParametersGroup.setLayout(new GridLayout());
 		launchParametersGroup.setLayoutData(new GridData(GridData.FILL_BOTH));
 
-		Label jsonLabel = new Label(launchParametersGroup, SWT.NONE);
+		final var jsonLabel = new Label(launchParametersGroup, SWT.NONE);
 		jsonLabel.setText("Launch &Parameters (Json):");
 		jsonLabel.setLayoutData(new GridData(GridData.BEGINNING));
 

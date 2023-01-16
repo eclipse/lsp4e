@@ -109,7 +109,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 		continued();
 		stepping = true;
 		fireResumeEvent(DebugEvent.STEP_OVER);
-		StepOutArguments arguments = new StepOutArguments();
+		final var arguments = new StepOutArguments();
 		arguments.setThreadId(id);
 		getDebugProtocolServer().stepOut(arguments).exceptionally(this::handleExceptionalResume);
 	}
@@ -119,7 +119,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 		continued();
 		stepping = true;
 		fireResumeEvent(DebugEvent.STEP_OVER);
-		NextArguments arguments = new NextArguments();
+		final var arguments = new NextArguments();
 		arguments.setThreadId(id);
 		getDebugProtocolServer().next(arguments).exceptionally(this::handleExceptionalResume);
 	}
@@ -129,7 +129,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 		continued();
 		stepping = true;
 		fireResumeEvent(DebugEvent.STEP_INTO);
-		StepInArguments arguments = new StepInArguments();
+		final var arguments = new StepInArguments();
 		arguments.setThreadId(id);
 		getDebugProtocolServer().stepIn(arguments).exceptionally(this::handleExceptionalResume);
 	}
@@ -139,7 +139,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 		continued();
 		stepping = true;
 		fireResumeEvent(DebugEvent.RESUME);
-		ContinueArguments arguments = new ContinueArguments();
+		final var arguments = new ContinueArguments();
 		arguments.setThreadId(id);
 		getDebugProtocolServer().continue_(arguments).thenAccept(response -> {
 			if (response == null || response.getAllThreadsContinued() == null || response.getAllThreadsContinued()) {
@@ -181,7 +181,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 
 	@Override
 	public void suspend() throws DebugException {
-		PauseArguments arguments = new PauseArguments();
+		final var arguments = new PauseArguments();
 		arguments.setThreadId(id);
 		getDebugProtocolServer().pause(arguments).exceptionally(t -> {
 			DSPPlugin.logError("Failed to suspend debug adapter", t);

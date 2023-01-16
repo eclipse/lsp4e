@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -64,10 +63,10 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 		}
 		IRegion r = findWord(textViewer.getDocument(), region.getOffset());
 		final IRegion linkRegion = r != null ? r : region;
-		Map<Either<Location, LocationLink>,LSBasedHyperlink> allLinks = Collections.synchronizedMap(new LinkedHashMap<>());
+		final var allLinks = Collections.synchronizedMap(new LinkedHashMap<Either<Location, LocationLink>,LSBasedHyperlink>());
 		try {
 			// Collect definitions
-			Collection<CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>>> allFutures = Collections.synchronizedCollection(new ArrayList<>());
+			final var allFutures = Collections.synchronizedCollection(new ArrayList<CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>>>());
 			CompletableFuture.allOf(
 				LanguageServiceAccessor
 					.getLanguageServers(textViewer.getDocument(), capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDefinitionProvider()))

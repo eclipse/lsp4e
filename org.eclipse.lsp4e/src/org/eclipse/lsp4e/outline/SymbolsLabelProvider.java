@@ -254,7 +254,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element instanceof LSPDocumentInfo info) {
 			return new StyledString(info.getFileUri().getPath());
 		}
-		StyledString res = new StyledString();
+		final var res = new StyledString();
 		if (element == null){
 			return res;
 		}

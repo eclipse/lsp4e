@@ -163,7 +163,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 				try {
 					Method systemProcessGetter = RuntimeProcess.class.getDeclaredMethod("getSystemProcess"); //$NON-NLS-1$
 					systemProcessGetter.setAccessible(true);
-					Process systemProcess = (Process) systemProcessGetter.invoke(process);
+					final var systemProcess = (Process) systemProcessGetter.invoke(process);
 					this.outputStream = systemProcess.getOutputStream();
 				} catch (ReflectiveOperationException ex) {
 					LanguageServerPlugin.logError(ex);

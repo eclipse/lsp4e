@@ -269,8 +269,8 @@ public class LanguageServersRegistry {
 			}
 		}
 
-		Map<String, LanguageServerDefinition> servers = new HashMap<>();
-		List<ContentTypeMapping> contentTypes = new ArrayList<>();
+		final var servers = new HashMap<String, LanguageServerDefinition>();
+		final var contentTypes = new ArrayList<ContentTypeMapping>();
 		for (IConfigurationElement extension : Platform.getExtensionRegistry().getConfigurationElementsFor(EXTENSION_POINT_ID)) {
 			String id = extension.getAttribute(ID_ATTRIBUTE);
 			if (id != null && !id.isEmpty()) {
@@ -362,7 +362,7 @@ public class LanguageServersRegistry {
 	}
 
 	public void registerAssociation(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {
-		ContentTypeToLSPLaunchConfigEntry mapping = new ContentTypeToLSPLaunchConfigEntry(contentType, launchConfig,
+		final var mapping = new ContentTypeToLSPLaunchConfigEntry(contentType, launchConfig,
 				launchMode);
 		connections.add(mapping);
 		persistContentTypeToLaunchConfigurationMapping();
@@ -465,7 +465,7 @@ public class LanguageServersRegistry {
 	 * @return definitions that can support the following content-types
 	 */
 	private Set<LanguageServerDefinition> getAvailableLSFor(Collection<IContentType> contentTypes) {
-		Set<LanguageServerDefinition> res = new HashSet<>();
+		final var res = new HashSet<LanguageServerDefinition>();
 		contentTypes = expandToSuperTypes(contentTypes);
 		for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
 			if (mapping.isEnabled() && contentTypes.contains(mapping.getKey())) {
@@ -476,7 +476,7 @@ public class LanguageServersRegistry {
 	}
 
 	private Collection<IContentType> expandToSuperTypes(Collection<IContentType> contentTypes) {
-		ArrayList<IContentType> res = new ArrayList<>(contentTypes);
+		final var res = new ArrayList<IContentType>(contentTypes);
 		for (int i = 0; i < res.size(); i++) {
 			IContentType current = res.get(i);
 			IContentType base = current.getBaseType();

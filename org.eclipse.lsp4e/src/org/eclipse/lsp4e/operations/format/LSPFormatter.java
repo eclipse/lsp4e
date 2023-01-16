@@ -86,7 +86,7 @@ public class LSPFormatter {
 
 	private CompletableFuture<List<? extends TextEdit>> requestFormatting(LSPDocumentInfo info,
 			ITextSelection textSelection) throws BadLocationException {
-		TextDocumentIdentifier docId = new TextDocumentIdentifier(info.getFileUri().toString());
+		final var docId = new TextDocumentIdentifier(info.getFileUri().toString());
 		ServerCapabilities capabilities = info.getCapabilites();
 		IPreferenceStore store = EditorsUI.getPreferenceStore();
 		int tabWidth = store.getInt(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);
@@ -96,7 +96,7 @@ public class LSPFormatter {
 				&& isDocumentRangeFormattingSupported(capabilities)
 				&& (!isDocumentFormattingSupported(capabilities)
 						|| textSelection.getLength() != 0)) {
-			DocumentRangeFormattingParams params = new DocumentRangeFormattingParams();
+			final var params = new DocumentRangeFormattingParams();
 			params.setTextDocument(docId);
 			params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
 			boolean fullFormat = textSelection.getLength() == 0;
@@ -109,7 +109,7 @@ public class LSPFormatter {
 					.thenComposeAsync(server -> server.getTextDocumentService().rangeFormatting(params));
 		}
 
-		DocumentFormattingParams params = new DocumentFormattingParams();
+		final var params = new DocumentFormattingParams();
 		params.setTextDocument(docId);
 		params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
 		return info.getInitializedLanguageClient()
