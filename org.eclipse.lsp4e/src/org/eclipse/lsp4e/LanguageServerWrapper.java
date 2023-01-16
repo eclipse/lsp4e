@@ -194,7 +194,7 @@ public class LanguageServerWrapper {
 	private Timer timer;
 	private AtomicBoolean stopping = new AtomicBoolean(false);
 
-	private final ExecutorService dispatcher;
+	private ExecutorService dispatcher;
 
 	/**
 	 * Map containing unregistration handlers for dynamic capability registrations.
@@ -219,14 +219,23 @@ public class LanguageServerWrapper {
 		this.initialPath = initialPath;
 		this.serverDefinition = serverDefinition;
 		this.connectedDocuments = new HashMap<>();
-		String threadNameFormat = "LS-" + serverDefinition.id + "-dispatcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
-		this.dispatcher = Executors
-				.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(threadNameFormat).build());
-
+		startDispatcher();
 	}
 
-	void stopDispatcher() {
-		this.dispatcher.shutdownNow();
+	private synchronized void startDispatcher() {
+		if(dispatcher != null && !dispatcher.isShutdown()) {
+			return;
+		}
+		final String threadNameFormat = "LS-" + serverDefinition.id + "-dispatcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
+		this.dispatcher = Executors
+				.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(threadNameFormat).build());
+	}
+
+	synchronized void stopDispatcher() {
+		if(dispatcher == null) {
+			return;
+		}
+		dispatcher.shutdownNow();
 	}
 
 	/**
@@ -269,6 +278,7 @@ public class LanguageServerWrapper {
 				stop();
 			}
 		}
+		startDispatcher();
 		if (this.initializeFuture == null) {
 			final URI rootURI = getRootURI();
 			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
@@ -564,6 +574,8 @@ public class LanguageServerWrapper {
 		this.languageServer = null;
 
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
+
+		stopDispatcher();
 	}
 
 	/**
