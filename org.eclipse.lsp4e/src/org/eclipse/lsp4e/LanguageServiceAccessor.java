@@ -75,6 +75,7 @@ public class LanguageServiceAccessor {
 	public static void clearStartedServers() {
 		startedServers.removeIf(server -> {
 			server.stop();
+			server.stopDispatcher();
 			return true;
 		});
 	}

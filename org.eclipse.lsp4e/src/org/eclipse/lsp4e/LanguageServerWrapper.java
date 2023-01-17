@@ -196,6 +196,8 @@ public class LanguageServerWrapper {
 
 	private final ExecutorService dispatcher;
 
+	private final ExecutorService listener;
+
 	/**
 	 * Map containing unregistration handlers for dynamic capability registrations.
 	 */
@@ -219,14 +221,27 @@ public class LanguageServerWrapper {
 		this.initialPath = initialPath;
 		this.serverDefinition = serverDefinition;
 		this.connectedDocuments = new HashMap<>();
-		String threadNameFormat = "LS-" + serverDefinition.id + "-dispatcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
+		String dispatcherThreadNameFormat = "LS-" + serverDefinition.id + "-dispatcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
 		this.dispatcher = Executors
-				.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(threadNameFormat).build());
+				.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(dispatcherThreadNameFormat).build());
 
+		// Executor service passed through to the LSP4j layer when we attempt to start the LS. It will be used
+		// to create a listener that sits on the input stream and processes inbound messages (responses, or server-initiated
+		// requests).
+		String listenerThreadNameFormat = "LS-" + serverDefinition.id + "-listener-%d"; //$NON-NLS-1$ //$NON-NLS-2$
+		this.listener = Executors
+				.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(listenerThreadNameFormat).build());
 	}
 
 	void stopDispatcher() {
 		this.dispatcher.shutdownNow();
+
+		// Only really needed for testing - the listener (an instance of ConcurrentMessageProcessor) should exit
+		// as soon as the input stream from the LS is closed, and a cached thread pool will recycle idle
+		// threads after a 60 second timeout - or immediately in response to JVM shutdown.
+		// If we don't do this then a full test run will generate a lot of threads because we create new
+		// instances of this class for each test
+		this.listener.shutdownNow();
 	}
 
 	/**
@@ -287,9 +302,7 @@ public class LanguageServerWrapper {
 				return null;
 			}).thenApply(unused -> {
 				languageClient = serverDefinition.createLanguageClient();
-				String theardNameFormat = "LS-" + serverDefinition.id + "-launcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
-				ExecutorService executorService = Executors
-						.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(theardNameFormat).build());
+
 				initParams.setProcessId((int) ProcessHandle.current().pid());
 
 				if (rootURI != null) {
@@ -311,7 +324,7 @@ public class LanguageServerWrapper {
 						.setRemoteInterface(serverDefinition.getServerInterface())//
 						.setInput(lspStreamProvider.getInputStream())//
 						.setOutput(lspStreamProvider.getOutputStream())//
-						.setExecutorService(executorService)//
+						.setExecutorService(listener)//
 						.wrapMessages(wrapper)//
 						.create();
 				this.languageServer = launcher.getRemoteProxy();
