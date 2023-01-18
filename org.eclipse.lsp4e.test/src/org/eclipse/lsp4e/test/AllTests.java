@@ -88,7 +88,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	EditorToOutlineAdapterFactoryTest.class,
 	OutlineContentTest.class,
 	LanguageServerWrapperTest.class,
-	LSExecutorTest.class,
+	LanguageServersTest.class,
 	ColorTest.class,
 	LSPCodeMiningTest.class,
 	ShowMessageTest.class,

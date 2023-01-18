@@ -144,7 +144,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
-public class LanguageServerWrapper implements ILSWrapper {
+public class LanguageServerWrapper implements ILanguageServerWrapper {
 
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override

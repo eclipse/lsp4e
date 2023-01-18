@@ -27,7 +27,6 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant;
-import org.eclipse.lsp4e.ILSWrapper;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.TestUtils.JobSynchronizer;
@@ -65,7 +64,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
 				c -> Boolean.TRUE);
-		ILSWrapper wrapper1 = wrappers.iterator().next();
+		LanguageServerWrapper wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
 		UI.getActivePage().closeAllEditors(false);
@@ -82,7 +81,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 
 		wrappers = LanguageServiceAccessor.getLSWrappers(testFile2, c -> Boolean.TRUE);
-		ILSWrapper wrapper2 = wrappers.iterator().next();
+		LanguageServerWrapper wrapper2 = wrappers.iterator().next();
 		assertTrue(wrapper2.isActive());
 
 		// See corresponding LanguageServiceAccessorTest.testCreateNewLSAfterInitialProjectGotDeleted() - if WorkspaceFolders capability present
@@ -102,7 +101,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
 				c -> Boolean.TRUE);
-		ILSWrapper wrapper1 = wrappers.iterator().next();
+		LanguageServerWrapper wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
 		UI.getActivePage().closeAllEditors(false);
@@ -151,7 +150,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
 				c -> Boolean.TRUE);
-		ILSWrapper wrapper1 = wrappers.iterator().next();
+		LanguageServerWrapper wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
 		// Grab this before deletion otherwise project.getLocationURI will be null...

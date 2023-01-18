@@ -1,3 +1,15 @@
+/*******************************************************************************
+ * Copyright (c) 2022-3 Cocotec Ltd and others.
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *  Ahmed Hussain (Cocotec Ltd) - initial implementation
+ *
+ *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getActiveLanguageServers;
@@ -27,10 +39,10 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.lsp4e.ILSWrapper;
+import org.eclipse.lsp4e.ILanguageServerWrapper;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LSPExecutor.LSPDocumentExecutor;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.LanguageServers.LSPDocumentExecutor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
@@ -51,7 +63,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class LSExecutorTest {
+public class LanguageServersTest {
 	
 	@Rule
 	public AllCleanRule clear = new AllCleanRule();
@@ -769,10 +781,10 @@ public class LSExecutorTest {
 	}
 	
 	private static class LSWPair {
-		public final ILSWrapper wrapper;
+		public final ILanguageServerWrapper wrapper;
 		public final LanguageServer server;
 		
-		public LSWPair(final ILSWrapper w, final LanguageServer s) {
+		public LSWPair(final ILanguageServerWrapper w, final LanguageServer s) {
 			this.wrapper = w;
 			this.server = s;
 		}

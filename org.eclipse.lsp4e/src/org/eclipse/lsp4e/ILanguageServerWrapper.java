@@ -1,3 +1,15 @@
+/*******************************************************************************
+ * Copyright (c) 2022-3 Cocotec Ltd and others.
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *  Ahmed Hussain (Cocotec Ltd) - initial implementation
+ *
+ *******************************************************************************/
 package org.eclipse.lsp4e;
 
 import java.util.concurrent.CompletableFuture;
@@ -16,7 +28,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
  * methods to dispatch requests/notifications.
  *
  */
-public interface ILSWrapper {
+public interface ILanguageServerWrapper {
 
 	/**
 	 * @return The language ID that this wrapper is dealing with if defined in the
@@ -25,10 +37,12 @@ public interface ILSWrapper {
 	String getLanguageId(IContentType[] contentTypes);
 
 	/**
-	 * Warning: this is a long running operation
+	 * If called within one of the <code>LanguageServers.compute</code> callbacks (or afterwards),
+	 * will return the server capabilities as the LS will have been started and its capabilities cached.
+	 * If called directly on <code>LanguageServerWrapper</code>
+	 * then might be a long running operation that could time out and return null.
 	 *
-	 * @return the server capabilities, or null if initialization job didn't
-	 *         complete
+	 * @return the server capabilities
 	 */
 	ServerCapabilities getServerCapabilities();
 
@@ -54,7 +68,6 @@ public interface ILSWrapper {
 	 * already started.
 	 *
 	 * @return whether this language server can operate on the given project
-	 * @since 0.5
 	 */
 	boolean canOperate(@NonNull IProject project);
 

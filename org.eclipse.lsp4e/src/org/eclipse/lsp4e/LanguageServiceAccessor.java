@@ -267,7 +267,7 @@ public class LanguageServiceAccessor {
 	 *         {@code capabilitiesPredicate == null} or
 	 *         {@code wrapper.getServerCapabilities() == null}
 	 */
-	private static boolean capabilitiesComply(ILSWrapper wrapper,
+	private static boolean capabilitiesComply(ILanguageServerWrapper wrapper,
 			Predicate<ServerCapabilities> capabilitiesPredicate) {
 		return capabilitiesPredicate == null
 				/* next null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
@@ -438,7 +438,7 @@ public class LanguageServiceAccessor {
 	 * @deprecated
 	 */
 	@Deprecated
-	public static ILSWrapper getLSWrapperForConnection(@NonNull IProject project,
+	public static LanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project,
 			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
 		return getLSWrapper(project, serverDefinition);
 	}
@@ -472,7 +472,7 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-	public static @NonNull ILSWrapper startLanguageServer(@NonNull LanguageServerDefinition serverDefinition) throws IOException {
+	public static @NonNull LanguageServerWrapper startLanguageServer(@NonNull LanguageServerDefinition serverDefinition) throws IOException {
 		synchronized (startedServers) {
 			LanguageServerWrapper wrapper = startedServers.stream().filter(w -> w.serverDefinition == serverDefinition).findFirst().orElseGet(() -> {
 				LanguageServerWrapper w = new LanguageServerWrapper(serverDefinition, null);
@@ -517,7 +517,7 @@ public class LanguageServiceAccessor {
 	 */
 	@FunctionalInterface
 	private static interface ServerSupplier {
-		ILSWrapper get() throws IOException;
+		LanguageServerWrapper get() throws IOException;
 	}
 
 	@NonNull

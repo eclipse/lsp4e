@@ -71,7 +71,7 @@ public class ServerMessageHandler {
 
 	}
 
-	public static void logMessage(ILSWrapper wrapper, MessageParams params) {
+	public static void logMessage(ILanguageServerWrapper wrapper, MessageParams params) {
 		final var log = new StringBuilder();
 		log.append('[');
 		log.append(params.getType());
