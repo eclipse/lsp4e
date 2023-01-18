@@ -221,14 +221,15 @@ public class LanguageServerWrapper {
 		this.initialPath = initialPath;
 		this.serverDefinition = serverDefinition;
 		this.connectedDocuments = new HashMap<>();
-		String dispatcherThreadNameFormat = "LS-" + serverDefinition.id + "-dispatcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
+		String projectName = (project != null && project.getName() != null) ? ("@" + project.getName()) : "";  //$NON-NLS-1$//$NON-NLS-2$
+		String dispatcherThreadNameFormat = "LS-" + serverDefinition.id + projectName + "-dispatcher-%d"; //$NON-NLS-1$ //$NON-NLS-2$
 		this.dispatcher = Executors
 				.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(dispatcherThreadNameFormat).build());
 
 		// Executor service passed through to the LSP4j layer when we attempt to start the LS. It will be used
 		// to create a listener that sits on the input stream and processes inbound messages (responses, or server-initiated
 		// requests).
-		String listenerThreadNameFormat = "LS-" + serverDefinition.id + "-listener-%d"; //$NON-NLS-1$ //$NON-NLS-2$
+		String listenerThreadNameFormat = "LS-" + serverDefinition.id + projectName + "-listener-%d"; //$NON-NLS-1$ //$NON-NLS-2$
 		this.listener = Executors
 				.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(listenerThreadNameFormat).build());
 	}
