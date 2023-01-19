@@ -58,14 +58,14 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 *
 	 * @param <T> Type of result being computed on the language server(s)
 	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
-	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link ILanguageServerWrapper }
+	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link LanguageServerWrapper }
 	 * allowing fine-grained interrogation of server capabilities, or the construction of objects that can use this
 	 * handle to make further calls on the same server
 	 *
 	 * @return Async result
 	 */
 	@NonNull
-	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super ILanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		final CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 		return getServers().stream()
 			.map(wrapperFuture -> wrapperFuture
@@ -99,14 +99,14 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 *
 	 * @param <T> Type of result being computed on the language server(s)
 	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
-	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link ILanguageServerWrapper }
+	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link LanguageServerWrapper }
 	 * allowing fine-grained interrogation of server capabilities, or the construction of objects that can use this
 	 * handle to make further calls on the same server
 	 *
 	 * @return A list of pending results (note that these may be null or empty)
 	 */
 	@NonNull
-	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super ILanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		return getServers().stream()
 				.map(wrapperFuture -> wrapperFuture
 						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
@@ -132,14 +132,14 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * non-null response
 	 * @param <T> Type of result being computed on the language server(s)
 	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
-	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link ILanguageServerWrapper }
+	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link LanguageServerWrapper }
 	 * allowing fine-grained interrogation of server capabilities, or the construction of objects that can use this
 	 * handle to make further calls on the same server
 	 *
 	 * @return An asynchronous result that will complete with a populated <code>Optional&lt;T&gt;</code> from the first
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
-	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super ILanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		final List<CompletableFuture<LanguageServerWrapper>> servers = getServers();
 
 		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();

@@ -267,7 +267,7 @@ public class LanguageServiceAccessor {
 	 *         {@code capabilitiesPredicate == null} or
 	 *         {@code wrapper.getServerCapabilities() == null}
 	 */
-	private static boolean capabilitiesComply(ILanguageServerWrapper wrapper,
+	private static boolean capabilitiesComply(LanguageServerWrapper wrapper,
 			Predicate<ServerCapabilities> capabilitiesPredicate) {
 		return capabilitiesPredicate == null
 				/* next null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */

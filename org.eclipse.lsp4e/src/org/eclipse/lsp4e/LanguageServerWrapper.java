@@ -144,7 +144,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
-public class LanguageServerWrapper implements ILanguageServerWrapper {
+public class LanguageServerWrapper {
 
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
@@ -490,7 +490,6 @@ public class LanguageServerWrapper implements ILanguageServerWrapper {
 	/**
 	 * @return whether the underlying connection to language server is still active
 	 */
-	@Override
 	public boolean isActive() {
 		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
 	}
@@ -637,7 +636,6 @@ public class LanguageServerWrapper implements ILanguageServerWrapper {
 	 * @return whether this language server can operate on the given project
 	 * @since 0.5
 	 */
-	@Override
 	public boolean canOperate(@NonNull IProject project) {
 		return project.equals(this.initialProject) || serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
 	}
@@ -803,7 +801,6 @@ public class LanguageServerWrapper implements ILanguageServerWrapper {
 	 *
 	 * @param fn LS notification to send
 	 */
-	@Override
 	public void sendNotification(@NonNull Consumer<LanguageServer> fn) {
 		// Enqueues a notification on the dispatch thread associated with the wrapped language server. This
 		// ensures the interleaving of document updates and other requests in the UI is mirrored in the
@@ -811,7 +808,6 @@ public class LanguageServerWrapper implements ILanguageServerWrapper {
 		getInitializedServer().thenAcceptAsync(fn, this.dispatcher);
 	}
 
-	@Override
 	/**
 	 * Runs a request on the language server
 	 *
@@ -820,7 +816,6 @@ public class LanguageServerWrapper implements ILanguageServerWrapper {
 	 *
 	 * @return Async result
 	 */
-	@NonNull
 	public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
 		// Send the request on the dispatch thread, then additionally make sure the response is delivered
 		// on a thread from the default ForkJoinPool. This makes sure the user can't chain on an arbitrary
@@ -872,14 +867,12 @@ public class LanguageServerWrapper implements ILanguageServerWrapper {
 		}).thenApply(server -> server == null ? null : this);
 	}
 
-	@Override
 	/**
 	 * Warning: this is a long running operation
 	 *
 	 * @return the server capabilities, or null if initialization job didn't
 	 *         complete
 	 */
-	@Nullable
 	public ServerCapabilities getServerCapabilities() {
 		try {
 			getInitializedServer().get(10, TimeUnit.SECONDS);
@@ -895,12 +888,10 @@ public class LanguageServerWrapper implements ILanguageServerWrapper {
 		return this.serverCapabilities;
 	}
 
-	@Override
 	/**
 	 * @return The language ID that this wrapper is dealing with if defined in the
 	 *         content type mapping for the language server
 	 */
-	@Nullable
 	public String getLanguageId(IContentType[] contentTypes) {
 		for (IContentType contentType : contentTypes) {
 			String languageId = serverDefinition.languageIdMappings.get(contentType);

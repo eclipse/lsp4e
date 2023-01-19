@@ -39,8 +39,8 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.lsp4e.ILanguageServerWrapper;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LSPDocumentExecutor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -781,10 +781,10 @@ public class LanguageServersTest {
 	}
 	
 	private static class LSWPair {
-		public final ILanguageServerWrapper wrapper;
+		public final LanguageServerWrapper wrapper;
 		public final LanguageServer server;
 		
-		public LSWPair(final ILanguageServerWrapper w, final LanguageServer s) {
+		public LSWPair(final LanguageServerWrapper w, final LanguageServer s) {
 			this.wrapper = w;
 			this.server = s;
 		}
