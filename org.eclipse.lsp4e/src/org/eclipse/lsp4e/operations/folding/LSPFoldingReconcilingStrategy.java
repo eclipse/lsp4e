@@ -37,7 +37,6 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.FoldingRangeRequestParams;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.swt.graphics.FontMetrics;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Rectangle;
@@ -121,7 +120,7 @@ public class LSPFoldingReconcilingStrategy
 		if (uri == null) {
 			return;
 		}
-		final var identifier = new TextDocumentIdentifier(uri.toString());
+		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(uri);
 		final var params = new FoldingRangeRequestParams(identifier);
 		LanguageServiceAccessor.getLanguageServers(document, LSPFoldingReconcilingStrategy::canFold).thenAcceptAsync(servers -> {
 			if (servers.isEmpty()) {

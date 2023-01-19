@@ -53,7 +53,6 @@ import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.graphics.Image;
@@ -140,7 +139,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				final var context = new CodeActionContext(Collections.singletonList(diagnostic));
 				final var params = new CodeActionParams();
 				params.setContext(context);
-				params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(res).toString()));
+				params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(res));
 				params.setRange(diagnostic.getRange());
 				CompletableFuture<List<Either<Command, CodeAction>>> codeAction = lsf
 						.thenComposeAsync(ls -> ls.getTextDocumentService().codeAction(params));

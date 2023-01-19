@@ -51,7 +51,6 @@ import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentHighlightKind;
 import org.eclipse.lsp4j.DocumentHighlightParams;
 import org.eclipse.lsp4j.Position;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.swt.custom.StyledText;
 
 /**
@@ -191,7 +190,7 @@ public class HighlightReconcilingStrategy
 		if(uri == null) {
 			return;
 		}
-		final var identifier = new TextDocumentIdentifier(uri.toString());
+		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(uri);
 		final var params = new DocumentHighlightParams(identifier, position);
 		request = LanguageServiceAccessor.getLanguageServers(document,
 				capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDocumentHighlightProvider()))

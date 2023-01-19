@@ -51,7 +51,6 @@ import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.SymbolInformation;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IMemento;
@@ -303,7 +302,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			symbols.cancel(true);
 		}
 
-		final var params = new DocumentSymbolParams(new TextDocumentIdentifier(documentURI.toString()));
+		final var params = new DocumentSymbolParams(LSPEclipseUtils.toTextDocumentIdentifier(documentURI));
 		symbols = outlineViewerInput.languageServer.getTextDocumentService().documentSymbol(params);
 		symbols.thenAcceptAsync(response -> {
 			symbolsModel.update(response);

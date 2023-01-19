@@ -37,7 +37,6 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.RenameOptions;
 import org.eclipse.lsp4j.RenameParams;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -107,7 +106,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 			for (LanguageServer serverToTry : serverList.get(500, TimeUnit.MILLISECONDS)) {
 				// check if prepareRename is supported by the active LSP
 				if (languageServer.equals(serverToTry)) {
-					final var identifier = new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString());
+					final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
 					final var params = new PrepareRenameParams();
 					params.setTextDocument(identifier);
 					params.setPosition(LSPEclipseUtils.toPosition(offset, document));
@@ -163,7 +162,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 		try {
 			final var params = new RenameParams();
 			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
-			final var identifier = new TextDocumentIdentifier();
+			final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
 			identifier.setUri(LSPEclipseUtils.toUri(document).toString());
 			params.setTextDocument(identifier);
 			params.setNewName(newName);

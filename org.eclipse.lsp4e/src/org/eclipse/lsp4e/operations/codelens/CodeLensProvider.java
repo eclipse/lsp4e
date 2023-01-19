@@ -27,7 +27,6 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.CodeLensParams;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 public class CodeLensProvider extends AbstractCodeMiningProvider {
@@ -35,7 +34,7 @@ public class CodeLensProvider extends AbstractCodeMiningProvider {
 	private CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(@NonNull IDocument document) {
 		URI docURI = LSPEclipseUtils.toUri(document);
 		if (docURI != null) {
-			final var param = new CodeLensParams(new TextDocumentIdentifier(docURI.toString()));
+			final var param = new CodeLensParams(LSPEclipseUtils.toTextDocumentIdentifier(docURI));
 			final var codeLensResults = Collections.synchronizedList(new ArrayList<LSPCodeMining>());
 			return LanguageServiceAccessor
 					.getLanguageServers(document, capabilities -> capabilities.getCodeLensProvider() != null)

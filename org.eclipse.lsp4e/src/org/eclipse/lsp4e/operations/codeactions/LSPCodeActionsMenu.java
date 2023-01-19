@@ -39,7 +39,6 @@ import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -91,7 +90,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		item.setText(Messages.computing);
 		final var context = new CodeActionContext(Collections.emptyList());
 		final var params = new CodeActionParams();
-		params.setTextDocument(new TextDocumentIdentifier(infos.get(0).getFileUri().toString()));
+		params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(infos.get(0).getFileUri()));
 		params.setRange(this.range);
 		params.setContext(context);
 		final var runningFutures = new HashSet<CompletableFuture<?>>();

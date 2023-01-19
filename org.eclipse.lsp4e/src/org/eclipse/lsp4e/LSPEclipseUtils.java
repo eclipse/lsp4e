@@ -187,9 +187,7 @@ public final class LSPEclipseUtils {
 		Position start = toPosition(offset, document);
 		final var param = new CompletionParams();
 		param.setPosition(start);
-		final var id = new TextDocumentIdentifier();
-		id.setUri(fileUri.toString());
-		param.setTextDocument(id);
+		param.setTextDocument(toTextDocumentIdentifier(fileUri));
 		return param;
 	}
 
@@ -208,9 +206,7 @@ public final class LSPEclipseUtils {
 		Position start = toPosition(offset, document);
 		final var param = new TextDocumentPositionParams();
 		param.setPosition(start);
-		final var id = new TextDocumentIdentifier();
-		id.setUri(fileUri.toString());
-		param.setTextDocument(id);
+		param.setTextDocument(toTextDocumentIdentifier(fileUri));
 		return param;
 	}
 
@@ -221,7 +217,7 @@ public final class LSPEclipseUtils {
 		param.setPosition(start);
 		final var id = new TextDocumentIdentifier();
 		if (uri != null) {
-			id.setUri(uri.toString());
+			id.setUri(uri.toASCIIString());
 		}
 		param.setTextDocument(id);
 		return param;
@@ -268,6 +264,21 @@ public final class LSPEclipseUtils {
 		return specificParams;
 	}
 
+	@NonNull
+	public static TextDocumentIdentifier toTextDocumentIdentifier(@NonNull final IDocument document) {
+		return toTextDocumentIdentifier(toUri(document));
+	}
+
+	@NonNull
+	public static TextDocumentIdentifier toTextDocumentIdentifier(@NonNull final IResource res) {
+		return toTextDocumentIdentifier(toUri(res));
+	}
+
+	@NonNull
+	public static TextDocumentIdentifier toTextDocumentIdentifier(final URI uri) {
+		return new TextDocumentIdentifier(uri.toASCIIString());
+	}
+
 	private static ITextFileBuffer toBuffer(IDocument document) {
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
 		if (bufferManager == null)
@@ -275,7 +286,10 @@ public final class LSPEclipseUtils {
 		return bufferManager.getTextFileBuffer(document);
 	}
 
-	public static URI toUri(IDocument document) {
+	public static URI toUri(@Nullable IDocument document) {
+		if(document == null) {
+			return null;
+		}
 		IFile file = getFile(document);
 		if (file != null) {
 			return toUri(file);
@@ -968,7 +982,7 @@ public final class LSPEclipseUtils {
 		}
 	}
 
-	@Nullable public static IFile getFile(IDocument document) {
+	@Nullable public static IFile getFile(@NonNull IDocument document) {
 		IPath path = toPath(document);
 		return getFile(path);
 	}
@@ -1000,7 +1014,7 @@ public final class LSPEclipseUtils {
 	public static WorkspaceFolder toWorkspaceFolder(@NonNull IProject project) {
 		final var folder = new WorkspaceFolder();
 		URI folderUri = toUri(project);
-		folder.setUri(folderUri != null ? folderUri.toString() : ""); //$NON-NLS-1$
+		folder.setUri(folderUri != null ? folderUri.toASCIIString() : ""); //$NON-NLS-1$
 		folder.setName(project.getName());
 		return folder;
 	}

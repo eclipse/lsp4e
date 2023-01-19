@@ -34,7 +34,6 @@ import org.eclipse.lsp4j.FormattingOptions;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
@@ -86,7 +85,7 @@ public class LSPFormatter {
 
 	private CompletableFuture<List<? extends TextEdit>> requestFormatting(LSPDocumentInfo info,
 			ITextSelection textSelection) throws BadLocationException {
-		final var docId = new TextDocumentIdentifier(info.getFileUri().toString());
+		final var docId = LSPEclipseUtils.toTextDocumentIdentifier(info.getFileUri());
 		ServerCapabilities capabilities = info.getCapabilites();
 		IPreferenceStore store = EditorsUI.getPreferenceStore();
 		int tabWidth = store.getInt(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);

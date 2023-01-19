@@ -33,7 +33,6 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 
 public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 
@@ -79,7 +78,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 		if (uri == null) {
 			return null;
 		}
-		final var params = new DocumentLinkParams(new TextDocumentIdentifier(uri.toString()));
+		final var params = new DocumentLinkParams(LSPEclipseUtils.toTextDocumentIdentifier(uri));
 		try {
 			return LanguageServiceAccessor
 					.getLanguageServers(document,
