@@ -65,7 +65,7 @@ public class LanguageServiceAccessor {
 		// this class shouldn't be instantiated
 	}
 
-	private static final Set<LanguageServerWrapper> startedServers = new CopyOnWriteArraySet<>();
+	private static final Set<@NonNull LanguageServerWrapper> startedServers = new CopyOnWriteArraySet<>();
 	private static final Map<StreamConnectionProvider, LanguageServerDefinition> providersToLSDefinitions = new HashMap<>();
 
 	/**
@@ -293,13 +293,16 @@ public class LanguageServiceAccessor {
 			return Collections.emptyList();
 		}
 
-		final var res = new LinkedHashSet<LanguageServerWrapper>(getMatchingStartedWrappers(file, request));
+		final var lsRegistry = LanguageServersRegistry.getInstance();
+		final var fileURI = file.getLocationURI();
+
+		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(file.getProject(), request, true);
+		wrappers.removeIf(wrapper -> !wrapper.isConnectedTo(fileURI) || !lsRegistry.matches(file, wrapper.serverDefinition));
 
 		// look for running language servers via content-type
 		final var directContentTypes = LSPEclipseUtils.getFileContentTypes(file);
 		final var contentTypesToProcess = new ArrayDeque<IContentType>(directContentTypes);
 		final var processedContentTypes = new HashSet<IContentType>(directContentTypes.size());
-		final var lsRegistry = LanguageServersRegistry.getInstance();
 
 		while (!contentTypesToProcess.isEmpty()) {
 			final var contentType = contentTypesToProcess.poll();
@@ -317,8 +320,8 @@ public class LanguageServiceAccessor {
 				}
 
 				final var wrapper = getLSWrapper(project, serverDefinition, file.getFullPath());
-				if (!res.contains(wrapper) && capabilitiesComply(wrapper, request)) {
-					res.add(wrapper);
+				if (!wrappers.contains(wrapper) && capabilitiesComply(wrapper, request)) {
+					wrappers.add(wrapper);
 				}
 			}
 
@@ -327,7 +330,7 @@ public class LanguageServiceAccessor {
 			}
 			processedContentTypes.add(contentType);
 		}
-		return res;
+		return wrappers;
 	}
 
 	@NonNull
@@ -415,6 +418,7 @@ public class LanguageServiceAccessor {
 	 * @return a new or existing {@link LanguageServerWrapper} for the given definition.
 	 * @throws IOException
 	 */
+	@NonNull
 	public static LanguageServerWrapper getLSWrapper(@NonNull IProject project,
 			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
 		return getLSWrapper(project, serverDefinition, null);
@@ -439,6 +443,7 @@ public class LanguageServiceAccessor {
 		return getLSWrapper(project, serverDefinition);
 	}
 
+	@NonNull
 	private static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
 			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
 
@@ -515,20 +520,17 @@ public class LanguageServiceAccessor {
 		LanguageServerWrapper get() throws IOException;
 	}
 
-	private static Collection<LanguageServerWrapper> getMatchingStartedWrappers(@NonNull final IFile file,
-			@Nullable final Predicate<ServerCapabilities> request) {
-
-		final var lsRegistry = LanguageServersRegistry.getInstance();
-		final var project = file.getProject();
-		final var fileURI = file.getLocationURI();
-
-		return startedServers.stream()
-				.filter(wrapper -> wrapper.isActive() && wrapper.isConnectedTo(fileURI)
-						|| (lsRegistry.matches(file, wrapper.serverDefinition)
-								&& project != null && wrapper.canOperate(project)))
-				.filter(wrapper -> request == null
-						|| (wrapper.getServerCapabilities() == null || request.test(wrapper.getServerCapabilities())))
-				.toList();
+	@NonNull
+	public static List<@NonNull LanguageServerWrapper> getStartedWrappers(@Nullable IProject project, Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
+		List<@NonNull LanguageServerWrapper> result = new ArrayList<>();
+		for (LanguageServerWrapper wrapper : startedServers) {
+			if ((!onlyActiveLS || wrapper.isActive()) && (project == null || wrapper.canOperate(project))) {
+				if (capabilitiesComply(wrapper, request)) {
+					result.add(wrapper);
+				}
+			}
+		}
+		return result;
 	}
 
 	/**
@@ -568,20 +570,16 @@ public class LanguageServiceAccessor {
 	@NonNull
 	public static List<@NonNull LanguageServer> getLanguageServers(@Nullable IProject project,
 			Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
-		final var serverInfos = new ArrayList<@NonNull LanguageServer>();
-		for (LanguageServerWrapper wrapper : startedServers) {
-			if ((!onlyActiveLS || wrapper.isActive()) && (project == null || wrapper.canOperate(project))) {
-				@Nullable
-				LanguageServer server = wrapper.getServer();
-				if (server == null) {
-					continue;
-				}
-				if (capabilitiesComply(wrapper, request)) {
-					serverInfos.add(server);
-				}
+		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(project, request, onlyActiveLS);
+		final var servers = new ArrayList<@NonNull LanguageServer>(wrappers.size());
+		for (LanguageServerWrapper wrapper : wrappers) {
+			@Nullable
+			LanguageServer server = wrapper.getServer();
+			if (server != null) {
+				servers.add(server);
 			}
 		}
-		return serverInfos;
+		return servers;
 	}
 
 	protected static LanguageServerDefinition getLSDefinition(@NonNull StreamConnectionProvider provider) {
