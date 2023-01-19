@@ -783,22 +783,22 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Dispatches a LS request on a single executor thread tied to this server. Use of this guarantees that the server
+	 * Executes a LS request on a single executor thread tied to this server. Use of this guarantees that the server
 	 * will have seen all previous such requests (and document updates), and will not receive any further updates
 	 * prior to receiving this one.
 	 * @param <T> LS response type
 	 * @param fn LS method to invoke
 	 * @return Async result
 	 */
-	<T> CompletableFuture<T> executeOnLatestVersion(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+	<T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
 		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
 	}
 	/**
-	 * Sends a notification to the LS on a single executor thread tied to this server. Use of this guarantees that the server
+	 * Notify the LS on a single executor thread tied to this server. Use of this guarantees that the server
 	 * will have seen all previous such requests/notifications (and document updates).
 	 * @param fn LS notification to send
 	 */
-	void notifyOnLatestVersion(Consumer<LanguageServer> fn) {
+	void notify(@NonNull Consumer<LanguageServer> fn) {
 		getInitializedServer().thenAcceptAsync(fn, this.dispatcher);
 	}
 

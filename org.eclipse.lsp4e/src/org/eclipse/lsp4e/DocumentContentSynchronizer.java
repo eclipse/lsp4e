@@ -96,11 +96,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		textDocument.setUri(fileUri.toString());
 		textDocument.setText(document.get());
 
-		List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(this.document);
+		List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(document);
 
 		String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
 
-		IPath fromPortableString = Path.fromPortableString(this.fileUri.getPath());
+		IPath fromPortableString = Path.fromPortableString(fileUri.getPath());
 		if (languageId == null) {
 			languageId = fromPortableString.getFileExtension();
 			if (languageId == null) {
@@ -110,7 +110,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		textDocument.setLanguageId(languageId);
 		textDocument.setVersion(++version);
-		this.languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
+		languageServerWrapper.notify(ls -> ls.getTextDocumentService().didOpen(new DidOpenTextDocumentParams(textDocument)));
 	}
 
 	@Override
@@ -125,7 +125,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			changeParams = null;
 
 			changeParamsToSend.getTextDocument().setVersion(++version);
-			this.languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
+			languageServerWrapper.notify(ls -> ls.getTextDocumentService().didChange(changeParamsToSend));
 		}
 	}
 
@@ -233,7 +233,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 
 		try {
-			List<TextEdit> edits = this.languageServerWrapper.executeOnLatestVersion(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
+			List<TextEdit> edits = languageServerWrapper.execute(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
 				.get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS);
 			try {
 				LSPEclipseUtils.applyEdits(document, edits);
@@ -260,7 +260,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		if (openSaveStamp >= buffer.getModificationStamp()) {
 			return;
 		}
-		this.openSaveStamp = buffer.getModificationStamp();
+		openSaveStamp = buffer.getModificationStamp();
 		ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
 		if (serverCapabilities != null) {
 			Either<TextDocumentSyncKind, TextDocumentSyncOptions> textDocumentSync = serverCapabilities
@@ -271,11 +271,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 		final var identifier = new TextDocumentIdentifier(fileUri.toString());
 		final var params = new DidSaveTextDocumentParams(identifier, document.get());
-//		lastChangeFuture.updateAndGet(f -> f.thenApplyAsync(ls -> {
-//  			ls.getTextDocumentService().didSave(params);
-//  			return ls;
-//  		}));
-		this.languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didSave(params));
+		languageServerWrapper.notify(ls -> ls.getTextDocumentService().didSave(params));
 
 	}
 
@@ -287,7 +283,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		if (languageServerWrapper.isActive()) {
 			final var identifier = new TextDocumentIdentifier(uri);
 			final var params = new DidCloseTextDocumentParams(identifier);
-			languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didClose(params));
+			languageServerWrapper.notify(ls -> ls.getTextDocumentService().didClose(params));
 		}
 		return CompletableFuture.completedFuture(null);
 	}
@@ -304,7 +300,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	}
 
 	public IDocument getDocument() {
-		return this.document;
+		return document;
 	}
 
 	int getVersion() {
@@ -312,7 +308,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	}
 
 	private void checkEvent(DocumentEvent event) {
-		if (this.document != event.getDocument()) {
+		if (document != event.getDocument()) {
 			throw new IllegalStateException(
 					"Synchronizer should apply to only a single document, which is the one it was instantiated for"); //$NON-NLS-1$
 		}

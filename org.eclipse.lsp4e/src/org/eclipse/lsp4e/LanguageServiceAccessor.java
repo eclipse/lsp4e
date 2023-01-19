@@ -673,7 +673,7 @@ public class LanguageServiceAccessor {
 			// Ensure wrappers are started, connected to the document, and filter for capabilities
 			.map(wrapper -> wrapper.connectIf(document, filter)
 				// Call fn on lang servers, excluding null servers (that failed to start/connect or do not have the required capability)
-				.thenCompose(w -> w == null ? CompletableFuture.completedFuture((T)null) : w.executeOnLatestVersion(fn)))
+				.thenCompose(w -> w == null ? CompletableFuture.completedFuture((T)null) : w.execute(fn)))
 
 			// Transform individual async results into a single async with the aggregate result
 			.reduce(init, LanguageServiceAccessor::combine, LanguageServiceAccessor::concatResults)
