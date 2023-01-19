@@ -21,7 +21,10 @@ import java.nio.channels.Pipe;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Function;
 
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -37,6 +40,8 @@ public class MockConnectionProvider implements StreamConnectionProvider {
 	private Future<Void> listener;
 	private Collection<Closeable> streams = new ArrayList<>(4);
 	
+	private static ExecutorService testRunner = Executors.newCachedThreadPool();
+	
 	@Override
 	public void start() throws IOException {
 		Pipe serverOutputToClientInput = Pipe.open();
@@ -46,7 +51,7 @@ public class MockConnectionProvider implements StreamConnectionProvider {
 		InputStream serverInputStream = Channels.newInputStream(clientOutputToServerInput.source());
 		OutputStream serverOutputStream = Channels.newOutputStream(serverOutputToClientInput.sink());
 		Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(MockLanguageServer.INSTANCE, serverInputStream,
-				serverOutputStream);
+				serverOutputStream, testRunner, Function.identity());
 		clientInputStream = Channels.newInputStream(serverOutputToClientInput.source());
 		clientOutputStream = Channels.newOutputStream(clientOutputToServerInput.sink());
 		listener = launcher.startListening();
