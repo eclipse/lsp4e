@@ -435,9 +435,15 @@ public final class LSPEclipseUtils {
 					// Must be a bad location: we bail out to avoid corrupting the document.
 					throw new BadLocationException("Invalid location information found applying edits"); //$NON-NLS-1$
 				}
-				edit.addChild(new ReplaceEdit(offset, length, textEdit.getNewText()));
+
+				// check if that edit would actually change the document
+				if (!document.get(offset, length).equals(textEdit.getNewText()))
+					edit.addChild(new ReplaceEdit(offset, length, textEdit.getNewText()));
 			}
 		}
+
+		if(!edit.hasChildren())
+			return;
 
 		IDocumentUndoManager manager = DocumentUndoManagerRegistry.getDocumentUndoManager(document);
 		if (manager != null) {
