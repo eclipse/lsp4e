@@ -39,7 +39,6 @@ import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
@@ -55,7 +54,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 				return null;
 			}
 			params = new TextDocumentPositionParams(
-					new TextDocumentIdentifier(uri.toString()),
+					LSPEclipseUtils.toTextDocumentIdentifier(uri),
 					LSPEclipseUtils.toPosition(region.getOffset(), document));
 		} catch (BadLocationException e1) {
 			LanguageServerPlugin.logError(e1);

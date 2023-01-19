@@ -29,7 +29,6 @@ import org.eclipse.lsp4j.InlayHint;
 import org.eclipse.lsp4j.InlayHintParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 public class InlayHintProvider extends AbstractCodeMiningProvider {
@@ -46,7 +45,7 @@ public class InlayHintProvider extends AbstractCodeMiningProvider {
 				LanguageServerPlugin.logWarning("Unable to compute end of document", e); //$NON-NLS-1$
 			}
 			Range viewPortRange = new Range(new Position(0,0), end);
-			InlayHintParams param = new InlayHintParams(new TextDocumentIdentifier(docURI.toString()), viewPortRange);
+			InlayHintParams param = new InlayHintParams(LSPEclipseUtils.toTextDocumentIdentifier(docURI), viewPortRange);
 			List<LSPLineContentCodeMining> inlayHintResults = Collections.synchronizedList(new ArrayList<>());
 			return LanguageServiceAccessor
 					.getLanguageServers(document, capabilities -> capabilities.getInlayHintProvider() != null)

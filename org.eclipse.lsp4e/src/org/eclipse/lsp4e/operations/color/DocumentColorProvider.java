@@ -32,7 +32,6 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.DocumentColorParams;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.widgets.Display;
@@ -54,7 +53,7 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 		URI docURI = LSPEclipseUtils.toUri(document);
 
 		if (docURI != null) {
-			final var textDocumentIdentifier = new TextDocumentIdentifier(docURI.toString());
+			final var textDocumentIdentifier = LSPEclipseUtils.toTextDocumentIdentifier(docURI);
 			final var param = new DocumentColorParams(textDocumentIdentifier);
 			final var colorResults = Collections.synchronizedList(new ArrayList<ColorInformationMining>());
 			return LanguageServiceAccessor.getLanguageServers(document, DocumentColorProvider::isColorProvider)

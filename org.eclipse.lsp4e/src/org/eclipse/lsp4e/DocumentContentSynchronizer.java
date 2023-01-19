@@ -48,7 +48,6 @@ import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.TextDocumentSaveReason;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
@@ -93,7 +92,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		// add a document buffer
 		final var textDocument = new TextDocumentItem();
-		textDocument.setUri(fileUri.toString());
+		textDocument.setUri(fileUri.toASCIIString());
 		textDocument.setText(document.get());
 
 		List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(this.document);
@@ -151,7 +150,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		Assert.isTrue(changeParams == null);
 		changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(),
 				Collections.singletonList(new TextDocumentContentChangeEvent()));
-		changeParams.getTextDocument().setUri(fileUri.toString());
+		changeParams.getTextDocument().setUri(fileUri.toASCIIString());
 
 		IDocument document = event.getDocument();
 		TextDocumentContentChangeEvent changeEvent = null;
@@ -222,12 +221,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			return;
 		}
 
-		String uri = fileUri.toString();
-		if (WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.getOrDefault(uri, 0) > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD) {
+		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(fileUri);
+		if (WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.getOrDefault(identifier.getUri(), 0) > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD) {
 			return;
 		}
 
-		final var identifier = new TextDocumentIdentifier(uri);
 		// Use @link{TextDocumentSaveReason.Manual} as the platform does not give enough information to be accurate
 		final var params = new WillSaveTextDocumentParams(identifier, TextDocumentSaveReason.Manual);
 
@@ -243,12 +241,12 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (TimeoutException e) {
-			Integer timeoutCount = WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.compute(uri,
+			Integer timeoutCount = WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.compute(identifier.getUri(),
 					(k, v) -> v == null ? 1 : Integer.valueOf(v + 1));
 			String message = timeoutCount > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD ?
 					Messages.DocumentContentSynchronizer_TimeoutThresholdMessage:
 						Messages.DocumentContentSynchronizer_TimeoutMessage;
-			String boundMessage = NLS.bind(message, Integer.toString(lsToWillSaveWaitUntilTimeout()), uri);
+			String boundMessage = NLS.bind(message, Integer.toString(lsToWillSaveWaitUntilTimeout()), identifier.getUri());
 			ServerMessageHandler.showMessage(Messages.DocumentContentSynchronizer_OnSaveActionTimeout, new MessageParams(MessageType.Error, boundMessage));
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
@@ -269,7 +267,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 				return;
 			}
 		}
-		final var identifier = new TextDocumentIdentifier(fileUri.toString());
+		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(fileUri);
 		final var params = new DidSaveTextDocumentParams(identifier, document.get());
 //		lastChangeFuture.updateAndGet(f -> f.thenApplyAsync(ls -> {
 //  			ls.getTextDocumentService().didSave(params);
@@ -280,12 +278,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	}
 
 	public CompletableFuture<Void> documentClosed() {
-		String uri = fileUri.toString();
-		WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.remove(uri);
+	   final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(fileUri);
+		WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.remove(identifier.getUri());
 		// When LS is shut down all documents are being disconnected. No need to send
 		// "didClose" message to the LS that is being shut down or not yet started
 		if (languageServerWrapper.isActive()) {
-			final var identifier = new TextDocumentIdentifier(uri);
 			final var params = new DidCloseTextDocumentParams(identifier);
 			languageServerWrapper.notifyOnLatestVersion(ls -> ls.getTextDocumentService().didClose(params));
 		}

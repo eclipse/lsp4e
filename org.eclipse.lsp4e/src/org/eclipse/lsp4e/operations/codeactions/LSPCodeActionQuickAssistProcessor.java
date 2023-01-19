@@ -40,7 +40,6 @@ import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -223,7 +222,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 	private static CodeActionParams prepareCodeActionParams(List<LSPDocumentInfo> infos, int offset, int length) {
 		final var context = new CodeActionContext(Collections.emptyList());
 		final var params = new CodeActionParams();
-		params.setTextDocument(new TextDocumentIdentifier(infos.get(0).getFileUri().toString()));
+		params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(infos.get(0).getFileUri()));
 		try {
 			params.setRange(new Range(LSPEclipseUtils.toPosition(offset, infos.get(0).getDocument()), LSPEclipseUtils
 					.toPosition(offset + (length > 0 ? length : 0), infos.get(0).getDocument())));

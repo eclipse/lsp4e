@@ -28,7 +28,6 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.widgets.Control;
 
@@ -72,7 +71,7 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 			return;
 		}
 		cancel();
-		final var params = new DocumentLinkParams(new TextDocumentIdentifier(uri.toString()));
+		final var params = new DocumentLinkParams(LSPEclipseUtils.toTextDocumentIdentifier(uri));
 		request = LanguageServiceAccessor
 				.getLanguageServers(document, capabilities -> capabilities.getDocumentLinkProvider() != null)
 				.thenAcceptAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()

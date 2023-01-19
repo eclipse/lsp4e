@@ -44,7 +44,6 @@ import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.lsp4j.SemanticTokensParams;
 import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
@@ -168,7 +167,7 @@ public class SemanticHighlightReconcilerStrategy
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri != null) {
 			final var semanticTokensParams = new SemanticTokensParams();
-			semanticTokensParams.setTextDocument(new TextDocumentIdentifier(uri.toString()));
+			semanticTokensParams.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(uri));
 			return semanticTokensParams;
 		}
 		return null;

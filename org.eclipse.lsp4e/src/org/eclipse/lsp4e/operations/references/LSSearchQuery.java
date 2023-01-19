@@ -38,7 +38,6 @@ import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.ReferenceContext;
 import org.eclipse.lsp4j.ReferenceParams;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.search.internal.ui.text.FileMatch;
@@ -78,6 +77,7 @@ public class LSSearchQuery extends FileSearchQuery {
 		this.document = document;
 		this.languageServers = languageServers;
 		this.position = LSPEclipseUtils.toPosition(offset, document);
+		final var uri = LSPEclipseUtils.toUri(document);
 		this.filename = Path.fromPortableString(LSPEclipseUtils.toUri(document).getPath()).lastSegment();
 	}
 
@@ -91,7 +91,7 @@ public class LSSearchQuery extends FileSearchQuery {
 			// Execute LSP "references" service
 			final var params = new ReferenceParams();
 			params.setContext(new ReferenceContext(false));
-			params.setTextDocument(new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString()));
+			params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(document));
 			params.setPosition(position);
 
 			for (final LanguageServer languageServer : languageServers) {

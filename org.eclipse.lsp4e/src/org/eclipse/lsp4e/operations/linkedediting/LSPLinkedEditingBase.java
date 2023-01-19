@@ -26,7 +26,6 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Position;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 
 public class LSPLinkedEditingBase implements IPreferenceChangeListener {
@@ -64,7 +63,7 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 		if(uri == null) {
 			return CompletableFuture.completedFuture(null);
 		}
-		final var identifier = new TextDocumentIdentifier(uri.toString());
+		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(uri);
 		final var params = new TextDocumentPositionParams(identifier, position);
 
 		final var range = new AtomicReference<LinkedEditingRanges>();

@@ -305,7 +305,7 @@ public class CommandExecutor {
 			}
 		});
 		if (!currentEntry.value.isEmpty()) {
-			changes.put(currentEntry.key.toString(), currentEntry.value);
+			changes.put(currentEntry.key.toASCIIString(), currentEntry.value);
 		}
 		return res;
 	}
