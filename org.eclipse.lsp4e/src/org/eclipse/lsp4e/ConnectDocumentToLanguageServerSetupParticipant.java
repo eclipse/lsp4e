@@ -70,18 +70,25 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 			protected IStatus run(IProgressMonitor monitor) {
 				ITextFileBuffer buffer = ITextFileBufferManager.DEFAULT.getTextFileBuffer(document);
 				if (buffer == null || buffer.getLocation() == null) { // document no more relevant
+					SUBMITTED_JOBS.remove(this);
 					return Status.OK_STATUS;
 				}
 				if (monitor.isCanceled()) {
+					SUBMITTED_JOBS.remove(this);
 					return Status.CANCEL_STATUS;
 				}
 				// connect to LS so they start receiving notifications and pushing diagnostics
 				LanguageServiceAccessor.getLanguageServers(document, capabilities -> true)
 					.thenRun(() -> {
 						locationMap.remove(location);
-						SUBMITTED_JOBS.remove(this);
 					});
+				SUBMITTED_JOBS.remove(this);
 				return Status.OK_STATUS;
+			}
+
+			@Override
+			protected void canceling() {
+				SUBMITTED_JOBS.remove(this);
 			}
 		};
 		SUBMITTED_JOBS.add(job);
