@@ -260,7 +260,11 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		@Override
 		protected List<CompletableFuture<LanguageServerWrapper>> getServers() {
 			// Compute list of servers from project & filter
-			return LanguageServiceAccessor.getWrappers(this.project, getFilter(), !this.restartStopped);
+			List<@NonNull CompletableFuture<LanguageServerWrapper>> wrappers = new ArrayList<>();
+			for (LanguageServerWrapper wrapper :  LanguageServiceAccessor.getStartedWrappers(project, getFilter(), !restartStopped)) {
+				wrappers.add(wrapper.getInitializedServer().thenApply(ls -> wrapper));
+			}
+			return wrappers;
 		}
 	}
 
