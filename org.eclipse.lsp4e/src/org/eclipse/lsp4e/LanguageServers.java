@@ -31,6 +31,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.swt.widgets.Display;
 
 /**
  * Main entry point for accessors to run requests on the language servers, and some utilities
@@ -73,7 +74,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			.reduce(init, LanguageServers::combine, LanguageServers::concatResults)
 
 			// Ensure any subsequent computation added by caller does not block further incoming messages from language servers
-			.thenApplyAsync(Function.identity());
+			.thenCompose(this::complete);
 	}
 
 
@@ -109,7 +110,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		return getServers().stream()
 				.map(wrapperFuture -> wrapperFuture
-						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
+						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)).thenCompose(this::complete)))
 				.collect(Collectors.toList());
 	}
 
@@ -169,7 +170,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			}
 		});
 
-		return result.thenApplyAsync(Function.identity());
+		return result.thenCompose(this::complete);
 	}
 
 	/**
@@ -179,6 +180,19 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	public E withFilter(final @NonNull Predicate<ServerCapabilities> filter) {
 		this.filter = filter;
+		return (E)this;
+	}
+
+	/**
+	 * Causes any <code>CompletableFuture</code> returned by any calls to the language server
+	 * from this instance to deliver their results on the UI thread of the supplied <code>display</code>
+	 * rather than a random thread from the default ForkJoin pool.
+	 *
+	 * @param display SWT display owning the event thread to use
+	 * @return
+	 */
+	public E completeOnUI(final @NonNull Display display) {
+		this.display = display;
 		return (E)this;
 	}
 
@@ -333,6 +347,18 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return new LSPDocumentExecutor(document);
 	}
 
+	private <T> CompletableFuture<T> complete(final T t) {
+		if (this.display != null) {
+			CompletableFuture<T> tmp = new CompletableFuture<>();
+			this.display.asyncExec(() -> {
+				tmp.complete(t);
+			});
+			return tmp;
+		}
+		return CompletableFuture.supplyAsync(() -> t);
+	}
+
+
 	/**
 	 *
 	 * @param project
@@ -343,6 +369,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	}
 
 	private @NonNull Predicate<ServerCapabilities> filter = s -> true;
+
+	private Display display;
 
 
 }

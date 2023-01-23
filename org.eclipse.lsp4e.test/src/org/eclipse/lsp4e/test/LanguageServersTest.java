@@ -613,6 +613,65 @@ public class LanguageServersTest {
 	}
 	
 	@Test
+	public void testDeliverOnUI() throws Exception {
+		final AtomicInteger hoverCount = new AtomicInteger();
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			@Override
+			public synchronized void didChange(DidChangeTextDocumentParams params) {
+				super.didChange(params);
+			}
+			
+			@Override
+			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
+				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				return CompletableFuture.completedFuture(hoverResponse);
+			}
+		});
+		
+		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		final IDocument document = viewer.getDocument();
+		
+		final HoverParams params = new HoverParams();
+		final Position position = new Position();
+		position.setCharacter(10);
+		position.setLine(0);
+		params.setPosition(position);
+		
+		Display display = Display.getDefault();
+		
+		CompletableFuture<Boolean> wasOnUiThread = new CompletableFuture<>();
+		
+		CompletableFuture<List<String>> result =  LanguageServers.forDocument(document)
+				.completeOnUI(display)
+				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()))
+				.thenApply(hovers -> {
+					wasOnUiThread.complete(Display.getCurrent() != null);
+					return hovers;
+				});
+				
+		// Unit test runs on main thread, which has to be the event thread on MacOS, so avert deadlock in test framework
+		Display current = Display.getCurrent();
+		if (current != null) {
+			while (!wasOnUiThread.isDone()) {
+				if (!current.readAndDispatch()) {
+					current.sleep();
+				}
+			}
+		}
+		
+		List<String> hovers = result.join();
+		
+		assertTrue(hovers.contains("HoverContent1"));
+		assertTrue(hovers.contains("HoverContent2"));
+		
+		boolean wasOnUI = wasOnUiThread.join();
+		assertTrue("Should have been on UI thread", wasOnUI);
+	}
+	
+	@Test
 	public void testNoMatchingServers() throws Exception {
 		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
