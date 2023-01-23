@@ -691,11 +691,11 @@ public class LanguageServerWrapper {
 				}
 				TextDocumentSyncKind syncKind = initializeFuture == null ? null
 						: serverCapabilities.getTextDocumentSync().map(Functions.identity(), TextDocumentSyncOptions::getChange);
-				final var listener = new DocumentContentSynchronizer(this, theDocument, syncKind);
+				final var listener = new DocumentContentSynchronizer(this, languageServer, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
 			}
-		}, this.dispatcher).thenApply(theVoid -> languageServer);
+		}).thenApply(theVoid -> languageServer);
 	}
 
 	/**
@@ -797,23 +797,50 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Dispatches a LS request on a single executor thread tied to this server. Use of this guarantees that the server
-	 * will have seen all previous such requests (and document updates), and will not receive any further updates
-	 * prior to receiving this one.
+	 * Sends a notification to the wrapped language server
+	 *
+	 * @param fn LS notification to send
+	 */
+	public void sendNotification(@NonNull Consumer<LanguageServer> fn) {
+		// Enqueues a notification on the dispatch thread associated with the wrapped language server. This
+		// ensures the interleaving of document updates and other requests in the UI is mirrored in the
+		// order in which they get dispatched to the server
+		getInitializedServer().thenAcceptAsync(fn, this.dispatcher);
+	}
+
+	/**
+	 * Runs a request on the language server
+	 *
+	 * @param <T> LS response type
+	 * @param fn Code block that will be supplied the LS in a state where it is guaranteed to have been initialized
+	 *
+	 * @return Async result
+	 */
+	public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+		// Send the request on the dispatch thread, then additionally make sure the response is delivered
+		// on a thread from the default ForkJoinPool. This makes sure the user can't chain on an arbitrary
+		// long-running block of code that would tie up the server response listener and prevent any more
+		// inbound messages being read
+		return executeImpl(fn).thenApplyAsync(Function.identity());
+	}
+
+	/**
+	 * Runs a request on the language server. Internal hook for the LSPexecutor implementations
+	 *
 	 * @param <T> LS response type
 	 * @param fn LS method to invoke
 	 * @return Async result
 	 */
-	<T> CompletableFuture<T> executeOnLatestVersion(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+	@NonNull
+	 <T> CompletableFuture<T> executeImpl(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+		// Run the supplied function, ensuring that it is enqueued on the dispatch thread associated with the
+		// wrapped language server, and is thus guarannteed to be seen in the correct order with respect
+		// to e.g. previous document changes
+		//
+		// Note this doesn't get the .thenApplyAsync(Function.identity()) chained on additionally, unlike
+		// the public-facing version of this method, because we trust the LSPExecutor implementations to
+		// make sure the server response thread doesn't get blocked by any further work
 		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
-	}
-	/**
-	 * Sends a notification to the LS on a single executor thread tied to this server. Use of this guarantees that the server
-	 * will have seen all previous such requests/notifications (and document updates).
-	 * @param fn LS notification to send
-	 */
-	void notifyOnLatestVersion(Consumer<LanguageServer> fn) {
-		getInitializedServer().thenAcceptAsync(fn, this.dispatcher);
 	}
 
 	/**
@@ -827,8 +854,8 @@ public class LanguageServerWrapper {
 	 * @return Async result that guarantees the wrapped server will be active and connected to the document. Wraps
 	 * null if the server does not support the requested capabilities or could not be started.
 	 */
-	CompletableFuture<LanguageServerWrapper> connectIf(IDocument document, Predicate<ServerCapabilities> filter) {
-		return getInitializedServer().thenComposeAsync(server -> {
+	@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connectIf(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> filter) {
+		return getInitializedServer().thenCompose(server -> {
 			if (server != null && (filter == null || filter.test(getServerCapabilities()))) {
 				try {
 					return connect(document);
@@ -837,7 +864,7 @@ public class LanguageServerWrapper {
 				}
 			}
 			return CompletableFuture.completedFuture(null);
-		}, this.dispatcher).thenApply(server -> this);
+		}).thenApply(server -> server == null ? null : this);
 	}
 
 	/**
@@ -846,7 +873,6 @@ public class LanguageServerWrapper {
 	 * @return the server capabilities, or null if initialization job didn't
 	 *         complete
 	 */
-	@Nullable
 	public ServerCapabilities getServerCapabilities() {
 		try {
 			getInitializedServer().get(10, TimeUnit.SECONDS);
@@ -866,7 +892,6 @@ public class LanguageServerWrapper {
 	 * @return The language ID that this wrapper is dealing with if defined in the
 	 *         content type mapping for the language server
 	 */
-	@Nullable
 	public String getLanguageId(IContentType[] contentTypes) {
 		for (IContentType contentType : contentTypes) {
 			String languageId = serverDefinition.languageIdMappings.get(contentType);

@@ -16,44 +16,31 @@ import static org.eclipse.lsp4e.test.TestUtils.numberOfChangesIs;
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.net.URI;
-import java.util.Collections;
 import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
-import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
-import org.eclipse.lsp4j.Hover;
-import org.eclipse.lsp4j.HoverParams;
-import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.ide.IDE;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -183,97 +170,6 @@ public class DocumentDidChangeTest {
 			String delta = changes.get(i).getContentChanges().get(0).getText();
 			assertEquals(i + "\n", delta);
 		}
-	}
-	
-	@Test
-	@Ignore(value = """
-			This test is currently failing because of synchronization issues.
-			See various discussion at
-			* https://github.com/eclipse/lsp4e/pull/251
-			* https://github.com/eclipse/lsp4e/pull/318#issuecomment-1330738521
-			* ...
-			About ensuring the order to requests performed by the client is respected
-			despite usage of `then...Async` to avoid blocking UI Thread.
-			""")
-	public void editInterleavingTortureTest() throws Exception {
-		
-		final Vector<Integer> tooEarlyHover = new Vector<>();
-		final Vector<Integer> tooLateHover = new Vector<>();
-		
-		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
-		.setTextDocumentSync(TextDocumentSyncKind.Incremental);
-		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
-			int changeVersion = 0;
-			@Override
-			public synchronized void didChange(DidChangeTextDocumentParams params) {
-				super.didChange(params);
-				changeVersion++;
-			}
-			
-			@Override
-			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				final int targetVersionForRequest = position.getPosition().getCharacter();
-				if (targetVersionForRequest < changeVersion) {
-					tooLateHover.add(targetVersionForRequest);
-				} else if (targetVersionForRequest > changeVersion){
-					tooEarlyHover.add(targetVersionForRequest);
-				}
-				return super.hover(position);
-			}
-		});
-		
-		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
-		MockLanguageServer.INSTANCE.setHover(hoverResponse);
-		CompletableFuture<?> initial = CompletableFuture.completedFuture(null);
-		
-		IFile testFile = TestUtils.createUniqueTestFile(project, "");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
-		final IDocument document = viewer.getDocument();
-		final URI uri = LSPEclipseUtils.toUri(document);
-		StyledText text = viewer.getTextWidget();
-		Thread.sleep(1000);
-		
-		for (int i = 0; i < 5000; i++) {
-			final int current = i + 1;
-			text.append(i + "\n");
-			final HoverParams params = new HoverParams();
-			final Position position = new Position();
-			position.setCharacter(current);
-			position.setLine(0);
-			params.setPosition(position);
-			
-			CompletableFuture<?> hoverFuture = LanguageServiceAccessor.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
-			.thenApply(languageServers -> // Async is very important here, otherwise the LS Client thread is in
-												// deadlock and doesn't read bytes from LS
-			languageServers.stream()
-				.map(languageServer -> {
-					try {
-						return languageServer.getTextDocumentService().hover(params);
-					} catch (Exception e) {
-						
-					}
-					return CompletableFuture.completedFuture(null);
-				}).collect(Collectors.toList()));
-			initial = CompletableFuture.allOf(initial, hoverFuture);
-		}
-		
-		initial.join();
-		StringBuilder message = new StringBuilder();
-		message.append("Too Early hover requests: "); message.append(tooEarlyHover.size());
-		message.append(System.lineSeparator());
-		tooEarlyHover.forEach(i -> {
-			message.append("  Too Early ");
-			message.append(i);
-			message.append(System.lineSeparator());
-		});
-		message.append("Too Late hover requests: "); message.append(tooLateHover.size());
-		message.append(System.lineSeparator());
-		tooLateHover.forEach(i -> {
-			message.append("  Too Late " );message.append(i);
-			message.append(System.lineSeparator());
-		});
-		assertTrue(message.toString(), tooEarlyHover.isEmpty() && tooLateHover.isEmpty());
 	}
 
 	@Test
