@@ -21,12 +21,12 @@ import org.eclipse.jface.text.codemining.LineContentCodeMining;
 import org.eclipse.jface.util.Geometry;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4j.ColorInformation;
 import org.eclipse.lsp4j.ColorPresentationParams;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextEdit;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.graphics.Color;
@@ -57,14 +57,14 @@ public class ColorInformationMining extends LineContentCodeMining {
 
 		private final TextDocumentIdentifier textDocumentIdentifier;
 		private final ColorInformation colorInformation;
-		private final LanguageServer languageServer;
+		private final LanguageServerWrapper languageServerWrapper;
 		private final IDocument document;
 
 		public UpdateColorWithDialog(TextDocumentIdentifier textDocumentIdentifier, ColorInformation colorInformation,
-				LanguageServer languageServer, IDocument document) {
+				LanguageServerWrapper languageServerWrapper, IDocument document) {
 			this.textDocumentIdentifier = textDocumentIdentifier;
 			this.colorInformation = colorInformation;
-			this.languageServer = languageServer;
+			this.languageServerWrapper = languageServerWrapper;
 			this.document = document;
 		}
 
@@ -82,31 +82,31 @@ public class ColorInformationMining extends LineContentCodeMining {
 				// get LSP color presentation list for the picked color
 				final var params = new ColorPresentationParams(textDocumentIdentifier,
 						LSPEclipseUtils.toColor(rgb), colorInformation.getRange());
-				this.languageServer.getTextDocumentService().colorPresentation(params)
-						.thenAcceptAsync(presentations -> {
+				this.languageServerWrapper.execute(ls -> ls.getTextDocumentService().colorPresentation(params))
+					.thenAcceptAsync(presentations -> {
 							if (presentations.isEmpty()) {
 								return;
 							}
 							// As ColorDialog cannot be customized (to choose the color presentation (rgb,
 							// hexa, ....) we pick the first color presentation.
 							TextEdit textEdit = presentations.get(0).getTextEdit();
-							styledText.getDisplay().asyncExec(() -> {
 								try {
+									// TODO: Should consider using optimistic locking for this in case document changes while
+									// request being processed
 									LSPEclipseUtils.applyEdit(textEdit, document);
 								} catch (BadLocationException e) {
 									LanguageServerPlugin.logError(e);
 								}
-							});
-						});
+						}, styledText.getDisplay());
 			}
 		}
 	}
 
 	public ColorInformationMining(ColorInformation colorInformation, @NonNull IDocument document,
-			TextDocumentIdentifier textDocumentIdentifier, LanguageServer languageServer,
+			TextDocumentIdentifier textDocumentIdentifier, LanguageServerWrapper languageServerWrapper,
 			DocumentColorProvider colorProvider) throws BadLocationException {
 		super(toPosition(colorInformation.getRange(), document), colorProvider,
-				new UpdateColorWithDialog(textDocumentIdentifier, colorInformation, languageServer, document));
+				new UpdateColorWithDialog(textDocumentIdentifier, colorInformation, languageServerWrapper, document));
 		this.rgba = LSPEclipseUtils.toRGBA(colorInformation.getColor());
 		this.colorProvider = colorProvider;
 		// set label with space to mark the mining as resolved.
