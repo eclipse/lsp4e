@@ -148,7 +148,7 @@ public class LanguageServersTest {
 		List<String> hovers = result.join();
 		
 		assertTrue(hovers.contains("HoverContent1"));
-		assertFalse(hovers.contains("HoverContent2"));
+		assertFalse(hovers.contains(null));
 	}
 	
 	@Test
