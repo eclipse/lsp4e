@@ -40,7 +40,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -832,7 +831,7 @@ public class LanguageServerWrapper {
 	 * @return Async result
 	 */
 	@NonNull
-	 <T> CompletableFuture<T> executeImpl(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+	<T> CompletableFuture<T> executeImpl(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
 		// Run the supplied function, ensuring that it is enqueued on the dispatch thread associated with the
 		// wrapped language server, and is thus guarannteed to be seen in the correct order with respect
 		// to e.g. previous document changes
@@ -841,30 +840,6 @@ public class LanguageServerWrapper {
 		// the public-facing version of this method, because we trust the LSPExecutor implementations to
 		// make sure the server response thread doesn't get blocked by any further work
 		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
-	}
-
-	/**
-	 * Test whether this server supports the requested <code>ServerCapabilities</code>, and ensure
-	 * that it is connected to the document if so.
-	 *
-	 * NB result is a future on this <emph>wrapper</emph> rather than the wrapped language server directly,
-	 * to support accessing the server on the single-threaded dispatch queue.
-	 * @param document Document to connect
-	 * @param filter Constraint on server capabilities
-	 * @return Async result that guarantees the wrapped server will be active and connected to the document. Wraps
-	 * null if the server does not support the requested capabilities or could not be started.
-	 */
-	@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connectIf(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> filter) {
-		return getInitializedServer().thenCompose(server -> {
-			if (server != null && (filter == null || filter.test(getServerCapabilities()))) {
-				try {
-					return connect(document);
-				} catch (IOException ex) {
-					LanguageServerPlugin.logError(ex);
-				}
-			}
-			return CompletableFuture.completedFuture(null);
-		}).thenApply(server -> server == null ? null : this);
 	}
 
 	/**

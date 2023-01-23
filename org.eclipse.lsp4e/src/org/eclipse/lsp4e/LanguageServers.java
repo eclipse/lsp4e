@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -205,11 +206,11 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * Executor that will run requests on the set of language servers appropriate for the supplied document
 	 *
 	 */
-	public static class LSPDocumentExecutor extends LanguageServers<LSPDocumentExecutor> {
+	public static class LanguageServerDocumentExecutor extends LanguageServers<LanguageServerDocumentExecutor> {
 
 		private final @NonNull IDocument document;
 
-		LSPDocumentExecutor(final @NonNull IDocument document) {
+		LanguageServerDocumentExecutor(final @NonNull IDocument document) {
 			this.document = document;
 		}
 
@@ -217,11 +218,32 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			return this.document;
 		}
 
+		/**
+		 * Test whether this server supports the requested <code>ServerCapabilities</code>, and ensure
+		 * that it is connected to the document if so.
+		 *
+		 * NB result is a future on this <emph>wrapper</emph> rather than the wrapped language server directly,
+		 * to support accessing the server on the single-threaded dispatch queue.
+		 */
+		@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connectIf(@NonNull LanguageServerWrapper wrapper) {
+			@NonNull Predicate<ServerCapabilities> filter = getFilter();
+			return wrapper.getInitializedServer().thenCompose(server -> {
+				if (server != null && filter.test(wrapper.getServerCapabilities())) {
+					try {
+						return wrapper.connect(document);
+					} catch (IOException ex) {
+						LanguageServerPlugin.logError(ex);
+					}
+				}
+				return CompletableFuture.completedFuture(null);
+			}).thenApply(server -> server == null ? null : wrapper);
+		}
+
 		@Override
 		protected List<CompletableFuture<LanguageServerWrapper>> getServers() {
 			// Compute list of servers from document & filter
 			return LanguageServiceAccessor.getLSWrappers(this.document).stream()
-				.map(wrapper -> wrapper.connectIf(this.document, getFilter()))
+				.map(this::connectIf)
 				.collect(Collectors.toList());
 		}
 
@@ -237,13 +259,13 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * still available. Candidate LS for a project-level operation may include only currently-running LS,
 	 * or can restart any previously-started ones that match the filter.
 	 */
-	public static class LSPProjectExecutor extends LanguageServers<LSPProjectExecutor> {
+	public static class LanguageServerProjectExecutor extends LanguageServers<LanguageServerProjectExecutor> {
 
 		private final IProject project;
 
 		private boolean restartStopped = true;
 
-		LSPProjectExecutor(final IProject project) {
+		LanguageServerProjectExecutor(final IProject project) {
 			this.project = project;
 		}
 
@@ -252,7 +274,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		 * in this session but have since shut down
 		 * @return
 		 */
-		public LSPProjectExecutor excludeInactive() {
+		public LanguageServerProjectExecutor excludeInactive() {
 			this.restartStopped = false;
 			return this;
 		}
@@ -329,8 +351,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param document
 	 * @return Executor that will run requests on servers appropriate to the supplied document
 	 */
-	public static LSPDocumentExecutor forDocument(final @NonNull IDocument document) {
-		return new LSPDocumentExecutor(document);
+	public static LanguageServerDocumentExecutor forDocument(final @NonNull IDocument document) {
+		return new LanguageServerDocumentExecutor(document);
 	}
 
 	/**
@@ -338,8 +360,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param project
 	 * @return Executor that will run requests on servers appropriate to the supplied project
 	 */
-	public static LSPProjectExecutor forProject(final IProject project) {
-		return new LSPProjectExecutor(project);
+	public static LanguageServerProjectExecutor forProject(final IProject project) {
+		return new LanguageServerProjectExecutor(project);
 	}
 
 	private @NonNull Predicate<ServerCapabilities> filter = s -> true;

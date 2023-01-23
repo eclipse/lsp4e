@@ -42,7 +42,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
-import org.eclipse.lsp4e.LanguageServers.LSPDocumentExecutor;
+import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
@@ -623,7 +623,7 @@ public class LanguageServersTest {
 		final IDocument document = viewer.getDocument();
 		StyledText text = viewer.getTextWidget();
 		
-		LSPDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(sc -> false);
+		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(sc -> false);
 		
 		assertFalse("Should not have been any valid LS", executor.anyMatching());
 		
@@ -775,7 +775,7 @@ public class LanguageServersTest {
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		final IDocument document = viewer.getDocument();
 		
-		final LSPDocumentExecutor executor = LanguageServers.forDocument(document);
+		final LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document);
 		
 		assertEquals(document, executor.getDocument());
 	}
