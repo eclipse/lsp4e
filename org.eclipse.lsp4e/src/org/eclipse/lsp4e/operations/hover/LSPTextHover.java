@@ -45,6 +45,7 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.MarkedString;
 import org.eclipse.lsp4j.MarkupContent;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
@@ -62,7 +63,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 
 	private IRegion lastRegion;
 	private ITextViewer lastViewer;
-	private CompletableFuture<List<Hover>> request;
+	private CompletableFuture<@NonNull List<@NonNull Hover>> request;
 
 	@Override
 	public String getHoverInfo(ITextViewer textViewer, IRegion hoverRegion) {
@@ -193,13 +194,16 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 	 */
 	private void initiateHoverRequest(@NonNull ITextViewer viewer, int offset) {
 		final IDocument document = viewer.getDocument();
+		if (document == null) {
+			return;
+		}
 		this.lastViewer = viewer;
 		try {
 			HoverParams params = LSPEclipseUtils.toHoverParams(offset, document);
 
 			this.request = LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
-				.collectAll((wapper, server) -> server.getTextDocumentService().hover(params));
+				.withCapability(ServerCapabilities::getHoverProvider)
+				.collectAll(server -> server.getTextDocumentService().hover(params));
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}

@@ -30,6 +30,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 /**
@@ -179,6 +180,16 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	public E withFilter(final @NonNull Predicate<ServerCapabilities> filter) {
 		this.filter = filter;
+		return (E)this;
+	}
+
+	/**
+	 * Specifies the capabilities that a server must have to process this request
+	 * @param serverCapabilities
+	 * @return
+	 */
+	public E withCapability(final @NonNull Function<ServerCapabilities, Either<Boolean, ? extends Object>> serverCapabilities) {
+		this.filter = f -> LSPEclipseUtils.hasCapability(serverCapabilities.apply(f));
 		return (E)this;
 	}
 
