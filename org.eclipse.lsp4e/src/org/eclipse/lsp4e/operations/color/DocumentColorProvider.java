@@ -12,15 +12,12 @@
 package org.eclipse.lsp4e.operations.color;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
@@ -60,16 +57,15 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 		if (docURI != null) {
 			final var textDocumentIdentifier = LSPEclipseUtils.toTextDocumentIdentifier(docURI);
 			final var param = new DocumentColorParams(textDocumentIdentifier);
-			final var colorResults = Collections.synchronizedList(new ArrayList<ColorInformationMining>());
 			return LanguageServers.forDocument(document)
 				.withFilter(DocumentColorProvider::isColorProvider)
 				.collectAll(
-					// Need to do some of the result processing inside the function we supply to computeOnServers(...)
-					// as need the LS to construct the ColorInformationMining
+					// Need to do some of the result processing inside the function we supply to collectAll(...)
+					// as need the LSW to construct the ColorInformationMining
 					(wrapper, ls) -> ls.getTextDocumentService().documentColor(param)
 								.thenApply(colors -> LanguageServers.streamSafely(colors)
 										.map(color -> toMining(color, document, textDocumentIdentifier, wrapper))))
-		 		.thenApply(res -> res.stream().flatMap(Function.identity()).filter(Objects::nonNull).collect(Collectors.toList()));
+				.thenApply(res -> res.stream().flatMap(Function.identity()).filter(Objects::nonNull).toList());
 		} else {
 			return null;
 		}
