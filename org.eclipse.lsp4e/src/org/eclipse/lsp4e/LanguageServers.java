@@ -72,7 +72,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return getServers().stream()
 			.map(wrapperFuture -> wrapperFuture
 					.thenCompose(w -> w == null ? CompletableFuture.completedFuture((T) null) : w.executeImpl(ls -> fn.apply(w, ls))))
-			.reduce(init, LanguageServers::combine, LanguageServers::concatResults)
+			.reduce(init, LanguageServers::add, LanguageServers::addAll)
 
 			// Ensure any subsequent computation added by caller does not block further incoming messages from language servers
 			.thenApplyAsync(Function.identity());
@@ -326,15 +326,16 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 	/**
 	 *
-	 * Accumulator that appends the result of an async computation onto an async aggregate result. Nulls will be excluded.
+	 * Combines the result of an async computation and an async list of results by adding the element to the list. Null elements will be excluded.
 	 * @param <T> Result type
-	 * @param result Async aggregate result
-	 * @param next Pending result to include
+	 * @param accumulator One async result
+	 * @param element Another async result
 	 * @return
 	 */
+	@SuppressWarnings("null")
 	@NonNull
-	public static <T> CompletableFuture<@NonNull List<@NonNull T>> combine(@NonNull CompletableFuture<? extends List<@NonNull T>> result, @NonNull CompletableFuture<@Nullable T> next) {
-		return result.thenCombine(next, (List<T> a, T b) -> {
+	private static <T> CompletableFuture<@NonNull List<@NonNull T>> add(@NonNull CompletableFuture<? extends @NonNull List<@NonNull T>> accumulator, @NonNull CompletableFuture<@Nullable T> element) {
+		return accumulator.thenCombine(element, (a, b) -> {
 			if (b != null) {
 				a.add(b);
 			}
@@ -343,17 +344,18 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	}
 
 	/**
-	 * Merges two async sets of results into a single async result
+	 * Combines two async lists of results into a single list by adding all the elements of the second list to the first one.
 	 * @param <T> Result type
-	 * @param first First async result
-	 * @param second Second async result
+	 * @param accumulator One async result
+	 * @param another Another async result
 	 * @return Async combined result
 	 */
+	@SuppressWarnings("null")
 	@NonNull
-	public static <T> CompletableFuture<@NonNull List<T>> concatResults(@NonNull CompletableFuture<@NonNull List<T>> first, @NonNull CompletableFuture<@NonNull List<T>> second) {
-		return first.thenCombine(second, (c, d) -> {
-			c.addAll(d);
-			return c;
+	private static <T> CompletableFuture<@NonNull List<T>> addAll(@NonNull CompletableFuture<@NonNull List<T>> accumulator, @NonNull CompletableFuture<@NonNull List<T>> another) {
+		return accumulator.thenCombine(another, (a, b) -> {
+			a.addAll(b);
+			return a;
 		});
 	}
 
