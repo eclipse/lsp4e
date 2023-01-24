@@ -15,6 +15,7 @@ package org.eclipse.lsp4e;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -106,7 +107,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		return getServers().stream()
 				.map(cf -> cf
-						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
+						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.execute(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
 				.toList();
 	}
 
@@ -283,6 +284,23 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	}
 
 
+	/**
+	 * Executor that will run on the supplied wrapper
+	 */
+	public static class LanguageServerWrapperExecutor extends LanguageServers<LanguageServerWrapperExecutor> {
+
+		private final @NonNull LanguageServerWrapper wrapper;
+
+		private LanguageServerWrapperExecutor(final @NonNull LanguageServerWrapper wrapper) {
+			this.wrapper = wrapper;
+		}
+
+		@Override
+		protected @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
+			return Collections.singletonList(CompletableFuture.completedFuture(wrapper));
+		}
+	}
+
 	private static <T> boolean isEmpty(final T t) {
 		return t == null || ((t instanceof List) && ((List<?>)t).isEmpty());
 	}
@@ -344,7 +362,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	private <T> Stream<CompletableFuture<T>> executeOnServers(
 			BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		return getServers().stream().map(cf -> cf.thenCompose(
-				w -> w == null ? CompletableFuture.completedFuture((T) null) : w.executeImpl(ls -> fn.apply(w, ls))));
+				w -> w == null ? CompletableFuture.completedFuture((T) null) : w.execute(ls -> fn.apply(w, ls))));
 	}
 
 	/*
@@ -376,6 +394,15 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	public static LanguageServerProjectExecutor forProject(final IProject project) {
 		return new LanguageServerProjectExecutor(project);
+	}
+
+	/**
+	 *
+	 * @param wrapper
+	 * @return Executor that will run requests on servers appropriate to the supplied wrapper
+	 */
+	public static LanguageServerWrapperExecutor forWrapper(final @NonNull LanguageServerWrapper wrapper) {
+		return new LanguageServerWrapperExecutor(wrapper);
 	}
 
 	private @NonNull Predicate<ServerCapabilities> filter = s -> true;

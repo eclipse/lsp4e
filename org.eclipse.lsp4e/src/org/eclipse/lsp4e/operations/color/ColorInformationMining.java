@@ -22,6 +22,7 @@ import org.eclipse.jface.util.Geometry;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4j.ColorInformation;
 import org.eclipse.lsp4j.ColorPresentationParams;
 import org.eclipse.lsp4j.Range;
@@ -82,14 +83,15 @@ public class ColorInformationMining extends LineContentCodeMining {
 				// get LSP color presentation list for the picked color
 				final var params = new ColorPresentationParams(textDocumentIdentifier,
 						LSPEclipseUtils.toColor(rgb), colorInformation.getRange());
-				this.languageServerWrapper.execute(ls -> ls.getTextDocumentService().colorPresentation(params))
-					.thenAcceptAsync(presentations -> {
-							if (presentations.isEmpty()) {
-								return;
-							}
-							// As ColorDialog cannot be customized (to choose the color presentation (rgb,
-							// hexa, ....) we pick the first color presentation.
-							TextEdit textEdit = presentations.get(0).getTextEdit();
+				LanguageServers.forWrapper(languageServerWrapper).computeFirst(ls -> ls.getTextDocumentService().colorPresentation(params))
+						.thenAcceptAsync(optional -> {
+							optional.ifPresent(presentations -> {
+								if (presentations.isEmpty()) {
+									return;
+								}
+								// As ColorDialog cannot be customized (to choose the color presentation (rgb,
+								// hexa, ....) we pick the first color presentation.
+								TextEdit textEdit = presentations.get(0).getTextEdit();
 								try {
 									// TODO: Should consider using optimistic locking for this in case document changes while
 									// request being processed
@@ -97,6 +99,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 								} catch (BadLocationException e) {
 									LanguageServerPlugin.logError(e);
 								}
+							});
 						}, styledText.getDisplay());
 			}
 		}

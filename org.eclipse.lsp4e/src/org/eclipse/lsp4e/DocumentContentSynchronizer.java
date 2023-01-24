@@ -234,7 +234,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 
 		try {
-			List<TextEdit> edits = languageServerWrapper.executeImpl(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
+			List<TextEdit> edits = languageServerWrapper.execute(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
 				.get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS);
 			try {
 				LSPEclipseUtils.applyEdits(document, edits);
@@ -278,7 +278,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	}
 
 	public CompletableFuture<Void> documentClosed() {
-	   final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(fileUri);
+		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(fileUri);
 		WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.remove(identifier.getUri());
 		// When LS is shut down all documents are being disconnected. No need to send
 		// "didClose" message to the LS that is being shut down or not yet started
