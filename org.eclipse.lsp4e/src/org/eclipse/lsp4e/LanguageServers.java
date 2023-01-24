@@ -15,6 +15,7 @@ package org.eclipse.lsp4e;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -28,8 +29,10 @@ import java.util.stream.Stream;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 
@@ -67,6 +70,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		computeVersion();
 		final CompletableFuture<@NonNull List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 		return executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll)
 			// Ensure any subsequent computation added by caller does not block further incoming messages from language servers
@@ -104,6 +108,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		computeVersion();
 		return getServers().stream()
 				.map(cf -> cf
 						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
@@ -137,6 +142,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
 	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		computeVersion();
 		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
 
 		// Dispatch the request to the servers, appending a step to each such that
@@ -203,12 +209,22 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 		private final @NonNull IDocument document;
 
+		private long startVersion;
+
 		LanguageServerDocumentExecutor(final @NonNull IDocument document) {
 			this.document = document;
 		}
 
 		public @NonNull IDocument getDocument() {
 			return this.document;
+		}
+
+		public VersionedEdits toVersionedEdits(List<? extends TextEdit> edits) {
+			return new VersionedEdits(startVersion, edits, document);
+		}
+
+		public <T> Versioned<T> toVersioned(T t) {
+			return new Versioned<>(startVersion, t);
 		}
 
 		/**
@@ -237,6 +253,11 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			return LanguageServiceAccessor.getLSWrappers(this.document).stream()
 				.map(this::connectIf)
 				.toList();
+		}
+
+		@Override
+		protected void computeVersion() {
+			this.startVersion = LSPEclipseUtils.getDocumentModificationStamp(document);
 		}
 
 	}
@@ -282,6 +303,62 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		}
 	}
 
+	/**
+	 * Specialised POJO for document edits specifically
+	 *
+	 */
+	public static class VersionedEdits extends Versioned<List<? extends TextEdit>> {
+
+		private final IDocument document;
+
+		public VersionedEdits(long version, List<? extends TextEdit> data, IDocument document) {
+			super(version, data);
+			this.document = document;
+		}
+
+		/**
+		 * Apply the edits from the server, provided the document is unchanged since the request used
+		 * to compute the edits
+		 *
+		 * @throws BadLocationException
+		 * @throws ConcurrentModificationException
+		 */
+		public void apply() throws BadLocationException, ConcurrentModificationException {
+			if (getVersion() != LSPEclipseUtils.getDocumentModificationStamp(this.document)) {
+				throw new ConcurrentModificationException();
+			} else {
+				LSPEclipseUtils.applyEdits(this.document, get());
+			}
+		}
+
+ 	}
+
+	/**
+	 * Bundles together a result from a language server with the document version at the time it was run.
+	 * Supports optimistic locking.
+	 *
+	 * @param <T>
+	 */
+	public static class Versioned<T> {
+		private final long version;
+
+		private final T data;
+
+		public Versioned(final long version, final T data) {
+			this.version = version;
+			this.data = data;
+		}
+
+		public T get() {
+			return data;
+		}
+
+		public long getVersion() {
+			return version;
+		}
+	}
+
+
 
 	private static <T> boolean isEmpty(final T t) {
 		return t == null || ((t instanceof List) && ((List<?>)t).isEmpty());
@@ -291,6 +368,11 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 	// Pluggable strategy for getting the set of LSWrappers to dispatch operations on
 	protected abstract @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers();
+
+	/**
+	 * Hook called when requests are scheduled - for subclasses to implement optimistic locking
+	 */
+	protected void computeVersion() {}
 
 	/**
 	 *
