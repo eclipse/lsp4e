@@ -796,7 +796,7 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Sends a notification to the wrapped language server
+	 * Sends a notification to the wrapped language server.
 	 *
 	 * @param fn LS notification to send
 	 */
@@ -808,37 +808,17 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Runs a request on the language server
-	 *
-	 * @param <T> LS response type
-	 * @param fn Code block that will be supplied the LS in a state where it is guaranteed to have been initialized
-	 *
-	 * @return Async result
-	 */
-	public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
-		// Send the request on the dispatch thread, then additionally make sure the response is delivered
-		// on a thread from the default ForkJoinPool. This makes sure the user can't chain on an arbitrary
-		// long-running block of code that would tie up the server response listener and prevent any more
-		// inbound messages being read
-		return executeImpl(fn).thenApplyAsync(Function.identity());
-	}
-
-	/**
-	 * Runs a request on the language server. Internal hook for the LSPexecutor implementations
+	 * Runs a request on the language server.
 	 *
 	 * @param <T> LS response type
 	 * @param fn LS method to invoke
 	 * @return Async result
 	 */
 	@NonNull
-	<T> CompletableFuture<T> executeImpl(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+	<T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
 		// Run the supplied function, ensuring that it is enqueued on the dispatch thread associated with the
-		// wrapped language server, and is thus guarannteed to be seen in the correct order with respect
+		// wrapped language server, and is thus guaranteed to be seen in the correct order with respect
 		// to e.g. previous document changes
-		//
-		// Note this doesn't get the .thenApplyAsync(Function.identity()) chained on additionally, unlike
-		// the public-facing version of this method, because we trust the LSPExecutor implementations to
-		// make sure the server response thread doesn't get blocked by any further work
 		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
 	}
 

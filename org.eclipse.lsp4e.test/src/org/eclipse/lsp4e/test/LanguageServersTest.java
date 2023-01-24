@@ -40,7 +40,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -680,7 +679,7 @@ public class LanguageServersTest {
 	}
 
 	/**
-	 * The LSExecutor request methods can optionally supply an ILSWrapper as well as the raw language server
+	 * The LSExecutor request methods can optionally supply an LanguageServerWrapper as well as the raw language server
 	 * proxy to the consuming functions. This is intended to support constructing objects that need access to
 	 * the same language server for follow-up calls
 	 */
@@ -700,27 +699,14 @@ public class LanguageServersTest {
 		position.setLine(0);
 		params.setPosition(position);
 
-		CompletableFuture<List<LSWPair>> async = LanguageServers.forDocument(document)
+		CompletableFuture<List<LanguageServer>> async = LanguageServers.forDocument(document)
 				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
-				.collectAll((w, ls) -> ls.getTextDocumentService().hover(params).thenApply(h -> new LSWPair(w, ls)));
+				.collectAll((w, ls) -> ls.getTextDocumentService().hover(params).thenApply(h -> ls));
 
-		final List<LSWPair> result = async.join();
-
-		final AtomicInteger matching = new AtomicInteger();
+		final List<LanguageServer> result = async.join();
 
 		assertEquals("Should have had two responses", 2, result.size());
-		assertNotEquals("LS should have been different proxies", result.get(0).server, result.get(1).server);
-		result.forEach(p -> {
-			p.wrapper.execute(ls -> {
-				if (ls == p.server) {
-					matching.incrementAndGet();
-				}
-				return CompletableFuture.completedFuture(null);
-			}).join();
-		});
-
-		assertEquals("Wrapper should have used same LS", 2, matching.get());
-
+		assertNotEquals("LS should have been different proxies", result.get(0), result.get(1));
 	}
 
 	/**
@@ -777,15 +763,5 @@ public class LanguageServersTest {
 		final LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document);
 
 		assertEquals(document, executor.getDocument());
-	}
-
-	private static class LSWPair {
-		public final LanguageServerWrapper wrapper;
-		public final LanguageServer server;
-
-		public LSWPair(final LanguageServerWrapper w, final LanguageServer s) {
-			this.wrapper = w;
-			this.server = s;
-		}
 	}
 }
