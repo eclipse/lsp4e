@@ -17,6 +17,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -26,6 +27,9 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.LanguageServers.VersionedEdits;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.DocumentFormattingParams;
@@ -34,6 +38,7 @@ import org.eclipse.lsp4j.FormattingOptions;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
@@ -83,6 +88,40 @@ public class LSPFormatter {
 		return new VersionedFormatRequest();
 	}
 
+	public CompletableFuture<Optional<VersionedEdits>> requestFormatting(@NonNull IDocument document, @NonNull ITextSelection textSelection) throws BadLocationException {
+		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPFormatter::supportsFormatting);
+		final FormattingOptions formatOptions = getFormatOptions();
+		TextDocumentIdentifier docId = new TextDocumentIdentifier(LSPEclipseUtils.toUri(document).toString());
+
+		DocumentRangeFormattingParams rangeParams = new DocumentRangeFormattingParams();
+		rangeParams.setTextDocument(docId);
+		rangeParams.setOptions(formatOptions);
+		boolean fullFormat = textSelection.getLength() == 0;
+		Position start = LSPEclipseUtils.toPosition(fullFormat ? 0 : textSelection.getOffset(), document);
+		Position end = LSPEclipseUtils.toPosition(
+				fullFormat ? document.getLength() : textSelection.getOffset() + textSelection.getLength(),
+				document);
+		rangeParams.setRange(new Range(start, end));
+
+		DocumentFormattingParams params = new DocumentFormattingParams();
+		params.setTextDocument(docId);
+		params.setOptions(formatOptions);
+
+		// TODO: Could refine this algorithm: at present this grabs the first non-null response but the most functional
+		// implementation (if a text selection is present) would try all the servers in turn to see if they supported
+		return executor.computeFirst((w, ls) -> {
+			final ServerCapabilities capabilities = w.getServerCapabilities();
+			if (isDocumentRangeFormattingSupported(capabilities)
+					&& (!isDocumentFormattingSupported(capabilities)
+							|| textSelection.getLength() != 0)) {
+				return ls.getTextDocumentService().rangeFormatting(rangeParams).thenApply(executor::toVersionedEdits);
+			}
+
+			return ls.getTextDocumentService().formatting(params).thenApply(executor::toVersionedEdits);
+		});
+
+	}
+
 	private CompletableFuture<List<? extends TextEdit>> requestFormatting(LSPDocumentInfo info,
 			ITextSelection textSelection) throws BadLocationException {
 		final var docId = LSPEclipseUtils.toTextDocumentIdentifier(info.getFileUri());
@@ -113,6 +152,13 @@ public class LSPFormatter {
 		params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
 		return info.getInitializedLanguageClient()
 				.thenComposeAsync(server -> server.getTextDocumentService().formatting(params));
+	}
+
+	private FormattingOptions getFormatOptions() {
+		IPreferenceStore store = EditorsUI.getPreferenceStore();
+		int tabWidth = store.getInt(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);
+		boolean insertSpaces = store.getBoolean(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SPACES_FOR_TABS);
+		return new FormattingOptions(tabWidth, insertSpaces);
 	}
 
 	private static boolean isDocumentRangeFormattingSupported(ServerCapabilities capabilities) {
