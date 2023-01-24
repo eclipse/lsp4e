@@ -23,7 +23,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.core.resources.IProject;
@@ -68,12 +67,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
-		final CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
-		return getServers().stream()
-			.map(wrapperFuture -> wrapperFuture
-					.thenCompose(w -> w == null ? CompletableFuture.completedFuture((T) null) : w.executeImpl(ls -> fn.apply(w, ls))))
-			.reduce(init, LanguageServers::add, LanguageServers::addAll)
-
+		final CompletableFuture<@NonNull List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
+		return executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll)
 			// Ensure any subsequent computation added by caller does not block further incoming messages from language servers
 			.thenApplyAsync(Function.identity());
 	}
@@ -110,9 +105,9 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	@NonNull
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		return getServers().stream()
-				.map(wrapperFuture -> wrapperFuture
+				.map(cf -> cf
 						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
-				.collect(Collectors.toList());
+				.toList();
 	}
 
 	/**
@@ -142,34 +137,21 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
 	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
-		final List<CompletableFuture<LanguageServerWrapper>> servers = getServers();
-
 		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
 
 		// Dispatch the request to the servers, appending a step to each such that
 		// the first to return a non-null result will be the overall result.
 		// CompletableFuture.anyOf() almost does what we need, but we don't want
 		// a quickly-returned null to trump a slowly-returned result
-		final List<CompletableFuture<T>> intermediate = servers.stream()
-				.map(wrapperFuture -> wrapperFuture
-						.thenCompose(w -> w == null ? CompletableFuture.completedFuture((T) null) : w.executeImpl(ls -> fn.apply(w, ls))))
+		CompletableFuture.allOf(
+				executeOnServers(fn)
 				.map(cf -> cf.thenApply(t -> {
 					if (!isEmpty(t)) { // TODO: Does this need to be a supplied function to handle all cases?
 						result.complete(Optional.of(t));
 					}
 					return t;
-				})).collect(Collectors.toList());
-
-		// Make sure that if the servers all return null - or complete exceptionally - then we give up and supply an empty result
-		// rather than potentially waiting forever...
-		CompletableFuture<Void> fallback = CompletableFuture.allOf(intermediate.toArray(new CompletableFuture[intermediate.size()]));
-		fallback.whenComplete((v, t) -> {
-			if (t != null) {
-				result.completeExceptionally(t);
-			} else {
-				result.complete(Optional.empty());
-			}
-		});
+				})).toArray(CompletableFuture[]::new)
+				).whenComplete((v, t) -> completeEmptyOrWithException(result, t));
 
 		return result.thenApplyAsync(Function.identity());
 	}
@@ -237,9 +219,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		 * to support accessing the server on the single-threaded dispatch queue.
 		 */
 		@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connectIf(@NonNull LanguageServerWrapper wrapper) {
-			@NonNull Predicate<ServerCapabilities> filter = getFilter();
 			return wrapper.getInitializedServer().thenCompose(server -> {
-				if (server != null && filter.test(wrapper.getServerCapabilities())) {
+				if (server != null && getFilter().test(wrapper.getServerCapabilities())) {
 					try {
 						return wrapper.connect(document);
 					} catch (IOException ex) {
@@ -251,11 +232,11 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		}
 
 		@Override
-		protected List<CompletableFuture<LanguageServerWrapper>> getServers() {
+		protected @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
 			// Compute list of servers from document & filter
 			return LanguageServiceAccessor.getLSWrappers(this.document).stream()
 				.map(this::connectIf)
-				.collect(Collectors.toList());
+				.toList();
 		}
 
 	}
@@ -291,7 +272,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		}
 
 		@Override
-		protected List<CompletableFuture<LanguageServerWrapper>> getServers() {
+		protected @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
 			// Compute list of servers from project & filter
 			List<@NonNull CompletableFuture<LanguageServerWrapper>> wrappers = new ArrayList<>();
 			for (LanguageServerWrapper wrapper :  LanguageServiceAccessor.getStartedWrappers(project, getFilter(), !restartStopped)) {
@@ -309,7 +290,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 
 	// Pluggable strategy for getting the set of LSWrappers to dispatch operations on
-	protected abstract List<CompletableFuture<LanguageServerWrapper>> getServers();
+	protected abstract @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers();
 
 	/**
 	 *
@@ -357,6 +338,26 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			a.addAll(b);
 			return a;
 		});
+	}
+
+	@NonNull
+	private <T> Stream<CompletableFuture<T>> executeOnServers(
+			BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		return getServers().stream().map(cf -> cf.thenCompose(
+				w -> w == null ? CompletableFuture.completedFuture((T) null) : w.executeImpl(ls -> fn.apply(w, ls))));
+	}
+
+	/*
+	 * Make sure that if the servers all return null - or complete exceptionally -
+	 * then we give up and supply an empty result rather than potentially waiting
+	 * forever...
+	 */
+	private <T> void completeEmptyOrWithException(final CompletableFuture<Optional<T>> completableFuture, final Throwable t) {
+		if (t != null) {
+			completableFuture.completeExceptionally(t);
+		} else {
+			completableFuture.complete(Optional.empty());
+		}
 	}
 
 	/**
