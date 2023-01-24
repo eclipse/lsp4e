@@ -36,6 +36,7 @@ import org.eclipse.jface.text.reconciler.IReconcilingStrategyExtension;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4j.Position;
@@ -83,9 +84,9 @@ import org.eclipse.swt.custom.StyledText;
 public class SemanticHighlightReconcilerStrategy
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextPresentationListener {
 
-    private static final int FULL_RECONCILE_TIMEOUT_S = 10;
+	private static final int FULL_RECONCILE_TIMEOUT_S = 10;
 
-    private final boolean disabled;
+	private final boolean disabled;
 
 	private ITextViewer viewer;
 
@@ -106,10 +107,10 @@ public class SemanticHighlightReconcilerStrategy
 	 */
 	private volatile int documentVersionAtLastAppliedTextPresentation;
 
-	private CompletableFuture<Void> semanticTokensFullFuture;
+	private CompletableFuture<@NonNull List<@NonNull Void>> semanticTokensFullFuture;
 
 	public SemanticHighlightReconcilerStrategy() {
-	    IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
+		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
 		disabled = store.getBoolean("semanticHighlightReconciler.disabled"); //$NON-NLS-1$
 	}
 
@@ -197,11 +198,6 @@ public class SemanticHighlightReconcilerStrategy
 	private boolean hasSemanticTokensFull(final ServerCapabilities serverCapabilities) {
 		return serverCapabilities.getSemanticTokensProvider() != null
 				&& LSPEclipseUtils.hasCapability(serverCapabilities.getSemanticTokensProvider().getFull());
-	}
-
-	private CompletableFuture<Void> semanticTokensFull(final List<LanguageServer> languageServers, final int version) {
-		return CompletableFuture.allOf(
-				languageServers.stream().map(ls -> semanticTokensFull(ls, version)).toArray(CompletableFuture[]::new));
 	}
 
 	private boolean isRequestCancelledException(final Throwable throwable) {
@@ -295,8 +291,8 @@ public class SemanticHighlightReconcilerStrategy
 		if (theDocument != null) {
 			try {
 				int version = getDocumentVersion();
-				semanticTokensFullFuture = LanguageServiceAccessor.getLanguageServers(theDocument, this::hasSemanticTokensFull)//
-						.thenAccept(ls -> semanticTokensFull(ls, version));
+				semanticTokensFullFuture = LanguageServers.forDocument(theDocument).withFilter(this::hasSemanticTokensFull)//
+						.collectAll(ls -> semanticTokensFull(ls, version));
 				semanticTokensFullFuture.get(FULL_RECONCILE_TIMEOUT_S, TimeUnit.SECONDS);
 			} catch (ExecutionException e) {
 				LanguageServerPlugin.logError(e);
