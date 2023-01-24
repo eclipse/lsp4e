@@ -56,8 +56,11 @@ public class LSPFormatter {
 			throws ConcurrentModificationException {
 		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
 				LSPFormatter::supportsFormatting);
+
 		if (getLSPDocumentInfo(infos).getVersion() != version) {
-			throw new ConcurrentModificationException();
+			throw new ConcurrentModificationException(
+					String.format("TextEdit version: %s, Document version: %s, Location: %s", version, //$NON-NLS-1$
+							getLSPDocumentInfo(infos).getVersion(), LSPEclipseUtils.toUri(document)));
 		} else {
 			try {
 				LSPEclipseUtils.applyEdits(document, edits);
