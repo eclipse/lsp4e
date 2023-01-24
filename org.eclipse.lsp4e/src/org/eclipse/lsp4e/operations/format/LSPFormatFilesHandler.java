@@ -16,6 +16,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -34,11 +36,11 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.operations.format.LSPFormatter.VersionedFormatRequest;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
-import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.DocumentProviderRegistry;
@@ -58,7 +60,14 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 					if (subMonitor.isCanceled()) {
 						return;
 					}
-					formatFile(file, monitor);
+					try {
+						formatFile(file, monitor).get();
+					} catch (InterruptedException ex) {
+						LanguageServerPlugin.logError(ex);
+						Thread.currentThread().interrupt();
+					} catch (java.util.concurrent.ExecutionException ex) {
+						LanguageServerPlugin.logError(ex);
+					}
 					subMonitor.worked(1);
 				}
 				subMonitor.done();
@@ -69,37 +78,50 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 		return null;
 	}
 
-	protected void formatFile(final @NonNull IFile file, final IProgressMonitor monitor) {
+	protected Future<Boolean> formatFile(final @NonNull IFile file, final IProgressMonitor monitor) {
 		if (!file.exists() || !LanguageServersRegistry.getInstance().canUseLanguageServer(file))
-			return;
+			return CompletableFuture.completedFuture(false);
 
 		final var docProvider = getDocumentProvider(file);
 		try {
 			docProvider.connect(file);
-			final IDocument doc = docProvider.getDocument(file);
-			if (doc == null)
-				return;
-
-			monitor.setTaskName(NLS.bind(Messages.LSPFormatFilesHandler_FormattingFile, file.getFullPath()));
-			final VersionedFormatRequest formatRequest = formatter.versionedRequestFormatting(doc,
-					new TextSelection(0, 0));
-
-			List<? extends TextEdit> formatEdits = formatRequest.edits().get();
-			if (formatEdits.isEmpty())
-				return;
-
-			docProvider.aboutToChange(doc);
-			UI.getDisplay().syncExec(() -> formatter.applyEdits(doc, formatEdits, formatRequest.version()));
-			docProvider.changed(doc);
-			docProvider.saveDocument(monitor, file, doc, true);
-		} catch (InterruptedException ex) {
-			Thread.currentThread().interrupt();
+		} catch (CoreException ex) {
 			LanguageServerPlugin.logError(ex);
-		} catch (final Exception ex) {
-			LanguageServerPlugin.logError(ex);
-		} finally {
-			docProvider.disconnect(file);
+			return CompletableFuture.completedFuture(false);
 		}
+		final IDocument doc = docProvider.getDocument(file);
+		if (doc == null)
+			return CompletableFuture.completedFuture(false);
+
+		return LanguageServers.forDocument(doc) //
+				.withFilter(LSPFormatter::supportsFormatting) //
+				.computeFirst((lsw, ls) -> {
+					monitor.setTaskName(NLS.bind(Messages.LSPFormatFilesHandler_FormattingFile, file.getFullPath()));
+					final VersionedFormatRequest formatRequest = formatter.versionedRequestFormatting(doc,
+							new TextSelection(0, 0));
+					return formatRequest.edits().thenApplyAsync(formatEdits -> {
+						if (formatEdits == null || formatEdits.isEmpty())
+							return false;
+						try {
+							docProvider.aboutToChange(doc);
+							UI.getDisplay()
+									.syncExec(() -> formatter.applyEdits(doc, formatEdits, formatRequest.version()));
+							docProvider.changed(doc);
+							docProvider.saveDocument(monitor, file, doc, true);
+							return true;
+						} catch (final CoreException ex) {
+							LanguageServerPlugin.logError(ex);
+							return false;
+						}
+					});
+				}).handle((value, ex) -> {
+					docProvider.disconnect(file);
+					if (ex == null) {
+						return true;
+					}
+					LanguageServerPlugin.logError(ex);
+					return false;
+				});
 	}
 
 	protected IDocumentProvider getDocumentProvider(IFile file) {
