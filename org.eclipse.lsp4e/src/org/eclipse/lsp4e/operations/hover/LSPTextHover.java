@@ -40,10 +40,12 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4j.Hover;
+import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.MarkedString;
 import org.eclipse.lsp4j.MarkupContent;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
@@ -61,7 +63,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 
 	private IRegion lastRegion;
 	private ITextViewer lastViewer;
-	private CompletableFuture<List<Hover>> request;
+	private CompletableFuture<@NonNull List<@NonNull Hover>> request;
 
 	@Override
 	public String getHoverInfo(ITextViewer textViewer, IRegion hoverRegion) {
@@ -192,29 +194,19 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 	 */
 	private void initiateHoverRequest(@NonNull ITextViewer viewer, int offset) {
 		final IDocument document = viewer.getDocument();
+		if (document == null) {
+			return;
+		}
 		this.lastViewer = viewer;
-		this.request = LanguageServiceAccessor
-			.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
-				.thenApplyAsync(languageServers -> // Async is very important here, otherwise the LS Client thread is in
-													// deadlock and doesn't read bytes from LS
-				languageServers.stream()
-					.map(languageServer -> {
-						try {
-								return languageServer.getTextDocumentService()
-										.hover(LSPEclipseUtils.toHoverParams(offset, document))
-										.get(GET_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-						} catch (ExecutionException | BadLocationException e) {
-							LanguageServerPlugin.logError(e);
-							return null;
-						} catch (InterruptedException e) {
-							LanguageServerPlugin.logError(e);
-							Thread.currentThread().interrupt();
-							return null;
-						} catch (TimeoutException e) {
-							LanguageServerPlugin.logWarning("Could not get hover due to timeout after " + GET_TIMEOUT_MS + " miliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
-							return null;
-						}
-					}).filter(Objects::nonNull).collect(Collectors.toList()));
+		try {
+			HoverParams params = LSPEclipseUtils.toHoverParams(offset, document);
+
+			this.request = LanguageServers.forDocument(document)
+				.withCapability(ServerCapabilities::getHoverProvider)
+				.collectAll(server -> server.getTextDocumentService().hover(params));
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+		}
 	}
 
 	@Override
