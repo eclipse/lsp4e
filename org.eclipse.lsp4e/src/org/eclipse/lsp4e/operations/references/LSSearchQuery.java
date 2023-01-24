@@ -78,7 +78,7 @@ public class LSSearchQuery extends FileSearchQuery {
 		this.languageServers = languageServers;
 		this.position = LSPEclipseUtils.toPosition(offset, document);
 		final var uri = LSPEclipseUtils.toUri(document);
-		this.filename = Path.fromPortableString(LSPEclipseUtils.toUri(document).getPath()).lastSegment();
+		this.filename = Path.fromPortableString(uri.getPath()).lastSegment();
 	}
 
 	@Override
