@@ -243,6 +243,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			try {
 				int lineOfStartOffset = document.getLineOfOffset(start);
 				attributes.put(IMarker.LINE_NUMBER, lineOfStartOffset + 1);
+				// Empty range arbitrary implementation: extend one char forward or backward if at EOL
 				if (start == end && documentLength > end) {
 					end++;
 					if (document.getLineOfOffset(end) != lineOfStartOffset) {
