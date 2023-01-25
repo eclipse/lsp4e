@@ -169,7 +169,7 @@ public final class LSPEclipseUtils {
 	}
 
 	public static int toOffset(Position position, IDocument document) throws BadLocationException {
-		return document.getLineInformation(position.getLine()).getOffset() + position.getCharacter();
+		return document.getLineOffset(position.getLine()) + position.getCharacter();
 	}
 
 	public static boolean isOffsetInRange(int offset, Range range, IDocument document) {
@@ -1053,7 +1053,7 @@ public final class LSPEclipseUtils {
 		if(path != null) {
 			return path.lastSegment();
 		}
-        return null;
+		return null;
 	}
 
 	@NonNull
