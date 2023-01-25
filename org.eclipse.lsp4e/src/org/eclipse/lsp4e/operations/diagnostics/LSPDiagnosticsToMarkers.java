@@ -228,10 +228,21 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		if (document != null) {
 			Range range = diagnostic.getRange();
 			int documentLength = document.getLength();
+			int start;
 			try {
-				int start = Math.min(LSPEclipseUtils.toOffset(range.getStart(), document), documentLength);
-				int end = Math.min(LSPEclipseUtils.toOffset(range.getEnd(), document), documentLength);
+				start = Math.min(LSPEclipseUtils.toOffset(range.getStart(), document), documentLength);
+			} catch (BadLocationException ex) {
+				start = documentLength;
+			}
+			int end;
+			try {
+				end = Math.min(LSPEclipseUtils.toOffset(range.getEnd(), document), documentLength);
+			} catch (BadLocationException ex) {
+				end = documentLength;
+			}
+			try {
 				int lineOfStartOffset = document.getLineOfOffset(start);
+				attributes.put(IMarker.LINE_NUMBER, lineOfStartOffset + 1);
 				if (start == end && documentLength > end) {
 					end++;
 					if (document.getLineOfOffset(end) != lineOfStartOffset) {
@@ -239,12 +250,11 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 						end--;
 					}
 				}
-				attributes.put(IMarker.CHAR_START, start);
-				attributes.put(IMarker.CHAR_END, end);
-				attributes.put(IMarker.LINE_NUMBER, lineOfStartOffset + 1);
 			} catch (BadLocationException ex) {
 				LanguageServerPlugin.logError(ex);
 			}
+			attributes.put(IMarker.CHAR_START, start);
+			attributes.put(IMarker.CHAR_END, end);
 		}
 
 
