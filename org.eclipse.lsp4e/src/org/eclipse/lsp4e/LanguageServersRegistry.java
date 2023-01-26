@@ -75,7 +75,7 @@ public class LanguageServersRegistry {
 	private static final String SINGLETON_ATTRIBUTE = "singleton"; //$NON-NLS-1$
 	private static final boolean DEFAULT_SINGLETON = false;
 	private static final String LAST_DOCUMENT_DISCONNECTED_TIMEOUT = "lastDocumentDisconnectedTimeout"; //$NON-NLS-1$
-	private static final int DEFAULT_LAST_DOCUMENTED_DISCONNECTED_TIEMOUT = 0;
+	private static final int DEFAULT_LAST_DOCUMENTED_DISCONNECTED_TIEMOUT = 5;
 	private static final String CONTENT_TYPE_ATTRIBUTE = "contentType"; //$NON-NLS-1$
 	private static final String LANGUAGE_ID_ATTRIBUTE = "languageId"; //$NON-NLS-1$
 	private static final String CLASS_ATTRIBUTE = "class"; //$NON-NLS-1$

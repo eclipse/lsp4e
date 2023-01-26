@@ -6,26 +6,31 @@
       <server
             class="org.eclipse.lsp4e.test.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server"
+            lastDocumentDisconnectedTimeout="0"
             label="Test LS">
       </server>
       <server
             class="org.eclipse.lsp4e.test.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server2"
+            lastDocumentDisconnectedTimeout="0"
             label="Test LS 2">
       </server>
        <server
             class="org.eclipse.lsp4e.test.MockConnectionProviderWithException"
             id="org.eclipse.lsp4e.test.server-with-exception"
+            lastDocumentDisconnectedTimeout="0"
             label="Test LS With Exception">
       </server>
        <server
             class="org.eclipse.lsp4e.test.MockConnectionProviderMultiRootFolders"
             id="org.eclipse.lsp4e.test.server-with-multi-root-support"
+            lastDocumentDisconnectedTimeout="0"
             label="Test LS With Multi-Root Support">
       </server>
       <server
             class="org.eclipse.lsp4e.test.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server.disable"
+            lastDocumentDisconnectedTimeout="0"
             label="Test LS Enablement">
       </server>
       <server
@@ -93,6 +98,7 @@
             class="org.eclipse.lsp4e.test.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.singletonLS"
             label="Singleton LS"
+            lastDocumentDisconnectedTimeout="0"
             singleton="true">
       </server>
       <contentTypeMapping
@@ -214,9 +220,9 @@
       </extension>
   <extension
          point="org.eclipse.core.filesystem.filesystems">
-	<filesystem scheme="other">
-	   <run class="org.eclipse.lsp4e.test.OtherFileSystem" />
-	</filesystem>
+      <filesystem scheme="other">
+         <run class="org.eclipse.lsp4e.test.OtherFileSystem" />
+      </filesystem>
   </extension>"
   <extension
          point="org.eclipse.core.runtime.adapters">
