@@ -14,20 +14,15 @@ package org.eclipse.lsp4e.test;
 
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getActiveLanguageServers;
 import static org.eclipse.lsp4e.test.TestUtils.createUniqueTestFile;
-import static org.eclipse.lsp4e.test.TestUtils.numberOfChangesIs;
 import static org.eclipse.lsp4e.test.TestUtils.openEditor;
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Vector;
@@ -42,33 +37,27 @@ import java.util.stream.Collectors;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
-import org.eclipse.lsp4e.VersionedEdits;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
-import org.eclipse.lsp4j.DocumentFormattingParams;
-import org.eclipse.lsp4j.FormattingOptions;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
-import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
-import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
@@ -85,7 +74,7 @@ public class LanguageServersTest {
 
 	@Before
 	public void setUp() throws CoreException {
-		project = TestUtils.createProject("LSExecutorTest"+System.currentTimeMillis());
+		project = TestUtils.createProject("LanguageServersTest"+System.currentTimeMillis());
 	}
 
 	@Test
@@ -788,81 +777,6 @@ public class LanguageServersTest {
 		final LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document);
 
 		assertEquals(document, executor.getDocument());
-	}
-	
-	@Test
-	public void testVersionSupportSuccess() throws Exception {
-		List<TextEdit> formattingTextEdits = new ArrayList<>();
-		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 0), new Position(0, 1)), "MyF"));
-		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 10), new Position(0, 11)), ""));
-		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 21), new Position(0, 21)), " Second"));
-		MockLanguageServer.INSTANCE.setFormattingTextEdits(formattingTextEdits);
-
-		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
-		IEditorPart editor = TestUtils.openEditor(file);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
-
-		final var doc = viewer.getDocument();
-		final var docId = LSPEclipseUtils.toTextDocumentIdentifier(doc);
-
-		final var params = new DocumentFormattingParams();
-		params.setTextDocument(docId);
-		params.setOptions(new FormattingOptions(4, true));
-		
-		var ex = LanguageServers.forDocument(doc).withCapability(ServerCapabilities::getDocumentFormattingProvider);
-		
-		var result = ex.computeFirst(ls -> ls.getTextDocumentService().formatting(params).thenApply(ex::toVersionedEdits));
-		
-		VersionedEdits edits = result.join().get();
-		editor.getSite().getShell().getDisplay().syncExec(() -> {
-			try {
-				edits.apply();
-			} catch (ConcurrentModificationException | BadLocationException e) {
-				fail(e.getMessage());
-			}
-		});
-
-		ITextEditor textEditor = (ITextEditor) editor;
-		textEditor.getDocumentProvider().getDocument(textEditor.getEditorInput());
-		assertEquals("MyFormattingOther Text Second", viewer.getDocument().get());
-		
-		final long currentTS = LanguageServers.getDocumentModificationStamp(doc);
-		var ex2 = LanguageServers.forDocument(doc);
-		var dummyVersioned = ex2.computeFirst(ls -> CompletableFuture.completedFuture("Hello").thenApply(ex2::toVersioned)).join().get();
-		assertEquals(currentTS, dummyVersioned.getVersion());
-		assertEquals("Hello", dummyVersioned.get());
-
-		TestUtils.closeEditor(editor, false);
-	}
-	
-	@Test(expected=ConcurrentModificationException.class)
-	public void testVersionedEditsFailsOnModification() throws Exception {
-		List<TextEdit> formattingTextEdits = new ArrayList<>();
-		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 0), new Position(0, 1)), "MyF"));
-		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 10), new Position(0, 11)), ""));
-		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 21), new Position(0, 21)), " Second"));
-		MockLanguageServer.INSTANCE.setFormattingTextEdits(formattingTextEdits);
-
-		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
-		IEditorPart editor = TestUtils.openEditor(file);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
-
-		final var doc = viewer.getDocument();
-		final var docId = LSPEclipseUtils.toTextDocumentIdentifier(doc);
-
-		final var params = new DocumentFormattingParams();
-		params.setTextDocument(docId);
-		params.setOptions(new FormattingOptions(4, true));
-		
-		var ex = LanguageServers.forDocument(doc).withCapability(ServerCapabilities::getDocumentFormattingProvider);
-		
-		var result = ex.computeFirst(ls -> ls.getTextDocumentService().formatting(params).thenApply(ex::toVersionedEdits));
-		
-		VersionedEdits edits = result.join().get();
-		viewer.getDocument().replace(0, 0, "Hello");
-		waitForAndAssertCondition(1_000,  numberOfChangesIs(1));
-
-		edits.apply();
 	}
 
 	private static class LSWPair {

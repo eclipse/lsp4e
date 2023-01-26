@@ -57,8 +57,8 @@ public class LSPFormatter {
 		return executor.computeFirst((w, ls) -> {
 			final ServerCapabilities capabilities = w.getServerCapabilities();
 			if (isDocumentRangeFormattingSupported(capabilities)
-					&& (!isDocumentFormattingSupported(capabilities)
-							|| textSelection.getLength() != 0)) {
+					&& !(isDocumentFormattingSupported(capabilities)
+							&& textSelection.getLength() == 0)) {
 				return ls.getTextDocumentService().rangeFormatting(rangeParams).thenApply(executor::toVersionedEdits);
 			}
 

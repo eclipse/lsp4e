@@ -17,6 +17,7 @@ import java.util.List;
 
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4j.TextEdit;
 
 /**
@@ -48,4 +49,7 @@ public class VersionedEdits extends Versioned<List<? extends TextEdit>> {
 		}
 	}
 
+	public static VersionedEdits toVersionedEdits(LanguageServerDocumentExecutor executor, List<? extends TextEdit> data) {
+		return new VersionedEdits(executor.getStartVersion(), data, executor.getDocument());
+	}
 }

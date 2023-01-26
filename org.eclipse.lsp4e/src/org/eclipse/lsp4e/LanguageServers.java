@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
@@ -219,11 +220,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		}
 
 		public VersionedEdits toVersionedEdits(List<? extends TextEdit> edits) {
-			return new VersionedEdits(startVersion, edits, document);
-		}
-
-		public <T> Versioned<T> toVersioned(T t) {
-			return new Versioned<>(startVersion, t);
+			return VersionedEdits.toVersionedEdits(this, edits);
 		}
 
 		/**
@@ -258,6 +255,15 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		protected void computeVersion() {
 			this.startVersion = getDocumentModificationStamp(document);
 		}
+
+		/**
+		 *
+		 * @return The document's timestamp at the start of the last request
+		 */
+		public long getStartVersion() {
+			return this.startVersion;
+		}
+
 
 	}
 
@@ -395,8 +401,16 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param document Document to check
 	 * @return Opaque version stamp, or -1 if not available
 	 */
-	public static long getDocumentModificationStamp(@Nullable IDocument document) {
-		return document instanceof IDocumentExtension4 ? ((IDocumentExtension4) document).getModificationStamp() : -1;
+	 static long getDocumentModificationStamp(@Nullable IDocument document) {
+		if (document instanceof IDocumentExtension4 ext) {
+ 			return ext.getModificationStamp();
+ 		} else if (document != null){
+ 			IFile file = LSPEclipseUtils.getFile(document);
+ 			if (file != null) {
+ 				return file.getModificationStamp();
+ 			}
+ 		}
+ 		return IDocumentExtension4.UNKNOWN_MODIFICATION_STAMP;
 	}
 
 	/**

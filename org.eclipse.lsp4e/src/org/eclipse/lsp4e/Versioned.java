@@ -35,4 +35,9 @@ public class Versioned<T> {
 	public long getVersion() {
 		return version;
 	}
+
+	public static <T> Versioned<T> toVersioned(final long version, final T data) {
+		return new Versioned<>(version, data);
+	}
+
 }
