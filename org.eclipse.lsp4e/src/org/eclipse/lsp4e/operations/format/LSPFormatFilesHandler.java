@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -48,6 +49,7 @@ import org.eclipse.ui.texteditor.IDocumentProvider;
 
 public class LSPFormatFilesHandler extends AbstractHandler {
 
+	private static final int SINGLE_FILE_TIMEOUT_MS = 5000;
 	protected final LSPFormatter formatter = new LSPFormatter();
 
 	@Override
@@ -84,7 +86,7 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 
 			monitor.setTaskName(NLS.bind(Messages.LSPFormatFilesHandler_FormattingFile, file.getFullPath()));
 			final Optional<VersionedEdits> formatting = formatter.requestFormatting(doc,
-					new TextSelection(0, 0)).get();
+					new TextSelection(0, 0)).get(SINGLE_FILE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
 			formatting.ifPresent(edits -> {
 				docProvider.aboutToChange(doc);
