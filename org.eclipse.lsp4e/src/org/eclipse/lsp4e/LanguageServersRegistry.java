@@ -84,6 +84,7 @@ public class LanguageServersRegistry {
 	private static final String MARKER_ATTR_COMPUTER_ELEMENT = "markerAttributeComputer"; //$NON-NLS-1$
 	private static final String SERVER_INTERFACE_ATTRIBUTE = "serverInterface"; //$NON-NLS-1$
 	private static final String LAUNCHER_BUILDER_ATTRIBUTE = "launcherBuilder"; //$NON-NLS-1$
+	private static final String LANGUAGE_CLIENT_CONFIGURATION_PROVIDER_ATTRIBUTE = "languageClientConfigurationProvider"; //$NON-NLS-1$
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_ATTRIBUTE = "enabledWhen"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_DESC = "description"; //$NON-NLS-1$
@@ -121,10 +122,15 @@ public class LanguageServersRegistry {
 			return new Launcher.Builder<>();
 		}
 
+		public LanguageClientConfigurationProvider getLanguageClientConfigurationProvider() {
+			return DefaultLanguageClientConfigurationProvider.getInstance();
+		}
+
 	}
 
 	static class ExtensionLanguageServerDefinition extends LanguageServerDefinition {
 		private final IConfigurationElement extension;
+		private LanguageClientConfigurationProvider languageClientConfigurationProvider;
 
 		private Consumer<PublishDiagnosticsParams> getDiagnosticHandler() {
 			String serverId = extension.getAttribute(ID_ATTRIBUTE);
@@ -216,6 +222,24 @@ public class LanguageServersRegistry {
 			return super.createLauncherBuilder();
 		}
 
+		@Override
+		public LanguageClientConfigurationProvider getLanguageClientConfigurationProvider() {
+			if (languageClientConfigurationProvider != null) {
+				return languageClientConfigurationProvider;
+			}
+			String configuration = extension.getAttribute(LANGUAGE_CLIENT_CONFIGURATION_PROVIDER_ATTRIBUTE);
+			if (configuration != null && !configuration.isEmpty()) {
+				try {
+					languageClientConfigurationProvider = (LanguageClientConfigurationProvider) extension.createExecutableExtension(LANGUAGE_CLIENT_CONFIGURATION_PROVIDER_ATTRIBUTE);
+				} catch (CoreException e) {
+					StatusManager.getManager().handle(e, LanguageServerPlugin.PLUGIN_ID);
+				}
+			}
+			if (languageClientConfigurationProvider == null) {
+				languageClientConfigurationProvider = DefaultLanguageClientConfigurationProvider.getInstance();
+			}
+			return languageClientConfigurationProvider;
+		}
 	}
 
 	static class LaunchConfigurationLanguageServerDefinition extends LanguageServerDefinition {

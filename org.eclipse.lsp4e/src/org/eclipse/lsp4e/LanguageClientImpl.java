@@ -13,7 +13,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -69,7 +68,7 @@ public class LanguageClientImpl implements LanguageClient {
 	@Override
 	public CompletableFuture<List<Object>> configuration(ConfigurationParams configurationParams) {
 		// override as needed
-		return CompletableFuture.completedFuture(Collections.emptyList());
+		return wrapper.serverDefinition.getLanguageClientConfigurationProvider().configuration(configurationParams);
 	}
 
 	@Override

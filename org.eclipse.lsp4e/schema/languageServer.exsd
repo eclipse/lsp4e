@@ -151,6 +151,16 @@ If set to a number bigger than zero, the server will run until the timeout is re
                </documentation>
             </annotation>
          </attribute>
+         <attribute name="languageClientConfigurationProvider" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="java" basedOn=":org.eclipse.lsp4e.LanguageClientConfigurationProvider"/>
+               </appinfo>
+            </annotation>
+         </attribute>
       </complexType>
    </element>
 
