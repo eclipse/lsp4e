@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import org.eclipse.core.commands.AbstractHandler;
@@ -37,6 +38,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.VersionedEdits;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.osgi.util.NLS;
@@ -81,23 +83,25 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 				return;
 
 			monitor.setTaskName(NLS.bind(Messages.LSPFormatFilesHandler_FormattingFile, file.getFullPath()));
-			final var formatting = formatter.requestFormatting(doc,
+			final Optional<VersionedEdits> formatting = formatter.requestFormatting(doc,
 					new TextSelection(0, 0)).get();
 
-			if (!formatting.isPresent())
-				return;
-
-			docProvider.aboutToChange(doc);
-			UI.getDisplay().syncExec(() -> {
+			formatting.ifPresent(edits -> {
+				docProvider.aboutToChange(doc);
+				UI.getDisplay().syncExec(() -> {
+					try {
+						edits.apply();
+					} catch (ConcurrentModificationException | BadLocationException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				});
+				docProvider.changed(doc);
 				try {
-					formatting.get().apply();
-				} catch (ConcurrentModificationException | BadLocationException e) {
+					docProvider.saveDocument(monitor, file, doc, true);
+				} catch (CoreException e) {
 					LanguageServerPlugin.logError(e);
-
 				}
 			});
-			docProvider.changed(doc);
-			docProvider.saveDocument(monitor, file, doc, true);
 		} catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
 			LanguageServerPlugin.logError(ex);

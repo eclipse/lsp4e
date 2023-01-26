@@ -25,7 +25,7 @@ import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
-import org.eclipse.lsp4e.LanguageServers.VersionedEdits;
+import org.eclipse.lsp4e.VersionedEdits;
 import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.FormattingOptions;
@@ -46,22 +46,14 @@ public class LSPFormatter {
 		FormattingOptions formatOptions = getFormatOptions();
 		TextDocumentIdentifier docId = new TextDocumentIdentifier(uri.toString());
 
-		DocumentRangeFormattingParams rangeParams = new DocumentRangeFormattingParams();
-		rangeParams.setTextDocument(docId);
-		rangeParams.setOptions(formatOptions);
-		boolean fullFormat = textSelection.getLength() == 0;
-		Position start = LSPEclipseUtils.toPosition(fullFormat ? 0 : textSelection.getOffset(), document);
-		Position end = LSPEclipseUtils.toPosition(
-				fullFormat ? document.getLength() : textSelection.getOffset() + textSelection.getLength(),
-				document);
-		rangeParams.setRange(new Range(start, end));
+		DocumentRangeFormattingParams rangeParams = getRangeFormattingParams(document, textSelection, formatOptions,
+				docId);
 
-		DocumentFormattingParams params = new DocumentFormattingParams();
-		params.setTextDocument(docId);
-		params.setOptions(formatOptions);
+		DocumentFormattingParams params = getFullFormatParams(formatOptions, docId);
 
 		// TODO: Could refine this algorithm: at present this grabs the first non-null response but the most functional
 		// implementation (if a text selection is present) would try all the servers in turn to see if they supported
+		// range formatting, falling back to a full format if unavailable
 		return executor.computeFirst((w, ls) -> {
 			final ServerCapabilities capabilities = w.getServerCapabilities();
 			if (isDocumentRangeFormattingSupported(capabilities)
@@ -73,6 +65,28 @@ public class LSPFormatter {
 			return ls.getTextDocumentService().formatting(params).thenApply(executor::toVersionedEdits);
 		});
 
+	}
+
+	private DocumentFormattingParams getFullFormatParams(FormattingOptions formatOptions,
+			TextDocumentIdentifier docId) {
+		DocumentFormattingParams params = new DocumentFormattingParams();
+		params.setTextDocument(docId);
+		params.setOptions(formatOptions);
+		return params;
+	}
+
+	private DocumentRangeFormattingParams getRangeFormattingParams(IDocument document, ITextSelection textSelection,
+			FormattingOptions formatOptions, TextDocumentIdentifier docId) throws BadLocationException {
+		DocumentRangeFormattingParams rangeParams = new DocumentRangeFormattingParams();
+		rangeParams.setTextDocument(docId);
+		rangeParams.setOptions(formatOptions);
+		boolean fullFormat = textSelection.getLength() == 0;
+		Position start = LSPEclipseUtils.toPosition(fullFormat ? 0 : textSelection.getOffset(), document);
+		Position end = LSPEclipseUtils.toPosition(
+				fullFormat ? document.getLength() : textSelection.getOffset() + textSelection.getLength(),
+				document);
+		rangeParams.setRange(new Range(start, end));
+		return rangeParams;
 	}
 
 	private FormattingOptions getFormatOptions() {

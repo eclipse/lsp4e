@@ -49,7 +49,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
-import org.eclipse.lsp4e.LanguageServers.VersionedEdits;
+import org.eclipse.lsp4e.VersionedEdits;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
@@ -826,7 +826,7 @@ public class LanguageServersTest {
 		textEditor.getDocumentProvider().getDocument(textEditor.getEditorInput());
 		assertEquals("MyFormattingOther Text Second", viewer.getDocument().get());
 		
-		final long currentTS = LSPEclipseUtils.getDocumentModificationStamp(doc);
+		final long currentTS = LanguageServers.getDocumentModificationStamp(doc);
 		var ex2 = LanguageServers.forDocument(doc);
 		var dummyVersioned = ex2.computeFirst(ls -> CompletableFuture.completedFuture("Hello").thenApply(ex2::toVersioned)).join().get();
 		assertEquals(currentTS, dummyVersioned.getVersion());

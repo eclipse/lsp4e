@@ -15,7 +15,6 @@ package org.eclipse.lsp4e;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -29,8 +28,8 @@ import java.util.stream.Stream;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IDocumentExtension4;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -257,7 +256,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 		@Override
 		protected void computeVersion() {
-			this.startVersion = LSPEclipseUtils.getDocumentModificationStamp(document);
+			this.startVersion = getDocumentModificationStamp(document);
 		}
 
 	}
@@ -302,63 +301,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			return wrappers;
 		}
 	}
-
-	/**
-	 * Specialised POJO for document edits specifically
-	 *
-	 */
-	public static class VersionedEdits extends Versioned<List<? extends TextEdit>> {
-
-		private final IDocument document;
-
-		public VersionedEdits(long version, List<? extends TextEdit> data, IDocument document) {
-			super(version, data);
-			this.document = document;
-		}
-
-		/**
-		 * Apply the edits from the server, provided the document is unchanged since the request used
-		 * to compute the edits
-		 *
-		 * @throws BadLocationException
-		 * @throws ConcurrentModificationException
-		 */
-		public void apply() throws BadLocationException, ConcurrentModificationException {
-			if (getVersion() != LSPEclipseUtils.getDocumentModificationStamp(this.document)) {
-				throw new ConcurrentModificationException();
-			} else {
-				LSPEclipseUtils.applyEdits(this.document, get());
-			}
-		}
-
- 	}
-
-	/**
-	 * Bundles together a result from a language server with the document version at the time it was run.
-	 * Supports optimistic locking.
-	 *
-	 * @param <T>
-	 */
-	public static class Versioned<T> {
-		private final long version;
-
-		private final T data;
-
-		public Versioned(final long version, final T data) {
-			this.version = version;
-			this.data = data;
-		}
-
-		public T get() {
-			return data;
-		}
-
-		public long getVersion() {
-			return version;
-		}
-	}
-
-
 
 	private static <T> boolean isEmpty(final T t) {
 		return t == null || ((t instanceof List) && ((List<?>)t).isEmpty());
@@ -440,6 +382,21 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		} else {
 			completableFuture.complete(Optional.empty());
 		}
+	}
+
+	/**
+	 * Gets the modification stamp for the supplied document, or returns -1 if not available.
+	 *
+	 * In practice just a sanity-checked downcast of a legacy API: should expect the platfom to be instantiating
+	 * Documents that implement the later interfaces.
+	 *
+	 * Should be called on UI thread
+	 *
+	 * @param document Document to check
+	 * @return Opaque version stamp, or -1 if not available
+	 */
+	public static long getDocumentModificationStamp(@Nullable IDocument document) {
+		return document instanceof IDocumentExtension4 ? ((IDocumentExtension4) document).getModificationStamp() : -1;
 	}
 
 	/**
