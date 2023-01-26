@@ -13,20 +13,19 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.format;
 
-import java.util.Collection;
 import java.util.ConcurrentModificationException;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.ServerMessageHandler;
-import org.eclipse.lsp4e.operations.format.LSPFormatter.VersionedFormatRequest;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.MessageParams;
@@ -51,20 +50,24 @@ public class LSPFormatHandler extends AbstractHandler {
 			if (doc == null)
 				return null;
 
-			final VersionedFormatRequest versionedEdits = formatter.versionedRequestFormatting(doc, textSelection);
-			versionedEdits.edits().thenAcceptAsync(edits -> {
-				if (!edits.isEmpty()) {
-					UI.getDisplay().asyncExec(() -> {
-						try {
-							formatter.applyEdits(doc, edits, versionedEdits.version());
-						} catch (final ConcurrentModificationException ex) {
-							ServerMessageHandler.showMessage(Messages.LSPFormatHandler_DiscardedFormat,
-									new MessageParams(MessageType.Error,
-											Messages.LSPFormatHandler_DiscardedFormatResponse));
-						}
-					});
-				}
-			});
+			try {
+				formatter.requestFormatting(doc, textSelection)
+					.thenAcceptAsync(result -> {
+						result.ifPresent(edits -> {
+							try {
+								edits.apply();
+							} catch (final ConcurrentModificationException ex) {
+								ServerMessageHandler.showMessage(Messages.LSPFormatHandler_DiscardedFormat,
+										new MessageParams(MessageType.Error,
+												Messages.LSPFormatHandler_DiscardedFormatResponse));
+							} catch (BadLocationException e) {
+								LanguageServerPlugin.logError(e);
+							}
+						});
+					}, UI.getDisplay());
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
+			}
 		}
 		return null;
 	}
@@ -83,8 +86,9 @@ public class LSPFormatHandler extends AbstractHandler {
 		if (doc == null)
 			return false;
 
-		final Collection<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(doc,
-				LSPFormatter::supportsFormatting);
-		return !infos.isEmpty();
+		return LanguageServers
+				.forDocument(doc)
+				.withFilter(LSPFormatter::supportsFormatting)
+				.anyMatching();
 	}
 }

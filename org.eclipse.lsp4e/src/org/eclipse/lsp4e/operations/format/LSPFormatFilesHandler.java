@@ -13,9 +13,12 @@ package org.eclipse.lsp4e.operations.format;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
@@ -31,14 +34,14 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.e4.core.commands.ExpressionContext;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
-import org.eclipse.lsp4e.operations.format.LSPFormatter.VersionedFormatRequest;
+import org.eclipse.lsp4e.VersionedEdits;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
-import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.DocumentProviderRegistry;
@@ -46,6 +49,7 @@ import org.eclipse.ui.texteditor.IDocumentProvider;
 
 public class LSPFormatFilesHandler extends AbstractHandler {
 
+	private static final int SINGLE_FILE_TIMEOUT_MS = 5000;
 	protected final LSPFormatter formatter = new LSPFormatter();
 
 	@Override
@@ -81,17 +85,25 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 				return;
 
 			monitor.setTaskName(NLS.bind(Messages.LSPFormatFilesHandler_FormattingFile, file.getFullPath()));
-			final VersionedFormatRequest formatRequest = formatter.versionedRequestFormatting(doc,
-					new TextSelection(0, 0));
+			final Optional<VersionedEdits> formatting = formatter.requestFormatting(doc,
+					new TextSelection(0, 0)).get(SINGLE_FILE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
-			List<? extends TextEdit> formatEdits = formatRequest.edits().get();
-			if (formatEdits.isEmpty())
-				return;
-
-			docProvider.aboutToChange(doc);
-			UI.getDisplay().syncExec(() -> formatter.applyEdits(doc, formatEdits, formatRequest.version()));
-			docProvider.changed(doc);
-			docProvider.saveDocument(monitor, file, doc, true);
+			formatting.ifPresent(edits -> {
+				docProvider.aboutToChange(doc);
+				UI.getDisplay().syncExec(() -> {
+					try {
+						edits.apply();
+					} catch (ConcurrentModificationException | BadLocationException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				});
+				docProvider.changed(doc);
+				try {
+					docProvider.saveDocument(monitor, file, doc, true);
+				} catch (CoreException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			});
 		} catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
 			LanguageServerPlugin.logError(ex);

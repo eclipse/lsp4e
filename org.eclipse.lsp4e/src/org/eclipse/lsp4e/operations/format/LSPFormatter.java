@@ -13,10 +13,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.format;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.List;
+import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jdt.annotation.NonNull;
@@ -25,94 +23,77 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.VersionedEdits;
 import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.FormattingOptions;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 public class LSPFormatter {
-
-	public record VersionedFormatRequest(int version, CompletableFuture<List<? extends TextEdit>> edits) {
-		public VersionedFormatRequest() {
-			this(-1, CompletableFuture.completedFuture(Collections.emptyList()));
+	public CompletableFuture<Optional<VersionedEdits>> requestFormatting(@NonNull IDocument document, @NonNull ITextSelection textSelection) throws BadLocationException {
+		URI uri = LSPEclipseUtils.toUri(document);
+		if (uri == null) {
+			return CompletableFuture.completedFuture(Optional.empty());
 		}
-	}
+		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPFormatter::supportsFormatting);
+		FormattingOptions formatOptions = getFormatOptions();
+		TextDocumentIdentifier docId = new TextDocumentIdentifier(uri.toString());
 
-	private @NonNull LSPDocumentInfo getLSPDocumentInfo(Collection<@NonNull LSPDocumentInfo> infos) {
-		// TODO consider a better strategy for that, maybe iterate on all LS until one
-		// gives a result
-		return infos.iterator().next();
-	}
+		DocumentRangeFormattingParams rangeParams = getRangeFormattingParams(document, textSelection, formatOptions,
+				docId);
 
-	public void applyEdits(@NonNull IDocument document, List<? extends TextEdit> edits, int version)
-			throws ConcurrentModificationException {
-		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-				LSPFormatter::supportsFormatting);
-		if (getLSPDocumentInfo(infos).getVersion() != version) {
-			throw new ConcurrentModificationException();
-		} else {
-			try {
-				LSPEclipseUtils.applyEdits(document, edits);
-			} catch (BadLocationException e) {
-				LanguageServerPlugin.logError(e);
+		DocumentFormattingParams params = getFullFormatParams(formatOptions, docId);
+
+		// TODO: Could refine this algorithm: at present this grabs the first non-null response but the most functional
+		// implementation (if a text selection is present) would try all the servers in turn to see if they supported
+		// range formatting, falling back to a full format if unavailable
+		return executor.computeFirst((w, ls) -> {
+			final ServerCapabilities capabilities = w.getServerCapabilities();
+			if (isDocumentRangeFormattingSupported(capabilities)
+					&& !(isDocumentFormattingSupported(capabilities)
+							&& textSelection.getLength() == 0)) {
+				return ls.getTextDocumentService().rangeFormatting(rangeParams).thenApply(executor::toVersionedEdits);
 			}
-		}
+
+			return ls.getTextDocumentService().formatting(params).thenApply(executor::toVersionedEdits);
+		});
+
 	}
 
-	public VersionedFormatRequest versionedRequestFormatting(@NonNull IDocument document,
-			@NonNull ITextSelection textSelection) {
-		Collection<@NonNull LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(document,
-				LSPFormatter::supportsFormatting);
-		if (infos.isEmpty()) {
-			return new VersionedFormatRequest();
-		}
-		LSPDocumentInfo info = getLSPDocumentInfo(infos);
-		try {
-			return new VersionedFormatRequest(info.getVersion(), requestFormatting(info, textSelection));
-		} catch (BadLocationException e) {
-			LanguageServerPlugin.logError(e);
-		}
-		return new VersionedFormatRequest();
+	private DocumentFormattingParams getFullFormatParams(FormattingOptions formatOptions,
+			TextDocumentIdentifier docId) {
+		DocumentFormattingParams params = new DocumentFormattingParams();
+		params.setTextDocument(docId);
+		params.setOptions(formatOptions);
+		return params;
 	}
 
-	private CompletableFuture<List<? extends TextEdit>> requestFormatting(LSPDocumentInfo info,
-			ITextSelection textSelection) throws BadLocationException {
-		final var docId = LSPEclipseUtils.toTextDocumentIdentifier(info.getFileUri());
-		ServerCapabilities capabilities = info.getCapabilites();
+	private DocumentRangeFormattingParams getRangeFormattingParams(IDocument document, ITextSelection textSelection,
+			FormattingOptions formatOptions, TextDocumentIdentifier docId) throws BadLocationException {
+		DocumentRangeFormattingParams rangeParams = new DocumentRangeFormattingParams();
+		rangeParams.setTextDocument(docId);
+		rangeParams.setOptions(formatOptions);
+		boolean fullFormat = textSelection.getLength() == 0;
+		Position start = LSPEclipseUtils.toPosition(fullFormat ? 0 : textSelection.getOffset(), document);
+		Position end = LSPEclipseUtils.toPosition(
+				fullFormat ? document.getLength() : textSelection.getOffset() + textSelection.getLength(),
+				document);
+		rangeParams.setRange(new Range(start, end));
+		return rangeParams;
+	}
+
+	private FormattingOptions getFormatOptions() {
 		IPreferenceStore store = EditorsUI.getPreferenceStore();
 		int tabWidth = store.getInt(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);
 		boolean insertSpaces = store.getBoolean(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SPACES_FOR_TABS);
-		// use range formatting if standard formatting is not supported or text is selected
-		if (capabilities != null
-				&& isDocumentRangeFormattingSupported(capabilities)
-				&& (!isDocumentFormattingSupported(capabilities)
-						|| textSelection.getLength() != 0)) {
-			final var params = new DocumentRangeFormattingParams();
-			params.setTextDocument(docId);
-			params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
-			boolean fullFormat = textSelection.getLength() == 0;
-			Position start = LSPEclipseUtils.toPosition(fullFormat ? 0 : textSelection.getOffset(), info.getDocument());
-			Position end = LSPEclipseUtils.toPosition(
-					fullFormat ? info.getDocument().getLength() : textSelection.getOffset() + textSelection.getLength(),
-					info.getDocument());
-			params.setRange(new Range(start, end));
-			return info.getInitializedLanguageClient()
-					.thenComposeAsync(server -> server.getTextDocumentService().rangeFormatting(params));
-		}
-
-		final var params = new DocumentFormattingParams();
-		params.setTextDocument(docId);
-		params.setOptions(new FormattingOptions(tabWidth, insertSpaces));
-		return info.getInitializedLanguageClient()
-				.thenComposeAsync(server -> server.getTextDocumentService().formatting(params));
+		return new FormattingOptions(tabWidth, insertSpaces);
 	}
 
 	private static boolean isDocumentRangeFormattingSupported(ServerCapabilities capabilities) {

@@ -25,11 +25,14 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IDocumentExtension4;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 
@@ -67,6 +70,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		computeVersion();
 		final CompletableFuture<@NonNull List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 		return executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll)
 			// Ensure any subsequent computation added by caller does not block further incoming messages from language servers
@@ -104,6 +108,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		computeVersion();
 		return getServers().stream()
 				.map(cf -> cf
 						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
@@ -137,6 +142,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
 	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		computeVersion();
 		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
 
 		// Dispatch the request to the servers, appending a step to each such that
@@ -203,12 +209,18 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 		private final @NonNull IDocument document;
 
+		private long startVersion;
+
 		LanguageServerDocumentExecutor(final @NonNull IDocument document) {
 			this.document = document;
 		}
 
 		public @NonNull IDocument getDocument() {
 			return this.document;
+		}
+
+		public VersionedEdits toVersionedEdits(List<? extends TextEdit> edits) {
+			return VersionedEdits.toVersionedEdits(this, edits);
 		}
 
 		/**
@@ -238,6 +250,20 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 				.map(this::connectIf)
 				.toList();
 		}
+
+		@Override
+		protected void computeVersion() {
+			this.startVersion = getDocumentModificationStamp(document);
+		}
+
+		/**
+		 *
+		 * @return The document's timestamp at the start of the last request
+		 */
+		public long getStartVersion() {
+			return this.startVersion;
+		}
+
 
 	}
 
@@ -282,7 +308,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		}
 	}
 
-
 	private static <T> boolean isEmpty(final T t) {
 		return t == null || ((t instanceof List) && ((List<?>)t).isEmpty());
 	}
@@ -291,6 +316,11 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 	// Pluggable strategy for getting the set of LSWrappers to dispatch operations on
 	protected abstract @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers();
+
+	/**
+	 * Hook called when requests are scheduled - for subclasses to implement optimistic locking
+	 */
+	protected void computeVersion() {}
 
 	/**
 	 *
@@ -358,6 +388,29 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		} else {
 			completableFuture.complete(Optional.empty());
 		}
+	}
+
+	/**
+	 * Gets the modification stamp for the supplied document, or returns -1 if not available.
+	 *
+	 * In practice just a sanity-checked downcast of a legacy API: should expect the platfom to be instantiating
+	 * Documents that implement the later interfaces.
+	 *
+	 * Should be called on UI thread
+	 *
+	 * @param document Document to check
+	 * @return Opaque version stamp, or -1 if not available
+	 */
+	 static long getDocumentModificationStamp(@Nullable IDocument document) {
+		if (document instanceof IDocumentExtension4 ext) {
+ 			return ext.getModificationStamp();
+ 		} else if (document != null){
+ 			IFile file = LSPEclipseUtils.getFile(document);
+ 			if (file != null) {
+ 				return file.getModificationStamp();
+ 			}
+ 		}
+ 		return IDocumentExtension4.UNKNOWN_MODIFICATION_STAMP;
 	}
 
 	/**

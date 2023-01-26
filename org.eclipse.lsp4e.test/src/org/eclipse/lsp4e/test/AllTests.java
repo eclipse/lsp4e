@@ -89,6 +89,7 @@ import org.junit.runners.Suite.SuiteClasses;
 	OutlineContentTest.class,
 	LanguageServerWrapperTest.class,
 	LanguageServersTest.class,
+	VersioningSupportTest.class,
 	ColorTest.class,
 	LSPCodeMiningTest.class,
 	ShowMessageTest.class,

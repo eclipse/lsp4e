@@ -74,7 +74,7 @@ public class LanguageServersTest {
 
 	@Before
 	public void setUp() throws CoreException {
-		project = TestUtils.createProject("LSExecutorTest"+System.currentTimeMillis());
+		project = TestUtils.createProject("LanguageServersTest"+System.currentTimeMillis());
 	}
 
 	@Test
