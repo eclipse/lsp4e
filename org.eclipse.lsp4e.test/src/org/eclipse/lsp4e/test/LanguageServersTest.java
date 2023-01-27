@@ -43,6 +43,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
@@ -700,19 +701,19 @@ public class LanguageServersTest {
 		position.setLine(0);
 		params.setPosition(position);
 
-		CompletableFuture<List<LSWPair>> async = LanguageServers.forDocument(document)
+		CompletableFuture<List<Pair<LanguageServerWrapper, LanguageServer>>> async = LanguageServers.forDocument(document)
 				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
-				.collectAll((w, ls) -> ls.getTextDocumentService().hover(params).thenApply(h -> new LSWPair(w, ls)));
+				.collectAll((w, ls) -> ls.getTextDocumentService().hover(params).thenApply(h -> Pair.of(w, ls)));
 
-		final List<LSWPair> result = async.join();
+		final List<Pair<LanguageServerWrapper, LanguageServer>> result = async.join();
 
 		final AtomicInteger matching = new AtomicInteger();
 
 		assertEquals("Should have had two responses", 2, result.size());
-		assertNotEquals("LS should have been different proxies", result.get(0).server, result.get(1).server);
+		assertNotEquals("LS should have been different proxies", result.get(0).getSecond(), result.get(1).getSecond());
 		result.forEach(p -> {
-			p.wrapper.execute(ls -> {
-				if (ls == p.server) {
+			p.getFirst().execute(ls -> {
+				if (ls == p.getSecond()) {
 					matching.incrementAndGet();
 				}
 				return CompletableFuture.completedFuture(null);
@@ -777,15 +778,5 @@ public class LanguageServersTest {
 		final LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document);
 
 		assertEquals(document, executor.getDocument());
-	}
-
-	private static class LSWPair {
-		public final LanguageServerWrapper wrapper;
-		public final LanguageServer server;
-
-		public LSWPair(final LanguageServerWrapper w, final LanguageServer s) {
-			this.wrapper = w;
-			this.server = s;
-		}
 	}
 }

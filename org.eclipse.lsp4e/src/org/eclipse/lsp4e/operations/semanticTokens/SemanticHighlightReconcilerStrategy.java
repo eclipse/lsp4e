@@ -10,11 +10,9 @@ package org.eclipse.lsp4e.operations.semanticTokens;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -36,17 +34,16 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.internal.DocumentUtil;
+import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.SemanticTokens;
 import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.lsp4j.SemanticTokensParams;
 import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
@@ -83,8 +80,6 @@ import org.eclipse.swt.custom.StyledText;
 public class SemanticHighlightReconcilerStrategy
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextPresentationListener {
 
-	private static final int FULL_RECONCILE_TIMEOUT_S = 10;
-
 	private final boolean disabled;
 
 	private ITextViewer viewer;
@@ -106,7 +101,7 @@ public class SemanticHighlightReconcilerStrategy
 	 */
 	private volatile long documentTimestampAtLastAppliedTextPresentation;
 
-	private CompletableFuture<@NonNull List<@NonNull Void>> semanticTokensFullFuture;
+	private CompletableFuture<Optional<VersionedSemanticTokens>> semanticTokensFullFuture;
 
 	public SemanticHighlightReconcilerStrategy() {
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
@@ -173,7 +168,9 @@ public class SemanticHighlightReconcilerStrategy
 		return null;
 	}
 
-	private void saveStyle(final SemanticTokens semanticTokens, final SemanticTokensLegend semanticTokensLegend) {
+	private void saveStyle(final Pair<SemanticTokens, SemanticTokensLegend> pair) {
+		final SemanticTokens semanticTokens = pair.getFirst();
+		final SemanticTokensLegend semanticTokensLegend = pair.getSecond();
 		if (semanticTokens == null || semanticTokensLegend == null) {
 			return;
 		}
@@ -199,18 +196,6 @@ public class SemanticHighlightReconcilerStrategy
 				&& LSPEclipseUtils.hasCapability(serverCapabilities.getSemanticTokensProvider().getFull());
 	}
 
-	private boolean isRequestCancelledException(final Throwable throwable) {
-		if (throwable instanceof final CompletionException completionException) {
-			Throwable cause = completionException.getCause();
-			if (cause instanceof final ResponseErrorException responseErrorException) {
-				ResponseError responseError = responseErrorException.getResponseError();
-				return responseError != null
-						&& responseError.getCode() == ResponseErrorCode.RequestCancelled.getValue();
-			}
-		}
-		return false;
-	}
-
 	private @Nullable SemanticTokensLegend getSemanticTokensLegend(final LanguageServerWrapper wrapper) {
 		ServerCapabilities serverCapabilities = wrapper.getServerCapabilities();
 		if (serverCapabilities != null) {
@@ -234,30 +219,19 @@ public class SemanticHighlightReconcilerStrategy
 	 * for the given document. Otherwise the style rages will be applied when applyTextPresentation is
 	 * called as part of the syntactic reconciliation.
 	 */
-	private boolean invalidateTextPresentation(final long documentTimestamp) {
+
+	private boolean outdatedTextPresentation(final long documentTimestamp) {
 		return documentTimestampAtLastAppliedTextPresentation == 0
 				|| documentTimestampAtLastAppliedTextPresentation == documentTimestamp;
 	}
 
-	private CompletableFuture<Void> semanticTokensFull(final LanguageServer languageServer, final long documentTimestamp) {
-		SemanticTokensParams semanticTokensParams = getSemanticTokensParams();
-		return languageServer.getTextDocumentService().semanticTokensFull(semanticTokensParams)
-				.thenAccept(semanticTokens -> {
-					if (DocumentUtil.getDocumentModificationStamp(document) == documentTimestamp) {
-						saveStyle(semanticTokens, getSemanticTokensLegend(languageServer));
-						StyledText textWidget = viewer.getTextWidget();
-						textWidget.getDisplay().asyncExec(() -> {
-							if (!textWidget.isDisposed() && invalidateTextPresentation(documentTimestamp)) {
-								viewer.invalidateTextPresentation();
-							}
-						});
-					}
-				}).exceptionally(e -> {
-					if (!isRequestCancelledException(e)) {
-						LanguageServerPlugin.logError(e);
-					}
-					return null;
-				});
+	private void invalidateTextPresentation(final Long documentTimestamp) {
+		StyledText textWidget = viewer.getTextWidget();
+		textWidget.getDisplay().asyncExec(() -> {
+			if (!textWidget.isDisposed() && outdatedTextPresentation(documentTimestamp)) {
+				viewer.invalidateTextPresentation();
+			}
+		});
 	}
 
 	private void cancelSemanticTokensFull() {
@@ -273,18 +247,23 @@ public class SemanticHighlightReconcilerStrategy
 		IDocument theDocument = document;
 		cancelSemanticTokensFull();
 		if (theDocument != null) {
+			LanguageServerDocumentExecutor executor = LanguageServers.forDocument(theDocument)
+					.withFilter(this::hasSemanticTokensFull);
+			semanticTokensFullFuture = executor//
+					.computeFirst((w, ls) -> ls.getTextDocumentService().semanticTokensFull(getSemanticTokensParams())//
+							.thenApply(semanticTokens -> VersionedSemanticTokens.toVersionedSemantikTokens(executor,
+									semanticTokens, getSemanticTokensLegend(w))));
+
 			try {
-				long documentTimestamp = DocumentUtil.getDocumentModificationStamp(document);
-				semanticTokensFullFuture = LanguageServers.forDocument(theDocument).withFilter(this::hasSemanticTokensFull)//
-						.collectAll(ls -> semanticTokensFull(ls, documentTimestamp));
-				semanticTokensFullFuture.get(FULL_RECONCILE_TIMEOUT_S, TimeUnit.SECONDS);
+				semanticTokensFullFuture.get() // background thread with cancellation support, no timeout needed
+						.ifPresent(versionedSemanticTokens -> {
+							versionedSemanticTokens.apply(this::saveStyle, this::invalidateTextPresentation);
+						});
 			} catch (ExecutionException e) {
 				LanguageServerPlugin.logError(e);
 			} catch (InterruptedException e) {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
-			} catch (TimeoutException e) {
-				LanguageServerPlugin.logWarning("Could not get semantic tokens due to timeout after " + FULL_RECONCILE_TIMEOUT_S + " seconds", e); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 	}
