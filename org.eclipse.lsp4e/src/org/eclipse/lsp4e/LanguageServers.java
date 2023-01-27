@@ -25,12 +25,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IDocumentExtension4;
+import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -253,7 +252,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 		@Override
 		protected void computeVersion() {
-			this.startVersion = getDocumentModificationStamp(document);
+			this.startVersion = DocumentUtil.getDocumentModificationStamp(document);
 		}
 
 		/**
@@ -388,29 +387,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		} else {
 			completableFuture.complete(Optional.empty());
 		}
-	}
-
-	/**
-	 * Gets the modification stamp for the supplied document, or returns -1 if not available.
-	 *
-	 * In practice just a sanity-checked downcast of a legacy API: should expect the platfom to be instantiating
-	 * Documents that implement the later interfaces.
-	 *
-	 * Should be called on UI thread
-	 *
-	 * @param document Document to check
-	 * @return Opaque version stamp, or -1 if not available
-	 */
-	 static long getDocumentModificationStamp(@Nullable IDocument document) {
-		if (document instanceof IDocumentExtension4 ext) {
- 			return ext.getModificationStamp();
- 		} else if (document != null){
- 			IFile file = LSPEclipseUtils.getFile(document);
- 			if (file != null) {
- 				return file.getModificationStamp();
- 			}
- 		}
- 		return IDocumentExtension4.UNKNOWN_MODIFICATION_STAMP;
 	}
 
 	/**
