@@ -33,12 +33,12 @@ import org.eclipse.swt.graphics.RGB;
 
 @SuppressWarnings("restriction")
 public class LSJavaHoverProvider extends JavadocHover {
-	
+
 	private static String fgStyleSheet;
-	private static String BODY_OPEN = "<body";
-	private static String BODY_CLOSE = "</body>";
-	private static String SEPARATOR = "<hr/>";
-	
+	private static final String BODY_OPEN = "<body";
+	private static final String BODY_CLOSE = "</body>";
+	private static final String SEPARATOR = "<hr/>";
+
 	private LSPTextHover lsBasedHover;
 
 	public LSJavaHoverProvider() {
@@ -54,7 +54,7 @@ public class LSJavaHoverProvider extends JavadocHover {
 		CompletableFuture<String> lsHoverFuture = this.lsBasedHover.getHoverInfoFuture(textViewer, hoverRegion);
 		AtomicReference<String> lsHtmlHoverContent = new AtomicReference<>();
 		AtomicReference<JavadocBrowserInformationControlInput> jdtHoverControlInput = new AtomicReference<>();
-			
+
 		JavadocBrowserInformationControlInput input;
 		IJavaElement javaElement = null;
 		JavadocBrowserInformationControlInput previous = null;
@@ -90,7 +90,7 @@ public class LSJavaHoverProvider extends JavadocHover {
 			// Return null to let JDT compute the hover using its own Hover Providers
 			return null;
 		}
-		
+
 		/*
 		 *  LS HTML and JDT HTML are two HTML docs that need to be combined. JDT HTML comes with embedded CSS.
 		 *  Therefore it is best to insert LS HTML body inside the body of JDT HTML to take advantage of the JDT CSS.
@@ -109,14 +109,14 @@ public class LSJavaHoverProvider extends JavadocHover {
 			return (lsContent == null ? "" : lsContent) + (jdtContent == null ? "" : jdtContent);
 		}
 	}
-	
+
 	private static StringBuilder wrapHtml(String html) {
 		/*
 		 * No JDT content. Means no JDT CSS part either. Therefore add JDT CSS chunk to it.
 		 */
 		ColorRegistry registry = JFaceResources.getColorRegistry();
-		RGB fgRGB = registry.getRGB("org.eclipse.jdt.ui.Javadoc.foregroundColor"); //$NON-NLS-1$ 
-		RGB bgRGB= registry.getRGB("org.eclipse.jdt.ui.Javadoc.backgroundColor"); //$NON-NLS-1$ 
+		RGB fgRGB = registry.getRGB("org.eclipse.jdt.ui.Javadoc.foregroundColor"); //$NON-NLS-1$
+		RGB bgRGB= registry.getRGB("org.eclipse.jdt.ui.Javadoc.backgroundColor"); //$NON-NLS-1$
 
 		StringBuilder buffer = new StringBuilder(html);
 		HTMLPrinter.insertPageProlog(buffer, 0, fgRGB, bgRGB, getStyleSheet());
