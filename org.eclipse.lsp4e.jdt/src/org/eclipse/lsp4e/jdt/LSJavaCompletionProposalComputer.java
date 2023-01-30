@@ -43,17 +43,12 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 	@Override
 	public List<ICompletionProposal> computeCompletionProposals(ContentAssistInvocationContext context,
 			IProgressMonitor monitor) {
-		CompletableFuture<ICompletionProposal[]> future = CompletableFuture.supplyAsync(() -> {
-			return lsContentAssistProcessor.computeCompletionProposals(context.getViewer(), context.getInvocationOffset());
-		});
+		CompletableFuture<ICompletionProposal[]> future = CompletableFuture.supplyAsync(() ->
+			lsContentAssistProcessor.computeCompletionProposals(context.getViewer(), context.getInvocationOffset()));
 
 		try {
 			return Arrays.asList(asJavaProposals(future));
-		} catch (TimeoutException e) {
-			LanguageServerPlugin.logError(e);
-			javaCompletionSpecificErrorMessage = createErrorMessage(e);
-			return Collections.emptyList();
-		} catch (ExecutionException e) {
+		} catch (ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
 			javaCompletionSpecificErrorMessage = createErrorMessage(e);
 			return Collections.emptyList();
