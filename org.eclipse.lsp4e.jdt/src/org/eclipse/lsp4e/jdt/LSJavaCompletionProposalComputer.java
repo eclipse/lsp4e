@@ -33,12 +33,8 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 	private static final TimeUnit TIMEOUT_UNIT = TimeUnit.MILLISECONDS;
 	private static final long TIMEOUT_LENGTH = 300;
 
-	private LSContentAssistProcessor lsContentAssistProcessor;
+	private final LSContentAssistProcessor lsContentAssistProcessor = new LSContentAssistProcessor(false);
 	private String javaCompletionSpecificErrorMessage;
-
-	public LSJavaCompletionProposalComputer() {
-		lsContentAssistProcessor = new LSContentAssistProcessor(false);
-	}
 
 	@Override
 	public void sessionStarted() {
