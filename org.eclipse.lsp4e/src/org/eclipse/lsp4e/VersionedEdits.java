@@ -18,6 +18,7 @@ import java.util.List;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4j.TextEdit;
 
 /**
@@ -42,7 +43,7 @@ public class VersionedEdits extends Versioned<List<? extends TextEdit>> {
 	 * received the request
 	 */
 	public void apply() throws BadLocationException, ConcurrentModificationException {
-		if (getVersion() != LanguageServers.getDocumentModificationStamp(this.document)) {
+		if (getVersion() != DocumentUtil.getDocumentModificationStamp(this.document)) {
 			throw new ConcurrentModificationException();
 		} else {
 			LSPEclipseUtils.applyEdits(this.document, get());

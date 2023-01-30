@@ -9,7 +9,6 @@
 package org.eclipse.lsp4e.operations.semanticTokens;
 
 import java.net.URI;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -38,7 +37,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.SemanticTokens;
 import org.eclipse.lsp4j.SemanticTokensLegend;
@@ -105,7 +104,7 @@ public class SemanticHighlightReconcilerStrategy
 	 * that org.eclipse.jface.text.ITextViewer.invalidateTextPresentation() is
 	 * called by use while the presentation is being updated.
 	 */
-	private volatile int documentVersionAtLastAppliedTextPresentation;
+	private volatile long documentTimestampAtLastAppliedTextPresentation;
 
 	private CompletableFuture<@NonNull List<@NonNull Void>> semanticTokensFullFuture;
 
@@ -235,20 +234,20 @@ public class SemanticHighlightReconcilerStrategy
 	 * for the given document. Otherwise the style rages will be applied when applyTextPresentation is
 	 * called as part of the syntactic reconciliation.
 	 */
-	private boolean invalidateTextPresentation(final int version) {
-		return documentVersionAtLastAppliedTextPresentation == 0
-				|| documentVersionAtLastAppliedTextPresentation == version;
+	private boolean invalidateTextPresentation(final long documentTimestamp) {
+		return documentTimestampAtLastAppliedTextPresentation == 0
+				|| documentTimestampAtLastAppliedTextPresentation == documentTimestamp;
 	}
 
-	private CompletableFuture<Void> semanticTokensFull(final LanguageServer languageServer, final int version) {
+	private CompletableFuture<Void> semanticTokensFull(final LanguageServer languageServer, final long documentTimestamp) {
 		SemanticTokensParams semanticTokensParams = getSemanticTokensParams();
 		return languageServer.getTextDocumentService().semanticTokensFull(semanticTokensParams)
 				.thenAccept(semanticTokens -> {
-					if (getDocumentVersion() == version) {
+					if (DocumentUtil.getDocumentModificationStamp(document) == documentTimestamp) {
 						saveStyle(semanticTokens, getSemanticTokensLegend(languageServer));
 						StyledText textWidget = viewer.getTextWidget();
 						textWidget.getDisplay().asyncExec(() -> {
-							if (!textWidget.isDisposed() && invalidateTextPresentation(version)) {
+							if (!textWidget.isDisposed() && invalidateTextPresentation(documentTimestamp)) {
 								viewer.invalidateTextPresentation();
 							}
 						});
@@ -259,21 +258,6 @@ public class SemanticHighlightReconcilerStrategy
 					}
 					return null;
 				});
-	}
-
-	private int getDocumentVersion() {
-		IDocument theDocument = document;
-		if (theDocument != null) {
-			Iterator<@NonNull LSPDocumentInfo> iterator = LanguageServiceAccessor
-					.getLSPDocumentInfosFor(theDocument, this::hasSemanticTokensFull).iterator();
-			if (iterator.hasNext()) {
-				@Nullable LSPDocumentInfo documentInfo = iterator.next();
-				if (documentInfo != null) {
-					return documentInfo.getVersion();
-				}
-			}
-		}
-		return -1;
 	}
 
 	private void cancelSemanticTokensFull() {
@@ -290,9 +274,9 @@ public class SemanticHighlightReconcilerStrategy
 		cancelSemanticTokensFull();
 		if (theDocument != null) {
 			try {
-				int version = getDocumentVersion();
+				long documentTimestamp = DocumentUtil.getDocumentModificationStamp(document);
 				semanticTokensFullFuture = LanguageServers.forDocument(theDocument).withFilter(this::hasSemanticTokensFull)//
-						.collectAll(ls -> semanticTokensFull(ls, version));
+						.collectAll(ls -> semanticTokensFull(ls, documentTimestamp));
 				semanticTokensFullFuture.get(FULL_RECONCILE_TIMEOUT_S, TimeUnit.SECONDS);
 			} catch (ExecutionException e) {
 				LanguageServerPlugin.logError(e);
@@ -322,7 +306,7 @@ public class SemanticHighlightReconcilerStrategy
 
 	@Override
 	public void applyTextPresentation(final TextPresentation textPresentation) {
-		documentVersionAtLastAppliedTextPresentation = getDocumentVersion();
+		documentTimestampAtLastAppliedTextPresentation = DocumentUtil.getDocumentModificationStamp(document);
 		IRegion extent = textPresentation.getExtent();
 		if (extent != null) {
 			textPresentation.replaceStyleRanges(styleRangeHolder.overlappingRanges(extent));
