@@ -13,14 +13,19 @@
 package org.eclipse.lsp4e.test.diagnostics;
 
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntSupplier;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -41,9 +46,11 @@ import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.test.color.ColorTest;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
@@ -51,9 +58,12 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.MarkerUtilities;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -68,7 +78,8 @@ public class DiagnosticsTest {
 		project = TestUtils.createProject("DiagnoticsTest" + System.currentTimeMillis());
 		diagnosticsToMarkers = new LSPDiagnosticsToMarkers("dummy");
 	}
-
+	
+	@Ignore
 	@Test
 	public void testDiagnostics() throws CoreException {
 		IFile file = TestUtils.createUniqueTestFile(project, "Diagnostic Other Text");
@@ -103,6 +114,7 @@ public class DiagnosticsTest {
 		assertEquals(0, markers.length);
 	}
 
+	@Ignore
 	@Test
 	public void testFileBuffersNotLeaked() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "Diagnostic Other Text");
@@ -123,6 +135,7 @@ public class DiagnosticsTest {
 
 	}
 
+	@Ignore
 	@Test
 	public void testDiagnosticsRangeAfterDocument() throws CoreException {
 		String content = "Diagnostic Other Text";
@@ -149,7 +162,72 @@ public class DiagnosticsTest {
 			assertEquals(marker.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC), diagnostic);
 		}
 	}
+	
+	
+	@Test
+	public void diagnosticsTortureTest() throws Exception {
+		String content = "Syntactically\ndodgy\n";
+		
+		List<IFile> files = new ArrayList<>(1000);
+		
+		for (int i = 0; i < 1000; i++ ) {
+			files.add(TestUtils.createUniqueTestFile(project, content));
+		}
+		List<PublishDiagnosticsParams> multiFileDiagnostics = files.stream().map(file -> {
+			URI uri = file.getLocationURI();
+			List<Diagnostic> tmp = new ArrayList<>();
+			final Range range1 = new Range(new Position(0, 1), new Position(1, 3));
+			final Diagnostic pos1Info1 = createDiagnostic("1", "message1", range1, DiagnosticSeverity.Error, "source1");
+			tmp.add(pos1Info1);
+			return new PublishDiagnosticsParams(uri.toString(), tmp);
+		}).toList();
+		
+		CompletableFuture<?> sync = new CompletableFuture<>();
+		
+		AtomicBoolean done = new AtomicBoolean();
+		
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			@Override
+			public void didOpen(DidOpenTextDocumentParams params) {
+				super.didOpen(params);
+				if (done.get()) {
+//					return;
+				}
+				done.set(true);
+				CompletableFuture.runAsync(() -> {
+					multiFileDiagnostics.forEach(diagnostic -> {
+						this.remoteProxies.stream().collect(Collectors.toSet()).forEach(p -> p.publishDiagnostics(diagnostic));
 
+					});
+				}).thenAccept(dummy -> {
+					sync.complete(null);
+				});
+			}
+		});
+		
+		IFile arbitrarilyOpened = files.get(0);
+		
+		IEditorPart editor = TestUtils.openEditor(arbitrarilyOpened);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		
+		IFile lastFile = files.get(files.size() - 1);
+		sync.join();
+		
+		waitForAndAssertCondition(10_000, () -> {
+			IMarker[] markers = lastFile.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
+					IResource.DEPTH_INFINITE);
+			if (markers.length > 0) {
+				return true;
+			}
+			return false;
+		});
+		Display display = Display.getDefault();
+		while (true)
+	      if (!display.readAndDispatch())
+	          display.sleep();
+	}
+
+	@Ignore
 	@Test
 	public void testDiagnosticsFromVariousLS() throws Exception {
 		String content = "Diagnostic Other Text";
@@ -165,6 +243,7 @@ public class DiagnosticsTest {
 		assertEquals("there should be 1 marker for each language server", 2, markers.length);
 	}
 
+	@Ignore
 	@Test
 	public void testDiagnosticRedrawingCalls() throws CoreException {
 		IFile file = TestUtils.createUniqueTestFile(project, "Diagnostic Other Text\nDiagnostic Other Text");

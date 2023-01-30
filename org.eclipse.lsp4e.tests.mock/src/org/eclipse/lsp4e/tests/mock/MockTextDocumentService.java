@@ -98,7 +98,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private ConcurrentLinkedQueue<DidChangeTextDocumentParams> didChangeEvents = new ConcurrentLinkedQueue<>();
 
 	private Function<?, ? extends CompletableFuture<?>> _futureFactory;
-	private List<LanguageClient> remoteProxies;
+	protected List<LanguageClient> remoteProxies;
 	private Location mockReferences;
 	private List<Diagnostic> diagnostics;
 	private List<Either<Command, CodeAction>> mockCodeActions;

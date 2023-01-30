@@ -129,6 +129,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	}
 
 	private void updateMarkers(PublishDiagnosticsParams diagnostics, IResource resource) throws CoreException {
+		System.err.println("Publishing markers for " + diagnostics.getUri()); //$NON-NLS-1$
 		final var toDeleteMarkers = new HashSet<IMarker>(
 				Arrays.asList(resource.findMarkers(markerType, false, IResource.DEPTH_ONE)));
 		toDeleteMarkers
