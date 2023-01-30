@@ -28,18 +28,18 @@ public class LspJavaQuickAssistProcessor extends LSPCodeActionQuickAssistProcess
 
 	private IQuickAssistInvocationContext getContext(IInvocationContext context) {
 		return new IQuickAssistInvocationContext() {
-			
+
 			@Override
 			public ISourceViewer getSourceViewer() {
 				// Should be of instance or a subclass of TextInvocationContext
 				return ((TextInvocationContext) context).getSourceViewer();
 			}
-			
+
 			@Override
 			public int getOffset() {
 				return context.getSelectionOffset();
 			}
-			
+
 			@Override
 			public int getLength() {
 				return context.getSelectionLength();
@@ -51,13 +51,13 @@ public class LspJavaQuickAssistProcessor extends LSPCodeActionQuickAssistProcess
 	public boolean hasAssists(IInvocationContext context) throws CoreException {
 		return this.canAssist(getContext(context));
 	}
-	
+
 	@Override
 	public IJavaCompletionProposal[] getAssists(IInvocationContext context, IProblemLocation[] locations)
 			throws CoreException {
-		
+
 		ICompletionProposal[] proposals = computeQuickAssistProposals(getContext(context));
-		IJavaCompletionProposal[] javaProposals = new IJavaCompletionProposal[proposals.length];
+		final var javaProposals = new IJavaCompletionProposal[proposals.length];
 		for (int i = 0; i < proposals.length; i++) {
 			javaProposals[i] = new LSJavaProposal(proposals[i], RELEVANCE);
 		}

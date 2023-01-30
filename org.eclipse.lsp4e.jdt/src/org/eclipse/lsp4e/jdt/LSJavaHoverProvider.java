@@ -52,8 +52,8 @@ public class LSJavaHoverProvider extends JavadocHover {
 			return super.getHoverInfo2(textViewer, hoverRegion);
 		}
 		CompletableFuture<String> lsHoverFuture = this.lsBasedHover.getHoverInfoFuture(textViewer, hoverRegion);
-		AtomicReference<String> lsHtmlHoverContent = new AtomicReference<>();
-		AtomicReference<JavadocBrowserInformationControlInput> jdtHoverControlInput = new AtomicReference<>();
+		final var lsHtmlHoverContent = new AtomicReference<String>();
+		final var jdtHoverControlInput = new AtomicReference<JavadocBrowserInformationControlInput>();
 
 		JavadocBrowserInformationControlInput input;
 		IJavaElement javaElement = null;
@@ -118,7 +118,7 @@ public class LSJavaHoverProvider extends JavadocHover {
 		RGB fgRGB = registry.getRGB("org.eclipse.jdt.ui.Javadoc.foregroundColor"); //$NON-NLS-1$
 		RGB bgRGB= registry.getRGB("org.eclipse.jdt.ui.Javadoc.backgroundColor"); //$NON-NLS-1$
 
-		StringBuilder buffer = new StringBuilder(html);
+		final var buffer = new StringBuilder(html);
 		HTMLPrinter.insertPageProlog(buffer, 0, fgRGB, bgRGB, getStyleSheet());
 		HTMLPrinter.addPageEpilog(buffer);
 		return buffer;
