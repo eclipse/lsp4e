@@ -90,7 +90,7 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 		// based on this existing order. Note that based on IJavaCompletionProposal javadoc,
 		// relevance values are [0,1000] so we start at 1000
 		int relevance = 1000;
-		ICompletionProposal[] javaProposals = new ICompletionProposal[originalProposals.length];
+		final var javaProposals = new ICompletionProposal[originalProposals.length];
 
 		for (int i = 0; i < originalProposals.length; i++) {
 			javaProposals[i] = new LSJavaProposal(originalProposals[i], relevance--);
