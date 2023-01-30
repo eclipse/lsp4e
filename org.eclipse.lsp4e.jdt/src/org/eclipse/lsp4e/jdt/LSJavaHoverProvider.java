@@ -39,12 +39,7 @@ public class LSJavaHoverProvider extends JavadocHover {
 	private static final String BODY_CLOSE = "</body>";
 	private static final String SEPARATOR = "<hr/>";
 
-	private LSPTextHover lsBasedHover;
-
-	public LSJavaHoverProvider() {
-		super();
-		lsBasedHover = new LSPTextHover();
-	}
+	private final LSPTextHover lsBasedHover = new LSPTextHover();
 
 	@Override
 	public Object getHoverInfo2(ITextViewer textViewer, IRegion hoverRegion) {
