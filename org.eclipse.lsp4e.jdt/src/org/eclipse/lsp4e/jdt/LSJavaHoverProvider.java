@@ -75,9 +75,13 @@ public class LSJavaHoverProvider extends JavadocHover {
 				leadingImageWidth = input.getLeadingImageWidth();
 				jdtHtmlHoverContent = input.getHtml();
 			}
-
-		} catch (InterruptedException | ExecutionException e) {
+		} catch (ExecutionException e) {
 			LanguageServerPlugin.logWarning("Javadoc unavailable. Failed to obtain it.", e);
+			// Return null to let JDT compute the hover using its own Hover Providers
+			return null;
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logWarning("Javadoc unavailable. Failed to obtain it.", e);
+			Thread.currentThread().interrupt();
 			// Return null to let JDT compute the hover using its own Hover Providers
 			return null;
 		} catch (TimeoutException e) {
