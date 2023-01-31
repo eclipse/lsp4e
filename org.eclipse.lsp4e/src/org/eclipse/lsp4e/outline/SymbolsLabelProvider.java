@@ -46,9 +46,12 @@ import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.DocumentSymbol;
+import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.WorkspaceSymbol;
+import org.eclipse.lsp4j.WorkspaceSymbolLocation;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMemento;
@@ -127,6 +130,8 @@ public class SymbolsLabelProvider extends LabelProvider
 		Image res = null;
 		if (element instanceof SymbolInformation info) {
 			res = LSPImages.imageFromSymbolKind(info.getKind());
+		} else if (element instanceof WorkspaceSymbol symbol) {
+			res = LSPImages.imageFromSymbolKind(symbol.getKind());
 		} else if (element instanceof DocumentSymbol symbol) {
 			res = LSPImages.imageFromSymbolKind(symbol.getKind());
 		} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
@@ -135,6 +140,8 @@ public class SymbolsLabelProvider extends LabelProvider
 		IResource file = null;
 		if (element instanceof SymbolInformation symbol) {
 			file = LSPEclipseUtils.findResourceFor(symbol.getLocation().getUri());
+		} else if (element instanceof WorkspaceSymbol symbol) {
+			file = LSPEclipseUtils.findResourceFor(getUri(symbol));
 		} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
 			file = symbolWithFile.file;
 		}
@@ -145,6 +152,8 @@ public class SymbolsLabelProvider extends LabelProvider
 			Range range = null;
 			if (element instanceof SymbolInformation symbol) {
 				range = symbol.getLocation().getRange();
+			} else if (element instanceof WorkspaceSymbol symbol && symbol.getLocation().isLeft()) {
+				range = symbol.getLocation().getLeft().getRange();
 			} else if (element instanceof DocumentSymbol documentSymbol) {
 				range = documentSymbol.getRange();
 			} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
@@ -273,6 +282,15 @@ public class SymbolsLabelProvider extends LabelProvider
 			} catch (IllegalArgumentException e) {
 				LanguageServerPlugin.logError("Invalid URI: " + symbolInformation.getLocation().getUri(), e); //$NON-NLS-1$
 			}
+		} else if (element instanceof WorkspaceSymbol workspaceSymbol) {
+			name = workspaceSymbol.getName();
+			kind = workspaceSymbol.getKind();
+			String rawUri = getUri(workspaceSymbol);
+			try {
+				location = URI.create(rawUri);
+			} catch (IllegalArgumentException e) {
+				LanguageServerPlugin.logError("Invalid URI: " + rawUri, e); //$NON-NLS-1$
+			}
 		} else if (element instanceof DocumentSymbol documentSymbol) {
 			name = documentSymbol.getName();
 			kind = documentSymbol.getKind();
@@ -333,6 +351,10 @@ public class SymbolsLabelProvider extends LabelProvider
 				}
 			}
 		}
+	}
+
+	private static String getUri(WorkspaceSymbol symbol) {
+		return symbol.getLocation().map(Location::getUri, WorkspaceSymbolLocation::getUri);
 	}
 
 }

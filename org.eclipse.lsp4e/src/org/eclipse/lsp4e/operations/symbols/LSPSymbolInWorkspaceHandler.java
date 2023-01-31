@@ -23,9 +23,8 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerProjectExecutor;
 import org.eclipse.lsp4e.ui.UI;
-import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.WorkspaceSymbol;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchSite;
@@ -64,10 +63,13 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 		if (dialog.open() != IDialogConstants.OK_ID) {
 			return null;
 		}
-		final var symbolInformation = (SymbolInformation) dialog.getFirstResult();
-		Location location = symbolInformation.getLocation();
+		final var symbolInformation = ((WorkspaceSymbol) dialog.getFirstResult()).getLocation();
+		if (symbolInformation.isLeft()) {
+			LSPEclipseUtils.openInEditor(symbolInformation.getLeft());
+		} else if (symbolInformation.isRight()) {
+			LSPEclipseUtils.open(symbolInformation.getRight().getUri(), null);
+		}
 
-		LSPEclipseUtils.openInEditor(location);
 		return null;
 	}
 
