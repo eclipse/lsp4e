@@ -14,13 +14,11 @@
 package org.eclipse.lsp4e.operations.declaration;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -34,7 +32,7 @@ import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Range;
@@ -44,6 +42,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector {
 
+	@SuppressWarnings("null")
 	@Override
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
 		final IDocument document = textViewer.getDocument();
@@ -62,32 +61,16 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 		}
 		IRegion r = findWord(textViewer.getDocument(), region.getOffset());
 		final IRegion linkRegion = r != null ? r : region;
-		final var allLinks = Collections.synchronizedMap(new LinkedHashMap<Either<Location, LocationLink>,LSBasedHyperlink>());
+		final var allLinks = new LinkedHashMap<Either<Location, LocationLink>,LSBasedHyperlink>();
 		try {
-			// Collect definitions
-			final var allFutures = Collections.synchronizedCollection(new ArrayList<CompletableFuture<Either<List<? extends Location>, List<? extends LocationLink>>>>());
-			CompletableFuture.allOf(
-				LanguageServiceAccessor
-					.getLanguageServers(textViewer.getDocument(), capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDefinitionProvider()))
-					.thenAcceptAsync(languageServers ->
-						languageServers.stream().map(ls -> ls.getTextDocumentService().definition(LSPEclipseUtils.toDefinitionParams(params))).forEach(allFutures::add)
-					),
-				LanguageServiceAccessor
-					.getLanguageServers(textViewer.getDocument(), OpenDeclarationHyperlinkDetector::isTypeDefinitionProvider)
-					.thenAcceptAsync(languageServers ->
-						languageServers.stream().map(ls -> ls.getTextDocumentService().typeDefinition(LSPEclipseUtils.toTypeDefinitionParams(params))).forEach(allFutures::add)
-					)
-			).thenCompose(theVoid ->
-				CompletableFuture.allOf(allFutures.stream().map(future ->
-				future.thenAccept(locations -> {
-					Collection<LSBasedHyperlink> links = toHyperlinks(document, linkRegion, locations);
-					synchronized (allLinks) {
-						links.forEach(link -> {
-							allLinks.putIfAbsent(link.getLocation(), link);
-						});
-					}
-				})).toArray(CompletableFuture[]::new))
-			).get(500, TimeUnit.MILLISECONDS);
+			LanguageServers.addAll(
+				LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDefinitionProvider)
+					.collectAll(ls -> ls.getTextDocumentService().definition(LSPEclipseUtils.toDefinitionParams(params))),
+				LanguageServers.forDocument(document).withCapability(ServerCapabilities::getTypeDefinitionProvider)
+					.collectAll(ls -> ls.getTextDocumentService().typeDefinition(LSPEclipseUtils.toTypeDefinitionParams(params))))
+				.get(500, TimeUnit.MILLISECONDS)
+				.stream().flatMap(locations -> toHyperlinks(document, linkRegion, locations).stream())
+				.forEach(link -> allLinks.putIfAbsent(link.getLocation(), link));
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (InterruptedException e) {
@@ -143,10 +126,6 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 					}).toList();
 		}
 		return Collections.emptyList();
-	}
-
-	private static boolean isTypeDefinitionProvider(ServerCapabilities capabilities) {
-		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getTypeDefinitionProvider());
 	}
 
 	/**
