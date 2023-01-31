@@ -51,6 +51,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 *
 	 * @return Async result
 	 */
+	@NonNull
 	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
 		return collectAll((w, ls) -> fn.apply(ls));
 	}
@@ -362,7 +363,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@SuppressWarnings("null")
 	@NonNull
-	private static <T> CompletableFuture<@NonNull List<T>> addAll(@NonNull CompletableFuture<@NonNull List<T>> accumulator, @NonNull CompletableFuture<@NonNull List<T>> another) {
+	public static <T> CompletableFuture<@NonNull List<T>> addAll(@NonNull CompletableFuture<@NonNull List<T>> accumulator, @NonNull CompletableFuture<@NonNull List<T>> another) {
 		return accumulator.thenCombine(another, (a, b) -> {
 			a.addAll(b);
 			return a;
