@@ -98,44 +98,50 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 			final CompletableFuture<List<Either<Command, CodeAction>>> codeActions = info.getInitializedLanguageClient()
 					.thenComposeAsync(languageServer -> languageServer.getTextDocumentService().codeAction(params));
 			runningFutures.add(codeActions);
-			codeActions.whenComplete((t, u) -> {
+			codeActions.whenComplete((actions, t) -> {
 				runningFutures.remove(codeActions);
-				final var job = new UIJob(menu.getDisplay(), Messages.updateCodeActions_menu) {
-					@Override
-					public IStatus runInUIThread(IProgressMonitor monitor) {
-						if (u != null) {
-							final var item = new MenuItem(menu, SWT.NONE, index);
-							item.setText(u.getMessage());
-							item.setImage(LSPImages.getSharedImage(ISharedImages.IMG_DEC_FIELD_ERROR));
-							item.setEnabled(false);
-						} else if (t != null) {
-							for (Either<Command, CodeAction> command : t) {
-								if (command != null) {
-									final var item = new MenuItem(menu, SWT.NONE, index);
-									final var proposal = new CodeActionCompletionProposal(command, info);
-									item.setText(proposal.getDisplayString());
-									item.addSelectionListener(new SelectionAdapter() {
-										@Override
-										public void widgetSelected(SelectionEvent e) {
-											proposal.apply(info.getDocument());
-										}
-									});
-								}
-							}
-						}
-						if (menu.getItemCount() == 1) {
-							item.setText(Messages.codeActions_emptyMenu);
-						} else {
-							item.dispose();
-						}
-						return Status.OK_STATUS;
-					}
-				};
-				job.schedule();
+				scheduleMenuUpdate(menu, item, index, info, t, actions);
 			});
 		}
 		super.fill(menu, index);
 	}
+
+	private void scheduleMenuUpdate(final Menu menu, final MenuItem placeHolder, final int index, final LSPDocumentInfo info, final Throwable u, final List<Either<Command, CodeAction>> codeActions) {
+		final var job = new UIJob(menu.getDisplay(), Messages.updateCodeActions_menu) {
+			@Override
+			public IStatus runInUIThread(IProgressMonitor monitor) {
+				if (u != null) {
+					final var item = new MenuItem(menu, SWT.NONE, index);
+					item.setText(u.getMessage());
+					item.setImage(LSPImages.getSharedImage(ISharedImages.IMG_DEC_FIELD_ERROR));
+					item.setEnabled(false);
+				} else if (codeActions != null) {
+					for (Either<Command, CodeAction> command : codeActions) {
+						if (command != null) {
+							final var item = new MenuItem(menu, SWT.NONE, index);
+							final var proposal = new CodeActionCompletionProposal(command, info);
+							item.setText(proposal.getDisplayString());
+							item.addSelectionListener(new SelectionAdapter() {
+								@Override
+								public void widgetSelected(SelectionEvent e) {
+									proposal.apply(info.getDocument());
+								}
+							});
+						}
+					}
+				}
+				if (menu.getItemCount() == 1) {
+					placeHolder.setText(Messages.codeActions_emptyMenu);
+				} else {
+					placeHolder.dispose();
+				}
+				return Status.OK_STATUS;
+			}
+		};
+		job.schedule();
+	}
+
+
 
 	private void executeCommand(LSPDocumentInfo info, Command command) {
 		ServerCapabilities capabilities = info.getCapabilites();
