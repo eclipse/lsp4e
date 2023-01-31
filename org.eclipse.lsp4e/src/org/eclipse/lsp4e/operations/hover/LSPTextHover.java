@@ -38,6 +38,7 @@ import org.eclipse.jface.text.ITextHover;
 import org.eclipse.jface.text.ITextHoverExtension;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
+import org.eclipse.lsp4e.Canceller;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
@@ -64,6 +65,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 	private IRegion lastRegion;
 	private ITextViewer lastViewer;
 	private CompletableFuture<@NonNull List<@NonNull Hover>> request;
+	private Canceller canceller = new Canceller();
 
 	@Override
 	public String getHoverInfo(ITextViewer textViewer, IRegion hoverRegion) {
@@ -200,10 +202,12 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 		this.lastViewer = viewer;
 		try {
 			HoverParams params = LSPEclipseUtils.toHoverParams(offset, document);
+			this.canceller.cancel();
+			this.canceller = new Canceller();
 
 			this.request = LanguageServers.forDocument(document)
 				.withCapability(ServerCapabilities::getHoverProvider)
-				.collectAll(server -> server.getTextDocumentService().hover(params));
+				.collectAll(canceller.wrap(server -> server.getTextDocumentService().hover(params)));
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}
