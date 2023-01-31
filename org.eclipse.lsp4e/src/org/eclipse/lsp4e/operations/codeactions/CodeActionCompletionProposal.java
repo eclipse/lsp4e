@@ -52,7 +52,9 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 				return caProvider.getLeft();
 			} else if (caProvider.isRight()) {
 				CodeActionOptions options = caProvider.getRight();
-				return options.getResolveProvider().booleanValue();
+				var resolveProvider = options.getResolveProvider();
+				if (resolveProvider != null)
+					return resolveProvider.booleanValue();
 			}
 		}
 		return false;
