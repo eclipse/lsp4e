@@ -11,24 +11,21 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.symbols;
 
-import java.util.List;
-
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.LanguageServers.LanguageServerProjectExecutor;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SymbolInformation;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchSite;
@@ -54,15 +51,16 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 		}
 
 		IProject project = resource.getProject();
-		List<@NonNull LanguageServer> languageServers = LanguageServiceAccessor.getLanguageServers(project, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()));
-		if (languageServers.isEmpty()) {
+		final LanguageServerProjectExecutor executor = LanguageServers.forProject(project).withCapability(ServerCapabilities::getWorkspaceSymbolProvider);
+		if (!executor.anyMatching()) {
 			return null;
 		}
+
 		IWorkbenchSite site = HandlerUtil.getActiveSite(event);
 		if (site == null) {
 			return null;
 		}
-		final var dialog = new LSPSymbolInWorkspaceDialog(site.getShell(), languageServers);
+		final var dialog = new LSPSymbolInWorkspaceDialog(site.getShell(), executor);
 		if (dialog.open() != IDialogConstants.OK_ID) {
 			return null;
 		}
@@ -77,10 +75,9 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 	public boolean isEnabled() {
 		IWorkbenchPart part = UI.getActivePart();
 		if (part instanceof ITextEditor textEditor) {
-			List<LSPDocumentInfo> infos = LanguageServiceAccessor.getLSPDocumentInfosFor(
-					LSPEclipseUtils.getDocument(textEditor),
-					capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()));
-			return !infos.isEmpty();
+			return LanguageServers.forDocument(LSPEclipseUtils.getDocument(textEditor))
+					.withCapability(ServerCapabilities::getWorkspaceSymbolProvider)
+					.anyMatching();
 		}
 		return false;
 	}
