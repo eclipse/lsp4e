@@ -46,10 +46,12 @@ import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.DocumentSymbol;
+import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.WorkspaceSymbol;
+import org.eclipse.lsp4j.WorkspaceSymbolLocation;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMemento;
@@ -283,10 +285,11 @@ public class SymbolsLabelProvider extends LabelProvider
 		} else if (element instanceof WorkspaceSymbol workspaceSymbol) {
 			name = workspaceSymbol.getName();
 			kind = workspaceSymbol.getKind();
+			String rawUri = getUri(workspaceSymbol);
 			try {
-				location = URI.create(getUri(workspaceSymbol));
+				location = URI.create(rawUri);
 			} catch (IllegalArgumentException e) {
-				LanguageServerPlugin.logError("Invalid URI: " + workspaceSymbol.getLocation(), e); //$NON-NLS-1$
+				LanguageServerPlugin.logError("Invalid URI: " + rawUri, e); //$NON-NLS-1$
 			}
 		} else if (element instanceof DocumentSymbol documentSymbol) {
 			name = documentSymbol.getName();
@@ -351,10 +354,7 @@ public class SymbolsLabelProvider extends LabelProvider
 	}
 
 	private static String getUri(WorkspaceSymbol symbol) {
-		if (symbol.getLocation().isLeft()) {
-			return symbol.getLocation().getLeft().getUri();
-		}
-		return symbol.getLocation().getRight().getUri();
+		return symbol.getLocation().map(Location::getUri, WorkspaceSymbolLocation::getUri);
 	}
 
 }
