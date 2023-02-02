@@ -15,6 +15,7 @@ package org.eclipse.lsp4e;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,7 +42,11 @@ import org.eclipse.lsp4j.services.LanguageServer;
 
 /**
  * Main entry point for accessors to run requests on the language servers, and some utilities
- * for manipulating the asynchronous response objects in streams
+ * for manipulating the asynchronous response objects in streams.
+ *
+ * Note that versioning support makes the executor classes stateful. Attempting to call request
+ * methods multiple times on the same executor object will throw an <code>IllegalStateExeception</code>.
+ * Either call <code>reset()</code> between intervening executions or <code>clone()</code> a fresh object.
  */
 public abstract class LanguageServers<E extends LanguageServers<E>> {
 
@@ -74,6 +79,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		checkHasRun();
 		computeVersion();
 		final CompletableFuture<@NonNull List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 		return executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll)
@@ -112,6 +118,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		checkHasRun();
 		computeVersion();
 		return getServers().stream()
 				.map(cf -> cf
@@ -146,6 +153,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
 	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+		checkHasRun();
 		computeVersion();
 		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
 
@@ -203,6 +211,12 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		// Use CF::getNow with a default null?
 		return getServers().stream().map(CompletableFuture::join).anyMatch(Objects::nonNull);
 	}
+
+	/**
+	 * Creates a new executor from this one, with the same settings and filter, so a further request can be run
+	 */
+	@Override
+	public abstract E clone();
 
 
 	/**
@@ -268,6 +282,72 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			return this.startVersion;
 		}
 
+		public SingleLanguageServerDocumentExecutor toExecutor(final @NonNull LanguageServerWrapper serverWrapper) {
+			return new SingleLanguageServerDocumentExecutor(this.document, serverWrapper);
+		}
+
+		@Override
+		public LanguageServerDocumentExecutor clone() {
+			return new LanguageServerDocumentExecutor(this.document).withFilter(getFilter());
+		}
+
+		@Override
+		public void reset() {
+			super.reset();
+			this.startVersion = 0L;
+		}
+	}
+
+	/**
+	 * Executor for a single server - for follow-up requests that should go to the server that returned an earlier response.
+	 * The multi-LS dispatch methods will work, and will take into account the filter, so will return exactly 1 or 0 response.
+	 * The additional <code>execute()</code> method will bypass the filter and just run the request directly on the single wrapped
+	 * language server.
+	 *
+	 */
+	public static class SingleLanguageServerDocumentExecutor extends LanguageServerDocumentExecutor {
+
+		private final @NonNull LanguageServerWrapper serverWrapper;
+
+		SingleLanguageServerDocumentExecutor(final @NonNull IDocument document, final @NonNull LanguageServerWrapper serverWrapper) {
+			super(document);
+			this.serverWrapper = serverWrapper;
+		}
+
+		@Override
+		@SuppressWarnings("null")
+		protected @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
+			// Take into account filter
+ 			if (getFilter().test(serverWrapper.getServerCapabilities())) {
+ 				return Collections.singletonList(CompletableFuture.completedFuture(serverWrapper));
+ 			}
+			return Collections.emptyList();
+		}
+
+		/**
+		 * Runs a request directly on the (single) wrapped language server. No filter is applied, but version checking is supported.
+		 * @param <T>
+		 * @param fn
+		 * @return
+		 */
+		public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+			checkHasRun();
+			computeVersion();
+			return serverWrapper.execute(fn);
+		}
+
+		public boolean supports(final Predicate<ServerCapabilities> predicate) {
+			return predicate.test(serverWrapper.getServerCapabilities());
+		}
+
+		public LanguageServerWrapper getServer() {
+			return serverWrapper;
+ 		}
+
+		@Override
+		public SingleLanguageServerDocumentExecutor clone() {
+			return new SingleLanguageServerDocumentExecutor(getDocument(), serverWrapper);
+		}
 
 	}
 
@@ -309,6 +389,13 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 				wrappers.add(wrapper.getInitializedServer().thenApply(ls -> wrapper));
 			}
 			return wrappers;
+		}
+
+		@Override
+		public LanguageServerProjectExecutor clone() {
+			LanguageServerProjectExecutor cloned = new LanguageServerProjectExecutor(this.project).withFilter(getFilter());
+			cloned.restartStopped = this.restartStopped;
+			return cloned;
 		}
 	}
 
@@ -413,7 +500,28 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return new LanguageServerProjectExecutor(project);
 	}
 
+	/**
+	 *
+	 * @return True if this executor has been used for a request
+	 */
+	public final boolean hasRun() {
+		return hasRun;
+	}
+
+	public void reset() {
+		hasRun = false;
+	}
+
+	protected void checkHasRun() {
+		if (hasRun) {
+			throw new IllegalStateException("Executor has already been used for a request"); //$NON-NLS-1$
+		}
+		hasRun = true;
+	}
+
 	private @NonNull Predicate<ServerCapabilities> filter = s -> true;
+
+	private boolean hasRun = false;
 
 	private boolean isRequestCancelledException(final Throwable throwable) {
 		if (throwable instanceof final CompletionException completionException) {

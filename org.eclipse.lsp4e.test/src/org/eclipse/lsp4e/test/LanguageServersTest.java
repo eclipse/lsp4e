@@ -38,11 +38,13 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IDocumentExtension4;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.LanguageServers.SingleLanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
@@ -635,9 +637,13 @@ public class LanguageServersTest {
 
 		Optional<?> result = executor.computeFirst(ls -> ls.getTextDocumentService().hover(params)).get(10, TimeUnit.SECONDS);
 		assertFalse("Should not have had a result", result.isPresent());
+		
+		executor = executor.clone();
 
 		List<?> collectedResult = executor.collectAll(ls -> ls.getTextDocumentService().hover(params)).get(10, TimeUnit.SECONDS);
 		assertTrue("Should not have had a result", collectedResult.isEmpty());
+		
+		executor = executor.clone();
 
 		List<CompletableFuture<Hover>> allResults = executor.computeAll(ls -> ls.getTextDocumentService().hover(params));
 		for (CompletableFuture<Hover> f : allResults) {
@@ -767,6 +773,151 @@ public class LanguageServersTest {
 		assertTrue(serversForProject4.contains("Server2"));
 	}
 
+	@Test(expected=IllegalStateException.class)
+	public void testExecutorNotReusable() throws Exception {
+		final AtomicInteger hoverCount = new AtomicInteger();
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			@Override
+			public synchronized void didChange(DidChangeTextDocumentParams params) {
+				super.didChange(params);
+			}
+
+			@Override
+			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
+				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				return CompletableFuture.completedFuture(hoverResponse);
+			}
+		});
+
+		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		final IDocument document = viewer.getDocument();
+
+		final HoverParams params = new HoverParams();
+		final Position position = new Position();
+		position.setCharacter(10);
+		position.setLine(0);
+		params.setPosition(position);
+		
+		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document)
+				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()));
+
+		CompletableFuture<List<String>> result =  executor
+				.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()));
+
+		List<String> hovers = result.join();
+
+		assertTrue(hovers.contains("HoverContent1"));
+		assertTrue(hovers.contains("HoverContent2"));
+		
+		CompletableFuture<List<String>> result2 =  executor
+				.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()));
+	}
+	
+	@Test
+	public void testDocumentExecutorClonable() throws Exception {
+		final AtomicInteger hoverCount = new AtomicInteger();
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			@Override
+			public synchronized void didChange(DidChangeTextDocumentParams params) {
+				super.didChange(params);
+			}
+
+			@Override
+			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
+				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				return CompletableFuture.completedFuture(hoverResponse);
+			}
+		});
+
+		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		final IDocument document = viewer.getDocument();
+
+		final HoverParams params = new HoverParams();
+		final Position position = new Position();
+		position.setCharacter(10);
+		position.setLine(0);
+		params.setPosition(position);
+
+		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document)
+				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()));
+
+		CompletableFuture<List<String>> result =  executor
+				.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()));
+
+		List<String> hovers = result.join();
+
+		assertTrue(hovers.contains("HoverContent1"));
+		assertTrue(hovers.contains("HoverContent2"));
+		
+		executor = executor.clone();
+		
+		CompletableFuture<List<String>> result2 =  executor
+				.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()));
+		
+		List<String> hovers2 = result2.join();
+
+		assertTrue(hovers2.contains("HoverContent3"));
+		assertTrue(hovers2.contains("HoverContent4"));
+	}
+	
+	@Test
+	public void testResetExecutor() throws Exception {
+		final AtomicInteger hoverCount = new AtomicInteger();
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			@Override
+			public synchronized void didChange(DidChangeTextDocumentParams params) {
+				super.didChange(params);
+			}
+
+			@Override
+			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
+				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				return CompletableFuture.completedFuture(hoverResponse);
+			}
+		});
+
+		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		final IDocument document = viewer.getDocument();
+
+		final HoverParams params = new HoverParams();
+		final Position position = new Position();
+		position.setCharacter(10);
+		position.setLine(0);
+		params.setPosition(position);
+
+		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document)
+				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()));
+
+		CompletableFuture<List<String>> result =  executor
+				.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()));
+
+		List<String> hovers = result.join();
+
+		assertTrue(hovers.contains("HoverContent1"));
+		assertTrue(hovers.contains("HoverContent2"));
+		final long currentTS = ((IDocumentExtension4)document).getModificationStamp();
+
+		assertEquals(currentTS, executor.getStartVersion());
+
+		executor.reset();
+		
+		assertEquals(0L, executor.getStartVersion());
+		
+		CompletableFuture<List<String>> result2 =  executor
+				.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()));
+		
+		List<String> hovers2 = result2.join();
+
+		assertTrue(hovers2.contains("HoverContent3"));
+		assertTrue(hovers2.contains("HoverContent4"));
+	}
+	
 	@Test
 	public void testGetDocument() throws Exception {
 
@@ -778,5 +929,63 @@ public class LanguageServersTest {
 		final LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document);
 
 		assertEquals(document, executor.getDocument());
+	}
+	
+	@Test
+	public void testSingleServerDocumentExecutor() throws Exception {
+		final AtomicInteger hoverCount = new AtomicInteger();
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			@Override
+			public synchronized void didChange(DidChangeTextDocumentParams params) {
+				super.didChange(params);
+			}
+
+			@Override
+			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
+				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				return CompletableFuture.completedFuture(hoverResponse);
+			}
+		});
+
+		IFile testFile = TestUtils.createUniqueTestFile(project, "Here is some content");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		final IDocument document = viewer.getDocument();
+
+		final HoverParams params = new HoverParams();
+		final Position position = new Position();
+		position.setCharacter(10);
+		position.setLine(0);
+		params.setPosition(position);
+		
+		LanguageServerDocumentExecutor ex = LanguageServers.forDocument(document);
+		
+		SingleLanguageServerDocumentExecutor subexecutor = ex.computeFirst((w, ls) -> CompletableFuture.completedFuture(ex.toExecutor(w)))
+				.join().get();
+
+		assertEquals(subexecutor.getDocument(), document);
+		
+		// Set a no-result filter
+		subexecutor.withFilter(s -> false);
+		final String hover1 = subexecutor.execute(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft())).join();
+		assertEquals("HoverContent1", hover1);
+		assertEquals(subexecutor.getServer().serverDefinition.id, "org.eclipse.lsp4e.test.server");
+		
+		subexecutor.reset();
+		List<String> noHovers = subexecutor.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft())).join();
+		assertTrue(noHovers.isEmpty());
+		
+		// Set a true filter
+		subexecutor.reset();
+		subexecutor.withFilter(s -> true);
+		List<String> someHovers = subexecutor.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft())).join();
+		assertEquals(1, someHovers.size());
+		assertEquals("HoverContent2", someHovers.get(0));
+		
+		SingleLanguageServerDocumentExecutor subexecutor2 = subexecutor.clone();
+		assertEquals(subexecutor2.getDocument(), document);
+		assertEquals(subexecutor.getServer(), subexecutor2.getServer());
+		assertEquals(0L, subexecutor2.getStartVersion());
+		
 	}
 }
