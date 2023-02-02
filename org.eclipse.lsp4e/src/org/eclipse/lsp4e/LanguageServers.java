@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -32,7 +33,10 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 /**
@@ -374,7 +378,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	private <T> Stream<CompletableFuture<T>> executeOnServers(
 			BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
 		return getServers().stream().map(cf -> cf.thenCompose(
-				w -> w == null ? CompletableFuture.completedFuture((T) null) : w.executeImpl(ls -> fn.apply(w, ls))));
+				w -> w == null ? CompletableFuture.completedFuture((T) null) : w.executeImpl(ls -> fn.apply(w, ls)
+		)));
 	}
 
 	/*
@@ -383,7 +388,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * forever...
 	 */
 	private <T> void completeEmptyOrWithException(final CompletableFuture<Optional<T>> completableFuture, final Throwable t) {
-		if (t != null) {
+		if (t != null && !isRequestCancelledException(t)) {
 			completableFuture.completeExceptionally(t);
 		} else {
 			completableFuture.complete(Optional.empty());
@@ -410,5 +415,15 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 	private @NonNull Predicate<ServerCapabilities> filter = s -> true;
 
-
+	private boolean isRequestCancelledException(final Throwable throwable) {
+		if (throwable instanceof final CompletionException completionException) {
+			Throwable cause = completionException.getCause();
+			if (cause instanceof final ResponseErrorException responseErrorException) {
+				ResponseError responseError = responseErrorException.getResponseError();
+				return responseError != null
+						&& responseError.getCode() == ResponseErrorCode.RequestCancelled.getValue();
+			}
+		}
+		return false;
+	}
 }
