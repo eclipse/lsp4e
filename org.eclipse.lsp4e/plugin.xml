@@ -587,10 +587,14 @@
       <definition id="org.eclipse.lsp4e.editorHasLanguageServer">
          <or>
             <with variable="editorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+               <test
+                     forcePluginActivation="true"
+                     property="org.eclipse.lsp4e.hasLanguageServer"/>
             </with>
             <with variable="viewer">
-               <test property="org.eclipse.lsp4e.hasLanguageServer"/>
+               <test
+                     forcePluginActivation="true"
+                     property="org.eclipse.lsp4e.hasLanguageServer"/>
             </with>
          </or>
       </definition>
