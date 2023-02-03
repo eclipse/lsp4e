@@ -43,6 +43,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.LanguageServers.LanguageServerWrapperExecutor;
 import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
@@ -778,5 +779,41 @@ public class LanguageServersTest {
 		final LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document);
 
 		assertEquals(document, executor.getDocument());
+	}
+
+	@Test
+	public void testSingleServerDocumentExecutor() throws Exception {
+		final AtomicInteger hoverCount = new AtomicInteger();
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			@Override
+			public synchronized void didChange(DidChangeTextDocumentParams params) {
+				super.didChange(params);
+			}
+
+			@Override
+			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
+				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				return CompletableFuture.completedFuture(hoverResponse);
+			}
+		});
+
+		IFile testFile = TestUtils.createUniqueTestFile(project, "Here is some content");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		final IDocument document = viewer.getDocument();
+
+		final HoverParams params = new HoverParams();
+		final Position position = new Position();
+		position.setCharacter(10);
+		position.setLine(0);
+		params.setPosition(position);
+
+		LanguageServerDocumentExecutor ex = LanguageServers.forDocument(document);
+
+		LanguageServerWrapperExecutor subexecutor = ex.computeFirst((w, ls) -> /* ... */ CompletableFuture.completedFuture(LanguageServers.forWrapper(w)))
+				.join().get();
+
+		final String hover1 = subexecutor.computeFirst(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft())).join().get();
+		assertEquals("HoverContent1", hover1);
 	}
 }

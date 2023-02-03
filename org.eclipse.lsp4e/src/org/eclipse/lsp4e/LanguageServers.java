@@ -15,6 +15,7 @@ package org.eclipse.lsp4e;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -55,7 +56,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 *
 	 * @return Async result
 	 */
-	@NonNull
 	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
 		return collectAll((w, ls) -> fn.apply(ls));
 	}
@@ -104,7 +104,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 *
 	 * @param <T> Type of result being computed on the language server(s)
 	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
-	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link LanguageServerWrapper }
+	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link LanguageServerWrapper}
 	 * allowing fine-grained interrogation of server capabilities, or the construction of objects that can use this
 	 * handle to make further calls on the same server
 	 *
@@ -312,6 +312,26 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		}
 	}
 
+	/**
+	 * Executor that will run on the supplied wrapper
+	 */
+	public static class LanguageServerWrapperExecutor extends LanguageServers<LanguageServerWrapperExecutor> {
+
+		private final @NonNull LanguageServerWrapper wrapper;
+
+		private LanguageServerWrapperExecutor(final @NonNull LanguageServerWrapper wrapper) {
+			this.wrapper = wrapper;
+		}
+
+		@Override
+		protected @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
+			if (getFilter().test(wrapper.getServerCapabilities())) {
+				return Collections.singletonList(CompletableFuture.completedFuture(wrapper));
+			}
+			return Collections.emptyList();
+		}
+	}
+
 	private static <T> boolean isEmpty(final T t) {
 		return t == null || ((t instanceof List) && ((List<?>)t).isEmpty());
 	}
@@ -411,6 +431,15 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	public static LanguageServerProjectExecutor forProject(final IProject project) {
 		return new LanguageServerProjectExecutor(project);
+	}
+
+	/**
+	 *
+	 * @param wrapper
+	 * @return Executor that will run requests on servers appropriate to the supplied wrapper
+	 */
+	public static LanguageServerWrapperExecutor forWrapper(final @NonNull LanguageServerWrapper wrapper) {
+		return new LanguageServerWrapperExecutor(wrapper);
 	}
 
 	private @NonNull Predicate<ServerCapabilities> filter = s -> true;
