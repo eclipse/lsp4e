@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016 Red Hat Inc. and others.
+ * Copyright (c) 2016-23 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -13,23 +13,22 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.references;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.ui.UI;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.search.ui.NewSearchUI;
-import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -39,25 +38,23 @@ import org.eclipse.ui.texteditor.ITextEditor;
  */
 public class LSFindReferences extends AbstractHandler implements IHandler {
 
+	private @NonNull LanguageServerDocumentExecutor getExecutor(@NonNull IDocument document) {
+		return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getReferencesProvider);
+	}
+
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		if (part instanceof ITextEditor editor) {
+		if (HandlerUtil.getActiveEditor(event) instanceof ITextEditor editor) {
 			ISelection sel = editor.getSelectionProvider().getSelection();
 			if (sel instanceof ITextSelection textSelection) {
 				IDocument document = LSPEclipseUtils.getDocument(editor);
 				if (document != null) {
-					LanguageServiceAccessor.getLanguageServers(document, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getReferencesProvider())).thenAcceptAsync(languageServers -> {
-						if (languageServers.isEmpty()) {
-							return;
-						}
-						try {
-							final var query = new LSSearchQuery(document, textSelection.getOffset(), languageServers);
-							HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
-						} catch (BadLocationException e) {
-							LanguageServerPlugin.logError(e);
-						}
-					});
+					try {
+						final var query = new LSSearchQuery(textSelection.getOffset(), getExecutor(document));
+						HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
+					} catch (BadLocationException e) {
+						LanguageServerPlugin.logError(e);
+					}
 				}
 			}
 		}
@@ -70,24 +67,14 @@ public class LSFindReferences extends AbstractHandler implements IHandler {
 		if(page == null) {
 			return false;
 		}
-		IEditorPart part = page.getActiveEditor();
-		if (part instanceof ITextEditor editor) {
+		if (page.getActiveEditor() instanceof ITextEditor editor) {
 			ISelection selection = editor.getSelectionProvider().getSelection();
 			if (selection.isEmpty() || !(selection instanceof ITextSelection)) {
 				return false;
 			}
-			try {
-				return !LanguageServiceAccessor
-						.getLanguageServers(LSPEclipseUtils.getDocument(editor),
-								capabilities -> LSPEclipseUtils.hasCapability(capabilities.getReferencesProvider()))
-						.get(50, TimeUnit.MILLISECONDS).isEmpty();
-			} catch (java.util.concurrent.ExecutionException e) {
-				LanguageServerPlugin.logError(e);
-			} catch (InterruptedException e) {
-				LanguageServerPlugin.logError(e);
-				Thread.currentThread().interrupt();
-			} catch (TimeoutException e) {
-				LanguageServerPlugin.logWarning("Could not get language server due to timeout after 50 miliseconds", e); //$NON-NLS-1$
+			IDocument document = LSPEclipseUtils.getDocument(editor);
+			if (document != null) {
+				return getExecutor(document).anyMatching();
 			}
 		}
 		return false;
