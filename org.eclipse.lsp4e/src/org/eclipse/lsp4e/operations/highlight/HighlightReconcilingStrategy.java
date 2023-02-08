@@ -46,11 +46,12 @@ import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentHighlightKind;
 import org.eclipse.lsp4j.DocumentHighlightParams;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.swt.custom.StyledText;
 
 /**
@@ -192,16 +193,13 @@ public class HighlightReconcilingStrategy
 		}
 		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(uri);
 		final var params = new DocumentHighlightParams(identifier, position);
-		request = LanguageServiceAccessor.getLanguageServers(document,
-				capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDocumentHighlightProvider()))
-				.thenAcceptAsync(languageServers ->
-				CompletableFuture.allOf(languageServers.stream()
-						.map(languageServer -> languageServer.getTextDocumentService().documentHighlight(params))
-						.map(request -> request.thenAcceptAsync(result -> {
+		request = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDocumentHighlightProvider)
+				.collectAll(languageServer -> languageServer.getTextDocumentService().documentHighlight(params)
+						.thenAcceptAsync(highlights -> {
 							if (!monitor.isCanceled()) {
-								updateAnnotations(result, sourceViewer.getAnnotationModel());
+								updateAnnotations(highlights, sourceViewer.getAnnotationModel());
 							}
-						})).toArray(CompletableFuture[]::new)));
+						}));
 	}
 
 	/**
