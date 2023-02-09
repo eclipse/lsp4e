@@ -14,6 +14,7 @@
 package org.eclipse.lsp4e.operations.references;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.LocationKind;
@@ -101,12 +102,8 @@ public class LSSearchQuery extends FileSearchQuery {
 						return;
 					}
 					// Loop for each LSP Location and convert it to Match search.
-					for (Location loc : locations) {
-						Match match = toMatch(loc);
-						if (match != null) {
-							result.addMatch(match);
-						}
-					}
+					locations.stream().filter(Objects::nonNull).map(LSSearchQuery::toMatch)
+						.filter(Objects::nonNull).forEach(result::addMatch);
 				}).exceptionally(e -> {
 					LanguageServerPlugin.logError(e);
 					return null;
@@ -126,7 +123,7 @@ public class LSSearchQuery extends FileSearchQuery {
 	 *            the LSP location to convert.
 	 * @return the converted Eclipse search {@link Match}.
 	 */
-	private static Match toMatch(Location location) {
+	private static Match toMatch(@NonNull Location location) {
 		IResource resource = LSPEclipseUtils.findResourceFor(location.getUri());
 		if (resource != null) {
 			IDocument document = LSPEclipseUtils.getExistingDocument(resource);
