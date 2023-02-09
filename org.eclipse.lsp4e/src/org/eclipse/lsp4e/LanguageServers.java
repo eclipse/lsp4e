@@ -171,7 +171,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param filter Server capabilities predicate
 	 * @return
 	 */
-	public E withFilter(final @NonNull Predicate<ServerCapabilities> filter) {
+	public @NonNull E withFilter(final @NonNull Predicate<ServerCapabilities> filter) {
 		this.filter = filter;
 		return (E)this;
 	}
@@ -181,7 +181,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param serverCapabilities
 	 * @return
 	 */
-	public E withCapability(final @NonNull Function<ServerCapabilities, Either<Boolean, ? extends Object>> serverCapabilities) {
+	public @NonNull E withCapability(final @NonNull Function<ServerCapabilities, Either<Boolean, ? extends Object>> serverCapabilities) {
 		this.filter = f -> LSPEclipseUtils.hasCapability(serverCapabilities.apply(f));
 		return (E)this;
 	}
@@ -223,7 +223,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			return this.document;
 		}
 
-		public VersionedEdits toVersionedEdits(List<? extends TextEdit> edits) {
+		public @NonNull VersionedEdits toVersionedEdits(List<? extends TextEdit> edits) {
 			return VersionedEdits.toVersionedEdits(this, edits);
 		}
 
@@ -296,7 +296,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		 * in this session but have since shut down
 		 * @return
 		 */
-		public LanguageServerProjectExecutor excludeInactive() {
+		public @NonNull LanguageServerProjectExecutor excludeInactive() {
 			this.restartStopped = false;
 			return this;
 		}
@@ -400,7 +400,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param document
 	 * @return Executor that will run requests on servers appropriate to the supplied document
 	 */
-	public static LanguageServerDocumentExecutor forDocument(final @NonNull IDocument document) {
+	public static @NonNull LanguageServerDocumentExecutor forDocument(final @NonNull IDocument document) {
 		return new LanguageServerDocumentExecutor(document);
 	}
 
@@ -409,7 +409,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param project
 	 * @return Executor that will run requests on servers appropriate to the supplied project
 	 */
-	public static LanguageServerProjectExecutor forProject(final IProject project) {
+	public static @NonNull LanguageServerProjectExecutor forProject(final IProject project) {
 		return new LanguageServerProjectExecutor(project);
 	}
 
