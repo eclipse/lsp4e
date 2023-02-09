@@ -209,6 +209,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * Executor that will run requests on the set of language servers appropriate for the supplied document
 	 *
 	 */
+	@SuppressWarnings("null")
 	public static class LanguageServerDocumentExecutor extends LanguageServers<LanguageServerDocumentExecutor> {
 
 		private final @NonNull IDocument document;
@@ -227,32 +228,46 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			return VersionedEdits.toVersionedEdits(this, edits);
 		}
 
-		/**
-		 * Test whether this server supports the requested <code>ServerCapabilities</code>, and ensure
-		 * that it is connected to the document if so.
-		 *
-		 * NB result is a future on this <emph>wrapper</emph> rather than the wrapped language server directly,
-		 * to support accessing the server on the single-threaded dispatch queue.
-		 */
-		@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connectIf(@NonNull LanguageServerWrapper wrapper) {
-			return wrapper.getInitializedServer().thenCompose(server -> {
-				if (server != null && getFilter().test(wrapper.getServerCapabilities())) {
+		@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connect(@NonNull CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture) {
+			return wrapperFuture.thenCompose(wrapper -> {
+				if (wrapper != null) {
 					try {
-						return wrapper.connect(document);
-					} catch (IOException ex) {
-						LanguageServerPlugin.logError(ex);
+						CompletableFuture<LanguageServer> serverFuture = wrapper.connect(document);
+						if (serverFuture != null) {
+							return serverFuture.thenApply(server -> wrapper);
+						}
+					} catch (IOException e) {
+						LanguageServerPlugin.logError(e);
 					}
 				}
-				return CompletableFuture.completedFuture(null);
-			}).thenApply(server -> server == null ? null : wrapper);
+				return CompletableFuture.completedFuture(wrapper);
+			});
+		}
+
+
+		/**
+		 * Test whether this server supports the requested <code>ServerCapabilities</code>.
+		 */
+		private @NonNull CompletableFuture<@Nullable LanguageServerWrapper> filter(@NonNull LanguageServerWrapper wrapper) {
+			return wrapper.getInitializedServer()
+					.thenCompose(server -> CompletableFuture
+							.completedFuture(server != null && getFilter().test(wrapper.getServerCapabilities())))
+					.thenApply(matches -> matches ? wrapper: null);
 		}
 
 		@Override
 		protected @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
 			// Compute list of servers from document & filter
-			return LanguageServiceAccessor.getLSWrappers(this.document).stream()
-				.map(this::connectIf)
+			return LanguageServiceAccessor.getLSWrappers(document).stream()
+				.map(this::filter)
+				.map(this::connect)
 				.toList();
+		}
+
+		@Override
+		public boolean anyMatching() {
+			return LanguageServiceAccessor.getLSWrappers(document).stream()
+					.map(this::filter).map(CompletableFuture::join).anyMatch(Objects::nonNull);
 		}
 
 		@Override
