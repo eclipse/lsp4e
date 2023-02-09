@@ -45,8 +45,6 @@ import org.eclipse.search.internal.ui.text.FileMatch;
 import org.eclipse.search.internal.ui.text.FileSearchQuery;
 import org.eclipse.search.internal.ui.text.LineElement;
 import org.eclipse.search.ui.ISearchQuery;
-import org.eclipse.search.ui.ISearchResult;
-import org.eclipse.search.ui.text.AbstractTextSearchResult;
 import org.eclipse.search.ui.text.Match;
 
 /**
@@ -85,8 +83,7 @@ public class LSSearchQuery extends FileSearchQuery {
 	@Override
 	public IStatus run(IProgressMonitor monitor) throws OperationCanceledException {
 		startTime = System.currentTimeMillis();
-		final var textResult = (AbstractTextSearchResult) getSearchResult();
-		textResult.removeAll();
+		getSearchResult().removeAll();
 
 		try {
 			// Execute LSP "references" service
@@ -159,7 +156,7 @@ public class LSSearchQuery extends FileSearchQuery {
 	}
 
 	@Override
-	public ISearchResult getSearchResult() {
+	public LSSearchResult getSearchResult() {
 		if (result == null) {
 			result = new LSSearchResult(this);
 		}
