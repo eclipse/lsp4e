@@ -127,11 +127,6 @@ public class LSSearchQuery extends FileSearchQuery {
 			boolean temporaryLoadDocument = document == null;
 			if (temporaryLoadDocument) {
 				document = LSPEclipseUtils.getDocument(resource);
-				try {
-					FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
-				} catch (CoreException e) {
-					LanguageServerPlugin.logError(e);
-				}
 			}
 			if (document != null) {
 				try {
@@ -145,6 +140,14 @@ public class LSSearchQuery extends FileSearchQuery {
 					return new FileMatch((IFile) resource, startOffset, endOffset - startOffset, lineEntry);
 				} catch (BadLocationException ex) {
 					LanguageServerPlugin.logError(ex);
+				} finally {
+					if (temporaryLoadDocument) {
+						try {
+							FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
+						} catch (CoreException e) {
+							LanguageServerPlugin.logError(e);
+						}
+					}
 				}
 			}
 			Position startPosition = location.getRange().getStart();
