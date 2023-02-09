@@ -33,7 +33,7 @@ import org.eclipse.jface.text.source.projection.ProjectionAnnotation;
 import org.eclipse.jface.text.source.projection.ProjectionAnnotationModel;
 import org.eclipse.jface.text.source.projection.ProjectionViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.FoldingRangeRequestParams;
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -112,24 +112,20 @@ public class LSPFoldingReconcilingStrategy
 
 	@Override
 	public void reconcile(IRegion subRegion) {
-		if (projectionAnnotationModel == null || document == null) {
+		IDocument theDocument = document;
+		if (projectionAnnotationModel == null || theDocument == null) {
 			return;
 		}
 
-		URI uri = LSPEclipseUtils.toUri(document);
+		URI uri = LSPEclipseUtils.toUri(theDocument);
 		if (uri == null) {
 			return;
 		}
 		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(uri);
 		final var params = new FoldingRangeRequestParams(identifier);
-		LanguageServiceAccessor.getLanguageServers(document, LSPFoldingReconcilingStrategy::canFold).thenAcceptAsync(servers -> {
-			if (servers.isEmpty()) {
-				return;
-			}
-			servers.stream().forEach(server -> {
-				server.getTextDocumentService().foldingRange(params).thenAcceptAsync(this::applyFolding);
-			});
-		});
+		LanguageServers.forDocument(theDocument).withCapability(ServerCapabilities::getFoldingRangeProvider)
+				.computeAll(server -> server.getTextDocumentService().foldingRange(params))
+				.forEach(ranges -> ranges.thenAccept(this::applyFolding));
 	}
 
 	private void applyFolding(List<FoldingRange> ranges) {
@@ -165,10 +161,6 @@ public class LSPFoldingReconcilingStrategy
 			projectionAnnotationModel.modifyAnnotations(deletions.toArray(new Annotation[1]), additions,
 					modifications.toArray(new Annotation[0]));
 		}
-	}
-
-	private static boolean canFold(final ServerCapabilities capabilities) {
-		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getFoldingRangeProvider());
 	}
 
 	public void install(ProjectionViewer viewer) {
