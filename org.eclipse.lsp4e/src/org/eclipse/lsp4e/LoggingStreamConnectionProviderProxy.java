@@ -110,10 +110,11 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		this.logFile = getLogFile();
 	}
 
+	private static enum Direction { LANGUAGE_SERVER_TO_LSP4E, LSP4E_TO_LANGUAGE_SERVER, ERROR_FROM_LANGUAGE_SERVER };
 
-	private String message(String direction, byte[] payload) {
+	private String message(Direction direction, byte[] payload) {
 		String now = OffsetDateTime.now().toString();
-		final var builder = new StringBuilder(payload.length + id.length() + direction.length() + now.length() + 10);
+		final var builder = new StringBuilder(payload.length + id.length() + direction.toString().length() + now.length() + 10);
 		builder.append("\n["); //$NON-NLS-1$
 		builder.append(now);
 		builder.append("] "); //$NON-NLS-1$
@@ -125,12 +126,8 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		return builder.toString();
 	}
 
-	private String infoMessage(byte[] payload) {
-		return message("LSP4E to", payload);  //$NON-NLS-1$
-	}
-
 	private String errorMessage(byte[] payload) {
-		return message("Error from", payload);  //$NON-NLS-1$
+		return message(Direction.ERROR_FROM_LANGUAGE_SERVER, payload);
 	}
 
 	@Override
@@ -146,7 +143,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 					final var payload = new byte[bytes];
 					System.arraycopy(b, off, payload, 0, bytes);
 					if (logToConsole || logToFile) {
-						String s = infoMessage(payload);
+						String s = message(Direction.LANGUAGE_SERVER_TO_LSP4E, payload);
 						if (logToConsole) {
 							logToConsole(s);
 						}
@@ -199,7 +196,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 				@Override
 				public void write(byte[] b) throws IOException {
 					if (logToConsole || logToFile) {
-						String s = infoMessage(b);
+						String s = message(Direction.LSP4E_TO_LANGUAGE_SERVER, b);
 						if (logToConsole) {
 							logToConsole(s);
 						}
