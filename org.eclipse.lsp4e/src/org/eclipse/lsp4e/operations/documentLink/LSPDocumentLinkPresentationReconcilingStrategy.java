@@ -25,11 +25,12 @@ import org.eclipse.jface.text.reconciler.IReconcilingStrategy;
 import org.eclipse.jface.text.reconciler.IReconcilingStrategyExtension;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 
 /**
  * Reconciling strategy used to display links coming from LSP
@@ -72,16 +73,14 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 		}
 		cancel();
 		final var params = new DocumentLinkParams(LSPEclipseUtils.toTextDocumentIdentifier(uri));
-		request = LanguageServiceAccessor
-				.getLanguageServers(document, capabilities -> capabilities.getDocumentLinkProvider() != null)
-				.thenAcceptAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
-						.map(languageServer -> languageServer.getTextDocumentService().documentLink(params))
-						.map(request -> request.thenAcceptAsync(links -> {
-							final Control control = viewer.getTextWidget();
-							if (control != null) {
-								control.getDisplay().asyncExec(() -> underline(links));
-							}
-						})).toArray(CompletableFuture[]::new)));
+		final Control control = viewer.getTextWidget();
+		if (control != null && !control.isDisposed()) {
+			Display display = control.getDisplay();
+			request = LanguageServers.forDocument(document)
+					.withFilter(capabilities -> capabilities.getDocumentLinkProvider() != null)
+					.collectAll(languageServer -> languageServer.getTextDocumentService().documentLink(params))
+					.thenAcceptAsync(links -> links.forEach(this::underline), display);
+		}
 	}
 
 	private void underline(List<DocumentLink> links) {

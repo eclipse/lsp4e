@@ -29,7 +29,7 @@ import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
@@ -80,35 +80,18 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 		}
 		final var params = new DocumentLinkParams(LSPEclipseUtils.toTextDocumentIdentifier(uri));
 		try {
-			return LanguageServiceAccessor
-					.getLanguageServers(document,
-							capabilities -> capabilities.getDocumentLinkProvider() != null)
-					.thenApplyAsync(languageServers -> {
-						IHyperlink[] res = languageServers.stream()
-								.map(languageServer -> languageServer.getTextDocumentService().documentLink(params))
-								.map(future -> {
-									try {
-										return future.get(2, TimeUnit.SECONDS);
-									} catch (ExecutionException e) {
-										LanguageServerPlugin.logError(e);
-										return null;
-									} catch (InterruptedException e) {
-										LanguageServerPlugin.logError(e);
-										Thread.currentThread().interrupt();
-										return null;
-									} catch (TimeoutException e) {
-										LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 2 seconds in `document/Link`", e); //$NON-NLS-1$
-										return null;
-									}
-								}).filter(Objects::nonNull).flatMap(List<DocumentLink>::stream).map(link -> {
+			return LanguageServers.forDocument(document)
+					.withFilter(capabilities -> capabilities.getDocumentLinkProvider() != null)
+					.collectAll(languageServer -> languageServer.getTextDocumentService().documentLink(params))
+					.thenApply(links -> {
+						IHyperlink[] res = links.stream().flatMap(List<DocumentLink>::stream).filter(Objects::nonNull)
+								.filter(link -> link.getTarget() != null).map(link -> {
 									DocumentHyperlink jfaceLink = null;
 									try {
-										int start = LSPEclipseUtils.toOffset(link.getRange().getStart(),
-												textViewer.getDocument());
-										int end = LSPEclipseUtils.toOffset(link.getRange().getEnd(),
-												textViewer.getDocument());
+										int start = LSPEclipseUtils.toOffset(link.getRange().getStart(), document);
+										int end = LSPEclipseUtils.toOffset(link.getRange().getEnd(), document);
 										final var linkRegion = new Region(start, end - start);
-										if (TextUtilities.overlaps(region, linkRegion) && link.getTarget() != null) {
+										if (TextUtilities.overlaps(region, linkRegion)) {
 											jfaceLink = new DocumentHyperlink(link.getTarget(), linkRegion);
 										}
 									} catch (BadLocationException ex) {
@@ -121,7 +104,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 						} else {
 							return res;
 						}
-					}).get(2, TimeUnit.SECONDS);
+					}).get(4, TimeUnit.SECONDS);
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 			return null;
@@ -130,7 +113,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 			Thread.currentThread().interrupt();
 			return null;
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 2 seconds", e); //$NON-NLS-1$
+			LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 4 seconds", e); //$NON-NLS-1$
 			return null;
 		}
 	}
