@@ -18,26 +18,26 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.codemining.LineHeaderCodeMining;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.Command;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.events.MouseEvent;
 
 public class LSPCodeMining extends LineHeaderCodeMining {
 	private CodeLens codeLens;
-	private final LanguageServer languageServer;
+
+	private final LanguageServerWrapper languageServerWrapper;
 	private final LanguageServerDefinition languageServerDefinition;
 	private final @Nullable IDocument document;
 
-	public LSPCodeMining(CodeLens codeLens, IDocument document, LanguageServer languageServer, LanguageServerDefinition languageServerDefinition,
+	public LSPCodeMining(CodeLens codeLens, IDocument document, LanguageServerWrapper languageServerWrapper,
 			CodeLensProvider provider) throws BadLocationException {
 		super(codeLens.getRange().getStart().getLine(), document, provider, null);
 		this.codeLens = codeLens;
-		this.languageServer = languageServer;
-		this.languageServerDefinition = languageServerDefinition;
+		this.languageServerWrapper = languageServerWrapper;
+		this.languageServerDefinition = languageServerWrapper.serverDefinition;
 		this.document = document;
 		setLabel(getCodeLensString(codeLens));
 	}
@@ -52,15 +52,13 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 
 	@Override
 	protected CompletableFuture<Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
-		if (!LanguageServiceAccessor.checkCapability(languageServer,
-				capabilities -> {
-					Boolean resolveProvider = capabilities.getCodeLensProvider().getResolveProvider();
-					return resolveProvider != null && resolveProvider;
-				})) {
+		final Boolean resolveProvider = this.languageServerWrapper.getServerCapabilities().getCodeLensProvider().getResolveProvider();
+		if (resolveProvider == null || !resolveProvider) {
 			return CompletableFuture.completedFuture(null);
 		}
-		return languageServer.getTextDocumentService().resolveCodeLens(this.codeLens)
-				.thenAcceptAsync(resolvedCodeLens -> {
+
+		return this.languageServerWrapper.execute(languageServer -> languageServer.getTextDocumentService().resolveCodeLens(this.codeLens))
+				.thenAccept(resolvedCodeLens -> {
 					codeLens = resolvedCodeLens;
 					if (resolvedCodeLens != null) {
 						setLabel(getCodeLensString(resolvedCodeLens));

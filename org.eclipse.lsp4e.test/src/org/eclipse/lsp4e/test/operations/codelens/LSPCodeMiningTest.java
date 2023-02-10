@@ -11,11 +11,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.operations.codelens;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -25,9 +24,10 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.command.LSPCommandHandler;
 import org.eclipse.lsp4e.operations.codelens.CodeLensProvider;
 import org.eclipse.lsp4e.operations.codelens.LSPCodeMining;
@@ -39,7 +39,6 @@ import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.widgets.Display;
@@ -71,7 +70,7 @@ public class LSPCodeMiningTest {
 	}
 
 	@Test
-	public void testLSPCodeMiningActionClientSideHandling() throws BadLocationException, CoreException {
+	public void testLSPCodeMiningActionClientSideHandling() throws Exception {
 		String commandID = "test.command";
 		final CodeLens lens = createCodeLens(commandID);
 
@@ -94,10 +93,10 @@ public class LSPCodeMiningTest {
 		IFile file = TestUtils.createUniqueTestFile(project, "lspt", "test content");
 		IDocument document = TestUtils.openTextViewer(file).getDocument();
 
-		LanguageServer languageServer = MockLanguageServer.INSTANCE;
 		CodeLensProvider provider = new CodeLensProvider();
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapperForConnection(project, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID));
 
-		LSPCodeMining sut = new LSPCodeMining(lens, document, languageServer, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID), provider);
+		LSPCodeMining sut = new LSPCodeMining(lens, document, wrapper, provider);
 		MouseEvent mouseEvent = createMouseEvent();
 		sut.getAction().accept(mouseEvent);
 
@@ -107,8 +106,7 @@ public class LSPCodeMiningTest {
 
 	@Test
 	public void testLSPCodeMiningActionServerSideHandling()
-			throws InterruptedException, java.util.concurrent.ExecutionException, TimeoutException,
-			BadLocationException, CoreException {
+			throws Exception {
 		final CodeLens lens = createCodeLens(MockLanguageServer.SUPPORTED_COMMAND_ID);
 		Command command = lens.getCommand();
 		JsonObject jsonObject = new JsonObject();
@@ -122,8 +120,9 @@ public class LSPCodeMiningTest {
 		MockLanguageServer languageServer = MockLanguageServer.INSTANCE;
 		CodeLensProvider provider = new CodeLensProvider();
 
-		LSPCodeMining sut = new LSPCodeMining(lens, document, languageServer, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID), provider);
-		MouseEvent mouseEvent = createMouseEvent();
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapperForConnection(project, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID));
+
+		LSPCodeMining sut = new LSPCodeMining(lens, document, wrapper, provider);		MouseEvent mouseEvent = createMouseEvent();
 		sut.getAction().accept(mouseEvent);
 
 		// We expect that the language server will be called to execute the command

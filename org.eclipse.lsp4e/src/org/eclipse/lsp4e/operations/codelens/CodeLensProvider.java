@@ -9,11 +9,10 @@
 package org.eclipse.lsp4e.operations.codelens;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
@@ -24,10 +23,11 @@ import org.eclipse.jface.text.codemining.AbstractCodeMiningProvider;
 import org.eclipse.jface.text.codemining.ICodeMining;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.CodeLensParams;
-import org.eclipse.lsp4j.services.LanguageServer;
 
 public class CodeLensProvider extends AbstractCodeMiningProvider {
 
@@ -35,30 +35,25 @@ public class CodeLensProvider extends AbstractCodeMiningProvider {
 		URI docURI = LSPEclipseUtils.toUri(document);
 		if (docURI != null) {
 			final var param = new CodeLensParams(LSPEclipseUtils.toTextDocumentIdentifier(docURI));
-			final var codeLensResults = Collections.synchronizedList(new ArrayList<LSPCodeMining>());
-			return LanguageServiceAccessor
-					.getLanguageServers(document, capabilities -> capabilities.getCodeLensProvider() != null)
-					.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
-							.map(languageServer -> languageServer.getTextDocumentService().codeLens(param)
-									.thenAcceptAsync(codeLenses -> {
-										// textDocument/codeLens may return null
-										if (codeLenses != null) {
-											codeLenses.stream().filter(Objects::nonNull)
-													.map(codeLens -> toCodeMining(document, languageServer, codeLens))
-													.filter(Objects::nonNull).forEach(codeLensResults::add);
-										}
-									}))
-							.toArray(CompletableFuture[]::new)))
-					.thenApplyAsync(theVoid -> codeLensResults);
+			LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document)
+					.withFilter(sc -> sc.getCodeLensProvider() != null);
+			return executor.collectAll((w, ls) -> ls.getTextDocumentService().codeLens(param)
+								.thenApply(codeLenses -> LanguageServers.streamSafely(codeLenses)
+										.map(codeLens -> toCodeMining(document, w, codeLens))
+										.filter(Objects::nonNull)))
+				.thenApply(result -> result.stream().flatMap(s -> s).collect(Collectors.toList()));
 		}
 		else {
 			return null;
 		}
 	}
 
-	private LSPCodeMining toCodeMining(IDocument document, LanguageServer languageServer, CodeLens codeLens) {
+	private LSPCodeMining toCodeMining(IDocument document, LanguageServerWrapper languageServerWrapper, CodeLens codeLens) {
+		if (codeLens == null) {
+			return null;
+		}
 		try {
-			return new LSPCodeMining(codeLens, document, languageServer, LanguageServiceAccessor.resolveServerDefinition(languageServer).orElse(null), CodeLensProvider.this);
+			return new LSPCodeMining(codeLens, document, languageServerWrapper, CodeLensProvider.this);
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 			return null;
