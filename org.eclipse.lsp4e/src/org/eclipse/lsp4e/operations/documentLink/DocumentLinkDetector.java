@@ -85,20 +85,8 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 					.collectAll(languageServer -> languageServer.getTextDocumentService().documentLink(params))
 					.thenApply(links -> {
 						IHyperlink[] res = links.stream().flatMap(List<DocumentLink>::stream).filter(Objects::nonNull)
-								.filter(link -> link.getTarget() != null).map(link -> {
-									DocumentHyperlink jfaceLink = null;
-									try {
-										int start = LSPEclipseUtils.toOffset(link.getRange().getStart(), document);
-										int end = LSPEclipseUtils.toOffset(link.getRange().getEnd(), document);
-										final var linkRegion = new Region(start, end - start);
-										if (TextUtilities.overlaps(region, linkRegion)) {
-											jfaceLink = new DocumentHyperlink(link.getTarget(), linkRegion);
-										}
-									} catch (BadLocationException ex) {
-										LanguageServerPlugin.logError(ex);
-									}
-									return jfaceLink;
-								}).filter(Objects::nonNull).toArray(IHyperlink[]::new);
+								.filter(link -> link.getTarget() != null).map(link -> toHyperlink(region, document, link))
+								.filter(Objects::nonNull).toArray(IHyperlink[]::new);
 						if (res.length == 0) {
 							return null;
 						} else {
@@ -116,6 +104,21 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 			LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 4 seconds", e); //$NON-NLS-1$
 			return null;
 		}
+	}
+
+	private DocumentHyperlink toHyperlink(IRegion region, final IDocument document, DocumentLink link) {
+		DocumentHyperlink jfaceLink = null;
+		try {
+			int start = LSPEclipseUtils.toOffset(link.getRange().getStart(), document);
+			int end = LSPEclipseUtils.toOffset(link.getRange().getEnd(), document);
+			final var linkRegion = new Region(start, end - start);
+			if (TextUtilities.overlaps(region, linkRegion)) {
+				jfaceLink = new DocumentHyperlink(link.getTarget(), linkRegion);
+			}
+		} catch (BadLocationException ex) {
+			LanguageServerPlugin.logError(ex);
+		}
+		return jfaceLink;
 	}
 
 }
