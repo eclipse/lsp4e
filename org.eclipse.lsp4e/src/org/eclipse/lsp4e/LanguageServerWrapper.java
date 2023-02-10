@@ -127,6 +127,7 @@ import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
+import org.eclipse.lsp4j.WorkspaceSymbolOptions;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
@@ -928,6 +929,10 @@ public class LanguageServerWrapper {
 				final Either<Boolean, CodeActionOptions> beforeRegistration = serverCapabilities.getCodeActionProvider();
 				serverCapabilities.setCodeActionProvider(Boolean.TRUE);
 				addRegistration(reg, () -> serverCapabilities.setCodeActionProvider(beforeRegistration));
+			} else if ("workspace/symbol".equals(reg.getMethod())) { //$NON-NLS-1$
+				final Either<Boolean, WorkspaceSymbolOptions> beforeRegistration = serverCapabilities.getWorkspaceSymbolProvider();
+				serverCapabilities.setWorkspaceSymbolProvider(Boolean.TRUE);
+				addRegistration(reg, () -> serverCapabilities.setWorkspaceSymbolProvider(beforeRegistration));
 			}
 		});
 	}
