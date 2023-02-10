@@ -12,20 +12,24 @@
 package org.eclipse.lsp4e.operations.linkedediting;
 
 import java.net.URI;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
 
 public class LSPLinkedEditingBase implements IPreferenceChangeListener {
@@ -46,7 +50,7 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 		cancel();
 	}
 
-	protected CompletableFuture<LinkedEditingRanges> collectLinkedEditingRanges(IDocument document, int offset) {
+	protected CompletableFuture<Optional<LinkedEditingRanges>> collectLinkedEditingRanges(IDocument document, int offset) {
 		cancel();
 
 		if (document == null) {
@@ -66,18 +70,20 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(uri);
 		final var params = new TextDocumentPositionParams(identifier, position);
 
-		final var range = new AtomicReference<LinkedEditingRanges>();
-		return LanguageServiceAccessor.getLanguageServers(document,
-					capabilities -> LSPEclipseUtils.hasCapability(capabilities.getLinkedEditingRangeProvider()))
-				.thenComposeAsync(languageServers ->
-					CompletableFuture.allOf(languageServers.stream()
-							.map(ls -> ls.getTextDocumentService().linkedEditingRange(LSPEclipseUtils.toLinkedEditingRangeParams(params))
-								.thenAcceptAsync(result -> {
-									if (result != null && result.getRanges() != null && result.getRanges().size() > 1) {
-										range.set(result);
-									}
-							})).toArray(CompletableFuture[]::new)))
-				.thenApplyAsync(theVoid -> range.get());
+		return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getLinkedEditingRangeProvider)
+				.collectAll(languageServer -> languageServer.getTextDocumentService()
+						.linkedEditingRange(LSPEclipseUtils.toLinkedEditingRangeParams(params)))
+				.thenApply(linkedEditRanges -> linkedEditRanges.stream().filter(Objects::nonNull)
+						.filter(linkedEditRange -> rangesContainOffset(linkedEditRange, offset, document)).findFirst());
+	}
+
+	private boolean rangesContainOffset(@NonNull LinkedEditingRanges ranges, int offset, IDocument document) {
+		for (Range range : ranges.getRanges()) {
+			if (LSPEclipseUtils.isOffsetInRange(offset, range, document)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

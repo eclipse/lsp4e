@@ -49,7 +49,8 @@ import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.ui.progress.UIJob;
 import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
 
-public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase implements IReconcilingStrategy, IReconcilingStrategyExtension {
+public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
+		implements IReconcilingStrategy, IReconcilingStrategyExtension {
 	private ISourceViewer sourceViewer;
 	private IDocument fDocument;
 	private EditorSelectionChangedListener editorSelectionChangedListener;
@@ -153,20 +154,18 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 	}
 
 	private void updateLinkedEditing(int offset) {
-		if (sourceViewer != null  && fDocument != null  && fEnabled && linkedModel == null || !linkedModel.anyPositionContains(offset)) {
+		if (sourceViewer != null && fDocument != null && fEnabled && linkedModel == null
+				|| !linkedModel.anyPositionContains(offset)) {
 			if (linkedModel != null) {
 				linkedModel.exit(ILinkedModeListener.EXIT_ALL);
 				linkedModel = null;
 			}
-			collectLinkedEditingRanges(fDocument, offset)
-				.thenAcceptAsync(r -> {
-					if (r != null && rangesContainOffset(r, offset)) {
-						applyLinkedEdit(r);
-					}
-				}).exceptionally(e -> {
+			collectLinkedEditingRanges(fDocument, offset).thenAcceptAsync(optional -> {
+				optional.ifPresent(this::applyLinkedEdit);
+			}).exceptionally(e -> {
 				LanguageServerPlugin.logError(e);
 				return null;
-			});;
+			});
 		}
 	}
 
@@ -229,15 +228,6 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase im
 			LanguageServerPlugin.logError(e);
 		}
 		return null;
-	}
-
-	private boolean rangesContainOffset(@NonNull LinkedEditingRanges ranges, int offset) {
-		for (Range range : ranges.getRanges()) {
-			if (LSPEclipseUtils.isOffsetInRange(offset, range, fDocument)) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	private LinkedPositionGroup toJFaceGroup(@NonNull LinkedEditingRanges ranges) throws BadLocationException {
