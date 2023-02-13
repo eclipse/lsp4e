@@ -232,7 +232,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 						return Action.removeMnemonics(IDialogConstants.NO_LABEL);
 
 					}
-					String extensionStatus = ((ContentTypeToLanguageServerDefinition) element).isExtensionEnabled()
+					String extensionStatus = ((ContentTypeToLanguageServerDefinition) element).isExtensionEnabled(null)
 							? Messages.PreferencePage_enablementCondition_true
 							: Messages.PreferencePage_enablementCondition_false;
 					return tester.getDescription() + " (" + extensionStatus + ")"; //$NON-NLS-1$ //$NON-NLS-2$
@@ -247,7 +247,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 					}
 					Color red = Display.getDefault().getSystemColor(SWT.COLOR_RED);
 					Color green = Display.getDefault().getSystemColor(SWT.COLOR_GREEN);
-					return ((ContentTypeToLanguageServerDefinition) element).isExtensionEnabled() ? green : red;
+					return ((ContentTypeToLanguageServerDefinition) element).isExtensionEnabled(null) ? green : red;
 				}
 			});
 		}

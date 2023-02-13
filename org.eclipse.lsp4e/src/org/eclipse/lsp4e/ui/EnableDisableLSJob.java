@@ -39,7 +39,7 @@ public class EnableDisableLSJob extends Job {
 		for (ContentTypeToLanguageServerDefinition changedDefinition : serverDefinitions) {
 			LanguageServerDefinition serverDefinition = changedDefinition.getValue();
 			if (serverDefinition != null) {
-				if (!changedDefinition.isEnabled()) {
+				if (!changedDefinition.isEnabled(null)) {
 					LanguageServiceAccessor.disableLanguageServerContentType(changedDefinition);
 				} else if (editors != null) {
 					LanguageServiceAccessor.enableLanguageServerContentType(changedDefinition, editors);
