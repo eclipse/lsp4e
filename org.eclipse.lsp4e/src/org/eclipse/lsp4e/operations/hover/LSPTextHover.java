@@ -38,10 +38,10 @@ import org.eclipse.jface.text.ITextHover;
 import org.eclipse.jface.text.ITextHoverExtension;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
-import org.eclipse.lsp4e.Canceller;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.MarkedString;
@@ -62,10 +62,11 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage(true));
 	private static final int GET_TIMEOUT_MS = 1000;
 
+	private LanguageServerDocumentExecutor lastExecutor;
+
 	private IRegion lastRegion;
 	private ITextViewer lastViewer;
 	private CompletableFuture<@NonNull List<@NonNull Hover>> request;
-	private Canceller canceller = new Canceller();
 
 	@Override
 	public String getHoverInfo(ITextViewer textViewer, IRegion hoverRegion) {
@@ -202,12 +203,14 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 		this.lastViewer = viewer;
 		try {
 			HoverParams params = LSPEclipseUtils.toHoverParams(offset, document);
-			this.canceller.cancel();
-			this.canceller = new Canceller();
+			if (this.lastExecutor != null) {
+				this.lastExecutor.cancel();
+			}
+			this.lastExecutor = LanguageServers.forDocument(document)
+					.withCapability(ServerCapabilities::getHoverProvider);
 
-			this.request = LanguageServers.forDocument(document)
-				.withCapability(ServerCapabilities::getHoverProvider)
-				.collectAll(canceller.wrap(server -> server.getTextDocumentService().hover(params)));
+			this.request =
+					this.lastExecutor.collectAll(this.lastExecutor.wrapCancellable(server -> server.getTextDocumentService().hover(params)));
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}

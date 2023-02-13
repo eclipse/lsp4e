@@ -413,7 +413,44 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return new LanguageServerProjectExecutor(project);
 	}
 
+	/**
+	 *
+	 * @return True if the server call made using this executor has been cancelled
+	 */
+	public boolean isCancelled() {
+		return canceller.isCancelled();
+	}
+
+	/**
+	 * Cancel any running requests that have been wrapped with cancellation support
+	 */
+	public void cancel() {
+		canceller.cancel();
+	}
+
+	/**
+	 * Wrap a call to the LS such that it can be cancelled while running
+	 * @param <T>
+	 * @param fn
+	 * @return
+	 */
+	public <T> BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> wrapCancellable(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
+		return canceller.wrap(fn);
+	}
+
+	/**
+	 * Wrap a call to the LS such that it can be cancelled while running
+	 * @param <T>
+	 * @param fn
+	 * @return
+	 */
+	public <T> Function<LanguageServer, ? extends CompletableFuture<T>> wrapCancellable(Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
+		return canceller.wrap(fn);
+	}
+
 	private @NonNull Predicate<ServerCapabilities> filter = s -> true;
+
+	private Canceller canceller = new Canceller();
 
 	private boolean isRequestCancelledException(final Throwable throwable) {
 		if (throwable instanceof final CompletionException completionException) {
