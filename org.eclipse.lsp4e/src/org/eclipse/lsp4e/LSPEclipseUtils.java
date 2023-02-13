@@ -50,6 +50,7 @@ import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileInfo;
 import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.filesystem.IFileSystem;
 import org.eclipse.core.internal.utils.FileUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
@@ -682,59 +683,9 @@ public final class LSPEclipseUtils {
 
 	protected static void openFileLocationInEditor(String uri, IWorkbenchPage page, Range optionalRange,
 			boolean createFile) {
-		// Open file uri in an editor
-		IEditorPart part = null;
+		IEditorPart part = openEditor(uri, page, createFile);
+
 		IDocument targetDocument = null;
-		IResource targetResource = findResourceFor(uri);
-		try {
-			if (targetResource != null && targetResource.getType() == IResource.FILE) {
-				if (!targetResource.exists() && createFile) {
-					// The file to open is not found, open a confirm dialog to ask if the file must
-					// be created.
-					if (MessageDialog.openQuestion(UI.getActiveShell(), Messages.CreateFile_confirm_title,
-							Messages.bind(Messages.CreateFile_confirm_message, uri))) {
-						try (final ByteArrayInputStream input = new ByteArrayInputStream("".getBytes())) //$NON-NLS-1$
-						{
-							((IFile) targetResource).create(input, IResource.KEEP_HISTORY, null);
-						} catch (Exception e) {
-							LanguageServerPlugin.logError(e);
-						}
-					} else {
-						return;
-					}
-				}
-				part = IDE.openEditor(page, (IFile) targetResource);
-			} else {
-				URI fileUri = URI.create(uri).normalize();
-				IFileStore fileStore = EFS.getLocalFileSystem().getStore(fileUri);
-				IFileInfo fetchInfo = fileStore.fetchInfo();
-				if (!fetchInfo.isDirectory()) {
-					if (!fetchInfo.exists() && createFile) {
-						// The file to open is not found, open a confirm dialog to ask if the file must
-						// be created.
-						if (MessageDialog.openQuestion(UI.getActiveShell(), Messages.CreateFile_confirm_title,
-								Messages.bind(Messages.CreateFile_confirm_message, uri))) {
-							try {
-								fileStore.getParent().mkdir(EFS.NONE, null);
-								try (final OutputStream out = fileStore.openOutputStream(EFS.NONE, null)) {
-									out.write("".getBytes()); //$NON-NLS-1$
-								}
-							} catch (Exception e) {
-								LanguageServerPlugin.logError(e);
-							}
-						} else {
-							return;
-						}
-					}
-
-					part = IDE.openEditorOnFileStore(page, fileStore);
-				}
-			}
-
-		} catch (PartInitException e) {
-			LanguageServerPlugin.logError(e);
-		}
-
 		// Update selection (if needed) from the given range
 		if (optionalRange != null && part != null && part.getEditorSite() != null
 				&& part.getEditorSite().getSelectionProvider() != null) {
@@ -755,6 +706,63 @@ public final class LSPEclipseUtils {
 				LanguageServerPlugin.logError(e);
 			}
 		}
+	}
+
+	private static IEditorPart openEditor(String uri, IWorkbenchPage page, boolean createFile) {
+		// Open file uri in an editor
+		IResource targetResource = findResourceFor(uri);
+		if (targetResource != null && targetResource.getType() == IResource.FILE) {
+			if (!targetResource.exists() && createFile) {
+				// The file to open is not found, open a confirm dialog to ask if the file must
+				// be created.
+				if (MessageDialog.openQuestion(UI.getActiveShell(), Messages.CreateFile_confirm_title,
+						Messages.bind(Messages.CreateFile_confirm_message, uri))) {
+					try (final ByteArrayInputStream input = new ByteArrayInputStream("".getBytes())) //$NON-NLS-1$
+					{
+						((IFile) targetResource).create(input, IResource.KEEP_HISTORY, null);
+					} catch (Exception e) {
+						LanguageServerPlugin.logError(e);
+					}
+				} else {
+					return null;
+				}
+			}
+			try {
+				return IDE.openEditor(page, (IFile) targetResource);
+			} catch (PartInitException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		} else {
+			URI fileUri = URI.create(uri).normalize();
+			try {
+				IFileSystem fileSystem = EFS.getFileSystem(fileUri.getScheme());
+				IFileStore fileStore = fileSystem.getStore(fileUri);
+				IFileInfo fetchInfo = fileStore.fetchInfo();
+				if (!fetchInfo.isDirectory()) {
+					if (!fetchInfo.exists() && createFile) {
+						// The file to open is not found, open a confirm dialog to ask if the file must
+						// be created.
+						if (MessageDialog.openQuestion(UI.getActiveShell(), Messages.CreateFile_confirm_title,
+								Messages.bind(Messages.CreateFile_confirm_message, uri))) {
+							try {
+								fileStore.getParent().mkdir(EFS.NONE, null);
+								try (final OutputStream out = fileStore.openOutputStream(EFS.NONE, null)) {
+									out.write("".getBytes()); //$NON-NLS-1$
+								}
+							} catch (Exception e) {
+								LanguageServerPlugin.logError(e);
+							}
+						} else {
+							return null;
+						}
+					}
+					return IDE.openEditorOnFileStore(page, fileStore);
+				}
+			} catch (CoreException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
+		return null;
 	}
 
 	public static IDocument getDocument(ITextEditor editor) {
