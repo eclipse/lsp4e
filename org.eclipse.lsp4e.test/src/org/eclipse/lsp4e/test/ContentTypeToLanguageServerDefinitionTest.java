@@ -45,7 +45,7 @@ public class ContentTypeToLanguageServerDefinitionTest {
 	@Test
 	public void testDisabledLanguageServerMappingsPreference() {
 		List<ContentTypeToLanguageServerDefinition> disabledDefinitions = LanguageServersRegistry.getInstance()
-				.getContentTypeToLSPExtensions().stream().filter(lsDefinition -> !lsDefinition.isEnabled())
+				.getContentTypeToLSPExtensions().stream().filter(lsDefinition -> !lsDefinition.isEnabled(null))
 				.collect(Collectors.toList());
 		assertEquals(1, disabledDefinitions.size());
 		assertEquals(SERVER_TO_DISABLE, disabledDefinitions.get(0).getValue().id);
@@ -57,11 +57,11 @@ public class ContentTypeToLanguageServerDefinitionTest {
 	public void testDisableLanguageServerMapping() {
 		ContentTypeToLanguageServerDefinition lsDefinition = TestUtils.getDisabledLS();
 		lsDefinition.setUserEnabled(false);
-		assertFalse(lsDefinition.isEnabled());
+		assertFalse(lsDefinition.isEnabled(null));
 		assertTrue(LanguageServerPlugin.getDefault().getPreferenceStore().contains(DISABLED_SERVER_PREF));
 		assertFalse(LanguageServerPlugin.getDefault().getPreferenceStore().getBoolean(DISABLED_SERVER_PREF));
 		lsDefinition.setUserEnabled(true);
-		assertTrue(lsDefinition.isEnabled());
+		assertTrue(lsDefinition.isEnabled(null));
 		assertTrue(LanguageServerPlugin.getDefault().getPreferenceStore().contains(DISABLED_SERVER_PREF));
 		assertTrue(LanguageServerPlugin.getDefault().getPreferenceStore().getBoolean(DISABLED_SERVER_PREF));
 	}

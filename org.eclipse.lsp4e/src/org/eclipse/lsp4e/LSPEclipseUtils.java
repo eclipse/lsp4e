@@ -1211,7 +1211,7 @@ public final class LSPEclipseUtils {
 			.collect(Collectors.toSet());
 	}
 
-	private static URI toUri(IEditorInput editorInput) {
+	public static URI toUri(IEditorInput editorInput) {
 		if (editorInput instanceof FileEditorInput fileEditorInput) {
 			return toUri(fileEditorInput.getFile());
 		}

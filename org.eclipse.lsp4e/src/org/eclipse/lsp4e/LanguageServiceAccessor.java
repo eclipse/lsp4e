@@ -181,7 +181,7 @@ public class LanguageServiceAccessor {
 					final IContentDescription contentDesc = editorFile.getContentDescription();
 					if(contentDesc == null)
 						continue;
-					if (contentType.equals(contentDesc.getContentType()) && contentTypeToLSDefinition.isEnabled()) {
+					if (contentType.equals(contentDesc.getContentType()) && contentTypeToLSDefinition.isEnabled(editorFile.getLocationURI())) {
 						getInitializedLanguageServer(editorFile, lsDefinition, capabilities -> true);
 					}
 				}
@@ -310,7 +310,7 @@ public class LanguageServiceAccessor {
 			}
 
 			for (final ContentTypeToLanguageServerDefinition mapping : lsRegistry.findProviderFor(contentType)) {
-				if (!mapping.isEnabled()) {
+				if (!mapping.isEnabled(fileURI)) {
 					continue;
 				}
 				final LanguageServerDefinition serverDefinition = mapping.getValue();
@@ -369,7 +369,7 @@ public class LanguageServiceAccessor {
 			}
 
 			for (final ContentTypeToLanguageServerDefinition mapping : lsRegistry.findProviderFor(contentType)) {
-				if (!mapping.isEnabled()) {
+				if (!mapping.isEnabled(uri)) {
 					continue;
 				}
 				final LanguageServerDefinition serverDefinition = mapping.getValue();

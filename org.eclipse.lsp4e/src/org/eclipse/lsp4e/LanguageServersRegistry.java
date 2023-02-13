@@ -14,6 +14,7 @@
 package org.eclipse.lsp4e;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -428,7 +429,7 @@ public class LanguageServersRegistry {
 	 * @return whether the given serverDefinition is suitable for the file
 	 */
 	public boolean matches(@NonNull IFile file, @NonNull LanguageServerDefinition serverDefinition) {
-		return getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file)).contains(serverDefinition);
+		return getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file), file.getLocationURI()).contains(serverDefinition);
 	}
 
 	/**
@@ -437,12 +438,12 @@ public class LanguageServersRegistry {
 	 * @return whether the given serverDefinition is suitable for the file
 	 */
 	public boolean matches(@NonNull IDocument document, @NonNull LanguageServerDefinition serverDefinition) {
-		return getAvailableLSFor(LSPEclipseUtils.getDocumentContentTypes(document)).contains(serverDefinition);
+		return getAvailableLSFor(LSPEclipseUtils.getDocumentContentTypes(document), LSPEclipseUtils.toUri(document)).contains(serverDefinition);
 	}
 
 	public boolean canUseLanguageServer(@NonNull IEditorInput editorInput) {
 		return !getAvailableLSFor(
-				Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(editorInput.getName()))).isEmpty();
+				Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(editorInput.getName())), LSPEclipseUtils.toUri(editorInput)).isEmpty();
 	}
 
 	public boolean canUseLanguageServer(@NonNull IDocument document) {
@@ -452,11 +453,11 @@ public class LanguageServersRegistry {
 			return false;
 		}
 
-		return !getAvailableLSFor(contentTypes).isEmpty();
+		return !getAvailableLSFor(contentTypes, LSPEclipseUtils.toUri(document)).isEmpty();
 	}
 
 	public boolean canUseLanguageServer(@NonNull IFile file) {
-		return !getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file)).isEmpty();
+		return !getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file), file.getLocationURI()).isEmpty();
 	}
 
 	/**
@@ -464,11 +465,11 @@ public class LanguageServersRegistry {
 	 * @param contentTypes content-types to check against LS registry. Base types are checked too.
 	 * @return definitions that can support the following content-types
 	 */
-	private Set<LanguageServerDefinition> getAvailableLSFor(Collection<IContentType> contentTypes) {
+	private Set<LanguageServerDefinition> getAvailableLSFor(Collection<IContentType> contentTypes, URI uri) {
 		final var res = new HashSet<LanguageServerDefinition>();
 		contentTypes = expandToSuperTypes(contentTypes);
 		for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
-			if (mapping.isEnabled() && contentTypes.contains(mapping.getKey())) {
+			if (mapping.isEnabled(uri) && contentTypes.contains(mapping.getKey())) {
 				res.add(mapping.getValue());
 			}
 		}

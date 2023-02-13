@@ -12,13 +12,20 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.enablement;
 
+import java.net.URI;
 import java.util.function.Supplier;
 
 import org.eclipse.core.expressions.EvaluationContext;
 import org.eclipse.core.expressions.EvaluationResult;
 import org.eclipse.core.expressions.Expression;
 import org.eclipse.core.expressions.IEvaluationContext;
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.LocationKind;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 
 /**
@@ -56,14 +63,43 @@ public final class EnablementTester {
 	 *
 	 * @return true if expression evaluates to true, false otherwise
 	 */
-	public boolean evaluate() {
+	public boolean evaluate(URI uri) {
+		boolean temporaryLoadDocument = false;
+		IResource resource = null;
 		try {
+			IDocument document = null;
+			resource = LSPEclipseUtils.findResourceFor(uri);
+			if (resource != null) {
+				document = LSPEclipseUtils.getExistingDocument(resource);
+				if (document == null) {
+					document = LSPEclipseUtils.getDocument(resource);
+					temporaryLoadDocument = true;
+				}
+			}
+			if (document == null) {
+				temporaryLoadDocument = false;
+			}
 			final var context = new EvaluationContext(parent.get(), new Object());
+			context.addVariable("document", //$NON-NLS-1$
+					document != null ? document : IEvaluationContext.UNDEFINED_VARIABLE);
+			context.addVariable("resource", //$NON-NLS-1$
+					resource != null ? resource : IEvaluationContext.UNDEFINED_VARIABLE);
+			context.addVariable("uri", //$NON-NLS-1$
+					uri != null ? uri : IEvaluationContext.UNDEFINED_VARIABLE);
 			context.setAllowPluginActivation(true);
 			return expression.evaluate(context).equals(EvaluationResult.TRUE);
 		} catch (CoreException e) {
 			LanguageServerPlugin.logError("Error occured during evaluation of enablement expression", e); //$NON-NLS-1$
+		} finally {
+			if (temporaryLoadDocument && resource != null) {
+				try {
+					FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
+				} catch (CoreException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			}
 		}
+
 		return false;
 	}
 

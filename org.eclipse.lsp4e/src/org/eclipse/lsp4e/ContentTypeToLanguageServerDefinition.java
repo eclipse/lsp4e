@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import java.net.URI;
 import java.util.AbstractMap.SimpleEntry;
 
 import org.eclipse.core.runtime.content.IContentType;
@@ -32,8 +33,8 @@ public class ContentTypeToLanguageServerDefinition extends SimpleEntry<IContentT
 		this.enablement = enablement;
 	}
 
-	public boolean isEnabled() {
-		return isUserEnabled() && isExtensionEnabled();
+	public boolean isEnabled(URI uri) {
+		return isUserEnabled() && isExtensionEnabled(uri);
 	}
 
 	public void setUserEnabled(boolean enabled) {
@@ -47,9 +48,8 @@ public class ContentTypeToLanguageServerDefinition extends SimpleEntry<IContentT
 		return true;
 	}
 
-	public boolean isExtensionEnabled() {
-		return enablement != null ? enablement.evaluate() : true;
-
+	public boolean isExtensionEnabled(URI uri) {
+		return enablement != null ? enablement.evaluate(uri) : true;
 	}
 
 	public EnablementTester getEnablementCondition() {
