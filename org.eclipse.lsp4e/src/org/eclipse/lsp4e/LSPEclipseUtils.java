@@ -291,19 +291,15 @@ public final class LSPEclipseUtils {
 		if(document == null) {
 			return null;
 		}
-		IFile file = getFile(document);
+		ITextFileBuffer buffer = toBuffer(document);
+		IPath path = toPath(buffer);
+		IFile file = getFile(path);
 		if (file != null) {
 			return toUri(file);
-		} else {
-			ITextFileBuffer buffer = toBuffer(document);
-			if (buffer != null) {
-				IPath path = toPath(buffer);
-				if(path != null) {
-					return toUri(path.toFile());
-				} else {
-					return buffer.getFileStore().toURI();
-				}
-			}
+		} else if(path != null) {
+			return toUri(path.toFile());
+		} else if (buffer != null && buffer.getFileStore() != null) {
+			return buffer.getFileStore().toURI();
 		}
 		return null;
 	}
@@ -983,7 +979,10 @@ public final class LSPEclipseUtils {
 				return uri;
 			}
 		}
-		return buffer.getFileStore().toURI();
+		if (buffer.getFileStore() != null) {
+			return buffer.getFileStore().toURI();
+		}
+		return null;
 	}
 
 	public static URI toUri(File file) {
@@ -1052,21 +1051,17 @@ public final class LSPEclipseUtils {
 	}
 
 	@Nullable
-	private static String getFileName(@NonNull IDocument document) {
-		IFile file = getFile(document);
+	private static String getFileName(@Nullable ITextFileBuffer buffer) {
+		IPath path = toPath(buffer);
+		IFile file = getFile(path);
 		if (file != null) {
 			return file.getName();
 		}
-		IPath path = toPath(document);
 		if(path != null) {
 			return path.lastSegment();
 		}
-		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
-		if (bufferManager != null) {
-			ITextFileBuffer buffer = bufferManager.getTextFileBuffer(document);
-			if (buffer != null && buffer.getFileStore() != null) {
-				return buffer.getFileStore().getName();
-			}
+		if (buffer != null && buffer.getFileStore() != null) {
+			return buffer.getFileStore().getName();
 		}
 		return null;
 	}
@@ -1075,28 +1070,25 @@ public final class LSPEclipseUtils {
 	public static List<IContentType> getDocumentContentTypes(@NonNull IDocument document) {
 		final var contentTypes = new ArrayList<IContentType>();
 
-		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
-		if (bufferManager != null) {
-			ITextFileBuffer buffer = bufferManager.getTextFileBuffer(document);
-			if (buffer != null) {
-				try {
-					// may be a more specific content-type, relying on some content-type factory and actual content (not just name)
-					IContentType contentType = buffer.getContentType();
-					if (contentType != null) {
-						contentTypes.add(contentType);
-					}
-				} catch (CoreException e) {
-					if (!(e.getCause() instanceof java.io.FileNotFoundException)) {
-						//the content type may be based on path or file name pattern or another subsystem via the ContentTypeManager
-						// so that is not an error condition
-						//otherwise, account for some other unknown CoreException
-						LanguageServerPlugin.logError("Exception occurred while fetching the content type from the buffer", e); //$NON-NLS-1$;
-					}
+		ITextFileBuffer buffer = toBuffer(document);
+		if (buffer != null) {
+			try {
+				// may be a more specific content-type, relying on some content-type factory and actual content (not just name)
+				IContentType contentType = buffer.getContentType();
+				if (contentType != null) {
+					contentTypes.add(contentType);
+				}
+			} catch (CoreException e) {
+				if (!(e.getCause() instanceof java.io.FileNotFoundException)) {
+					//the content type may be based on path or file name pattern or another subsystem via the ContentTypeManager
+					// so that is not an error condition
+					//otherwise, account for some other unknown CoreException
+					LanguageServerPlugin.logError("Exception occurred while fetching the content type from the buffer", e); //$NON-NLS-1$;
 				}
 			}
 		}
 
-		String fileName = getFileName(document);
+		String fileName = getFileName(buffer);
 		if (fileName != null) {
 			try (var contents = new DocumentInputStream(document)) {
 				contentTypes
