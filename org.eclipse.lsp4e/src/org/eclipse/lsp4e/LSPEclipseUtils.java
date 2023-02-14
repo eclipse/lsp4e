@@ -1061,6 +1061,13 @@ public final class LSPEclipseUtils {
 		if(path != null) {
 			return path.lastSegment();
 		}
+		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+		if (bufferManager != null) {
+			ITextFileBuffer buffer = bufferManager.getTextFileBuffer(document);
+			if (buffer != null && buffer.getFileStore() != null) {
+				return buffer.getFileStore().getName();
+			}
+		}
 		return null;
 	}
 
