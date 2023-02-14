@@ -40,11 +40,11 @@ import org.eclipse.jface.viewers.TreeSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.outline.LSSymbolsContentProvider.OutlineViewerInput;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -71,22 +71,22 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	private final IDocument document;
 
 	@NonNull
-	private final LanguageServer languageServer;
+	private final LanguageServerWrapper wrapper;
 
-	public CNFOutlinePage(@NonNull LanguageServer languageServer, @Nullable ITextEditor textEditor) {
+	public CNFOutlinePage(@NonNull LanguageServerWrapper wrapper, @Nullable ITextEditor textEditor) {
 		preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 		preferences.addPreferenceChangeListener(this);
 		this.textEditor = textEditor;
 		this.textEditorViewer = LSPEclipseUtils.getTextViewer(textEditor);
 		this.document = LSPEclipseUtils.getDocument(textEditor);
-		this.languageServer = languageServer;
+		this.wrapper = wrapper;
 	}
 
 	@Override
 	public void createControl(Composite parent) {
 		outlineViewer = new CommonViewer(ID, parent, SWT.NONE);
 		if (document != null) {
-			outlineViewer.setInput(new OutlineViewerInput(document, languageServer, textEditor));
+			outlineViewer.setInput(new OutlineViewerInput(document, wrapper, textEditor));
 		}
 		outlineViewer.setSorter(new CommonViewerSorter());
 		outlineViewer.getLabelProvider().addListener(this);

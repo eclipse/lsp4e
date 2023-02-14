@@ -8,10 +8,11 @@
  */
 package org.eclipse.lsp4e.test.outline;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
 import static org.junit.Assert.assertFalse;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.stream.Collectors;
@@ -25,6 +26,8 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4e.test.AllCleanRule;
@@ -49,7 +52,7 @@ public class OutlineContentTest {
 	public AllCleanRule rule = new AllCleanRule();
 
 	@Test
-	public void testOutlineSorting() throws CoreException {
+	public void testOutlineSorting() throws CoreException, IOException {
 		IProject project = TestUtils
 				.createProject("OutlineContentTest_testOutlineSorting" + System.currentTimeMillis());
 		IFile testFile = TestUtils.createUniqueTestFile(project, "content\n does\n not\n matter\n but needs to cover the ranges described below");
@@ -70,7 +73,9 @@ public class OutlineContentTest {
 		prefs.putBoolean(CNFOutlinePage.SORT_OUTLINE_PREFERENCE, false);
 
 		ITextEditor editor = (ITextEditor) TestUtils.openEditor(testFile);
-		CNFOutlinePage outlinePage = new CNFOutlinePage(MockLanguageServer.INSTANCE, editor);
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, request -> true).iterator().next();
+
+		CNFOutlinePage outlinePage = new CNFOutlinePage(wrapper, editor);
 		Shell shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
 		shell.setLayout(new FillLayout());
 		outlinePage.createControl(shell);
@@ -101,7 +106,7 @@ public class OutlineContentTest {
 	}
 
 	@Test
-	public void testNodeRemainExpandedUponSelection() throws CoreException {
+	public void testNodeRemainExpandedUponSelection() throws CoreException, IOException {
 		IProject project = TestUtils
 				.createProject("OutlineContentTest_testNodeRemainExpandedUponSelection" + System.currentTimeMillis());
 		IFile testFile = TestUtils.createUniqueTestFile(project, "a(b())");
@@ -112,7 +117,9 @@ public class OutlineContentTest {
 								new Range(new Position(0, 2), new Position(0, 5)),
 								new Range(new Position(0, 2), new Position(0, 3))))));
 		ITextEditor editor = (ITextEditor) TestUtils.openEditor(testFile);
-		CNFOutlinePage outlinePage = new CNFOutlinePage(MockLanguageServer.INSTANCE, editor);
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, request -> true).iterator().next();
+
+		CNFOutlinePage outlinePage = new CNFOutlinePage(wrapper, editor);
 		Shell shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
 		shell.setLayout(new FillLayout());
 		outlinePage.createControl(shell);
@@ -137,7 +144,7 @@ public class OutlineContentTest {
 	}
 
 	@Test
-	public void testNodeRemainExpandedUponModification() throws CoreException, BadLocationException {
+	public void testNodeRemainExpandedUponModification() throws CoreException, BadLocationException, IOException {
 		IProject project = TestUtils.createProject(
 				"OutlineContentTest_testNodeRemainExpandedUponModification" + System.currentTimeMillis());
 		IFile testFile = TestUtils.createUniqueTestFile(project, "a(b())");
@@ -148,7 +155,9 @@ public class OutlineContentTest {
 								new Range(new Position(0, 2), new Position(0, 5)),
 								new Range(new Position(0, 2), new Position(0, 3))))));
 		ITextEditor editor = (ITextEditor) TestUtils.openEditor(testFile);
-		CNFOutlinePage outlinePage = new CNFOutlinePage(MockLanguageServer.INSTANCE, editor);
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, request -> true).iterator().next();
+
+		CNFOutlinePage outlinePage = new CNFOutlinePage(wrapper, editor);
 		Shell shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
 		shell.setLayout(new FillLayout());
 		outlinePage.createControl(shell);
