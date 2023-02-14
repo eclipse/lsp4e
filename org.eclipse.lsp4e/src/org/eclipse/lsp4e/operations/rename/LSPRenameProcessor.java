@@ -16,6 +16,7 @@ package org.eclipse.lsp4e.operations.rename;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
@@ -110,9 +111,13 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 					final var params = new PrepareRenameParams();
 					params.setTextDocument(identifier);
 					params.setPosition(LSPEclipseUtils.toPosition(offset, document));
-					prepareRenameResult = languageServer.getTextDocumentService().prepareRename(params).get(1000, TimeUnit.MILLISECONDS);
-					if (prepareRenameResult == null) {
-						status.addFatalError(Messages.rename_invalidated);
+					try {
+						prepareRenameResult = languageServer.getTextDocumentService().prepareRename(params).get(1000, TimeUnit.MILLISECONDS);
+						if (prepareRenameResult == null) {
+							status.addFatalError(Messages.rename_invalidated);
+						}
+					} catch (TimeoutException e) {
+						LanguageServerPlugin.logWarning("Could not prepare rename due to timeout after 1 seconds in `textDocument/prepareRename`. 'newName' will be used", e); //$NON-NLS-1$
 					}
 				}
 			}
