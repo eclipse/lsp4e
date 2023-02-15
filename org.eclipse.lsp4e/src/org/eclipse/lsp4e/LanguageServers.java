@@ -21,6 +21,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -194,14 +196,29 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return this.filter;
 	}
 
+	protected Boolean matches(@NonNull CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture) {
+		try {
+			return wrapperFuture.thenApply(Objects::nonNull).get(50, TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.ExecutionException e) {
+			LanguageServerPlugin.logError(e);
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning("Could not get language server due to timeout after 50 milliseconds", e); //$NON-NLS-1$
+			return Boolean.TRUE;
+		}
+		return Boolean.FALSE;
+	}
+
 	/**
+	 *  Waits if necessary for at most 50 milliseconds for getting a server, if that is not enough it is assumed that
+	 *  the server would be matching, and we rely on the next call of to executor to filter the server if needed.
 	 *
-	 * @return True if there is a language server for this project/document & server capabilities
+	 * @return True if there is a language server for this project/document & server capabilities.
 	 */
 	public boolean anyMatching() {
-		// TODO: should maybe have a default timeout for this...?
-		// Use CF::getNow with a default null?
-		return getServers().stream().map(CompletableFuture::join).anyMatch(Objects::nonNull);
+		return getServers().stream().filter(this::matches).count() != 0;
 	}
 
 
@@ -267,7 +284,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		@Override
 		public boolean anyMatching() {
 			return LanguageServiceAccessor.getLSWrappers(document).stream()
-					.map(this::filter).map(CompletableFuture::join).anyMatch(Objects::nonNull);
+					.map(this::filter).filter(this::matches).count() != 0;
 		}
 
 		@Override
