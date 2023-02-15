@@ -22,6 +22,7 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.LSSymbolsContentProvider;
 import org.eclipse.lsp4e.outline.LSSymbolsContentProvider.OutlineViewerInput;
@@ -31,7 +32,6 @@ import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Composite;
@@ -50,9 +50,9 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 	private final ITextEditor textEditor;
 
 	public LSPSymbolInFileDialog(@NonNull Shell parentShell, @NonNull ITextEditor textEditor,
-			@NonNull IDocument document, @NonNull LanguageServer languageServer) {
+			@NonNull IDocument document, @NonNull LanguageServerWrapper wrapper) {
 		super(parentShell, PopupDialog.INFOPOPUPRESIZE_SHELLSTYLE, true, true, true, false, false, null, null);
-		outlineViewerInput = new OutlineViewerInput(document, languageServer, textEditor);
+		outlineViewerInput = new OutlineViewerInput(document, wrapper, textEditor);
 		this.textEditor = textEditor;
 		create();
 	}

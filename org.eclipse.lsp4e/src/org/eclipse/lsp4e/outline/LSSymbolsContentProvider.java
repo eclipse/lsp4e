@@ -28,6 +28,7 @@ import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.DocumentEvent;
@@ -47,12 +48,12 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonContentProvider;
@@ -67,7 +68,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	public static final class OutlineViewerInput {
 
 		public final IDocument document;
-		public final LanguageServer languageServer;
+		public final LanguageServerWrapper wrapper;
 
 		@Nullable
 		public final ITextEditor textEditor;
@@ -78,7 +79,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		@Nullable
 		private final URI documentURI;
 
-		public OutlineViewerInput(IDocument document, LanguageServer languageServer, @Nullable ITextEditor textEditor) {
+		public OutlineViewerInput(IDocument document, @NonNull LanguageServerWrapper wrapper, @Nullable ITextEditor textEditor) {
 			this.document = document;
 			IPath path = LSPEclipseUtils.toPath(document);
 			if (path == null) {
@@ -89,7 +90,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 				documentFile = file;
 				documentURI = file == null ? null : LSPEclipseUtils.toUri(file);
 			}
-			this.languageServer = languageServer;
+			this.wrapper = wrapper;
 			this.textEditor = textEditor;
 		}
 	}
@@ -303,7 +304,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		}
 
 		final var params = new DocumentSymbolParams(LSPEclipseUtils.toTextDocumentIdentifier(documentURI));
-		symbols = outlineViewerInput.languageServer.getTextDocumentService().documentSymbol(params);
+		symbols = outlineViewerInput.wrapper.execute(ls -> ls.getTextDocumentService().documentSymbol(params));
 		symbols.thenAcceptAsync(response -> {
 			symbolsModel.update(response);
 			lastError = null;
