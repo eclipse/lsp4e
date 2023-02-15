@@ -15,6 +15,7 @@ package org.eclipse.lsp4e.outline;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -63,7 +64,10 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 							.withFilter(capabilities -> LSPEclipseUtils
 									.hasCapability(capabilities.getDocumentSymbolProvider())).computeFirst((w,ls) -> CompletableFuture.completedFuture(w));
 					try {
-						server = languageServer.get(50, TimeUnit.MILLISECONDS).get();
+						return languageServer.get(50, TimeUnit.MILLISECONDS).filter(Objects::nonNull)
+								.filter(LanguageServerWrapper::isActive)
+								.map(s -> adapterType.cast(createOutlinePage(editorPart, s)))
+								.orElse(null);
 					} catch (TimeoutException e) {
 						refreshContentOutlineAsync(languageServer, editorPart);
 					} catch (ExecutionException e) {
@@ -71,11 +75,6 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 					} catch (InterruptedException e) {
 						LanguageServerPlugin.logError(e);
 						Thread.currentThread().interrupt();
-					}
-
-					// TODO consider other strategies (select, merge...?)
-					if (server != null && server.isActive()) {
-						return adapterType.cast(createOutlinePage(editorPart, server));
 					}
 				}
 			}
