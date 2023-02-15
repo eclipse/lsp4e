@@ -218,7 +218,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return True if there is a language server for this project/document & server capabilities.
 	 */
 	public boolean anyMatching() {
-		return getServers().stream().filter(this::matches).count() != 0;
+		return getServers().stream().filter(this::matches).findFirst().isPresent();
 	}
 
 
@@ -284,7 +284,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		@Override
 		public boolean anyMatching() {
 			return LanguageServiceAccessor.getLSWrappers(document).stream()
-					.map(this::filter).filter(this::matches).count() != 0;
+					.map(this::filter).filter(this::matches).findFirst().isPresent();
 		}
 
 		@Override
