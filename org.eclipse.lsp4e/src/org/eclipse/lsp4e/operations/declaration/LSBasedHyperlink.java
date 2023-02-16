@@ -86,9 +86,7 @@ public class LSBasedHyperlink implements IHyperlink {
 				else if (uri.startsWith(LSPEclipseUtils.INTRO_URL)) {
 					return getIntroUrlBasedLabel(uri);
 				}
-				else if (uri.startsWith(LSPEclipseUtils.HTTP)) {
-					return getHttpBasedLabel(uri);
-				}
+				return getGenericUriBasedLabel(uri);
 			}
 		}
 
@@ -112,7 +110,7 @@ public class LSBasedHyperlink implements IHyperlink {
 		return Messages.hyperlinkLabel;
 	}
 
-	private String getHttpBasedLabel(String uri) {
+	private String getGenericUriBasedLabel(String uri) {
 		return Messages.hyperlinkLabel + " - " + uri; //$NON-NLS-1$
 	}
 
