@@ -669,7 +669,6 @@ public class LanguageServerWrapper {
 	 */
 	private CompletableFuture<LanguageServer> connect(@NonNull URI uri, IDocument document) throws IOException {
 		removeStopTimer();
-		System.err.println("Connect initiated by " + whoCalledMe()); //$NON-NLS-1$
 		if (this.connectedDocuments.containsKey(uri)) {
 			return CompletableFuture.completedFuture(languageServer);
 		}
@@ -697,17 +696,6 @@ public class LanguageServerWrapper {
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
 			}
 		}).thenApply(theVoid -> languageServer);
-	}
-
-	public static String whoCalledMe() {
-		for (var el : Thread.currentThread().getStackTrace()) {
-			var callingClass = el.getClassName();
-			if (!callingClass.equals(LanguageServerWrapper.class.getCanonicalName()) && callingClass.contains("lsp4e") && !callingClass.contains("LanguageServers") //$NON-NLS-1$ //$NON-NLS-2$
-					&& !callingClass.contains("Accessor") ) { //$NON-NLS-1$
-				return callingClass + " :: " + el.getMethodName() + " : " + el.getLineNumber();   //$NON-NLS-1$//$NON-NLS-2$
-			}
-		}
-		return ""; //$NON-NLS-1$
 	}
 
 	/**
