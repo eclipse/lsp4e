@@ -11,44 +11,32 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.WeakHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.filebuffers.IDocumentSetupParticipant;
 import org.eclipse.core.filebuffers.IDocumentSetupParticipantExtension;
-import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBufferManager;
 import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.text.IDocument;
 
 /**
- * Startup the language servers that can be used by the document.
+ * Implements a file buffer lifecycle hook: when a document is opened in the IDE, ensure that all LS that deal with this document's
+ * content type are started. For many LS this is not needed, as other features such as outlining or semantic highlighting will also
+ * be set up when the editor is configured, and all such features will trigger a connect before requesting data from the server.
+ * However lightweight LS (i.e. linters and other supplementary servers that only e.g. contribute diagnostic markers) will not
+ * support such rich functionality and so need an explicit connect so that they can begin their analysis.
  *
  */
 public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumentSetupParticipant, IDocumentSetupParticipantExtension {
-	private final Map<IPath, Job> locationMap = new HashMap<>();
-	private static final Set<Job> SUBMITTED_JOBS = new HashSet<>();
+	private static final WeakHashMap<CompletableFuture<?>, Void> PENDING_CONNECTIONS = new WeakHashMap<>();
 
 	public ConnectDocumentToLanguageServerSetupParticipant() {
-
-		ITextFileBufferManager.DEFAULT.addFileBufferListener(new FileBufferListenerAdapter() {
-			@Override
-			public void bufferDisposed(IFileBuffer buffer) {
-				Job job = locationMap.remove(buffer.getLocation());
-				if (job != null) {
-					job.cancel();
-				}
-			}
-		});
 	}
 
 	@Override
@@ -65,37 +53,8 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 		if (document == null) {
 			return;
 		}
-		final var job = new Job("Initialize Language Servers for " + location.toFile().getName()) { //$NON-NLS-1$
-			@Override
-			protected IStatus run(IProgressMonitor monitor) {
-				ITextFileBuffer buffer = ITextFileBufferManager.DEFAULT.getTextFileBuffer(document);
-				if (buffer == null || buffer.getLocation() == null) { // document no more relevant
-					SUBMITTED_JOBS.remove(this);
-					return Status.OK_STATUS;
-				}
-				if (monitor.isCanceled()) {
-					SUBMITTED_JOBS.remove(this);
-					return Status.CANCEL_STATUS;
-				}
-				// connect to LS so they start receiving notifications and pushing diagnostics
-				LanguageServiceAccessor.getLanguageServers(document, capabilities -> true)
-					.thenRun(() -> {
-						locationMap.remove(location);
-					});
-				SUBMITTED_JOBS.remove(this);
-				return Status.OK_STATUS;
-			}
-
-			@Override
-			protected void canceling() {
-				SUBMITTED_JOBS.remove(this);
-			}
-		};
-		SUBMITTED_JOBS.add(job);
-		locationMap.put(location, job);
-		job.setUser(true);
-		job.setPriority(Job.INTERACTIVE);
-		job.schedule(100); // give some time to populate doc and associate it with the IFile
+		// Force document connect
+		PENDING_CONNECTIONS.put(LanguageServers.forDocument(document).collectAll(ls -> CompletableFuture.completedFuture(null)), null);
 	}
 
 	/**
@@ -103,11 +62,10 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 	 * jobs trying to attach to them
 	 */
 	public static void waitForAll() {
-		SUBMITTED_JOBS.forEach(job -> {
-			job.cancel();
+		PENDING_CONNECTIONS.forEach((cf, dummy) -> {
 			try {
-				job.join(1000, new NullProgressMonitor());
-			} catch (InterruptedException e) {
+				cf.get(1000, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException | ExecutionException | TimeoutException e) {
 				LanguageServerPlugin.logInfo("Interrupted trying to cancel document setup"); //$NON-NLS-1$;
 			}
 		});

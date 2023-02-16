@@ -359,14 +359,13 @@
          </includes>
       </viewerContentBinding>
    </extension>
-   <!--
    <extension
          point="org.eclipse.core.filebuffers.documentSetup">
       <participant
             class="org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant"
             contentTypeId="org.eclipse.core.runtime.text">
       </participant>
-   </extension> -->
+   </extension>
    <extension point="org.eclipse.ui.editors.annotationTypes">
       <type name="org.eclipse.lsp4e.read"></type>
       <type name="org.eclipse.lsp4e.write"></type>

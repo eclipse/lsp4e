@@ -614,8 +614,6 @@ public class LanguageServiceAccessor {
 	@NonNull
 	public static CompletableFuture<List<@NonNull LanguageServer>> getLanguageServers(@NonNull IDocument document,
 			Predicate<ServerCapabilities> filter) {
-		System.err.println("Connect initiated by " + LanguageServerWrapper.whoCalledMe()); //$NON-NLS-1$
-
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
 			return CompletableFuture.completedFuture(Collections.emptyList());
