@@ -15,6 +15,7 @@ package org.eclipse.lsp4e;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -164,6 +165,11 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return result.thenApplyAsync(Function.identity());
 	}
 
+	public @NonNull E withComparator(final @Nullable Comparator<? super LanguageServerWrapper> comparator) {
+		this.comparator = comparator;
+		return (E)this;
+	}
+
 	/**
 	 * Specifies the capabilities that a server must have to process this request
 	 * @param filter Server capabilities predicate
@@ -271,10 +277,15 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		@Override
 		protected @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
 			// Compute list of servers from document & filter
-			return LanguageServiceAccessor.getLSWrappers(document).stream()
-				.map(this::filter)
-				.map(this::connect)
-				.toList();
+			Collection<LanguageServerWrapper> wrappers;
+			if (comparator != null) {
+				List<LanguageServerWrapper> temp = new ArrayList<>(LanguageServiceAccessor.getLSWrappers(document));
+				temp.sort(comparator);
+				wrappers = temp;
+			} else {
+				wrappers = LanguageServiceAccessor.getLSWrappers(document);
+			}
+			return wrappers.stream().map(this::filter).map(this::connect).toList();
 		}
 
 		@Override
@@ -332,8 +343,13 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		@Override
 		protected @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
 			// Compute list of servers from project & filter
-			List<@NonNull CompletableFuture<LanguageServerWrapper>> wrappers = new ArrayList<>();
-			for (LanguageServerWrapper wrapper :  LanguageServiceAccessor.getStartedWrappers(project, getFilter(), !restartStopped)) {
+			List<@NonNull LanguageServerWrapper> startedWrappers = LanguageServiceAccessor.getStartedWrappers(project, getFilter(), !restartStopped);
+			if (comparator != null) {
+				startedWrappers.sort(comparator);
+			}
+
+			List<@NonNull CompletableFuture<LanguageServerWrapper>> wrappers = new ArrayList<>(startedWrappers.size());
+			for (LanguageServerWrapper wrapper :  startedWrappers) {
 				wrappers.add(wrapper.getInitializedServer().thenApply(ls -> wrapper));
 			}
 			return wrappers;
@@ -442,4 +458,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	}
 
 	private @NonNull Predicate<ServerCapabilities> filter = s -> true;
+
+	protected @Nullable Comparator<? super LanguageServerWrapper> comparator;
 }
