@@ -257,7 +257,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 						LanguageServerPlugin.logError(e);
 					}
 				}
-				return CompletableFuture.completedFuture(wrapper);
+				return CompletableFuture.completedFuture(null);
 			});
 		}
 
