@@ -97,21 +97,22 @@ public class FindReferencesTest {
 		long delay = System.currentTimeMillis() - time;
 		// TODO re-use the UI freeze monitoring org.eclipse.ui.monitoring instead
 		assertTrue("Find references blocked UI for " + delay + "ms", delay < uiFreezeThreesholdreezeThreeshold);
-		AtomicInteger runCount = new AtomicInteger();
+		AtomicInteger blockedCount = new AtomicInteger();
 		Thread uiThreadActiveChecker = new Thread(() -> {
 			while (!Thread.currentThread().isInterrupted()) {
 				long triggerTime = System.currentTimeMillis();
 				PlatformUI.getWorkbench().getDisplay().syncExec(() -> {
-					runCount.incrementAndGet();
 					long uiThreadRequestTime = System.currentTimeMillis() - triggerTime;
-					assertTrue("UI Thread blocked for " + uiThreadRequestTime, uiThreadRequestTime < uiFreezeThreesholdreezeThreeshold);
+					if (uiThreadRequestTime > uiFreezeThreesholdreezeThreeshold) {
+						blockedCount.incrementAndGet();
+					}
 				});
 			}
 		});
 		uiThreadActiveChecker.start();
 		try {
 			assertNotNull("Search Result view not found", findSearchResultView(5000));
-			assertTrue("UI Thread was frozen", runCount.intValue() > 1000);
+			assertTrue("UI Thread was frozen " + blockedCount + " times", blockedCount.intValue() == 0);
 		} finally {
 			uiThreadActiveChecker.interrupt();
 		}
