@@ -97,6 +97,7 @@ import org.eclipse.lsp4j.FoldingRangeCapabilities;
 import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
+import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.InitializedParams;
 import org.eclipse.lsp4j.InlayHintCapabilities;
 import org.eclipse.lsp4j.InsertTextMode;
@@ -301,7 +302,7 @@ public class LanguageServerWrapper {
 					throw new RuntimeException(e);
 				}
 				return null;
-			}).thenApply(unused -> {
+			}).thenRun(() -> {
 				languageClient = serverDefinition.createLanguageClient();
 
 				initParams.setProcessId((int) ProcessHandle.current().pid());
@@ -331,88 +332,9 @@ public class LanguageServerWrapper {
 				this.languageServer = launcher.getRemoteProxy();
 				languageClient.connect(languageServer, this);
 				this.launcherFuture = launcher.startListening();
-				return null;
-			}).thenCompose(unused -> {
-				String name = "Eclipse IDE"; //$NON-NLS-1$
-				if (Platform.getProduct() != null) {
-					name = Platform.getProduct().getName();
-				}
-				final var workspaceClientCapabilities = new WorkspaceClientCapabilities();
-				workspaceClientCapabilities.setApplyEdit(Boolean.TRUE);
-				workspaceClientCapabilities.setConfiguration(Boolean.TRUE);
-				workspaceClientCapabilities.setExecuteCommand(new ExecuteCommandCapabilities(Boolean.TRUE));
-				workspaceClientCapabilities.setSymbol(new SymbolCapabilities(Boolean.TRUE));
-				workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);
-				WorkspaceEditCapabilities editCapabilities = new WorkspaceEditCapabilities();
-				editCapabilities.setDocumentChanges(Boolean.TRUE);
-				editCapabilities.setResourceOperations(Arrays.asList(ResourceOperationKind.Create,
-						ResourceOperationKind.Delete, ResourceOperationKind.Rename));
-				editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
-				workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
-				final var textDocumentClientCapabilities = new TextDocumentClientCapabilities();
-				final var codeAction = new CodeActionCapabilities(new CodeActionLiteralSupportCapabilities(
-						new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix, CodeActionKind.Refactor,
-								CodeActionKind.RefactorExtract, CodeActionKind.RefactorInline,
-								CodeActionKind.RefactorRewrite, CodeActionKind.Source,
-								CodeActionKind.SourceOrganizeImports))),
-						true);
-				codeAction.setDataSupport(true);
-				codeAction.setResolveSupport(new CodeActionResolveSupportCapabilities(List.of("edit"))); //$NON-NLS-1$
-				textDocumentClientCapabilities.setCodeAction(codeAction);
-				textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
-				textDocumentClientCapabilities.setInlayHint(new InlayHintCapabilities());
-				textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
-				final var completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);
-				completionItemCapabilities
-						.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
-				completionItemCapabilities.setInsertTextModeSupport(new CompletionItemInsertTextModeSupportCapabilities(List.of(InsertTextMode.AsIs, InsertTextMode.AdjustIndentation)));
-				completionItemCapabilities.setResolveSupport(new CompletionItemResolveSupportCapabilities(List.of("documentation", "detail", "additionalTextEdits"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(completionItemCapabilities));
-				final var definitionCapabilities = new DefinitionCapabilities();
-				definitionCapabilities.setLinkSupport(Boolean.TRUE);
-				textDocumentClientCapabilities.setDefinition(definitionCapabilities);
-				final var typeDefinitionCapabilities = new TypeDefinitionCapabilities();
-				typeDefinitionCapabilities.setLinkSupport(Boolean.TRUE);
-				textDocumentClientCapabilities.setTypeDefinition(typeDefinitionCapabilities);
-				textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
-				textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
-				final var documentSymbol = new DocumentSymbolCapabilities();
-				documentSymbol.setHierarchicalDocumentSymbolSupport(true);
-				documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.Array,
-						SymbolKind.Boolean, SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor,
-						SymbolKind.Enum, SymbolKind.EnumMember, SymbolKind.Event, SymbolKind.Field, SymbolKind.File,
-						SymbolKind.Function, SymbolKind.Interface, SymbolKind.Key, SymbolKind.Method, SymbolKind.Module,
-						SymbolKind.Namespace, SymbolKind.Null, SymbolKind.Number, SymbolKind.Object,
-						SymbolKind.Operator, SymbolKind.Package, SymbolKind.Property, SymbolKind.String,
-						SymbolKind.Struct, SymbolKind.TypeParameter, SymbolKind.Variable)));
-				textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
-				textDocumentClientCapabilities.setFoldingRange(new FoldingRangeCapabilities());
-				textDocumentClientCapabilities.setFormatting(new FormattingCapabilities(Boolean.TRUE));
-				final var hoverCapabilities = new HoverCapabilities();
-				hoverCapabilities.setContentFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
-				textDocumentClientCapabilities.setHover(hoverCapabilities);
-				textDocumentClientCapabilities.setOnTypeFormatting(null); // TODO
-				textDocumentClientCapabilities.setRangeFormatting(new RangeFormattingCapabilities());
-				textDocumentClientCapabilities.setReferences(new ReferencesCapabilities());
-				final var renameCapabilities = new RenameCapabilities();
-				renameCapabilities.setPrepareSupport(true);
-				textDocumentClientCapabilities.setRename(renameCapabilities);
-				textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
-				textDocumentClientCapabilities
-						.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
-
-				WindowClientCapabilities windowClientCapabilities = getWindowClientCapabilities();
-				initParams.setCapabilities(new ClientCapabilities(
-						workspaceClientCapabilities,
-						textDocumentClientCapabilities,
-						windowClientCapabilities,
-						lspStreamProvider.getExperimentalFeaturesPOJO()));
-				initParams.setClientInfo(getClientInfo(name));
-				initParams.setTrace(this.lspStreamProvider.getTrace(rootURI));
-
-				// no then...Async future here as we want this chain of operation to be sequential and "atomic"-ish
-				return languageServer.initialize(initParams);
-			}).thenAccept(res -> {
+			})
+			.thenCompose(unused -> initServer(rootURI))
+			.thenAccept(res -> {
 				serverCapabilities = res.getCapabilities();
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
 			}).thenRun(() -> {
@@ -437,6 +359,88 @@ public class LanguageServerWrapper {
 				return null;
 			});
 		}
+	}
+
+	private CompletableFuture<InitializeResult> initServer(final URI rootURI) {
+		String name = "Eclipse IDE"; //$NON-NLS-1$
+		if (Platform.getProduct() != null) {
+			name = Platform.getProduct().getName();
+		}
+		final var workspaceClientCapabilities = new WorkspaceClientCapabilities();
+		workspaceClientCapabilities.setApplyEdit(Boolean.TRUE);
+		workspaceClientCapabilities.setConfiguration(Boolean.TRUE);
+		workspaceClientCapabilities.setExecuteCommand(new ExecuteCommandCapabilities(Boolean.TRUE));
+		workspaceClientCapabilities.setSymbol(new SymbolCapabilities(Boolean.TRUE));
+		workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);
+		WorkspaceEditCapabilities editCapabilities = new WorkspaceEditCapabilities();
+		editCapabilities.setDocumentChanges(Boolean.TRUE);
+		editCapabilities.setResourceOperations(Arrays.asList(ResourceOperationKind.Create,
+				ResourceOperationKind.Delete, ResourceOperationKind.Rename));
+		editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
+		workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
+		final var textDocumentClientCapabilities = new TextDocumentClientCapabilities();
+		final var codeAction = new CodeActionCapabilities(new CodeActionLiteralSupportCapabilities(
+				new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix, CodeActionKind.Refactor,
+						CodeActionKind.RefactorExtract, CodeActionKind.RefactorInline,
+						CodeActionKind.RefactorRewrite, CodeActionKind.Source,
+						CodeActionKind.SourceOrganizeImports))),
+				true);
+		codeAction.setDataSupport(true);
+		codeAction.setResolveSupport(new CodeActionResolveSupportCapabilities(List.of("edit"))); //$NON-NLS-1$
+		textDocumentClientCapabilities.setCodeAction(codeAction);
+		textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
+		textDocumentClientCapabilities.setInlayHint(new InlayHintCapabilities());
+		textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
+		final var completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);
+		completionItemCapabilities
+				.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
+		completionItemCapabilities.setInsertTextModeSupport(new CompletionItemInsertTextModeSupportCapabilities(List.of(InsertTextMode.AsIs, InsertTextMode.AdjustIndentation)));
+		completionItemCapabilities.setResolveSupport(new CompletionItemResolveSupportCapabilities(List.of("documentation", "detail", "additionalTextEdits"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(completionItemCapabilities));
+		final var definitionCapabilities = new DefinitionCapabilities();
+		definitionCapabilities.setLinkSupport(Boolean.TRUE);
+		textDocumentClientCapabilities.setDefinition(definitionCapabilities);
+		final var typeDefinitionCapabilities = new TypeDefinitionCapabilities();
+		typeDefinitionCapabilities.setLinkSupport(Boolean.TRUE);
+		textDocumentClientCapabilities.setTypeDefinition(typeDefinitionCapabilities);
+		textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
+		textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
+		final var documentSymbol = new DocumentSymbolCapabilities();
+		documentSymbol.setHierarchicalDocumentSymbolSupport(true);
+		documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.Array,
+				SymbolKind.Boolean, SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor,
+				SymbolKind.Enum, SymbolKind.EnumMember, SymbolKind.Event, SymbolKind.Field, SymbolKind.File,
+				SymbolKind.Function, SymbolKind.Interface, SymbolKind.Key, SymbolKind.Method, SymbolKind.Module,
+				SymbolKind.Namespace, SymbolKind.Null, SymbolKind.Number, SymbolKind.Object,
+				SymbolKind.Operator, SymbolKind.Package, SymbolKind.Property, SymbolKind.String,
+				SymbolKind.Struct, SymbolKind.TypeParameter, SymbolKind.Variable)));
+		textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
+		textDocumentClientCapabilities.setFoldingRange(new FoldingRangeCapabilities());
+		textDocumentClientCapabilities.setFormatting(new FormattingCapabilities(Boolean.TRUE));
+		final var hoverCapabilities = new HoverCapabilities();
+		hoverCapabilities.setContentFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
+		textDocumentClientCapabilities.setHover(hoverCapabilities);
+		textDocumentClientCapabilities.setOnTypeFormatting(null); // TODO
+		textDocumentClientCapabilities.setRangeFormatting(new RangeFormattingCapabilities());
+		textDocumentClientCapabilities.setReferences(new ReferencesCapabilities());
+		final var renameCapabilities = new RenameCapabilities();
+		renameCapabilities.setPrepareSupport(true);
+		textDocumentClientCapabilities.setRename(renameCapabilities);
+		textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
+		textDocumentClientCapabilities
+				.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
+
+		WindowClientCapabilities windowClientCapabilities = getWindowClientCapabilities();
+		initParams.setCapabilities(new ClientCapabilities(
+				workspaceClientCapabilities,
+				textDocumentClientCapabilities,
+				windowClientCapabilities,
+				lspStreamProvider.getExperimentalFeaturesPOJO()));
+		initParams.setClientInfo(getClientInfo(name));
+		initParams.setTrace(this.lspStreamProvider.getTrace(rootURI));
+
+		// no then...Async future here as we want this chain of operation to be sequential and "atomic"-ish
+		return languageServer.initialize(initParams);
 	}
 
 	private ClientInfo getClientInfo(String name) {
