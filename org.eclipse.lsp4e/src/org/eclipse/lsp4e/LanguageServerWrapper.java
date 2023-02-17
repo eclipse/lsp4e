@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,64 +65,27 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.internal.SupportedFeatures;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.ClientInfo;
-import org.eclipse.lsp4j.CodeActionCapabilities;
-import org.eclipse.lsp4j.CodeActionKind;
-import org.eclipse.lsp4j.CodeActionKindCapabilities;
-import org.eclipse.lsp4j.CodeActionLiteralSupportCapabilities;
 import org.eclipse.lsp4j.CodeActionOptions;
-import org.eclipse.lsp4j.CodeActionResolveSupportCapabilities;
-import org.eclipse.lsp4j.CodeLensCapabilities;
-import org.eclipse.lsp4j.ColorProviderCapabilities;
-import org.eclipse.lsp4j.CompletionCapabilities;
-import org.eclipse.lsp4j.CompletionItemCapabilities;
-import org.eclipse.lsp4j.CompletionItemInsertTextModeSupportCapabilities;
-import org.eclipse.lsp4j.CompletionItemResolveSupportCapabilities;
-import org.eclipse.lsp4j.DefinitionCapabilities;
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
 import org.eclipse.lsp4j.DocumentFormattingOptions;
-import org.eclipse.lsp4j.DocumentHighlightCapabilities;
-import org.eclipse.lsp4j.DocumentLinkCapabilities;
 import org.eclipse.lsp4j.DocumentRangeFormattingOptions;
-import org.eclipse.lsp4j.DocumentSymbolCapabilities;
-import org.eclipse.lsp4j.ExecuteCommandCapabilities;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
-import org.eclipse.lsp4j.FailureHandlingKind;
-import org.eclipse.lsp4j.FoldingRangeCapabilities;
-import org.eclipse.lsp4j.FormattingCapabilities;
-import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.InitializedParams;
-import org.eclipse.lsp4j.InlayHintCapabilities;
-import org.eclipse.lsp4j.InsertTextMode;
-import org.eclipse.lsp4j.MarkupKind;
-import org.eclipse.lsp4j.RangeFormattingCapabilities;
-import org.eclipse.lsp4j.ReferencesCapabilities;
 import org.eclipse.lsp4j.Registration;
 import org.eclipse.lsp4j.RegistrationParams;
-import org.eclipse.lsp4j.RenameCapabilities;
-import org.eclipse.lsp4j.ResourceOperationKind;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.ShowDocumentCapabilities;
-import org.eclipse.lsp4j.SignatureHelpCapabilities;
-import org.eclipse.lsp4j.SymbolCapabilities;
-import org.eclipse.lsp4j.SymbolKind;
-import org.eclipse.lsp4j.SymbolKindCapabilities;
-import org.eclipse.lsp4j.SynchronizationCapabilities;
-import org.eclipse.lsp4j.TextDocumentClientCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
-import org.eclipse.lsp4j.TypeDefinitionCapabilities;
 import org.eclipse.lsp4j.UnregistrationParams;
 import org.eclipse.lsp4j.WindowClientCapabilities;
-import org.eclipse.lsp4j.WindowShowMessageRequestCapabilities;
-import org.eclipse.lsp4j.WorkspaceClientCapabilities;
-import org.eclipse.lsp4j.WorkspaceEditCapabilities;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
@@ -362,75 +324,12 @@ public class LanguageServerWrapper {
 	}
 
 	private CompletableFuture<InitializeResult> initServer(final URI rootURI) {
-		String name = "Eclipse IDE"; //$NON-NLS-1$
-		if (Platform.getProduct() != null) {
-			name = Platform.getProduct().getName();
-		}
-		final var workspaceClientCapabilities = new WorkspaceClientCapabilities();
-		workspaceClientCapabilities.setApplyEdit(Boolean.TRUE);
-		workspaceClientCapabilities.setConfiguration(Boolean.TRUE);
-		workspaceClientCapabilities.setExecuteCommand(new ExecuteCommandCapabilities(Boolean.TRUE));
-		workspaceClientCapabilities.setSymbol(new SymbolCapabilities(Boolean.TRUE));
-		workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);
-		WorkspaceEditCapabilities editCapabilities = new WorkspaceEditCapabilities();
-		editCapabilities.setDocumentChanges(Boolean.TRUE);
-		editCapabilities.setResourceOperations(Arrays.asList(ResourceOperationKind.Create,
-				ResourceOperationKind.Delete, ResourceOperationKind.Rename));
-		editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
-		workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
-		final var textDocumentClientCapabilities = new TextDocumentClientCapabilities();
-		final var codeAction = new CodeActionCapabilities(new CodeActionLiteralSupportCapabilities(
-				new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix, CodeActionKind.Refactor,
-						CodeActionKind.RefactorExtract, CodeActionKind.RefactorInline,
-						CodeActionKind.RefactorRewrite, CodeActionKind.Source,
-						CodeActionKind.SourceOrganizeImports))),
-				true);
-		codeAction.setDataSupport(true);
-		codeAction.setResolveSupport(new CodeActionResolveSupportCapabilities(List.of("edit"))); //$NON-NLS-1$
-		textDocumentClientCapabilities.setCodeAction(codeAction);
-		textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
-		textDocumentClientCapabilities.setInlayHint(new InlayHintCapabilities());
-		textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
-		final var completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);
-		completionItemCapabilities
-				.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
-		completionItemCapabilities.setInsertTextModeSupport(new CompletionItemInsertTextModeSupportCapabilities(List.of(InsertTextMode.AsIs, InsertTextMode.AdjustIndentation)));
-		completionItemCapabilities.setResolveSupport(new CompletionItemResolveSupportCapabilities(List.of("documentation", "detail", "additionalTextEdits"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(completionItemCapabilities));
-		final var definitionCapabilities = new DefinitionCapabilities();
-		definitionCapabilities.setLinkSupport(Boolean.TRUE);
-		textDocumentClientCapabilities.setDefinition(definitionCapabilities);
-		final var typeDefinitionCapabilities = new TypeDefinitionCapabilities();
-		typeDefinitionCapabilities.setLinkSupport(Boolean.TRUE);
-		textDocumentClientCapabilities.setTypeDefinition(typeDefinitionCapabilities);
-		textDocumentClientCapabilities.setDocumentHighlight(new DocumentHighlightCapabilities());
-		textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
-		final var documentSymbol = new DocumentSymbolCapabilities();
-		documentSymbol.setHierarchicalDocumentSymbolSupport(true);
-		documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.Array,
-				SymbolKind.Boolean, SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor,
-				SymbolKind.Enum, SymbolKind.EnumMember, SymbolKind.Event, SymbolKind.Field, SymbolKind.File,
-				SymbolKind.Function, SymbolKind.Interface, SymbolKind.Key, SymbolKind.Method, SymbolKind.Module,
-				SymbolKind.Namespace, SymbolKind.Null, SymbolKind.Number, SymbolKind.Object,
-				SymbolKind.Operator, SymbolKind.Package, SymbolKind.Property, SymbolKind.String,
-				SymbolKind.Struct, SymbolKind.TypeParameter, SymbolKind.Variable)));
-		textDocumentClientCapabilities.setDocumentSymbol(documentSymbol);
-		textDocumentClientCapabilities.setFoldingRange(new FoldingRangeCapabilities());
-		textDocumentClientCapabilities.setFormatting(new FormattingCapabilities(Boolean.TRUE));
-		final var hoverCapabilities = new HoverCapabilities();
-		hoverCapabilities.setContentFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
-		textDocumentClientCapabilities.setHover(hoverCapabilities);
-		textDocumentClientCapabilities.setOnTypeFormatting(null); // TODO
-		textDocumentClientCapabilities.setRangeFormatting(new RangeFormattingCapabilities());
-		textDocumentClientCapabilities.setReferences(new ReferencesCapabilities());
-		final var renameCapabilities = new RenameCapabilities();
-		renameCapabilities.setPrepareSupport(true);
-		textDocumentClientCapabilities.setRename(renameCapabilities);
-		textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
-		textDocumentClientCapabilities
-				.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
+		final String name = Platform.getProduct() != null ? Platform.getProduct().getName() : "Eclipse IDE"; //$NON-NLS-1$
 
-		WindowClientCapabilities windowClientCapabilities = getWindowClientCapabilities();
+		final var workspaceClientCapabilities = SupportedFeatures.getWorkspaceClientCapabilities();
+		final var textDocumentClientCapabilities = SupportedFeatures.getTextDocumentClientCapabilities();
+
+		WindowClientCapabilities windowClientCapabilities = SupportedFeatures.getWindowClientCapabilities();
 		initParams.setCapabilities(new ClientCapabilities(
 				workspaceClientCapabilities,
 				textDocumentClientCapabilities,
@@ -447,14 +346,6 @@ public class LanguageServerWrapper {
 		String pluginVersion = Platform.getBundle(LanguageServerPlugin.PLUGIN_ID).getVersion().toString();
 		final var clientInfo = new ClientInfo(name, pluginVersion);
 		return clientInfo;
-	}
-
-	private WindowClientCapabilities getWindowClientCapabilities() {
-		final var windowClientCapabilities = new WindowClientCapabilities();
-		windowClientCapabilities.setShowDocument(new ShowDocumentCapabilities(true));
-		windowClientCapabilities.setWorkDoneProgress(true);
-		windowClientCapabilities.setShowMessage(new WindowShowMessageRequestCapabilities());
-		return windowClientCapabilities;
 	}
 
 	@Nullable
