@@ -29,6 +29,8 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
@@ -55,27 +57,23 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 				IDocument document = LSPEclipseUtils.getDocument(textEditor);
 				if (document != null) {
 					Shell shell = part.getSite().getShell();
-					return LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
-							.thenAcceptAsync(languageServers -> {
-								if (languageServers.isEmpty()) {
-									return;
-								}
-								int offset = textSelection.getOffset();
-								// TODO consider better strategy to pick LS, or iterate over LS until one gives
-								// 	a good result
-								final var processor = new LSPRenameProcessor(document, languageServers.get(0), offset);
-								final var refactoring = new ProcessorBasedRefactoring(processor);
-								final var wizard = new LSPRenameRefactoringWizard(refactoring);
-								final var operation = new RefactoringWizardOpenOperation(wizard);
-								shell.getDisplay().asyncExec(() -> {
-									try {
-										operation.run(shell, Messages.rename_title);
-									} catch (InterruptedException e1) {
-										LanguageServerPlugin.logError(e1);
-										Thread.currentThread().interrupt();
-									}
-								});
-							});
+					LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPRenameHandler::isRenameProvider);
+					if (executor.anyMatching()) {
+						int offset = textSelection.getOffset();
+
+						final var processor = new LSPRenameProcessor(document, offset);
+						final var refactoring = new ProcessorBasedRefactoring(processor);
+						final var wizard = new LSPRenameRefactoringWizard(refactoring);
+						final var operation = new RefactoringWizardOpenOperation(wizard);
+						shell.getDisplay().asyncExec(() -> {
+							try {
+								operation.run(shell, Messages.rename_title);
+							} catch (InterruptedException e1) {
+								LanguageServerPlugin.logError(e1);
+								Thread.currentThread().interrupt();
+							}
+						});
+					}
 				}
 			}
 		}
@@ -99,7 +97,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 				try {
 					isEnable = !LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
 							.get(50, TimeUnit.MILLISECONDS).isEmpty();
-				} catch (java.util.concurrent.ExecutionException | TimeoutException e) {
+				} catch (TimeoutException e) {
 
 					// in case the language servers take longer to kick in, defer the enablement to
 					// a later time
@@ -109,12 +107,14 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 								final var handleEvent = new HandlerEvent(this, enabled, false);
 								fireHandlerChanged(handleEvent);
 							});
-
 					isEnable = false;
 
 				} catch (InterruptedException e) {
 					LanguageServerPlugin.logError(e);
 					Thread.currentThread().interrupt();
+					isEnable = false;
+				} catch (java.util.concurrent.ExecutionException e) {
+					LanguageServerPlugin.logError(e);
 					isEnable = false;
 				}
 			}

@@ -13,8 +13,7 @@
  */
 package org.eclipse.lsp4e.operations.rename;
 
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -29,7 +28,9 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.PrepareRenameDefaultBehavior;
 import org.eclipse.lsp4j.PrepareRenameParams;
@@ -43,7 +44,6 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.Either3;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.participants.CheckConditionsContext;
@@ -59,18 +59,18 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 
 	private static final String ID = "org.eclipse.lsp4e.operations.rename"; //$NON-NLS-1$
 
-	private final IDocument document;
-	private final LanguageServer languageServer;
+	private final @NonNull IDocument document;
 	private final int offset;
+
+	private LanguageServerWrapper refactoringServer;
 
 	private String newName;
 
 	private WorkspaceEdit rename;
 	private Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior> prepareRenameResult;
 
-	public LSPRenameProcessor(@NonNull IDocument document, LanguageServer languageServer, int offset) {
+	public LSPRenameProcessor(@NonNull IDocument document, int offset) {
 		this.document = document;
-		this.languageServer = languageServer;
 		this.offset = offset;
 	}
 
@@ -99,28 +99,28 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 			throws CoreException, OperationCanceledException {
 		final var status = new RefactoringStatus();
 
-		if (document == null) {
-			return status;
-		}
 		try {
-			CompletableFuture<List<LanguageServer>> serverList = LanguageServiceAccessor.getLanguageServers(document, LSPRenameProcessor::isPrepareRenameProvider) ;
-			for (LanguageServer serverToTry : serverList.get(500, TimeUnit.MILLISECONDS)) {
-				// check if prepareRename is supported by the active LSP
-				if (languageServer.equals(serverToTry)) {
-					final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
-					final var params = new PrepareRenameParams();
-					params.setTextDocument(identifier);
-					params.setPosition(LSPEclipseUtils.toPosition(offset, document));
-					try {
-						prepareRenameResult = languageServer.getTextDocumentService().prepareRename(params).get(1000, TimeUnit.MILLISECONDS);
-						if (prepareRenameResult == null) {
-							status.addFatalError(Messages.rename_invalidated);
-						}
-					} catch (TimeoutException e) {
-						LanguageServerPlugin.logWarning("Could not prepare rename due to timeout after 1 seconds in `textDocument/prepareRename`. 'newName' will be used", e); //$NON-NLS-1$
-					}
-				}
+			final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
+			final var params = new PrepareRenameParams();
+			params.setTextDocument(identifier);
+			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
+
+
+			Optional<Pair<LanguageServerWrapper, Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior>>> tmp
+				= LanguageServers.forDocument(document).withFilter(LSPRenameProcessor::isPrepareRenameProvider)
+				.computeFirst((w, ls) -> ls.getTextDocumentService().prepareRename(params).thenApply(result -> new Pair<>(w, result)))
+				.get(1000, TimeUnit.MILLISECONDS);
+
+			if (tmp.isEmpty() || tmp.get().getSecond() == null) {
+				status.addFatalError(Messages.rename_invalidated);
+			} else {
+				tmp.ifPresent(p -> {
+					refactoringServer = p.getFirst();
+					prepareRenameResult = p.getSecond();
+				});
 			}
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning("Could not prepare rename due to timeout after 1 seconds in `textDocument/prepareRename`. 'newName' will be used", e); //$NON-NLS-1$
 		} catch (Exception e) {
 			status.addFatalError(getErrorMessage(e));
 		}
@@ -171,11 +171,17 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 			identifier.setUri(LSPEclipseUtils.toUri(document).toString());
 			params.setTextDocument(identifier);
 			params.setNewName(newName);
-			if (params.getNewName() != null) {
+			if (params.getNewName() != null && refactoringServer != null) {
 				// TODO: how to manage ltk with CompletableFuture? Is 1000 ms is enough?
-				rename = languageServer.getTextDocumentService().rename(params).get(1000, TimeUnit.MILLISECONDS);
+				if (refactoringServer != null) {
+					rename = refactoringServer.execute(ls -> ls.getTextDocumentService().rename(params)).get(1000, TimeUnit.MILLISECONDS);
+				} else {
+					// Prepare timed out so we don't have a preferred server, so just try all the servers again
+					rename = LanguageServers.forDocument(document).withFilter(LSPRenameHandler::isRenameProvider)
+							.computeFirst(ls -> ls.getTextDocumentService().rename(params)).get(1000, TimeUnit.MILLISECONDS).orElse(null);
+				}
 				if (!status.hasError() && (rename == null
-						|| (rename.getChanges().isEmpty() && rename.getDocumentChanges().isEmpty()))) {
+ 						|| (rename.getChanges().isEmpty() && rename.getDocumentChanges().isEmpty()))) {
 					status.addWarning(Messages.rename_empty_message);
 				}
 			}
