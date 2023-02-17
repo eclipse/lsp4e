@@ -61,7 +61,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 					if (executor.anyMatching()) {
 						int offset = textSelection.getOffset();
 
-						final var processor = new LSPRenameProcessor(document, executor, offset);
+						final var processor = new LSPRenameProcessor(document, offset);
 						final var refactoring = new ProcessorBasedRefactoring(processor);
 						final var wizard = new LSPRenameRefactoringWizard(refactoring);
 						final var operation = new RefactoringWizardOpenOperation(wizard);

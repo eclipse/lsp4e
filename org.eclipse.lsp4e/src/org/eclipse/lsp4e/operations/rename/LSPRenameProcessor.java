@@ -28,7 +28,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
-import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.PrepareRenameDefaultBehavior;
@@ -61,8 +61,6 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	private final IDocument document;
 	private final int offset;
 
-	private final LanguageServerDocumentExecutor initialExecutor;
-
 	private LanguageServerWrapper refactoringServer;
 
 	private String newName;
@@ -70,9 +68,8 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	private WorkspaceEdit rename;
 	private Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior> prepareRenameResult;
 
-	public LSPRenameProcessor(@NonNull IDocument document, LanguageServerDocumentExecutor executor, int offset) {
+	public LSPRenameProcessor(@NonNull IDocument document, int offset) {
 		this.document = document;
-		this.initialExecutor = executor;
 		this.offset = offset;
 	}
 
@@ -111,7 +108,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
 
 
-			Optional<Pair<LanguageServerWrapper, Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior>>> tmp = initialExecutor.withFilter(LSPRenameProcessor::isPrepareRenameProvider)
+			Optional<Pair<LanguageServerWrapper, Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior>>> tmp = LanguageServers.forDocument(document).withFilter(LSPRenameProcessor::isPrepareRenameProvider)
 				.computeFirst((w, ls) -> ls.getTextDocumentService().prepareRename(params).thenApply(result -> new Pair<>(w, result))).get(500, TimeUnit.MILLISECONDS);
 
 			if (tmp.isEmpty() || tmp.get().getSecond() == null) {
