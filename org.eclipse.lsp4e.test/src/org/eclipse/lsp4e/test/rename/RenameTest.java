@@ -42,9 +42,6 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServers;
-import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
-import org.eclipse.lsp4e.operations.rename.LSPRenameHandler;
 import org.eclipse.lsp4e.operations.rename.LSPRenameProcessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -118,8 +115,7 @@ public class RenameTest {
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
-		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPRenameHandler::isRenameProvider);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, executor, 0);
+		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
 		processor.setNewName("new");
 		try {
 			ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
@@ -138,8 +134,7 @@ public class RenameTest {
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
-		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPRenameHandler::isRenameProvider);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, executor, 0);
+		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
 		processor.setNewName("new");
 		try {
 			ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
@@ -159,8 +154,7 @@ public class RenameTest {
 		MockLanguageServer.INSTANCE.getTextDocumentService().setPrepareRenameResult(null);
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
-		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPRenameHandler::isRenameProvider);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, executor, 0);
+		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
 		processor.setNewName("new");
 
 		try {
@@ -182,8 +176,7 @@ public class RenameTest {
 			manager.connectFileStore(store, new NullProgressMonitor());
 			IDocument document = ((ITextFileBuffer)manager.getFileStoreFileBuffer(store)).getDocument();
 			document.set("old");
-			LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPRenameHandler::isRenameProvider);
-			LSPRenameProcessor processor = new LSPRenameProcessor(document, executor, 0);
+			LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
 			processor.setNewName("new");
 			try {
 				ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
@@ -210,8 +203,7 @@ public class RenameTest {
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(new WorkspaceEdit(edits));
 		IDocument document = LSPEclipseUtils.getDocument(workspaceFile);
 		assertNotNull(document);
-		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPRenameHandler::isRenameProvider);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, executor, 0);
+		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
 		processor.setNewName("new");
 		try {
 			ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
@@ -273,8 +265,7 @@ public class RenameTest {
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
-		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPRenameHandler::isRenameProvider);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, executor, 0);
+		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
 		
 		try {
 			processor.checkInitialConditions(new NullProgressMonitor());
@@ -293,8 +284,7 @@ public class RenameTest {
 		MockLanguageServer.INSTANCE.getTextDocumentService().setPrepareRenameResult(Either.forLeft(range));
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
-		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPRenameHandler::isRenameProvider);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, executor, 0);
+		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
 		
 		try {
 			processor.checkInitialConditions(new NullProgressMonitor());

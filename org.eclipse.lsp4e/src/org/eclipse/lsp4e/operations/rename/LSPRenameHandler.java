@@ -97,7 +97,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 				try {
 					isEnable = !LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
 							.get(50, TimeUnit.MILLISECONDS).isEmpty();
-				} catch (java.util.concurrent.ExecutionException | TimeoutException e) {
+				} catch (TimeoutException e) {
 
 					// in case the language servers take longer to kick in, defer the enablement to
 					// a later time
@@ -107,12 +107,14 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 								final var handleEvent = new HandlerEvent(this, enabled, false);
 								fireHandlerChanged(handleEvent);
 							});
-
 					isEnable = false;
 
 				} catch (InterruptedException e) {
 					LanguageServerPlugin.logError(e);
 					Thread.currentThread().interrupt();
+					isEnable = false;
+				} catch (java.util.concurrent.ExecutionException e) {
+					LanguageServerPlugin.logError(e);
 					isEnable = false;
 				}
 			}
