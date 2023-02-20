@@ -16,7 +16,7 @@ import org.eclipse.jface.text.contentassist.ContextInformation;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionOptions;
 import org.eclipse.lsp4j.Command;
@@ -32,10 +32,10 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 	private CodeAction fcodeAction;
 	private Command fcommand;
 	private String fdisplayString;
-	private final LSPDocumentInfo finfo;
+	private final LanguageServerWrapper serverWrapper;
 
-	public CodeActionCompletionProposal(Either<Command, CodeAction> command, LSPDocumentInfo info) {
-		this.finfo = info;
+	public CodeActionCompletionProposal(Either<Command, CodeAction> command, LanguageServerWrapper serverWrapper) {
+		this.serverWrapper = serverWrapper;
 		if (command.isLeft()) {
 			fcommand = command.getLeft();
 			fdisplayString = fcommand.getTitle();
@@ -63,9 +63,9 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 	@Override
 	public void apply(IDocument document) {
 		if (fcodeAction != null) {
-			if (isCodeActionResolveSupported(finfo.getCapabilites()) && fcodeAction.getEdit() == null) {
+			if (isCodeActionResolveSupported(serverWrapper.getServerCapabilities()) && fcodeAction.getEdit() == null) {
 				// Unresolved code action "edit" property. Resolve it.
-				finfo.getInitializedLanguageClient().thenComposeAsync(ls -> ls.getTextDocumentService().resolveCodeAction(fcodeAction)).thenAccept(this::apply);
+				serverWrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(fcodeAction)).thenAccept(this::apply);
 			} else {
 				apply(fcodeAction);
 			}
@@ -113,15 +113,14 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 	}
 
 	private void executeCommand(Command command) {
-		ServerCapabilities capabilities = this.finfo.getCapabilites();
+		ServerCapabilities capabilities = this.serverWrapper.getServerCapabilities();
 		if (capabilities != null) {
 			ExecuteCommandOptions provider = capabilities.getExecuteCommandProvider();
 			if (provider != null && provider.getCommands().contains(command.getCommand())) {
 				final var params = new ExecuteCommandParams();
 				params.setCommand(command.getCommand());
 				params.setArguments(command.getArguments());
-				this.finfo.getInitializedLanguageClient()
-						.thenAcceptAsync(ls -> ls.getWorkspaceService().executeCommand(params));
+				this.serverWrapper.execute(ls -> ls.getWorkspaceService().executeCommand(params));
 			}
 		}
 	}
