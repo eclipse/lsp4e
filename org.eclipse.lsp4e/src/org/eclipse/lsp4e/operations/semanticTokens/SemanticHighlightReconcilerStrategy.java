@@ -36,6 +36,7 @@ import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4j.Position;
@@ -139,6 +140,7 @@ public class SemanticHighlightReconcilerStrategy
 		if (disabled) {
 			return;
 		}
+		cancelSemanticTokensFull();
 		semanticTokensDataStreamProcessor = null;
 		if (viewer instanceof final TextViewer textViewerImpl) {
 			textViewerImpl.removeTextPresentationListener(this);
@@ -149,7 +151,7 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private @NonNull Function<Position, Integer> offsetMapper() {
-		return (p) -> {
+		return p -> {
 			try {
 				return LSPEclipseUtils.toOffset(p, document);
 			} catch (BadLocationException e) {
@@ -260,7 +262,9 @@ public class SemanticHighlightReconcilerStrategy
 							versionedSemanticTokens.apply(this::saveStyle, this::invalidateTextPresentation);
 						});
 			} catch (ExecutionException e) {
-				LanguageServerPlugin.logError(e);
+				if (!CancellationUtil.isRequestCancelledException(e)) {
+					LanguageServerPlugin.logError(e);
+				}
 			} catch (InterruptedException e) {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
