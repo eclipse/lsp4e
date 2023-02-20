@@ -18,6 +18,7 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextListener;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.TextEvent;
+import org.eclipse.jface.text.TextUtilities;
 import org.eclipse.swt.custom.StyleRange;
 
 /**
@@ -62,7 +63,7 @@ public class StyleRangeHolder implements ITextListener {
 			// style when applied to the presentation
 			// and we want the ones saved from the reconciling as immutable
 			return previousRanges.stream()//
-					.filter(r -> overlaps(r, region))//
+					.filter(r -> TextUtilities.overlaps(region, new Region(r.start, r.length)))//
 					.map(this::clone).toArray(StyleRange[]::new);
 		}
 	}
@@ -74,17 +75,8 @@ public class StyleRangeHolder implements ITextListener {
 		return clonedStyleRange;
 	}
 
-	private boolean isContained(final int offset, final StyleRange range) {
-		return offset >= range.start && offset < (range.start + range.length);
-	}
-
 	private boolean isContained(final int offset, final IRegion region) {
 		return offset >= region.getOffset() && offset < (region.getOffset() + region.getLength());
-	}
-
-	private boolean overlaps(final StyleRange range, final IRegion region) {
-		return isContained(range.start, region) || isContained(range.start + range.length, region)
-				|| isContained(region.getOffset(), range);
 	}
 
 	@Override
