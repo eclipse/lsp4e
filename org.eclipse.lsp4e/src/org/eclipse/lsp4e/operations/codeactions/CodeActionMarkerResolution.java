@@ -69,7 +69,7 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 			try {
 				LanguageServerWrapper wrapper = definition != null ? LanguageServiceAccessor.getLSWrapper(marker.getResource().getProject(), definition) : null;
 				if (wrapper != null && CodeActionCompletionProposal.isCodeActionResolveSupported(wrapper.getServerCapabilities())) {
-					this.codeAction = wrapper.getInitializedServer().thenComposeAsync(theLs -> theLs.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
+					this.codeAction = wrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
 				}
 			} catch (IOException | TimeoutException | ExecutionException | InterruptedException ex) {
 				LanguageServerPlugin.logError(ex);
