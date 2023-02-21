@@ -162,7 +162,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 
 		CompletionItem completionItem = createCompletionItem("test", CompletionItemKind.Class, range);
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				completionItem, info.getLanguageClient());
+				completionItem, info.getLanguageServerWrapper());
 		// Blank input ''
 		assertEquals("", completionProposal.getDocumentFilter());
 		assertEquals(0, completionProposal.getRankScore());
@@ -178,7 +178,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 
 		document.set("prefix:pnd");
 		completionItem = createCompletionItem("append", CompletionItemKind.Class);
-		completionProposal = new LSCompletionProposal(document, 7, completionItem, info.getLanguageClient());
+		completionProposal = new LSCompletionProposal(document, 7, completionItem, info.getLanguageServerWrapper());
 		// Blank input 'prefix:'
 		assertEquals("", completionProposal.getDocumentFilter());
 		assertEquals(0, completionProposal.getRankScore());

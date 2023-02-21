@@ -13,7 +13,12 @@
 package org.eclipse.lsp4e.test.completion;
 
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
@@ -492,7 +497,7 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		// The completion ': 1.0.1' was given, then the user types a 's', which is used
 		// as a filter and removes the completion
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0, new CompletionItem(": 1.0.1"),
-				info.getLanguageClient());
+				info.getLanguageServerWrapper());
 		assertTrue(completionProposal.isValidFor(document, 6));
 		assertFalse(completionProposal.isValidFor(document, 7));
 	}
