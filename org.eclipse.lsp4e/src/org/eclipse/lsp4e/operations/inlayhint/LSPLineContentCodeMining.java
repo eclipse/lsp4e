@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2022 Red Hat Inc. and others.
+ * Copyright (c) 2022-23 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -21,26 +21,24 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.codemining.LineContentCodeMining;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4j.InlayHint;
 import org.eclipse.lsp4j.InlayHintLabelPart;
 import org.eclipse.lsp4j.InlayHintRegistrationOptions;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.services.LanguageServer;
 
 public class LSPLineContentCodeMining extends LineContentCodeMining {
 
 	private InlayHint inlayHint;
-	private final LanguageServer languageServer;
+	private final LanguageServerWrapper wrapper;
 
-	public LSPLineContentCodeMining(InlayHint inlayHint, IDocument document, LanguageServer languageServer,
-			LanguageServerDefinition languageServerDefinition, InlayHintProvider provider) throws BadLocationException {
+	public LSPLineContentCodeMining(InlayHint inlayHint, IDocument document, LanguageServerWrapper languageServerWrapper,
+			InlayHintProvider provider) throws BadLocationException {
 		super(toPosition(inlayHint.getPosition(), document), provider);
 		this.inlayHint = inlayHint;
-		this.languageServer = languageServer;
+		this.wrapper = languageServerWrapper;
 		setLabel(getInlayHintString(inlayHint));
 	}
 
@@ -56,16 +54,16 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 
 	@Override
 	protected CompletableFuture<Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
-		if (!LanguageServiceAccessor.checkCapability(languageServer, LSPLineContentCodeMining::canResolveInlayHint)) {
-			return CompletableFuture.completedFuture(null);
+		if (wrapper.isActive() && canResolveInlayHint(wrapper.getServerCapabilities())) {
+			return wrapper.execute(ls -> ls.getTextDocumentService().resolveInlayHint(this.inlayHint)
+					.thenAcceptAsync(resolvedInlayHint -> {
+						inlayHint = resolvedInlayHint;
+						if (resolvedInlayHint != null) {
+							setLabel(getInlayHintString(resolvedInlayHint));
+						}
+					}));
 		}
-		return languageServer.getTextDocumentService().resolveInlayHint(this.inlayHint)
-				.thenAcceptAsync(resolvedInlayHint -> {
-					inlayHint = resolvedInlayHint;
-					if (resolvedInlayHint != null) {
-						setLabel(getInlayHintString(resolvedInlayHint));
-					}
-				});
+		return CompletableFuture.completedFuture(null);
 	}
 
 	private static boolean canResolveInlayHint(ServerCapabilities capabilities) {
