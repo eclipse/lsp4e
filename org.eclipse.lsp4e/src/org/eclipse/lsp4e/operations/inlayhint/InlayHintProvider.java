@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2022 Red Hat Inc. and others.
+ * Copyright (c) 2022-23 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -24,12 +24,13 @@ import org.eclipse.jface.text.codemining.AbstractCodeMiningProvider;
 import org.eclipse.jface.text.codemining.ICodeMining;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4j.InlayHint;
 import org.eclipse.lsp4j.InlayHintParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.lsp4j.ServerCapabilities;
 
 public class InlayHintProvider extends AbstractCodeMiningProvider {
 
@@ -47,30 +48,25 @@ public class InlayHintProvider extends AbstractCodeMiningProvider {
 			Range viewPortRange = new Range(new Position(0,0), end);
 			InlayHintParams param = new InlayHintParams(LSPEclipseUtils.toTextDocumentIdentifier(docURI), viewPortRange);
 			List<LSPLineContentCodeMining> inlayHintResults = Collections.synchronizedList(new ArrayList<>());
-			return LanguageServiceAccessor
-					.getLanguageServers(document, capabilities -> capabilities.getInlayHintProvider() != null)
-					.thenComposeAsync(languageServers -> CompletableFuture
-							.allOf(languageServers.stream().map(languageServer -> languageServer
-									.getTextDocumentService().inlayHint(param).thenAcceptAsync(inlayHints -> {
-										// textDocument/inlayHint may return null
-										if (inlayHints != null) {
-											inlayHints.stream().filter(Objects::nonNull)
-													.map(inlayHint -> toCodeMining(document, languageServer, inlayHint))
-													.filter(Objects::nonNull).forEach(inlayHintResults::add);
-										}
-									})).toArray(CompletableFuture[]::new)))
-					.thenApplyAsync(theVoid -> inlayHintResults);
+			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getInlayHintProvider)
+					.collectAll((w, ls) -> ls.getTextDocumentService().inlayHint(param).thenAcceptAsync(inlayHints -> {
+						// textDocument/inlayHint may return null
+						if (inlayHints != null) {
+							inlayHints.stream().filter(Objects::nonNull)
+									.map(inlayHint -> toCodeMining(document, w, inlayHint))
+									.filter(Objects::nonNull)
+									.forEach(inlayHintResults::add);
+						}
+					})).thenApplyAsync(theVoid -> inlayHintResults);
 		} else {
 			return null;
 		}
 	}
 
-	private LSPLineContentCodeMining toCodeMining(IDocument document, LanguageServer languageServer,
+	private LSPLineContentCodeMining toCodeMining(IDocument document, LanguageServerWrapper languageServerWrapper,
 			InlayHint inlayHint) {
 		try {
-			return new LSPLineContentCodeMining(inlayHint, document, languageServer,
-					LanguageServiceAccessor.resolveServerDefinition(languageServer).orElse(null),
-					InlayHintProvider.this);
+			return new LSPLineContentCodeMining(inlayHint, document, languageServerWrapper, InlayHintProvider.this);
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 			return null;
