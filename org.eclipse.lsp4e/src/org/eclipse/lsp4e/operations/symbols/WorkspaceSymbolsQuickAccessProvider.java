@@ -24,9 +24,9 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.quickaccess.IQuickAccessComputer;
 import org.eclipse.ui.quickaccess.IQuickAccessComputerExtension;
 import org.eclipse.ui.quickaccess.QuickAccessElement;
@@ -34,7 +34,7 @@ import org.eclipse.ui.quickaccess.QuickAccessElement;
 public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer, IQuickAccessComputerExtension {
 
 
-	private List<@NonNull LanguageServer> usedLanguageServers;
+	private List<@NonNull LanguageServerWrapper> usedLanguageServerWrappers;
 
 	@Override
 	public QuickAccessElement[] computeElements() {
@@ -47,27 +47,27 @@ public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer
 
 	@Override
 	public boolean needsRefresh() {
-		return this.usedLanguageServers == null
-				|| !this.usedLanguageServers.equals(LanguageServiceAccessor.getActiveLanguageServers(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider())));
+		return this.usedLanguageServerWrappers == null
+				|| !this.usedLanguageServerWrappers.equals(LanguageServiceAccessor.getStartedWrappers(null, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()), true));
 	}
 
 	@Override
 	public QuickAccessElement[] computeElements(String query, IProgressMonitor monitor) {
-		this.usedLanguageServers = LanguageServiceAccessor.getActiveLanguageServers(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()));
-		if (usedLanguageServers.isEmpty()) {
+		this.usedLanguageServerWrappers = LanguageServiceAccessor.getStartedWrappers(null, capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()), true);
+		if (usedLanguageServerWrappers.isEmpty()) {
 			return new QuickAccessElement[0];
 		}
 		final var params = new WorkspaceSymbolParams(query);
 		final var res = Collections.synchronizedList(new ArrayList<QuickAccessElement>());
 
 		try {
-			CompletableFuture.allOf(usedLanguageServers.stream()
-					.map(ls -> ls.getWorkspaceService().symbol(params).thenAcceptAsync(symbols -> {
+			CompletableFuture.allOf(usedLanguageServerWrappers.stream()
+					.map(w -> w.execute(ls -> ls.getWorkspaceService().symbol(params).thenAcceptAsync(symbols -> {
 						if (symbols != null) {
 							res.addAll(LSPSymbolInWorkspaceDialog.eitherToWorkspaceSymbols(symbols).stream().map(WorkspaceSymbolQuickAccessElement::new)
 									.collect(Collectors.toList()));
 						}
-					})).toArray(CompletableFuture[]::new)).get(1, TimeUnit.SECONDS);
+					}))).toArray(CompletableFuture[]::new)).get(1, TimeUnit.SECONDS);
 		}
 		catch (ExecutionException | InterruptedException e) {
 			LanguageServerPlugin.logError(e);
