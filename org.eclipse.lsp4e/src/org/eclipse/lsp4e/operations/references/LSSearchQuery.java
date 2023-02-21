@@ -34,7 +34,6 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
@@ -61,7 +60,7 @@ public class LSSearchQuery extends FileSearchQuery {
 
 	/**
 	 * LSP search query to "Find references" from the given offset of the given
-	 * {@link LSPDocumentInfo}.
+	 * {@link LanguageServerDocumentExecutor}.
 	 *
 	 * @param offset
 	 * @param executor
