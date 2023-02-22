@@ -42,7 +42,8 @@ import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.jface.text.contentassist.IContextInformationValidator;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CompletionItem;
@@ -53,7 +54,6 @@ import org.eclipse.lsp4j.SignatureHelpOptions;
 import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SignatureInformation;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 import com.google.common.base.Strings;
@@ -65,10 +65,10 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private IDocument currentDocument;
 	private String errorMessage;
 	private final boolean errorAsCompletionItem;
-	private CompletableFuture<List<@NonNull LanguageServer>> completionLanguageServersFuture;
+	private CompletableFuture<@NonNull List<@NonNull Void>> completionLanguageServersFuture;
 	private final Object completionTriggerCharsSemaphore = new Object();
 	private char[] completionTriggerChars = new char[0];
-	private CompletableFuture<List<@NonNull LanguageServer>> contextInformationLanguageServersFuture;
+	private CompletableFuture<@NonNull List<@NonNull Void>> contextInformationLanguageServersFuture;
 	private final Object contextTriggerCharsSemaphore = new Object();
 	private char[] contextTriggerChars = new char[0];
 
@@ -104,13 +104,11 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 		List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
 		try {
-			this.completionLanguageServersFuture
-					.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
-							.map(languageServer -> languageServer.getTextDocumentService().completion(param)
-									.thenAcceptAsync(completion -> proposals
-											.addAll(toProposals(document, offset, completion, languageServer))))
-							.toArray(CompletableFuture[]::new)))
-					.get();
+			this.completionLanguageServersFuture = LanguageServers.forDocument(document)
+					.withFilter(capabilities -> capabilities.getCompletionProvider() != null)
+					.collectAll((w, ls) -> ls.getTextDocumentService().completion(param)
+							.thenAccept(completion -> proposals.addAll(toProposals(document, offset, completion, w))));
+			this.completionLanguageServersFuture.get();
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 			this.errorMessage = createErrorMessage(offset, e);
@@ -169,29 +167,22 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			this.completionTriggerChars = new char[0];
 			this.contextTriggerChars = new char[0];
 
-			this.completionLanguageServersFuture = LanguageServiceAccessor.getLanguageServers(document,
-					capabilities -> {
-						CompletionOptions provider = capabilities.getCompletionProvider();
-						if (provider != null) {
-							synchronized (this.completionTriggerCharsSemaphore) {
-								this.completionTriggerChars = mergeTriggers(this.completionTriggerChars,
-										provider.getTriggerCharacters());
-							}
-							return true;
+			this.completionLanguageServersFuture = LanguageServers.forDocument(document)
+					.withFilter(capabilities -> capabilities.getCompletionProvider() != null).collectAll((w, ls) -> {
+						CompletionOptions provider = w.getServerCapabilities().getCompletionProvider();
+						synchronized (completionTriggerCharsSemaphore) {
+							completionTriggerChars = mergeTriggers(completionTriggerChars,
+									provider.getTriggerCharacters());
 						}
-						return false;
+						return null;
 					});
-			this.contextInformationLanguageServersFuture = LanguageServiceAccessor.getLanguageServers(document,
-					capabilities -> {
-						SignatureHelpOptions provider = capabilities.getSignatureHelpProvider();
-						if (provider != null) {
-							synchronized (this.contextTriggerCharsSemaphore) {
-								this.contextTriggerChars = mergeTriggers(this.contextTriggerChars,
-										provider.getTriggerCharacters());
-							}
-							return true;
+			this.contextInformationLanguageServersFuture = LanguageServers.forDocument(document)
+					.withFilter(capabilities -> capabilities.getSignatureHelpProvider() != null).collectAll((w, ls) -> {
+						SignatureHelpOptions provider = w.getServerCapabilities().getSignatureHelpProvider();
+						synchronized (contextTriggerCharsSemaphore) {
+							contextTriggerChars = mergeTriggers(contextTriggerChars, provider.getTriggerCharacters());
 						}
-						return false;
+						return null;
 					});
 		}
 
@@ -207,7 +198,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 	}
 	private static List<ICompletionProposal> toProposals(IDocument document,
-			int offset, Either<List<CompletionItem>, CompletionList> completionList, LanguageServer languageServer) {
+			int offset, Either<List<CompletionItem>, CompletionList> completionList, LanguageServerWrapper languageServerWrapper) {
 		if (completionList == null) {
 			return Collections.emptyList();
 		}
@@ -216,7 +207,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		return items.stream() //
 				.filter(Objects::nonNull)
 				.map(item -> new LSCompletionProposal(document, offset, item,
-							languageServer, isIncomplete))
+						languageServerWrapper, isIncomplete))
 				.filter(proposal -> proposal.validate(document, offset, null))
 				.map(ICompletionProposal.class::cast)
 				.toList();
@@ -224,26 +215,30 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	@Override
 	public IContextInformation[] computeContextInformation(ITextViewer viewer, int offset) {
-		initiateLanguageServers(viewer.getDocument());
+		IDocument document = viewer.getDocument();
+		if (document == null) {
+			return new IContextInformation[] { /* TODO? show error in context information */ };
+		}
+		initiateLanguageServers(document);
 		SignatureHelpParams param;
 		try {
-			param = LSPEclipseUtils.toSignatureHelpParams(offset, viewer.getDocument());
+			param = LSPEclipseUtils.toSignatureHelpParams(offset, document);
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		}
 		List<IContextInformation> contextInformations = Collections.synchronizedList(new ArrayList<>());
 		try {
-			contextInformationLanguageServersFuture
-					.thenComposeAsync(languageServers -> CompletableFuture.allOf(languageServers.stream()
-							.map(languageServer -> languageServer.getTextDocumentService().signatureHelp(param))
-							.map(signatureHelpFuture -> signatureHelpFuture.thenAcceptAsync(signatureHelp -> {
+			this.contextInformationLanguageServersFuture = LanguageServers.forDocument(document)
+					.withFilter(capabilities -> capabilities.getSignatureHelpProvider() != null).collectAll(
+							ls -> ls.getTextDocumentService().signatureHelp(param).thenAccept(signatureHelp -> {
 								if (signatureHelp != null) {
-									signatureHelp.getSignatures().stream().map(LSContentAssistProcessor::toContextInformation)
-										.forEach(contextInformations::add);
+									signatureHelp.getSignatures().stream()
+											.map(LSContentAssistProcessor::toContextInformation)
+											.forEach(contextInformations::add);
 								}
-							})).toArray(CompletableFuture[]::new)))
-					.get(CONTEXT_INFORMATION_TIMEOUT, TimeUnit.MILLISECONDS);
+							}));
+			this.contextInformationLanguageServersFuture.get(CONTEXT_INFORMATION_TIMEOUT, TimeUnit.MILLISECONDS);
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 			return new IContextInformation[] { /* TODO? show error in context information */ };
@@ -268,7 +263,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		return contextInformation;
 	}
 
-	private void getFuture(CompletableFuture<List<@NonNull LanguageServer>> future) {
+	private void getFuture(CompletableFuture<@NonNull List<@NonNull Void>> future) {
 		if(future == null) {
 			return;
 		}

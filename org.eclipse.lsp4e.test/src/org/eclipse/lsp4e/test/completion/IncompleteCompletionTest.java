@@ -13,7 +13,10 @@
 package org.eclipse.lsp4e.test.completion;
 
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -491,7 +494,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 						|| capabilities.getSignatureHelpProvider() != null)
 				.get(0);
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				new CompletionItem("blah"), info.getLanguageClient());
+				new CompletionItem("blah"), info.getLanguageServerWrapper());
 		completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 	}
 
@@ -505,7 +508,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		CompletionItem item = new CompletionItem("blah");
 		item.setDetail("");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				item, info.getLanguageClient());
+				item, info.getLanguageServerWrapper());
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertTrue(addInfo.isEmpty());
 	}
@@ -520,7 +523,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		CompletionItem item = new CompletionItem("blah");
 		item.setDetail("detail");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				item, info.getLanguageClient());
+				item, info.getLanguageServerWrapper());
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertTrue(addInfo.indexOf("<p>detail</p>") >= 0);
 	}
@@ -535,7 +538,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		CompletionItem item = new CompletionItem("blah");
 		item.setDocumentation("");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				item, info.getLanguageClient());
+				item, info.getLanguageServerWrapper());
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertTrue(addInfo.isEmpty());
 	}
@@ -550,7 +553,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		CompletionItem item = new CompletionItem("blah");
 		item.setDocumentation("documentation");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				item, info.getLanguageClient());
+				item, info.getLanguageServerWrapper());
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertFalse(addInfo.isEmpty());
 	}

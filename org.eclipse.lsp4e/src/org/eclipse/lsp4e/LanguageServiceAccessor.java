@@ -126,6 +126,10 @@ public class LanguageServiceAccessor {
 			}
 		}
 
+		public LanguageServerWrapper getLanguageServerWrapper() {
+			return wrapper;
+		}
+
 		public int getVersion() {
 			return wrapper.getVersion(fileUri);
 		}

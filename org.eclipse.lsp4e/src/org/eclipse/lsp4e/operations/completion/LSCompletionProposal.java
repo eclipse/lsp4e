@@ -64,7 +64,7 @@ import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4e.operations.hover.FocusableBrowserInformationControl;
 import org.eclipse.lsp4e.ui.LSPImages;
@@ -76,7 +76,6 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -141,18 +140,18 @@ public class LSCompletionProposal
 	private Integer rankScore;
 	private String documentFilter;
 	private String documentFilterAddition = ""; //$NON-NLS-1$
-	private final LanguageServer languageServer;
+	private final LanguageServerWrapper languageServerWrapper;
 
 	public LSCompletionProposal(@NonNull IDocument document, int offset, @NonNull CompletionItem item,
-			LanguageServer languageServer) {
-		this(document, offset, item, languageServer, false);
+			LanguageServerWrapper languageServerWrapper) {
+		this(document, offset, item, languageServerWrapper, false);
 	}
 
 	public LSCompletionProposal(@NonNull IDocument document, int offset, @NonNull CompletionItem item,
-			LanguageServer languageServer, boolean isIncomplete) {
+			LanguageServerWrapper languageServerWrapper, boolean isIncomplete) {
 		this.item = item;
 		this.document = document;
-		this.languageServer = languageServer;
+		this.languageServerWrapper = languageServerWrapper;
 		this.initialOffset = offset;
 		this.currentOffset = offset;
 		this.bestOffset = getPrefixCompletionStart(document, offset);
@@ -323,10 +322,9 @@ public class LSCompletionProposal
 
 	@Override
 	public String getAdditionalProposalInfo(IProgressMonitor monitor) {
-		if (LanguageServiceAccessor.checkCapability(languageServer,
-				capability -> Boolean.TRUE.equals(capability.getCompletionProvider().getResolveProvider()))) {
+		if (languageServerWrapper.isActive() && languageServerWrapper.getServerCapabilities().getCompletionProvider().getResolveProvider()) {
 			try {
-				languageServer.getTextDocumentService().resolveCompletionItem(item).thenAcceptAsync(this::updateCompletionItem)
+				languageServerWrapper.execute(ls -> ls.getTextDocumentService().resolveCompletionItem(item).thenAccept(this::updateCompletionItem))
 						.get(RESOLVE_TIMEOUT, TimeUnit.MILLISECONDS);
 			} catch (ExecutionException e) {
 				LanguageServerPlugin.logError(e);
@@ -611,8 +609,7 @@ public class LSCompletionProposal
 			}
 
 			if (item.getCommand() != null) {
-				LanguageServiceAccessor.resolveServerDefinition(languageServer).map(definition -> definition.id)
-						.ifPresent(id -> CommandExecutor.executeCommand(item.getCommand(), document, id));
+				CommandExecutor.executeCommand(item.getCommand(), document, languageServerWrapper.serverDefinition.id);
 			}
 		} catch (BadLocationException ex) {
 			LanguageServerPlugin.logError(ex);
