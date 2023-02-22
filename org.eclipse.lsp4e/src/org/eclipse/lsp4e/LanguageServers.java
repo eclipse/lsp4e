@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
@@ -55,7 +54,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return Async result
 	 */
 	@NonNull
-	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
 		return collectAll((w, ls) -> fn.apply(ls));
 	}
 
@@ -72,7 +71,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return Async result
 	 */
 	@NonNull
-	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		computeVersion();
 		final CompletableFuture<@NonNull List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 		return executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll)
@@ -92,7 +91,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return A list of pending results (note that these may be null or empty)
 	 */
 	@NonNull
-	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
 		return computeAll((w, ls) -> fn.apply(ls));
 	}
 
@@ -110,7 +109,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return A list of pending results (note that these may be null or empty)
 	 */
 	@NonNull
-	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		computeVersion();
 		return getServers().stream()
 				.map(cf -> cf
@@ -128,7 +127,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return An asynchronous result that will complete with a populated <code>Optional&lt;T&gt;</code> from the first
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
-	public <T> CompletableFuture<Optional<T>> computeFirst(Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> CompletableFuture<Optional<T>> computeFirst(Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
 		return computeFirst((w, ls) -> fn.apply(ls));
 	}
 
@@ -144,7 +143,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return An asynchronous result that will complete with a populated <code>Optional&lt;T&gt;</code> from the first
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
-	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		computeVersion();
 		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
 
@@ -420,7 +419,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 	@NonNull
 	private <T> Stream<CompletableFuture<T>> executeOnServers(
-			BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletionStage<T>> fn) {
+			BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		return getServers().stream().map(cf -> cf.thenCompose(
 				w -> w == null ? CompletableFuture.completedFuture((T) null) : w.executeImpl(ls -> fn.apply(w, ls)
 		)));
