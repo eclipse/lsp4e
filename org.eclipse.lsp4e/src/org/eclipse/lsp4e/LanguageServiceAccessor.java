@@ -337,7 +337,7 @@ public class LanguageServiceAccessor {
 	}
 
 	@NonNull
-	static Collection<LanguageServerWrapper> getLSWrappers(@NonNull final IDocument document) {
+	public  static Collection<LanguageServerWrapper> getLSWrappers(@NonNull final IDocument document) {
 		final URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
 			return Collections.emptyList();

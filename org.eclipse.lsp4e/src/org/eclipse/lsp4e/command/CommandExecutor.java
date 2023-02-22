@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 
@@ -38,6 +39,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
@@ -48,7 +50,6 @@ import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
@@ -89,7 +90,7 @@ public class CommandExecutor {
 	 * @param languageServerId
 	 *            the ID of the language server for which the {@code command} is
 	 *            applicable. If {@code null}, the command will not be executed on
-	 *            the language server.
+	 *            the language client.
 	 * @return A CompletableFuture<Object> or null. A null return value means that
 	 *      'there is no known way to handle the command'. A non-null value means 'the command
 	 *      is being handled'. Therefore it is possible for a caller to determine synchronously
@@ -117,45 +118,88 @@ public class CommandExecutor {
 		return null;
 	}
 
+	/**
+	 * Will execute the given {@code command} either on a language server,
+	 * supporting the command, or on the client, if an {@link IHandler} is
+	 * registered for the ID of the command (see {@link LSPCommandHandler}). If
+	 * {@code command} is {@code null}, then this method will do nothing (returning null).
+	 * If neither the server, nor the client are able to handle the command explicitly, a
+	 * heuristic method will try to interpret the command locally.
+	 *
+	 * @param command
+	 *            the LSP Command to be executed. If {@code null} this method will
+	 *            do nothing.
+	 * @param document
+	 *            optional document for which the command was created
+	 * @param languageServerWrapper
+	 *            the Language Server Wrapper. If {@code null}, the command will not be executed on
+	 *            the language client.
+	 * @return A CompletableFuture<Object> or null. A null return value means that
+	 *      'there is no known way to handle the command'. A non-null value means 'the command
+	 *      is being handled'. Therefore it is possible for a caller to determine synchronously
+	 *      whether the callee is handling the command or not (by checking whether the return value is not null).
+	 */
+	public static CompletableFuture<Object> executeCommand(@Nullable Command command, @Nullable IDocument document,
+			LanguageServerWrapper languageServerWrapper) {
+		if (command == null) {
+			return null;
+		}
+
+		if (handlesCommand(command).test(languageServerWrapper.getServerCapabilities())) {
+			languageServerWrapper.execute(ls -> ls.getWorkspaceService()
+					.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
+		}
+
+		CompletableFuture<Object> r = executeCommandClientSide(command, document);
+		if (r!=null) {
+			return r;
+		}
+
+		// tentative fallback
+		if (command.getArguments() != null) {
+			WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), document);
+			LSPEclipseUtils.applyWorkspaceEdit(edit, command.getTitle());
+			return CompletableFuture.completedFuture(null);
+		}
+		return null;
+	}
+
 	private static CompletableFuture<Object> executeCommandServerSide(@NonNull Command command, @Nullable String languageServerId,
 			@Nullable IDocument document) {
 		@Nullable LanguageServerDefinition languageServerDefinition = languageServerId == null ? null : LanguageServersRegistry.getInstance()
 				.getDefinition(languageServerId);
 		try {
-			CompletableFuture<LanguageServer> languageServerFuture = getLanguageServerForCommand(command, document,
+			LanguageServerWrapper wrapper = getLanguageServerForCommand(command, document,
 					languageServerDefinition);
-			if (languageServerFuture == null) {
-				return null;
+			if (wrapper != null) {
+				return wrapper.execute(ls -> ls.getWorkspaceService()
+						.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
 			}
-			// Server can handle command
-			return languageServerFuture.thenApplyAsync(server -> {
-				final var params = new ExecuteCommandParams();
-				params.setCommand(command.getCommand());
-				params.setArguments(command.getArguments());
-				return server.getWorkspaceService().executeCommand(params);
-			});
 		} catch (IOException e) {
 			// log and let the code fall through for LSPEclipseUtils to handle
 			LanguageServerPlugin.logError(e);
-			return null;
 		}
+		return null;
 	}
 
-	private static CompletableFuture<LanguageServer> getLanguageServerForCommand(@NonNull Command command,
+	private static LanguageServerWrapper getLanguageServerForCommand(@NonNull Command command,
 			@Nullable IDocument document, @Nullable LanguageServerDefinition languageServerDefinition) throws IOException {
 		if (document!=null && languageServerDefinition!=null) {
-			return LanguageServiceAccessor
-					.getInitializedLanguageServer(document, languageServerDefinition, serverCapabilities -> {
-						ExecuteCommandOptions provider = serverCapabilities.getExecuteCommandProvider();
-						return provider != null && provider.getCommands().contains(command.getCommand());
-					});
+			Optional<LanguageServerWrapper> wrapper = LanguageServiceAccessor.getLSWrappers(document).stream()
+					.filter(w -> w.serverDefinition.equals(languageServerDefinition))
+					.filter(w -> handlesCommand(command).test(w.getServerCapabilities()))
+					.findAny();
+			if (wrapper.isPresent()) {
+				return wrapper.get();
+			}
 		} else {
-			String id = command.getCommand();
-			List<LanguageServer> commandHandlers = LanguageServiceAccessor.getActiveLanguageServers(handlesCommand(id));
+			List<LanguageServerWrapper> commandHandlers = LanguageServiceAccessor.getStartedWrappers(null,
+					handlesCommand(command), true);
 			if (commandHandlers != null && !commandHandlers.isEmpty()) {
 				if (commandHandlers.size() == 1) {
-					return CompletableFuture.completedFuture(commandHandlers.get(0));
+					return commandHandlers.get(0);
 				} else if (commandHandlers.size() > 1) {
+					String id = command.getCommand();
 					throw new IllegalStateException("Multiple language servers have registered to handle command '"+id+"'"); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 			}
@@ -163,11 +207,11 @@ public class CommandExecutor {
 		return null;
 	}
 
-	private static Predicate<ServerCapabilities> handlesCommand(String id) {
+	private static Predicate<ServerCapabilities> handlesCommand(Command command) {
 		return serverCaps -> {
 			ExecuteCommandOptions executeCommandProvider = serverCaps.getExecuteCommandProvider();
 			if (executeCommandProvider != null) {
-				return executeCommandProvider.getCommands().contains(id);
+				return executeCommandProvider.getCommands().contains(command.getCommand());
 			}
 			return false;
 		};

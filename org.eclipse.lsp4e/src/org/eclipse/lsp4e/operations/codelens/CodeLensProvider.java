@@ -48,7 +48,7 @@ public class CodeLensProvider extends AbstractCodeMiningProvider {
 		}
 	}
 
-	private LSPCodeMining toCodeMining(IDocument document, LanguageServerWrapper languageServerWrapper, CodeLens codeLens) {
+	private LSPCodeMining toCodeMining(@NonNull IDocument document, LanguageServerWrapper languageServerWrapper, CodeLens codeLens) {
 		if (codeLens == null) {
 			return null;
 		}
