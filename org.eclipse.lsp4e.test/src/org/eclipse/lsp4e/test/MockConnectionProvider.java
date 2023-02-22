@@ -16,6 +16,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.channels.Channels;
 import java.nio.channels.Pipe;
 import java.nio.charset.StandardCharsets;
@@ -26,11 +27,14 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
+import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
+import org.eclipse.lsp4j.services.LanguageServer;
 
 public class MockConnectionProvider implements StreamConnectionProvider {
 
@@ -91,6 +95,15 @@ public class MockConnectionProvider implements StreamConnectionProvider {
 		streams.clear();
 		listener.cancel(true);
 		listener = null;
+	}
+
+	static Collection<Message> cancellations = new ArrayList<>();
+	@Override
+	public void handleMessage(Message message, LanguageServer languageServer, @Nullable URI rootURI) {
+		if (message.toString().contains("cancelRequest")) {
+			cancellations.add(message);
+		}
+		StreamConnectionProvider.super.handleMessage(message, languageServer, rootURI);
 	}
 
 }
