@@ -75,6 +75,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	@NonNull
 	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		computeVersion();
+		fn = canceller.wrap(fn);
 		final CompletableFuture<@NonNull List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 		return executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll)
 			// Ensure any subsequent computation added by caller does not block further incoming messages from language servers
@@ -113,9 +114,10 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	@NonNull
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		computeVersion();
+		final BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> wrappedFn = canceller.wrap(fn);
 		return getServers().stream()
 				.map(cf -> cf
-						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
+						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> wrappedFn.apply(w, ls)).thenApplyAsync(Function.identity())))
 				.toList();
 	}
 
@@ -147,6 +149,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		computeVersion();
+		fn = canceller.wrap(fn);
 		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
 
 		// Dispatch the request to the servers, appending a step to each such that
@@ -429,23 +432,14 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	}
 
 	/**
-	 * Wrap a call to the LS such that it can be cancelled while running
+	 * Wrap a raw <code>CompletableFuture</code> returned by the language server so
+	 * that it can be cancelled
 	 * @param <T>
-	 * @param fn
+	 * @param rawResult
 	 * @return
 	 */
-	public <T> BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> wrapCancellable(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
-		return canceller.wrap(fn);
-	}
-
-	/**
-	 * Wrap a call to the LS such that it can be cancelled while running
-	 * @param <T>
-	 * @param fn
-	 * @return
-	 */
-	public <T> Function<LanguageServer, ? extends CompletableFuture<T>> wrapCancellable(Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
-		return canceller.wrap(fn);
+	public <T> CompletableFuture<T> cancellable(CompletableFuture<T> rawResult) {
+		return canceller.wrap(rawResult);
 	}
 
 	private @NonNull Predicate<ServerCapabilities> filter = s -> true;

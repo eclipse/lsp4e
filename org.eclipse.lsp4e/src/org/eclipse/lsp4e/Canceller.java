@@ -46,23 +46,29 @@ public class Canceller {
 		return (w, ls) -> {
 			synchronized (this.lock) {
 				checkCancelled();
-				CompletableFuture<T> pending = fn.apply(w,  ls);
-				this.running.add(pending);
-
-				return pending;
+				return fn.apply(w,  ls);
 			}
 		};
 	}
 
 	public <T> Function<LanguageServer, ? extends CompletableFuture<T>> wrap(Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
 		return ls -> {
-			checkCancelled();
-			CompletableFuture<T> pending = fn.apply(ls);
-			this.running.add(pending);
-
-			return pending;
-
+			synchronized (this.lock) {
+				checkCancelled();
+				return fn.apply(ls);
+			}
 		};
+	}
+
+	public <T> CompletableFuture<T> wrap(CompletableFuture<T> raw) {
+		synchronized(this.lock) {
+			if (this.cancelled) {
+				raw.cancel(true);
+			} else {
+				this.running.add(raw);
+			}
+			return raw;
+		}
 	}
 
 }

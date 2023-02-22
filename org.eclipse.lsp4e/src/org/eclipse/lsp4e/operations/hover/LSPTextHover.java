@@ -206,11 +206,11 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 			if (this.lastExecutor != null) {
 				this.lastExecutor.cancel();
 			}
-			this.lastExecutor = LanguageServers.forDocument(document)
+			LanguageServerDocumentExecutor ex = this.lastExecutor = LanguageServers.forDocument(document)
 					.withCapability(ServerCapabilities::getHoverProvider);
 
 			this.request =
-					this.lastExecutor.collectAll(this.lastExecutor.wrapCancellable(server -> server.getTextDocumentService().hover(params)));
+					ex.collectAll(server -> ex.cancellable(server.getTextDocumentService().hover(params)));
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 		}
