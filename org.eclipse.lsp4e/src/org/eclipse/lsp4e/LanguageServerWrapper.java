@@ -30,7 +30,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -816,7 +815,7 @@ public class LanguageServerWrapper {
 	 *
 	 * @return Async result
 	 */
-	public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+	public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
 		// Send the request on the dispatch thread, then additionally make sure the response is delivered
 		// on a thread from the default ForkJoinPool. This makes sure the user can't chain on an arbitrary
 		// long-running block of code that would tie up the server response listener and prevent any more
@@ -832,7 +831,7 @@ public class LanguageServerWrapper {
 	 * @return Async result
 	 */
 	@NonNull
-	<T> CompletableFuture<T> executeImpl(@NonNull Function<LanguageServer, ? extends CompletionStage<T>> fn) {
+	<T> CompletableFuture<T> executeImpl(@NonNull Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
 		// Run the supplied function, ensuring that it is enqueued on the dispatch thread associated with the
 		// wrapped language server, and is thus guarannteed to be seen in the correct order with respect
 		// to e.g. previous document changes
