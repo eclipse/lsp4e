@@ -60,6 +60,7 @@ public class AllCleanRule extends TestWatcher {
 	}
 
 	private void clear() {
+		MockLanguageServer.INSTANCE.setTimeToProceedQueries(0);
 		// Give the platform three attempts to shut down windows
 		for (int i = 3; i > 0 && !UI.getActivePage().closeAllEditors(false); i--) {}
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
@@ -73,6 +74,7 @@ public class AllCleanRule extends TestWatcher {
 		MockLanguageServer.INSTANCE.waitBeforeTearDown();
 		LanguageServiceAccessor.clearStartedServers();
 		MockLanguageServer.reset(this.serverConfigurer);
+		MockConnectionProvider.cancellations.clear();
 		TestUtils.tearDown();
 	}
 }

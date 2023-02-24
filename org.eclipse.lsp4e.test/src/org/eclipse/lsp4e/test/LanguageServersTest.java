@@ -51,6 +51,7 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ReferenceParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -58,6 +59,7 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Assume;
 import org.junit.Before;
@@ -778,5 +780,23 @@ public class LanguageServersTest {
 		final LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document);
 
 		assertEquals(document, executor.getDocument());
+	}
+
+	@Test
+	public void testCancellable() throws Exception {
+		IFile testFile = TestUtils.createUniqueTestFile(project, "Here is some content");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 2000);
+		final IDocument document = viewer.getDocument();
+		final LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document);
+		MockLanguageServer.INSTANCE.setTimeToProceedQueries(50000);
+		LanguageServerWrapper lsWrapper = executor.computeFirst((wrapper, ls) -> CompletableFuture.completedFuture(wrapper)).get().get();
+		CompletableFuture<?> request = lsWrapper.execute(ls -> ls.getTextDocumentService().references(new ReferenceParams()));
+		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 500);
+		request.cancel(false);
+		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 100);
+		assertNotEquals(List.of(), MockConnectionProvider.cancellations);
+		MockLanguageServer.INSTANCE.setTimeToProceedQueries(3000);
 	}
 }

@@ -37,6 +37,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -811,23 +812,54 @@ public class LanguageServerWrapper {
 	 * Runs a request on the language server
 	 *
 	 * @param <T> LS response type
-	 * @param fn Code block that will be supplied the LS in a state where it is guaranteed to have been initialized
+	 * @param fn Code block that will be supplied the LS in a state where it is guaranteed to have been initialized.
+	 * This should usually be simply invoking a method of LSP4E; more complex work
+	 * like result transformation should be avoided here, because
+	 * <ul>
+	 * <li>LSP4E will cancel those futures when necessary, and the cancellation is expected to
+	 * also cancel the LSP request; so this method makes LSP4E support proper cancellation only when
+	 * the future here originates from LSP4J API (or transitively cancels the related future from LSP4J
+	 * API)
+	 * <li>This work will run on the Language Server dispatcher thread; so extraneous work will block the
+	 * thread for other work, like other pending LSP requests</li>
+	 * </ul>
 	 *
 	 * @return Async result
 	 */
 	public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
-		// Send the request on the dispatch thread, then additionally make sure the response is delivered
-		// on a thread from the default ForkJoinPool. This makes sure the user can't chain on an arbitrary
+		// Send the request on the dispatch thread
+		CompletableFuture<T> lsRequest = executeImpl(fn);
+		// then additionally make sure the response is delivered on a thread from the default ForkJoinPool.
+		// This makes sure the user can't chain on an arbitrary
 		// long-running block of code that would tie up the server response listener and prevent any more
 		// inbound messages being read
-		return executeImpl(fn).thenApplyAsync(Function.identity());
+		CompletableFuture<T> future = lsRequest.thenApplyAsync(Function.identity());
+		// and ensure cancellation of the returned future cancels the LS request (send cancel event via
+		// LSP4J)
+		future.exceptionally(t -> {
+			if (t instanceof CancellationException) {
+				lsRequest.cancel(true);
+			}
+			return (T)null;
+		});
+		return future;
 	}
 
 	/**
 	 * Runs a request on the language server. Internal hook for the LSPexecutor implementations
 	 *
 	 * @param <T> LS response type
-	 * @param fn LS method to invoke
+	 * @param fn LSP method to invoke.
+	 * This should usually be simply invoking a method of LSP4E; more complex work
+	 * like result transformation should be avoided here, because
+	 * <ul>
+	 * <li>LSP4E will cancel those futures when necessary, and the cancellation is expected to
+	 * also cancel the LSP request; so this method makes LSP4E support proper cancellation only when
+	 * the future here originates from LSP4J API (or transitively cancels the related future from LSP4J
+	 * API)
+	 * <li>This work will run on the Language Server dispatcher thread; so extraneous work will block the
+	 * thread for other work, like other pending LSP requests</li>
+	 * </ul>
 	 * @return Async result
 	 */
 	@NonNull
@@ -839,7 +871,23 @@ public class LanguageServerWrapper {
 		// Note this doesn't get the .thenApplyAsync(Function.identity()) chained on additionally, unlike
 		// the public-facing version of this method, because we trust the LSPExecutor implementations to
 		// make sure the server response thread doesn't get blocked by any further work
-		return getInitializedServer().thenComposeAsync(fn, this.dispatcher);
+		AtomicReference<CompletableFuture<T>> request = new AtomicReference<>();
+		Function<LanguageServer, CompletableFuture<T>> cancelWrapper = ls -> {
+			CompletableFuture<T> res = fn.apply(ls);
+			request.set(res);
+			return res;
+		};
+		CompletableFuture<T> res = getInitializedServer().thenComposeAsync(cancelWrapper, this.dispatcher);
+		res.exceptionally(e -> {
+			if (e instanceof CancellationException) {
+				CompletableFuture<T> stage = request.get();
+				if (stage != null) {
+					stage.cancel(false);
+				}
+			}
+			return null;
+		});
+		return res;
 	}
 
 	/**
