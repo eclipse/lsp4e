@@ -65,10 +65,11 @@ import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
-import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4e.operations.hover.FocusableBrowserInformationControl;
 import org.eclipse.lsp4e.ui.LSPImages;
+import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
+import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InsertReplaceEdit;
 import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.InsertTextMode;
@@ -609,7 +610,9 @@ public class LSCompletionProposal
 			}
 
 			if (item.getCommand() != null) {
-				CommandExecutor.executeCommand(item.getCommand(), document, languageServerWrapper.serverDefinition.id);
+				Command command = item.getCommand();
+				languageServerWrapper.execute(ls -> ls.getWorkspaceService()
+						.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));;
 			}
 		} catch (BadLocationException ex) {
 			LanguageServerPlugin.logError(ex);
