@@ -20,12 +20,12 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.semanticTokens.SemanticHighlightReconcilerStrategy;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4j.SemanticTokensLegend;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,10 +52,10 @@ public class SemanticTokensLegendProviderTest {
 		// Setup test data
 		IFile file = TestUtils.createUniqueTestFile(project, "lspt", "test content");
 		// start the LS
-		LanguageServer languageServer = LanguageServiceAccessor.getInitializedLanguageServers(file, c -> Boolean.TRUE).iterator()
-		.next().get();
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(file, c -> Boolean.TRUE).iterator()
+		.next();
 
-		SemanticTokensLegend semanticTokensLegend = (new SemanticHighlightReconcilerStrategy()).getSemanticTokensLegend(languageServer);
+		SemanticTokensLegend semanticTokensLegend = new SemanticHighlightReconcilerStrategy().getSemanticTokensLegend(wrapper);
 		assertNotNull(semanticTokensLegend);
 		assertEquals(tokenTypes, semanticTokensLegend.getTokenTypes());
 		assertEquals(tokenModifiers, semanticTokensLegend.getTokenModifiers());
