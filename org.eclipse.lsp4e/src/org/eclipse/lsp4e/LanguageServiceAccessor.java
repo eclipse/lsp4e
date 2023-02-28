@@ -464,8 +464,6 @@ public class LanguageServiceAccessor {
 	 * @return a new or existing {@link LanguageServerWrapper} for the given connection.
 	 * @throws IOException
 	 * @Deprecated will be made private soon, use {@link #getLSWrapper}
-	 * @noreference will be made private soon, use {@link #getLSWrapper}
-	 * @deprecated use {@link LanguageServers#forProject()} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	public static LanguageServerWrapper getLSWrapperForConnection(@NonNull IProject project,
