@@ -17,10 +17,11 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -153,16 +154,16 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 	@Test
 	public void testMovingOffset() throws Exception {
 		Range range = new Range(new Position(0, 0), new Position(0, 4));
-		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "test")).getDocument();
-		LSPDocumentInfo info = LanguageServiceAccessor
-				.getLSPDocumentInfosFor(document,
+		IFile testFile = TestUtils.createUniqueTestFile(project, "test");
+		IDocument document = TestUtils.openTextViewer(testFile).getDocument();
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile,
 						capabilities -> capabilities.getCompletionProvider() != null
 						|| capabilities.getSignatureHelpProvider() != null)
 				.get(0);
 
 		CompletionItem completionItem = createCompletionItem("test", CompletionItemKind.Class, range);
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				completionItem, info.getLanguageServerWrapper());
+				completionItem, wrapper);
 		// Blank input ''
 		assertEquals("", completionProposal.getDocumentFilter());
 		assertEquals(0, completionProposal.getRankScore());
@@ -178,7 +179,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 
 		document.set("prefix:pnd");
 		completionItem = createCompletionItem("append", CompletionItemKind.Class);
-		completionProposal = new LSCompletionProposal(document, 7, completionItem, info.getLanguageServerWrapper());
+		completionProposal = new LSCompletionProposal(document, 7, completionItem, wrapper);
 		// Blank input 'prefix:'
 		assertEquals("", completionProposal.getDocumentFilter());
 		assertEquals(0, completionProposal.getRankScore());

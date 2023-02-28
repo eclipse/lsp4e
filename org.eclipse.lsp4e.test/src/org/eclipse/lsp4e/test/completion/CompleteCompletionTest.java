@@ -42,7 +42,6 @@ import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -489,15 +488,15 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 
 	@Test
 	public void testFilterNonmatchingCompletionsMovieOffset() throws Exception {
-		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "servers")).getDocument();
-		LSPDocumentInfo info = LanguageServiceAccessor
-				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
-						|| capabilities.getSignatureHelpProvider() != null)
+		IFile testFile = TestUtils.createUniqueTestFile(project, "servers");
+		IDocument document = TestUtils.openTextViewer(testFile).getDocument();
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, capabilities -> capabilities.getCompletionProvider() != null
+				|| capabilities.getSignatureHelpProvider() != null)
 				.get(0);
 		// The completion ': 1.0.1' was given, then the user types a 's', which is used
 		// as a filter and removes the completion
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0, new CompletionItem(": 1.0.1"),
-				info.getLanguageServerWrapper());
+				wrapper);
 		assertTrue(completionProposal.isValidFor(document, 6));
 		assertFalse(completionProposal.isValidFor(document, 7));
 	}
