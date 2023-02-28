@@ -31,6 +31,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextEdit;
@@ -164,8 +165,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return result.thenApplyAsync(Function.identity());
 	}
 
-	public @NonNull E withPreferredServer(final @Nullable String serverId) {
-		this.serverId = serverId;
+	public @NonNull E withPreferredServer(final @Nullable LanguageServerDefinition serverDefinition) {
+		this.serverDefinition = serverDefinition;
 		return (E)this;
 	}
 
@@ -349,12 +350,11 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	}
 
 	protected Collection<LanguageServerWrapper> order(Collection<LanguageServerWrapper> wrappers) {
-		String id = serverId;
-		if (id != null && wrappers.size() > 1) {
+		if (serverDefinition != null && wrappers.size() > 1) {
 			List<LanguageServerWrapper> temp = new ArrayList<>(wrappers);
 			for (int i = 0; i < temp.size(); i++) {
 				LanguageServerWrapper wrapper = temp.get(i);
-				if (wrapper != null && wrapper.serverDefinition != null && id != null && id.equals(wrapper.serverDefinition.id)) {
+				if (wrapper != null && wrapper.serverDefinition != null && Objects.equals(serverDefinition, wrapper.serverDefinition)) {
 					Collections.swap(temp, 0, i);
 					return temp;
 				}
@@ -461,5 +461,5 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 	private @NonNull Predicate<ServerCapabilities> filter = s -> true;
 
-	protected @Nullable String serverId;
+	protected @Nullable LanguageServerDefinition serverDefinition;
 }
