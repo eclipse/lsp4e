@@ -19,24 +19,25 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.codemining.LineHeaderCodeMining;
 import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.Command;
-import org.eclipse.lsp4j.ExecuteCommandOptions;
-import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.swt.events.MouseEvent;
 
 public class LSPCodeMining extends LineHeaderCodeMining {
 	private CodeLens codeLens;
 
 	private final LanguageServerWrapper languageServerWrapper;
-	private final @NonNull IDocument document;
+	private final LanguageServerDefinition languageServerDefinition;
+	private final @Nullable IDocument document;
 
-	public LSPCodeMining(CodeLens codeLens, @NonNull IDocument document, LanguageServerWrapper languageServerWrapper,
+	public LSPCodeMining(CodeLens codeLens, IDocument document, LanguageServerWrapper languageServerWrapper,
 			CodeLensProvider provider) throws BadLocationException {
 		super(codeLens.getRange().getStart().getLine(), document, provider, null);
 		this.codeLens = codeLens;
 		this.languageServerWrapper = languageServerWrapper;
+		this.languageServerDefinition = languageServerWrapper.serverDefinition;
 		this.document = document;
 		setLabel(getCodeLensString(codeLens));
 	}
@@ -76,13 +77,9 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 	}
 
 	private void performAction(MouseEvent mouseEvent) {
-		ExecuteCommandOptions provider = languageServerWrapper.getServerCapabilities().getExecuteCommandProvider();
-		Command command = codeLens.getCommand();
-		if (provider != null && provider.getCommands().contains(command.getCommand())) {
-			languageServerWrapper.execute(ls -> ls.getWorkspaceService()
-					.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
-		} else  {
-			CommandExecutor.executeCommandClientSide(command, document);
+		IDocument document = this.document;
+		if(document != null) {
+			CommandExecutor.executeCommand(codeLens.getCommand(), document, languageServerDefinition.id);
 		}
 	}
 

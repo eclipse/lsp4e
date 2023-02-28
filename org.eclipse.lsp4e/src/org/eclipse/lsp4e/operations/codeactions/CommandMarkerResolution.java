@@ -12,21 +12,19 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
-import java.io.IOException;
-
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServerWrapper;
-import org.eclipse.lsp4e.LanguageServersRegistry;
-import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4j.Command;
-import org.eclipse.lsp4j.ExecuteCommandOptions;
-import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
@@ -47,31 +45,21 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 	@Override
 	public void run(IMarker marker) {
 		IResource resource = marker.getResource();
-		if (resource == null) {
-			return;
+		IDocument document = LSPEclipseUtils.getExistingDocument(resource);
+		boolean temporaryLoadDocument = document == null;
+		if (temporaryLoadDocument) {
+			document = LSPEclipseUtils.getDocument(resource);
 		}
-		String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
-		LanguageServerDefinition definition = languageServerId != null
-				? LanguageServersRegistry.getInstance().getDefinition(languageServerId)
-				: null;
-
-		if (definition == null) {
-			return;
-		}
-
-		try {
-			LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
-			if (wrapper != null) {
-				ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
-				if (provider != null && provider.getCommands().contains(command.getCommand())) {
-					wrapper.execute(ls -> ls.getWorkspaceService()
-							.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
-				} else {
-					CommandExecutor.executeCommandClientSide(command, resource);
+		if(document != null) {
+			String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
+			CommandExecutor.executeCommand(command, document, languageServerId);
+			if (temporaryLoadDocument) {
+				try {
+					FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
+				} catch (CoreException e) {
+					LanguageServerPlugin.logError(e);
 				}
 			}
-		} catch (IOException ex) {
-			LanguageServerPlugin.logError(ex);
 		}
 	}
 

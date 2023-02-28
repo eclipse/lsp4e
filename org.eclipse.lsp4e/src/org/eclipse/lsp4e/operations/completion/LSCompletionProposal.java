@@ -65,12 +65,10 @@ import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
-import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4e.operations.hover.FocusableBrowserInformationControl;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
-import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InsertReplaceEdit;
 import org.eclipse.lsp4j.InsertTextFormat;
@@ -613,13 +611,8 @@ public class LSCompletionProposal
 
 			if (item.getCommand() != null) {
 				Command command = item.getCommand();
-				ExecuteCommandOptions provider = languageServerWrapper.getServerCapabilities().getExecuteCommandProvider();
-				if (provider != null && provider.getCommands().contains(command.getCommand())) {
-					languageServerWrapper.execute(ls -> ls.getWorkspaceService()
-							.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
-				} else {
-					CommandExecutor.executeCommandClientSide(command, document);
-				}
+				languageServerWrapper.execute(ls -> ls.getWorkspaceService()
+						.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));;
 			}
 		} catch (BadLocationException ex) {
 			LanguageServerPlugin.logError(ex);
