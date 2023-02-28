@@ -35,7 +35,6 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4e.internal.Pair;
@@ -45,7 +44,6 @@ import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.lsp4j.SemanticTokensParams;
 import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 
@@ -198,7 +196,8 @@ public class SemanticHighlightReconcilerStrategy
 				&& LSPEclipseUtils.hasCapability(serverCapabilities.getSemanticTokensProvider().getFull());
 	}
 
-	private @Nullable SemanticTokensLegend getSemanticTokensLegend(final LanguageServerWrapper wrapper) {
+	// public for testing
+	public @Nullable SemanticTokensLegend getSemanticTokensLegend(final LanguageServerWrapper wrapper) {
 		ServerCapabilities serverCapabilities = wrapper.getServerCapabilities();
 		if (serverCapabilities != null) {
 			SemanticTokensWithRegistrationOptions semanticTokensProvider = serverCapabilities
@@ -208,12 +207,6 @@ public class SemanticHighlightReconcilerStrategy
 			}
 		}
 		return null;
-	}
-
-	// public for testing
-	public @Nullable SemanticTokensLegend getSemanticTokensLegend(@NonNull final LanguageServer languageSever) {
-		return LanguageServiceAccessor.resolveLanguageServerWrapper(languageSever)
-				.map(this::getSemanticTokensLegend).orElse(null);
 	}
 
 	/** The presentation is invalidated if applyTextPresentation has never been called (e.g. there is
