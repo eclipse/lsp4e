@@ -58,12 +58,10 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile1);
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile1, capabilities -> Boolean.TRUE).iterator()
-				.next();
-		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
-
 		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
 				c -> Boolean.TRUE);
+		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
+
 		LanguageServerWrapper wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
@@ -76,11 +74,9 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile2 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile2);
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile2, capabilities -> Boolean.TRUE).iterator()
-				.next();
+		wrappers = LanguageServiceAccessor.getLSWrappers(testFile2, c -> Boolean.TRUE);
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 
-		wrappers = LanguageServiceAccessor.getLSWrappers(testFile2, c -> Boolean.TRUE);
 		LanguageServerWrapper wrapper2 = wrappers.iterator().next();
 		assertTrue(wrapper2.isActive());
 
@@ -94,13 +90,11 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile1);
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile1, capabilities -> Boolean.TRUE).iterator()
-				.next();
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
+				c -> Boolean.TRUE);
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 
-		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
-				c -> Boolean.TRUE);
 		LanguageServerWrapper wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
@@ -120,7 +114,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile1);
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile1, capabilities -> Boolean.TRUE).iterator()
+		LanguageServiceAccessor.getLSWrappers(testFile1, capabilities -> Boolean.TRUE).iterator()
 				.next();
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
@@ -143,13 +137,11 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile1);
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile1, capabilities -> Boolean.TRUE).iterator()
-				.next();
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
+				c -> Boolean.TRUE);
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 
-		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
-				c -> Boolean.TRUE);
 		LanguageServerWrapper wrapper1 = wrappers.iterator().next();
 		assertTrue(wrapper1.isActive());
 
@@ -172,7 +164,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile1);
-		LanguageServiceAccessor.getInitializedLanguageServers(testFile1, capabilities -> Boolean.TRUE).iterator()
+		LanguageServiceAccessor.getLSWrappers(testFile1, capabilities -> Boolean.TRUE).iterator()
 				.next();
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();

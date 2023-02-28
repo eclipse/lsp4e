@@ -12,18 +12,20 @@
 package org.eclipse.lsp4e.test;
 
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
+import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
@@ -53,7 +55,7 @@ public class RunningLanguageServerTest {
 		// open and close the editor several times
 		for(int i = 0; i < 10; i++) {
 			IEditorPart editor = TestUtils.openEditor(testFile);
-			LanguageServiceAccessor.getInitializedLanguageServers(testFile, capabilities -> Boolean.TRUE).iterator()
+			LanguageServiceAccessor.getLSWrappers(testFile, capabilities -> Boolean.TRUE).iterator()
 					.next();
 			waitForAndAssertCondition("language server should be started for iteration #" + i, 5_000,
 					() -> MockLanguageServer.INSTANCE.isRunning());
@@ -73,8 +75,8 @@ public class RunningLanguageServerTest {
 		LanguageServiceAccessor.disableLanguageServerContentType(lsDefinition);
 
 		TestUtils.openEditor(testFile);
-		List<CompletableFuture<LanguageServer>> initializedLanguageServers = LanguageServiceAccessor
-				.getInitializedLanguageServers(testFile, capabilities -> Boolean.TRUE);
+		@NonNull List<LanguageServerWrapper> initializedLanguageServers = LanguageServiceAccessor
+				.getLSWrappers(testFile, capabilities -> Boolean.TRUE);
 		assertNotNull(initializedLanguageServers);
 		assertEquals("language server should not be started because it is disabled", 0,
 				initializedLanguageServers.size());
