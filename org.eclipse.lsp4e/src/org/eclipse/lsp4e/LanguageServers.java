@@ -212,6 +212,25 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return Boolean.FALSE;
 	}
 
+	protected Boolean matches(@NonNull CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture, Runnable runner) {
+		try {
+			return wrapperFuture.thenApply(Objects::nonNull).get(50, TimeUnit.MILLISECONDS);
+		} catch (java.util.concurrent.ExecutionException e) {
+			LanguageServerPlugin.logError(e);
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
+		} catch (TimeoutException e) {
+			wrapperFuture.thenAcceptAsync(w -> {
+				if (w != null) {
+					runner.run();
+				}
+			});
+			return Boolean.FALSE;
+		}
+		return Boolean.FALSE;
+	}
+
 	/**
 	 *  Waits if necessary for at most 50 milliseconds for getting a server, if that is not enough it is assumed that
 	 *  the server would be matching, and we rely on the next call of to executor to filter the server if needed.
@@ -221,7 +240,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	public boolean anyMatching() {
 		return getServers().stream().filter(this::matches).findFirst().isPresent();
 	}
-
 
 	/**
 	 * Executor that will run requests on the set of language servers appropriate for the supplied document
@@ -285,6 +303,21 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			return LanguageServiceAccessor.getLSWrappers(document).stream()
 					.map(this::filter).filter(this::matches).findFirst().isPresent();
 		}
+
+		/**
+		 * Waits if necessary for at most 50 milliseconds for getting a server, if that
+		 * is not enough:
+		 * <li>It is assumed that the server would not be matching.
+		 * <li>The server is get asynchronously and then a runner will be called if
+		 * the call completes with true as final result.
+		 *
+		 * @return True if there is a language server for this document & server
+		 *         capabilities.
+		 */
+		public boolean anyMatching(Runnable runner) {
+			return getServers().stream().filter(wF -> matches(wF, runner)).findFirst().isPresent();
+		}
+
 
 		@Override
 		protected void computeVersion() {

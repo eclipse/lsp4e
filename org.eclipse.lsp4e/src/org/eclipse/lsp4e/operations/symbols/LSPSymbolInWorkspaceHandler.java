@@ -14,6 +14,7 @@ package org.eclipse.lsp4e.operations.symbols;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.commands.HandlerEvent;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
@@ -79,7 +80,7 @@ public class LSPSymbolInWorkspaceHandler extends AbstractHandler {
 		if (part instanceof ITextEditor textEditor) {
 			return LanguageServers.forDocument(LSPEclipseUtils.getDocument(textEditor))
 					.withCapability(ServerCapabilities::getWorkspaceSymbolProvider)
-					.anyMatching();
+					.anyMatching(() -> fireHandlerChanged(new HandlerEvent(this, true, false)));
 		}
 		return false;
 	}

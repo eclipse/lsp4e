@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.commands.HandlerEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
@@ -68,7 +69,7 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 			}
 
 			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDocumentSymbolProvider)
-					.anyMatching();
+					.anyMatching(() -> fireHandlerChanged(new HandlerEvent(this, true, false)));
 		}
 		return false;
 	}

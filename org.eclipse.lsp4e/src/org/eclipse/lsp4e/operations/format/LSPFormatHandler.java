@@ -18,6 +18,7 @@ import java.util.ConcurrentModificationException;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.commands.HandlerEvent;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -89,6 +90,6 @@ public class LSPFormatHandler extends AbstractHandler {
 		return LanguageServers
 				.forDocument(doc)
 				.withFilter(LSPFormatter::supportsFormatting)
-				.anyMatching();
+				.anyMatching(() -> fireHandlerChanged(new HandlerEvent(this, true, false)));
 	}
 }

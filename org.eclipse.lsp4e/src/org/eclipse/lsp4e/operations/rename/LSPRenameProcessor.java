@@ -177,11 +177,11 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 					rename = refactoringServer.execute(ls -> ls.getTextDocumentService().rename(params)).get(1000, TimeUnit.MILLISECONDS);
 				} else {
 					// Prepare timed out so we don't have a preferred server, so just try all the servers again
-					rename = LanguageServers.forDocument(document).withFilter(LSPRenameHandler::isRenameProvider)
+					rename = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getRenameProvider)
 							.computeFirst(ls -> ls.getTextDocumentService().rename(params)).get(1000, TimeUnit.MILLISECONDS).orElse(null);
 				}
 				if (!status.hasError() && (rename == null
- 						|| (rename.getChanges().isEmpty() && rename.getDocumentChanges().isEmpty()))) {
+						|| (rename.getChanges().isEmpty() && rename.getDocumentChanges().isEmpty()))) {
 					status.addWarning(Messages.rename_empty_message);
 				}
 			}
