@@ -41,7 +41,6 @@ import org.eclipse.jface.viewers.LabelProviderChangedEvent;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4e.ui.Messages;
@@ -259,9 +258,6 @@ public class SymbolsLabelProvider extends LabelProvider
 				message = element.getClass().getName();
 			}
 			return new StyledString(message);
-		}
-		if (element instanceof LSPDocumentInfo info) {
-			return new StyledString(info.getFileUri().getPath());
 		}
 		final var res = new StyledString();
 		if (element == null){
