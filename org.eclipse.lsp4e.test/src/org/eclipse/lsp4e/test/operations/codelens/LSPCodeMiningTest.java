@@ -94,7 +94,7 @@ public class LSPCodeMiningTest {
 		IDocument document = TestUtils.openTextViewer(file).getDocument();
 
 		CodeLensProvider provider = new CodeLensProvider();
-		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapperForConnection(project, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID));
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(project, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID));
 
 		LSPCodeMining sut = new LSPCodeMining(lens, document, wrapper, provider);
 		MouseEvent mouseEvent = createMouseEvent();
@@ -120,7 +120,7 @@ public class LSPCodeMiningTest {
 		MockLanguageServer languageServer = MockLanguageServer.INSTANCE;
 		CodeLensProvider provider = new CodeLensProvider();
 
-		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapperForConnection(project, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID));
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(project, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID));
 
 		LSPCodeMining sut = new LSPCodeMining(lens, document, wrapper, provider);		MouseEvent mouseEvent = createMouseEvent();
 		sut.getAction().accept(mouseEvent);
