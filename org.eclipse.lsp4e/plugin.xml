@@ -104,7 +104,24 @@
             class="org.eclipse.lsp4e.operations.rename.LSPRenameHandler"
             commandId="org.eclipse.ui.edit.rename">
          <activeWhen>
-            <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
+            <and>
+               <!-- LSP rename handler is active when: -->
+               <!-- 1. The file is not a Java file to avoid conlict with JDT UI rename handler -->
+               <not>
+                 <with variable="editorInput">
+                    <or>
+                       <adapt type="org.eclipse.core.resources.IFile">
+                          <test property="org.eclipse.core.resources.contentTypeId" value="org.eclipse.jdt.core.javaSource" />                     
+                       </adapt>
+                       <adapt type="org.eclipse.jdt.core.IClassFile">
+                          <instanceof value="org.eclipse.jdt.core.IClassFile" />
+                       </adapt>
+                    </or>
+                 </with>
+              </not>
+              <!-- 2. The file is mapped with a language server -->
+              <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
+            </and>
          </activeWhen>
       </handler>
       <handler
