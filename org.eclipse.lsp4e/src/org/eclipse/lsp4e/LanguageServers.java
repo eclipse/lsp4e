@@ -222,7 +222,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return getServers().stream().filter(this::matches).findFirst().isPresent();
 	}
 
-
 	/**
 	 * Executor that will run requests on the set of language servers appropriate for the supplied document
 	 *
@@ -234,7 +233,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 		private long startVersion;
 
-		LanguageServerDocumentExecutor(final @NonNull IDocument document) {
+		protected LanguageServerDocumentExecutor(final @NonNull IDocument document) {
 			this.document = document;
 		}
 

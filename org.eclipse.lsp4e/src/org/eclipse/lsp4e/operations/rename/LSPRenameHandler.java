@@ -15,14 +15,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.rename;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
-import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.commands.HandlerEvent;
-import org.eclipse.core.commands.IHandler;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -31,9 +25,8 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.internal.LSPDocumentAbstractHandler;
 import org.eclipse.lsp4e.ui.Messages;
-import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.ltk.core.refactoring.participants.ProcessorBasedRefactoring;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
@@ -42,7 +35,7 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-public class LSPRenameHandler extends AbstractHandler implements IHandler {
+public class LSPRenameHandler extends LSPDocumentAbstractHandler {
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -57,7 +50,7 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 				IDocument document = LSPEclipseUtils.getDocument(textEditor);
 				if (document != null) {
 					Shell shell = part.getSite().getShell();
-					LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPRenameHandler::isRenameProvider);
+					LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getRenameProvider);
 					if (executor.anyMatching()) {
 						int offset = textSelection.getOffset();
 
@@ -80,50 +73,8 @@ public class LSPRenameHandler extends AbstractHandler implements IHandler {
 		return null;
 	}
 
-	public static boolean isRenameProvider(final ServerCapabilities capabilities) {
-		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getRenameProvider());
-	}
-
 	@Override
 	public void setEnabled(Object evaluationContext) {
-		var part = UI.getActivePart();
-		if (part instanceof ITextEditor textEditor) {
-			ISelectionProvider provider = textEditor.getSelectionProvider();
-			ISelection selection = (provider == null) ? null : provider.getSelection();
-			var isEnable = selection instanceof ITextSelection && !selection.isEmpty();
-
-			IDocument document = LSPEclipseUtils.getDocument((ITextEditor) part);
-			if (document != null && isEnable) {
-				try {
-					isEnable = !LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
-							.get(50, TimeUnit.MILLISECONDS).isEmpty();
-				} catch (TimeoutException e) {
-
-					// in case the language servers take longer to kick in, defer the enablement to
-					// a later time
-					LanguageServiceAccessor.getLanguageServers(document, LSPRenameHandler::isRenameProvider)
-							.thenAccept(languageServer -> {
-								boolean enabled = !languageServer.isEmpty();
-								final var handleEvent = new HandlerEvent(this, enabled, false);
-								fireHandlerChanged(handleEvent);
-							});
-					isEnable = false;
-
-				} catch (InterruptedException e) {
-					LanguageServerPlugin.logError(e);
-					Thread.currentThread().interrupt();
-					isEnable = false;
-				} catch (java.util.concurrent.ExecutionException e) {
-					LanguageServerPlugin.logError(e);
-					isEnable = false;
-				}
-			}
-			setBaseEnabled(isEnable);
-		} else {
-			setBaseEnabled(false);
-		}
-
-
+		setEnabled(ServerCapabilities::getRenameProvider, this::hasSelection);
 	}
-
 }

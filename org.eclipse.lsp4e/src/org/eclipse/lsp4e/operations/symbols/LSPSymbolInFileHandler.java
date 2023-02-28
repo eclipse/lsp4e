@@ -14,21 +14,19 @@ package org.eclipse.lsp4e.operations.symbols;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
-import org.eclipse.lsp4e.ui.UI;
+import org.eclipse.lsp4e.internal.LSPDocumentAbstractHandler;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-public class LSPSymbolInFileHandler extends AbstractHandler {
+public class LSPSymbolInFileHandler extends LSPDocumentAbstractHandler {
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -59,17 +57,7 @@ public class LSPSymbolInFileHandler extends AbstractHandler {
 	}
 
 	@Override
-	public boolean isEnabled() {
-		IWorkbenchPart part = UI.getActivePart();
-		if (part instanceof final ITextEditor textEditor) {
-			final IDocument document = LSPEclipseUtils.getDocument(textEditor);
-			if (document == null) {
-				return false;
-			}
-
-			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDocumentSymbolProvider)
-					.anyMatching();
-		}
-		return false;
+	public void setEnabled(Object evaluationContext) {
+		setEnabled(ServerCapabilities::getDocumentSymbolProvider, x -> true);
 	}
 }

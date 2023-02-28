@@ -15,7 +15,6 @@ package org.eclipse.lsp4e.operations.format;
 
 import java.util.ConcurrentModificationException;
 
-import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.text.BadLocationException;
@@ -24,8 +23,8 @@ import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.ServerMessageHandler;
+import org.eclipse.lsp4e.internal.LSPDocumentAbstractHandler;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.MessageParams;
@@ -33,7 +32,7 @@ import org.eclipse.lsp4j.MessageType;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-public class LSPFormatHandler extends AbstractHandler {
+public class LSPFormatHandler extends LSPDocumentAbstractHandler {
 
 	private final LSPFormatter formatter = new LSPFormatter();
 
@@ -73,22 +72,7 @@ public class LSPFormatHandler extends AbstractHandler {
 	}
 
 	@Override
-	public boolean isEnabled() {
-		final ITextEditor textEditor = UI.getActiveTextEditor();
-		if (textEditor == null)
-			return false;
-
-		final ISelection selection = textEditor.getSelectionProvider().getSelection();
-		if (!(selection instanceof ITextSelection) || selection.isEmpty())
-			return false;
-
-		final IDocument doc = LSPEclipseUtils.getDocument(textEditor);
-		if (doc == null)
-			return false;
-
-		return LanguageServers
-				.forDocument(doc)
-				.withFilter(LSPFormatter::supportsFormatting)
-				.anyMatching();
+	public void setEnabled(Object evaluationContext) {
+		setEnabled(LSPFormatter::supportsFormatting, this::hasSelection);
 	}
 }
