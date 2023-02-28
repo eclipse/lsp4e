@@ -27,10 +27,10 @@ import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.ParameterType;
 import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.core.commands.common.NotDefinedException;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
@@ -64,23 +64,25 @@ public class CommandExecutor {
 	private static final String LSP_COMMAND_PARAMETER_TYPE_ID = "org.eclipse.lsp4e.commandParameterType"; //$NON-NLS-1$
 	private static final String LSP_PATH_PARAMETER_TYPE_ID = "org.eclipse.lsp4e.pathParameterType"; //$NON-NLS-1$
 
-	public static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @NonNull IDocument document) {
-		IFile file = LSPEclipseUtils.getFile(document);
-		if (file != null) {
-			return CommandExecutor.executeCommandClientSide(command, file);
-		}
-		return null;
+	/**
+	 * @deprecated use {@link #executeCommandClientSide(Command, IDocument)}
+	 */
+	@Deprecated(forRemoval = true)
+	public static CompletableFuture<Object> executeCommand(@Nullable Command command, @Nullable IDocument document,
+			@Nullable String languageServerId) {
+		return executeCommandClientSide(command, document);
 	}
 
-	@SuppressWarnings("unused") // ECJ compiler for some reason thinks handlerService == null is always false
-	public static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @NonNull IResource resource) {
+
+	public static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @Nullable IDocument document) {
 		IWorkbench workbench = PlatformUI.getWorkbench();
 		if (workbench == null) {
 			return null;
 		}
+		URI documentUri = LSPEclipseUtils.toUri(document);
 		IPath path;
-		if (resource != null) {
-			path = resource.getFullPath();
+		if (documentUri != null) {
+			path = Path.fromOSString(documentUri.getPath());
 		} else {
 			path = ResourcesPlugin.getWorkspace().getRoot().getLocation();
 		}
@@ -104,7 +106,7 @@ public class CommandExecutor {
 		}
 		// tentative fallback
 		if (command.getArguments() != null) {
-			WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), resource);
+			WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), documentUri);
 			LSPEclipseUtils.applyWorkspaceEdit(edit, command.getTitle());
 			return CompletableFuture.completedFuture(null);
 		}
@@ -153,11 +155,10 @@ public class CommandExecutor {
 	 * Very empirical and unsafe heuristic to turn unknown command arguments into a
 	 * workspace edit...
 	 */
-	private static WorkspaceEdit createWorkspaceEdit(List<Object> commandArguments, @NonNull IResource resource) {
+	private static WorkspaceEdit createWorkspaceEdit(List<Object> commandArguments, @NonNull URI initialUri) {
 		final var workspaceEdit = new WorkspaceEdit();
 		final var changes = new HashMap<String, List<TextEdit>>();
 		workspaceEdit.setChanges(changes);
-		URI initialUri = LSPEclipseUtils.toUri(resource);
 		final var currentEntry = new Pair<URI, List<TextEdit>>(initialUri, new ArrayList<>());
 		commandArguments.stream().flatMap(item -> {
 			if (item instanceof List<?> list) {
