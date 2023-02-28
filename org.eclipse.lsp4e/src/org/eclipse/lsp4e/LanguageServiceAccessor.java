@@ -312,7 +312,7 @@ public class LanguageServiceAccessor {
 	 *              for testing
 	 */
 	@NonNull
-	public static Collection<LanguageServerWrapper> getLSWrappers(@NonNull final IFile file,
+	public static List<LanguageServerWrapper> getLSWrappers(@NonNull final IFile file,
 			@Nullable final Predicate<ServerCapabilities> request) throws IOException {
 		final var project = file.getProject();
 		if (project == null) {

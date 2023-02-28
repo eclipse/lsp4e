@@ -41,7 +41,6 @@ import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.LanguageServiceAccessor.LSPDocumentInfo;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -488,72 +487,72 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 	@Test
 	public void testAdditionalInformation() throws Exception {
-		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();
-		LSPDocumentInfo info = LanguageServiceAccessor
-				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		IDocument document = TestUtils.openTextViewer(testFile).getDocument();
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, capabilities -> capabilities.getCompletionProvider() != null
 						|| capabilities.getSignatureHelpProvider() != null)
 				.get(0);
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				new CompletionItem("blah"), info.getLanguageServerWrapper());
+				new CompletionItem("blah"), wrapper);
 		completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 	}
 
 	@Test
 	public void testAdditionalInformationWithEmptyDetail() throws Exception {
-		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();
-		LSPDocumentInfo info = LanguageServiceAccessor
-				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		IDocument document = TestUtils.openTextViewer(testFile).getDocument();
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, capabilities -> capabilities.getCompletionProvider() != null
 						|| capabilities.getSignatureHelpProvider() != null)
 				.get(0);
 		CompletionItem item = new CompletionItem("blah");
 		item.setDetail("");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				item, info.getLanguageServerWrapper());
+				item, wrapper);
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertTrue(addInfo.isEmpty());
 	}
 
 	@Test
 	public void testAdditionalInformationWithDetail() throws Exception {
-		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();
-		LSPDocumentInfo info = LanguageServiceAccessor
-				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		IDocument document = TestUtils.openTextViewer(testFile).getDocument();
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, capabilities -> capabilities.getCompletionProvider() != null
 						|| capabilities.getSignatureHelpProvider() != null)
 				.get(0);
 		CompletionItem item = new CompletionItem("blah");
 		item.setDetail("detail");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				item, info.getLanguageServerWrapper());
+				item, wrapper);
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertTrue(addInfo.indexOf("<p>detail</p>") >= 0);
 	}
 
 	@Test
 	public void testAdditionalInformationWithEmptyDocumentation() throws Exception {
-		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();
-		LSPDocumentInfo info = LanguageServiceAccessor
-				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		IDocument document = TestUtils.openTextViewer(testFile).getDocument();
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, capabilities -> capabilities.getCompletionProvider() != null
 						|| capabilities.getSignatureHelpProvider() != null)
 				.get(0);
 		CompletionItem item = new CompletionItem("blah");
 		item.setDocumentation("");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				item, info.getLanguageServerWrapper());
+				item, wrapper);
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertTrue(addInfo.isEmpty());
 	}
 
 	@Test
 	public void testAdditionalInformationWithDocumentation() throws Exception {
-		IDocument document = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "")).getDocument();
-		LSPDocumentInfo info = LanguageServiceAccessor
-				.getLSPDocumentInfosFor(document, capabilities -> capabilities.getCompletionProvider() != null
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		IDocument document = TestUtils.openTextViewer(testFile).getDocument();
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, capabilities -> capabilities.getCompletionProvider() != null
 						|| capabilities.getSignatureHelpProvider() != null)
 				.get(0);
 		CompletionItem item = new CompletionItem("blah");
 		item.setDocumentation("documentation");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
-				item, info.getLanguageServerWrapper());
+				item, wrapper);
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
 		assertFalse(addInfo.isEmpty());
 	}
