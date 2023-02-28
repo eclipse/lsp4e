@@ -16,7 +16,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
@@ -116,16 +115,14 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 
 	private void checkMarkerResoultion(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException {
 		IResource res = marker.getResource();
-		if (res != null && res.getType() == IResource.FILE) {
-			final var file = (IFile) res;
+		if (res instanceof IFile file) {
 			Object[] attributes = marker.getAttributes(new String[]{LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC});
-			final var languageServerId = (String) attributes[0];
-			final var diagnostic = (Diagnostic) attributes[1];
 			LanguageServerProjectExecutor executor = LanguageServers.forProject(file.getProject())
 					.withCapability(ServerCapabilities::getCodeActionProvider)
 					// try to use same LS as the one that created the marker
-					.withComparator(Comparator.nullsLast(Comparator.comparing(w -> serverIdOrNull(languageServerId, w))));
+					.withPreferredServer((String) attributes[0]);
 			if (executor.anyMatching()) {
+				final var diagnostic = (Diagnostic) attributes[1];
 				final var context = new CodeActionContext(Collections.singletonList(diagnostic));
 				final var params = new CodeActionParams();
 				params.setContext(context);
