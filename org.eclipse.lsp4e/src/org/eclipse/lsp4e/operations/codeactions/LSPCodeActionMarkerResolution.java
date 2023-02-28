@@ -41,6 +41,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerProjectExecutor;
+import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
@@ -120,7 +121,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 			LanguageServerProjectExecutor executor = LanguageServers.forProject(file.getProject())
 					.withCapability(ServerCapabilities::getCodeActionProvider)
 					// try to use same LS as the one that created the marker
-					.withPreferredServer((String) attributes[0]);
+					.withPreferredServer(LanguageServersRegistry.getInstance().getDefinition((String) attributes[0]));
 			if (executor.anyMatching()) {
 				final var diagnostic = (Diagnostic) attributes[1];
 				final var context = new CodeActionContext(Collections.singletonList(diagnostic));
