@@ -18,13 +18,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.core.filebuffers.FileBuffers;
-import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
@@ -34,6 +30,9 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4j.CodeAction;
+import org.eclipse.lsp4j.Command;
+import org.eclipse.lsp4j.ExecuteCommandOptions;
+import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
@@ -63,41 +62,45 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 
 	@Override
 	public void run(IMarker marker) {
-		String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
-		if (codeAction.getEdit() == null) {
-			LanguageServerDefinition definition = languageServerId != null ? LanguageServersRegistry.getInstance().getDefinition(languageServerId) : null;
-			try {
-				LanguageServerWrapper wrapper = definition != null ? LanguageServiceAccessor.getLSWrapper(marker.getResource().getProject(), definition) : null;
-				if (wrapper != null && CodeActionCompletionProposal.isCodeActionResolveSupported(wrapper.getServerCapabilities())) {
-					CodeAction resolvedCodeAction = wrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
-					if (resolvedCodeAction != null) {
-						codeAction = resolvedCodeAction;
-					}
-				}
-			} catch (IOException | TimeoutException | ExecutionException | InterruptedException ex) {
-				LanguageServerPlugin.logError(ex);
-			}
-		}
 		if (codeAction.getEdit() != null) {
 			LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
+			return;
 		}
-		if (codeAction.getCommand() != null) {
-			IResource resource = marker.getResource();
-			IDocument document = LSPEclipseUtils.getExistingDocument(resource);
-			boolean temporaryLoadDocument = document == null;
-			if (temporaryLoadDocument) {
-				document = LSPEclipseUtils.getDocument(resource);
+		String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
+		LanguageServerDefinition definition = languageServerId != null ? LanguageServersRegistry.getInstance().getDefinition(languageServerId) : null;
+		try {
+			LanguageServerWrapper wrapper = null;
+			if (definition != null) {
+				IResource resource = marker.getResource();
+				if (resource != null) {
+					wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
+				}
 			}
-			if (document != null) {
-				CommandExecutor.executeCommand(codeAction.getCommand(), document, languageServerId);
-				if (temporaryLoadDocument) {
-					try {
-						FileBuffers.getTextFileBufferManager().disconnect(resource.getFullPath(), LocationKind.IFILE, new NullProgressMonitor());
-					} catch (CoreException e) {
-						LanguageServerPlugin.logError(e);
+			if (wrapper != null) {
+				if (codeAction.getEdit() == null) {
+					if (CodeActionCompletionProposal.isCodeActionResolveSupported(wrapper.getServerCapabilities())) {
+						CodeAction resolvedCodeAction = wrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
+						if (resolvedCodeAction != null) {
+							codeAction = resolvedCodeAction;
+						}
+					}
+				}
+				if (codeAction.getCommand() != null) {
+					Command command = codeAction.getCommand();
+					ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
+					if (provider != null && provider.getCommands().contains(command.getCommand())) {
+						wrapper.execute(ls -> ls.getWorkspaceService()
+								.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
+					} else  {
+						IResource resource = marker.getResource();
+						if (resource != null) {
+							CommandExecutor.executeCommandClientSide(command, resource);
+						}
 					}
 				}
 			}
+		} catch (IOException | TimeoutException | ExecutionException | InterruptedException ex) {
+			LanguageServerPlugin.logError(ex);
 		}
 	}
 
