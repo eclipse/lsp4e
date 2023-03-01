@@ -480,23 +480,47 @@ public class LanguageServerWrapper {
 	 * @param document
 	 * @return null if not connection has happened, a future tracking the connection state otherwise
 	 * @throws IOException
+	 * @deprecated use {@link #connect(IDocument, IFile)}
 	 */
+	@Deprecated(forRemoval = true)
 	public @Nullable CompletableFuture<LanguageServer> connect(@NonNull IFile file, IDocument document)
 			throws IOException {
+		CompletableFuture<@NonNull LanguageServerWrapper> connect = connect(document, file);
+		if (connect != null) {
+			return connect.thenApply(theVoid -> languageServer);
+		}
+		return null;
+	}
+
+	public @Nullable CompletableFuture<@NonNull LanguageServerWrapper> connect(IDocument document, @NonNull IFile file)
+			throws IOException {
 		final URI uri = LSPEclipseUtils.toUri(file);
-		return uri == null ? null : connect(uri, document);
+		if (uri != null) {
+			return connect(uri, document);
+		}
+		return null;
 	}
 
 	/**
 	 * @param document
 	 * @return null if not connection has happened, a future tracking the connection state otherwise
 	 * @throws IOException
+	 * @deprecated use {@link #connect2}
 	 */
+	@Deprecated(forRemoval = true)
 	public @Nullable CompletableFuture<LanguageServer> connect(IDocument document) throws IOException {
+		CompletableFuture<LanguageServerWrapper> connect2 = connectDocument(document);
+		if (connect2 != null) {
+			return connect2.thenApply(theVoid -> languageServer);
+		}
+		return null;
+	}
+
+	public @Nullable CompletableFuture<LanguageServerWrapper> connectDocument(IDocument document) throws IOException {
 		IFile file = LSPEclipseUtils.getFile(document);
 
 		if (file != null && file.exists()) {
-			return connect(file, document);
+			return connect(document, file);
 		}
 
 		final URI uri = LSPEclipseUtils.toUri(document);
@@ -562,10 +586,10 @@ public class LanguageServerWrapper {
 	 * @return null if not connection has happened, a future that completes when file is initialized otherwise
 	 * @noreference internal so far
 	 */
-	private CompletableFuture<LanguageServer> connect(@NonNull URI uri, IDocument document) throws IOException {
+	private @Nullable CompletableFuture<@NonNull LanguageServerWrapper> connect(@NonNull URI uri, IDocument document) throws IOException {
 		removeStopTimer();
 		if (this.connectedDocuments.containsKey(uri)) {
-			return CompletableFuture.completedFuture(languageServer);
+			return CompletableFuture.completedFuture(this);
 		}
 		start();
 		if (this.initializeFuture == null) {
@@ -590,7 +614,7 @@ public class LanguageServerWrapper {
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
 			}
-		}).thenApply(theVoid -> languageServer);
+		}).thenApply(theVoid -> this);
 	}
 
 	/**
@@ -645,7 +669,7 @@ public class LanguageServerWrapper {
 	 *
 	 * @deprecated use {@link #getInitializedServer()} instead.
 	 */
-	@Deprecated
+	@Deprecated(forRemoval = true)
 	@Nullable
 	public LanguageServer getServer() {
 		CompletableFuture<LanguageServer> languagServerFuture = getInitializedServer();
@@ -662,7 +686,10 @@ public class LanguageServerWrapper {
 	 * notifications are sent).
 	 * <p>If done in the UI stream, a job will be created
 	 * displaying that the server is being initialized</p>
+	 *
+	 * @deprecated use {@link LanguageServers#forDocument(IDocument)}
 	 */
+	@Deprecated(forRemoval = true) // will turn into a protected method
 	@NonNull
 	public CompletableFuture<LanguageServer> getInitializedServer() {
 		try {
