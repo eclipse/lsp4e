@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
@@ -166,6 +167,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	}
 
 	public @NonNull E withPreferredServer(final @Nullable LanguageServerDefinition serverDefinition) {
+		Assert.isLegal(this.serverDefinition == null);
 		this.serverDefinition = serverDefinition;
 		return (E)this;
 	}
@@ -176,6 +178,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return
 	 */
 	public @NonNull E withFilter(final @NonNull Predicate<ServerCapabilities> filter) {
+		Assert.isLegal(this.filter == NO_FILTER);
 		this.filter = filter;
 		return (E)this;
 	}
@@ -186,6 +189,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return
 	 */
 	public @NonNull E withCapability(final @NonNull Function<ServerCapabilities, Either<Boolean, ? extends Object>> serverCapabilities) {
+		Assert.isLegal(this.filter == NO_FILTER);
 		this.filter = f -> LSPEclipseUtils.hasCapability(serverCapabilities.apply(f));
 		return (E)this;
 	}
@@ -459,7 +463,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return new LanguageServerProjectExecutor(project);
 	}
 
-	private @NonNull Predicate<ServerCapabilities> filter = s -> true;
+	private static final @NonNull Predicate<ServerCapabilities> NO_FILTER = s -> true;
+	private @NonNull Predicate<ServerCapabilities> filter = NO_FILTER;
 
 	protected @Nullable LanguageServerDefinition serverDefinition;
 }
