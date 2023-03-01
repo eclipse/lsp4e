@@ -254,9 +254,9 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			return wrapperFuture.thenCompose(wrapper -> {
 				if (wrapper != null) {
 					try {
-						CompletableFuture<LanguageServer> serverFuture = wrapper.connect(document);
+						CompletableFuture<LanguageServerWrapper> serverFuture = wrapper.connectDocument(document);
 						if (serverFuture != null) {
-							return serverFuture.thenApply(server -> wrapper);
+							return serverFuture;
 						}
 					} catch (IOException e) {
 						LanguageServerPlugin.logError(e);
