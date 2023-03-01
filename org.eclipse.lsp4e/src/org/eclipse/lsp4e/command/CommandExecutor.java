@@ -27,7 +27,6 @@ import org.eclipse.core.commands.NotHandledException;
 import org.eclipse.core.commands.ParameterType;
 import org.eclipse.core.commands.ParameterizedCommand;
 import org.eclipse.core.commands.common.NotDefinedException;
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
@@ -64,26 +63,57 @@ public class CommandExecutor {
 	private static final String LSP_COMMAND_PARAMETER_TYPE_ID = "org.eclipse.lsp4e.commandParameterType"; //$NON-NLS-1$
 	private static final String LSP_PATH_PARAMETER_TYPE_ID = "org.eclipse.lsp4e.pathParameterType"; //$NON-NLS-1$
 
-	public static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @NonNull IDocument document) {
-		IFile file = LSPEclipseUtils.getFile(document);
-		if (file != null) {
-			return CommandExecutor.executeCommandClientSide(command, file);
+	/**
+	 * @param languageServerId unused
+	 * @deprecated use {@link #executeCommandClientSide(Command, IDocument)}
+	 */
+	@Deprecated(forRemoval = true)
+	public static CompletableFuture<Object> executeCommand(@Nullable Command command, @Nullable IDocument document, @Nullable String languageServerId) {
+		if (command != null && document != null) {
+			return executeCommandClientSide(command, document);
 		}
-		return null;
+		return CompletableFuture.completedFuture(null);
 	}
 
-	@SuppressWarnings("unused") // ECJ compiler for some reason thinks handlerService == null is always false
+	public static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @NonNull IDocument document) {
+		IPath path = LSPEclipseUtils.toPath(document);
+		if (path == null) {
+			path = ResourcesPlugin.getWorkspace().getRoot().getLocation();
+		}
+		CompletableFuture<Object> r = executeCommandClientSide(command, path);
+		if (r != null) {
+			return r;
+		}
+
+		URI uri = LSPEclipseUtils.toUri(document);
+		if (uri != null) {
+			return CommandExecutor.executeFallbackClientSide(command, uri);
+		}
+		return CompletableFuture.completedFuture(null);
+	}
+
 	public static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @NonNull IResource resource) {
+		CompletableFuture<Object> r = executeCommandClientSide(command, resource.getFullPath());
+		if (r != null) {
+			return r;
+		}
+		URI uri = LSPEclipseUtils.toUri(resource);
+		if (uri != null) {
+			return executeFallbackClientSide(command, uri);
+		}
+		return CompletableFuture.completedFuture(null);
+	}
+
+	@SuppressWarnings("unused") // ECJ compiler handlerService cannot be null because getService is declared as
+	// <T> T getService(Class<T> api), it infers the input is Class<@NonNull IHandlerService> and the output
+	// @NonNull IHandlerService, as it takes over the @NonNull annotation when inferring the return type, which
+	// is a bug in its implementation
+	private static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @Nullable IPath path) {
 		IWorkbench workbench = PlatformUI.getWorkbench();
 		if (workbench == null) {
 			return null;
 		}
-		IPath path;
-		if (resource != null) {
-			path = resource.getFullPath();
-		} else {
-			path = ResourcesPlugin.getWorkspace().getRoot().getLocation();
-		}
+
 		ParameterizedCommand parameterizedCommand = createEclipseCoreCommand(command, path, workbench);
 		if (parameterizedCommand == null) {
 			return null;
@@ -102,15 +132,20 @@ public class CommandExecutor {
 			LanguageServerPlugin.logError(e);
 		} catch (NotEnabledException | NotHandledException e2) {
 		}
-		// tentative fallback
+		return null;
+	}
+
+	// tentative fallback
+	private static CompletableFuture<Object> executeFallbackClientSide(@NonNull Command command, @NonNull URI initialUri) {
 		if (command.getArguments() != null) {
-			WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), resource);
+			WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), initialUri);
 			LSPEclipseUtils.applyWorkspaceEdit(edit, command.getTitle());
 			return CompletableFuture.completedFuture(null);
 		}
 		return null;
 	}
 
+	@SuppressWarnings("unused") // ECJ compiler thinks commandService cannot be null (see above)
 	private static ParameterizedCommand createEclipseCoreCommand(@NonNull Command command, IPath context,
 			@NonNull IWorkbench workbench) {
 		// Usually commands are defined via extension point, but we synthesize one on
@@ -119,6 +154,9 @@ public class CommandExecutor {
 		String commandId = command.getCommand();
 		@Nullable
 		ICommandService commandService = workbench.getService(ICommandService.class);
+		if (commandService == null) {
+			return null;
+		}
 		org.eclipse.core.commands.Command coreCommand = commandService.getCommand(commandId);
 		if (!coreCommand.isDefined()) {
 			ParameterType commandParamType = commandService.getParameterType(LSP_COMMAND_PARAMETER_TYPE_ID);
@@ -153,11 +191,10 @@ public class CommandExecutor {
 	 * Very empirical and unsafe heuristic to turn unknown command arguments into a
 	 * workspace edit...
 	 */
-	private static WorkspaceEdit createWorkspaceEdit(List<Object> commandArguments, @NonNull IResource resource) {
+	private static WorkspaceEdit createWorkspaceEdit(List<Object> commandArguments, @NonNull URI initialUri) {
 		final var workspaceEdit = new WorkspaceEdit();
 		final var changes = new HashMap<String, List<TextEdit>>();
 		workspaceEdit.setChanges(changes);
-		URI initialUri = LSPEclipseUtils.toUri(resource);
 		final var currentEntry = new Pair<URI, List<TextEdit>>(initialUri, new ArrayList<>());
 		commandArguments.stream().flatMap(item -> {
 			if (item instanceof List<?> list) {
