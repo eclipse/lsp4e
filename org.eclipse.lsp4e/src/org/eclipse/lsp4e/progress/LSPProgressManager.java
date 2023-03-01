@@ -128,7 +128,11 @@ public class LSPProgressManager {
 	private void begin(final WorkDoneProgressBegin begin, final IProgressMonitor monitor) {
 		Integer percentage = begin.getPercentage();
 		if (percentage != null) {
-			monitor.beginTask(begin.getTitle(), percentage);
+			if (percentage == 0) {
+				monitor.beginTask(begin.getTitle(), 100);
+			} else {
+				monitor.beginTask(begin.getTitle(), percentage);
+			}
 			currentPercentageMap.put(monitor, 0);
 		} else {
 			monitor.beginTask(begin.getTitle(), IProgressMonitor.UNKNOWN);
