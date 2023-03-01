@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2021 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016-2023 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -54,6 +54,7 @@ public final class LSPImages {
 	public static final String IMG_CONSTRUCTOR = "IMG_CONSTRUCTOR"; //$NON-NLS-1$
 	public static final String IMG_ENUM = "IMG_ENUM"; //$NON-NLS-1$
 	public static final String IMG_ENUM_MEMBER = "IMG_ENUM_MEMBER"; //$NON-NLS-1$
+	public static final String IMG_STRUCT = "IMG_STRUCT"; //$NON-NLS-1$
 	public static final String IMG_INTERACE = "IMG_INTERFACE"; //$NON-NLS-1$
 	public static final String IMG_FUNCTION = "IMG_FUNCTION"; //$NON-NLS-1$
 	public static final String IMG_VARIABLE = "IMG_VARIABLE"; //$NON-NLS-1$
@@ -83,6 +84,7 @@ public final class LSPImages {
 		declareRegistryImage(IMG_CONSTRUCTOR, OBJECT + "constructor.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_ENUM, OBJECT + "enum.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_ENUM_MEMBER, OBJECT + "enum_member.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_STRUCT, OBJECT + "struct.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_INTERACE, OBJECT + "interface.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_FUNCTION, OBJECT + "function.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_VARIABLE, OBJECT + "variable.png"); //$NON-NLS-1$
@@ -169,6 +171,7 @@ public final class LSPImages {
 		case Constructor -> getImage(IMG_CONSTRUCTOR);
 		case Enum -> getImage(IMG_ENUM);
 		case EnumMember -> getImage(IMG_ENUM_MEMBER);
+		case Struct -> getImage(IMG_STRUCT);
 		case Field -> getImage(IMG_FIELD);
 		case File -> getSharedImage(ISharedImages.IMG_OBJ_FILE);
 		case Function -> getImage(IMG_FUNCTION);
@@ -201,6 +204,7 @@ public final class LSPImages {
 		case Value -> getImage(IMG_VALUE);
 		case Enum -> getImage(IMG_ENUM);
 		case EnumMember -> getImage(IMG_ENUM_MEMBER);
+		case Struct -> getImage(IMG_STRUCT);
 		case Keyword -> getImage(IMG_KEYWORD);
 		case Snippet -> getImage(IMG_SNIPPET);
 		case Color -> getImageForColor(completionItem);
