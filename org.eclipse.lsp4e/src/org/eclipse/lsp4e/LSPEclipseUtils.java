@@ -82,6 +82,7 @@ import org.eclipse.lsp4e.refactoring.DeleteExternalFile;
 import org.eclipse.lsp4e.refactoring.LSPTextChange;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
+import org.eclipse.lsp4j.CallHierarchyPrepareParams;
 import org.eclipse.lsp4j.Color;
 import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.CreateFile;
@@ -278,6 +279,13 @@ public final class LSPEclipseUtils {
 	@NonNull
 	public static TextDocumentIdentifier toTextDocumentIdentifier(final URI uri) {
 		return new TextDocumentIdentifier(uri.toASCIIString());
+	}
+	
+	public static CallHierarchyPrepareParams toCallHierarchyPrepareParams(int offset, final @NonNull IDocument document) throws BadLocationException {
+        Position position =  LSPEclipseUtils.toPosition(offset, document);
+        TextDocumentIdentifier documentIdentifier = toTextDocumentIdentifier(document);
+        return new CallHierarchyPrepareParams(documentIdentifier, position);
+		
 	}
 
 	private static ITextFileBuffer toBuffer(IDocument document) {

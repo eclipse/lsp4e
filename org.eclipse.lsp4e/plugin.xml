@@ -90,6 +90,12 @@
                class="org.eclipse.ui.handlers.RegistryToggleState:false"
                id="org.eclipse.ui.commands.toggleState" />
       </command>
+      <command
+            categoryId="org.eclipse.lsp4e.category"
+            description="%command.open.call.hierarchy.decription"
+            id="org.eclipse.lsp4e.openCallHierarchy"
+            name="%command.open.call.hierarchy.name">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
@@ -140,6 +146,10 @@
       </handler>
       <handler commandId="org.eclipse.lsp4e.toggleSortOutline">
          <class class="org.eclipse.lsp4e.outline.ToggleSortOutlineHandler" />
+      </handler>
+      <handler
+            class="org.eclipse.lsp4e.callhierarchy.CallHierarchyCommandHandler"
+            commandId="org.eclipse.lsp4e.openCallHierarchy">
       </handler>
    </extension>
    <extension
@@ -257,6 +267,23 @@
             </visibleWhen>
          </command>
       </menuContribution>
+      <menuContribution
+            locationURI="popup:#TextEditorContext?before=org.eclipse.ui.genericeditor.findReferences">
+         <command
+               commandId="org.eclipse.lsp4e.openCallHierarchy">
+            <visibleWhen
+                  checkEnabled="false">
+               <and>
+                 <with variable="selection">
+                   <instanceof value="org.eclipse.jface.text.ITextSelection" />
+                 </with>
+                 <with variable="activeEditorInput">
+                   <test property="org.eclipse.lsp4e.hasLanguageServer" />
+                 </with>
+               </and>
+            </visibleWhen>
+         </command>
+      </menuContribution>
    </extension>
    <extension
          point="org.eclipse.ui.genericeditor.contentAssistProcessors">
@@ -311,6 +338,12 @@
             sequence="COMMAND+ALT+R"
             commandId="org.eclipse.ui.edit.rename"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration">
+      </key>
+      <key
+            commandId="org.eclipse.lsp4e.openCallHierarchy"
+            contextId="org.eclipse.ui.genericeditor.genericEditorContext"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="Ctrl+Alt+H">
       </key>
    </extension>
    <extension
@@ -567,6 +600,15 @@
             <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
       </reconciler>
+   </extension>
+   <extension
+         point="org.eclipse.ui.views">
+      <view
+            class="org.eclipse.lsp4e.callhierarchy.CallHierarchyView"
+            id="org.eclipse.lsp4e.callHierarchy.callHierarchyView"
+            name="Call Hierarchy"
+            restorable="true">
+      </view>
    </extension>
 
    <!-- reusable expression definitions, see https://wiki.eclipse.org/Command_Core_Expressions -->
