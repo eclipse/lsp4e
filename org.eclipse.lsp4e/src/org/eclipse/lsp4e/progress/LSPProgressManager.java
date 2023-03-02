@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2022 Avaloq Evolution AG.
+ * Copyright (c) 2022, 2023 Avaloq Evolution AG.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -128,7 +128,11 @@ public class LSPProgressManager {
 	private void begin(final WorkDoneProgressBegin begin, final IProgressMonitor monitor) {
 		Integer percentage = begin.getPercentage();
 		if (percentage != null) {
-			monitor.beginTask(begin.getTitle(), percentage);
+			if (percentage == 0) {
+				monitor.beginTask(begin.getTitle(), 100);
+			} else {
+				monitor.beginTask(begin.getTitle(), percentage);
+			}
 			currentPercentageMap.put(monitor, 0);
 		} else {
 			monitor.beginTask(begin.getTitle(), IProgressMonitor.UNKNOWN);
@@ -146,21 +150,19 @@ public class LSPProgressManager {
 	}
 
 	private void report(final WorkDoneProgressReport report, final IProgressMonitor monitor) {
-		if (report.getPercentage() == null) {
-			return;
-		}
-
 		if (report.getMessage() != null && !report.getMessage().isBlank()) {
 			monitor.subTask(report.getMessage());
 		}
 
-		if (currentPercentageMap.containsKey(monitor)) {
-			Integer percentage = currentPercentageMap.get(monitor);
-			int worked = percentage != null ? Math.min(percentage, report.getPercentage()) : 0;
-			monitor.worked(report.getPercentage().intValue() - worked);
-		}
+		if (report.getPercentage() != null) {
+			if (currentPercentageMap.containsKey(monitor)) {
+				Integer percentage = currentPercentageMap.get(monitor);
+				int worked = percentage != null ? Math.min(percentage, report.getPercentage()) : 0;
+				monitor.worked(report.getPercentage().intValue() - worked);
+			}
 
-		currentPercentageMap.put(monitor, report.getPercentage());
+			currentPercentageMap.put(monitor, report.getPercentage());
+		}
 	}
 
 	/**
