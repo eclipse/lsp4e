@@ -31,6 +31,7 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ltk.core.refactoring.Change;
@@ -47,16 +48,25 @@ import org.eclipse.text.edits.UndoEdit;
 public class LSPTextChange extends TextChange {
 
 	private final @NonNull URI fileUri;
-	private final @NonNull TextEdit textEdit;
 
 	private Either<IFile, IFileStore> file;
 	private int fAcquireCount;
 	private ITextFileBuffer fBuffer;
+	private @NonNull String newText;
+	private Range range;
 
 	public LSPTextChange(@NonNull String name, @NonNull URI fileUri, @NonNull TextEdit textEdit) {
 		super(name);
 		this.fileUri = fileUri;
-		this.textEdit = textEdit;
+		this.newText = textEdit.getNewText();
+		this.range = textEdit.getRange();
+	}
+
+	public LSPTextChange(@NonNull String name, @NonNull URI fileUri, @NonNull String newText) {
+		super(name);
+		this.fileUri = fileUri;
+		this.newText = newText;
+		this.range = null;
 	}
 
 	@Override
@@ -99,11 +109,11 @@ public class LSPTextChange extends TextChange {
 		final IDocument document  = fBuffer.getDocument();
 		int offset = 0;
 		int length = document.getLength();
-		if (this.textEdit.getRange() != null) {
+		if (range != null) {
 			try {
-				offset = LSPEclipseUtils.toOffset(this.textEdit.getRange().getStart(), document);
-				length = LSPEclipseUtils.toOffset(this.textEdit.getRange().getEnd(), document) - offset;
-				this.setEdit(new ReplaceEdit(offset, length, this.textEdit.getNewText()));
+				offset = LSPEclipseUtils.toOffset(range.getStart(), document);
+				length = LSPEclipseUtils.toOffset(range.getEnd(), document) - offset;
+				this.setEdit(new ReplaceEdit(offset, length, newText));
 			} catch (BadLocationException e) {
 				// Should not happen
 				LanguageServerPlugin.logError(e);
@@ -169,9 +179,9 @@ public class LSPTextChange extends TextChange {
 
 			int offset = 0;
 			int length = document.getLength();
-			if (textEdit.getRange() != null) {
-				offset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
-				length = LSPEclipseUtils.toOffset(textEdit.getRange().getEnd(), document) - offset;
+			if (range != null) {
+				offset = LSPEclipseUtils.toOffset(range.getStart(), document);
+				length = LSPEclipseUtils.toOffset(range.getEnd(), document) - offset;
 			}
 
 			final TextChange delegate;
@@ -186,7 +196,7 @@ public class LSPTextChange extends TextChange {
 				};
 			}
 			delegate.initializeValidationData(new NullProgressMonitor());
-			delegate.setEdit(new ReplaceEdit(offset, length, textEdit.getNewText()));
+			delegate.setEdit(new ReplaceEdit(offset, length, newText));
 
 			return delegate.perform(pm);
 
