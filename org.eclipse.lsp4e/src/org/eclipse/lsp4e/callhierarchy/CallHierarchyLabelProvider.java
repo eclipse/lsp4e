@@ -24,63 +24,63 @@ import org.eclipse.swt.graphics.Image;
  */
 public class CallHierarchyLabelProvider extends LabelProvider implements IStyledLabelProvider {
 
-    @Override
-    public Image getImage(final Object element) {
-        if (element instanceof CallHierarchyViewTreeNode) {
-            CallHierarchyItem callContainer = ((CallHierarchyViewTreeNode) element).getCallContainer();
-            Image res = LSPImages.imageFromSymbolKind(callContainer.getKind());
-            if (res != null) {
-                return res;
-            }
-        }
-        return super.getImage(element);
-    }
+	@Override
+	public Image getImage(final Object element) {
+		if (element instanceof CallHierarchyViewTreeNode treeNode) {
+			CallHierarchyItem callContainer = treeNode.getCallContainer();
+			Image res = LSPImages.imageFromSymbolKind(callContainer.getKind());
+			if (res != null) {
+				return res;
+			}
+		}
+		return super.getImage(element);
+	}
 
-    @Override
-    public StyledString getStyledText(final Object element) {
-        if (element instanceof CallHierarchyViewTreeNode) {
-            CallHierarchyItem callContainer = ((CallHierarchyViewTreeNode) element).getCallContainer();
-            StyledString styledString = new StyledString();
-            appendName(styledString, callContainer.getName());
-            if (callContainer.getDetail() != null) {
-                appendDetail(styledString, callContainer.getDetail());
-            }
-            return styledString;
-        } else if (element instanceof String) {
-            return new StyledString((String) element);
-        }
-        return null;
-    }
+	@Override
+	public StyledString getStyledText(final Object element) {
+		if (element instanceof CallHierarchyViewTreeNode treeNode) {
+			CallHierarchyItem callContainer = treeNode.getCallContainer();
+			StyledString styledString = new StyledString();
+			appendName(styledString, callContainer.getName());
+			if (callContainer.getDetail() != null) {
+				appendDetail(styledString, callContainer.getDetail());
+			}
+			return styledString;
+		} else if (element instanceof String s) {
+			return new StyledString(s);
+		}
+		return null;
+	}
 
-    /**
-     * Append the given call container name to the given styled string.
-     *
-     * @param styledString
-     *            the styled string to append to.
-     * @param name
-     *            the call container name to append.
-     */
-    protected void appendName(final StyledString styledString, final String name) {
-        // This implementation is specific to the way the symbol detail is encoded in
-        // the call container name (following VSCode as defacto standard).
-        int colon = name.lastIndexOf(':');
-        if (colon >= 0) {
-            styledString.append(name.substring(0, colon));
-            styledString.append(name.substring(colon), StyledString.DECORATIONS_STYLER);
-        } else {
-            styledString.append(name);
-        }
-    }
+	/**
+	 * Append the given call container name to the given styled string.
+	 *
+	 * @param styledString
+	 *            the styled string to append to.
+	 * @param name
+	 *            the call container name to append.
+	 */
+	protected void appendName(final StyledString styledString, final String name) {
+		// This implementation is specific to the way the symbol detail is encoded in
+		// the call container name (following VSCode as defacto standard).
+		int colon = name.lastIndexOf(':');
+		if (colon >= 0) {
+			styledString.append(name.substring(0, colon));
+			styledString.append(name.substring(colon), StyledString.DECORATIONS_STYLER);
+		} else {
+			styledString.append(name);
+		}
+	}
 
-    /**
-     * Append the given call container detail to the given styled string.
-     *
-     * @param styledString
-     *            the styled string to append to.
-     * @param detail
-     *            the call container detail to append.
-     */
-    protected void appendDetail(final StyledString styledString, final String detail) {
-        styledString.append(detail, StyledString.QUALIFIER_STYLER);
-    }
+	/**
+	 * Append the given call container detail to the given styled string.
+	 *
+	 * @param styledString
+	 *            the styled string to append to.
+	 * @param detail
+	 *            the call container detail to append.
+	 */
+	protected void appendDetail(final StyledString styledString, final String detail) {
+		styledString.append(detail, StyledString.QUALIFIER_STYLER);
+	}
 }
