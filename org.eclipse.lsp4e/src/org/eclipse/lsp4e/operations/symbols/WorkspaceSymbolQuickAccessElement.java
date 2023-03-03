@@ -12,15 +12,16 @@
 package org.eclipse.lsp4e.operations.symbols;
 
 import java.util.Random;
-import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.WorkspaceSymbol;
+import org.eclipse.lsp4j.WorkspaceSymbolLocation;
 import org.eclipse.ui.quickaccess.QuickAccessElement;
 
 public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
@@ -53,14 +54,16 @@ public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
 
 	@Override
 	public String getId() {
-		Location location = symbol.getLocation().map(Function.identity(), symbol -> new Location(symbol.getUri(), null));
-		@Nullable Range range = location.getRange();
-		return symbol.getName() + '@' + location.getUri() + (range != null ? '[' + range.getStart().getLine() + ',' + range.getStart().getCharacter() + ':' + range.getEnd().getLine() + ',' + range.getEnd().getCharacter() + ']' : "") + ',' + idExtension; //$NON-NLS-1$
+		String locationUri = symbol.getLocation().map(Location::getUri, WorkspaceSymbolLocation::getUri);
+		@Nullable Range range = symbol.getLocation().map(Location::getRange, s -> null);
+		return symbol.getName() + '@' + locationUri + (range != null ? '[' + range.getStart().getLine() + ',' + range.getStart().getCharacter() + ':' + range.getEnd().getLine() + ',' + range.getEnd().getCharacter() + ']' : "") + ',' + idExtension; //$NON-NLS-1$
 	}
 
 	@Override
 	public void execute() {
-		LSPEclipseUtils.openInEditor(symbol.getLocation().map(Function.identity(), symbol -> new Location(symbol.getUri(), null)));
+		String locationUri = symbol.getLocation().map(Location::getUri, WorkspaceSymbolLocation::getUri);
+		@Nullable Range range = symbol.getLocation().map(Location::getRange, s -> null);
+		LSPEclipseUtils.open(locationUri, UI.getActivePage(), range);
 	}
 
 }

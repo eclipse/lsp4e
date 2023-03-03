@@ -280,12 +280,12 @@ public final class LSPEclipseUtils {
 	public static TextDocumentIdentifier toTextDocumentIdentifier(final URI uri) {
 		return new TextDocumentIdentifier(uri.toASCIIString());
 	}
-	
+
 	public static CallHierarchyPrepareParams toCallHierarchyPrepareParams(int offset, final @NonNull IDocument document) throws BadLocationException {
-        Position position =  LSPEclipseUtils.toPosition(offset, document);
-        TextDocumentIdentifier documentIdentifier = toTextDocumentIdentifier(document);
-        return new CallHierarchyPrepareParams(documentIdentifier, position);
-		
+		Position position =  LSPEclipseUtils.toPosition(offset, document);
+		TextDocumentIdentifier documentIdentifier = toTextDocumentIdentifier(document);
+		return new CallHierarchyPrepareParams(documentIdentifier, position);
+
 	}
 
 	private static ITextFileBuffer toBuffer(IDocument document) {
@@ -875,9 +875,7 @@ public final class LSPEclipseUtils {
 						if (targetFile.exists() && createOperation.getOptions() != null) {
 							if (!createOperation.getOptions().getIgnoreIfExists()) {
 								if (createOperation.getOptions().getOverwrite()) {
-									final var edit = new TextEdit(null, ""); //$NON-NLS-1$
-									change.add(new LSPTextChange("Overwrite", //$NON-NLS-1$
-											targetURI, edit));
+									change.add(new LSPTextChange("Overwrite", targetURI, "")); //$NON-NLS-1$ //$NON-NLS-2$
 								} else {
 									// TODO? Log, warn user...?
 								}

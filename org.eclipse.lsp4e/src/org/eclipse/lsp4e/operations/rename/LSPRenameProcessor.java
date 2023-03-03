@@ -24,6 +24,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -128,7 +129,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	}
 
 	public String getPlaceholder() {
-		String placeholder = null;
+		@Nullable String placeholder = null;
 		if (prepareRenameResult != null) {
 			placeholder = prepareRenameResult.map(range -> {
 				try {
