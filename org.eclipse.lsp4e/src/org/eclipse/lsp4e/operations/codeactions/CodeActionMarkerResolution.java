@@ -85,6 +85,9 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 						}
 					}
 				}
+				if (codeAction.getEdit() != null) {
+					LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
+				}
 				if (codeAction.getCommand() != null) {
 					Command command = codeAction.getCommand();
 					ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
