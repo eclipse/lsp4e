@@ -18,39 +18,39 @@ import org.eclipse.jface.text.IDocument;
  * Simple type representing the input to the call hierarchy view.
  */
 public class CallHierarchyViewInput {
-    private final IDocument document;
-    private final int offset;
+	private final IDocument document;
+	private final int offset;
 
-    /**
-     * Creates a new instance of {@link CallHierarchyViewInput}.
-     *
-     * @param document
-     *            the document containing the selection to start a call hierarchy
-     *            from.
-     * @param offset
-     *            the offset into the document to select as the root of the
-     *            hierarchy.
-     */
-    public CallHierarchyViewInput(final IDocument document, final int offset) {
-        this.document = document;
-        this.offset = offset;
-    }
+	/**
+	 * Creates a new instance of {@link CallHierarchyViewInput}.
+	 *
+	 * @param document
+	 *            the document containing the selection to start a call hierarchy
+	 *            from.
+	 * @param offset
+	 *            the offset into the document to select as the root of the
+	 *            hierarchy.
+	 */
+	public CallHierarchyViewInput(final IDocument document, final int offset) {
+		this.document = document;
+		this.offset = offset;
+	}
 
-    /**
-     * Get the document containing the selection to start a call hierarchy from.
-     *
-     * @return the document containing the selection to start a call hierarchy from.
-     */
-    public IDocument getDocument() {
-        return document;
-    }
+	/**
+	 * Get the document containing the selection to start a call hierarchy from.
+	 *
+	 * @return the document containing the selection to start a call hierarchy from.
+	 */
+	public IDocument getDocument() {
+		return document;
+	}
 
-    /**
-     * Get the offset into the document to select as the root of the hierarchy.
-     *
-     * @return the offset into the document to select as the root of the hierarchy.
-     */
-    public int getOffset() {
-        return offset;
-    }
+	/**
+	 * Get the offset into the document to select as the root of the hierarchy.
+	 *
+	 * @return the offset into the document to select as the root of the hierarchy.
+	 */
+	public int getOffset() {
+		return offset;
+	}
 }

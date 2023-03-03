@@ -27,55 +27,54 @@ import org.eclipse.ui.part.ViewPart;
  * An LSP based CallHierarchyView.
  */
 public class CallHierarchyView extends ViewPart {
-    public static final String ID = "org.eclipse.lsp4e.callHierarchy.callHierarchyView"; //$NON-NLS-1$
+	public static final String ID = "org.eclipse.lsp4e.callHierarchy.callHierarchyView"; //$NON-NLS-1$
 
-    private TreeViewer treeViewer;
+	private TreeViewer treeViewer;
 
-    private final CallHierarchyContentProvider contentProvider = new CallHierarchyContentProvider();
+	private final CallHierarchyContentProvider contentProvider = new CallHierarchyContentProvider();
 
-    @Override
-    public void createPartControl(final Composite parent) {
-        // Create the tree viewer as a child of the composite parent
-        treeViewer = new TreeViewer(parent);
-        treeViewer.setContentProvider(contentProvider);
+	@Override
+	public void createPartControl(final Composite parent) {
+		// Create the tree viewer as a child of the composite parent
+		treeViewer = new TreeViewer(parent);
+		treeViewer.setContentProvider(contentProvider);
 
-        treeViewer.setLabelProvider(new DelegatingStyledCellLabelProvider(new CallHierarchyLabelProvider()));
+		treeViewer.setLabelProvider(new DelegatingStyledCellLabelProvider(new CallHierarchyLabelProvider()));
 
-        treeViewer.setUseHashlookup(true);
-        treeViewer.getControl().setEnabled(false);
-        treeViewer.addDoubleClickListener(new IDoubleClickListener() {
+		treeViewer.setUseHashlookup(true);
+		treeViewer.getControl().setEnabled(false);
+		treeViewer.addDoubleClickListener(new IDoubleClickListener() {
 
-            @SuppressWarnings("unchecked")
-            @Override
-            public void doubleClick(final DoubleClickEvent event) {
-                if (event.getSelection() instanceof IStructuredSelection) {
-                    ((IStructuredSelection) event.getSelection()).iterator().forEachRemaining(selectedObject -> {
-                        if (selectedObject instanceof CallHierarchyViewTreeNode) {
-                            CallHierarchyViewTreeNode selectedNode = (CallHierarchyViewTreeNode) selectedObject;
-                            CallHierarchyItem callContainer = selectedNode.getCallContainer();
-                            LSPEclipseUtils.open(callContainer.getUri(), selectedNode.getSelectionRange());
-                        }
-                    });
-                }
-            }
-        });
-    }
+			@SuppressWarnings("unchecked")
+			@Override
+			public void doubleClick(final DoubleClickEvent event) {
+				if (event.getSelection() instanceof IStructuredSelection structuredSelection) {
+					structuredSelection.iterator().forEachRemaining(selectedObject -> {
+						if (selectedObject instanceof CallHierarchyViewTreeNode selectedNode) {
+							CallHierarchyItem callContainer = selectedNode.getCallContainer();
+							LSPEclipseUtils.open(callContainer.getUri(), selectedNode.getSelectionRange());
+						}
+					});
+				}
+			}
+		});
+	}
 
-    @Override
-    public void setFocus() {
-        treeViewer.getControl().setFocus();
-    }
+	@Override
+	public void setFocus() {
+		treeViewer.getControl().setFocus();
+	}
 
-    /**
-     * Initialise this view with the call hierarchy for the specified selection.
-     *
-     * @param document
-     *            the document containing the current selection.
-     * @param offset
-     *            the offset into the document of the current selection.
-     */
-    public void initialize(final IDocument document, final int offset) {
-        CallHierarchyViewInput viewInput = new CallHierarchyViewInput(document, offset);
-        treeViewer.setInput(viewInput);
-    }
+	/**
+	 * Initialise this view with the call hierarchy for the specified selection.
+	 *
+	 * @param document
+	 *            the document containing the current selection.
+	 * @param offset
+	 *            the offset into the document of the current selection.
+	 */
+	public void initialize(final IDocument document, final int offset) {
+		CallHierarchyViewInput viewInput = new CallHierarchyViewInput(document, offset);
+		treeViewer.setInput(viewInput);
+	}
 }
