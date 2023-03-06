@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2019 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -33,6 +33,8 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.internal.Pair;
+import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.Range;
@@ -63,13 +65,15 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 		final IRegion linkRegion = r != null ? r : region;
 		final var allLinks = new LinkedHashMap<Either<Location, LocationLink>,LSBasedHyperlink>();
 		try {
-			LanguageServers.addAll(
-				LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDefinitionProvider)
-					.collectAll(ls -> ls.getTextDocumentService().definition(LSPEclipseUtils.toDefinitionParams(params))),
-				LanguageServers.forDocument(document).withCapability(ServerCapabilities::getTypeDefinitionProvider)
-					.collectAll(ls -> ls.getTextDocumentService().typeDefinition(LSPEclipseUtils.toTypeDefinitionParams(params))))
-				.get(500, TimeUnit.MILLISECONDS)
-				.stream().flatMap(locations -> toHyperlinks(document, linkRegion, locations).stream())
+			var definitions = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDefinitionProvider)
+				.collectAll(ls -> ls.getTextDocumentService().definition(LSPEclipseUtils.toDefinitionParams(params)).thenApply(l -> Pair.of(Messages.declarationHyperlinkLabel, l)));
+			var typeDefinitions = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getTypeDefinitionProvider)
+				.collectAll(ls -> ls.getTextDocumentService().typeDefinition(LSPEclipseUtils.toTypeDefinitionParams(params)).thenApply(l -> Pair.of(Messages.typeDefinitionHyperlinkLabel, l)));
+			var implementations = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getImplementationProvider)
+				.collectAll(ls -> ls.getTextDocumentService().implementation(LSPEclipseUtils.toImplementationParams(params)).thenApply(l -> Pair.of(Messages.implementationHyperlinkLabel, l)));
+			LanguageServers.addAll(LanguageServers.addAll(definitions, typeDefinitions), implementations)
+				.get(800, TimeUnit.MILLISECONDS)
+				.stream().flatMap(locations -> toHyperlinks(document, linkRegion, locations.getFirst(), locations.getSecond()).stream())
 				.forEach(link -> allLinks.putIfAbsent(link.getLocation(), link));
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
@@ -77,7 +81,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 500 miliseconds", e);  //$NON-NLS-1$
+			LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 800 miliseconds", e);  //$NON-NLS-1$
 		}
 		if (allLinks.isEmpty()) {
 			return null;
@@ -98,14 +102,14 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 	 *            the Eclipse links to update
 	 */
 	private static Collection<LSBasedHyperlink> toHyperlinks(final IDocument document, final IRegion linkRegion,
-			Either<List<? extends Location>, List<? extends LocationLink>> locations) {
+			String locationType, Either<List<? extends Location>, List<? extends LocationLink>> locations) {
 		if (locations == null) {
 			return Collections.emptyList();
 		}
 		if (locations.isLeft()) {
 			return locations.getLeft().stream()
 					.filter(Objects::nonNull)
-					.map(location -> new LSBasedHyperlink(location, linkRegion))
+					.map(location -> new LSBasedHyperlink(location, linkRegion, locationType))
 					.toList();
 		} else if (locations.isRight()) {
 			return locations.getRight().stream().filter(Objects::nonNull).map(locationLink -> {
@@ -122,7 +126,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 								LanguageServerPlugin.logError(e.getMessage(), e);
 							}
 						}
-						return new LSBasedHyperlink(locationLink, selectionRegion);
+						return new LSBasedHyperlink(locationLink, selectionRegion, locationType);
 					}).toList();
 		}
 		return Collections.emptyList();

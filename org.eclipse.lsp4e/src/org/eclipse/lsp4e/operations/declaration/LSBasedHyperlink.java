@@ -14,11 +14,11 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.declaration;
 
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -29,18 +29,20 @@ public class LSBasedHyperlink implements IHyperlink {
 
 	private final Either<Location, LocationLink> location;
 	private final IRegion highlightRegion;
+	private final String locationType;
 
-	public LSBasedHyperlink(Either<Location, LocationLink> location, IRegion highlightRegion) {
+	public LSBasedHyperlink(Either<Location, LocationLink> location, IRegion highlightRegion, String locationType) {
 		this.location = location;
 		this.highlightRegion = highlightRegion;
+		this.locationType = locationType;
 	}
 
-	public LSBasedHyperlink(Location location, IRegion linkRegion) {
-		this(Either.forLeft(location), linkRegion);
+	public LSBasedHyperlink(@NonNull Location location, IRegion linkRegion, String locationType) {
+		this(Either.forLeft(location), linkRegion, locationType);
 	}
 
-	public LSBasedHyperlink(LocationLink locationLink, IRegion linkRegion) {
-		this(Either.forRight(locationLink), linkRegion);
+	public LSBasedHyperlink(@NonNull LocationLink locationLink, IRegion linkRegion, String locationType) {
+		this(Either.forRight(locationLink), linkRegion, locationType);
 	}
 
 	@Override
@@ -90,7 +92,7 @@ public class LSBasedHyperlink implements IHyperlink {
 			}
 		}
 
-		return Messages.hyperlinkLabel;
+		return locationType;
 	}
 
 	private String getIntroUrlBasedLabel(String uri) {
@@ -99,7 +101,7 @@ public class LSBasedHyperlink implements IHyperlink {
 			if (introUrl != null) {
 				String label = introUrl.getParameter("label"); //$NON-NLS-1$
 				if (label != null) {
-					return Messages.hyperlinkLabel + " - " + label; //$NON-NLS-1$
+					return locationType + " - " + label; //$NON-NLS-1$
 				}
 			}
 		}
@@ -107,15 +109,15 @@ public class LSBasedHyperlink implements IHyperlink {
 			LanguageServerPlugin.logError(e.getMessage(), e);
 		}
 
-		return Messages.hyperlinkLabel;
+		return locationType;
 	}
 
 	private String getGenericUriBasedLabel(String uri) {
-		return Messages.hyperlinkLabel + " - " + uri; //$NON-NLS-1$
+		return locationType + " - " + uri; //$NON-NLS-1$
 	}
 
 	private String getFileBasedLabel(String uri) {
-		return Messages.hyperlinkLabel + " - " + uri.substring(LSPEclipseUtils.FILE_URI.length()); //$NON-NLS-1$
+		return locationType + " - " + uri.substring(LSPEclipseUtils.FILE_URI.length()); //$NON-NLS-1$
 	}
 
 }

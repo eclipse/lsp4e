@@ -90,6 +90,7 @@ import org.eclipse.lsp4j.DefinitionParams;
 import org.eclipse.lsp4j.DeleteFile;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.HoverParams;
+import org.eclipse.lsp4j.ImplementationParams;
 import org.eclipse.lsp4j.LinkedEditingRangeParams;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
@@ -245,6 +246,10 @@ public final class LSPEclipseUtils {
 
 	public static TypeDefinitionParams toTypeDefinitionParams(TextDocumentPositionParams params) {
 		return toTextDocumentPositionParamsCommon(new TypeDefinitionParams(), params);
+	}
+
+	public static ImplementationParams toImplementationParams(TextDocumentPositionParams params) {
+		return toTextDocumentPositionParamsCommon(new ImplementationParams(), params);
 	}
 
 	public static LinkedEditingRangeParams toLinkedEditingRangeParams(TextDocumentPositionParams params) {
