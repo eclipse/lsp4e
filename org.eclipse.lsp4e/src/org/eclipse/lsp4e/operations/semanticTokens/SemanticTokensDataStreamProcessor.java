@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.lsp4e.internal.StyleUtil;
@@ -86,9 +87,16 @@ public class SemanticTokensDataStreamProcessor {
 				List<String> tokenModifiers = tokenModifiers(data, semanticTokensLegend.getTokenModifiers());
 				StyleRange styleRange = getStyleRange(offset, length, textAttribute(tokenType));
 				if (tokenModifiers.stream().anyMatch(x -> x.equals(SemanticTokenModifiers.Deprecated))) {
+					if (styleRange == null) {
+						styleRange = new StyleRange();
+						styleRange.start = offset;
+						styleRange.length = length;
+					}
 					StyleUtil.DEPRECATE.applyStyles(styleRange);
 				}
-				styleRanges.add(styleRange);
+				if (styleRange != null) {
+					styleRanges.add(styleRange);
+				}
 				break;
 			}
 			idx++;
@@ -144,21 +152,16 @@ public class SemanticTokensDataStreamProcessor {
 	 * @param attr
 	 *            the attribute describing the style of the range to be styled
 	 */
-	private StyleRange getStyleRange(final int offset, final int length, final TextAttribute attr) {
-		final StyleRange styleRange;
+	private @Nullable StyleRange getStyleRange(final int offset, final int length, final TextAttribute attr) {
 		if (attr != null) {
 			final int style = attr.getStyle();
 			final int fontStyle = style & (SWT.ITALIC | SWT.BOLD | SWT.NORMAL);
-			styleRange = new StyleRange(offset, length, attr.getForeground(), attr.getBackground(), fontStyle);
+			final StyleRange styleRange = new StyleRange(offset, length, attr.getForeground(), attr.getBackground(), fontStyle);
 			styleRange.strikeout = (style & TextAttribute.STRIKETHROUGH) != 0;
 			styleRange.underline = (style & TextAttribute.UNDERLINE) != 0;
 			styleRange.font = attr.getFont();
 			return styleRange;
-		} else {
-			styleRange = new StyleRange();
-			styleRange.start = offset;
-			styleRange.length = length;
 		}
-		return styleRange;
+		return null;
 	}
 }
