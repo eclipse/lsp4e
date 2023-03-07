@@ -43,6 +43,7 @@ import org.eclipse.lsp4j.RangeFormattingCapabilities;
 import org.eclipse.lsp4j.ReferencesCapabilities;
 import org.eclipse.lsp4j.RenameCapabilities;
 import org.eclipse.lsp4j.ResourceOperationKind;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.ShowDocumentCapabilities;
 import org.eclipse.lsp4j.SignatureHelpCapabilities;
 import org.eclipse.lsp4j.SymbolCapabilities;
@@ -138,6 +139,12 @@ public class SupportedFeatures {
 		windowClientCapabilities.setWorkDoneProgress(true);
 		windowClientCapabilities.setShowMessage(new WindowShowMessageRequestCapabilities());
 		return windowClientCapabilities;
+	}
+
+	public static boolean supportsWorkspaceFolders(ServerCapabilities serverCapabilities) {
+		return serverCapabilities != null && serverCapabilities.getWorkspace() != null
+				&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
+				&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
 	}
 
 }

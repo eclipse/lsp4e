@@ -118,8 +118,10 @@ public final class MockLanguageServer implements LanguageServer {
 		inFlight.forEach(future -> {
 			try {
 				future.join();
-			} catch (CancellationException | CompletionException e) {
-				System.err.println("Error waiting for in flight requests prior to teardown: " + e.getMessage());
+			} catch (CompletionException e) {
+				System.err.println("Error waiting for in flight requests prior to teardown: " + e);
+			} catch (CancellationException e) {
+				// Not a test error!
 			}
 		});
 	}

@@ -32,14 +32,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.IFileBuffer;
@@ -57,7 +54,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.core.runtime.jobs.Job;
@@ -65,19 +61,16 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.internal.ConnectionFactory;
+import org.eclipse.lsp4e.internal.ServerConnection;
 import org.eclipse.lsp4e.internal.SupportedFeatures;
-import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
-import org.eclipse.lsp4j.ClientCapabilities;
-import org.eclipse.lsp4j.ClientInfo;
 import org.eclipse.lsp4j.CodeActionOptions;
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
 import org.eclipse.lsp4j.DocumentFormattingOptions;
 import org.eclipse.lsp4j.DocumentRangeFormattingOptions;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
-import org.eclipse.lsp4j.InitializeParams;
-import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.InitializedParams;
 import org.eclipse.lsp4j.Registration;
 import org.eclipse.lsp4j.RegistrationParams;
@@ -85,14 +78,11 @@ import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.UnregistrationParams;
-import org.eclipse.lsp4j.WindowClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.WorkspaceFoldersChangeEvent;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.eclipse.lsp4j.WorkspaceSymbolOptions;
-import org.eclipse.lsp4j.jsonrpc.Launcher;
-import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
@@ -146,16 +136,21 @@ public class LanguageServerWrapper {
 	protected Map<@NonNull URI, @NonNull DocumentContentSynchronizer> connectedDocuments;
 	@Nullable
 	protected final IPath initialPath;
-	protected final InitializeParams initParams = new InitializeParams();
 
-	protected StreamConnectionProvider lspStreamProvider;
-	private Future<?> launcherFuture;
-	private CompletableFuture<Void> initializeFuture;
-	private LanguageServer languageServer;
-	private LanguageClientImpl languageClient;
-	private ServerCapabilities serverCapabilities;
+	/**
+	 * This will be null if the server is stopped, and set when start is called. Code that
+	 * needs to enqueue further work for when the server is ready should chain onto this object.
+	 */
+	private CompletableFuture<@NonNull ServerConnection> initializeFuture;
+
+	/**
+	 * Internal hook: this will be set when initializeFuture is complete and cleared when
+	 * the server is shut down. Essentially syntactic sugar so code within this class can use
+	 * a simple null check rather than dereferencing initializeFuture
+	 */
+	private volatile ServerConnection connection;
+
 	private Timer timer;
-	private AtomicBoolean stopping = new AtomicBoolean(false);
 
 	private final ExecutorService dispatcher;
 
@@ -165,7 +160,7 @@ public class LanguageServerWrapper {
 	 * Map containing unregistration handlers for dynamic capability registrations.
 	 */
 	private final @NonNull Map<@NonNull String, @NonNull Runnable> dynamicRegistrations = new HashMap<>();
-	private boolean initiallySupportsWorkspaceFolders = false;
+
 	private final @NonNull IResourceChangeListener workspaceFolderUpdater = new WorkspaceFolderListener();
 
 	/* Backwards compatible constructor */
@@ -212,7 +207,7 @@ public class LanguageServerWrapper {
 	 * @return the workspace folder to be announced to the language server
 	 */
 	private List<WorkspaceFolder> getRelevantWorkspaceFolders() {
-		final var languageClient = this.languageClient;
+		final var languageClient = connection == null ? null : connection.languageClient;
 		List<WorkspaceFolder> folders = null;
 		if (languageClient != null) {
 			try {
@@ -233,12 +228,11 @@ public class LanguageServerWrapper {
 	/**
 	 * Starts a language server and triggers initialization. If language server is
 	 * started and active, does nothing. If language server is inactive, restart it.
-	 *
 	 * @throws IOException
 	 */
 	public synchronized void start() throws IOException {
 		final var filesToReconnect = new HashMap<@NonNull URI, IDocument>();
-		if (this.languageServer != null) {
+		if (connection != null) {
 			if (isActive()) {
 				return;
 			} else {
@@ -252,72 +246,49 @@ public class LanguageServerWrapper {
 			// Someone else has already triggered startup in a separate thread: nothing to do
 			return;
 		}
-		final URI rootURI = getRootURI();
-		this.initializeFuture = CompletableFuture.supplyAsync(() -> {
-			if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
-				this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
-						serverDefinition.createConnectionProvider(), serverDefinition.id);
-			} else {
-				this.lspStreamProvider = serverDefinition.createConnectionProvider();
-			}
-			initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
-			try {
-				lspStreamProvider.start();
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-			return null;
-		}).thenRun(() -> {
-			languageClient = serverDefinition.createLanguageClient();
 
-			initParams.setProcessId((int) ProcessHandle.current().pid());
+		final ConnectionFactory connectionFactory = new ConnectionFactory(getRootURI(), this, this::logMessage, this.listener);
 
-			if (rootURI != null) {
-				initParams.setRootUri(rootURI.toString());
-				initParams.setRootPath(rootURI.getPath());
-			}
+		this.initializeFuture = connectionFactory.start().thenApply(connection -> {
+			// Connection from the factory basically ready, send init message
+			connectionFactory.checkCancelled();
+			connection.languageServer.initialized(new InitializedParams());
 
-			UnaryOperator<MessageConsumer> wrapper = consumer -> (message -> {
-				logMessage(message);
-				consumer.consume(message);
-				final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
-				if (currentConnectionProvider != null && isActive()) {
-					currentConnectionProvider.handleMessage(message, this.languageServer, rootURI);
-				}
-			});
-			initParams.setWorkspaceFolders(getRelevantWorkspaceFolders());
-			Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder() //
-					.setLocalService(languageClient)//
-					.setRemoteInterface(serverDefinition.getServerInterface())//
-					.setInput(lspStreamProvider.getInputStream())//
-					.setOutput(lspStreamProvider.getOutputStream())//
-					.setExecutorService(listener)//
-					.wrapMessages(wrapper)//
-					.create();
-			this.languageServer = launcher.getRemoteProxy();
-			languageClient.connect(languageServer, this);
-			this.launcherFuture = launcher.startListening();
-		})
-		.thenCompose(unused -> initServer(rootURI))
-		.thenAccept(res -> {
-			serverCapabilities = res.getCapabilities();
-			this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
-		}).thenRun(() -> {
-			this.languageServer.initialized(new InitializedParams());
+			// Ensure this class receives notifications for documents being opened
+			connectionFactory.checkCancelled();
 			FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
-		}).exceptionally(e -> {
-			LanguageServerPlugin.logError(e);
-			stop();
-			return null;
+
+			// Set the internal field
+			connectionFactory.checkCancelled();
+			this.connection = connection;
+
+			connectionFactory.checkCancelled();
+			return connection;
+		});
+
+		this.initializeFuture.whenComplete((t, e) -> {
+			if (e != null) {
+				if (!(e instanceof CancellationException)) {
+					LanguageServerPlugin.logError(e);
+				}
+
+				// If being cancelled during startup then try and prevent any yet-to-begin
+				// steps from even being attempted
+				connectionFactory.abortStartup();
+
+				// Ensure the state and listeners held on this class outside ServerConnection are
+				// cleaned up
+				stop();
+			}
 		});
 
 		// Ensure any documents are reconnected if they were open when the server was shut down
 		// This is an extra step composed on top of initializeFuture rather than one of the initialization
 		// steps: effectively this means when the initializeFuture is complete then other operations can
 		// proceed in parallel with document reconnection. TODO: is this right/desirable?
-		this.initializeFuture.thenRunAsync(() -> {
-			watchProjects();
-			for (Entry<URI, IDocument> fileToReconnect : filesToReconnect.entrySet()) {
+		this.initializeFuture.thenAcceptAsync(conn -> {
+			watchProjects(conn);
+			for (Entry<@NonNull URI, IDocument> fileToReconnect : filesToReconnect.entrySet()) {
 				try {
 					connect(fileToReconnect.getKey(), fileToReconnect.getValue());
 				} catch (IOException e) {
@@ -325,33 +296,8 @@ public class LanguageServerWrapper {
 				}
 			}
 		});
-
 	}
 
-	private CompletableFuture<InitializeResult> initServer(final URI rootURI) {
-		final String name = Platform.getProduct() != null ? Platform.getProduct().getName() : "Eclipse IDE"; //$NON-NLS-1$
-
-		final var workspaceClientCapabilities = SupportedFeatures.getWorkspaceClientCapabilities();
-		final var textDocumentClientCapabilities = SupportedFeatures.getTextDocumentClientCapabilities();
-
-		WindowClientCapabilities windowClientCapabilities = SupportedFeatures.getWindowClientCapabilities();
-		initParams.setCapabilities(new ClientCapabilities(
-				workspaceClientCapabilities,
-				textDocumentClientCapabilities,
-				windowClientCapabilities,
-				lspStreamProvider.getExperimentalFeaturesPOJO()));
-		initParams.setClientInfo(getClientInfo(name));
-		initParams.setTrace(this.lspStreamProvider.getTrace(rootURI));
-
-		// no then...Async future here as we want this chain of operation to be sequential and "atomic"-ish
-		return languageServer.initialize(initParams);
-	}
-
-	private ClientInfo getClientInfo(String name) {
-		String pluginVersion = Platform.getBundle(LanguageServerPlugin.PLUGIN_ID).getVersion().toString();
-		final var clientInfo = new ClientInfo(name, pluginVersion);
-		return clientInfo;
-	}
 
 	@Nullable
 	private URI getRootURI() {
@@ -371,12 +317,6 @@ public class LanguageServerWrapper {
 		return null;
 	}
 
-	private static boolean supportsWorkspaceFolders(ServerCapabilities serverCapabilities) {
-		return serverCapabilities != null && serverCapabilities.getWorkspace() != null
-				&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
-				&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
-	}
-
 	private void logMessage(Message message) {
 		if (message instanceof ResponseMessage responseMessage && responseMessage.getError() != null
 				&& responseMessage.getId()
@@ -391,7 +331,7 @@ public class LanguageServerWrapper {
 	 * @return whether the underlying connection to language server is still active
 	 */
 	public boolean isActive() {
-		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
+		return this.connection != null && this.connection.isActive();
 	}
 
 	private void removeStopTimer() {
@@ -419,63 +359,29 @@ public class LanguageServerWrapper {
 	 * @return True if this is the wrapper for the given server
 	 */
 	boolean isWrapperFor(LanguageServer server) {
-		return server == this.languageServer;
+		return connection != null && server == connection.languageServer;
 	}
 
 	public synchronized void stop() {
-		final boolean alreadyStopping = this.stopping.getAndSet(true);
-		if (alreadyStopping) {
-			return;
-		}
 		removeStopTimer();
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
 			this.initializeFuture = null;
 		}
+		if (this.connection != null) {
+			ConnectionFactory.stop(this.connection);
+			this.connection = null;
+		}
 
-		this.serverCapabilities = null;
 		this.dynamicRegistrations.clear();
-
-		final Future<?> serverFuture = this.launcherFuture;
-		final StreamConnectionProvider provider = this.lspStreamProvider;
-		final LanguageServer languageServerInstance = this.languageServer;
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(workspaceFolderUpdater);
 
-		Runnable shutdownKillAndStopFutureAndProvider = () -> {
-			if (languageServerInstance != null) {
-				CompletableFuture<Object> shutdown = languageServerInstance.shutdown();
-				try {
-					shutdown.get(5, TimeUnit.SECONDS);
-				} catch (InterruptedException ex) {
-					Thread.currentThread().interrupt();
-				} catch (Exception ex) {
-					LanguageServerPlugin.logError(ex);
-				}
-			}
-
-			if (serverFuture != null) {
-				serverFuture.cancel(true);
-			}
-
-			if (languageServerInstance != null) {
-				languageServerInstance.exit();
-			}
-
-			if (provider != null) {
-				provider.stop();
-			}
-			this.stopping.set(false);
-		};
-
-		CompletableFuture.runAsync(shutdownKillAndStopFutureAndProvider);
-
-		this.launcherFuture = null;
-		this.lspStreamProvider = null;
-
-		while (!this.connectedDocuments.isEmpty()) {
-			disconnect(this.connectedDocuments.keySet().iterator().next());
-		}
-		this.languageServer = null;
+		// Make sure we don't get any more document events. No need to send didClose message
+		// when we're killing the server anyway
+		this.connectedDocuments.values().forEach(documentListener -> {
+			documentListener.getDocument().removeDocumentListener(documentListener);
+		});
+		this.connectedDocuments.clear();
 
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
 	}
@@ -508,18 +414,21 @@ public class LanguageServerWrapper {
 		return uri == null ? null : connect(uri, document);
 	}
 
-	private void watchProjects() {
-		if (!supportsWorkspaceFolderCapability()) {
+	private void watchProjects(final @NonNull ServerConnection conn) {
+		if (!supportsWorkspaceFolderCapability(conn)) {
 			return;
 		}
-		final LanguageServer currentLS = this.languageServer;
+
+		// TODO: is a workspace job too heavyweight for this?
 		new WorkspaceJob("Setting watch projects on server " + serverDefinition.label) { //$NON-NLS-1$
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 				WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
 				wsFolderEvent.getAdded().addAll(getRelevantWorkspaceFolders());
-				if (currentLS != null && currentLS == LanguageServerWrapper.this.languageServer) {
-					currentLS.getWorkspaceService()
+
+				// Not sure about this... guarding against a possible race condition?
+				if (conn == connection) {
+					conn.languageServer.getWorkspaceService()
 							.didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(wsFolderEvent));
 				}
 				ResourcesPlugin.getWorkspace().addResourceChangeListener(workspaceFolderUpdater,
@@ -548,7 +457,7 @@ public class LanguageServerWrapper {
 	private boolean supportsWorkspaceFolderCapability() {
 		if (this.initializeFuture != null) {
 			try {
-				this.initializeFuture.get(1, TimeUnit.SECONDS);
+				return this.initializeFuture.thenApply(conn -> supportsWorkspaceFolderCapability(conn)).get(1, TimeUnit.SECONDS);
 			} catch (ExecutionException e) {
 				LanguageServerPlugin.logError(e);
 			} catch (InterruptedException e) {
@@ -558,7 +467,11 @@ public class LanguageServerWrapper {
 				LanguageServerPlugin.logWarning("Could not get if the workspace folder capability is supported due to timeout after 1 second", e); //$NON-NLS-1$
 			}
 		}
-		return initiallySupportsWorkspaceFolders || supportsWorkspaceFolders(serverCapabilities);
+		return false;
+	}
+
+	private boolean supportsWorkspaceFolderCapability(@NonNull ServerConnection conn) {
+		return conn.initiallySupportsWorkspaceFolders || SupportedFeatures.supportsWorkspaceFolders(conn.serverCapabilities);
 	}
 
 	/**
@@ -569,12 +482,12 @@ public class LanguageServerWrapper {
 	 */
 	private CompletableFuture<LanguageServer> connect(@NonNull URI uri, IDocument document) throws IOException {
 		removeStopTimer();
-		if (this.connectedDocuments.containsKey(uri)) {
-			return CompletableFuture.completedFuture(languageServer);
-		}
 		start();
 		if (this.initializeFuture == null) {
 			return null;
+		}
+		if (this.connectedDocuments.containsKey(uri)) {
+			return initializeFuture.thenApply(connection -> connection.languageServer);
 		}
 		if (document == null) {
 			final var docFile = (IFile) LSPEclipseUtils.findResourceFor(uri);
@@ -584,18 +497,18 @@ public class LanguageServerWrapper {
 			return null;
 		}
 		final IDocument theDocument = document;
-		return initializeFuture.thenAcceptAsync(theVoid -> {
+		return initializeFuture.thenApplyAsync(conn -> {
 			synchronized (connectedDocuments) {
 				if (this.connectedDocuments.containsKey(uri)) {
-					return;
+					return conn.languageServer;
 				}
-				TextDocumentSyncKind syncKind = initializeFuture == null ? null
-						: serverCapabilities.getTextDocumentSync().map(Functions.identity(), TextDocumentSyncOptions::getChange);
-				final var listener = new DocumentContentSynchronizer(this, languageServer, theDocument, syncKind);
+				TextDocumentSyncKind syncKind = conn.serverCapabilities.getTextDocumentSync().map(Functions.identity(), TextDocumentSyncOptions::getChange);
+				final var listener = new DocumentContentSynchronizer(this, conn.languageServer, theDocument, syncKind);
 				theDocument.addDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
+				return conn.languageServer;
 			}
-		}).thenApply(theVoid -> languageServer);
+		});
 	}
 
 	/**
@@ -655,7 +568,7 @@ public class LanguageServerWrapper {
 	public LanguageServer getServer() {
 		CompletableFuture<LanguageServer> languagServerFuture = getInitializedServer();
 		if (Display.getCurrent() != null) { // UI Thread
-			return this.languageServer;
+			return connection != null ? connection.languageServer : null;
 		} else {
 			return languagServerFuture.join();
 		}
@@ -690,10 +603,10 @@ public class LanguageServerWrapper {
 				PlatformUI.getWorkbench().getProgressService().showInDialog(UI.getActiveShell(), waitForInitialization);
 			}
 			if (initializeFuture != null) {
-				return initializeFuture.thenApply(r -> this.languageServer);
+				return initializeFuture.thenApply(conn -> conn.languageServer);
 			}
 		}
-		return CompletableFuture.completedFuture(this.languageServer);
+		return CompletableFuture.completedFuture(connection == null ? null : connection.languageServer);
 	}
 
 	/**
@@ -808,7 +721,7 @@ public class LanguageServerWrapper {
 			LanguageServerPlugin.logError(e);
 		}
 
-		return this.serverCapabilities;
+		return connection != null ? connection.serverCapabilities : null;
 	}
 
 	/**
@@ -826,62 +739,64 @@ public class LanguageServerWrapper {
 	}
 
 	void registerCapability(RegistrationParams params) {
-		params.getRegistrations().forEach(reg -> {
-			if ("workspace/didChangeWorkspaceFolders".equals(reg.getMethod())) { //$NON-NLS-1$
-				Assert.isNotNull(serverCapabilities,
-						"Dynamic capability registration failed! Server not yet initialized?"); //$NON-NLS-1$
-				if (initiallySupportsWorkspaceFolders) {
-					// Can treat this as a NOP since nothing can disable it dynamically if it was
-					// enabled on initialization.
-				} else if (supportsWorkspaceFolders(serverCapabilities)) {
-					LanguageServerPlugin.logWarning(
-							"Dynamic registration of 'workspace/didChangeWorkspaceFolders' ignored. It was already enabled before", //$NON-NLS-1$
-							null);
-				} else {
-					addRegistration(reg, () -> setWorkspaceFoldersEnablement(false));
-					setWorkspaceFoldersEnablement(true);
+		initializeFuture.thenAccept(conn -> {
+			final ServerCapabilities serverCapabilities = conn.serverCapabilities;
+			params.getRegistrations().forEach(reg -> {
+				if ("workspace/didChangeWorkspaceFolders".equals(reg.getMethod())) { //$NON-NLS-1$
+					if (conn.initiallySupportsWorkspaceFolders) {
+						// Can treat this as a NOP since nothing can disable it dynamically if it was
+						// enabled on initialization.
+					} else if (SupportedFeatures.supportsWorkspaceFolders(serverCapabilities)) {
+						LanguageServerPlugin.logWarning(
+								"Dynamic registration of 'workspace/didChangeWorkspaceFolders' ignored. It was already enabled before", //$NON-NLS-1$
+								null);
+					} else {
+						addRegistration(reg, () -> setWorkspaceFoldersEnablement(conn, false));
+						setWorkspaceFoldersEnablement(conn, true);
+					}
+				} else if ("workspace/executeCommand".equals(reg.getMethod())) { //$NON-NLS-1$
+					final var gson = new Gson(); // TODO? retrieve the GSon used by LS
+					ExecuteCommandOptions executeCommandOptions = gson.fromJson((JsonObject) reg.getRegisterOptions(),
+							ExecuteCommandOptions.class);
+					List<String> newCommands = executeCommandOptions.getCommands();
+					if (!newCommands.isEmpty()) {
+						addRegistration(reg, () -> unregisterCommands(newCommands));
+						registerCommands(newCommands);
+					}
+				} else if ("textDocument/formatting".equals(reg.getMethod())) { //$NON-NLS-1$
+					Either<Boolean, DocumentFormattingOptions> documentFormattingProvider = serverCapabilities
+							.getDocumentFormattingProvider();
+					if (documentFormattingProvider == null || documentFormattingProvider.isLeft()) {
+						serverCapabilities.setDocumentFormattingProvider(Boolean.TRUE);
+						addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider));
+					} else {
+						serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider.getRight());
+						addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider));
+					}
+				} else if ("textDocument/rangeFormatting".equals(reg.getMethod())) { //$NON-NLS-1$
+					Either<Boolean, DocumentRangeFormattingOptions> documentRangeFormattingProvider = serverCapabilities
+							.getDocumentRangeFormattingProvider();
+					if (documentRangeFormattingProvider == null || documentRangeFormattingProvider.isLeft()) {
+						serverCapabilities.setDocumentRangeFormattingProvider(Boolean.TRUE);
+						addRegistration(reg, () -> serverCapabilities
+								.setDocumentRangeFormattingProvider(documentRangeFormattingProvider));
+					} else {
+						serverCapabilities.setDocumentRangeFormattingProvider(documentRangeFormattingProvider.getRight());
+						addRegistration(reg, () -> serverCapabilities
+								.setDocumentRangeFormattingProvider(documentRangeFormattingProvider));
+					}
+				} else if ("textDocument/codeAction".equals(reg.getMethod())) { //$NON-NLS-1$
+					final Either<Boolean, CodeActionOptions> beforeRegistration = serverCapabilities.getCodeActionProvider();
+					serverCapabilities.setCodeActionProvider(Boolean.TRUE);
+					addRegistration(reg, () -> serverCapabilities.setCodeActionProvider(beforeRegistration));
+				} else if ("workspace/symbol".equals(reg.getMethod())) { //$NON-NLS-1$
+					final Either<Boolean, WorkspaceSymbolOptions> beforeRegistration = serverCapabilities.getWorkspaceSymbolProvider();
+					serverCapabilities.setWorkspaceSymbolProvider(Boolean.TRUE);
+					addRegistration(reg, () -> serverCapabilities.setWorkspaceSymbolProvider(beforeRegistration));
 				}
-			} else if ("workspace/executeCommand".equals(reg.getMethod())) { //$NON-NLS-1$
-				final var gson = new Gson(); // TODO? retrieve the GSon used by LS
-				ExecuteCommandOptions executeCommandOptions = gson.fromJson((JsonObject) reg.getRegisterOptions(),
-						ExecuteCommandOptions.class);
-				List<String> newCommands = executeCommandOptions.getCommands();
-				if (!newCommands.isEmpty()) {
-					addRegistration(reg, () -> unregisterCommands(newCommands));
-					registerCommands(newCommands);
-				}
-			} else if ("textDocument/formatting".equals(reg.getMethod())) { //$NON-NLS-1$
-				Either<Boolean, DocumentFormattingOptions> documentFormattingProvider = serverCapabilities
-						.getDocumentFormattingProvider();
-				if (documentFormattingProvider == null || documentFormattingProvider.isLeft()) {
-					serverCapabilities.setDocumentFormattingProvider(Boolean.TRUE);
-					addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider));
-				} else {
-					serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider.getRight());
-					addRegistration(reg, () -> serverCapabilities.setDocumentFormattingProvider(documentFormattingProvider));
-				}
-			} else if ("textDocument/rangeFormatting".equals(reg.getMethod())) { //$NON-NLS-1$
-				Either<Boolean, DocumentRangeFormattingOptions> documentRangeFormattingProvider = serverCapabilities
-						.getDocumentRangeFormattingProvider();
-				if (documentRangeFormattingProvider == null || documentRangeFormattingProvider.isLeft()) {
-					serverCapabilities.setDocumentRangeFormattingProvider(Boolean.TRUE);
-					addRegistration(reg, () -> serverCapabilities
-							.setDocumentRangeFormattingProvider(documentRangeFormattingProvider));
-				} else {
-					serverCapabilities.setDocumentRangeFormattingProvider(documentRangeFormattingProvider.getRight());
-					addRegistration(reg, () -> serverCapabilities
-							.setDocumentRangeFormattingProvider(documentRangeFormattingProvider));
-				}
-			} else if ("textDocument/codeAction".equals(reg.getMethod())) { //$NON-NLS-1$
-				final Either<Boolean, CodeActionOptions> beforeRegistration = serverCapabilities.getCodeActionProvider();
-				serverCapabilities.setCodeActionProvider(Boolean.TRUE);
-				addRegistration(reg, () -> serverCapabilities.setCodeActionProvider(beforeRegistration));
-			} else if ("workspace/symbol".equals(reg.getMethod())) { //$NON-NLS-1$
-				final Either<Boolean, WorkspaceSymbolOptions> beforeRegistration = serverCapabilities.getWorkspaceSymbolProvider();
-				serverCapabilities.setWorkspaceSymbolProvider(Boolean.TRUE);
-				addRegistration(reg, () -> serverCapabilities.setWorkspaceSymbolProvider(beforeRegistration));
-			}
+			});
 		});
+
 	}
 
 	private void addRegistration(@NonNull Registration reg, @NonNull Runnable unregistrationHandler) {
@@ -892,17 +807,15 @@ public class LanguageServerWrapper {
 		}
 	}
 
-	synchronized void setWorkspaceFoldersEnablement(boolean enable) {
+	synchronized void setWorkspaceFoldersEnablement(ServerConnection conn, boolean enable) {
 		if (enable == supportsWorkspaceFolderCapability()) {
 			return;
 		}
-		if (serverCapabilities == null) {
-			this.serverCapabilities = new ServerCapabilities();
-		}
-		WorkspaceServerCapabilities workspace = serverCapabilities.getWorkspace();
+
+		WorkspaceServerCapabilities workspace = conn.serverCapabilities.getWorkspace();
 		if (workspace == null) {
 			workspace = new WorkspaceServerCapabilities();
-			serverCapabilities.setWorkspace(workspace);
+			conn.serverCapabilities.setWorkspace(workspace);
 		}
 		WorkspaceFoldersOptions folders = workspace.getWorkspaceFolders();
 		if (folders == null) {
@@ -911,7 +824,7 @@ public class LanguageServerWrapper {
 		}
 		folders.setSupported(enable);
 		if (enable) {
-			watchProjects();
+			watchProjects(conn);
 		}
 	}
 
@@ -996,10 +909,9 @@ public class LanguageServerWrapper {
 					|| (workspaceFolderEvent.getAdded().isEmpty() && workspaceFolderEvent.getRemoved().isEmpty())) {
 				return;
 			}
-			// If shutting down, language server will be set to null, so ignore the event
-			final LanguageServer currentServer = LanguageServerWrapper.this.languageServer;
-			if (currentServer != null) {
-				currentServer.getWorkspaceService()
+			// If shutting down, connection will be set to null, so ignore the event
+			if (connection != null) {
+				connection.languageServer.getWorkspaceService()
 						.didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(workspaceFolderEvent));
 			}
 		}
