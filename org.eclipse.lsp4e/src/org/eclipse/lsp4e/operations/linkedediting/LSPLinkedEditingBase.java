@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.linkedediting;
 
-import java.net.URI;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -27,7 +26,6 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4j.LinkedEditingRanges;
-import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentPositionParams;
@@ -56,25 +54,17 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 		if (document == null) {
 			return CompletableFuture.completedFuture(null);
 		}
-		Position position;
 		try {
-			position = LSPEclipseUtils.toPosition(offset, document);
+			TextDocumentPositionParams params = LSPEclipseUtils.toTextDocumentPosistionParams(offset, document);
+			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getLinkedEditingRangeProvider)
+					.collectAll(languageServer -> languageServer.getTextDocumentService()
+							.linkedEditingRange(LSPEclipseUtils.toLinkedEditingRangeParams(params)))
+					.thenApply(linkedEditRanges -> linkedEditRanges.stream().filter(Objects::nonNull)
+							.filter(linkedEditRange -> rangesContainOffset(linkedEditRange, offset, document)).findFirst());
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 			return CompletableFuture.completedFuture(null);
 		}
-		URI uri = LSPEclipseUtils.toUri(document);
-		if(uri == null) {
-			return CompletableFuture.completedFuture(null);
-		}
-		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(uri);
-		final var params = new TextDocumentPositionParams(identifier, position);
-
-		return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getLinkedEditingRangeProvider)
-				.collectAll(languageServer -> languageServer.getTextDocumentService()
-						.linkedEditingRange(LSPEclipseUtils.toLinkedEditingRangeParams(params)))
-				.thenApply(linkedEditRanges -> linkedEditRanges.stream().filter(Objects::nonNull)
-						.filter(linkedEditRange -> rangesContainOffset(linkedEditRange, offset, document)).findFirst());
 	}
 
 	private boolean rangesContainOffset(@NonNull LinkedEditingRanges ranges, int offset, IDocument document) {
