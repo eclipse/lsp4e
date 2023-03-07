@@ -174,7 +174,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 							completionTriggerChars = mergeTriggers(completionTriggerChars,
 									provider.getTriggerCharacters());
 						}
-						return null;
+						return CompletableFuture.completedFuture(null);
 					});
 			this.contextInformationLanguageServersFuture = LanguageServers.forDocument(document)
 					.withFilter(capabilities -> capabilities.getSignatureHelpProvider() != null).collectAll((w, ls) -> {
@@ -182,7 +182,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 						synchronized (contextTriggerCharsSemaphore) {
 							contextTriggerChars = mergeTriggers(contextTriggerChars, provider.getTriggerCharacters());
 						}
-						return null;
+						return CompletableFuture.completedFuture(null);
 					});
 		}
 
