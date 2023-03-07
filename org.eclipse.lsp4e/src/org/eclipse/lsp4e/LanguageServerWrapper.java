@@ -237,7 +237,7 @@ public class LanguageServerWrapper {
 	 * @throws IOException
 	 */
 	public synchronized void start() throws IOException {
-		final var filesToReconnect = new HashMap<URI, IDocument>();
+		final var filesToReconnect = new HashMap<@NonNull URI, IDocument>();
 		if (this.languageServer != null) {
 			if (isActive()) {
 				return;
@@ -248,79 +248,84 @@ public class LanguageServerWrapper {
 				stop();
 			}
 		}
-		if (this.initializeFuture == null) {
-			final URI rootURI = getRootURI();
-			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
-				if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
-					this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
-							serverDefinition.createConnectionProvider(), serverDefinition.id);
-				} else {
-					this.lspStreamProvider = serverDefinition.createConnectionProvider();
+		if (this.initializeFuture != null) {
+			// Someone else has already triggered startup in a separate thread: nothing to do
+			return;
+		}
+		final URI rootURI = getRootURI();
+		this.initializeFuture = CompletableFuture.supplyAsync(() -> {
+			if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
+				this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
+						serverDefinition.createConnectionProvider(), serverDefinition.id);
+			} else {
+				this.lspStreamProvider = serverDefinition.createConnectionProvider();
+			}
+			initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
+			try {
+				lspStreamProvider.start();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			return null;
+		}).thenRun(() -> {
+			languageClient = serverDefinition.createLanguageClient();
+
+			initParams.setProcessId((int) ProcessHandle.current().pid());
+
+			if (rootURI != null) {
+				initParams.setRootUri(rootURI.toString());
+				initParams.setRootPath(rootURI.getPath());
+			}
+
+			UnaryOperator<MessageConsumer> wrapper = consumer -> (message -> {
+				logMessage(message);
+				consumer.consume(message);
+				final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
+				if (currentConnectionProvider != null && isActive()) {
+					currentConnectionProvider.handleMessage(message, this.languageServer, rootURI);
 				}
-				initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
+			});
+			initParams.setWorkspaceFolders(getRelevantWorkspaceFolders());
+			Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder() //
+					.setLocalService(languageClient)//
+					.setRemoteInterface(serverDefinition.getServerInterface())//
+					.setInput(lspStreamProvider.getInputStream())//
+					.setOutput(lspStreamProvider.getOutputStream())//
+					.setExecutorService(listener)//
+					.wrapMessages(wrapper)//
+					.create();
+			this.languageServer = launcher.getRemoteProxy();
+			languageClient.connect(languageServer, this);
+			this.launcherFuture = launcher.startListening();
+		})
+		.thenCompose(unused -> initServer(rootURI))
+		.thenAccept(res -> {
+			serverCapabilities = res.getCapabilities();
+			this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
+		}).thenRun(() -> {
+			this.languageServer.initialized(new InitializedParams());
+			FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
+		}).exceptionally(e -> {
+			LanguageServerPlugin.logError(e);
+			stop();
+			return null;
+		});
+
+		// Ensure any documents are reconnected if they were open when the server was shut down
+		// This is an extra step composed on top of initializeFuture rather than one of the initialization
+		// steps: effectively this means when the initializeFuture is complete then other operations can
+		// proceed in parallel with document reconnection. TODO: is this right/desirable?
+		this.initializeFuture.thenRunAsync(() -> {
+			watchProjects();
+			for (Entry<URI, IDocument> fileToReconnect : filesToReconnect.entrySet()) {
 				try {
-					lspStreamProvider.start();
+					connect(fileToReconnect.getKey(), fileToReconnect.getValue());
 				} catch (IOException e) {
 					throw new RuntimeException(e);
 				}
-				return null;
-			}).thenRun(() -> {
-				languageClient = serverDefinition.createLanguageClient();
+			}
+		});
 
-				initParams.setProcessId((int) ProcessHandle.current().pid());
-
-				if (rootURI != null) {
-					initParams.setRootUri(rootURI.toString());
-					initParams.setRootPath(rootURI.getPath());
-				}
-
-				UnaryOperator<MessageConsumer> wrapper = consumer -> (message -> {
-					logMessage(message);
-					consumer.consume(message);
-					final StreamConnectionProvider currentConnectionProvider = this.lspStreamProvider;
-					if (currentConnectionProvider != null && isActive()) {
-						currentConnectionProvider.handleMessage(message, this.languageServer, rootURI);
-					}
-				});
-				initParams.setWorkspaceFolders(getRelevantWorkspaceFolders());
-				Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder() //
-						.setLocalService(languageClient)//
-						.setRemoteInterface(serverDefinition.getServerInterface())//
-						.setInput(lspStreamProvider.getInputStream())//
-						.setOutput(lspStreamProvider.getOutputStream())//
-						.setExecutorService(listener)//
-						.wrapMessages(wrapper)//
-						.create();
-				this.languageServer = launcher.getRemoteProxy();
-				languageClient.connect(languageServer, this);
-				this.launcherFuture = launcher.startListening();
-			})
-			.thenCompose(unused -> initServer(rootURI))
-			.thenAccept(res -> {
-				serverCapabilities = res.getCapabilities();
-				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
-			}).thenRun(() -> {
-				this.languageServer.initialized(new InitializedParams());
-			}).thenRun(() -> {
-				final Map<URI, IDocument> toReconnect = filesToReconnect;
-				initializeFuture.thenRunAsync(() -> {
-					watchProjects();
-					for (Entry<URI, IDocument> fileToReconnect : toReconnect.entrySet()) {
-						try {
-							connect(fileToReconnect.getKey(), fileToReconnect.getValue());
-						} catch (IOException e) {
-							throw new RuntimeException(e);
-						}
-					}
-				});
-				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
-			}).exceptionally(e -> {
-				LanguageServerPlugin.logError(e);
-				initializeFuture.completeExceptionally(e);
-				stop();
-				return null;
-			});
-		}
 	}
 
 	private CompletableFuture<InitializeResult> initServer(final URI rootURI) {
