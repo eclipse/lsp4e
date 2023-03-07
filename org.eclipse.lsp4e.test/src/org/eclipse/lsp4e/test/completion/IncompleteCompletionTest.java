@@ -494,7 +494,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 				.get(0);
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
 				new CompletionItem("blah"), wrapper);
-		completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
+		completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no exception is sent
 	}
 
 	@Test
@@ -508,7 +508,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		item.setDetail("");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
 				item, wrapper);
-		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
+		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no exception is sent
 		assertTrue(addInfo.isEmpty());
 	}
 
@@ -523,7 +523,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		item.setDetail("detail");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
 				item, wrapper);
-		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
+		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no exception is sent
 		assertTrue(addInfo.indexOf("<p>detail</p>") >= 0);
 	}
 
@@ -538,7 +538,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		item.setDocumentation("");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
 				item, wrapper);
-		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
+		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no exception is sent
 		assertTrue(addInfo.isEmpty());
 	}
 
@@ -553,7 +553,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		item.setDocumentation("documentation");
 		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
 				item, wrapper);
-		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no expection is sent
+		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no exception is sent
 		assertFalse(addInfo.isEmpty());
 	}
 

@@ -1132,27 +1132,30 @@ public final class LSPEclipseUtils {
 	}
 
 	public static String getHtmlDocString(Either<String, MarkupContent> documentation) {
-		if (documentation.isLeft()) {
-			return htmlParagraph(documentation.getLeft());
-		} else if (documentation.isRight()) {
-			MarkupContent markupContent = documentation.getRight();
-			if (markupContent.getValue() != null) {
-				if (MARKDOWN.equalsIgnoreCase(markupContent.getKind())
-						|| MD.equalsIgnoreCase(markupContent.getKind())) {
+		return documentation.map(text -> {
+			if (text != null && !text.isEmpty()) {
+				return htmlParagraph(text);
+			}
+			return null;
+		}, markupContent -> {
+			String text = markupContent.getValue();
+			if (text != null && !text.isEmpty()) {
+				String kind = markupContent.getKind();
+				if (MARKDOWN.equalsIgnoreCase(kind) || MD.equalsIgnoreCase(kind)) {
 					try {
-						return MARKDOWN_PARSER.parseToHtml(markupContent.getValue());
+						return MARKDOWN_PARSER.parseToHtml(text);
 					} catch (Exception e) {
 						LanguageServerPlugin.logError(e);
-						return htmlParagraph(markupContent.getValue());
+						return htmlParagraph(text);
 					}
-				} else if (HTML.equalsIgnoreCase(markupContent.getKind())) {
-					return markupContent.getValue();
+				} else if (HTML.equalsIgnoreCase(kind)) {
+					return text;
 				} else {
-					return htmlParagraph(markupContent.getValue());
+					return htmlParagraph(text);
 				}
 			}
-		}
-		return null;
+			return null;
+		});
 	}
 
 	public static ITextViewer getTextViewer(@Nullable final IEditorPart editorPart) {

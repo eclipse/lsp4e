@@ -338,10 +338,8 @@ public class LSCompletionProposal
 		if (res.length() > 0) {
 			res.append("<br/>"); //$NON-NLS-1$
 		}
-		if (this.item.getDocumentation() != null &&
-			((this.item.getDocumentation().isLeft() && this.item.getDocumentation().getLeft() != null && !this.item.getDocumentation().getLeft().isEmpty()) ||
-			(this.item.getDocumentation().isRight() && this.item.getDocumentation().getRight() != null && this.item.getDocumentation().getRight().getValue() != null && !this.item.getDocumentation().getRight().getValue().isEmpty())))		{
-			String htmlDocString = LSPEclipseUtils.getHtmlDocString(this.item.getDocumentation());
+		if (item.getDocumentation() != null) {
+			String htmlDocString = LSPEclipseUtils.getHtmlDocString(item.getDocumentation());
 			if (htmlDocString != null) {
 				res.append(htmlDocString);
 			}
@@ -389,18 +387,10 @@ public class LSCompletionProposal
 	public int getPrefixCompletionStart(IDocument document, int completionOffset) {
 		Either<TextEdit, InsertReplaceEdit> textEdit = this.item.getTextEdit();
 		if (textEdit != null) {
-			if(textEdit.isLeft()) {
-				try {
-					return LSPEclipseUtils.toOffset(textEdit.getLeft().getRange().getStart(), document);
-				} catch (BadLocationException e) {
-					LanguageServerPlugin.logError(e);
-				}
-			} else {
-				try {
-					return LSPEclipseUtils.toOffset(textEdit.getRight().getInsert().getStart(), document);
-				} catch (BadLocationException e) {
-					LanguageServerPlugin.logError(e);
-				}
+			try {
+				return LSPEclipseUtils.toOffset(getTextEditRange().getStart(), document);
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
 			}
 		}
 		String insertText = getInsertText();
@@ -758,11 +748,7 @@ public class LSCompletionProposal
 		String insertText = this.item.getInsertText();
 		Either<TextEdit, InsertReplaceEdit> eitherTextEdit = this.item.getTextEdit();
 		if (eitherTextEdit != null) {
-			if(eitherTextEdit.isLeft()) {
-				insertText = eitherTextEdit.getLeft().getNewText();
-			} else {
-				insertText = eitherTextEdit.getRight().getNewText();
-			}
+			insertText = eitherTextEdit.map(TextEdit::getNewText, InsertReplaceEdit::getNewText);
 		}
 		if (insertText == null) {
 			insertText = this.item.getLabel();
@@ -847,11 +833,7 @@ public class LSCompletionProposal
 			if (!documentFilter.isEmpty()) {
 				return CompletionProposalTools.isSubstringFoundOrderedInString(documentFilter, getFilterString());
 			} else if (item.getTextEdit() != null) {
-				if(item.getTextEdit().isLeft()) {
-					return offset == LSPEclipseUtils.toOffset(item.getTextEdit().getLeft().getRange().getStart(), document);
-				} else {
-					return offset == LSPEclipseUtils.toOffset(item.getTextEdit().getRight().getInsert().getStart(), document);
-				}
+				return offset == LSPEclipseUtils.toOffset(getTextEditRange().getStart(), document);
 			}
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
