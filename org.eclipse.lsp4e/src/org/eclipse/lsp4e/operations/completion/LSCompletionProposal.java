@@ -66,6 +66,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.command.CommandExecutor;
+import org.eclipse.lsp4e.internal.StyleUtil;
 import org.eclipse.lsp4e.operations.hover.FocusableBrowserInformationControl;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.Command;
@@ -84,7 +85,6 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.TextStyle;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
 
 @SuppressWarnings("restriction")
@@ -120,14 +120,6 @@ public class LSCompletionProposal
 	static {
 		ALL_VARIABLES.addAll(Set.of(TM_SELECTED_TEXT, TM_CURRENT_LINE, TM_CURRENT_WORD, TM_LINE_INDEX, TM_LINE_NUMBER, TM_FILENAME, TM_FILENAME_BASE, TM_DIRECTORY, TM_FILEPATH));
 	}
-
-	private static final Styler DEPRECATE = new Styler() {
-		@Override
-		public void applyStyles(TextStyle textStyle) {
-			textStyle.strikeout = true;
-			textStyle.foreground = PlatformUI.getWorkbench().getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY);
-		};
-	};
 
 	protected final CompletionItem item;
 	private final int initialOffset;
@@ -257,7 +249,7 @@ public class LSCompletionProposal
 	public StyledString getStyledDisplayString(IDocument document, int offset, BoldStylerProvider boldStylerProvider) {
 		String rawString = getDisplayString();
 		StyledString res = isDeprecated()
-				? new StyledString(rawString, DEPRECATE)
+				? new StyledString(rawString, StyleUtil.DEPRECATE)
 				: new StyledString(rawString);
 		if (offset > this.bestOffset) {
 			try {
@@ -274,7 +266,7 @@ public class LSCompletionProposal
 							@Override
 							public void applyStyles(TextStyle textStyle) {
 								if (isDeprecated()) {
-									DEPRECATE.applyStyles(textStyle);
+									StyleUtil.DEPRECATE.applyStyles(textStyle);
 								}
 								boldStylerProvider.getBoldStyler().applyStyles(textStyle);
 							}
@@ -298,7 +290,7 @@ public class LSCompletionProposal
 	@Override
 	public StyledString getStyledDisplayString() {
 		if (Boolean.TRUE.equals(item.getDeprecated())) {
-			return new StyledString(getDisplayString(), DEPRECATE);
+			return new StyledString(getDisplayString(), StyleUtil.DEPRECATE);
 		}
 		return new StyledString(getDisplayString());
 	}
