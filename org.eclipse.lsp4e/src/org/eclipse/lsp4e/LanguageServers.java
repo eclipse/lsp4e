@@ -22,6 +22,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -40,8 +41,14 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 /**
- * Main entry point for accessors to run requests on the language servers, and some utilities
- * for manipulating the asynchronous response objects in streams
+ * Main entry point for executors to run requests on the language servers, and some utilities
+ * for manipulating the asynchronous response objects in streams.
+ * <p>
+ * @implNote Note that versioning support means that the executors are <b>stateful</b>, and can
+ * only be used for a single request: they will throw <code>IllegalStateException</code> if
+ * more than one call to any of <code>computeFirst</code>, <code>computeAll</code> or
+ * <code>collectAll</code> is made. It is, however, trivial to create new executor objects
+ * using the builder-style factory methods <code>forDocument()</code> and <code>forProject()</code>.
  */
 public abstract class LanguageServers<E extends LanguageServers<E>> {
 
@@ -74,6 +81,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
+		guardAgainstReuse();
 		computeVersion();
 		final CompletableFuture<@NonNull List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 		return executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll)
@@ -112,6 +120,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
+		guardAgainstReuse();
 		computeVersion();
 		return getServers().stream()
 				.map(cf -> cf
@@ -146,6 +155,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
 	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
+		guardAgainstReuse();
 		computeVersion();
 		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
 
@@ -462,8 +472,17 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return new LanguageServerProjectExecutor(project);
 	}
 
+	protected void guardAgainstReuse() {
+		final boolean wasRunPreviously = hasRun.getAndSet(true);
+		if (wasRunPreviously) {
+			throw new IllegalStateException("Executor cannot be used for more than one request. Create a new object instead."); //$NON-NLS-1$
+		}
+	}
+
 	private static final @NonNull Predicate<ServerCapabilities> NO_FILTER = s -> true;
 	private @NonNull Predicate<ServerCapabilities> filter = NO_FILTER;
 
 	protected @Nullable LanguageServerDefinition serverDefinition;
+
+	private final @NonNull AtomicBoolean hasRun = new AtomicBoolean();
 }

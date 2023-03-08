@@ -116,6 +116,49 @@ public class LanguageServersTest {
 		assertTrue(hovers.contains("HoverContent1"));
 		assertTrue(hovers.contains("HoverContent2"));
 	}
+	
+	@Test(expected=IllegalStateException.class)
+	public void testExecutorNotReusable() throws Exception {
+		final AtomicInteger hoverCount = new AtomicInteger();
+		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
+			@Override
+			public synchronized void didChange(DidChangeTextDocumentParams params) {
+				super.didChange(params);
+			}
+
+			@Override
+			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
+				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				return CompletableFuture.completedFuture(hoverResponse);
+			}
+		});
+
+		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
+		IEditorPart editor = TestUtils.openEditor(testFile);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		final IDocument document = viewer.getDocument();
+
+		final HoverParams params = new HoverParams();
+		final Position position = new Position();
+		position.setCharacter(10);
+		position.setLine(0);
+		params.setPosition(position);
+		
+		final LanguageServerDocumentExecutor ex = LanguageServers.forDocument(document)
+				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()));
+
+		CompletableFuture<List<String>> result = ex.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()));
+
+		List<String> hovers = result.join();
+
+		assertTrue(hovers.contains("HoverContent1"));
+		assertTrue(hovers.contains("HoverContent2"));
+		
+		// Reuse executor - should throw
+		ex.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()));
+
+	}
+
 
 	@Test
 	public void testCollectAllExcludesNulls() throws Exception {
@@ -638,9 +681,11 @@ public class LanguageServersTest {
 		Optional<?> result = executor.computeFirst(ls -> ls.getTextDocumentService().hover(params)).get(10, TimeUnit.SECONDS);
 		assertFalse("Should not have had a result", result.isPresent());
 
+		executor = LanguageServers.forDocument(document).withFilter(sc -> false);
 		List<?> collectedResult = executor.collectAll(ls -> ls.getTextDocumentService().hover(params)).get(10, TimeUnit.SECONDS);
 		assertTrue("Should not have had a result", collectedResult.isEmpty());
 
+		executor = LanguageServers.forDocument(document).withFilter(sc -> false);
 		List<CompletableFuture<Hover>> allResults = executor.computeAll(ls -> ls.getTextDocumentService().hover(params));
 		for (CompletableFuture<Hover> f : allResults) {
 			Hover h = f.get(10, TimeUnit.SECONDS);
