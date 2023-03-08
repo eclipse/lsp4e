@@ -13,7 +13,9 @@ package org.eclipse.lsp4e.internal;
 
 import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.TextStyle;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 
 public class StyleUtil {
@@ -22,12 +24,18 @@ public class StyleUtil {
 		// this class shouldn't be instantiated
 	}
 
+	private static Color darkGray;
+
+	static {
+		Display display = PlatformUI.getWorkbench().getDisplay();
+		display.asyncExec(() -> darkGray = display.getSystemColor(SWT.COLOR_DARK_GRAY));
+	}
+
 	public static final Styler DEPRECATE = new Styler() {
 		@Override
 		public void applyStyles(TextStyle textStyle) {
 			textStyle.strikeout = true;
-			textStyle.foreground = PlatformUI.getWorkbench().getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY);
+			textStyle.background = darkGray;
 		};
 	};
-
 }
