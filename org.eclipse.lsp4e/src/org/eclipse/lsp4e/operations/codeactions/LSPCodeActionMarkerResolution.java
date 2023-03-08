@@ -38,7 +38,6 @@ import org.eclipse.jface.text.quickassist.QuickAssistAssistant;
 import org.eclipse.jface.text.source.ISourceViewerExtension3;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerProjectExecutor;
 import org.eclipse.lsp4e.LanguageServersRegistry;
@@ -131,23 +130,21 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				params.setRange(diagnostic.getRange());
 				marker.setAttribute(LSP_REMEDIATION, COMPUTING);
 				try {
-					executor.computeFirst(ls -> ls.getTextDocumentService().codeAction(params)).thenAcceptAsync(optional -> {
-						optional.ifPresent(actions -> {
-								try {
-									marker.setAttribute(LSP_REMEDIATION, actions);
-									Display display = UI.getDisplay();
-									display.asyncExec(() -> {
-										ITextViewer textViewer = UI.getActiveTextViewer();
-										if (textViewer != null) {
-											// Do not re-invoke hover right away as hover may not be showing at all yet
-											display.timerExec(500, () -> reinvokeQuickfixProposalsIfNecessary(textViewer));
-										}
-									});
-								} catch (CoreException e) {
-									LanguageServerPlugin.logError(e);
-								}
-								}
-								);
+					executor.computeFirst(ls -> ls.getTextDocumentService().codeAction(params)).thenAccept(optional -> {
+						try {
+							marker.setAttribute(LSP_REMEDIATION, optional.orElse(Collections.emptyList()));
+						} catch (CoreException e) {
+							LanguageServerPlugin.logError(e);
+						}
+					}).thenRun(() -> {
+						Display display = UI.getDisplay();
+						display.asyncExec(() -> {
+							ITextViewer textViewer = UI.getActiveTextViewer();
+							if (textViewer != null) {
+								// Do not re-invoke hover right away as hover may not be showing at all yet
+								display.timerExec(500, () -> reinvokeQuickfixProposalsIfNecessary(textViewer));
+							}
+						});
 					}).get(300, TimeUnit.MILLISECONDS);
 					// wait a bit to avoid showing too much "Computing" without looking like a freeze
 				} catch (TimeoutException e) {
@@ -156,13 +153,6 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				}
 			}
 		}
-	}
-
-	private String serverIdOrNull(final String languageServerId, LanguageServerWrapper w) {
-		if (w != null && w.serverDefinition != null && languageServerId != null && languageServerId.equals(w.serverDefinition.id)) {
-			return languageServerId;
-		}
-		return null;
 	}
 
 	private void reinvokeQuickfixProposalsIfNecessary(ITextViewer textViewer) {
