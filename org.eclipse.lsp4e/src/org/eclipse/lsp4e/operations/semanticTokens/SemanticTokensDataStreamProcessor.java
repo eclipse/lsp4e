@@ -18,6 +18,7 @@ import java.util.function.Function;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.rules.IToken;
+import org.eclipse.lsp4e.internal.StyleUtil;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.SemanticTokenModifiers;
 import org.eclipse.lsp4j.SemanticTokensLegend;
@@ -85,7 +86,7 @@ public class SemanticTokensDataStreamProcessor {
 				List<String> tokenModifiers = tokenModifiers(data, semanticTokensLegend.getTokenModifiers());
 				StyleRange styleRange = getStyleRange(offset, length, textAttribute(tokenType));
 				if (tokenModifiers.stream().anyMatch(x -> x.equals(SemanticTokenModifiers.Deprecated))) {
-					styleRange.strikeout = true;
+					StyleUtil.DEPRECATE.applyStyles(styleRange);
 				}
 				styleRanges.add(styleRange);
 				break;
