@@ -44,6 +44,7 @@ import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.lsp4j.SemanticTokensParams;
 import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 
@@ -254,7 +255,7 @@ public class SemanticHighlightReconcilerStrategy
 						.ifPresent(versionedSemanticTokens -> {
 							versionedSemanticTokens.apply(this::saveStyle, this::invalidateTextPresentation);
 						});
-			} catch (ExecutionException e) {
+			} catch (ResponseErrorException | ExecutionException e) {
 				if (!CancellationUtil.isRequestCancelledException(e)) {
 					LanguageServerPlugin.logError(e);
 				}

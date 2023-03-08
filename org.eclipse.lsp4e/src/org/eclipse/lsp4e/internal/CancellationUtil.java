@@ -27,12 +27,18 @@ public final class CancellationUtil {
 		if (throwable instanceof final CompletionException completionException) {
 			Throwable cause = completionException.getCause();
 			if (cause instanceof final ResponseErrorException responseErrorException) {
-				ResponseError responseError = responseErrorException.getResponseError();
-				return responseError != null
-						&& responseError.getCode() == ResponseErrorCode.RequestCancelled.getValue();
+				return isRequestCancelled(responseErrorException);
 			}
+		} else if (throwable instanceof ResponseErrorException responseErrorException) {
+			return isRequestCancelled(responseErrorException);
 		}
 		return false;
+	}
+
+	private static boolean isRequestCancelled(ResponseErrorException responseErrorException) {
+		ResponseError responseError = responseErrorException.getResponseError();
+		return responseError != null
+				&& responseError.getCode() == ResponseErrorCode.RequestCancelled.getValue();
 	}
 
 }
