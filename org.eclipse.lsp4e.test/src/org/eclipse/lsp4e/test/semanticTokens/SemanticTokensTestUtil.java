@@ -42,7 +42,7 @@ public class SemanticTokensTestUtil {
 
 		return expectedTokens.stream().flatMap(List::stream).toList();
 	}
-	
+
 	public static final Color GREEN = new Color(133, 153, 0, 255);
 	public static final Color RED = new Color(255, 0, 0);
 
@@ -111,7 +111,7 @@ public class SemanticTokensTestUtil {
 	}
 
 	public static @NonNull Function<Position, Integer> offsetMapper(IDocument document) {
-		return (p) -> {
+		return p -> {
 			try {
 				return LSPEclipseUtils.toOffset(p, document);
 			} catch (BadLocationException e) {
