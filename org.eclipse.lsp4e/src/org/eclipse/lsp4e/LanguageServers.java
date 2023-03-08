@@ -156,7 +156,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		CompletableFuture.allOf(
 				executeOnServers(fn)
 				.map(cf -> cf.thenApply(t -> {
-					if (!isEmpty(t)) { // TODO: Does this need to be a supplied function to handle all cases?
+					if (!isEmpty(t)) { // some LS methods return null objects when they have nothing to report, and some return an empty List
 						result.complete(Optional.of(t));
 					}
 					return t;
