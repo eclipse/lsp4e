@@ -13,7 +13,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.declaration;
 
-import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -44,25 +43,19 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector {
 
-	@SuppressWarnings("null")
 	@Override
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
 		final IDocument document = textViewer.getDocument();
-		TextDocumentPositionParams params;
-		try {
-			URI uri = LSPEclipseUtils.toUri(document);
-			if (uri == null) {
-				return null;
-			}
-			params = new TextDocumentPositionParams(
-					LSPEclipseUtils.toTextDocumentIdentifier(uri),
-					LSPEclipseUtils.toPosition(region.getOffset(), document));
-		} catch (BadLocationException e1) {
-			LanguageServerPlugin.logError(e1);
+		if (document == null) {
 			return null;
 		}
-		IRegion r = findWord(textViewer.getDocument(), region.getOffset());
-		final IRegion linkRegion = r != null ? r : region;
+		TextDocumentPositionParams params;
+		try {
+			params = LSPEclipseUtils.toTextDocumentPosistionParams(region.getOffset(), document);
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+			return null;
+		}
 		final var allLinks = new LinkedHashMap<Either<Location, LocationLink>,LSBasedHyperlink>();
 		try {
 			var definitions = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDefinitionProvider)
@@ -73,7 +66,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 				.collectAll(ls -> ls.getTextDocumentService().implementation(LSPEclipseUtils.toImplementationParams(params)).thenApply(l -> Pair.of(Messages.implementationHyperlinkLabel, l)));
 			LanguageServers.addAll(LanguageServers.addAll(definitions, typeDefinitions), implementations)
 				.get(800, TimeUnit.MILLISECONDS)
-				.stream().flatMap(locations -> toHyperlinks(document, linkRegion, locations.getFirst(), locations.getSecond()).stream())
+				.stream().flatMap(locations -> toHyperlinks(document, region, locations.getFirst(), locations.getSecond()).stream())
 				.forEach(link -> allLinks.putIfAbsent(link.getLocation(), link));
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
@@ -90,62 +83,56 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 	}
 
 	/**
-	 * Fill the given Eclipse links by using the given LSP locations
+	 * Returns a list of {@link LSBasedHyperlink} using the given LSP locations
 	 *
 	 * @param document
 	 *            the document
 	 * @param linkRegion
-	 *            the link region
+	 *            the region
+	 * @param locationType
+	 *            the location type
 	 * @param locations
 	 *            the LSP locations
-	 * @param allLinks
-	 *            the Eclipse links to update
 	 */
-	private static Collection<LSBasedHyperlink> toHyperlinks(final IDocument document, final IRegion linkRegion,
+	private static Collection<LSBasedHyperlink> toHyperlinks(IDocument document, IRegion region,
 			String locationType, Either<List<? extends Location>, List<? extends LocationLink>> locations) {
 		if (locations == null) {
 			return Collections.emptyList();
 		}
-		if (locations.isLeft()) {
-			return locations.getLeft().stream()
-					.filter(Objects::nonNull)
-					.map(location -> new LSBasedHyperlink(location, linkRegion, locationType))
-					.toList();
-		} else if (locations.isRight()) {
-			return locations.getRight().stream().filter(Objects::nonNull).map(locationLink -> {
-						IRegion selectionRegion = linkRegion;
-						Range originSelectionRange = locationLink.getOriginSelectionRange();
-						if (originSelectionRange != null) {
-							try {
-								int offset = LSPEclipseUtils
-										.toOffset(originSelectionRange.getStart(), document);
-								int endOffset = LSPEclipseUtils
-										.toOffset(originSelectionRange.getEnd(), document);
-								selectionRegion = new Region(offset, endOffset - offset);
-							} catch (BadLocationException e) {
-								LanguageServerPlugin.logError(e.getMessage(), e);
-							}
-						}
-						return new LSBasedHyperlink(locationLink, selectionRegion, locationType);
-					}).toList();
-		}
-		return Collections.emptyList();
+		return locations.map(//
+				l -> l.stream().filter(Objects::nonNull)
+						.map(location -> new LSBasedHyperlink(location, findWord(document, region), locationType))
+						.toList(),
+				r -> r.stream().filter(Objects::nonNull).map(locationLink -> new LSBasedHyperlink(locationLink,
+						getSelectedRegion(document, region, locationLink), locationType)).toList());
 	}
 
 	/**
-	 * This method is only a workaround for missing range value (which can be used
-	 * to highlight hyperlink) in LSP 'definition' response.
-	 *
-	 * Should be removed when protocol will be updated
-	 * (https://github.com/Microsoft/language-server-protocol/issues/3)
-	 *
-	 * @param document
-	 * @param offset
-	 * @return
+	 * Returns the selection region, or if that fails , fallback to
+	 * {@link #findWord(IDocument, IRegion)}
 	 */
-	private IRegion findWord(IDocument document, int offset) {
+	private static IRegion getSelectedRegion(IDocument document, IRegion region, LocationLink locationLink) {
+		Range originSelectionRange = locationLink.getOriginSelectionRange();
+		if (originSelectionRange != null) {
+			try {
+				int offset = LSPEclipseUtils.toOffset(originSelectionRange.getStart(), document);
+				int endOffset = LSPEclipseUtils.toOffset(originSelectionRange.getEnd(), document);
+				return new Region(offset, endOffset - offset);
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e.getMessage(), e);
+			}
+		}
+		return findWord(document, region);
+	}
+
+	/**
+	 * Fallback for missing range value (which can be used to highlight hyperlink)
+	 * in LSP 'definition' response.
+	 */
+	private static IRegion findWord(IDocument document, IRegion region) {
 		int start = -2;
 		int end = -1;
+		int offset = region.getOffset();
 
 		try {
 
@@ -187,7 +174,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 				return new Region(start + 1, end - start - 1);
 		}
 
-		return null;
+		return region;
 	}
 
 }
