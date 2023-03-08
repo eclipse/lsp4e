@@ -349,7 +349,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	}
 
 	private static <T> boolean isEmpty(final T t) {
-		return t == null || ((t instanceof List) && ((List<?>)t).isEmpty());
+		return t == null || (t instanceof Collection<?> c && c.isEmpty());
 	}
 
 	protected Collection<LanguageServerWrapper> order(Collection<LanguageServerWrapper> wrappers) {
