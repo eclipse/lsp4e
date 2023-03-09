@@ -29,7 +29,6 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
-import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
@@ -53,7 +52,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchContribution {
 
-	private LanguageServerDocumentExecutor executor;
+	private IDocument document;
 	private Range range;
 
 	@Override
@@ -65,7 +64,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 			if (document == null) {
 				return;
 			}
-			executor = LanguageServers.forDocument(document).withFilter(LSPCodeActionMarkerResolution::providesCodeActions);
+			this.document = document;
 			final var selection = (ITextSelection) textEditor.getSelectionProvider().getSelection();
 			try {
 				this.range = new Range(LSPEclipseUtils.toPosition(selection.getOffset(), document),
@@ -82,7 +81,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		item.setEnabled(false);
 
 		item.setText(Messages.computing);
-		final @NonNull IDocument document = this.executor.getDocument();
+		final @NonNull IDocument document = this.document;
 		final URI fileUri = LSPEclipseUtils.toUri(document);
 
 		final var context = new CodeActionContext(Collections.emptyList());
@@ -92,7 +91,8 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		params.setContext(context);
 
 		final @NonNull List<@NonNull CompletableFuture<List<Either<Command, CodeAction>>>> actions
-			= executor.computeAll((w, ls) -> ls.getTextDocumentService().codeAction(params)
+			= LanguageServers.forDocument(document).withFilter(LSPCodeActionMarkerResolution::providesCodeActions)
+					.computeAll((w, ls) -> ls.getTextDocumentService().codeAction(params)
 					.whenComplete((codeActions, t) -> scheduleMenuUpdate(menu, item, index, document, w, t, codeActions)));
 
 		if (actions.isEmpty()) {

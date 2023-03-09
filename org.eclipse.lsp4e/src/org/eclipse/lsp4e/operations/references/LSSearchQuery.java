@@ -33,12 +33,14 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.ReferenceContext;
 import org.eclipse.lsp4j.ReferenceParams;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.search.internal.ui.text.FileMatch;
 import org.eclipse.search.internal.ui.text.FileSearchQuery;
@@ -52,7 +54,7 @@ import org.eclipse.search.ui.text.Match;
  */
 public class LSSearchQuery extends FileSearchQuery {
 
-	private final @NonNull LanguageServerDocumentExecutor executor;
+	private final @NonNull IDocument document;
 	private final int offset;
 
 	private LSSearchResult result;
@@ -65,10 +67,10 @@ public class LSSearchQuery extends FileSearchQuery {
 	 * @param offset
 	 * @param executor
 	 */
-	public LSSearchQuery(int offset, @NonNull LanguageServerDocumentExecutor executor)
+	public LSSearchQuery(int offset, @NonNull IDocument document)
 			throws BadLocationException {
 		super("", false, false, null); //$NON-NLS-1$
-		this.executor = executor;
+		this.document = document;
 		this.offset = offset;
 	}
 
@@ -81,10 +83,11 @@ public class LSSearchQuery extends FileSearchQuery {
 			// Execute LSP "references" service
 			final var params = new ReferenceParams();
 			params.setContext(new ReferenceContext(false));
-			params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(executor.getDocument()));
-			params.setPosition(LSPEclipseUtils.toPosition(offset, executor.getDocument()));
+			params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(document));
+			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
 
-			executor.collectAll(languageServer -> languageServer.getTextDocumentService().references(params)
+			LanguageServers.forDocument(document).withCapability(ServerCapabilities::getReferencesProvider)
+				.collectAll(languageServer -> languageServer.getTextDocumentService().references(params)
 					.thenAcceptAsync(locations -> {
 						if (locations != null) {
 							// Convert each LSP Location to a Match search.
@@ -169,7 +172,7 @@ public class LSSearchQuery extends FileSearchQuery {
 		if (startTime > 0) {
 			time = System.currentTimeMillis() - startTime;
 		}
-		URI uri = LSPEclipseUtils.toUri(executor.getDocument());
+		URI uri = LSPEclipseUtils.toUri(document);
 		String filename;
 		if (uri != null) {
 			filename = Path.fromPortableString(uri.getPath()).lastSegment();
@@ -178,7 +181,7 @@ public class LSSearchQuery extends FileSearchQuery {
 		}
 		Position position;
 		try {
-			position = LSPEclipseUtils.toPosition(offset, executor.getDocument());
+			position = LSPEclipseUtils.toPosition(offset, document);
 		} catch (BadLocationException ex) {
 			LanguageServerPlugin.logError(ex);
 			position = new Position(0,0);

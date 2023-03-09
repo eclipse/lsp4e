@@ -19,6 +19,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -32,11 +33,12 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.LanguageServers.LanguageServerProjectExecutor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.SymbolTag;
 import org.eclipse.lsp4j.WorkspaceSymbol;
@@ -105,11 +107,11 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	private final InternalSymbolsLabelProvider labelProvider;
 
-	private final LanguageServerProjectExecutor executor;
+	private final IProject project;
 
-	public LSPSymbolInWorkspaceDialog(Shell shell, final LanguageServerProjectExecutor executor) {
+	public LSPSymbolInWorkspaceDialog(Shell shell, IProject project) {
 		super(shell);
-		this.executor = executor;
+		this.project = project;
 		this.labelProvider = new InternalSymbolsLabelProvider(new BoldStylerProvider(shell.getFont()));
 		setMessage(Messages.LSPSymbolInWorkspaceDialog_DialogLabel);
 		setTitle(Messages.LSPSymbolInWorkspaceDialog_DialogTitle);
@@ -130,30 +132,31 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 			return;
 		}
 		final var params = new WorkspaceSymbolParams(itemsFilter.getPattern());
-		this.executor.computeAll((w, ls) -> ls.getWorkspaceService()
- 				.symbol(params)).stream().map(s -> s.thenApply(LSPSymbolInWorkspaceDialog::eitherToWorkspaceSymbols))
- 			.forEach(cf -> {
- 				if (monitor.isCanceled()) {
- 					return;
- 				}
- 				try {
- 					final List<? extends WorkspaceSymbol> items = cf.get(1, TimeUnit.SECONDS);
- 					if(items != null) {
- 						for (Object item : items) {
- 							if (item != null) {
- 								contentProvider.add(item, itemsFilter);
- 							}
- 						}
- 					}
- 				} catch (ExecutionException e) {
- 					LanguageServerPlugin.logError(e);
- 				} catch (InterruptedException e) {
- 					LanguageServerPlugin.logError(e);
- 					Thread.currentThread().interrupt();
- 				} catch (TimeoutException e) {
- 					LanguageServerPlugin.logWarning("Could not get workspace symbols due to timeout after 1 seconds in `workspace/symbol`", e); //$NON-NLS-1$
- 				}
- 			});
+		LanguageServers.forProject(project).withCapability(ServerCapabilities::getWorkspaceSymbolProvider)
+			.computeAll((w, ls) -> ls.getWorkspaceService()
+				.symbol(params)).stream().map(s -> s.thenApply(LSPSymbolInWorkspaceDialog::eitherToWorkspaceSymbols))
+			.forEach(cf -> {
+				if (monitor.isCanceled()) {
+					return;
+				}
+				try {
+					final List<? extends WorkspaceSymbol> items = cf.get(1, TimeUnit.SECONDS);
+					if(items != null) {
+						for (Object item : items) {
+							if (item != null) {
+								contentProvider.add(item, itemsFilter);
+							}
+						}
+					}
+				} catch (ExecutionException e) {
+					LanguageServerPlugin.logError(e);
+				} catch (InterruptedException e) {
+					LanguageServerPlugin.logError(e);
+					Thread.currentThread().interrupt();
+				} catch (TimeoutException e) {
+					LanguageServerPlugin.logWarning("Could not get workspace symbols due to timeout after 1 seconds in `workspace/symbol`", e); //$NON-NLS-1$
+				}
+			});
 	}
 
 	@Override
