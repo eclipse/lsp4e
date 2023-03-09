@@ -18,6 +18,7 @@ import java.util.List;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.internal.DocumentUtil;
+import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4j.TextEdit;
 
 /**
@@ -28,9 +29,9 @@ public class VersionedEdits extends Versioned<List<? extends TextEdit>> {
 
 	private final IDocument document;
 
-	public VersionedEdits(long version, List<? extends TextEdit> data, IDocument document) {
-		super(version, data);
-		this.document = document;
+	public VersionedEdits(Pair<IDocument, Long> data, List<? extends TextEdit> textEdits) {
+		super(data.getSecond(), textEdits);
+		this.document = data.getFirst();
 	}
 
 	/**

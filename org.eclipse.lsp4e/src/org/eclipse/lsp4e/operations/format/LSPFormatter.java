@@ -14,6 +14,7 @@
 package org.eclipse.lsp4e.operations.format;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -25,8 +26,8 @@ import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.VersionedBuilder;
 import org.eclipse.lsp4e.VersionedEdits;
-import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.FormattingOptions;
@@ -34,6 +35,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
+import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
@@ -55,7 +57,7 @@ public class LSPFormatter {
 		// TODO: Could refine this algorithm: at present this grabs the first non-null response but the most functional
 		// implementation (if a text selection is present) would try all the servers in turn to see if they supported
 		// range formatting, falling back to a full format if unavailable
-		long modificationStamp = DocumentUtil.getDocumentModificationStamp(document);
+		var builder = new VersionedBuilder<List<? extends TextEdit>, @NonNull VersionedEdits>(document, VersionedEdits::new);
 		return executor.computeFirst((w, ls) -> {
 			final ServerCapabilities capabilities = w.getServerCapabilities();
 			if (isDocumentRangeFormattingSupported(capabilities)
@@ -65,7 +67,7 @@ public class LSPFormatter {
 			}
 
 			return ls.getTextDocumentService().formatting(params);
-		}).thenApply(edits -> edits.map(e -> new VersionedEdits(modificationStamp, e, document)));
+		}).thenApply(edits -> edits.map(builder::build));
 	}
 
 	private DocumentFormattingParams getFullFormatParams(FormattingOptions formatOptions,

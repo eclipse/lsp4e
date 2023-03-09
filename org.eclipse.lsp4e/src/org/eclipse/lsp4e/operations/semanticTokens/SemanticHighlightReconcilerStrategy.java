@@ -35,6 +35,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.VersionedBuilder;
 import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4e.internal.Pair;
@@ -243,13 +244,13 @@ public class SemanticHighlightReconcilerStrategy
 		IDocument theDocument = document;
 		cancelSemanticTokensFull();
 		if (theDocument != null) {
-			long modificationStamp = DocumentUtil.getDocumentModificationStamp(theDocument);
+			var builder = new VersionedBuilder<Pair<SemanticTokens, SemanticTokensLegend>, @NonNull VersionedSemanticTokens>(document, VersionedSemanticTokens::new);
 			LanguageServerDocumentExecutor executor = LanguageServers.forDocument(theDocument)
 					.withFilter(this::hasSemanticTokensFull);
 			semanticTokensFullFuture = executor//
 					.computeFirst((w, ls) -> ls.getTextDocumentService().semanticTokensFull(getSemanticTokensParams())//
-							.thenApply(semanticTokens -> new VersionedSemanticTokens(modificationStamp,
-									Pair.of(semanticTokens, getSemanticTokensLegend(w)), theDocument)));
+							.thenApply(semanticTokens -> Pair.of(semanticTokens, getSemanticTokensLegend(w)))
+							.thenApply(builder::build));
 
 			try {
 				semanticTokensFullFuture.get() // background thread with cancellation support, no timeout needed

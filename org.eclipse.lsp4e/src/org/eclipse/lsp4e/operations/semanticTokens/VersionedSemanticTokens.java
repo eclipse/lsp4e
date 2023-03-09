@@ -28,9 +28,9 @@ public class VersionedSemanticTokens extends Versioned<Pair<SemanticTokens, Sema
 
 	private final IDocument document;
 
-	public VersionedSemanticTokens(long version, Pair<SemanticTokens, SemanticTokensLegend> data, IDocument document) {
-		super(version, data);
-		this.document = document;
+	public VersionedSemanticTokens(Pair<IDocument, Long> data, Pair<SemanticTokens, SemanticTokensLegend> semanticTokens) {
+		super(data.getSecond(), semanticTokens);
+		this.document = data.getFirst();
 	}
 
 	/**
