@@ -56,7 +56,7 @@ public class LSPSymbolInWorkspaceHandler extends LSPDocumentAbstractHandler {
 		if (site == null) {
 			return null;
 		}
-		final var dialog = new LSPSymbolInWorkspaceDialog(site.getShell(), executor);
+		final var dialog = new LSPSymbolInWorkspaceDialog(site.getShell(), project);
 		if (dialog.open() != IDialogConstants.OK_ID) {
 			return null;
 		}
