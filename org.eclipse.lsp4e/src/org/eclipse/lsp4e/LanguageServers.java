@@ -33,9 +33,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
-import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 
@@ -74,7 +72,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
-		computeVersion();
 		final CompletableFuture<@NonNull List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 		return executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll)
 			// Ensure any subsequent computation added by caller does not block further incoming messages from language servers
@@ -112,7 +109,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
-		computeVersion();
 		return getServers().stream()
 				.map(cf -> cf
 						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
@@ -146,7 +142,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
 	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
-		computeVersion();
 		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
 
 		// Dispatch the request to the servers, appending a step to each such that
@@ -236,18 +231,12 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 		private final @NonNull IDocument document;
 
-		private long startVersion;
-
 		protected LanguageServerDocumentExecutor(final @NonNull IDocument document) {
 			this.document = document;
 		}
 
 		public @NonNull IDocument getDocument() {
 			return this.document;
-		}
-
-		public @NonNull VersionedEdits toVersionedEdits(List<? extends TextEdit> edits) {
-			return VersionedEdits.toVersionedEdits(this, edits);
 		}
 
 		@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connect(@NonNull CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture) {
@@ -289,21 +278,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			return LanguageServiceAccessor.getLSWrappers(document).stream()
 					.map(this::filter).filter(this::matches).findFirst().isPresent();
 		}
-
-		@Override
-		protected void computeVersion() {
-			this.startVersion = DocumentUtil.getDocumentModificationStamp(document);
-		}
-
-		/**
-		 *
-		 * @return The document's timestamp at the start of the last request
-		 */
-		public long getStartVersion() {
-			return this.startVersion;
-		}
-
-
 	}
 
 	/**

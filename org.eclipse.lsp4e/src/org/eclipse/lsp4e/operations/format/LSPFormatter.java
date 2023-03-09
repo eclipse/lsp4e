@@ -26,6 +26,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.VersionedEdits;
+import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.FormattingOptions;
@@ -54,17 +55,17 @@ public class LSPFormatter {
 		// TODO: Could refine this algorithm: at present this grabs the first non-null response but the most functional
 		// implementation (if a text selection is present) would try all the servers in turn to see if they supported
 		// range formatting, falling back to a full format if unavailable
+		long modificationStamp = DocumentUtil.getDocumentModificationStamp(document);
 		return executor.computeFirst((w, ls) -> {
 			final ServerCapabilities capabilities = w.getServerCapabilities();
 			if (isDocumentRangeFormattingSupported(capabilities)
 					&& !(isDocumentFormattingSupported(capabilities)
 							&& textSelection.getLength() == 0)) {
-				return ls.getTextDocumentService().rangeFormatting(rangeParams).thenApply(executor::toVersionedEdits);
+				return ls.getTextDocumentService().rangeFormatting(rangeParams);
 			}
 
-			return ls.getTextDocumentService().formatting(params).thenApply(executor::toVersionedEdits);
-		});
-
+			return ls.getTextDocumentService().formatting(params);
+		}).thenApply(edits -> edits.map(e -> new VersionedEdits(modificationStamp, e, document)));
 	}
 
 	private DocumentFormattingParams getFullFormatParams(FormattingOptions formatOptions,
