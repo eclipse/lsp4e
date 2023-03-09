@@ -38,8 +38,6 @@ public final class ServerConnection {
 
 	public ServerInfo serverInfo;
 
-	public boolean initiallySupportsWorkspaceFolders;
-
 	public LanguageClientImpl languageClient;
 
 	public StreamConnectionProvider lspStreamProvider;

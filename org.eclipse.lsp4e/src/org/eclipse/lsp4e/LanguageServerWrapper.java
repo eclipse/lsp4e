@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -150,6 +151,13 @@ public class LanguageServerWrapper {
 	 */
 	private volatile ServerConnection connection;
 
+	/**
+	 * If the server returns that it supports workspace folders when it starts up, then that
+	 * should not change (even if the server is stopped and restarted). If it registers dynamically
+	 * then we have to cater for the fact that it can unregister.
+	 */
+	private final AtomicBoolean initiallySupportsWorkspaceFolders = new AtomicBoolean();
+
 	private Timer timer;
 
 	private final ExecutorService dispatcher;
@@ -261,6 +269,7 @@ public class LanguageServerWrapper {
 			// Set the internal field
 			connectionFactory.checkCancelled();
 			this.connection = connection;
+			this.initiallySupportsWorkspaceFolders.set(supportsWorkspaceFolderCapability(connection));
 
 			connectionFactory.checkCancelled();
 			return connection;
@@ -455,6 +464,9 @@ public class LanguageServerWrapper {
 	 * @since 0.6
 	 */
 	private boolean supportsWorkspaceFolderCapability() {
+		if (this.initiallySupportsWorkspaceFolders.get()) {
+			return true;
+		}
 		if (this.initializeFuture != null) {
 			try {
 				return this.initializeFuture.thenApply(conn -> supportsWorkspaceFolderCapability(conn)).get(1, TimeUnit.SECONDS);
@@ -471,7 +483,7 @@ public class LanguageServerWrapper {
 	}
 
 	private boolean supportsWorkspaceFolderCapability(@NonNull ServerConnection conn) {
-		return conn.initiallySupportsWorkspaceFolders || SupportedFeatures.supportsWorkspaceFolders(conn.serverCapabilities);
+		return SupportedFeatures.supportsWorkspaceFolders(conn.serverCapabilities);
 	}
 
 	/**
@@ -743,7 +755,7 @@ public class LanguageServerWrapper {
 			final ServerCapabilities serverCapabilities = conn.serverCapabilities;
 			params.getRegistrations().forEach(reg -> {
 				if ("workspace/didChangeWorkspaceFolders".equals(reg.getMethod())) { //$NON-NLS-1$
-					if (conn.initiallySupportsWorkspaceFolders) {
+					if (initiallySupportsWorkspaceFolders.get()) {
 						// Can treat this as a NOP since nothing can disable it dynamically if it was
 						// enabled on initialization.
 					} else if (SupportedFeatures.supportsWorkspaceFolders(serverCapabilities)) {
