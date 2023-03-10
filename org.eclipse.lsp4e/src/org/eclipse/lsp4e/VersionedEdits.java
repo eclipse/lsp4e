@@ -18,7 +18,6 @@ import java.util.List;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.internal.DocumentUtil;
-import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4j.TextEdit;
 
 /**
@@ -29,9 +28,9 @@ public class VersionedEdits extends Versioned<List<? extends TextEdit>> {
 
 	private final IDocument document;
 
-	public VersionedEdits(Pair<IDocument, Long> data, List<? extends TextEdit> textEdits) {
-		super(data.getSecond(), textEdits);
-		this.document = data.getFirst();
+	public VersionedEdits(Versioned<IDocument> versionedDocument, List<? extends TextEdit> textEdits) {
+		super(versionedDocument.getVersion(), textEdits);
+		document = versionedDocument.get();
 	}
 
 	/**
@@ -43,10 +42,10 @@ public class VersionedEdits extends Versioned<List<? extends TextEdit>> {
 	 * received the request
 	 */
 	public void apply() throws BadLocationException, ConcurrentModificationException {
-		if (getVersion() != DocumentUtil.getDocumentModificationStamp(this.document)) {
+		if (getVersion() != DocumentUtil.getDocumentModificationStamp(document)) {
 			throw new ConcurrentModificationException();
 		} else {
-			LSPEclipseUtils.applyEdits(this.document, get());
+			LSPEclipseUtils.applyEdits(document, get());
 		}
 	}
 }
