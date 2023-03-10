@@ -12,6 +12,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.lsp4e.internal.DocumentUtil;
+
 /**
  * Bundles together a result from a language server with the document version at the time it was run.
  * Supports optimistic locking.
@@ -19,25 +22,25 @@ package org.eclipse.lsp4e;
  * @param <T>
  */
 public class Versioned<T> {
-	private final long version;
+	protected final IDocument document;
+	public final long sourceDocumentVersion;
+	public final T data;
 
-	private final T data;
-
-	public Versioned(final long version, final T data) {
-		this.version = version;
+	/**
+	 * Constructs a new Versioned for the given document, and specify source version
+	 */
+	public Versioned(final IDocument document, long sourceDocumentVersion, final T data) {
+		this.document = document;
+		this.sourceDocumentVersion = sourceDocumentVersion;
 		this.data = data;
 	}
 
-	public T get() {
-		return data;
-	}
-
-	public long getVersion() {
-		return version;
-	}
-
-	public static <T> Versioned<T> toVersioned(final long version, final T data) {
-		return new Versioned<>(version, data);
+	/**
+	 * Constructs a new Versioned for the given document, using its current modification
+	 * stamp as source version.
+	 */
+	public Versioned(final IDocument document, final T data) {
+		this(document, DocumentUtil.getDocumentModificationStamp(document), data);
 	}
 
 }

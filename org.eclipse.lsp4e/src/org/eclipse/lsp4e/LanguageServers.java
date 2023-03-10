@@ -247,7 +247,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		}
 
 		public @NonNull VersionedEdits toVersionedEdits(List<? extends TextEdit> edits) {
-			return VersionedEdits.toVersionedEdits(this, edits);
+			return VersionedEdits.toVersionedEdits(this.getDocument(), this.startVersion, edits);
 		}
 
 		@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connect(@NonNull CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture) {

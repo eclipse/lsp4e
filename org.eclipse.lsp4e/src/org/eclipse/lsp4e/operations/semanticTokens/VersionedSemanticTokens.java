@@ -28,11 +28,8 @@ import org.eclipse.lsp4j.SemanticTokensLegend;
  */
 public class VersionedSemanticTokens extends Versioned<Pair<SemanticTokens, SemanticTokensLegend>>{
 
-	private final IDocument document;
-
 	public VersionedSemanticTokens(long version, Pair<SemanticTokens, SemanticTokensLegend> data, IDocument document) {
-		super(version, data);
-		this.document = document;
+		super(document, version, data);
 	}
 
 	/**
@@ -41,9 +38,9 @@ public class VersionedSemanticTokens extends Versioned<Pair<SemanticTokens, Sema
 	 *
 	 */
 	public void apply(Consumer<Pair<SemanticTokens, SemanticTokensLegend>> first, Consumer<Long> second) {
-		if (getVersion() == DocumentUtil.getDocumentModificationStamp(document)) {
-			first.accept(get());
-			second.accept(getVersion());
+		if (sourceDocumentVersion == DocumentUtil.getDocumentModificationStamp(document)) {
+			first.accept(data);
+			second.accept(sourceDocumentVersion);
 		}
 	}
 
