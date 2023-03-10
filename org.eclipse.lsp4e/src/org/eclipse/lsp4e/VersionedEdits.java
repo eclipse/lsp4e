@@ -18,7 +18,6 @@ import java.util.List;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4j.TextEdit;
 
@@ -28,11 +27,8 @@ import org.eclipse.lsp4j.TextEdit;
  */
 public class VersionedEdits extends Versioned<List<? extends TextEdit>> {
 
-	private final IDocument document;
-
 	public VersionedEdits(long version, List<? extends TextEdit> data, IDocument document) {
-		super(version, data);
-		this.document = document;
+		super(document, version, data);
 	}
 
 	/**
@@ -44,14 +40,15 @@ public class VersionedEdits extends Versioned<List<? extends TextEdit>> {
 	 * received the request
 	 */
 	public void apply() throws BadLocationException, ConcurrentModificationException {
-		if (getVersion() != DocumentUtil.getDocumentModificationStamp(this.document)) {
+		if (this.sourceDocumentVersion != DocumentUtil.getDocumentModificationStamp(this.document)) {
 			throw new ConcurrentModificationException();
 		} else {
-			LSPEclipseUtils.applyEdits(this.document, get());
+			LSPEclipseUtils.applyEdits(this.document, data);
 		}
 	}
 
-	public static @NonNull VersionedEdits toVersionedEdits(@NonNull LanguageServerDocumentExecutor executor, List<? extends TextEdit> data) {
-		return new VersionedEdits(executor.getStartVersion(), data, executor.getDocument());
+	public static @NonNull VersionedEdits toVersionedEdits(@NonNull IDocument document, long startVersion,
+			List<? extends TextEdit> edits) {
+		return new VersionedEdits(startVersion, edits, document);
 	}
 }

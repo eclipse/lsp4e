@@ -96,9 +96,9 @@ public class VersioningSupportTest {
 		
 		final long currentTS = ((IDocumentExtension4)doc).getModificationStamp();
 		var ex2 = LanguageServers.forDocument(doc);
-		var dummyVersioned = ex2.computeFirst(ls -> CompletableFuture.completedFuture("Hello").thenApply(r -> Versioned.toVersioned(ex2.getStartVersion(), r))).join().get();
-		assertEquals(currentTS, dummyVersioned.getVersion());
-		assertEquals("Hello", dummyVersioned.get());
+		var dummyVersioned = ex2.computeFirst(ls -> CompletableFuture.completedFuture("Hello").thenApply(r -> new Versioned<>(doc, ex2.getStartVersion(), r))).join().get();
+		assertEquals(currentTS, dummyVersioned.sourceDocumentVersion);
+		assertEquals("Hello", dummyVersioned.data);
 
 		TestUtils.closeEditor(editor, false);
 	}
