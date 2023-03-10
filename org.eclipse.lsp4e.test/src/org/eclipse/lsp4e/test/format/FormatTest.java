@@ -141,6 +141,7 @@ public class FormatTest {
 		ISelection selection = viewer.getSelectionProvider().getSelection();
 
 		Optional<VersionedEdits> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection).get();
+		assertTrue(edits.isPresent());
 		viewer.getDocument().replace(0, 0, "Hello");
 		waitForAndAssertCondition(1_000,  numberOfChangesIs(1));
 

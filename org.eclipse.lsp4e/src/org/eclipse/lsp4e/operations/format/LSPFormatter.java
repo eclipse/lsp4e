@@ -63,11 +63,11 @@ public class LSPFormatter {
 			if (isDocumentRangeFormattingSupported(capabilities)
 					&& !(isDocumentFormattingSupported(capabilities)
 							&& textSelection.getLength() == 0)) {
-				return ls.getTextDocumentService().rangeFormatting(rangeParams);
+				return ls.getTextDocumentService().rangeFormatting(rangeParams).thenApply(builder::build);
 			}
 
-			return ls.getTextDocumentService().formatting(params);
-		}).thenApply(edits -> edits.map(builder::build));
+			return ls.getTextDocumentService().formatting(params).thenApply(builder::build);
+		});
 	}
 
 	private DocumentFormattingParams getFullFormatParams(FormattingOptions formatOptions,
