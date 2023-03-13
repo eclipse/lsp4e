@@ -13,9 +13,7 @@ package org.eclipse.lsp4e.operations.semanticTokens;
 
 import java.util.function.Consumer;
 
-import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.Versioned;
 import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4e.internal.Pair;
@@ -42,9 +40,5 @@ public class VersionedSemanticTokens extends Versioned<Pair<SemanticTokens, Sema
 			first.accept(data);
 			second.accept(sourceDocumentVersion);
 		}
-	}
-
-	public static VersionedSemanticTokens toVersionedSemantikTokens(LanguageServerDocumentExecutor executor, SemanticTokens data, @Nullable SemanticTokensLegend semanticTokensLegend) {
-		return new VersionedSemanticTokens(executor.getStartVersion(), Pair.of(data, semanticTokensLegend), executor.getDocument());
 	}
 }

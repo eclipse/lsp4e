@@ -15,7 +15,6 @@ package org.eclipse.lsp4e;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.internal.DocumentUtil;
@@ -45,10 +44,5 @@ public class VersionedEdits extends Versioned<List<? extends TextEdit>> {
 		} else {
 			LSPEclipseUtils.applyEdits(this.document, data);
 		}
-	}
-
-	public static @NonNull VersionedEdits toVersionedEdits(@NonNull IDocument document, long startVersion,
-			List<? extends TextEdit> edits) {
-		return new VersionedEdits(startVersion, edits, document);
 	}
 }
