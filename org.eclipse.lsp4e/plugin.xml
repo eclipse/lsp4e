@@ -131,6 +131,11 @@
       <handler
             class="org.eclipse.lsp4e.operations.symbols.LSPSymbolInWorkspaceHandler"
             commandId="org.eclipse.lsp4e.symbolinworkspace">
+         <activeWhen>
+            <reference
+                  definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer">
+            </reference>
+         </activeWhen>
       </handler>
       <handler
             commandId="org.eclipse.lsp4e.togglelinkwitheditor">
