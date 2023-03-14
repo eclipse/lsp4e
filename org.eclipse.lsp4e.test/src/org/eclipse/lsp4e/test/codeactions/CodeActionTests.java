@@ -15,6 +15,7 @@ import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,7 +48,10 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditorActionConstants;
 import org.eclipse.ui.texteditor.TextOperationAction;
@@ -190,6 +194,45 @@ public class CodeActionTests {
 		}
 	}
 
+	@Test
+	public void testCodeActionWorkspaceEditlWithDifferentURI() throws CoreException {
+		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
+		IFile sourceFile = TestUtils.createUniqueTestFile(p, "error");
+		IFile targetFile = TestUtils.createUniqueTestFile(p, "fixme");
+
+		// create a diagnostic on the sourceFile with a code action 
+		// that changes the targetFile
+		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
+		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(targetFile.getLocationURI().toString(), Collections.singletonList(tEdit)));
+		CodeAction codeAction = new CodeAction("fixme");
+		codeAction.setCommand(new Command("editCommand", "mockEditCommand", Collections.singletonList(wEdit)));
+		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
+		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
+				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
+
+		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(sourceFile);
+		AbstractTextEditor activeEditor = null;
+		try {
+			IMarker m = assertDiagnostics(sourceFile, "error", "fixme");
+			
+			// Apply and check the resolution
+			assertResolution(targetFile, m, "fixed");
+			
+			// Double check that the editor is opened and active for the targetFile
+			// as result of the resolution
+			IEditorPart activeEditorPart = TestUtils.getActiveEditor();
+			assertTrue(activeEditorPart instanceof AbstractTextEditor);
+			activeEditor = (AbstractTextEditor)activeEditorPart;
+			assertEquals(new FileEditorInput(targetFile), activeEditor.getEditorInput());
+		} finally {
+			editor.close(false);
+			if (activeEditor != null) {
+				activeEditor.close(false);
+			}
+			p.delete(true, new NullProgressMonitor());
+		}
+	}
+	
 	public static IMarker assertDiagnostics(IFile f, String markerMessage, String resolutionLabel) throws CoreException {
 		waitForAndAssertCondition(2_000, () -> {
 			IMarker[] markers = f.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true,
@@ -211,6 +254,27 @@ public class CodeActionTests {
 	public static void assertResolution(AbstractTextEditor editor, IMarker m, String newText) {
 		IDE.getMarkerHelpRegistry().getResolutions(m)[0].run(m);
 
+		waitForCondition(1_000,
+				() -> newText.equals(editor.getDocumentProvider().getDocument(editor.getEditorInput()).get()));
+		assertEquals(newText, editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
+
+		waitForCondition(1_000,
+				() -> newText.equals(((StyledText) editor.getAdapter(Control.class)).getText()));
+		assertEquals(newText, ((StyledText) editor.getAdapter(Control.class)).getText());
+	}
+
+	public static void assertResolution(IFile targetFile, IMarker m, String newText) {
+		IDE.getMarkerHelpRegistry().getResolutions(m)[0].run(m);
+
+		IEditorPart editorPart = null;
+		try {
+			editorPart = TestUtils.getEditor(targetFile);
+		} catch (PartInitException e) {
+			fail(e.getMessage());
+		}
+		assertTrue(editorPart instanceof AbstractTextEditor);
+		AbstractTextEditor editor = (AbstractTextEditor)editorPart;
+		
 		waitForCondition(1_000,
 				() -> newText.equals(editor.getDocumentProvider().getDocument(editor.getEditorInput()).get()));
 		assertEquals(newText, editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());

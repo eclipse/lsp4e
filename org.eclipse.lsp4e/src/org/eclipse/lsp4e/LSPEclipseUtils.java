@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -841,11 +842,22 @@ public final class LSPEclipseUtils {
 	 */
 	public static void applyWorkspaceEdit(WorkspaceEdit wsEdit, String label) {
 		String name = label == null ? DEFAULT_LABEL : label;
-		CompositeChange change = toCompositeChange(wsEdit, name);
+		Map<URI, Range> changedURIs = new HashMap<>();
+		CompositeChange change = toCompositeChange(wsEdit, name, changedURIs);
 		final var changeOperation = new PerformChangeOperation(change);
 		changeOperation.setUndoManager(RefactoringCore.getUndoManager(), name);
 		try {
 			ResourcesPlugin.getWorkspace().run(changeOperation, new NullProgressMonitor());
+
+			// Open the resource in editor if there is the only one URI
+			if (changedURIs.size() == 1) {
+				changedURIs.keySet().stream().findFirst().ifPresent(uri -> {
+					// Select the only start position of the range or the document start
+					Range range = changedURIs.get(uri);
+					Position start = range.getStart() != null ? range.getStart() : new Position(0, 0);
+					open(uri.toString(), new Range( start, start));
+				});
+			}
 		} catch (CoreException e) {
 			LanguageServerPlugin.logError(e);
 		}
@@ -859,6 +871,18 @@ public final class LSPEclipseUtils {
 	 * @return a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
 	 */
 	public static CompositeChange toCompositeChange(WorkspaceEdit wsEdit, String name) {
+		return toCompositeChange(wsEdit, name, null);
+	}
+
+	/**
+	 * Returns a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
+	 *
+	 * @param wsEdit
+	 * @param name
+	 * @param collector A map of URI to Range entries collected from WorkspaceEdit
+	 * @return a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
+	 */
+	private static CompositeChange toCompositeChange(WorkspaceEdit wsEdit, String name, Map<URI, Range> collector) {
 		final var change = new CompositeChange(name);
 		List<Either<TextDocumentEdit, ResourceOperation>> documentChanges = wsEdit.getDocumentChanges();
 		if (documentChanges != null) {
@@ -872,6 +896,7 @@ public final class LSPEclipseUtils {
 					URI uri = URI.create(id.getUri());
 					List<TextEdit> textEdits = edit.getEdits();
 					change.addAll(toChanges(uri, textEdits));
+					collectChangedURI(uri, textEdits, collector);
 				} else if (action.isRight()) {
 					ResourceOperation resourceOperation = action.getRight();
 					if (resourceOperation instanceof final CreateFile createOperation) {
@@ -944,11 +969,54 @@ public final class LSPEclipseUtils {
 					URI uri = URI.create(edit.getKey());
 					List<TextEdit> textEdits = edit.getValue();
 					change.addAll(toChanges(uri, textEdits));
+					collectChangedURI(uri, textEdits, collector);
 				}
 			}
 		}
 		return change;
 	}
+
+	private static final Range DEFAULT_RANGE = new Range(new Position(0, 0), new Position(0, 0));
+	/*
+	 * Reports the URI and the start range of the given text edit, if exists.
+	 *
+	 *
+	 * @param textEdits A list of textEdits sorted in reversed order
+	 */
+	private static void collectChangedURI(URI uri, List<TextEdit> textEdits, Map<URI, Range> collector) {
+		if (collector == null) {
+			return;
+		}
+
+		Range start = textEdits != null && !textEdits.isEmpty()
+				? textEdits.get(textEdits.size() - 1).getRange() : DEFAULT_RANGE;
+
+		Range range  = collector.get(uri);
+		if (range == null) {
+			collector.put(uri, start);
+		} else  if(rangeStartIsLessThan(start, range)) {
+			collector.put(uri, range);
+		}
+	}
+
+	private static boolean rangeStartIsLessThan(Range range, Range toCompare) {
+		if (range == null) {
+			return true;
+		}
+		if (toCompare == null) {
+			return false;
+		}
+
+		Position start = range.getStart();
+		Position compareStart = toCompare.getStart();
+		if(start.getLine() < compareStart.getLine()) {
+			return true;
+		} else if (start.getLine() == compareStart.getLine()) {
+			return start.getCharacter() < compareStart.getCharacter();
+		}
+		return false;
+	}
+
 
 	/**
 	 * Transform LSP {@link TextEdit} list into ltk {@link DocumentChange} and add

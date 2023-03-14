@@ -83,6 +83,29 @@ public class TestUtils {
 		return part;
 	}
 
+	public static IEditorPart getEditor(IFile file) throws PartInitException {
+		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
+		IWorkbenchPage page = workbenchWindow.getActivePage();
+		IEditorInput input = new FileEditorInput(file);
+		
+		return Arrays.asList(page.getEditorReferences()).stream()
+			.filter(r -> {
+				try {
+					return r.getEditorInput().equals(input);
+				} catch (PartInitException e) {
+					return false;
+				}
+			})
+			.map(r -> r.getEditor(false))
+			.findAny().orElse(null);
+	}
+
+	public static IEditorPart getActiveEditor() throws PartInitException {
+		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
+		IWorkbenchPage page = workbenchWindow.getActivePage();
+		return page.getActiveEditor();
+	}
+
 	public static boolean closeEditor(IEditorPart editor, boolean save) {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
