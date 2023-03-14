@@ -449,7 +449,7 @@ public class LanguageServiceAccessor {
 	 * @throws IOException
 	 */
 	@NonNull
-	public static LanguageServerWrapper getLSWrapper(@NonNull IProject project,
+	public static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
 			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
 		return getLSWrapper(project, serverDefinition, null);
 	}
