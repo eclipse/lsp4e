@@ -13,7 +13,9 @@
 package org.eclipse.lsp4e.test.diagnostics;
 
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -51,7 +53,9 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.ide.IDE;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.MarkerUtilities;
 import org.junit.Before;
 import org.junit.Rule;
@@ -82,10 +86,17 @@ public class DiagnosticsTest {
 
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics));
 
+		assertTrue(DisplayHelper.waitForCondition(Display.getCurrent(), 2000, () -> {
+			try {
+				return file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_INFINITE).length
+					== diagnostics.size();
+			} catch (CoreException e) {
+				return false;
+			}
+		}));
+
 		IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
 				IResource.DEPTH_INFINITE);
-		assertEquals(diagnostics.size(), markers.length);
-
 		for (int i = 0; i < diagnostics.size(); i++) {
 			Diagnostic diagnostic = diagnostics.get(i);
 			IMarker marker = markers[i];
@@ -99,8 +110,14 @@ public class DiagnosticsTest {
 
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), Collections.emptyList()));
 
-		markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_INFINITE);
-		assertEquals(0, markers.length);
+		assertTrue(DisplayHelper.waitForCondition(Display.getCurrent(), 2000, () -> {
+			try {
+				return file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_INFINITE).length
+						== 0;
+			} catch (CoreException e) {
+				return false;
+			}
+		}));
 	}
 
 	@Test
@@ -117,8 +134,10 @@ public class DiagnosticsTest {
 
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics));
 
-		IDocument shouldHaveBeenClosed = LSPEclipseUtils.getExistingDocument(file);
-		assertNull(shouldHaveBeenClosed);
+		assertTrue(DisplayHelper.waitForCondition(Display.getDefault(), 2000, () -> {
+			IDocument shouldHaveBeenClosed = LSPEclipseUtils.getExistingDocument(file);
+			return shouldHaveBeenClosed == null;
+		}));
 
 
 	}
@@ -134,10 +153,17 @@ public class DiagnosticsTest {
 
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics));
 
+		assertTrue(DisplayHelper.waitForCondition(Display.getCurrent(), 2000, () -> {
+			try {
+				return file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
+						IResource.DEPTH_INFINITE).length == diagnostics.size();
+			} catch (CoreException e) {
+				return false;
+			}
+		}));
+
 		IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
 				IResource.DEPTH_INFINITE);
-		assertEquals(diagnostics.size(), markers.length);
-
 		for (int i = 0; i < diagnostics.size(); i++) {
 			Diagnostic diagnostic = diagnostics.get(i);
 			IMarker marker = markers[i];
@@ -160,9 +186,15 @@ public class DiagnosticsTest {
 		IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO);
 		assertEquals("no marker should be shown at file initialization", 0, markers.length);
 		TestUtils.openEditor(file);
-		Thread.sleep(300); //give some time to LSs to process
-		markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO);
-		assertEquals("there should be 1 marker for each language server", 2, markers.length);
+
+		assertTrue("there should be 1 marker for each language server", DisplayHelper.waitForCondition(Display.getCurrent(), 5000, () -> {
+			try {
+				return file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true,
+						IResource.DEPTH_ZERO).length == 2;
+			} catch (CoreException e) {
+				return false;
+			}
+		}));
 	}
 
 	@Test
@@ -257,7 +289,7 @@ public class DiagnosticsTest {
 				}
 				return false;
 			});
-			assertEquals(expectedChanges, redrawCountListener.getAsInt());
+			waitForAndAssertCondition(5_000, () -> expectedChanges == redrawCountListener.getAsInt());
 		} finally {
 			workspace.removeResourceChangeListener(redrawCountListener);
 		}
