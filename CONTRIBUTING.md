@@ -29,7 +29,7 @@ Eclipse LSP4E use mainly 2 channels for strategical and technical discussions
 
 ## 🆕 Trying latest builds
 
-Latest builds, for testing, can usually be found at `https://download.eclipse.org/lsp4e/latest/` .
+Latest snapshot builds, for testing, can usually be found at `https://download.eclipse.org/lsp4e/snapshots/` .
 
 ## 🧑‍💻 Developer resources
 
@@ -42,7 +42,7 @@ Eclipse IDE with Plugin Development Environment installed for development; and M
 * Clone this repository <a href="https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/redirect.html"><img src="https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/cloneToEclipseBadge.png" alt="Clone to Eclipse IDE"/></a> for lsp4e.
 * _File > Open Projects from Filesystem..._ , select the path to LSP4E Git repo and the relevant children projects you want to import
 * Depending on the task you're planning to work on, multiple workflows are available to configure the [target-platform](https://help.eclipse.org/latest/topic/org.eclipse.pde.doc.user/concepts/target.htm?cp=4_1_5)
-    * In many cases, this simplest workflow will be sufficient: Install latest LSP$E snapshot in your target-platform (can be your current IDE), or
+    * In many cases, this simplest workflow will be sufficient: Install latest LSP4E snapshot in your target-platform (can be your current IDE), or
     * If you don't want to mix versions of LSP4E, open  __target-platforms/target-platform-latest/target-platform-latest.target__  and  _Set as Target-Platform_  from the editor, or
 * Open the project modules you want to work on (right-click > Open project) and their dependencies
 * Happy coding!
