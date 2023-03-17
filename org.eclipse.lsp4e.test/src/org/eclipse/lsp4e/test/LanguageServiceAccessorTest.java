@@ -17,7 +17,6 @@ import static org.eclipse.lsp4e.LSPEclipseUtils.getDocument;
 import static org.eclipse.lsp4e.LSPEclipseUtils.getTextViewer;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getActiveLanguageServers;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getInitializedLanguageServers;
-import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSPDocumentInfosFor;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSWrapper;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSWrappers;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getLanguageServers;
@@ -28,8 +27,8 @@ import static org.eclipse.lsp4e.test.TestUtils.createUniqueTestFile;
 import static org.eclipse.lsp4e.test.TestUtils.createUniqueTestFileMultiLS;
 import static org.eclipse.lsp4e.test.TestUtils.openEditor;
 import static org.eclipse.lsp4e.test.TestUtils.openTextViewer;
-import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -51,7 +50,6 @@ import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.internal.core.IInternalDebugCoreConstants;
 import org.eclipse.debug.internal.core.Preferences;
-import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
@@ -86,20 +84,6 @@ public class LanguageServiceAccessorTest {
 
 		var lsWrapper = getLSWrapper(project, serverDefinition);
 		assertNotNull(lsWrapper);
-	}
-
-	@Test
-	public void testGetLSPDocumentInfoForInvalidDocument() {
-		var infos = getLSPDocumentInfosFor(new Document(), MATCH_ALL);
-		assertTrue(infos.isEmpty());
-	}
-
-	@Test
-	public void testGetLSPDocumentInfoForInvalidTextEditor() throws CoreException {
-		var testFile = createFile(project, "not_associated_with_ls.abc", "");
-		var textViewer = openTextViewer(testFile);
-		var infos = getLSPDocumentInfosFor(textViewer.getDocument(), MATCH_ALL);
-		assertTrue(infos.isEmpty());
 	}
 
 	@Test

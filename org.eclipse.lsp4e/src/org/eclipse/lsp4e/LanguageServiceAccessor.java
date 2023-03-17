@@ -29,7 +29,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -46,7 +45,6 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.part.FileEditorInput;
@@ -76,92 +74,6 @@ public class LanguageServiceAccessor {
 			server.stopDispatcher();
 			return true;
 		});
-	}
-
-	/**
-	 * A bean storing association of a Document/File with a language server.
-	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	public static class LSPDocumentInfo {
-
-		private final @NonNull URI fileUri;
-		private final @NonNull IDocument document;
-		private final @NonNull LanguageServerWrapper wrapper;
-
-		private LSPDocumentInfo(@NonNull URI fileUri, @NonNull IDocument document,
-				@NonNull LanguageServerWrapper wrapper) {
-			this.fileUri = fileUri;
-			this.document = document;
-			this.wrapper = wrapper;
-		}
-
-		public @NonNull IDocument getDocument() {
-			return this.document;
-		}
-
-		/**
-		 * TODO consider directly returning a {@link TextDocumentIdentifier}
-		 *
-		 * @return the file URI
-		 */
-		public @NonNull URI getFileUri() {
-			return this.fileUri;
-		}
-
-		/**
-		 * Returns the language server, regardless of if it is initialized.
-		 *
-		 * @deprecated use {@link #getLanguageServerWrapper()} instead.
-		 */
-		@Deprecated(forRemoval = true)
-		public LanguageServer getLanguageClient() {
-			try {
-				return this.wrapper.getInitializedServer().get();
-			} catch (ExecutionException e) {
-				LanguageServerPlugin.logError(e);
-				return this.wrapper.getServer();
-			} catch (InterruptedException e) {
-				LanguageServerPlugin.logError(e);
-				Thread.currentThread().interrupt();
-				return this.wrapper.getServer();
-			}
-		}
-
-		public LanguageServerWrapper getLanguageServerWrapper() {
-			return wrapper;
-		}
-
-		public int getVersion() {
-			return wrapper.getVersion(fileUri);
-		}
-
-		/**
-		 * Returns the language server, regardless of if it is initialized.
-		 *
-		 * @deprecated use {@link #getLanguageServerWrapper()} instead.
-		 */
-		@Deprecated(forRemoval = true)
-		public CompletableFuture<LanguageServer> getInitializedLanguageClient() {
-			return this.wrapper.getInitializedServer();
-		}
-
-		public @Nullable ServerCapabilities getCapabilites() {
-			return this.wrapper.getServerCapabilities();
-		}
-
-		public boolean isActive() {
-			return this.wrapper.isActive();
-		}
-	}
-
-	/**
-	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	public static @NonNull List<CompletableFuture<LanguageServer>> getInitializedLanguageServers(@NonNull IFile file,
-			@Nullable Predicate<ServerCapabilities> request) throws IOException {
-		return getLSWrappers(file, request).stream().map(LanguageServerWrapper::getInitializedServer).toList();
 	}
 
 	public static void disableLanguageServerContentType(
@@ -498,31 +410,6 @@ public class LanguageServiceAccessor {
 		return getLanguageServers(null, request, true);
 	}
 
-	/**
-	 * Gets list of LS initialized for given project.
-	 *
-	 * @param project
-	 * @param request
-	 * @return list of Language Servers
-	 * @deprecated use {@link LanguageServers#forProject(IProject)} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	@NonNull
-	public static List<@NonNull LanguageServer> getLanguageServers(@NonNull IProject project,
-			Predicate<ServerCapabilities> request) {
-		return getLanguageServers(project, request, false);
-	}
-
-	/**
-	 * Gets list of LS initialized for given project
-	 *
-	 * @param onlyActiveLS
-	 *            true if this method should return only the already running
-	 *            language servers, otherwise previously started language servers
-	 *            will be re-activated
-	 * @return list of Language Servers
-	 */
-	@NonNull
 	private static List<@NonNull LanguageServer> getLanguageServers(@Nullable IProject project,
 			Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
 		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(project, request, onlyActiveLS);
@@ -539,29 +426,6 @@ public class LanguageServiceAccessor {
 
 	protected static LanguageServerDefinition getLSDefinition(@NonNull StreamConnectionProvider provider) {
 		return providersToLSDefinitions.get(provider);
-	}
-
-	/**
-	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	@NonNull public static List<@NonNull LSPDocumentInfo> getLSPDocumentInfosFor(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> capabilityRequest) {
-		URI fileUri = LSPEclipseUtils.toUri(document);
-		final var res = new ArrayList<LSPDocumentInfo>();
-		try {
-			getLSWrappers(document).stream().filter(wrapper -> wrapper.getServerCapabilities() == null
-					|| capabilityRequest.test(wrapper.getServerCapabilities())).forEach(wrapper -> {
-						try {
-							wrapper.connectDocument(document);
-						} catch (IOException e) {
-							LanguageServerPlugin.logError(e);
-						}
-						res.add(new LSPDocumentInfo(fileUri, document, wrapper));
-					});
-		} catch (final Exception e) {
-			LanguageServerPlugin.logError(e);
-		}
-		return res;
 	}
 
 	/**
