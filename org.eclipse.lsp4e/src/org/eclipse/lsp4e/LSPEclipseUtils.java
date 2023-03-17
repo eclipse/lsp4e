@@ -135,6 +135,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.browser.IWorkbenchBrowserSupport;
+import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.intro.config.IIntroURL;
 import org.eclipse.ui.intro.config.IntroURLFactory;
@@ -294,7 +295,7 @@ public final class LSPEclipseUtils {
 
 	}
 
-	private static ITextFileBuffer toBuffer(IDocument document) {
+	public static ITextFileBuffer toBuffer(IDocument document) {
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
 		if (bufferManager == null)
 			return null;
@@ -574,31 +575,31 @@ public final class LSPEclipseUtils {
 		return document;
 	}
 
-	public static void openInEditor(Location location) {
-		openInEditor(location, UI.getActivePage());
+	public static void openInEditor(Location location, IDocument originDocument) {
+		openInEditor(location, UI.getActivePage(), originDocument);
 	}
 
-	public static void openInEditor(Location location, IWorkbenchPage page) {
-		open(location.getUri(), page, location.getRange());
+	public static void openInEditor(Location location, IWorkbenchPage page, IDocument originDocument) {
+		open(location.getUri(), page, location.getRange(), originDocument);
 	}
 
-	public static void openInEditor(LocationLink link) {
-		openInEditor(link, UI.getActivePage());
+	public static void openInEditor(LocationLink link, IDocument originDocument) {
+		openInEditor(link, UI.getActivePage(), originDocument);
 	}
 
-	public static void openInEditor(LocationLink link, IWorkbenchPage page) {
-		open(link.getTargetUri(), page, link.getTargetSelectionRange());
+	public static void openInEditor(LocationLink link, IWorkbenchPage page, IDocument originDocument) {
+		open(link.getTargetUri(), page, link.getTargetSelectionRange(), originDocument);
 	}
 
-	public static void open(String uri, Range optionalRange) {
-		open(uri, UI.getActivePage(), optionalRange);
+	public static void open(String uri, Range optionalRange, IDocument originDocument) {
+		open(uri, UI.getActivePage(), optionalRange, originDocument);
 	}
 
-	public static void open(String uri, IWorkbenchPage page, Range optionalRange) {
-		open(uri, page, optionalRange, false);
+	public static void open(String uri, IWorkbenchPage page, Range optionalRange, IDocument originDocument) {
+		open(uri, page, optionalRange, false, originDocument);
 	}
 
-	public static void open(String uri, IWorkbenchPage page, Range optionalRange, boolean createFile) {
+	public static void open(String uri, IWorkbenchPage page, Range optionalRange, boolean createFile, IDocument originDocument) {
 		if (uri.startsWith(HTTP)) {
 			if (uri.startsWith(INTRO_URL)) {
 				openIntroURL(uri);
@@ -609,7 +610,7 @@ public final class LSPEclipseUtils {
 			if (optionalRange == null){
 				optionalRange = parseRange(uri);
 			}
-			openFileLocationInEditor(uri, page, optionalRange, createFile);
+			openFileLocationInEditor(uri, page, optionalRange, createFile, originDocument);
 		}
 	}
 
@@ -692,8 +693,8 @@ public final class LSPEclipseUtils {
 	}
 
 	protected static void openFileLocationInEditor(String uri, IWorkbenchPage page, Range optionalRange,
-			boolean createFile) {
-		IEditorPart part = openEditor(uri, page, createFile);
+			boolean createFile, IDocument originDocument) {
+		IEditorPart part = openEditor(uri, page, createFile, originDocument);
 
 		IDocument targetDocument = null;
 		// Update selection (if needed) from the given range
@@ -718,7 +719,7 @@ public final class LSPEclipseUtils {
 		}
 	}
 
-	private static IEditorPart openEditor(String uri, IWorkbenchPage page, boolean createFile) {
+	private static IEditorPart openEditor(String uri, IWorkbenchPage page, boolean createFile, IDocument originDocument) {
 		// Open file uri in an editor
 		IResource targetResource = findResourceFor(uri);
 		if (targetResource != null && targetResource.getType() == IResource.FILE) {
@@ -765,6 +766,11 @@ public final class LSPEclipseUtils {
 						} else {
 							return null;
 						}
+					}
+					// add linked file to LS/wrapper of origin document and add page listener:
+					if (originDocument != null) {
+						var linkedDocument = LSPEclipseUtils.getDocument(new FileStoreEditorInput(fileStore));
+						LanguageServers.forDocument(originDocument).connectLinkedDocument(linkedDocument, page);
 					}
 					return IDE.openEditorOnFileStore(page, fileStore);
 				}
@@ -855,7 +861,7 @@ public final class LSPEclipseUtils {
 					// Select the only start position of the range or the document start
 					Range range = changedURIs.get(uri);
 					Position start = range.getStart() != null ? range.getStart() : new Position(0, 0);
-					open(uri.toString(), new Range( start, start));
+					open(uri.toString(), new Range( start, start), null);
 				});
 			}
 		} catch (CoreException e) {

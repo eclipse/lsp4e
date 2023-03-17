@@ -79,7 +79,7 @@ public class LSPEclipseUtilsTest {
 	public void testOpenInEditorExternalFile() throws Exception {
 		File externalFile = TestUtils.createTempFile("externalFile", ".txt");
 		Location location = new Location(LSPEclipseUtils.toUri(externalFile).toString(), new Range(new Position(0, 0), new Position(0, 0)));
-		LSPEclipseUtils.openInEditor(location, UI.getActivePage());
+		LSPEclipseUtils.openInEditor(location, UI.getActivePage(), null);
 
 	}
 

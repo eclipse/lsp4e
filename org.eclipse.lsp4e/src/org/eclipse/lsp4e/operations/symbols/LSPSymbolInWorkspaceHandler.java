@@ -62,9 +62,9 @@ public class LSPSymbolInWorkspaceHandler extends LSPDocumentAbstractHandler {
 		}
 		final var symbolInformation = ((WorkspaceSymbol) dialog.getFirstResult()).getLocation();
 		if (symbolInformation.isLeft()) {
-			LSPEclipseUtils.openInEditor(symbolInformation.getLeft());
+			LSPEclipseUtils.openInEditor(symbolInformation.getLeft(), null);
 		} else if (symbolInformation.isRight()) {
-			LSPEclipseUtils.open(symbolInformation.getRight().getUri(), null);
+			LSPEclipseUtils.open(symbolInformation.getRight().getUri(), null, null);
 		}
 
 		return null;

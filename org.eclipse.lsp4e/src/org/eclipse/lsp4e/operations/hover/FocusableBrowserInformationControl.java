@@ -49,7 +49,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 		@Override
 		public void changing(LocationEvent event) {
 			if (!"about:blank".equals(event.location)) { //$NON-NLS-1$
-				LSPEclipseUtils.open(event.location, null);
+				LSPEclipseUtils.open(event.location, null, null);
 				event.doit = false;
 			}
 		}

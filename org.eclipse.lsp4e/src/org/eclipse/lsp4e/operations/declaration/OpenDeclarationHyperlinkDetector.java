@@ -101,10 +101,10 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 		}
 		return locations.map(//
 				l -> l.stream().filter(Objects::nonNull)
-						.map(location -> new LSBasedHyperlink(location, findWord(document, region), locationType))
+						.map(location -> new LSBasedHyperlink(location, findWord(document, region), locationType, document))
 						.toList(),
 				r -> r.stream().filter(Objects::nonNull).map(locationLink -> new LSBasedHyperlink(locationLink,
-						getSelectedRegion(document, region, locationLink), locationType)).toList());
+						getSelectedRegion(document, region, locationLink), locationType, document)).toList());
 	}
 
 	/**

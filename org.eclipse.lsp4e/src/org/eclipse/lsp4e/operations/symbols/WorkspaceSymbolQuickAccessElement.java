@@ -63,7 +63,7 @@ public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
 	public void execute() {
 		String locationUri = symbol.getLocation().map(Location::getUri, WorkspaceSymbolLocation::getUri);
 		@Nullable Range range = symbol.getLocation().map(Location::getRange, s -> null);
-		LSPEclipseUtils.open(locationUri, UI.getActivePage(), range);
+		LSPEclipseUtils.open(locationUri, UI.getActivePage(), range, null);
 	}
 
 }

@@ -151,7 +151,7 @@ public class LanguageClientImpl implements LanguageClient {
 		return CompletableFuture.supplyAsync(() -> {
 			UI.getDisplay().syncExec(() -> {
 				var location = new Location(params.getUri(), params.getSelection());
-				LSPEclipseUtils.openInEditor(location);
+				LSPEclipseUtils.openInEditor(location, null);
 			});
 			return new ShowDocumentResult(true);
 		});

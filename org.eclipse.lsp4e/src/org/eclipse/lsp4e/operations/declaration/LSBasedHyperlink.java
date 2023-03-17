@@ -15,6 +15,7 @@
 package org.eclipse.lsp4e.operations.declaration;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -30,19 +31,21 @@ public class LSBasedHyperlink implements IHyperlink {
 	private final Either<Location, LocationLink> location;
 	private final IRegion highlightRegion;
 	private final String locationType;
+	private final IDocument originDocument;
 
-	public LSBasedHyperlink(Either<Location, LocationLink> location, IRegion highlightRegion, String locationType) {
+	public LSBasedHyperlink(Either<Location, LocationLink> location, IRegion highlightRegion, String locationType, IDocument originDocument) {
 		this.location = location;
 		this.highlightRegion = highlightRegion;
 		this.locationType = locationType;
+		this.originDocument = originDocument;
 	}
 
-	public LSBasedHyperlink(@NonNull Location location, IRegion linkRegion, String locationType) {
-		this(Either.forLeft(location), linkRegion, locationType);
+	public LSBasedHyperlink(@NonNull Location location, IRegion linkRegion, String locationType, IDocument originDocument) {
+		this(Either.forLeft(location), linkRegion, locationType, originDocument);
 	}
 
-	public LSBasedHyperlink(@NonNull LocationLink locationLink, IRegion linkRegion, String locationType) {
-		this(Either.forRight(locationLink), linkRegion, locationType);
+	public LSBasedHyperlink(@NonNull LocationLink locationLink, IRegion linkRegion, String locationType, IDocument originDocument) {
+		this(Either.forRight(locationLink), linkRegion, locationType, originDocument);
 	}
 
 	@Override
@@ -72,9 +75,9 @@ public class LSBasedHyperlink implements IHyperlink {
 	@Override
 	public void open() {
 		if (location.isLeft()) {
-			LSPEclipseUtils.openInEditor(location.getLeft());
+			LSPEclipseUtils.openInEditor(location.getLeft(), originDocument);
 		} else {
-			LSPEclipseUtils.openInEditor(location.getRight());
+			LSPEclipseUtils.openInEditor(location.getRight(), originDocument);
 		}
 	}
 

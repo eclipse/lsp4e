@@ -63,7 +63,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 
 		@Override
 		public void open() {
-			LSPEclipseUtils.open(uri, UI.getActivePage(), null, true);
+			LSPEclipseUtils.open(uri, UI.getActivePage(), null, true, null);
 		}
 
 	}

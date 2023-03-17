@@ -28,8 +28,8 @@ import static org.eclipse.lsp4e.test.TestUtils.createUniqueTestFile;
 import static org.eclipse.lsp4e.test.TestUtils.createUniqueTestFileMultiLS;
 import static org.eclipse.lsp4e.test.TestUtils.openEditor;
 import static org.eclipse.lsp4e.test.TestUtils.openTextViewer;
-import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -269,7 +269,7 @@ public class LanguageServiceAccessorTest {
 		var wrapper1 = wrappers1.iterator().next();
 		assertTrue(wrapper1.isActive());
 
-		wrapper1.disconnect(testFile1.getLocationURI());
+		wrapper1.disconnect(testFile1.getLocationURI(), null);
 		assertFalse(wrapper1.isActive());
 
 		var wrappers2 = getLSWrappers(testFile2, MATCH_ALL);
@@ -281,7 +281,7 @@ public class LanguageServiceAccessorTest {
 		// make sure the language server for testFile1 (which is unrelated to testFile2 is not started again)
 		assertFalse(wrapper1.isActive());
 
-		wrapper2.disconnect(testFile2.getLocationURI());
+		wrapper2.disconnect(testFile2.getLocationURI(), null);
 	}
 
 	@Test
@@ -294,7 +294,7 @@ public class LanguageServiceAccessorTest {
 		var wrapper = wrappers.iterator().next();
 		assertTrue(wrapper.isActive());
 
-		wrapper.disconnect(testFile.getLocationURI());
+		wrapper.disconnect(testFile.getLocationURI(), null);
 		assertTrue(wrapper.isActive());
 
 		wrapper.stop();
@@ -311,7 +311,7 @@ public class LanguageServiceAccessorTest {
 		var wrapper = wrappers.iterator().next();
 		assertTrue(wrapper.isActive());
 
-		wrapper.disconnect(testFile.getLocationURI());
+		wrapper.disconnect(testFile.getLocationURI(), null);
 		assertTrue(wrapper.isActive());
 
 		waitForAndAssertCondition(5_000, () -> !wrapper.isActive());
@@ -327,7 +327,7 @@ public class LanguageServiceAccessorTest {
 		var wrapper = wrappers.iterator().next();
 		assertTrue(wrapper.isActive());
 
-		wrapper.disconnect(testFile.getLocationURI());
+		wrapper.disconnect(testFile.getLocationURI(), null);
 		assertFalse(wrapper.isActive());
 	}
 
@@ -421,8 +421,8 @@ public class LanguageServiceAccessorTest {
 			var hoverProvider = capabilities.getHoverProvider();
 			return hoverProvider.isLeft() ? hoverProvider.getLeft() : hoverProvider.getRight() != null;
 		};
-
-		assertEquals(1, getLanguageServers(getTextViewer(editor).getDocument(), hasHoverCapabilities).get().size());
+		var servers = getLanguageServers(getTextViewer(editor).getDocument(), hasHoverCapabilities).get();
+		assertEquals(1, servers.size());
 		wb.getActivePage().closeAllEditors(false);
 		// opening another file should either reuse the LS or spawn another one, but not both
 		assertEquals(1, getLanguageServers( //

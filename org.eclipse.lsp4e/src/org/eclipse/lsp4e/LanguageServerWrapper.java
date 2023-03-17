@@ -44,6 +44,8 @@ import java.util.function.UnaryOperator;
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.IFileBufferListener;
+import org.eclipse.core.internal.filebuffers.FileStoreTextFileBuffer;
+import org.eclipse.core.internal.filebuffers.ResourceTextFileBuffer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
@@ -100,6 +102,9 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IPartListener;
+import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 
 import com.google.common.base.Functions;
@@ -109,10 +114,64 @@ import com.google.gson.JsonObject;
 
 public class LanguageServerWrapper {
 
+	/**
+	 * This listener is used to manage external files/documents.
+	 * External in this context means files/documents outside the workspace.
+	 *
+	 * Files/Documents outside the workspace are not handled by the IFileBufferListener
+	 * as this listener only handles {@link ResourceTextFileBuffer}.
+	 * External files are handled as {@link FileStoreTextFileBuffer}.
+	 */
+	private final IPartListener lsPartListener = new IPartListener() {
+
+		@Override
+		public void partActivated(IWorkbenchPart part) {
+		}
+
+		@Override
+		public void partBroughtToTop(IWorkbenchPart part) {
+		}
+
+		/**
+		 * Disconnects the URI only if {@link LanguageServerWrapper#disconnect(URI, IEditorPart)}
+		 * in the {@code bufferDisposed} method in {@link LanguageServerWrapper#fileBufferListener}
+		 * won't be called, because it's called only for {@link ResourceTextFileBuffer}
+		 */
+		@Override
+		public void partClosed(IWorkbenchPart part) {
+			if (part instanceof IEditorPart) {
+				var editorPart = (IEditorPart) part;
+				var editorInput = editorPart.getEditorInput();
+				var uri = LSPEclipseUtils.toUri(editorInput);
+				var document = LSPEclipseUtils.getDocument(editorInput);
+				var buffer = LSPEclipseUtils.toBuffer(document);
+				// TODO: instead of checking the buffer type here, the wrapper should manage a list
+				// with external documents. Then this listener can be removed, when no external file is opened anymore.
+				// Call disconnect only in case the given document is an external document.
+				// Documents in the workspace are handled by the fileBufferListener.
+				if (buffer != null && !(buffer instanceof ResourceTextFileBuffer))
+					disconnect(uri, editorPart);
+			}
+		}
+
+		@Override
+		public void partDeactivated(IWorkbenchPart part) {
+		}
+
+		@Override
+		public void partOpened(IWorkbenchPart part) {
+		}
+
+	};
+
+	public IPartListener getPartListener() {
+		return this.lsPartListener;
+	}
+
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
 		public void bufferDisposed(IFileBuffer buffer) {
-			disconnect(LSPEclipseUtils.toUri(buffer));
+			disconnect(LSPEclipseUtils.toUri(buffer), null);
 		}
 
 		@Override
@@ -468,7 +527,7 @@ public class LanguageServerWrapper {
 		this.lspStreamProvider = null;
 
 		while (!this.connectedDocuments.isEmpty()) {
-			disconnect(this.connectedDocuments.keySet().iterator().next());
+			disconnect(this.connectedDocuments.keySet().iterator().next(), null);
 		}
 		this.languageServer = null;
 
@@ -621,7 +680,7 @@ public class LanguageServerWrapper {
 	 * @param uri
 	 * @return null if not disconnection has happened, a future tracking the disconnection state otherwise
 	 */
-	public CompletableFuture<Void> disconnect(URI uri) {
+	public CompletableFuture<Void> disconnect(URI uri, @Nullable IEditorPart editorPart) {
 		DocumentContentSynchronizer documentListener = this.connectedDocuments.remove(uri);
 		CompletableFuture<Void> documentClosedFuture = null;
 		if (documentListener != null) {
@@ -629,6 +688,10 @@ public class LanguageServerWrapper {
 			documentClosedFuture = documentListener.documentClosed();
 		}
 		if (this.connectedDocuments.isEmpty()) {
+			if (editorPart  != null) {
+				//TODO: Do the removal of the listener in lsPartListener.partClosed when all external documents has been closed
+				editorPart.getSite().getWorkbenchWindow().getPartService().removePartListener(lsPartListener);
+			}
 			if (this.serverDefinition.lastDocumentDisconnectedTimeout != 0) {
 				removeStopTimer();
 				startStopTimer();
@@ -650,7 +713,7 @@ public class LanguageServerWrapper {
 			}
 		}
 		for (URI uri : urisToDisconnect) {
-			disconnect(uri);
+			disconnect(uri, null);
 		}
 	}
 
@@ -996,10 +1059,11 @@ public class LanguageServerWrapper {
 		if (this.isConnectedTo(documentUri)) {
 			return true;
 		}
-		if (this.initialProject == null && this.connectedDocuments.isEmpty()) {
+		IFile file = LSPEclipseUtils.getFile(document);
+		// (re)use "empty" wrapper/LS only for external files (file.getProject() == null):
+		if (file != null && file.getProject() == null && initialProject == null && this.connectedDocuments.isEmpty()) {
 			return true;
 		}
-		IFile file = LSPEclipseUtils.getFile(document);
 		if (file != null && file.exists() && canOperate(file.getProject())) {
 			return true;
 		}

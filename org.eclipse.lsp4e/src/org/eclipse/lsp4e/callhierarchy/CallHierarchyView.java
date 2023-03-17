@@ -52,7 +52,7 @@ public class CallHierarchyView extends ViewPart {
 					structuredSelection.iterator().forEachRemaining(selectedObject -> {
 						if (selectedObject instanceof CallHierarchyViewTreeNode selectedNode) {
 							CallHierarchyItem callContainer = selectedNode.getCallContainer();
-							LSPEclipseUtils.open(callContainer.getUri(), selectedNode.getSelectionRange());
+							LSPEclipseUtils.open(callContainer.getUri(), selectedNode.getSelectionRange(), null);
 						}
 					});
 				}

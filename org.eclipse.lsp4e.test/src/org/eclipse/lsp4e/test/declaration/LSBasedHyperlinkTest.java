@@ -25,7 +25,7 @@ public class LSBasedHyperlinkTest {
 	@Test
 	public void testHyperlinkLabelNoLocation() {
 		Location location = new Location();
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType, null);
 
 		assertEquals(locationType, hyperlink.getHyperlinkText());
 	}
@@ -34,7 +34,7 @@ public class LSBasedHyperlinkTest {
 	public void testHyperlinkLabelForFileLocation() {
 		Location location = new Location();
 		location.setUri("file:///Users/someuser/testfile");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType, null);
 
 		assertEquals("Open Declaration - /Users/someuser/testfile", hyperlink.getHyperlinkText());
 	}
@@ -43,7 +43,7 @@ public class LSBasedHyperlinkTest {
 	public void testHyperlinkLabelForFileLocationLink() {
 		LocationLink location = new LocationLink();
 		location.setTargetUri("file:///Users/someuser/testfile");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType, null);
 
 		assertEquals("Open Declaration - /Users/someuser/testfile", hyperlink.getHyperlinkText());
 	}
@@ -52,7 +52,7 @@ public class LSBasedHyperlinkTest {
 	public void testHyperlinkLabelForIntroBasedLocationWithoutLabel() {
 		Location location = new Location();
 		location.setUri("http://org.eclipse.ui.intro/execute?command=mycommand%28bindingKey%3DLorg%2Ftest%2Fmvctest%2FMyComponent%3B%2CprojectName%3Dmvctest%29");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType, null);
 
 		assertEquals("Open Declaration", hyperlink.getHyperlinkText());
 	}
@@ -61,7 +61,7 @@ public class LSBasedHyperlinkTest {
 	public void testHyperlinkLabelForIntroBasedLocationLinkWithLabel() {
 		LocationLink location = new LocationLink();
 		location.setTargetUri("http://org.eclipse.ui.intro/execute?command=org.springframework.tooling.ls.eclipse.commons.commands.OpenJavaElementInEditor%28bindingKey%3DLorg%2Ftest%2Fmvctest%2FMyComponent%3B%2CprojectName%3Dmvctest%29&label=MyComponent+-+org.test.mvctest");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType, null);
 
 		assertEquals("Open Declaration - MyComponent - org.test.mvctest", hyperlink.getHyperlinkText());
 	}
@@ -70,7 +70,7 @@ public class LSBasedHyperlinkTest {
 	public void testHyperlinkLabelForRandomURLLocation() {
 		Location location = new Location();
 		location.setUri("http://eclipse.org");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType, null);
 
 		assertEquals("Open Declaration - http://eclipse.org", hyperlink.getHyperlinkText());
 	}
@@ -79,7 +79,7 @@ public class LSBasedHyperlinkTest {
 	public void testHyperlinkLabelForRandomURLLocationLink() {
 		LocationLink location = new LocationLink();
 		location.setTargetUri("http://eclipse.org");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType, null);
 
 		assertEquals("Open Declaration - http://eclipse.org", hyperlink.getHyperlinkText());
 	}
