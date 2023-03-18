@@ -60,7 +60,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IWorkbenchCommandConstants;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.handlers.IHandlerService;
@@ -72,6 +71,8 @@ public class RenameTest {
 
 	@Rule public AllCleanRule clear = new AllCleanRule();
 
+	private static final String RENAME_COMMAND = "org.eclipse.lsp4e.rename";
+
 	@Test
 	public void testRenameHandlerEnablement() throws Exception {
 		IProject project = TestUtils.createProject("blah");
@@ -79,7 +80,7 @@ public class RenameTest {
 		ITextEditor editor = (ITextEditor) TestUtils.openEditor(file);
 		editor.selectAndReveal(1, 0);
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
-		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
+		Command command = commandService.getCommand(RENAME_COMMAND);
 		assertTrue(command.isEnabled());
 		assertTrue(command.isHandled());
 	}
@@ -98,7 +99,7 @@ public class RenameTest {
 		ITextEditor editor = (ITextEditor) TestUtils.openEditor(file);
 		editor.selectAndReveal(1, 0);
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
-		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
+		Command command = commandService.getCommand(RENAME_COMMAND);
 		assertFalse(command.isEnabled() && command.isHandled());
 
 		Thread.sleep(delay * 3);
@@ -225,7 +226,7 @@ public class RenameTest {
 		editor.selectAndReveal(1, 0);
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		IHandlerService handlerService = PlatformUI.getWorkbench().getService(IHandlerService.class);
-		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
+		Command command = commandService.getCommand(RENAME_COMMAND);
 		assertTrue(command.isEnabled() && command.isHandled());
 		Event e = new Event();
 		e.widget = editor.getAdapter(Control.class);
