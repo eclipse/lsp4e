@@ -79,7 +79,7 @@ public class TestUtils {
 		IEditorInput input = new FileEditorInput(file);
 
 		IEditorPart part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", false);
-		part.setFocus();
+		page.activate(part);
 		return part;
 	}
 
