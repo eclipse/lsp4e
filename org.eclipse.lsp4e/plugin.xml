@@ -96,6 +96,18 @@
             id="org.eclipse.lsp4e.openCallHierarchy"
             name="%command.open.call.hierarchy.name">
       </command>
+      <command
+            categoryId="org.eclipse.lsp4e.category"
+            description="%command.selection.range.up.decription"
+            id="org.eclipse.lsp4e.selectionRange.up"
+            name="%command.selection.range.up.name">
+      </command>
+      <command
+            categoryId="org.eclipse.lsp4e.category"
+            description="%command.selection.range.down.decription"
+            id="org.eclipse.lsp4e.selectionRange.down"
+            name="%command.selection.range.down.name">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
@@ -156,6 +168,20 @@
             class="org.eclipse.lsp4e.callhierarchy.CallHierarchyCommandHandler"
             commandId="org.eclipse.lsp4e.openCallHierarchy">
       </handler>
+      <handler
+            class="org.eclipse.lsp4e.operations.selectionRange.LSPSelectionRangeUpHandler"
+            commandId="org.eclipse.lsp4e.selectionRange.up">
+         <activeWhen>
+            <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
+         </activeWhen>
+      </handler>
+      <handler
+            class="org.eclipse.lsp4e.operations.selectionRange.LSPSelectionRangeDownHandler"
+            commandId="org.eclipse.lsp4e.selectionRange.down">
+         <activeWhen>
+            <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
+         </activeWhen>
+      </handler>      
    </extension>
    <extension
          point="org.eclipse.search.searchResultViewPages">
@@ -350,6 +376,18 @@
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="Ctrl+Alt+H">
       </key>
+      
+      <!-- edit -->
+      <key
+            sequence="M2+M3+ARROW_UP"
+            contextId="org.eclipse.ui.genericeditor.genericEditorContext"
+            commandId="org.eclipse.lsp4e.selectionRange.up"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+      <key
+            sequence="M2+M3+ARROW_DOWN"
+            contextId="org.eclipse.ui.genericeditor.genericEditorContext"
+            commandId="org.eclipse.lsp4e.selectionRange.down"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
    </extension>
    <extension
          point="org.eclipse.core.runtime.adapters">

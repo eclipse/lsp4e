@@ -81,6 +81,7 @@ import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.InitializedParams;
 import org.eclipse.lsp4j.Registration;
 import org.eclipse.lsp4j.RegistrationParams;
+import org.eclipse.lsp4j.SelectionRangeRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
@@ -902,6 +903,16 @@ public class LanguageServerWrapper {
 				final Either<Boolean, WorkspaceSymbolOptions> beforeRegistration = serverCapabilities.getWorkspaceSymbolProvider();
 				serverCapabilities.setWorkspaceSymbolProvider(Boolean.TRUE);
 				addRegistration(reg, () -> serverCapabilities.setWorkspaceSymbolProvider(beforeRegistration));
+			} else if ("textDocument/selectionRange".equals(reg.getMethod())) { //$NON-NLS-1$
+				Either<Boolean, SelectionRangeRegistrationOptions> selectionRangeProvider = serverCapabilities
+						.getSelectionRangeProvider();
+				if (selectionRangeProvider == null || selectionRangeProvider.isLeft()) {
+					serverCapabilities.setSelectionRangeProvider(Boolean.TRUE);
+					addRegistration(reg, () -> serverCapabilities.setSelectionRangeProvider(selectionRangeProvider));
+				} else {
+					serverCapabilities.setSelectionRangeProvider(selectionRangeProvider.getRight());
+					addRegistration(reg, () -> serverCapabilities.setSelectionRangeProvider(selectionRangeProvider));
+				}
 			}
 		});
 	}

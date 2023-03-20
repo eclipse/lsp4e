@@ -43,6 +43,7 @@ import org.eclipse.lsp4j.RangeFormattingCapabilities;
 import org.eclipse.lsp4j.ReferencesCapabilities;
 import org.eclipse.lsp4j.RenameCapabilities;
 import org.eclipse.lsp4j.ResourceOperationKind;
+import org.eclipse.lsp4j.SelectionRangeCapabilities;
 import org.eclipse.lsp4j.ShowDocumentCapabilities;
 import org.eclipse.lsp4j.SignatureHelpCapabilities;
 import org.eclipse.lsp4j.SymbolCapabilities;
@@ -113,6 +114,8 @@ public class SupportedFeatures {
 		textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
 		textDocumentClientCapabilities
 				.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
+		SelectionRangeCapabilities selectionRange = new SelectionRangeCapabilities();
+		textDocumentClientCapabilities.setSelectionRange(selectionRange);
 		return textDocumentClientCapabilities;
 	}
 
