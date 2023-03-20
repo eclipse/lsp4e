@@ -77,6 +77,7 @@ import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.RewriteSessionEditProcessor;
 import org.eclipse.jface.text.TextSelection;
+import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.lsp4e.refactoring.CreateFileChange;
 import org.eclipse.lsp4e.refactoring.DeleteExternalFile;
@@ -193,6 +194,17 @@ public final class LSPEclipseUtils {
 		param.setPosition(start);
 		param.setTextDocument(toTextDocumentIdentifier(fileUri));
 		return param;
+	}
+
+	public static ISelection toSelection(Range range, IDocument document) {
+		try {
+			int offset = toOffset(range.getStart(), document);
+			int endOffset = toOffset(range.getEnd(), document);
+			return new TextSelection(offset, endOffset > offset ? endOffset - offset : 0);
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+			return null;
+		}
 	}
 
 	/**
@@ -704,16 +716,12 @@ public final class LSPEclipseUtils {
 				targetDocument = textEditor.getDocumentProvider().getDocument(textEditor.getEditorInput());
 			}
 
-			try {
-				if (targetDocument != null) {
-					ISelectionProvider selectionProvider = part.getEditorSite().getSelectionProvider();
-					int offset = toOffset(optionalRange.getStart(), targetDocument);
-					int endOffset = toOffset(optionalRange.getEnd(), targetDocument);
-					selectionProvider
-							.setSelection(new TextSelection(offset, endOffset > offset ? endOffset - offset : 0));
+			if (targetDocument != null) {
+				ISelectionProvider selectionProvider = part.getEditorSite().getSelectionProvider();
+				ISelection selection = toSelection(optionalRange, targetDocument);
+				if (selection != null) {
+					selectionProvider.setSelection(selection);
 				}
-			} catch (BadLocationException e) {
-				LanguageServerPlugin.logError(e);
 			}
 		}
 	}
