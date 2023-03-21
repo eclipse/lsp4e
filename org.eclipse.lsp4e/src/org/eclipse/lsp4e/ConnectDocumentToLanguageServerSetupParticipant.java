@@ -54,7 +54,9 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 			return;
 		}
 		// Force document connect
-		PENDING_CONNECTIONS.put(LanguageServers.forDocument(document).collectAll(ls -> CompletableFuture.completedFuture(null)), null);
+		CompletableFuture.runAsync(
+				() -> PENDING_CONNECTIONS.put(LanguageServers.forDocument(document).collectAll(ls -> CompletableFuture.completedFuture(null)), null),
+				CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS)); // delay to ensure the document is initialized and can be resolved by LSPEclipseUtils.toUri
 	}
 
 	/**
