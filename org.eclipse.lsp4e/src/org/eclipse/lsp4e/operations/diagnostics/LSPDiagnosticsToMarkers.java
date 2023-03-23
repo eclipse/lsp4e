@@ -184,7 +184,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			}
 		};
 		job.setSystem(true);
-		job.setRule(resource); // locking only marker model would be enough, but the markerRule doesn't lock anything
+		job.setRule(resource.getWorkspace().getRuleFactory().markerRule(resource));
 		job.schedule();
 		return job;
 	}
