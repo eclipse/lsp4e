@@ -360,20 +360,6 @@
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration">
       </key>
       <key
-            platform="carbon"
-            sequence="M2+M3+R"
-            commandId=""
-            contextId="org.eclipse.ui.genericeditor.genericEditorContext"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration">
-      </key>
-      <key
-            platform="carbon"
-            sequence="COMMAND+ALT+R"
-            commandId="org.eclipse.ui.edit.rename"
-            contextId="org.eclipse.ui.genericeditor.genericEditorContext"
-            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration">
-      </key>
-      <key
             commandId="org.eclipse.lsp4e.openCallHierarchy"
             contextId="org.eclipse.ui.genericeditor.genericEditorContext"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
