@@ -94,7 +94,8 @@ public abstract class LSPDocumentAbstractHandler extends AbstractHandler {
 	}
 
 	protected void setEnabled(final @NonNull Predicate<ServerCapabilities> filter, Predicate<ITextEditor> condition) {
-		if (UI.getActivePart() instanceof ITextEditor textEditor && condition.test(textEditor)) {
+		ITextEditor textEditor = UI.getActiveTextEditor();
+		if (textEditor != null && condition.test(textEditor)) {
 			IDocument document = LSPEclipseUtils.getDocument(textEditor);
 			if (document != null) {
 				setBaseEnabled(new LanguageServerDocumentHandlerExecutor(document)
