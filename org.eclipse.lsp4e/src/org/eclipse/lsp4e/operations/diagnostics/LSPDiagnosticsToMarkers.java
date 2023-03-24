@@ -136,7 +136,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
 				final var toDeleteMarkers = new HashSet<IMarker>(
-						Arrays.asList(resource.findMarkers(markerType, false, IResource.DEPTH_ONE)));
+						Arrays.asList(resource.findMarkers(markerType, false, IResource.DEPTH_ZERO)));
 				toDeleteMarkers
 						.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
 				final var newDiagnostics = new ArrayList<Diagnostic>();
