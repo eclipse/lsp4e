@@ -26,6 +26,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourceAttributes;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -173,6 +174,33 @@ public class CodeActionTests {
 	}
 
 	@Test
+	public void testNoCodeActionOnReadOnlySource() throws CoreException {
+		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
+		IFile f = TestUtils.createUniqueTestFile(p, "error");
+		f.setResourceAttributes(new ResourceAttributes() {
+			@Override
+			public boolean isReadOnly() {
+				return true;
+			}
+		});
+
+		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
+		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
+		CodeAction codeAction = new CodeAction("fixme");
+		codeAction.setEdit(wEdit);
+		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
+		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
+				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
+		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
+		try {
+			assertDiagnostics(f, "error", "fixme", false);
+		} finally {
+			editor.close(false);
+			p.delete(true, new NullProgressMonitor());
+		}
+	}
+
+	@Test
 	public void testCodeActionLiteralWithClientCommand() throws CoreException {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile f = TestUtils.createUniqueTestFile(p, "error");
@@ -200,7 +228,7 @@ public class CodeActionTests {
 		IFile sourceFile = TestUtils.createUniqueTestFile(p, "error");
 		IFile targetFile = TestUtils.createUniqueTestFile(p, "fixme");
 
-		// create a diagnostic on the sourceFile with a code action 
+		// create a diagnostic on the sourceFile with a code action
 		// that changes the targetFile
 		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
 		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(targetFile.getLocationURI().toString(), Collections.singletonList(tEdit)));
@@ -214,10 +242,10 @@ public class CodeActionTests {
 		AbstractTextEditor activeEditor = null;
 		try {
 			IMarker m = assertDiagnostics(sourceFile, "error", "fixme");
-			
+
 			// Apply and check the resolution
 			assertResolution(targetFile, m, "fixed");
-			
+
 			// Double check that the editor is opened and active for the targetFile
 			// as result of the resolution
 			IEditorPart activeEditorPart = TestUtils.getActiveEditor();
@@ -232,8 +260,12 @@ public class CodeActionTests {
 			p.delete(true, new NullProgressMonitor());
 		}
 	}
-	
+
 	public static IMarker assertDiagnostics(IFile f, String markerMessage, String resolutionLabel) throws CoreException {
+		return assertDiagnostics(f, markerMessage, resolutionLabel, true);
+	}
+
+	public static IMarker assertDiagnostics(IFile f, String markerMessage, String resolutionLabel, boolean resolutionExpected) throws CoreException {
 		waitForAndAssertCondition(2_000, () -> {
 			IMarker[] markers = f.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true,
 					IResource.DEPTH_ZERO);
@@ -243,11 +275,12 @@ public class CodeActionTests {
 		final IMarker m = f.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO)[0];
 		assertEquals(markerMessage, m.getAttribute(IMarker.MESSAGE));
 
-		waitForAndAssertCondition(2_000, () ->
+		assertEquals(resolutionExpected ? "Resolution not found within expected time." : "Unexpected resolution found", resolutionExpected,
+				waitForCondition(2_000, () ->
 				IDE.getMarkerHelpRegistry().hasResolutions(m) &&
 				// need this 2nd condition because async introduces a dummy resolution that's
 				// not the one we want
-				IDE.getMarkerHelpRegistry().getResolutions(m)[0].getLabel().equals(resolutionLabel));
+				IDE.getMarkerHelpRegistry().getResolutions(m)[0].getLabel().equals(resolutionLabel)));
 		return m;
 	}
 
@@ -274,7 +307,7 @@ public class CodeActionTests {
 		}
 		assertTrue(editorPart instanceof AbstractTextEditor);
 		AbstractTextEditor editor = (AbstractTextEditor)editorPart;
-		
+
 		waitForCondition(1_000,
 				() -> newText.equals(editor.getDocumentProvider().getDocument(editor.getEditorInput()).get()));
 		assertEquals(newText, editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());

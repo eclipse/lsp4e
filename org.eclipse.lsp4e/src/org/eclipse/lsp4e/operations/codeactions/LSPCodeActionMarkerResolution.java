@@ -14,10 +14,11 @@ package org.eclipse.lsp4e.operations.codeactions;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -49,7 +50,12 @@ import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.ResourceOperation;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.TextDocumentEdit;
+import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
+import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
@@ -108,7 +114,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		} else if (att == null) {
 			return new IMarkerResolution[0];
 		}
-		return ((List<Either<Command, CodeAction>>) att).stream().filter(Objects::nonNull)
+		return ((List<Either<Command, CodeAction>>) att).stream().filter(LSPCodeActionMarkerResolution::canPerform)
 				.map(command -> command.map(CommandMarkerResolution::new, CodeActionMarkerResolution::new))
 				.toArray(IMarkerResolution[]::new);
 	}
@@ -207,5 +213,47 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 			LanguageServerPlugin.logError(ex);
 		}
 		return false;
+	}
+
+	static boolean canPerform(Either<Command, CodeAction> command) {
+		if (command == null) {
+			return false;
+		}
+		if (command.isLeft()) {
+			return true;
+		}
+		CodeAction action = command.getRight();
+		if (action.getDisabled() != null) {
+			return false;
+		}
+		WorkspaceEdit edit = action.getEdit();
+		if (edit == null) {
+			return true;
+		}
+		List<Either<TextDocumentEdit, ResourceOperation>> documentChanges = edit.getDocumentChanges();
+		if (documentChanges != null) {
+			for (Either<TextDocumentEdit, ResourceOperation> change : documentChanges) {
+				if (change.isLeft()) {
+					TextDocumentEdit textedit = change.getLeft();
+					VersionedTextDocumentIdentifier id = textedit.getTextDocument();
+					URI uri = URI.create(id.getUri());
+					if (uri != null && LSPEclipseUtils.isReadOnly(uri)) {
+						return false;
+					}
+				}
+			}
+		} else {
+			Map<String, List<TextEdit>> changes = edit.getChanges();
+			if (changes != null) {
+				for (java.util.Map.Entry<String, List<TextEdit>> textEdit : changes.entrySet()) {
+					URI uri = URI.create(textEdit.getKey());
+					if (uri != null && LSPEclipseUtils.isReadOnly(uri)) {
+						return false;
+					}
+				}
+			}
+		}
+
+		return true;
 	}
 }

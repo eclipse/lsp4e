@@ -59,6 +59,7 @@ import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourceAttributes;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.CoreException;
@@ -1340,5 +1341,20 @@ public final class LSPEclipseUtils {
 			return false;
 		}
 		return eitherCapability.isRight() || eitherCapability.getLeft();
+	}
+
+	public static boolean isReadOnly(final @NonNull URI uri) {
+		IResource resource = findResourceFor(uri);
+		return resource != null && isReadOnly(resource);
+	}
+
+	public static boolean isReadOnly(final @NonNull IDocument document) {
+		IFile file = getFile(document);
+		return file != null && isReadOnly(file);
+	}
+
+	public static boolean isReadOnly(final @NonNull IResource resource) {
+		ResourceAttributes attributes = resource.getResourceAttributes();
+		return attributes != null && attributes.isReadOnly();
 	}
 }
