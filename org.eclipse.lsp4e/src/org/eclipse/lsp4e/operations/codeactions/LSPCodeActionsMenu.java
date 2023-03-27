@@ -124,6 +124,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 									proposal.apply(document);
 								}
 							});
+							item.setEnabled(LSPCodeActionMarkerResolution.canPerform(command));
 						}
 					}
 				}

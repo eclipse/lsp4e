@@ -113,7 +113,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 
 		try {
 			CompletableFuture<List<Either<Command, CodeAction>>> anyActions = executor.collectAll(ls -> ls.getTextDocumentService().codeAction(params)).thenApply(s -> s.stream().flatMap(List::stream).collect(Collectors.toList()));
-			if (anyActions.get(200, TimeUnit.MILLISECONDS).isEmpty()) {
+			if (anyActions.get(200, TimeUnit.MILLISECONDS).stream().filter(LSPCodeActionMarkerResolution::canPerform).collect(Collectors.toList()).isEmpty()) {
 				return false;
 			}
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -162,6 +162,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 				futures = executor.computeAll((w, ls) -> ls.getTextDocumentService()
 						.codeAction(params)
 						.thenAccept(actions -> LanguageServers.streamSafely(actions)
+								.filter(LSPCodeActionMarkerResolution::canPerform)
 								.forEach(action -> processNewProposal(invocationContext, new CodeActionCompletionProposal(action, w)))));
 
 				CompletableFuture<?> aggregateFutures = CompletableFuture
