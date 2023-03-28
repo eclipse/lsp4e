@@ -108,6 +108,11 @@
             id="org.eclipse.lsp4e.selectionRange.down"
             name="%command.selection.range.down.name">
       </command>
+      <command
+            categoryId="org.eclipse.lsp4e.category"
+            id="org.eclipse.lsp4e.typeHierarchy"
+            name="%typeHierarchy.command.name">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.handlers">
@@ -180,6 +185,15 @@
             commandId="org.eclipse.lsp4e.selectionRange.down">
          <activeWhen>
             <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
+         </activeWhen>
+      </handler>
+      <handler
+            class="org.eclipse.lsp4e.operations.typeHierarchy.TypeHierarchyHandler"
+            commandId="org.eclipse.lsp4e.typeHierarchy">
+         <activeWhen>
+            <reference
+                  definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer">
+            </reference>
          </activeWhen>
       </handler>      
    </extension>
@@ -377,6 +391,12 @@
             contextId="org.eclipse.ui.genericeditor.genericEditorContext"
             commandId="org.eclipse.lsp4e.selectionRange.down"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
+      <key
+            commandId="org.eclipse.lsp4e.typeHierarchy"
+            contextId="org.eclipse.ui.textEditorScope"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="F4">
+      </key>
    </extension>
    <extension
          point="org.eclipse.core.runtime.adapters">
@@ -598,10 +618,6 @@
             id="org.eclipse.lsp4e.pathParameterType"
             type="org.eclipse.core.runtime.IPath">
       </commandParameterType>
-      <category
-            id="org.eclipse.lsp4e.commandCategory"
-            name="Command">
-      </category>
    </extension>
    <extension
          point="org.eclipse.ui.genericeditor.reconcilers">

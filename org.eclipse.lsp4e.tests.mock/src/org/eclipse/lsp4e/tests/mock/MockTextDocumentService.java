@@ -69,8 +69,13 @@ import org.eclipse.lsp4j.SemanticTokensParams;
 import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.TypeDefinitionParams;
+import org.eclipse.lsp4j.TypeHierarchyItem;
+import org.eclipse.lsp4j.TypeHierarchyPrepareParams;
+import org.eclipse.lsp4j.TypeHierarchySubtypesParams;
+import org.eclipse.lsp4j.TypeHierarchySupertypesParams;
 import org.eclipse.lsp4j.WillSaveTextDocumentParams;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -409,5 +414,28 @@ public class MockTextDocumentService implements TextDocumentService {
 	@Override
 	public CompletableFuture<SemanticTokens> semanticTokensFull(SemanticTokensParams params) {
 		return CompletableFuture.completedFuture(this.mockSemanticTokens);
+	}
+
+	private static final Range DUMMY_RANGE = new Range(new Position(0, 0), new Position(0, 0));
+
+	@Override
+	public CompletableFuture<List<TypeHierarchyItem>> prepareTypeHierarchy(TypeHierarchyPrepareParams params) {
+		return CompletableFuture.completedFuture(List.of(new TypeHierarchyItem("a", SymbolKind.Class, params.getTextDocument().getUri(), DUMMY_RANGE, DUMMY_RANGE, null)));
+	}
+
+	@Override
+	public CompletableFuture<List<TypeHierarchyItem>> typeHierarchySubtypes(TypeHierarchySubtypesParams params) {
+		return CompletableFuture.completedFuture(List.of(
+			new TypeHierarchyItem(params.getItem().getName() + "a", SymbolKind.Class, params.getItem().getUri() + "/a", DUMMY_RANGE, DUMMY_RANGE, null),
+			new TypeHierarchyItem(params.getItem().getName() + "b", SymbolKind.Class, params.getItem().getUri() + "/b", DUMMY_RANGE, DUMMY_RANGE, null)
+		));
+	}
+
+	@Override
+	public CompletableFuture<List<TypeHierarchyItem>> typeHierarchySupertypes(TypeHierarchySupertypesParams params) {
+		return CompletableFuture.completedFuture(List.of(
+			new TypeHierarchyItem("X" + params.getItem().getName(), SymbolKind.Class, params.getItem().getUri() + "/X", DUMMY_RANGE, DUMMY_RANGE, null),
+			new TypeHierarchyItem("Y" + params.getItem().getName(), SymbolKind.Class, params.getItem().getUri() + "/Y", DUMMY_RANGE, DUMMY_RANGE, null)
+		));
 	}
 }

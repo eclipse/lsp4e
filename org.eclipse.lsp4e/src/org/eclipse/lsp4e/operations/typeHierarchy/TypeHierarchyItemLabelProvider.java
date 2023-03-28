@@ -1,0 +1,34 @@
+/*******************************************************************************
+ * Copyright (c) 2023 Red Hat Inc. and others.
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.eclipse.lsp4e.operations.typeHierarchy;
+
+import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.lsp4e.ui.LSPImages;
+import org.eclipse.lsp4j.TypeHierarchyItem;
+import org.eclipse.swt.graphics.Image;
+
+public class TypeHierarchyItemLabelProvider extends LabelProvider {
+	
+	@Override
+	public String getText(Object element) {
+		if (element instanceof TypeHierarchyItem item) {
+			return item.getName();
+		}
+		return super.getText(element);
+	}
+
+	@Override
+	public Image getImage(Object element) {
+		if (element instanceof TypeHierarchyItem item) {
+			return LSPImages.imageFromSymbolKind(item.getKind());
+		}
+		return super.getImage(element);
+	}
+
+}
