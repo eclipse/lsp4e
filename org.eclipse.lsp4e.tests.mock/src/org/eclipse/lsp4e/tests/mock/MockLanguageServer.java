@@ -62,6 +62,8 @@ import org.eclipse.lsp4j.SignatureHelpOptions;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.lsp4j.TextDocumentSyncOptions;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.TypeHierarchyCapabilities;
+import org.eclipse.lsp4j.TypeHierarchyRegistrationOptions;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.launch.LSPLauncher;
@@ -173,6 +175,7 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setColorProvider(Boolean.TRUE);
 		capabilities.setDocumentSymbolProvider(Boolean.TRUE);
 		capabilities.setLinkedEditingRangeProvider(new LinkedEditingRangeRegistrationOptions());
+		capabilities.setTypeHierarchyProvider(new TypeHierarchyRegistrationOptions());
 		return capabilities;
 	}
 
