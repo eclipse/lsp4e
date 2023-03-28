@@ -207,7 +207,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		for (IMarker marker : remainingMarkers) {
 			try {
 				if (LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), document) == MarkerUtilities.getCharStart(marker)
-						&& LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document) == MarkerUtilities.getCharEnd(marker)
+						&& (LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document) == MarkerUtilities.getCharEnd(marker) || Objects.equals(diagnostic.getRange().getStart(), diagnostic.getRange().getEnd()))
 						&& Objects.equals(marker.getAttribute(IMarker.MESSAGE), diagnostic.getMessage())
 						&& Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID), this.languageServerId)) {
 					return marker;
