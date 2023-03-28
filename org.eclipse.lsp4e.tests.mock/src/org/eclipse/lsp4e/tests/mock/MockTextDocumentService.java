@@ -238,10 +238,17 @@ public class MockTextDocumentService implements TextDocumentService {
 		}
 
 		if (this.diagnostics != null && !this.diagnostics.isEmpty()) {
-			// 'collect(Collectors.toSet()` is added here in order to prevent a
-			// ConcurrentModificationException appearance
-			this.remoteProxies.stream().collect(Collectors.toSet()).forEach(p -> p.publishDiagnostics(
-					new PublishDiagnosticsParams(params.getTextDocument().getUri(), this.diagnostics)));
+			// we're not sure which remote proxy to use, but we know we should only use one
+			// per didOpen
+			// for proper LS interaction; so a strategy is to use the first one and rotate
+			// the others
+			// for further executions
+			synchronized (this.remoteProxies) {
+				// and we synchronize to avoid concurrent read/write on the list
+				this.remoteProxies.get(0).publishDiagnostics(
+						new PublishDiagnosticsParams(params.getTextDocument().getUri(), this.diagnostics));
+				Collections.rotate(this.remoteProxies, 1);
+			}
 		}
 	}
 
