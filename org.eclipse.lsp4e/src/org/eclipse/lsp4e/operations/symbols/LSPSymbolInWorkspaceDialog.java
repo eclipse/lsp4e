@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.symbols;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -203,7 +204,11 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		res.setLocation(Either.forLeft(symbolinformation.getLocation()));
 		res.setKind(symbolinformation.getKind());
 		res.setContainerName(symbolinformation.getContainerName());
-		res.setTags(symbolinformation.getDeprecated() ? List.of(SymbolTag.Deprecated) : List.of());
+		List<SymbolTag> tags = symbolinformation.getTags() != null ? new ArrayList<>(symbolinformation.getTags()) : new ArrayList<>(1);
+		if (symbolinformation.getDeprecated() != null && symbolinformation.getDeprecated().booleanValue()) {
+			tags.add(SymbolTag.Deprecated);
+		}
+		res.setTags(tags);
 		return res;
 	}
 
