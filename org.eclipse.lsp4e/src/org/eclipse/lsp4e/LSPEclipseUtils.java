@@ -142,6 +142,7 @@ import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.intro.config.IIntroURL;
 import org.eclipse.ui.intro.config.IntroURLFactory;
 import org.eclipse.ui.part.FileEditorInput;
+import org.eclipse.ui.progress.UIJob;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -858,18 +859,20 @@ public final class LSPEclipseUtils {
 		changeOperation.setUndoManager(RefactoringCore.getUndoManager(), name);
 		try {
 			ResourcesPlugin.getWorkspace().run(changeOperation, new NullProgressMonitor());
-
-			// Open the resource in editor if there is the only one URI
-			if (changedURIs.size() == 1) {
-				changedURIs.keySet().stream().findFirst().ifPresent(uri -> {
-					// Select the only start position of the range or the document start
-					Range range = changedURIs.get(uri);
-					Position start = range.getStart() != null ? range.getStart() : new Position(0, 0);
-					open(uri.toString(), new Range( start, start));
-				});
-			}
 		} catch (CoreException e) {
 			LanguageServerPlugin.logError(e);
+		}
+		// Open the resource in editor if there is the only one URI
+		if (changedURIs.size() == 1) {
+			changedURIs.keySet().stream().findFirst().ifPresent(uri -> {
+				// Select the only start position of the range or the document start
+				Range range = changedURIs.get(uri);
+				Position start = range.getStart() != null ? range.getStart() : new Position(0, 0);
+				// Create a UIJob otherwise open cannot determine the active page:
+				UIJob.create("Open/Focus Editor", monitor -> { //$NON-NLS-1$
+					open(uri.toString(), new Range( start, start));
+				}).schedule();
+			});
 		}
 	}
 
