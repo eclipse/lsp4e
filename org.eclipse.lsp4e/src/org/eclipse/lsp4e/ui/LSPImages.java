@@ -64,6 +64,7 @@ public final class LSPImages {
 	public static final String IMG_NUMBER = "IMG_NUMBER"; //$NON-NLS-1$
 	public static final String IMG_BOOLEAN = "IMG_BOOLEAN"; //$NON-NLS-1$
 	public static final String IMG_ARRAY = "IMG_ARRAY"; //$NON-NLS-1$
+	public static final String IMG_NULL = "IMG_NULL"; //$NON-NLS-1$
 	public static final String IMG_UNIT = "IMG_UNIT"; //$NON-NLS-1$
 	public static final String IMG_VALUE = "IMG_VALUE"; //$NON-NLS-1$
 	public static final String IMG_KEYWORD = "IMG_KEYWORD"; //$NON-NLS-1$
@@ -93,6 +94,7 @@ public final class LSPImages {
 		declareRegistryImage(IMG_NUMBER, OBJECT + "number.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_BOOLEAN, OBJECT + "boolean.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_ARRAY, OBJECT + "array.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_NULL, OBJECT + "null.png"); //$NON-NLS-1$
 
 		declareRegistryImage(IMG_TEXT, OBJECT + "text.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_UNIT, OBJECT + "unit.png"); //$NON-NLS-1$
@@ -184,6 +186,7 @@ public final class LSPImages {
 		case Property -> getImage(IMG_PROPERTY);
 		case String -> getImage(IMG_STRING);
 		case Variable -> getImage(IMG_VARIABLE);
+		case Null -> getImage(IMG_NULL);
 		default -> EMPTY_IMAGE; // when the SymbolKind is out the cases above
 		};
 	}
