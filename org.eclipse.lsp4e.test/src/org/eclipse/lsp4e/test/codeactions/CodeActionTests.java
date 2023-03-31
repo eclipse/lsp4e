@@ -108,13 +108,8 @@ public class CodeActionTests {
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
 
-		try {
-			IMarker m = assertDiagnostics(f, "error", "fixme");
-			assertResolution(editor, m, "fixed");
-		} finally {
-			editor.close(false);
-			p.delete(true, new NullProgressMonitor());
-		}
+		IMarker m = assertDiagnostics(f, "error", "fixme");
+		assertResolution(editor, m, "fixed");
 	}
 
 	private void checkCompletionContent(final Table completionProposalList) {
@@ -164,13 +159,8 @@ public class CodeActionTests {
 		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
-		try {
-			IMarker m = assertDiagnostics(f, "error", "fixme");
-			assertResolution(editor, m, "fixed");
-		} finally {
-			editor.close(false);
-			p.delete(true, new NullProgressMonitor());
-		}
+		IMarker m = assertDiagnostics(f, "error", "fixme");
+		assertResolution(editor, m, "fixed");
 	}
 
 	@Test
@@ -191,13 +181,8 @@ public class CodeActionTests {
 		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
 		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
-		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
-		try {
-			assertDiagnostics(f, "error", "fixme", false);
-		} finally {
-			editor.close(false);
-			p.delete(true, new NullProgressMonitor());
-		}
+		TestUtils.openEditor(f);
+		assertDiagnostics(f, "error", "fixme", false);
 	}
 
 	@Test
@@ -213,13 +198,8 @@ public class CodeActionTests {
 		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
-		try {
-			IMarker m = assertDiagnostics(f, "error", "fixme");
-			assertResolution(editor, m, "fixed");
-		} finally {
-			editor.close(false);
-			p.delete(true, new NullProgressMonitor());
-		}
+		IMarker m = assertDiagnostics(f, "error", "fixme");
+		assertResolution(editor, m, "fixed");
 	}
 
 	@Test
@@ -238,27 +218,17 @@ public class CodeActionTests {
 		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 
-		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(sourceFile);
-		AbstractTextEditor activeEditor = null;
-		try {
-			IMarker m = assertDiagnostics(sourceFile, "error", "fixme");
-
-			// Apply and check the resolution
-			assertResolution(targetFile, m, "fixed");
-
-			// Double check that the editor is opened and active for the targetFile
-			// as result of the resolution
-			IEditorPart activeEditorPart = TestUtils.getActiveEditor();
-			assertTrue(activeEditorPart instanceof AbstractTextEditor);
-			activeEditor = (AbstractTextEditor)activeEditorPart;
-			assertEquals(new FileEditorInput(targetFile), activeEditor.getEditorInput());
-		} finally {
-			editor.close(false);
-			if (activeEditor != null) {
-				activeEditor.close(false);
-			}
-			p.delete(true, new NullProgressMonitor());
-		}
+		TestUtils.openEditor(sourceFile);
+		IMarker m = assertDiagnostics(sourceFile, "error", "fixme");
+		
+		// Apply and check the resolution
+		assertResolution(targetFile, m, "fixed");
+		
+		// Double check that the editor is opened and active for the targetFile
+		// as result of the resolution
+		IEditorPart activeEditorPart = TestUtils.getActiveEditor();
+		assertTrue(activeEditorPart instanceof AbstractTextEditor);
+		assertEquals(new FileEditorInput(targetFile), ((AbstractTextEditor)activeEditorPart).getEditorInput());
 	}
 
 	public static IMarker assertDiagnostics(IFile f, String markerMessage, String resolutionLabel) throws CoreException {
