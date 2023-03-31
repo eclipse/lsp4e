@@ -89,7 +89,7 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		LanguageServerWrapper lsWrapper = LanguageServiceAccessor.getLSWrapper(testFile.getProject(), serverDefinition);
 		URI fileLocation = testFile.getLocationURI();
 		// force connection (that's what LSP4E should be designed to prevent 3rd party from having to use it).
-		lsWrapper.connect(testFile, null);
+		lsWrapper.connect(null, testFile);
 
 		waitForAndAssertCondition(3_000, () -> lsWrapper.isConnectedTo(fileLocation));
 

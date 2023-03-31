@@ -478,43 +478,11 @@ public class LanguageServerWrapper {
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
 	}
 
-	/**
-	 * @param file
-	 * @param document
-	 * @return null if not connection has happened, a future tracking the connection state otherwise
-	 * @throws IOException
-	 * @deprecated use {@link #connect(IDocument, IFile)}
-	 */
-	@Deprecated(forRemoval = true)
-	public @Nullable CompletableFuture<LanguageServer> connect(@NonNull IFile file, IDocument document)
-			throws IOException {
-		CompletableFuture<@NonNull LanguageServerWrapper> connect = connect(document, file);
-		if (connect != null) {
-			return connect.thenApply(theVoid -> languageServer);
-		}
-		return null;
-	}
-
 	public @Nullable CompletableFuture<@NonNull LanguageServerWrapper> connect(IDocument document, @NonNull IFile file)
 			throws IOException {
 		final URI uri = LSPEclipseUtils.toUri(file);
 		if (uri != null) {
 			return connect(uri, document);
-		}
-		return null;
-	}
-
-	/**
-	 * @param document
-	 * @return null if not connection has happened, a future tracking the connection state otherwise
-	 * @throws IOException
-	 * @deprecated use {@link #connect(IDocument)}
-	 */
-	@Deprecated(forRemoval = true)
-	public @Nullable CompletableFuture<LanguageServer> connect(IDocument document) throws IOException {
-		CompletableFuture<LanguageServerWrapper> connect2 = connectDocument(document);
-		if (connect2 != null) {
-			return connect2.thenApply(theVoid -> languageServer);
 		}
 		return null;
 	}
@@ -670,11 +638,9 @@ public class LanguageServerWrapper {
 	 * Starts and returns the language server, regardless of if it is initialized.
 	 * If not in the UI Thread, will wait to return the initialized server.
 	 *
-	 * @deprecated use {@link #getInitializedServer()} instead.
 	 */
-	@Deprecated(forRemoval = true)
 	@Nullable
-	public LanguageServer getServer() {
+	protected LanguageServer getServer() {
 		CompletableFuture<LanguageServer> languagServerFuture = getInitializedServer();
 		if (Display.getCurrent() != null) { // UI Thread
 			return this.languageServer;
@@ -690,11 +656,9 @@ public class LanguageServerWrapper {
 	 * <p>If done in the UI stream, a job will be created
 	 * displaying that the server is being initialized</p>
 	 *
-	 * @deprecated use {@link LanguageServers#forDocument(IDocument)}
 	 */
-	@Deprecated(forRemoval = true) // will turn into a protected method
 	@NonNull
-	public CompletableFuture<LanguageServer> getInitializedServer() {
+	protected CompletableFuture<LanguageServer> getInitializedServer() {
 		try {
 			start();
 		} catch (IOException ex) {
