@@ -175,7 +175,10 @@ public class SemanticHighlightReconcilerStrategy
 	private void saveStyle(final Pair<SemanticTokens, SemanticTokensLegend> pair) {
 		final SemanticTokens semanticTokens = pair.getFirst();
 		final SemanticTokensLegend semanticTokensLegend = pair.getSecond();
-		if (semanticTokens == null || semanticTokensLegend == null) {
+
+		// At this point `semanticTokensDataStreamProcessor` can be 'null', most probably
+		// after the 'uninstall' is invoked
+		if (semanticTokensDataStreamProcessor == null || semanticTokens == null || semanticTokensLegend == null) {
 			return;
 		}
 		List<Integer> dataStream = semanticTokens.getData();
@@ -225,6 +228,9 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void invalidateTextPresentation(final Long documentTimestamp) {
+		if (viewer == null) { // Most probably after the 'uninstall' is invoked
+			return;
+		}
 		StyledText textWidget = viewer.getTextWidget();
 		textWidget.getDisplay().asyncExec(() -> {
 			if (!textWidget.isDisposed() && outdatedTextPresentation(documentTimestamp)) {
