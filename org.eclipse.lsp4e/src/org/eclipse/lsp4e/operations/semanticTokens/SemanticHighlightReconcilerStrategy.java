@@ -13,6 +13,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -261,11 +263,11 @@ public class SemanticHighlightReconcilerStrategy
 									Pair.of(semanticTokens, getSemanticTokensLegend(w)), theDocument)));
 
 			try {
-				semanticTokensFullFuture.get() // background thread with cancellation support, no timeout needed
+				semanticTokensFullFuture.get(15, TimeUnit.SECONDS) // background thread with cancellation support, no timeout needed
 						.ifPresent(versionedSemanticTokens -> {
 							versionedSemanticTokens.apply(this::saveStyle, this::invalidateTextPresentation);
 						});
-			} catch (ResponseErrorException | ExecutionException e) {
+			} catch (TimeoutException | ResponseErrorException | ExecutionException e) {
 				if (!CancellationUtil.isRequestCancelledException(e)) {
 					LanguageServerPlugin.logError(e);
 				}
