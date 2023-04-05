@@ -71,6 +71,7 @@ import org.eclipse.lsp4e.operations.hover.FocusableBrowserInformationControl;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
+import org.eclipse.lsp4j.CompletionItemDefaults;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InsertReplaceEdit;
@@ -139,11 +140,11 @@ public class LSCompletionProposal
 
 	public LSCompletionProposal(@NonNull IDocument document, int offset, @NonNull CompletionItem item,
 			LanguageServerWrapper languageServerWrapper) {
-		this(document, offset, item, languageServerWrapper, false);
+		this(document, offset, item, null, languageServerWrapper, false);
 	}
 
 	public LSCompletionProposal(@NonNull IDocument document, int offset, @NonNull CompletionItem item,
-			LanguageServerWrapper languageServerWrapper, boolean isIncomplete) {
+			CompletionItemDefaults defaults, LanguageServerWrapper languageServerWrapper, boolean isIncomplete) {
 		this.item = item;
 		this.document = document;
 		this.languageServerWrapper = languageServerWrapper;
@@ -151,6 +152,17 @@ public class LSCompletionProposal
 		this.currentOffset = offset;
 		this.bestOffset = getPrefixCompletionStart(document, offset);
 		this.isIncomplete = isIncomplete;
+		if (defaults != null) {
+			if (item.getInsertTextFormat() == null) {
+				item.setInsertTextFormat(defaults.getInsertTextFormat());
+			}
+			if (item.getCommitCharacters() == null) {
+				item.setCommitCharacters(defaults.getCommitCharacters());
+			}
+			if (item.getInsertTextMode() == null) {
+				item.setInsertTextMode(defaults.getInsertTextMode());
+			}
+		}
 	}
 
 	/**

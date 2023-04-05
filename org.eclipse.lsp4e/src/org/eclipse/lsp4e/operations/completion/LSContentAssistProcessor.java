@@ -47,6 +47,7 @@ import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CompletionItem;
+import org.eclipse.lsp4j.CompletionItemDefaults;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.CompletionParams;
@@ -202,11 +203,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		if (completionList == null) {
 			return Collections.emptyList();
 		}
+		CompletionItemDefaults defaults = completionList.map(o -> null, CompletionList::getItemDefaults);
 		List<CompletionItem> items = completionList.isLeft() ? completionList.getLeft() : completionList.getRight().getItems();
 		boolean isIncomplete = completionList.isRight() ? completionList.getRight().isIncomplete() : false;
 		return items.stream() //
 				.filter(Objects::nonNull)
-				.map(item -> new LSCompletionProposal(document, offset, item,
+				.map(item -> new LSCompletionProposal(document, offset, item, defaults,
 						languageServerWrapper, isIncomplete))
 				.filter(proposal -> proposal.validate(document, offset, null))
 				.map(ICompletionProposal.class::cast)
