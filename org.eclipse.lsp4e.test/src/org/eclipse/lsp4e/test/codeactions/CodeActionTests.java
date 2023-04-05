@@ -220,10 +220,10 @@ public class CodeActionTests {
 
 		TestUtils.openEditor(sourceFile);
 		IMarker m = assertDiagnostics(sourceFile, "error", "fixme");
-		
+
 		// Apply and check the resolution
 		assertResolution(targetFile, m, "fixed");
-		
+
 		// Double check that the editor is opened and active for the targetFile
 		// as result of the resolution
 		IEditorPart activeEditorPart = TestUtils.getActiveEditor();
@@ -250,6 +250,7 @@ public class CodeActionTests {
 				IDE.getMarkerHelpRegistry().hasResolutions(m) &&
 				// need this 2nd condition because async introduces a dummy resolution that's
 				// not the one we want
+				IDE.getMarkerHelpRegistry().getResolutions(m).length > 0 &&
 				IDE.getMarkerHelpRegistry().getResolutions(m)[0].getLabel().equals(resolutionLabel)));
 		return m;
 	}
