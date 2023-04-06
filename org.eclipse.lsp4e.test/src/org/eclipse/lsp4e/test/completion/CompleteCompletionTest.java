@@ -364,6 +364,19 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		assertEquals(" and foo", viewer.getDocument().get());
 		// TODO check link edit groups
 	}
+	
+	@Test
+	public void testBasicSnippetReplace() throws PartInitException, CoreException {
+		CompletionItem completionItem = createCompletionItem("System.out.println(${0});", CompletionItemKind.Class, new Range(new Position(0, 4), new Position(0, 4)));
+		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, Collections.singletonList(completionItem)));
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,"syso"));
+		int invokeOffset = 4;
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+		assertEquals(1, proposals.length);
+		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
+		assertEquals("System.out.println();", viewer.getDocument().get());
+	}
 
 	@Test
 	public void testChoiceSnippet() throws PartInitException, CoreException {
