@@ -440,11 +440,12 @@ public class LanguageServerWrapper {
 
 		Runnable shutdownKillAndStopFutureAndProvider = () -> {
 			if (languageServerInstance != null) {
-				CompletableFuture<Object> shutdown = languageServerInstance.shutdown();
 				try {
-					shutdown.get(5, TimeUnit.SECONDS);
+					languageServerInstance.shutdown().get(5, TimeUnit.SECONDS);
 				} catch (InterruptedException ex) {
 					Thread.currentThread().interrupt();
+				} catch (TimeoutException ex) {
+					LanguageServerPlugin.logInfo("Server did not shutdown in five seconds"); //$NON-NLS-1$
 				} catch (Exception ex) {
 					LanguageServerPlugin.logError(ex);
 				}
