@@ -11,6 +11,7 @@ package org.eclipse.lsp4e.operations.semanticTokens;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -255,23 +256,25 @@ public class SemanticHighlightReconcilerStrategy
 			long modificationStamp = DocumentUtil.getDocumentModificationStamp(theDocument);
 			LanguageServerDocumentExecutor executor = LanguageServers.forDocument(theDocument)
 					.withFilter(this::hasSemanticTokensFull);
-			semanticTokensFullFuture = executor//
+			try {
+				semanticTokensFullFuture = executor//
 					.computeFirst((w, ls) -> ls.getTextDocumentService().semanticTokensFull(getSemanticTokensParams())//
 							.thenApply(semanticTokens -> new VersionedSemanticTokens(modificationStamp,
 									Pair.of(semanticTokens, getSemanticTokensLegend(w)), theDocument)));
 
-			try {
 				semanticTokensFullFuture.get() // background thread with cancellation support, no timeout needed
 						.ifPresent(versionedSemanticTokens -> {
 							versionedSemanticTokens.apply(this::saveStyle, this::invalidateTextPresentation);
 						});
 			} catch (ResponseErrorException | ExecutionException e) {
-				if (!CancellationUtil.isRequestCancelledException(e)) {
+				if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
 					LanguageServerPlugin.logError(e);
 				}
 			} catch (InterruptedException e) {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
+			} catch (CancellationException e) {
+				// nothing to do, the client has cancelled the request because the document has been closed or a new request has been sent
 			}
 		}
 	}
