@@ -92,6 +92,8 @@ public class SemanticHighlightReconcilerStrategy
 
 	private SemanticTokensDataStreamProcessor semanticTokensDataStreamProcessor;
 
+	private boolean isInstalled;
+	
 	/**
 	 * Written in {@link this.class#applyTextPresentation(TextPresentation)}
 	 * applyTextPresentation and read in the lambda in
@@ -108,6 +110,7 @@ public class SemanticHighlightReconcilerStrategy
 	public SemanticHighlightReconcilerStrategy() {
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
 		disabled = store.getBoolean("semanticHighlightReconciler.disabled"); //$NON-NLS-1$
+		isInstalled = false;
 	}
 
 	/**
@@ -120,7 +123,7 @@ public class SemanticHighlightReconcilerStrategy
 	 */
 	@Override
 	public void install(final ITextViewer textViewer) {
-		if (disabled) {
+		if (disabled || isInstalled) {
 			return;
 		}
 		viewer = textViewer;
@@ -132,6 +135,7 @@ public class SemanticHighlightReconcilerStrategy
 			textViewerImpl.addTextPresentationListener(this);
 		}
 		viewer.addTextListener(styleRangeHolder);
+		isInstalled = true;
 	}
 
 	/**
@@ -140,9 +144,10 @@ public class SemanticHighlightReconcilerStrategy
 	 */
 	@Override
 	public void uninstall() {
-		if (disabled) {
+		if (disabled || !isInstalled) {
 			return;
 		}
+		isInstalled = false; // Indicate that we're not installed or in the phase of deinstalling
 		cancelSemanticTokensFull();
 		semanticTokensDataStreamProcessor = null;
 		if (viewer instanceof final TextViewer textViewerImpl) {
@@ -177,9 +182,8 @@ public class SemanticHighlightReconcilerStrategy
 		final SemanticTokens semanticTokens = pair.getFirst();
 		final SemanticTokensLegend semanticTokensLegend = pair.getSecond();
 
-		// At this point `semanticTokensDataStreamProcessor` can be 'null', most probably
-		// after the 'uninstall' is invoked
-		if (semanticTokensDataStreamProcessor == null || semanticTokens == null || semanticTokensLegend == null) {
+		// Skip any processing if not installed or at least one of the pair values is null
+		if (!isInstalled || semanticTokens == null || semanticTokensLegend == null) {
 			return;
 		}
 		List<Integer> dataStream = semanticTokens.getData();
@@ -229,7 +233,7 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void invalidateTextPresentation(final Long documentTimestamp) {
-		if (viewer == null) { // Most probably after the 'uninstall' is invoked
+		if (!isInstalled) { // Skip any processing
 			return;
 		}
 		StyledText textWidget = viewer.getTextWidget();
@@ -247,7 +251,7 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void fullReconcile() {
-		if (disabled) {
+		if (disabled || !isInstalled) { // Skip any processing
 			return;
 		}
 		IDocument theDocument = document;
