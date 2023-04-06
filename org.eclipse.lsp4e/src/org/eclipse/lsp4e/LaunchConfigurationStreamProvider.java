@@ -82,7 +82,6 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 				try {
 					Thread.sleep(5, 0);
 				} catch (InterruptedException e) {
-					LanguageServerPlugin.logError(e);
 					Thread.currentThread().interrupt();
 				}
 			}
