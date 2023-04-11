@@ -733,6 +733,9 @@ public final class LSPEclipseUtils {
 	}
 
 	private static IEditorPart openEditor(String uri, IWorkbenchPage page, boolean createFile) {
+		if (page == null) {
+			return null;
+		}
 		// Open file uri in an editor
 		IResource targetResource = findResourceFor(uri);
 		if (targetResource != null && targetResource.getType() == IResource.FILE) {
