@@ -49,6 +49,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.texteditor.MarkerUtilities;
 
 public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParams> {
@@ -221,6 +222,17 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 
 	private @NonNull Map<String, Object> computeMarkerAttributes(@Nullable IDocument document,
 			@NonNull Diagnostic diagnostic, @NonNull IResource resource) {
+		Either<String, Integer> code = diagnostic.getCode();
+		if (code != null && code.isLeft()) {
+			String left = code.getLeft();
+			if (left != null) {
+				diagnostic.setCode(Either.forLeft(left.intern()));
+			}
+		}
+		String source = diagnostic.getSource();
+		if (source != null) {
+			diagnostic.setSource(source.intern());
+		}
 		final var attributes = new HashMap<String, Object>(8);
 		attributes.put(LSP_DIAGNOSTIC, diagnostic);
 		attributes.put(LANGUAGE_SERVER_ID, languageServerId);
