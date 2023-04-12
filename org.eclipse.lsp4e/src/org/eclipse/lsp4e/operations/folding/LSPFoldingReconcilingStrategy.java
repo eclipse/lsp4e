@@ -170,9 +170,11 @@ public class LSPFoldingReconcilingStrategy
 		if (this.viewer != null) {
 			this.viewer.removeProjectionListener(this);
 		}
-		this.viewer = (ProjectionViewer) viewer;
-		this.viewer.addProjectionListener(this);
-		this.projectionAnnotationModel = this.viewer.getProjectionAnnotationModel();
+		if (viewer instanceof ProjectionViewer projViewer) {
+			this.viewer = projViewer;
+			this.viewer.addProjectionListener(this);
+			this.projectionAnnotationModel = this.viewer.getProjectionAnnotationModel();
+		}
 	}
 
 	@Override
