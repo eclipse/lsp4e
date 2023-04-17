@@ -122,6 +122,7 @@ import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.RGBA;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.text.edits.MalformedTreeException;
 import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
@@ -865,7 +866,11 @@ public final class LSPEclipseUtils {
 					// Select the only start position of the range or the document start
 					Range range = changedURIs.get(uri);
 					Position start = range.getStart() != null ? range.getStart() : new Position(0, 0);
-					open(uri.toString(), new Range( start, start));
+					if (Display.getCurrent() != null) {
+						open(uri.toString(), new Range(start, start));
+					} else {
+						UI.getDisplay().asyncExec(() -> open(uri.toString(), new Range(start, start)));
+					}
 				});
 			}
 		} catch (CoreException e) {
