@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -36,9 +35,6 @@ import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
-import org.eclipse.lsp4e.debug.debugmodel.TransportStreams;
-import org.eclipse.lsp4e.debug.debugmodel.TransportStreams.DefaultTransportStreams;
-import org.eclipse.lsp4e.debug.debugmodel.TransportStreams.SocketTransportStreams;
 import org.eclipse.osgi.util.NLS;
 
 import com.google.gson.Gson;
@@ -226,9 +222,9 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		return dspParameters;
 	}
 
-	public void launch(DSPLaunchDelegateLaunchBuilder builderSrc) throws CoreException {
+	public void launch(DSPLaunchDelegateLaunchBuilder builder) throws CoreException {
 		// Make a copy so we can modify locally as needed.
-		final var builder = new DSPLaunchDelegateLaunchBuilder(builderSrc);
+		builder = new DSPLaunchDelegateLaunchBuilder(builder);
 		final var subMonitor = SubMonitor.convert(builder.monitor, 100);
 		builder.dspParameters = new HashMap<>(builder.dspParameters);
 
@@ -264,13 +260,12 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 			abort(NLS.bind("Unsupported launch mode '{0}'.", builder.mode), null);
 		}
 
-		Supplier<TransportStreams> streamSupplier;
+		Runnable cleanup;
+		InputStream inputStream;
+		OutputStream outputStream;
 		try {
 
 			if (builder.launchNotConnect) {
-				InputStream inputStream;
-				OutputStream outputStream;
-				Runnable cleanup;
 				final var command = new ArrayList<String>();
 
 				if (builder.debugCmd == null) {
@@ -343,15 +338,8 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 					outputStream = debugAdapterProcess.getOutputStream();
 					cleanup = debugAdapterProcess::destroyForcibly;
 				}
-				// TODO: encapsulate logic starting the process in the supplier
-				streamSupplier = () -> new DefaultTransportStreams(inputStream, outputStream) {
-					@Override
-					public void close() {
-						super.close();
-						cleanup.run();;
-					}
-				};
 			} else {
+
 				if (builder.server == null) {
 					abort("Debug server host unspecified.", null); //$NON-NLS-1$
 				}
@@ -360,17 +348,26 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 					abort("Debug server port unspecified or out of range 1-65535.", null); //$NON-NLS-1$
 				}
 				subMonitor.subTask(NLS.bind("Connecting to debug adapter: {0}:{1}", builder.server, builder.port));
-				streamSupplier = () -> new SocketTransportStreams(builder.server, builder.port);
+				Socket socket = new Socket(builder.server, builder.port);
+				inputStream = socket.getInputStream();
+				outputStream = socket.getOutputStream();
+				cleanup = () -> {
+					try {
+						socket.close();
+					} catch (IOException e) {
+						// ignore inner resource exception
+					}
+				};
 			}
 
 			subMonitor.setWorkRemaining(80);
 
 			ILaunch launch = builder.launch;
 			Map<String, Object> dspParameters = builder.dspParameters;
-			IDebugTarget target = createDebugTarget(subMonitor, streamSupplier, launch,
+			IDebugTarget target = createDebugTarget(subMonitor, cleanup, inputStream, outputStream, launch,
 					dspParameters);
 			builder.launch.addDebugTarget(target);
-		} catch (OperationCanceledException e1) {
+		} catch (IOException | OperationCanceledException e1) {
 			abort("Failed to start debugging", e1);
 		} finally {
 			subMonitor.done();
@@ -384,8 +381,9 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	 * of {@link DSPDebugTarget}, but does not have to be. The arguments to this
 	 * method are normally just passed to {@link DSPDebugTarget} constructor.
 	 */
-	protected IDebugTarget createDebugTarget(SubMonitor subMonitor, Supplier<TransportStreams> streamsSupplier, ILaunch launch, Map<String, Object> dspParameters) throws CoreException {
-		final var target = new DSPDebugTarget(launch, streamsSupplier, dspParameters);
+	protected IDebugTarget createDebugTarget(SubMonitor subMonitor, Runnable cleanup, InputStream inputStream,
+			OutputStream outputStream, ILaunch launch, Map<String, Object> dspParameters) throws CoreException {
+		final var target = new DSPDebugTarget(launch, cleanup, inputStream, outputStream, dspParameters);
 		target.initialize(subMonitor.split(80));
 		return target;
 	}

@@ -23,25 +23,22 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.debug.core.DebugEvent;
@@ -56,7 +53,6 @@ import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4e.debug.console.DSPProcess;
 import org.eclipse.lsp4e.debug.console.DSPStreamsProxy;
-import org.eclipse.lsp4e.debug.debugmodel.TransportStreams.DefaultTransportStreams;
 import org.eclipse.lsp4j.debug.BreakpointEventArguments;
 import org.eclipse.lsp4j.debug.Capabilities;
 import org.eclipse.lsp4j.debug.ConfigurationDoneArguments;
@@ -72,7 +68,6 @@ import org.eclipse.lsp4j.debug.ProcessEventArguments;
 import org.eclipse.lsp4j.debug.RunInTerminalRequestArguments;
 import org.eclipse.lsp4j.debug.RunInTerminalRequestArgumentsKind;
 import org.eclipse.lsp4j.debug.RunInTerminalResponse;
-import org.eclipse.lsp4j.debug.StartDebuggingRequestArguments;
 import org.eclipse.lsp4j.debug.StoppedEventArguments;
 import org.eclipse.lsp4j.debug.TerminateArguments;
 import org.eclipse.lsp4j.debug.TerminatedEventArguments;
@@ -132,12 +127,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	private boolean fSentTerminateRequest = false;
 	private String targetName = null;
 
+	private final Runnable processCleanup;
 	private DSPBreakpointManager breakpointManager;
 	private DSPProcess process;
-	private TransportStreams transportStreams;
-	// the suppliers can be used to reconnect to running adapter, or for
-	// startDebuggin
-	private final Supplier<TransportStreams> streamsSupplier;
+	private InputStream in;
+	private OutputStream out;
 
 	/**
 	 * User supplied debug paramters for {@link IDebugProtocolServer#launch(Map)}
@@ -145,24 +139,13 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 */
 	private final Map<String, Object> dspParameters;
 
-	/**
-	 * Kept for backward compatibility
-	 */
-	public DSPDebugTarget(ILaunch launch, Runnable cleanup, InputStream in, OutputStream out, Map<String, Object> dspParameters) {
-		this(launch, () -> new DefaultTransportStreams(in, out) {
-			@Override
-			public void close() {
-				super.close();
-				cleanup.run();
-			}
-		}, dspParameters);
-	}
-
-	public DSPDebugTarget(ILaunch launch, Supplier<TransportStreams> streamsSupplier, Map<String, Object> dspParameters) {
+	public DSPDebugTarget(ILaunch launch, Runnable processCleanup, InputStream in, OutputStream out,
+			Map<String, Object> dspParameters) {
 		super(null);
-		this.transportStreams = streamsSupplier.get();
-		this.streamsSupplier = streamsSupplier;
+		this.in = in;
+		this.out = out;
 		this.launch = launch;
+		this.processCleanup = processCleanup;
 		this.dspParameters = dspParameters;
 	}
 
@@ -177,11 +160,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				traceMessages = null;
 			}
 			if (TRACE_IO) {
-				transportStreams = transportStreams.withTrace();
+				in = new TraceInputStream(in, System.out);
+				out = new TraceOutputStream(out, System.out);
 			}
 			// TODO this Function copied from createClientLauncher so that I can replace
 			// threadpool, so make this wrapper more accessible
-
 			UnaryOperator<MessageConsumer> wrapper = consumer -> {
 				MessageConsumer result = consumer;
 				if (traceMessages != null) {
@@ -197,8 +180,8 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				return result;
 			};
 
-			InputStream in2 = transportStreams.in;
-			OutputStream out2 = transportStreams.out;
+			InputStream in2 = in;
+			OutputStream out2 = out;
 			ExecutorService threadPool2 = threadPool;
 			Launcher<? extends IDebugProtocolServer> debugProtocolLauncher = createLauncher(wrapper, in2, out2,
 					threadPool2);
@@ -247,7 +230,6 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		arguments.setLinesStartAt1(true);
 		arguments.setColumnsStartAt1(true);
 		arguments.setSupportsRunInTerminalRequest(true);
-		arguments.setSupportsStartDebuggingRequest(Boolean.TRUE);
 		targetName = Objects.toString(dspParameters.get("program"), "Debug Adapter Target");
 
 		monitor.subTask("Initializing connection to debug adapter");
@@ -263,6 +245,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 						capabilities = new Capabilities();
 					}
 					capabilitiesFuture.complete(capabilities);
+				}).thenRun(() -> {
+					process = new DSPProcess(this);
+					if (isLaunchRequest) {
+						launch.addProcess(process);
+					}
 				}).thenCompose(v -> {
 					monitor.worked(10);
 					if (isLaunchRequest) {
@@ -306,14 +293,6 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	private void terminated() {
 		fTerminated = true;
-		Arrays.stream(getThreads()).forEach(t -> {
-			try {
-				t.terminate();
-			} catch (DebugException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		});
 		fireTerminateEvent();
 		if (process != null) {
 			// Disable the terminate button of the console associated with the DSPProcess.
@@ -334,26 +313,22 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			 */
 			java.lang.Thread.interrupted();
 		}
-		transportStreams.close();
+		try {
+			in.close();
+		} catch (IOException e1) {
+			// ignore inner resource exception
+		}
+		try {
+			out.close();
+		} catch (IOException e1) {
+			// ignore inner resource exception
+		}
+		processCleanup.run();
 	}
 
 	@Override
 	public void initialized() {
 		initialized.complete(null);
-	}
-
-	@Override
-	public CompletableFuture<Void> startDebugging(StartDebuggingRequestArguments args) {
-		Map<String, Object> parameters = new HashMap<>(/*dspParameters*/);
-		parameters.putAll(args.getConfiguration());
-		try {
-			DSPDebugTarget newTarget = new DSPDebugTarget(launch, streamsSupplier, parameters);
-			launch.addDebugTarget(newTarget);
-			newTarget.initialize(new NullProgressMonitor());
-		} catch (CoreException e) {
-			DSPPlugin.logError(e);
-		}
-		return CompletableFuture.completedFuture(null);
 	}
 
 	/**
@@ -581,10 +556,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				return new DSPThread[0];
 			}
 			DSPPlugin.logError(e);
+			return new DSPThread[0];
 		} catch (InterruptedException e) {
 			java.lang.Thread.currentThread().interrupt();
+			return new DSPThread[0];
 		}
-		return new DSPThread[0];
 	}
 
 	/**
@@ -661,8 +637,8 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public void process(ProcessEventArguments args) {
-		process = new DSPProcess(this, args);
-		launch.addProcess(process);
+		// TODO
+
 	}
 
 	/**
@@ -771,5 +747,4 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	public Capabilities getCapabilities() {
 		return capabilitiesFuture.getNow(null);
 	}
-
 }

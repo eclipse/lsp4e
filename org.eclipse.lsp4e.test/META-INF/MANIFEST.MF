@@ -21,7 +21,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.osgi.services,
  org.eclipse.lsp4e.tests.mock;bundle-version="0.6.0",
  org.eclipse.lsp4e.debug;bundle-version="0.13.4",
- org.eclipse.lsp4j;bundle-version="[0.21.0,0.22.0)",
+ org.eclipse.lsp4j;bundle-version="[0.20.0,0.21.0)",
  org.eclipse.jdt.annotation;bundle-version="[2.0.0,3.0.0)",
  org.eclipse.ui.tests.harness
 Automatic-Module-Name: org.eclipse.lsp4e.test

@@ -86,11 +86,6 @@ public abstract class DSPDebugElement extends DebugElement {
 					return future.get(100, TimeUnit.MILLISECONDS);
 				} catch (TimeoutException e) {
 					// check monitor cancelled and try again.
-				} catch (ExecutionException e) {
-					// workaround https://github.com/eclipse-lsp4j/lsp4j/issues/721
-					if (e.getCause() instanceof ClassCastException) {
-						return null;
-					}
 				}
 			}
 		} catch (CancellationException e) {

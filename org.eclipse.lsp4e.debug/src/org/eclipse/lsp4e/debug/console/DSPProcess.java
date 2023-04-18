@@ -8,15 +8,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.console;
 
-import java.util.Optional;
-
-import org.eclipse.core.runtime.Status;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
-import org.eclipse.lsp4j.debug.ProcessEventArguments;
-import org.eclipse.lsp4j.debug.StartDebuggingRequestArguments;
 
 /**
  * Represents that Debug Adapter process and provides a console to see any
@@ -26,18 +21,10 @@ public class DSPProcess implements IProcess {
 
 	private final DSPDebugTarget target;
 	private final DSPStreamsProxy proxy;
-	private final ProcessEventArguments processArgs;
-	private final Optional<ProcessHandle> handle;
 
 	public DSPProcess(DSPDebugTarget target) {
-		this(target, null);
-	}
-
-	public DSPProcess(DSPDebugTarget dspDebugTarget, ProcessEventArguments args) {
-		this.target = dspDebugTarget;
+		this.target = target;
 		this.proxy = new DSPStreamsProxy(target.getDebugProtocolServer());
-		this.processArgs = args;
-		handle = ProcessHandle.of(args.getSystemProcessId());
 	}
 
 	@Override
@@ -62,9 +49,7 @@ public class DSPProcess implements IProcess {
 
 	@Override
 	public String getLabel() {
-		if (processArgs != null && processArgs.getName() != null) {
-			return processArgs.getName();
-		}
+		// TODO
 		return target.getName();
 	}
 
@@ -85,17 +70,13 @@ public class DSPProcess implements IProcess {
 
 	@Override
 	public String getAttribute(String key) {
-		if (ATTR_PROCESS_ID.equals(key)) {
-			return handle.map(ProcessHandle::pid).map(Object::toString).orElse(null);
-		}
+		// TODO
 		return null;
 	}
 
 	@Override
 	public int getExitValue() throws DebugException {
-		if (handle.isPresent() && !handle.get().isAlive()) {
-			throw new DebugException(Status.error(handle.get().pid() + " is still running"));
-		}
+		// TODO
 		return 0;
 	}
 
