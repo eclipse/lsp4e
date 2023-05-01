@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2020 Pivotal Inc. and others.
+ * Copyright (c) 2020, 2023 Pivotal Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -13,14 +13,32 @@ package org.eclipse.lsp4e.test.declaration;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
+
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.declaration.LSBasedHyperlink;
+import org.eclipse.lsp4e.test.AllCleanRule;
+import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class LSBasedHyperlinkTest {
 
 	private static String locationType = "Open Declaration";
+	
+	@Rule public AllCleanRule clear = new AllCleanRule();
+	private IProject project;
+
+	@Before
+	public void setUp() throws CoreException {
+		project = TestUtils.createProject("HyperlinkLabelTest");
+	}
 
 	@Test
 	public void testHyperlinkLabelNoLocation() {
@@ -36,7 +54,7 @@ public class LSBasedHyperlinkTest {
 		location.setUri("file:///Users/someuser/testfile");
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
 
-		assertEquals("Open Declaration - /Users/someuser/testfile", hyperlink.getHyperlinkText());
+		assertEquals("Open Declaration - testfile - /Users/someuser/testfile", hyperlink.getHyperlinkText());
 	}
 
 	@Test
@@ -45,7 +63,7 @@ public class LSBasedHyperlinkTest {
 		location.setTargetUri("file:///Users/someuser/testfile");
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
 
-		assertEquals("Open Declaration - /Users/someuser/testfile", hyperlink.getHyperlinkText());
+		assertEquals("Open Declaration - testfile - /Users/someuser/testfile", hyperlink.getHyperlinkText());
 	}
 
 	@Test
@@ -82,6 +100,16 @@ public class LSBasedHyperlinkTest {
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
 
 		assertEquals("Open Declaration - http://eclipse.org", hyperlink.getHyperlinkText());
+	}
+	
+	@Test
+	public void testHyperlinkLabelForFileInProject() throws Exception {
+		IFile file = TestUtils.createFile(project, "my-test.txt", "Example Text");
+		LocationLink location = new LocationLink();
+		location.setTargetUri(LSPEclipseUtils.toUri(new File(file.getLocation().toOSString())).toASCIIString());
+		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		
+		assertEquals("Open Declaration - my-test.txt - HyperlinkLabelTest", hyperlink.getHyperlinkText());
 	}
 
 }
