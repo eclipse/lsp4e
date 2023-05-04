@@ -36,8 +36,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -846,12 +849,58 @@ public final class LSPEclipseUtils {
 	}
 
 	/**
-	 * Applies a workspace edit. It does simply change the underlying documents.
+	 * Applies a workspace edit. It does simply change the underlying documents if all are currently
+	 * open in an editor, otherwise, it performs a Refactoring that will result on filesystem changes.
 	 *
 	 * @param wsEdit
 	 * @param label
 	 */
 	public static void applyWorkspaceEdit(WorkspaceEdit wsEdit, String label) {
+		if (wsEdit == null) {
+			return;
+		}
+
+		// Check and process if single document text edit
+		URI singleDocumentUri = null;
+		List<TextEdit> edits = null;
+		if (wsEdit.getChanges() != null) {
+			if (wsEdit.getChanges().size() == 1) {
+				singleDocumentUri = LSPEclipseUtils.toUri(wsEdit.getChanges().entrySet().iterator().next().getKey());
+				edits = wsEdit.getChanges().entrySet().iterator().next().getValue();
+			} 
+		} else if (wsEdit.getDocumentChanges() != null) {
+			if (wsEdit.getDocumentChanges().size() == 1 && wsEdit.getDocumentChanges().stream().allMatch(Either::isLeft)) {
+				singleDocumentUri = LSPEclipseUtils.toUri(wsEdit.getDocumentChanges().get(0).getLeft().getTextDocument().getUri());
+				edits = wsEdit.getDocumentChanges().get(0).getLeft().getEdits();
+			}
+		}
+		if (singleDocumentUri != null && edits != null && !edits.isEmpty()) {
+			Set<IEditorReference> editors = LSPEclipseUtils.findOpenEditorsFor(singleDocumentUri);
+			if (editors != null) {
+				Optional<IDocument> doc = editors.stream().map(editor -> {
+					try {
+						return editor.getEditorInput();
+					} catch (PartInitException ex) {
+						return null;
+					}}).filter(Objects::nonNull)
+					.map(LSPEclipseUtils::getDocument)
+					.filter(Objects::nonNull)
+					.findFirst();
+				List<TextEdit> finalEdits = edits;
+				doc.ifPresent(document -> {
+					try {
+						LSPEclipseUtils.applyEdits(document, finalEdits);
+					} catch (BadLocationException ex) {
+						LanguageServerPlugin.logError(ex);
+					}
+				});
+				if (doc.isPresent()) {
+					return;
+				}
+			}
+		}
+
+		// multiple documents or some ResourceChanges => create a refactoring
 		String name = label == null ? DEFAULT_LABEL : label;
 		Map<URI, Range> changedURIs = new HashMap<>();
 		CompositeChange change = toCompositeChange(wsEdit, name, changedURIs);
