@@ -301,6 +301,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		}
 
 		if (detail != null) {
+			res.append(' ');
 			res.append(detail, StyledString.DECORATIONS_STYLER);
 		}
 
