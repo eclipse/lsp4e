@@ -244,7 +244,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		isQuickOutline = Boolean.TRUE.equals(viewer.getData(VIEWER_PROPERTY_IS_QUICK_OUTLINE));
 
 		outlineViewerInput = (OutlineViewerInput) newInput;
-		symbolsModel.setDocument(outlineViewerInput.document);
+		symbolsModel.setUri(outlineViewerInput.documentURI);
 
 		// eagerly refresh the content tree, esp. important for the Quick Outline
 		// because otherwise the outline will be blank for 1-2 seconds initially

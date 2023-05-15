@@ -141,7 +141,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		} else if (element instanceof WorkspaceSymbol symbol) {
 			file = LSPEclipseUtils.findResourceFor(getUri(symbol));
 		} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
-			file = LSPEclipseUtils.getFile(symbolWithFile.document);
+			file = LSPEclipseUtils.findResourceFor(symbolWithFile.uri);
 		}
 		/*
 		 * Implementation node: for problem decoration,m aybe consider using a ILabelDecorator/IDelayedLabelDecorator?
@@ -294,7 +294,7 @@ public class SymbolsLabelProvider extends LabelProvider
 			name = symbolWithFile.symbol.getName();
 			kind = symbolWithFile.symbol.getKind();
 			detail = symbolWithFile.symbol.getDetail();
-			location = LSPEclipseUtils.toUri(symbolWithFile.document);
+			location = symbolWithFile.uri;
 		}
 		if (name != null) {
 			res.append(name, null);
