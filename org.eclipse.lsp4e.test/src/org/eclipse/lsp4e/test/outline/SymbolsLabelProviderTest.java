@@ -72,7 +72,7 @@ public class SymbolsLabelProviderTest {
 		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
 				new Range(new Position(1, 0), new Position(1, 2)),
 				new Range(new Position(1, 0), new Position(1, 2)),
-				" : additional detail");
+				": additional detail");
 		assertEquals("Foo : additional detail", labelProvider.getStyledText(info).getString());		
 	}
 
@@ -82,7 +82,7 @@ public class SymbolsLabelProviderTest {
 		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
 				new Range(new Position(1, 0), new Position(1, 2)),
 				new Range(new Position(1, 0), new Position(1, 2)),
-				" : additional detail");
+				": additional detail");
 		assertEquals("Foo : additional detail :Class", labelProvider.getStyledText(info).getString());		
 	}
 
@@ -92,7 +92,7 @@ public class SymbolsLabelProviderTest {
 		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
 				new Range(new Position(1, 0), new Position(1, 2)),
 				new Range(new Position(1, 0), new Position(1, 2)),
-				" : additional detail");
+				": additional detail");
 		SymbolsModel.DocumentSymbolWithFile infoWithFile = new SymbolsModel.DocumentSymbolWithFile(info, null);
 		assertEquals("Foo : additional detail", labelProvider.getStyledText(infoWithFile).getString());		
 	}
@@ -103,7 +103,7 @@ public class SymbolsLabelProviderTest {
 		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
 				new Range(new Position(1, 0), new Position(1, 2)),
 				new Range(new Position(1, 0), new Position(1, 2)),
-				" : additional detail");
+				": additional detail");
 		SymbolsModel.DocumentSymbolWithFile infoWithFile = new SymbolsModel.DocumentSymbolWithFile(info, null);
 		assertEquals("Foo : additional detail :Class", labelProvider.getStyledText(infoWithFile).getString());		
 	}
