@@ -12,6 +12,7 @@ import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
 import static org.junit.Assert.assertFalse;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,6 +30,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
+import org.eclipse.lsp4e.outline.EditorToOutlineAdapterFactory;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -43,6 +45,7 @@ import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.ITextEditor;
+import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -50,6 +53,40 @@ public class OutlineContentTest {
 
 	@Rule
 	public AllCleanRule rule = new AllCleanRule();
+	
+	@Test
+	public void testExternalFile() throws CoreException, IOException {
+		var testFile = TestUtils.createTempFile("test" + System.currentTimeMillis(), ".lspt");
+		
+		try (FileWriter fileWriter =  new FileWriter(testFile)) {
+			fileWriter.write("content\n does\n not\n matter\n but needs to cover the ranges described below");
+		}	
+		
+		DocumentSymbol symbolCow = new DocumentSymbol("cow", SymbolKind.Constant,
+				new Range(new Position(0, 0), new Position(0, 2)),
+				new Range(new Position(0, 0), new Position(0, 2)));
+
+		MockLanguageServer.INSTANCE.setDocumentSymbols(symbolCow);
+
+		ITextEditor editor = (ITextEditor) TestUtils.openExternalFileInEditor(testFile);
+		
+		CNFOutlinePage outlinePage = (CNFOutlinePage) new EditorToOutlineAdapterFactory().getAdapter(editor, IContentOutlinePage.class);
+		Shell shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
+		shell.setLayout(new FillLayout());
+		outlinePage.createControl(shell);
+		shell.open();
+		Tree tree = (Tree) outlinePage.getControl();
+
+		// wait for tree to render
+		waitForAndAssertCondition(5_000, tree.getDisplay(), //
+				() -> Arrays.asList(symbolCow) //
+						.equals(Arrays.stream(tree.getItems())
+								.map(e -> ((DocumentSymbolWithFile) e.getData()).symbol)
+								.collect(Collectors.toList())) //
+		);
+
+		shell.close();
+	}
 
 	@Test
 	public void testOutlineSorting() throws CoreException, IOException {

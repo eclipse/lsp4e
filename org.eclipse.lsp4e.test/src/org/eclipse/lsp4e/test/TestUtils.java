@@ -49,6 +49,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
 
@@ -79,6 +80,14 @@ public class TestUtils {
 		IEditorInput input = new FileEditorInput(file);
 
 		IEditorPart part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", false);
+		part.setFocus();
+		return part;
+	}
+	
+	public static IEditorPart openExternalFileInEditor(File file) throws PartInitException {
+		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
+		IWorkbenchPage page = workbenchWindow.getActivePage();	
+		IEditorPart part = IDE.openEditor(page, file.toURI(), "org.eclipse.ui.genericeditor.GenericEditor", false);
 		part.setFocus();
 		return part;
 	}

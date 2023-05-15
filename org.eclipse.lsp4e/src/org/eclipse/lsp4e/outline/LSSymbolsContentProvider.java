@@ -88,7 +88,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			} else {
 				IFile file = LSPEclipseUtils.getFile(path);
 				documentFile = file;
-				documentURI = file == null ? null : LSPEclipseUtils.toUri(file);
+				documentURI = file == null ? path.toFile().toURI() : LSPEclipseUtils.toUri(file);
 			}
 			this.wrapper = wrapper;
 			this.textEditor = textEditor;
@@ -244,7 +244,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		isQuickOutline = Boolean.TRUE.equals(viewer.getData(VIEWER_PROPERTY_IS_QUICK_OUTLINE));
 
 		outlineViewerInput = (OutlineViewerInput) newInput;
-		symbolsModel.setFile(outlineViewerInput.documentFile);
+		symbolsModel.setDocument(outlineViewerInput.document);
 
 		// eagerly refresh the content tree, esp. important for the Quick Outline
 		// because otherwise the outline will be blank for 1-2 seconds initially
