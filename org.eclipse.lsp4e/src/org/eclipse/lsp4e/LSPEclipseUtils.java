@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -863,44 +864,8 @@ public final class LSPEclipseUtils {
 			return;
 		}
 
-		// Check and process if single document text edit
-		URI singleDocumentUri = null;
-		List<TextEdit> edits = null;
-		if (wsEdit.getChanges() != null) {
-			if (wsEdit.getChanges().size() == 1) {
-				singleDocumentUri = LSPEclipseUtils.toUri(wsEdit.getChanges().entrySet().iterator().next().getKey());
-				edits = wsEdit.getChanges().entrySet().iterator().next().getValue();
-			} 
-		} else if (wsEdit.getDocumentChanges() != null) {
-			if (wsEdit.getDocumentChanges().size() == 1 && wsEdit.getDocumentChanges().stream().allMatch(Either::isLeft)) {
-				singleDocumentUri = LSPEclipseUtils.toUri(wsEdit.getDocumentChanges().get(0).getLeft().getTextDocument().getUri());
-				edits = wsEdit.getDocumentChanges().get(0).getLeft().getEdits();
-			}
-		}
-		if (singleDocumentUri != null && edits != null && !edits.isEmpty()) {
-			Set<IEditorReference> editors = LSPEclipseUtils.findOpenEditorsFor(singleDocumentUri);
-			if (editors != null) {
-				Optional<IDocument> doc = editors.stream().map(editor -> {
-					try {
-						return editor.getEditorInput();
-					} catch (PartInitException ex) {
-						return null;
-					}}).filter(Objects::nonNull)
-					.map(LSPEclipseUtils::getDocument)
-					.filter(Objects::nonNull)
-					.findFirst();
-				List<TextEdit> finalEdits = edits;
-				doc.ifPresent(document -> {
-					try {
-						LSPEclipseUtils.applyEdits(document, finalEdits);
-					} catch (BadLocationException ex) {
-						LanguageServerPlugin.logError(ex);
-					}
-				});
-				if (doc.isPresent()) {
-					return;
-				}
-			}
+		if (applyWorkspaceEditIfSingleOpenFile(wsEdit)) {
+			return;
 		}
 
 		// multiple documents or some ResourceChanges => create a refactoring
@@ -929,6 +894,62 @@ public final class LSPEclipseUtils {
 			LanguageServerPlugin.logError(e);
 		}
 	}
+
+	/**
+	 * Applies the workspace edit on an open editor if the given edit affects only 1 open file
+	 * @param wsEdit a workspace edit
+	 * @return <code>true<code> if the wsEdit matches a single open file and was performed on editor,
+	 *         <code>false</code> otherwise, thus the wsEdit needs to be performed differently.
+	 */
+	private static boolean applyWorkspaceEditIfSingleOpenFile(WorkspaceEdit wsEdit) {
+		Set<URI> documentUris = new HashSet<>();
+		final List<TextEdit> firstDocumentEdits = new ArrayList<>(); // collect edits
+		if (wsEdit.getChanges() != null && !wsEdit.getChanges().isEmpty()) {
+			wsEdit.getChanges().entrySet().stream()
+				.map(Entry::getKey)
+				.map(LSPEclipseUtils::toUri)
+				.forEach(documentUris::add);
+			firstDocumentEdits.addAll(wsEdit.getChanges().entrySet().iterator().next().getValue());
+		}
+		if (wsEdit.getDocumentChanges() != null && !wsEdit.getDocumentChanges().isEmpty()) {
+			if (wsEdit.getDocumentChanges().stream().anyMatch(Either::isRight)) {
+				documentUris.clear(); // do not process this as a single doc edit
+			} else {
+				wsEdit.getDocumentChanges().stream()
+					.map(Either::getLeft)
+					.map(TextDocumentEdit::getTextDocument)
+					.map(TextDocumentIdentifier::getUri)
+					.map(LSPEclipseUtils::toUri)
+					.forEach(documentUris::add);
+				firstDocumentEdits.addAll(wsEdit.getDocumentChanges().get(0).getLeft().getEdits());
+			}
+		}
+		if (documentUris.size() != 1 || firstDocumentEdits.isEmpty()) {
+			return false;
+		}
+		URI singleDocumentUri = documentUris.iterator().next();
+		Set<IEditorReference> editors = LSPEclipseUtils.findOpenEditorsFor(singleDocumentUri);
+		if (editors == null || editors.isEmpty()) {
+			return false;
+		}
+		Optional<IDocument> doc = editors.stream().map(editor -> {
+			try {
+				return editor.getEditorInput();
+			} catch (PartInitException ex) {
+				return null;
+			}}).filter(Objects::nonNull)
+			.map(LSPEclipseUtils::getDocument)
+			.filter(Objects::nonNull)
+			.findFirst();
+		doc.ifPresent(document -> {
+			try {
+				LSPEclipseUtils.applyEdits(document, firstDocumentEdits);
+			} catch (BadLocationException ex) {
+				LanguageServerPlugin.logError(ex);
+			}
+		});
+		return doc.isPresent();
+	} 
 
 	/**
 	 * Returns a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
