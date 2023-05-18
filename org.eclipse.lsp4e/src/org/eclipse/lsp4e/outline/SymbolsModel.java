@@ -23,8 +23,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.TreePath;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
@@ -46,9 +49,16 @@ public class SymbolsModel {
 		public final DocumentSymbol symbol;
 		public final @NonNull URI uri;
 
+		/**
+		 * @deprecated use {@link #uri}
+		 */
+		@Deprecated(since = "0.16.1", forRemoval = true)
+		public final @Nullable IFile file;
+
 		public DocumentSymbolWithFile(DocumentSymbol symbol, @NonNull URI uri) {
 			this.symbol = symbol;
 			this.uri = uri;
+			this.file = LSPEclipseUtils.getFileHandle(uri);
 		}
 
 		@Override
