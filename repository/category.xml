@@ -47,9 +47,6 @@
    <bundle id="org.eclipse.lsp4j.jsonrpc.debug">
      <category name="deps"/>
    </bundle>
-   <bundle id="org.eclipse.xtext.xbase.lib">
-     <category name="deps"/>
-   </bundle>
    <bundle id="com.google.gson">
      <category name="deps"/>
    </bundle>
