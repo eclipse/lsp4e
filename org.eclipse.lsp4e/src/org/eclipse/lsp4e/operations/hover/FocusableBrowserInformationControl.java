@@ -39,10 +39,13 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
+import com.google.common.base.Strings;
+
 @SuppressWarnings("restriction")
 public class FocusableBrowserInformationControl extends BrowserInformationControl {
 
 	private static final String HEAD = "<head>"; //$NON-NLS-1$
+	private static final String HTML_TEMPLATE = "<head>%s</head>%s"; //$NON-NLS-1$
 
 	private static final LocationListener HYPER_LINK_LISTENER = new LocationListener() {
 
@@ -163,14 +166,23 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 		}
 
 		int headIndex = html.indexOf(HEAD);
-		final var builder = new StringBuilder(html.length() + style.length());
-		builder.append(html.substring(0, headIndex + HEAD.length()));
-		builder.append(style);
-		if (hlStyle != null) {
-			builder.append(hlStyle);
+		String headContent = style + Strings.nullToEmpty(hlStyle);
+		if (headIndex > 0) {
+			return insert(html, headContent, headIndex);
+		} else {
+			return String.format(HTML_TEMPLATE, headContent, html);
 		}
-		builder.append(html.substring(headIndex + HEAD.length()));
-		return builder.toString();
+	}
+
+	/**
+	 *
+	 * @param target - a string to insert in
+	 * @param source - a substring to insert
+	 * @param index - a position in target to insert source at
+	 * @return an updated target
+	 */
+	private static String insert(String target, String source, int index) {
+		return target.substring(0, index) + source + target.substring(index);
 	}
 
 	private boolean isDarkTheme() {
