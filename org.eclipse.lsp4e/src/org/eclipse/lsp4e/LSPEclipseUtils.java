@@ -559,11 +559,7 @@ public final class LSPEclipseUtils {
 		if (resource != null) {
 			return getDocument(resource);
 		}
-		if (!fromUri(uri).isFile()) {
-			return null;
-		}
-
-
+	
 		IDocument document = null;
 		IFileStore store = null;
 		try {
