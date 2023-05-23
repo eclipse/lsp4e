@@ -384,8 +384,26 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	 * of {@link DSPDebugTarget}, but does not have to be. The arguments to this
 	 * method are normally just passed to {@link DSPDebugTarget} constructor.
 	 */
-	protected IDebugTarget createDebugTarget(SubMonitor subMonitor, Supplier<TransportStreams> streamsSupplier, ILaunch launch, Map<String, Object> dspParameters) throws CoreException {
-		final var target = new DSPDebugTarget(launch, streamsSupplier, dspParameters);
+	protected IDebugTarget createDebugTarget(SubMonitor subMonitor, Supplier<TransportStreams> streamsSupplier,
+			ILaunch launch, Map<String, Object> dspParameters) throws CoreException {
+		/*
+		 * TODO use the following code when removing createDebugTarget deprecated
+		 * final var target = new DSPDebugTarget(launch, streamsSupplier,
+		 * dspParameters); target.initialize(subMonitor.split(80)); return target;
+		 * return target;
+		 */
+		final var supplier = streamsSupplier.get();
+		return createDebugTarget(subMonitor, supplier::close, supplier.in, supplier.out, launch, dspParameters);
+	}
+
+	/**
+	 * @deprecated use
+	 *             {@link #createDebugTarget(SubMonitor, Supplier, ILaunch, Map)}
+	 */
+	@Deprecated(since = "0.15.2", forRemoval = true)
+	protected IDebugTarget createDebugTarget(SubMonitor subMonitor, Runnable cleanup, InputStream inputStream,
+			OutputStream outputStream, ILaunch launch, Map<String, Object> dspParameters) throws CoreException {
+		final var target = new DSPDebugTarget(launch, cleanup, inputStream, outputStream, dspParameters);
 		target.initialize(subMonitor.split(80));
 		return target;
 	}
