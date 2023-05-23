@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2017-2022 Angelo ZERR.
+ *  Copyright (c) 2017-2023 Angelo ZERR.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v1.0
  *  which accompanies this distribution, and is available at
@@ -13,6 +13,8 @@
  */
 package org.eclipse.lsp4e.operations.rename;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -106,13 +108,17 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 			params.setTextDocument(identifier);
 			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
 
+			@SuppressWarnings("null")
+			List<Pair<LanguageServerWrapper, Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior>>> list = LanguageServers
+					.forDocument(document).withFilter(LSPRenameProcessor::isPrepareRenameProvider)
+					.collectAll((w, ls) -> ls.getTextDocumentService().prepareRename(params)
+							.thenApply(result -> new Pair<>(w, result)))
+					.get(1000, TimeUnit.MILLISECONDS);
 
-			Optional<Pair<LanguageServerWrapper, Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior>>> tmp
-				= LanguageServers.forDocument(document).withFilter(LSPRenameProcessor::isPrepareRenameProvider)
-				.computeFirst((w, ls) -> ls.getTextDocumentService().prepareRename(params).thenApply(result -> new Pair<>(w, result)))
-				.get(1000, TimeUnit.MILLISECONDS);
+			Optional<Pair<LanguageServerWrapper, Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior>>> tmp = list
+					.stream().filter(Objects::nonNull).filter(t -> t.getSecond() != null).findFirst();
 
-			if (tmp.isEmpty() || tmp.get().getSecond() == null) {
+			if (tmp.isEmpty()) {
 				status.addFatalError(Messages.rename_invalidated);
 			} else {
 				tmp.ifPresent(p -> {
