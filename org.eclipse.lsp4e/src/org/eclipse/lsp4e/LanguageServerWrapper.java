@@ -426,6 +426,9 @@ public class LanguageServerWrapper {
 			return;
 		}
 		removeStopTimer();
+		if (this.languageClient != null) {
+            this.languageClient.dispose();
+        }
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
 			this.initializeFuture = null;
@@ -451,12 +454,12 @@ public class LanguageServerWrapper {
 				}
 			}
 
-			if (serverFuture != null) {
-				serverFuture.cancel(true);
-			}
-
 			if (languageServerInstance != null) {
 				languageServerInstance.exit();
+			}
+
+			if (serverFuture != null) {
+				serverFuture.cancel(true);
 			}
 
 			if (provider != null) {
@@ -471,7 +474,7 @@ public class LanguageServerWrapper {
 		this.lspStreamProvider = null;
 
 		while (!this.connectedDocuments.isEmpty()) {
-			disconnect(this.connectedDocuments.keySet().iterator().next());
+			disconnect(this.connectedDocuments.keySet().iterator().next(), true);
 		}
 		this.languageServer = null;
 
@@ -620,18 +623,21 @@ public class LanguageServerWrapper {
 		}).thenApply(theVoid -> this);
 	}
 
+	private void disconnect(URI uri) {
+		disconnect(uri, false);
+	}
+
 	/**
 	 * @param uri
 	 * @return null if not disconnection has happened, a future tracking the disconnection state otherwise
 	 */
-	public CompletableFuture<Void> disconnect(URI uri) {
+	private void disconnect(URI uri, boolean stopping) {
 		DocumentContentSynchronizer documentListener = this.connectedDocuments.remove(uri);
-		CompletableFuture<Void> documentClosedFuture = null;
 		if (documentListener != null) {
 			documentListener.getDocument().removeDocumentListener(documentListener);
-			documentClosedFuture = documentListener.documentClosed();
+			documentListener.documentClosed();
 		}
-		if (this.connectedDocuments.isEmpty()) {
+		if (!stopping &&  this.connectedDocuments.isEmpty()) {
 			if (this.serverDefinition.lastDocumentDisconnectedTimeout != 0) {
 				removeStopTimer();
 				startStopTimer();
@@ -639,7 +645,6 @@ public class LanguageServerWrapper {
 				stop();
 			}
 		}
-		return documentClosedFuture;
 	}
 
 	public void disconnectContentType(@NonNull IContentType contentType) {

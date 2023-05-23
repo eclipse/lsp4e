@@ -51,6 +51,7 @@ public class LanguageClientImpl implements LanguageClient {
 
 	private LanguageServer server;
 	private LanguageServerWrapper wrapper;
+	private boolean disposed;
 
 	public final void connect(LanguageServer server, LanguageServerWrapper wrapper) {
 		this.server = server;
@@ -156,4 +157,22 @@ public class LanguageClientImpl implements LanguageClient {
 			return new ShowDocumentResult(true);
 		});
 	}
+
+	/**
+	 * Dispose language client.
+	 */
+	public void dispose() {
+		progressManager.dispose();
+		disposed = true;
+	}
+
+	/**
+	 * Returns true if the client is disposed and false otherwise.
+	 *
+	 * @return true if the client is disposed and false otherwise.
+	 */
+	public boolean isDisposed() {
+		return disposed;
+	}
+
 }

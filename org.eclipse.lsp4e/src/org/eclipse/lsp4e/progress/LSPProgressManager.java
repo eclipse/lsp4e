@@ -184,4 +184,10 @@ public class LSPProgressManager {
 		}
 	}
 
+	public void dispose() {
+		progressMap.clear();
+		currentPercentageMap.clear();
+		done.clear();
+	}
+
 }
