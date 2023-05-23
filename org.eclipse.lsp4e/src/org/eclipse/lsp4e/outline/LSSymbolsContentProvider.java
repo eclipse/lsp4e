@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Red Hat Inc. and others.
+ * Copyright (c) 2017, 2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -14,6 +14,7 @@
 package org.eclipse.lsp4e.outline;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -53,6 +54,7 @@ import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.navigator.ICommonContentExtensionSite;
@@ -82,9 +84,17 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		public OutlineViewerInput(IDocument document, @NonNull LanguageServerWrapper wrapper, @Nullable ITextEditor textEditor) {
 			this.document = document;
 			IPath path = LSPEclipseUtils.toPath(document);
+			TextDocumentIdentifier docIdentifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
 			if (path == null) {
 				documentFile = null;
-				documentURI = null;
+				URI uri;
+				// Set the documentURI if valid URI for LSs that use custom protocols e.g. jdt://
+				try {
+					uri = new URI(docIdentifier.getUri());
+				} catch (URISyntaxException e) {
+					uri = null;
+				}
+				documentURI = uri;
 			} else {
 				IFile file = LSPEclipseUtils.getFile(path);
 				documentFile = file;
