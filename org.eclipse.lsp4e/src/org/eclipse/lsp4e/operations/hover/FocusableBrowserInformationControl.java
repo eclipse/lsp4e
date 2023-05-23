@@ -168,21 +168,10 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 		int headIndex = html.indexOf(HEAD);
 		String headContent = style + Strings.nullToEmpty(hlStyle);
 		if (headIndex > 0) {
-			return insert(html, headContent, headIndex);
+			return new StringBuilder(html).insert(headIndex, headContent).toString();
 		} else {
 			return String.format(HTML_TEMPLATE, headContent, html);
 		}
-	}
-
-	/**
-	 *
-	 * @param target - a string to insert in
-	 * @param source - a substring to insert
-	 * @param index - a position in target to insert source at
-	 * @return an updated target
-	 */
-	private static String insert(String target, String source, int index) {
-		return target.substring(0, index) + source + target.substring(index);
 	}
 
 	private boolean isDarkTheme() {
