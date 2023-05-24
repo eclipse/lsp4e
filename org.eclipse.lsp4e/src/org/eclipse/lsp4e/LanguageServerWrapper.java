@@ -508,7 +508,7 @@ public class LanguageServerWrapper {
 	 * @param document
 	 * @return null if not connection has happened, a future tracking the connection state otherwise
 	 * @throws IOException
-	 * @deprecated use {@link #connect2}
+	 * @deprecated use {@link #connect(IDocument)}
 	 */
 	@Deprecated(forRemoval = true)
 	public @Nullable CompletableFuture<LanguageServer> connect(IDocument document) throws IOException {

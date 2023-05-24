@@ -11,7 +11,6 @@ package org.eclipse.lsp4e.debug.launcher;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -348,7 +347,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 					@Override
 					public void close() {
 						super.close();
-						cleanup.run();;
+						cleanup.run();
 					}
 				};
 			} else {

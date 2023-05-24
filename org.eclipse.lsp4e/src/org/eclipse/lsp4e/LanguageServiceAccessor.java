@@ -80,7 +80,7 @@ public class LanguageServiceAccessor {
 
 	/**
 	 * A bean storing association of a Document/File with a language server.
-	 * @deprecated use {@link LanguageServers#forDocument()} instead.
+	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	public static class LSPDocumentInfo {
@@ -156,7 +156,7 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
-	 * @deprecated use {@link LanguageServers#forDocument()} instead.
+	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	public static @NonNull List<CompletableFuture<LanguageServer>> getInitializedLanguageServers(@NonNull IFile file,
@@ -177,7 +177,7 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
-	 * @deprecated use {@link LanguageServerWrapper#isWrapperFor() and LanguageServerWrapper#isActive()} instead.
+	 * @deprecated use {@link LanguageServerWrapper#isWrapperFor(LanguageServer)} and {@link LanguageServerWrapper#isActive()} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	public static boolean isStillRunning(LanguageServer server) {
@@ -218,7 +218,7 @@ public class LanguageServiceAccessor {
 	 * @param capabilitiesPredicate a predicate to check capabilities
 	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request
 	 *
-	 * @deprecated use {@link LanguageServers#forDocument()} instead.
+	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	public static LanguageServer getLanguageServer(@NonNull IFile file, @NonNull LanguageServerDefinition lsDefinition,
@@ -233,13 +233,13 @@ public class LanguageServiceAccessor {
 
 	/**
 	 * Get the requested language server instance for the given file. Starts the language server if not already started.
-	 * @param file
+	 * @param resource
 	 * @param lsDefinition
 	 * @param capabilitiesPredicate a predicate to check capabilities
 	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request.
 	 *  If {@code capabilitesPredicate} does not test positive for the server's capabilities, {@code null} is returned.
 	 *
-	 * @deprecated use {@link LanguageServers#forDocument()} instead.
+	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	public static CompletableFuture<LanguageServer> getInitializedLanguageServer(@NonNull IResource resource,
@@ -265,7 +265,7 @@ public class LanguageServiceAccessor {
 	 *         {@code capabilitesPredicate} does not test positive for the server's
 	 *         capabilities, {@code null} is returned.
 	 *
-	 * @deprecated use {@link LanguageServers#forDocument()} instead.
+	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	public static CompletableFuture<LanguageServer> getInitializedLanguageServer(@NonNull IDocument document,
@@ -567,7 +567,7 @@ public class LanguageServiceAccessor {
 	 *
 	 * @param request
 	 * @return list of Language Servers
-	 * @deprecated use {@link #getStartedWrappers()} instead.
+	 * @deprecated use {@link #getStartedWrappers(IProject, Predicate, boolean)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	@NonNull
@@ -581,7 +581,7 @@ public class LanguageServiceAccessor {
 	 * @param project
 	 * @param request
 	 * @return list of Language Servers
-	 * @deprecated use {@link LanguageServers#forProject()} instead.
+	 * @deprecated use {@link LanguageServers#forProject(IProject)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	@NonNull
@@ -598,7 +598,7 @@ public class LanguageServiceAccessor {
 	 *            language servers, otherwise previously started language servers
 	 *            will be re-activated
 	 * @return list of Language Servers
-	 * @deprecated use {@link LanguageServers#forProject()} instead.
+	 * @deprecated use {@link LanguageServers#forProject(IProject)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	@NonNull
@@ -621,7 +621,7 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
-	 * @deprecated use {@link LanguageServers#forDocument()} instead.
+	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	@NonNull public static List<@NonNull LSPDocumentInfo> getLSPDocumentInfosFor(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> capabilityRequest) {
@@ -649,7 +649,7 @@ public class LanguageServiceAccessor {
 	 * @param filter
 	 * @return
 	 * @since 0.9
-	 * @deprecated use {@link LanguageServers#forDocument()} instead.
+	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	@NonNull
@@ -707,7 +707,7 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
-	 * @deprecated use {@link #resolveLanguageServerWrapper()} instead.
+	 * @deprecated use {@link #resolveLanguageServerWrapper(LanguageServer)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	public static Optional<LanguageServerDefinition> resolveServerDefinition(LanguageServer languageServer) {
