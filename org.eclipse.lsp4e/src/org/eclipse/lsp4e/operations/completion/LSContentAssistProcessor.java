@@ -44,6 +44,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CompletionItem;
@@ -54,6 +55,7 @@ import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.SignatureHelpOptions;
 import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SignatureInformation;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -110,8 +112,10 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 					.collectAll((w, ls) -> ls.getTextDocumentService().completion(param)
 							.thenAccept(completion -> proposals.addAll(toProposals(document, offset, completion, w))));
 			this.completionLanguageServersFuture.get();
-		} catch (ExecutionException e) {
-			LanguageServerPlugin.logError(e);
+		} catch (ResponseErrorException | ExecutionException e) {
+			if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
+				LanguageServerPlugin.logError(e);
+			}
 			this.errorMessage = createErrorMessage(offset, e);
 			return createErrorProposal(offset, e);
 		} catch (InterruptedException e) {
@@ -241,8 +245,10 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 								}
 							}));
 			this.contextInformationLanguageServersFuture.get(CONTEXT_INFORMATION_TIMEOUT, TimeUnit.MILLISECONDS);
-		} catch (ExecutionException e) {
-			LanguageServerPlugin.logError(e);
+		} catch (ResponseErrorException | ExecutionException e) {
+			if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
+				LanguageServerPlugin.logError(e);
+			}
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
