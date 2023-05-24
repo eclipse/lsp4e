@@ -16,7 +16,6 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
 import org.eclipse.lsp4j.debug.ProcessEventArguments;
-import org.eclipse.lsp4j.debug.StartDebuggingRequestArguments;
 
 /**
  * Represents that Debug Adapter process and provides a console to see any
