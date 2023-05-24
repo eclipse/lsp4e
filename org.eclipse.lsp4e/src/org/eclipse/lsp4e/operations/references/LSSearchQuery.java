@@ -65,7 +65,7 @@ public class LSSearchQuery extends FileSearchQuery {
 	 * {@link LanguageServerDocumentExecutor}.
 	 *
 	 * @param offset
-	 * @param executor
+	 * @param document
 	 */
 	public LSSearchQuery(int offset, @NonNull IDocument document)
 			throws BadLocationException {
