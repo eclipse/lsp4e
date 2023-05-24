@@ -347,7 +347,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 					@Override
 					public void close() {
 						super.close();
-						cleanup.run();;
+						cleanup.run();
 					}
 				};
 			} else {
