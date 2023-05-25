@@ -26,6 +26,7 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -223,7 +224,10 @@ public class HighlightReconcilingStrategy
 	 * @param annotationModel
 	 *            annotation model to update.
 	 */
-	private void updateAnnotations(List<? extends DocumentHighlight> highlights, IAnnotationModel annotationModel) {
+	private void updateAnnotations(@Nullable List<? extends DocumentHighlight> highlights, IAnnotationModel annotationModel) {
+		if (highlights == null)
+			return;
+
 		final var annotationMap = new HashMap<Annotation, org.eclipse.jface.text.Position>(highlights.size());
 		for (DocumentHighlight h : highlights) {
 			if (h != null) {
@@ -285,7 +289,10 @@ public class HighlightReconcilingStrategy
 		}
 	}
 
-	private String kindToAnnotationType(DocumentHighlightKind kind) {
+	private String kindToAnnotationType(@Nullable DocumentHighlightKind kind) {
+		if (kind == null)
+			return TEXT_ANNOTATION_TYPE;
+
 		return switch (kind) {
 		case Read -> READ_ANNOTATION_TYPE;
 		case Write -> WRITE_ANNOTATION_TYPE;
