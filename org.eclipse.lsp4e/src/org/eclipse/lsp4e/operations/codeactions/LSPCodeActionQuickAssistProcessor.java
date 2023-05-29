@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.BadLocationException;
@@ -112,8 +111,8 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		CodeActionParams params = prepareCodeActionParams(document, invocationContext.getOffset(), invocationContext.getLength());
 
 		try {
-			CompletableFuture<List<Either<Command, CodeAction>>> anyActions = executor.collectAll(ls -> ls.getTextDocumentService().codeAction(params)).thenApply(s -> s.stream().flatMap(List::stream).collect(Collectors.toList()));
-			if (anyActions.get(200, TimeUnit.MILLISECONDS).stream().filter(LSPCodeActionMarkerResolution::canPerform).collect(Collectors.toList()).isEmpty()) {
+			CompletableFuture<List<Either<Command, CodeAction>>> anyActions = executor.collectAll(ls -> ls.getTextDocumentService().codeAction(params)).thenApply(s -> s.stream().flatMap(List::stream).toList());
+			if (anyActions.get(200, TimeUnit.MILLISECONDS).stream().filter(LSPCodeActionMarkerResolution::canPerform).toList().isEmpty()) {
 				return false;
 			}
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {

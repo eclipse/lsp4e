@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionParams;
@@ -178,7 +177,7 @@ public class MockTextDocumentService implements TextDocumentService {
 				.map(symbol -> {
 					Either<SymbolInformation, DocumentSymbol> res = Either.forRight(symbol);
 					return res;
-				}).collect(Collectors.toList()));
+				}).toList());
 	}
 
 	@Override
