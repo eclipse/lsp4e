@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2018 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2023 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -358,19 +358,15 @@ public class LanguageServiceAccessorTest {
 		LanguageServerPlugin.getDefault().getPreferenceStore().setValue(prefKey, Boolean.FALSE.toString());
 
 		var disabledFile = createUniqueTestFile(project, "lspt-disabled", "");
-		assertFalse(getLSWrappers(disabledFile, MATCH_ALL).stream().filter(w -> w.serverDefinition.id.equals(serverId))
-				.findAny().isPresent());
+		assertFalse(getLSWrappers(disabledFile, MATCH_ALL).stream().anyMatch(w -> w.serverDefinition.id.equals(serverId)));
 
 		var enabledFile = createUniqueTestFile(project, "lspt-enabled", "");
-		assertTrue(getLSWrappers(enabledFile, MATCH_ALL).stream().filter(w -> w.serverDefinition.id.equals(serverId))
-				.findAny().isPresent());
+		assertTrue(getLSWrappers(enabledFile, MATCH_ALL).stream().anyMatch(w -> w.serverDefinition.id.equals(serverId)));
 
 		LanguageServerPlugin.getDefault().getPreferenceStore().setValue(prefKey, Boolean.TRUE.toString());
 
-		assertTrue(getLSWrappers(disabledFile, MATCH_ALL).stream().filter(w -> w.serverDefinition.id.equals(serverId))
-				.findAny().isPresent());
-		assertTrue(getLSWrappers(enabledFile, MATCH_ALL).stream().filter(w -> w.serverDefinition.id.equals(serverId))
-				.findAny().isPresent());
+		assertTrue(getLSWrappers(disabledFile, MATCH_ALL).stream().anyMatch(w -> w.serverDefinition.id.equals(serverId)));
+		assertTrue(getLSWrappers(enabledFile, MATCH_ALL).stream().anyMatch(w -> w.serverDefinition.id.equals(serverId)));
 	}
 
 	@Test
