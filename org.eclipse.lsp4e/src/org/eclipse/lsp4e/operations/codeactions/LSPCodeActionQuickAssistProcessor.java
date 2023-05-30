@@ -112,7 +112,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 
 		try {
 			CompletableFuture<List<Either<Command, CodeAction>>> anyActions = executor.collectAll(ls -> ls.getTextDocumentService().codeAction(params)).thenApply(s -> s.stream().flatMap(List::stream).toList());
-			if (!anyActions.get(200, TimeUnit.MILLISECONDS).stream().anyMatch(LSPCodeActionMarkerResolution::canPerform)) {
+			if (anyActions.get(200, TimeUnit.MILLISECONDS).stream().noneMatch(LSPCodeActionMarkerResolution::canPerform)) {
 				return false;
 			}
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
