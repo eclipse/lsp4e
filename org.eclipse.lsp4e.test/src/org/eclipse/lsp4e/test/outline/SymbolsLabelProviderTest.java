@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2019 TypeFox and others.
+ * Copyright (c) 2017, 2023 TypeFox and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.test.outline;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.outline.SymbolsModel;
@@ -106,5 +107,18 @@ public class SymbolsLabelProviderTest {
 				": additional detail");
 		SymbolsModel.DocumentSymbolWithFile infoWithFile = new SymbolsModel.DocumentSymbolWithFile(info, null);
 		assertEquals("Foo : additional detail :Class", labelProvider.getStyledText(infoWithFile).getString());		
+	}
+	
+	@Test
+	public void testDocumentSymbolDetailWithFileWithKindDeprecated () {
+		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, true);
+		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
+				new Range(new Position(1, 0), new Position(1, 2)),
+				new Range(new Position(1, 0), new Position(1, 2)),
+				": additional detail");
+		info.setDeprecated(true);
+		SymbolsModel.DocumentSymbolWithFile infoWithFile = new SymbolsModel.DocumentSymbolWithFile(info, null);
+		assertEquals("Foo : additional detail :Class", labelProvider.getStyledText(infoWithFile).getString());		
+		assertTrue(labelProvider.getStyledText(infoWithFile).getStyleRanges()[0].strikeout);
 	}
 }
