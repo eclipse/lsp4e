@@ -12,14 +12,16 @@
 package org.eclipse.lsp4e.test.linkedediting;
 
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -131,7 +133,7 @@ public class LinkedEditingTest {
 		});
 
 		IAnnotationModel model = sourceViewer.getAnnotationModel();
-		List<Annotation> annotations = findAnnotations(sourceViewer, 14).stream().filter(a -> a.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")).collect(Collectors.toList());
+		List<Annotation> annotations = findAnnotations(sourceViewer, 14).stream().filter(a -> a.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")).toList();
 		assertEquals("Exepected only 1 link annotation here, got " + annotations, 1, annotations.size());
 		Annotation masterAnnotation = findAnnotation(sourceViewer, "org.eclipse.ui.internal.workbench.texteditor.link.master");
 		assertNotNull(masterAnnotation);

@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
@@ -65,7 +64,7 @@ public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer
 					.map(w -> w.execute(ls -> ls.getWorkspaceService().symbol(params).thenAcceptAsync(symbols -> {
 						if (symbols != null) {
 							res.addAll(LSPSymbolInWorkspaceDialog.eitherToWorkspaceSymbols(symbols).stream().map(WorkspaceSymbolQuickAccessElement::new)
-									.collect(Collectors.toList()));
+									.toList());
 						}
 					}))).toArray(CompletableFuture[]::new)).get(1, TimeUnit.SECONDS);
 		}

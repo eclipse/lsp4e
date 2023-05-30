@@ -32,7 +32,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -199,7 +198,7 @@ public class LanguageServersTest {
 
 		assertEquals("HoverContent1 should have returned first, independently", "HoverContent1", first);
 
-		List<String> hovers = result.stream().map(CompletableFuture::join).collect(Collectors.toList());
+		List<String> hovers = result.stream().map(CompletableFuture::join).toList();
 
 		assertTrue(hovers.contains("HoverContent1"));
 		assertTrue(hovers.contains("HoverContent2"));

@@ -16,7 +16,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -46,7 +45,7 @@ public class ContentTypeToLanguageServerDefinitionTest {
 	public void testDisabledLanguageServerMappingsPreference() {
 		List<ContentTypeToLanguageServerDefinition> disabledDefinitions = LanguageServersRegistry.getInstance()
 				.getContentTypeToLSPExtensions().stream().filter(lsDefinition -> !lsDefinition.isEnabled(null))
-				.collect(Collectors.toList());
+				.toList();
 		assertEquals(1, disabledDefinitions.size());
 		assertEquals(SERVER_TO_DISABLE, disabledDefinitions.get(0).getValue().id);
 		assertEquals(DISABLED_CONTENT_TYPE, disabledDefinitions.get(0).getKey().toString());

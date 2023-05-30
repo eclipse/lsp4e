@@ -16,7 +16,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -82,7 +81,7 @@ public class OutlineContentTest {
 				() -> Arrays.asList(symbolCow) //
 						.equals(Arrays.stream(tree.getItems())
 								.map(e -> ((DocumentSymbolWithFile) e.getData()).symbol)
-								.collect(Collectors.toList())) //
+								.toList()) //
 		);
 
 		shell.close();
@@ -124,7 +123,7 @@ public class OutlineContentTest {
 				() -> Arrays.asList(symbolCow, symbolFox, symbolCat) //
 						.equals(Arrays.stream(tree.getItems())
 								.map(e -> ((DocumentSymbolWithFile) e.getData()).symbol)
-								.collect(Collectors.toList())) //
+								.toList()) //
 		);
 
 		// enable outline sorting
@@ -135,7 +134,7 @@ public class OutlineContentTest {
 				() -> Arrays.asList(symbolCat, symbolCow, symbolFox) //
 						.equals(Arrays.stream(tree.getItems())
 								.map(e -> ((DocumentSymbolWithFile) e.getData()).symbol)
-								.collect(Collectors.toList())) //
+								.toList()) //
 		);
 
 		shell.close();

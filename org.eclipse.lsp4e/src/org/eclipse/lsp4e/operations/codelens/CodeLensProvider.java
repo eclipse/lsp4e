@@ -12,7 +12,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
@@ -41,7 +40,7 @@ public class CodeLensProvider extends AbstractCodeMiningProvider {
 								.thenApply(codeLenses -> LanguageServers.streamSafely(codeLenses)
 										.map(codeLens -> toCodeMining(document, w, codeLens))
 										.filter(Objects::nonNull)))
-				.thenApply(result -> result.stream().flatMap(s -> s).collect(Collectors.toList()));
+				.thenApply(result -> result.stream().flatMap(s -> s).toList());
 		}
 		else {
 			return null;
