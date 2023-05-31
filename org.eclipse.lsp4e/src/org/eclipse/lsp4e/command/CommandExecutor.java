@@ -63,18 +63,6 @@ public class CommandExecutor {
 	private static final String LSP_COMMAND_PARAMETER_TYPE_ID = "org.eclipse.lsp4e.commandParameterType"; //$NON-NLS-1$
 	private static final String LSP_PATH_PARAMETER_TYPE_ID = "org.eclipse.lsp4e.pathParameterType"; //$NON-NLS-1$
 
-	/**
-	 * @param languageServerId unused
-	 * @deprecated use {@link #executeCommandClientSide(Command, IDocument)}
-	 */
-	@Deprecated(forRemoval = true)
-	public static CompletableFuture<Object> executeCommand(@Nullable Command command, @Nullable IDocument document, @Nullable String languageServerId) {
-		if (command != null && document != null) {
-			return executeCommandClientSide(command, document);
-		}
-		return CompletableFuture.completedFuture(null);
-	}
-
 	public static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @NonNull IDocument document) {
 		IPath path = LSPEclipseUtils.toPath(document);
 		if (path == null) {
