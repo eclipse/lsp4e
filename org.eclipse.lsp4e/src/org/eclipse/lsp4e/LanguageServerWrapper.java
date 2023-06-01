@@ -156,7 +156,8 @@ public class LanguageServerWrapper {
 	private LanguageServer languageServer;
 	private LanguageClientImpl languageClient;
 	private ServerCapabilities serverCapabilities;
-	private Timer timer;
+	private final Timer timer = new Timer("Stop Language Server Task Processor"); //$NON-NLS-1$
+	private TimerTask stopTimerTask;
 	private AtomicBoolean stopping = new AtomicBoolean(false);
 
 	private final ExecutorService dispatcher;
@@ -392,22 +393,28 @@ public class LanguageServerWrapper {
 		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
 	}
 
-	private void removeStopTimer() {
-		if (timer != null) {
-			timer.cancel();
-			timer = null;
+	private void removeStopTimerTask() {
+		synchronized (timer) {
+			if (stopTimerTask != null) {
+				stopTimerTask.cancel();
+				stopTimerTask = null;
+			}
 		}
 	}
 
-	private void startStopTimer() {
-		timer = new Timer("Stop Language Server Timer"); //$NON-NLS-1$
-
-		timer.schedule(new TimerTask() {
-			@Override
-			public void run() {
-				stop();
+	private void startStopTimerTask() {
+		synchronized (timer) {
+			if (stopTimerTask != null) {
+				stopTimerTask.cancel();
 			}
-		}, TimeUnit.SECONDS.toMillis(this.serverDefinition.lastDocumentDisconnectedTimeout));
+			stopTimerTask = new TimerTask() {
+				@Override
+				public void run() {
+					stop();
+				}
+			};
+			timer.schedule(stopTimerTask, TimeUnit.SECONDS.toMillis(this.serverDefinition.lastDocumentDisconnectedTimeout));
+		}
 	}
 
 	/**
@@ -425,7 +432,7 @@ public class LanguageServerWrapper {
 		if (alreadyStopping) {
 			return;
 		}
-		removeStopTimer();
+		removeStopTimerTask();
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
 			this.initializeFuture = null;
@@ -558,7 +565,7 @@ public class LanguageServerWrapper {
 	 * @noreference internal so far
 	 */
 	private @Nullable CompletableFuture<@NonNull LanguageServerWrapper> connect(@NonNull URI uri, IDocument document) throws IOException {
-		removeStopTimer();
+		removeStopTimerTask();
 		if (this.connectedDocuments.containsKey(uri)) {
 			return CompletableFuture.completedFuture(this);
 		}
@@ -601,8 +608,7 @@ public class LanguageServerWrapper {
 		}
 		if (this.connectedDocuments.isEmpty()) {
 			if (this.serverDefinition.lastDocumentDisconnectedTimeout != 0) {
-				removeStopTimer();
-				startStopTimer();
+				startStopTimerTask();
 			} else {
 				stop();
 			}
