@@ -191,8 +191,8 @@ public final class LSPEclipseUtils {
 		 * this is at the end of the document, we therefore take the last document line
 		 * and set the character to line length - 1 (to remove delimiter)
 		 */
-		var zeroBasedDocumentLines = document.getNumberOfLines() - 1;
-		if (zeroBasedDocumentLines - 1 < position.getLine()) {
+		var zeroBasedDocumentLines = Math.max(0, document.getNumberOfLines() - 1);
+		if (zeroBasedDocumentLines < position.getLine()) {
 			line = zeroBasedDocumentLines;
 			character = getLineLength(document, line);
 		} else {
@@ -204,7 +204,7 @@ public final class LSPEclipseUtils {
 	}
 
 	private static int getLineLength(IDocument document, int line) throws BadLocationException {
-		return document.getLineLength(line) - System.lineSeparator().length();
+		return Math.max(0, document.getLineLength(line));
 	}
 
 	public static boolean isOffsetInRange(int offset, Range range, IDocument document) {
