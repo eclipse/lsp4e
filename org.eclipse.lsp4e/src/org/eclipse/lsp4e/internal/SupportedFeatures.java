@@ -22,6 +22,7 @@ import org.eclipse.lsp4j.CodeActionKindCapabilities;
 import org.eclipse.lsp4j.CodeActionLiteralSupportCapabilities;
 import org.eclipse.lsp4j.CodeActionResolveSupportCapabilities;
 import org.eclipse.lsp4j.CodeLensCapabilities;
+import org.eclipse.lsp4j.CodeLensWorkspaceCapabilities;
 import org.eclipse.lsp4j.ColorProviderCapabilities;
 import org.eclipse.lsp4j.CompletionCapabilities;
 import org.eclipse.lsp4j.CompletionItemCapabilities;
@@ -132,6 +133,8 @@ public class SupportedFeatures {
 				ResourceOperationKind.Delete, ResourceOperationKind.Rename));
 		editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
 		workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
+		CodeLensWorkspaceCapabilities codeLensWorkspaceCapabilities = new CodeLensWorkspaceCapabilities(true);
+		workspaceClientCapabilities.setCodeLens(codeLensWorkspaceCapabilities);
 		return workspaceClientCapabilities;
 	}
 
