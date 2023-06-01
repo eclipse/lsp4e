@@ -18,11 +18,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.lsp4e.progress.LSPProgressManager;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
@@ -43,6 +46,8 @@ import org.eclipse.lsp4j.WorkDoneProgressCreateParams;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.ui.IEditorReference;
+import org.eclipse.ui.IWorkbenchPage;
 
 public class LanguageClientImpl implements LanguageClient {
 
@@ -154,6 +159,26 @@ public class LanguageClientImpl implements LanguageClient {
 				LSPEclipseUtils.openInEditor(location);
 			});
 			return new ShowDocumentResult(true);
+		});
+	}
+
+	@Override
+	public CompletableFuture<Void> refreshCodeLenses() {
+		return CompletableFuture.runAsync(() -> {
+			UI.getDisplay().syncExec(() -> {
+				IWorkbenchPage activePage = UI.getActivePage();
+				if (activePage == null) {
+					return;
+				}
+				IEditorReference[] editors = activePage.getEditorReferences();
+				for (IEditorReference ref : editors) {
+					var editor = ref.getEditor(false);
+					var codeMiningSourceViewer = Adapters.adapt(editor, ITextViewer.class, true);
+					if (codeMiningSourceViewer != null && codeMiningSourceViewer instanceof SourceViewer) {
+						((SourceViewer) codeMiningSourceViewer).updateCodeMinings();
+					}
+				}
+			});
 		});
 	}
 }
