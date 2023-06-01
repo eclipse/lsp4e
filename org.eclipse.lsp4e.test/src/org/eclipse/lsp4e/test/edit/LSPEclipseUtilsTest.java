@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.Random;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.internal.utils.FileUtil;
@@ -84,19 +85,33 @@ public class LSPEclipseUtilsTest {
 	}
 
 	@Test
-	public void testWorkspaceEdit() throws Exception {
+	public void testWorkspaceEdit_insertText() throws Exception {
+		TextEdit textEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "insert");
+		AbstractTextEditor editor = applyWorkspaceTextEdit(textEdit);
+		Assert.assertEquals("insertHere", ((StyledText)editor.getAdapter(Control.class)).getText());
+		Assert.assertEquals("insertHere", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
+	}
+	
+	@Test
+	public void testWorkspaceEdit_WithExaggeratedRange() throws Exception {
+		TextEdit textEdit = new TextEdit(new Range(new Position(0, 0), new Position(Integer.MAX_VALUE, Integer.MAX_VALUE)), "insert");
+		AbstractTextEditor editor = applyWorkspaceTextEdit(textEdit);
+		Assert.assertEquals("insert", ((StyledText)editor.getAdapter(Control.class)).getText());
+		Assert.assertEquals("insert", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
+	}
+
+
+	private AbstractTextEditor applyWorkspaceTextEdit(TextEdit textEdit) throws CoreException, PartInitException {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile f = TestUtils.createFile(p, "dummy", "Here");
+		IFile f = TestUtils.createFile(p, "dummy"+new Random().nextInt(), "Here");
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		WorkspaceEdit workspaceEdit = new WorkspaceEdit(Collections.singletonMap(
 			LSPEclipseUtils.toUri(f).toString(),
-			Collections.singletonList(new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "insert"))));
+			Collections.singletonList(textEdit)));
 		LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
-		Assert.assertEquals("insertHere", ((StyledText)editor.getAdapter(Control.class)).getText());
-		Assert.assertEquals("insertHere", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
-
+		return editor;
 	}
-
+	
 	@Test
 	public void testWorkspaceEditMultipleChanges() throws Exception {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
