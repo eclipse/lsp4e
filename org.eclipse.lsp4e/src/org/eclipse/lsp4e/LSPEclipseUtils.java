@@ -17,6 +17,7 @@
  *  Markus Ofterdinger (SAP SE) - Bug 552140 - NullPointerException in LSP4E
  *  Rubén Porras Campo (Avaloq) - Bug 576425 - Support Remote Files
  *  Pierre-Yves Bigourdan <pyvesdev@gmail.com> - Issue 29
+ *  Bastian Doetsch (Snyk Ltd)
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -181,7 +182,29 @@ public final class LSPEclipseUtils {
 	}
 
 	public static int toOffset(Position position, IDocument document) throws BadLocationException {
-		return document.getLineOffset(position.getLine()) + position.getCharacter();
+		var line = position.getLine();
+		var character = position.getCharacter();
+
+		/*
+		 * The LSP spec allow for positions to specify the next line if a line should be
+		 * included completely, specifying the first character of the following line. If
+		 * this is at the end of the document, we therefore take the last document line
+		 * and set the character to line length - 1 (to remove delimiter)
+		 */
+		var zeroBasedDocumentLines = document.getNumberOfLines() - 1;
+		if (zeroBasedDocumentLines - 1 < position.getLine()) {
+			line = zeroBasedDocumentLines;
+			character = getLineLength(document, line);
+		} else {
+			// We just take the line length to be more forgiving and adhere to the LSP spec.
+			character = Math.min(getLineLength(document, line), position.getCharacter());
+		}
+
+		return document.getLineOffset(line) + character;
+	}
+
+	private static int getLineLength(IDocument document, int line) throws BadLocationException {
+		return document.getLineLength(line) - System.lineSeparator().length();
 	}
 
 	public static boolean isOffsetInRange(int offset, Range range, IDocument document) {
