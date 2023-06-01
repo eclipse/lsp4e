@@ -83,6 +83,7 @@ public class DocumentLinkTest {
 		File file = TestUtils.createTempFile("testDocumentLinkExternalFile", ".lspt");
 		ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		viewer.getDocument().set("Long enough dummy content to match ranges");
 
 		IHyperlink[] hyperlinks = documentLinkDetector.detectHyperlinks(viewer, new Region(13, 0), true);
 		assertEquals(1, hyperlinks.length);
