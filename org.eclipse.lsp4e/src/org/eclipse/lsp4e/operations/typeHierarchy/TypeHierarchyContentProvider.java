@@ -24,16 +24,20 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.TypeHierarchyItem;
 import org.eclipse.lsp4j.TypeHierarchyPrepareParams;
 import org.eclipse.lsp4j.TypeHierarchySubtypesParams;
+import org.eclipse.lsp4j.TypeHierarchySupertypesParams;
+import org.eclipse.lsp4j.services.TextDocumentService;
 
 public class TypeHierarchyContentProvider implements ITreeContentProvider {
 
 	private final LanguageServerDefinition lsDefinition;
 	private final IDocument document;
+	private boolean showSuperTypes;
 	private LanguageServerWrapper wrapper;
 
-	public TypeHierarchyContentProvider(LanguageServerDefinition lsDefinition, IDocument document) {
+	public TypeHierarchyContentProvider(LanguageServerDefinition lsDefinition, IDocument document, boolean showSuperTypes) {
 		this.lsDefinition = lsDefinition;
 		this.document = document;
+		this.showSuperTypes = showSuperTypes;
 	}
 
 	@Override
@@ -59,7 +63,13 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 	public Object[] getChildren(Object parentElement) {
 		if (parentElement instanceof TypeHierarchyItem parentItem) {
 			try {
-				return wrapper.execute(ls -> ls.getTextDocumentService().typeHierarchySubtypes(new TypeHierarchySubtypesParams(parentItem)))
+				return wrapper.execute(ls -> {
+					TextDocumentService textDocumentService = ls.getTextDocumentService();
+
+					return showSuperTypes
+							? textDocumentService.typeHierarchySupertypes(new TypeHierarchySupertypesParams(parentItem))
+							: textDocumentService.typeHierarchySubtypes(new TypeHierarchySubtypesParams(parentItem));
+				})
 					.thenApply(list -> list == null ? new Object[0] : list.toArray(Object[]::new))
 					.get(500, TimeUnit.MILLISECONDS);
 			} catch (Exception e) {

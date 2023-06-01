@@ -17,18 +17,29 @@ import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.TypeHierarchyItem;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.navigator.CommonViewerSorter;
 
 public class TypeHierarchyDialog extends PopupDialog {
-
+	/**
+	 * Indicates the current mode of the hierarchy dialog, if <code>true</code>
+	 * super types are displayed, otherwise subtypes are displayed.
+	 */
+	private static boolean showSuperTypes = true;
 
 	private final LanguageServerDefinition lsDefinition;
 	private final @NonNull IDocument document;
@@ -44,11 +55,49 @@ public class TypeHierarchyDialog extends PopupDialog {
 
 	@Override
 	protected Control createDialogArea(Composite parent) {
-		final var filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false);
+		final var filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false) {
+			@Override
+			protected Composite createFilterControls(Composite parent) {
+				Composite composite = new Composite(parent, SWT.NONE);
+				GridLayout layout = new GridLayout(2, false);
+				layout.horizontalSpacing=0;
+				layout.marginWidth=0;
+				layout.marginHeight=0;
+				composite.setLayout(layout);
+
+				Composite filterControls = super.createFilterControls(composite);
+				filterControls.setLayoutData(new GridData(SWT.FILL, SWT.NONE, true, false));
+
+				createToolBar(composite);
+
+				return composite;
+			}
+
+			private void createToolBar(Composite composite) {
+				ToolBar toolbar = new ToolBar(composite, HOVER_SHELLSTYLE);
+				ToolItem hierchyModeItem = new ToolItem(toolbar, SWT.PUSH);
+				updateHierarchyModeItem(hierchyModeItem, showSuperTypes);
+
+				hierchyModeItem.addSelectionListener(new SelectionAdapter() {
+					@Override
+					public void widgetSelected(SelectionEvent e) {
+						showSuperTypes = !showSuperTypes;
+						updateHierarchyModeItem(hierchyModeItem, showSuperTypes);
+						setHierarchyMode(getViewer(), showSuperTypes);
+					}
+				});
+			}
+
+			private void updateHierarchyModeItem(ToolItem hierchyModeItem, boolean showSuperTypes) {
+				hierchyModeItem.setImage(LSPImages.getImage(showSuperTypes ? LSPImages.IMG_SUBTYPE : LSPImages.IMG_SUPERTYPE));
+				hierchyModeItem.setToolTipText(showSuperTypes ? Messages.typeHierarchy_show_subtypes : Messages.typeHierarchy_show_supertypes);
+			}
+		};
 		TreeViewer viewer = filteredTree.getViewer();
-		viewer.setContentProvider(new TypeHierarchyContentProvider(lsDefinition, document));
+		setHierarchyMode(viewer, showSuperTypes);
 		// Maybe consider making this a CNF defined label provider
 		viewer.setLabelProvider(new TypeHierarchyItemLabelProvider());
+		viewer.setAutoExpandLevel(2);
 		viewer.addDoubleClickListener(event -> {
 			TypeHierarchyItem item = (TypeHierarchyItem)((IStructuredSelection)event.getSelection()).getFirstElement();
 			LSPEclipseUtils.open(item.getUri(), item.getSelectionRange());
@@ -61,6 +110,10 @@ public class TypeHierarchyDialog extends PopupDialog {
 
 		viewer.setInput(textSelection);
 		return filteredTree;
+	}
+
+	private void setHierarchyMode(TreeViewer viewer, boolean showSuperTypes) {
+		viewer.setContentProvider(new TypeHierarchyContentProvider(lsDefinition, document, showSuperTypes));
 	}
 
 	@Override

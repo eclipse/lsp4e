@@ -42,6 +42,7 @@ public final class LSPImages {
 	private static final Map<java.awt.Color, Image> colorToImageCache = new HashMap<>();
 	private static final String ICONS_PATH = "$nl$/icons/full/"; //$NON-NLS-1$
 	private static final String OBJECT = ICONS_PATH + "obj16/"; // basic colors - size 16x16 //$NON-NLS-1$
+	private static final String ACTION = ICONS_PATH + "elcl16/"; // basic colors - size 16x16 //$NON-NLS-1$
 	private static final Image EMPTY_IMAGE = new Image(UI.getDisplay(), 16, 16);
 
 	public static final String IMG_MODULE = "IMG_MODULE"; //$NON-NLS-1$
@@ -71,6 +72,9 @@ public final class LSPImages {
 	public static final String IMG_SNIPPET = "IMG_SNIPPET"; //$NON-NLS-1$
 	public static final String IMG_COLOR = "IMG_COLOR"; //$NON-NLS-1$
 	public static final String IMG_REFERENCE = "IMG_REFERENCE"; //$NON-NLS-1$
+
+	public static final String IMG_SUPERTYPE = "IMG_SUPERTYPE"; //$NON-NLS-1$
+	public static final String IMG_SUBTYPE = "IMG_SUBTYPE"; //$NON-NLS-1$
 
 	public static void initalize(ImageRegistry registry) {
 		imageRegistry = registry;
@@ -103,6 +107,9 @@ public final class LSPImages {
 		declareRegistryImage(IMG_SNIPPET, OBJECT + "snippet.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_COLOR, OBJECT + "color.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_REFERENCE, OBJECT + "reference.png"); //$NON-NLS-1$
+
+		declareRegistryImage(IMG_SUPERTYPE, ACTION + "super_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_SUBTYPE, ACTION + "sub_co.png"); //$NON-NLS-1$
 	}
 
 	private static final void declareRegistryImage(String key, String path) {
