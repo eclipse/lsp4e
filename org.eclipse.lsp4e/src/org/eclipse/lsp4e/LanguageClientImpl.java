@@ -120,9 +120,7 @@ public class LanguageClientImpl implements LanguageClient {
 			final var job = new Job(Messages.serverEdit) {
 				@Override
 				public IStatus run(IProgressMonitor monitor) {
-					UI.getDisplay().syncExec(() -> {
-						LSPEclipseUtils.applyWorkspaceEdit(params.getEdit(), params.getLabel());
-					});
+					LSPEclipseUtils.applyWorkspaceEdit(params.getEdit(), params.getLabel());
 					return Status.OK_STATUS;
 				}
 			};

@@ -582,7 +582,7 @@ public final class LSPEclipseUtils {
 		if (resource != null) {
 			return getDocument(resource);
 		}
-	
+
 		IDocument document = null;
 		IFileStore store = null;
 		try {
@@ -960,15 +960,18 @@ public final class LSPEclipseUtils {
 			.map(LSPEclipseUtils::getDocument)
 			.filter(Objects::nonNull)
 			.findFirst();
+
 		doc.ifPresent(document -> {
-			try {
-				LSPEclipseUtils.applyEdits(document, firstDocumentEdits);
-			} catch (BadLocationException ex) {
-				LanguageServerPlugin.logError(ex);
-			}
+			UI.getDisplay().syncExec(() -> {
+				try {
+					LSPEclipseUtils.applyEdits(document, firstDocumentEdits);
+				} catch (BadLocationException ex) {
+					LanguageServerPlugin.logError(ex);
+				}
+			});
 		});
 		return doc.isPresent();
-	} 
+	}
 
 	/**
 	 * Returns a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
