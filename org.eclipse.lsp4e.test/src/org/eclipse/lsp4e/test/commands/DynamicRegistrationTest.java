@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.test.commands;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -23,7 +24,6 @@ import java.util.function.Predicate;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
@@ -39,7 +39,6 @@ import org.eclipse.lsp4j.UnregistrationParams;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.eclipse.lsp4j.services.LanguageClient;
-import org.eclipse.lsp4j.services.LanguageServer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -70,37 +69,35 @@ public class DynamicRegistrationTest {
 
 	@Test
 	public void testCommandRegistration() throws Exception {
-		@NonNull List<@NonNull LanguageServer> servers = LanguageServiceAccessor.getActiveLanguageServers(c -> true);
-		assertEquals(1, servers.size());
+		assertTrue(LanguageServiceAccessor.hasActiveLanguageServers(c -> true));
 
-		assertTrue(LanguageServiceAccessor.getActiveLanguageServers(handlesCommand("test.command")).isEmpty());
-		
+		assertFalse(LanguageServiceAccessor.hasActiveLanguageServers(handlesCommand("test.command")));
+
 		UUID registration = registerCommands("test.command", "test.command.2");
 		try {
-			assertEquals(1, LanguageServiceAccessor.getActiveLanguageServers(handlesCommand("test.command")).size());
-			assertEquals(1, LanguageServiceAccessor.getActiveLanguageServers(handlesCommand("test.command.2")).size());
+			assertTrue(LanguageServiceAccessor.hasActiveLanguageServers(handlesCommand("test.command")));
+			assertTrue(LanguageServiceAccessor.hasActiveLanguageServers(handlesCommand("test.command.2")));
 		} finally {
 			unregister(registration);
 		}
-		assertTrue(LanguageServiceAccessor.getActiveLanguageServers(handlesCommand("test.command")).isEmpty());
-		assertTrue(LanguageServiceAccessor.getActiveLanguageServers(handlesCommand("test.command.2")).isEmpty());
+		assertFalse(LanguageServiceAccessor.hasActiveLanguageServers(handlesCommand("test.command")));
+		assertFalse(LanguageServiceAccessor.hasActiveLanguageServers(handlesCommand("test.command.2")));
 	}
 
 	@Test
 	public void testWorkspaceFoldersRegistration() throws Exception {
-		@NonNull List<@NonNull LanguageServer> servers = LanguageServiceAccessor.getActiveLanguageServers(c -> true);
-		assertEquals(1, servers.size());
+		assertTrue(LanguageServiceAccessor.hasActiveLanguageServers(c -> true));
 
-		assertTrue(LanguageServiceAccessor.getActiveLanguageServers(c -> hasWorkspaceFolderSupport(c)).isEmpty());
+		assertFalse(LanguageServiceAccessor.hasActiveLanguageServers(c -> hasWorkspaceFolderSupport(c)));
 
 		UUID registration = registerWorkspaceFolders();
 		try {
-			assertEquals(1, LanguageServiceAccessor.getActiveLanguageServers(c -> hasWorkspaceFolderSupport(c)).size());
+			assertTrue(LanguageServiceAccessor.hasActiveLanguageServers(c -> hasWorkspaceFolderSupport(c)));
 		} finally {
 			unregister(registration);
 		}
-		assertTrue(LanguageServiceAccessor.getActiveLanguageServers(c -> hasWorkspaceFolderSupport(c)).isEmpty());
-		assertEquals(1, LanguageServiceAccessor.getActiveLanguageServers(c -> !hasWorkspaceFolderSupport(c)).size());
+		assertFalse(LanguageServiceAccessor.hasActiveLanguageServers(c -> hasWorkspaceFolderSupport(c)));
+		assertTrue(LanguageServiceAccessor.hasActiveLanguageServers(c -> !hasWorkspaceFolderSupport(c)));
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////
