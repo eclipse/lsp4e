@@ -222,32 +222,6 @@ public class LanguageServiceAccessor {
 		return null;
 	}
 
-	/**
-	 * Get the requested language server instance for the given document. Starts the
-	 * language server if not already started.
-	 *
-	 * @param document the document for which the initialized LanguageServer shall be returned
-	 * @param lsDefinition the ID of the LanguageServer to be returned
-	 * @param capabilitiesPredicate
-	 *            a predicate to check capabilities
-	 * @return a LanguageServer for the given file, which is defined with provided
-	 *         server ID and conforms to specified request. If
-	 *         {@code capabilitesPredicate} does not test positive for the server's
-	 *         capabilities, {@code null} is returned.
-	 *
-	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
-	 */
-	@Deprecated(forRemoval = true)
-	public static CompletableFuture<LanguageServer> getInitializedLanguageServer(@NonNull IDocument document,
-			@NonNull LanguageServerDefinition lsDefinition, Predicate<ServerCapabilities> capabilitiesPredicate)
-			throws IOException {
-		IPath initialPath = LSPEclipseUtils.toPath(document);
-		LanguageServerWrapper wrapper = getLSWrapperForConnection(document, lsDefinition, initialPath);
-		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
-			return wrapper.getInitializedServer();
-		}
-		return null;
-	}
 
 	/**
 	 * Checks if the given {@code wrapper}'s capabilities comply with the given
@@ -548,9 +522,8 @@ public class LanguageServiceAccessor {
 	 *            will be re-activated
 	 * @return list of Language Servers
 	 */
-	@Deprecated
 	@NonNull
-	protected static List<@NonNull LanguageServer> getLanguageServers(@Nullable IProject project,
+	private static List<@NonNull LanguageServer> getLanguageServers(@Nullable IProject project,
 			Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
 		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(project, request, onlyActiveLS);
 		final var servers = new ArrayList<@NonNull LanguageServer>(wrappers.size());
