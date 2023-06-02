@@ -12,7 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.eclipse.lsp4e.LanguageServiceAccessor.getActiveLanguageServers;
+import static org.eclipse.lsp4e.LanguageServiceAccessor.hasActiveLanguageServers;
 import static org.eclipse.lsp4e.test.TestUtils.createUniqueTestFile;
 import static org.eclipse.lsp4e.test.TestUtils.openEditor;
 import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
@@ -750,7 +750,7 @@ public class LanguageServersTest {
 		((AbstractTextEditor) editor1).close(false);
 		((AbstractTextEditor) editor2).close(false);
 
-		waitForCondition(5_000, () -> getActiveLanguageServers(MATCH_ALL).isEmpty());
+		waitForCondition(5_000, () -> !hasActiveLanguageServers(MATCH_ALL));
 
 		serverCounter.set(0);
 		final List<String> serversForProject2 = LanguageServers.forProject(project).excludeInactive().collectAll(ls -> CompletableFuture.completedFuture("Server" + serverCounter.incrementAndGet())).join();

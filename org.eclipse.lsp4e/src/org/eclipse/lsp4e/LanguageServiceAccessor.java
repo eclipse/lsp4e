@@ -485,17 +485,14 @@ public class LanguageServiceAccessor {
 	}
 
 	/**
-	 * Gets list of running LS satisfying a capability predicate. This does not
-	 * start any matching language servers, it returns the already running ones.
+	 * Returns {@code true} if there are running language servers satisfying a capability predicate. This does not
+	 * start any matching language servers.
 	 *
 	 * @param request
-	 * @return list of Language Servers
-	 * @deprecated use {@link #getStartedWrappers(IProject, Predicate, boolean)} instead.
+	 * @return {@code true} if there are running language servers satisfying a capability predicate
 	 */
-	@Deprecated(forRemoval = true)
-	@NonNull
-	public static List<@NonNull LanguageServer> getActiveLanguageServers(Predicate<ServerCapabilities> request) {
-		return getLanguageServers(null, request, true);
+	public static boolean hasActiveLanguageServers(Predicate<ServerCapabilities> request) {
+		return !getLanguageServers(null, request, true).isEmpty();
 	}
 
 	/**
