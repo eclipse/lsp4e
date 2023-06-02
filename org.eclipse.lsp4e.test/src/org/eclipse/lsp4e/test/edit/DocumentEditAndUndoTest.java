@@ -24,7 +24,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.text.TextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -66,7 +66,7 @@ public class DocumentEditAndUndoTest {
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		// Force LS to initialize and open file
-		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(testFile), capabilites -> Boolean.TRUE);
+		LanguageServers.forDocument(LSPEclipseUtils.getDocument(testFile)).anyMatching();
 
 		System.out.println("Document initial:\t[" + viewer.getDocument().get() + "]");
 

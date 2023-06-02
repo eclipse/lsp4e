@@ -26,6 +26,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
@@ -62,8 +63,7 @@ public class DynamicRegistrationTest {
 		// Make sure mock language server is created...
 		IDocument document = LSPEclipseUtils.getDocument(testFile);
 		assertNotNull(document);
-		LanguageServiceAccessor.getLanguageServers(document, null).get(1,
-				TimeUnit.SECONDS);
+		LanguageServers.forDocument(document).anyMatching();
 		getMockClient();
 	}
 

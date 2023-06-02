@@ -975,7 +975,10 @@ public class LanguageServerWrapper {
 		}
 	}
 
-	int getVersion(URI uri) {
+	/**
+	 * return the TextDocument version, suitable to build a TextDocumentIndentifier
+	 */
+	public int getTextDocumentVersion(URI uri) {
 		DocumentContentSynchronizer documentContentSynchronizer = connectedDocuments.get(uri);
 		if (documentContentSynchronizer != null) {
 			return documentContentSynchronizer.getVersion();
