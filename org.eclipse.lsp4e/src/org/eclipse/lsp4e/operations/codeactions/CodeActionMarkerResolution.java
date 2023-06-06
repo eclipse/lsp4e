@@ -27,12 +27,15 @@ import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.ServerMessageHandler;
 import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
+import org.eclipse.lsp4j.MessageType;
+import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
@@ -92,8 +95,11 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 					Command command = codeAction.getCommand();
 					ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
 					if (provider != null && provider.getCommands().contains(command.getCommand())) {
+						final LanguageServerDefinition serverDefinition = wrapper.serverDefinition;
 						wrapper.execute(ls -> ls.getWorkspaceService()
-								.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
+								.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments()))
+								.exceptionally(t -> reportServerError(serverDefinition, t))
+						);
 					} else  {
 						IResource resource = marker.getResource();
 						if (resource != null) {
@@ -102,9 +108,22 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 					}
 				}
 			}
-		} catch (IOException | TimeoutException | ExecutionException | InterruptedException ex) {
+		} catch (ExecutionException | IOException | TimeoutException | InterruptedException ex) {
 			LanguageServerPlugin.logError(ex);
 		}
+	}
+
+	private ShowMessageRequestParams reportServerError(LanguageServerDefinition serverDefinition, Throwable t) {
+		ShowMessageRequestParams params = new ShowMessageRequestParams();
+		String title = "Error Executing Quick Fix"; //$NON-NLS-1$
+		params.setType(MessageType.Error);
+		params.setMessage("Failed to fetch quick fix edit for '" //$NON-NLS-1$
+				+ codeAction.getTitle()
+				+ "'. See Language Server '" //$NON-NLS-1$
+				+ serverDefinition.id
+				+ "' log for more details."); //$NON-NLS-1$
+		ServerMessageHandler.showMessage(title, params);
+		return params;
 	}
 
 	@Override
