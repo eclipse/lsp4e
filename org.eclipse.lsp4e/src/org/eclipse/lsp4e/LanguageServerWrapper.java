@@ -281,6 +281,9 @@ public class LanguageServerWrapper {
 						throw new RuntimeException(e);
 					}
 				}
+			}, dispatcher).exceptionally(error -> {
+				LanguageServerPlugin.logError(error);
+				return null;
 			});
 		}
 	}
