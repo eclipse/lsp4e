@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import org.eclipse.lsp4e.LanguageServerWrapperTest;
 import org.eclipse.lsp4e.test.codeactions.CodeActionTests;
 import org.eclipse.lsp4e.test.color.ColorTest;
 import org.eclipse.lsp4e.test.commands.DynamicRegistrationTest;

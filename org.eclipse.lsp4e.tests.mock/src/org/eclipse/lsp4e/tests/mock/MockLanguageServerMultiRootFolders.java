@@ -137,7 +137,10 @@ public final class MockLanguageServerMultiRootFolders implements LanguageServer 
 
 	@Override
 	public CompletableFuture<InitializeResult> initialize(InitializeParams params) {
-		return buildMaybeDelayedFuture(initializeResult);
+		return buildMaybeDelayedFuture(initializeResult).thenApply(result -> {
+			started = true;
+			return result;
+		});
 	}
 
 	@Override

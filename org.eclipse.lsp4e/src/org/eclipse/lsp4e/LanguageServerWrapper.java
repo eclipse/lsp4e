@@ -35,7 +35,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -54,6 +53,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -111,6 +111,8 @@ import com.google.gson.JsonObject;
 
 public class LanguageServerWrapper {
 
+	private static final ILog LOG = Platform.getLog(LanguageServerWrapper.class);
+
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
 		public void bufferDisposed(IFileBuffer buffer) {
@@ -158,7 +160,7 @@ public class LanguageServerWrapper {
 	private ServerCapabilities serverCapabilities;
 	private final Timer timer = new Timer("Stop Language Server Task Processor"); //$NON-NLS-1$
 	private TimerTask stopTimerTask;
-	private AtomicBoolean stopping = new AtomicBoolean(false);
+	private final AtomicReference<CompletableFuture<Void>> stopping = new AtomicReference<CompletableFuture<Void>>(null);
 
 	private final ExecutorService dispatcher;
 
@@ -201,14 +203,26 @@ public class LanguageServerWrapper {
 	}
 
 	void stopDispatcher() {
-		this.dispatcher.shutdownNow();
+		if (dispatcher.isShutdown()) {
+			return;
+		}
+		try {
+			stop().get(6, TimeUnit.SECONDS);
+		} catch (InterruptedException e ) {
+			Thread.currentThread().interrupt();
+			LOG.error(e.getLocalizedMessage(), e);
+		} catch (ExecutionException | TimeoutException e) {
+			LOG.error(String.format("Failed to stop %s in 6 second", this), e);  //$NON-NLS-1$
+		} finally {
+			this.dispatcher.shutdownNow();
 
-		// Only really needed for testing - the listener (an instance of ConcurrentMessageProcessor) should exit
-		// as soon as the input stream from the LS is closed, and a cached thread pool will recycle idle
-		// threads after a 60 second timeout - or immediately in response to JVM shutdown.
-		// If we don't do this then a full test run will generate a lot of threads because we create new
-		// instances of this class for each test
-		this.listener.shutdownNow();
+			// Only really needed for testing - the listener (an instance of ConcurrentMessageProcessor) should exit
+			// as soon as the input stream from the LS is closed, and a cached thread pool will recycle idle
+			// threads after a 60 second timeout - or immediately in response to JVM shutdown.
+			// If we don't do this then a full test run will generate a lot of threads because we create new
+			// instances of this class for each test
+			this.listener.shutdownNow();
+		}
 	}
 
 	/**
@@ -241,6 +255,7 @@ public class LanguageServerWrapper {
 	 */
 	public synchronized void start() throws IOException {
 		final var filesToReconnect = new HashMap<URI, IDocument>();
+		final CompletableFuture<?> stopFuture;
 		if (this.languageServer != null) {
 			if (isActive()) {
 				return;
@@ -248,13 +263,32 @@ public class LanguageServerWrapper {
 				for (Entry<URI, DocumentContentSynchronizer> entry : this.connectedDocuments.entrySet()) {
 					filesToReconnect.put(entry.getKey(), entry.getValue().getDocument());
 				}
-				stop();
+				stopFuture = stop();
 			}
+		} else {
+			stopFuture = CompletableFuture.completedFuture(null);
 		}
 		if (this.initializeFuture == null) {
-			final URI rootURI = getRootURI();
 			this.launcherFuture = new CompletableFuture<>();
-			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
+			this.initializeFuture = stopFuture.thenCompose(ignored -> initialize());
+			initializeFuture.thenRunAsync(() -> {
+				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
+				watchProjects();
+				for (Entry<URI, IDocument> fileToReconnect : filesToReconnect.entrySet()) {
+					try {
+						connect(fileToReconnect.getKey(), fileToReconnect.getValue());
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				}
+			});
+		}
+	}
+
+	private CompletableFuture<Void> initialize() {
+		final URI rootURI = getRootURI();
+		return CompletableFuture.supplyAsync(() -> {
+			synchronized (this) {
 				if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
 					this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
 							serverDefinition.createConnectionProvider(), serverDefinition.id);
@@ -262,13 +296,13 @@ public class LanguageServerWrapper {
 					this.lspStreamProvider = serverDefinition.createConnectionProvider();
 				}
 				initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
-				try {
-					lspStreamProvider.start();
-				} catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-				return null;
-			}).thenRun(() -> {
+			}
+			try {
+				lspStreamProvider.start();
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			synchronized (this) {
 				languageClient = serverDefinition.createLanguageClient();
 
 				initParams.setProcessId((int) ProcessHandle.current().pid());
@@ -298,33 +332,20 @@ public class LanguageServerWrapper {
 				this.languageServer = launcher.getRemoteProxy();
 				languageClient.connect(languageServer, this);
 				this.launcherFuture = launcher.startListening();
-			})
-			.thenCompose(unused -> initServer(rootURI))
-			.thenAccept(res -> {
+			}
+			return null;
+		}, dispatcher).thenCompose(unused -> initServer(rootURI)).thenAccept(res -> {
+			synchronized(this) {
 				serverCapabilities = res.getCapabilities();
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
-			}).thenRun(() -> {
 				this.languageServer.initialized(new InitializedParams());
-			}).thenRun(() -> {
-				final Map<URI, IDocument> toReconnect = filesToReconnect;
-				initializeFuture.thenRunAsync(() -> {
-					watchProjects();
-					for (Entry<URI, IDocument> fileToReconnect : toReconnect.entrySet()) {
-						try {
-							connect(fileToReconnect.getKey(), fileToReconnect.getValue());
-						} catch (IOException e) {
-							throw new RuntimeException(e);
-						}
-					}
-				});
-				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
-			}).exceptionally(e -> {
-				LanguageServerPlugin.logError(e);
-				initializeFuture.completeExceptionally(e);
-				stop();
-				return null;
-			});
-		}
+			}
+		}).exceptionally(e -> {
+			LanguageServerPlugin.logError(e);
+			initializeFuture.completeExceptionally(e);
+			stop();
+			return null;
+		});
 	}
 
 	private CompletableFuture<InitializeResult> initServer(final URI rootURI) {
@@ -427,11 +448,13 @@ public class LanguageServerWrapper {
 		return server == this.languageServer;
 	}
 
-	public synchronized void stop() {
-		final boolean alreadyStopping = this.stopping.getAndSet(true);
-		if (alreadyStopping) {
-			return;
+	public synchronized CompletableFuture<Void> stop() {
+		CompletableFuture<Void> result = new CompletableFuture<Void>();
+		CompletableFuture<Void> alreadyStopping = this.stopping.compareAndExchange(null, result);
+		if (alreadyStopping != null) {
+			return alreadyStopping;
 		}
+		try {
 		removeStopTimerTask();
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
@@ -454,7 +477,7 @@ public class LanguageServerWrapper {
 				} catch (InterruptedException ex) {
 					Thread.currentThread().interrupt();
 				} catch (Exception ex) {
-					LanguageServerPlugin.logError(ex);
+					LOG.error(ex.getLocalizedMessage(), ex);
 				}
 			}
 
@@ -469,10 +492,18 @@ public class LanguageServerWrapper {
 			if (provider != null) {
 				provider.stop();
 			}
-			this.stopping.set(false);
 		};
 
-		CompletableFuture.runAsync(shutdownKillAndStopFutureAndProvider);
+		CompletableFuture.runAsync(shutdownKillAndStopFutureAndProvider, dispatcher).whenComplete((ignored, error) -> {
+			if (error != null) {
+				result.completeExceptionally(error);
+			} else {
+				result.complete(ignored);
+			}
+			if (!this.stopping.compareAndSet(result, null)) {
+				LOG.error("Unexpected concurrent stop", new IllegalStateException()); //$NON-NLS-1$
+			}
+		});
 
 		this.launcherFuture = null;
 		this.lspStreamProvider = null;
@@ -483,6 +514,10 @@ public class LanguageServerWrapper {
 		this.languageServer = null;
 
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
+		} catch (Exception e) {
+			result.completeExceptionally(e);
+		}
+		return result;
 	}
 
 	public @Nullable CompletableFuture<@NonNull LanguageServerWrapper> connect(IDocument document, @NonNull IFile file)
@@ -605,12 +640,14 @@ public class LanguageServerWrapper {
 		if (documentListener != null) {
 			documentListener.getDocument().removeDocumentListener(documentListener);
 			documentClosedFuture = documentListener.documentClosed();
+		} else {
+			documentClosedFuture = CompletableFuture.completedFuture(null);
 		}
 		if (this.connectedDocuments.isEmpty()) {
 			if (this.serverDefinition.lastDocumentDisconnectedTimeout != 0) {
 				startStopTimerTask();
 			} else {
-				stop();
+				documentClosedFuture = documentClosedFuture.thenCompose(ignored -> this.stop());
 			}
 		}
 		return documentClosedFuture;
@@ -1121,6 +1158,11 @@ public class LanguageServerWrapper {
 			return wsFolder != null && wsFolder.getUri() != null && !wsFolder.getUri().isEmpty();
 		}
 
+	}
+
+	@Override
+	public String toString() {
+		return serverDefinition.id;
 	}
 
 }

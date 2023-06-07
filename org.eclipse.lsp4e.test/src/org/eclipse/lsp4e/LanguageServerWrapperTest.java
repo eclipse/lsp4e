@@ -9,21 +9,30 @@
  * Contributors:
  *  Markus Ofterdinger (SAP SE) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e;
 
 import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.lsp4e.LanguageServerWrapper;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.test.AllCleanRule;
+import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.tests.mock.MockLanguageServerMultiRootFolders;
+import org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer;
 import org.eclipse.ui.IEditorPart;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -62,5 +71,44 @@ public class LanguageServerWrapperTest {
 
 		TestUtils.closeEditor(editor1, false);
 		TestUtils.closeEditor(editor2, false);
+	}
+	
+	@Test
+	public void doNotStopBusyDispatchers() throws Exception {
+		final Logger LOG = Logger.getLogger(StreamMessageProducer.class.getName());
+		List<String> logMessages = Collections.synchronizedList(new ArrayList<>());
+		LOG.addHandler(new Handler() {
+			
+			@Override
+			public void publish(LogRecord record) {
+				logMessages.add(record.getMessage());
+			}
+			
+			@Override
+			public void flush() {
+				
+			}
+			
+			@Override
+			public void close() throws SecurityException {
+			}
+		});
+		IFile testFile1 = TestUtils.createFile(project1, "shouldUseExtension.lsptWithMultiRoot", "");
+		IEditorPart editor1 = TestUtils.openEditor(testFile1);
+		
+		try {
+			@NonNull Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1, request -> true);
+			LanguageServerWrapper wrapper = wrappers.iterator().next();
+			assertEquals(1, wrappers.size());
+			waitForAndAssertCondition(2_000, () -> MockLanguageServerMultiRootFolders.INSTANCE.isRunning());
+			assertTrue(wrapper.isConnectedTo(testFile1.getLocationURI()));
+			logMessages.clear();
+			wrapper.stopDispatcher();
+			waitForAndAssertCondition(2_000, () -> !MockLanguageServerMultiRootFolders.INSTANCE.isRunning());
+			Assert.assertEquals(Collections.emptyList(), logMessages);
+		} finally {
+			TestUtils.closeEditor(editor1, false);
+		}
+		
 	}
 }
