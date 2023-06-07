@@ -15,7 +15,11 @@ import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -62,5 +66,50 @@ public class LanguageServerWrapperTest {
 
 		TestUtils.closeEditor(editor1, false);
 		TestUtils.closeEditor(editor2, false);
+	}
+	
+	/**
+	 * Check if {@code isActive()} is correctly synchronized with  {@code stop()} 
+	 * @see https://github.com/eclipse/lsp4e/pull/688
+	 */
+	@Test
+	public void testStopAndActive() throws CoreException, IOException, AssertionError, InterruptedException, ExecutionException {
+		IFile testFile1 = TestUtils.createFile(project1, "shouldUseExtension.lsptWithMultiRoot", "");
+		IEditorPart editor1 = TestUtils.openEditor(testFile1);
+		@NonNull Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1, request -> true);
+		assertEquals(1, wrappers.size());
+		LanguageServerWrapper wrapper = wrappers.iterator().next();
+		CountDownLatch started = new CountDownLatch(1);
+		try {
+			var startStopJob = ForkJoinPool.commonPool().submit(() -> {
+				started.countDown();
+				while (!Thread.interrupted()) {
+					wrapper.stop();
+					try {
+						wrapper.start();
+					} catch (IOException e) {
+						throw new RuntimeException(e);
+					}
+				}
+			});
+			try {
+				started.await();
+				for (int i = 0; i < 10000000; i++) {
+					// Should not throw
+					wrapper.isActive();
+					if (startStopJob.isDone()) {
+						throw new AssertionError("Job should run indefinitely");
+					}
+				}
+			} finally {
+				startStopJob.cancel(true);
+				if (!startStopJob.isCancelled()) {
+					startStopJob.get();
+				}
+			}
+		} finally {
+			TestUtils.closeEditor(editor1, false);	
+		}
+		
 	}
 }
