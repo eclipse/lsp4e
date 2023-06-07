@@ -15,11 +15,9 @@ package org.eclipse.lsp4e.test;
 
 import static org.eclipse.lsp4e.LSPEclipseUtils.getDocument;
 import static org.eclipse.lsp4e.LSPEclipseUtils.getTextViewer;
-import static org.eclipse.lsp4e.LanguageServiceAccessor.getInitializedLanguageServers;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSPDocumentInfosFor;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSWrapper;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSWrappers;
-import static org.eclipse.lsp4e.LanguageServiceAccessor.getLanguageServers;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.hasActiveLanguageServers;
 import static org.eclipse.lsp4e.test.TestUtils.createFile;
 import static org.eclipse.lsp4e.test.TestUtils.createProject;
@@ -38,8 +36,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 
 import org.eclipse.core.filesystem.EFS;
@@ -48,13 +45,13 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
-import org.eclipse.debug.core.DebugPlugin;
-import org.eclipse.debug.internal.core.IInternalDebugCoreConstants;
-import org.eclipse.debug.internal.core.Preferences;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServerMultiRootFolders;
 import org.eclipse.lsp4e.ui.UI;
@@ -105,21 +102,23 @@ public class LanguageServiceAccessorTest {
 	@Test
 	public void testGetLanguageServerInvalidFile() throws Exception {
 		var testFile = createFile(project, "not_associated_with_ls.abc", "");
-		assertEmpty(getInitializedLanguageServers(testFile, MATCH_ALL));
+		assertFalse(hasActiveLanguageServers(testFile, MATCH_ALL));
 	}
 
 	@Test
 	public void testLSAsExtension() throws Exception {
 		var testFile = createFile(project, "shouldUseExtension.lspt", "");
-		var ls = getInitializedLanguageServers(testFile, MATCH_ALL).get(0).get(2, TimeUnit.SECONDS);
-		assertNotNull(ls);
+		// Force LS to initialize and open file
+		LanguageServers.forDocument(LSPEclipseUtils.getDocument(testFile)).anyMatching();
+		assertTrue(hasActiveLanguageServers(testFile, MATCH_ALL));
 	}
 
 	@Test
 	public void testLSAsRunConfiguration() throws Exception {
 		var testFile = createFile(project, "shouldUseRunConfiguration.lspt2", "");
-		var ls = getInitializedLanguageServers(testFile, MATCH_ALL).get(0).get(2, TimeUnit.SECONDS);
-		assertNotNull(ls);
+		// Force LS to initialize and open file
+		LanguageServers.forDocument(LSPEclipseUtils.getDocument(testFile)).anyMatching();
+		assertTrue(hasActiveLanguageServers(testFile, MATCH_ALL));
 	}
 
 	@Test
@@ -148,20 +147,20 @@ public class LanguageServiceAccessorTest {
 		var testFile1 = createUniqueTestFile(project, "");
 		var testFile2 = createUniqueTestFileMultiLS(project, "");
 
-		var file1LanguageServers = getInitializedLanguageServers(testFile1, MATCH_ALL);
+		var file1LanguageServers = getLSWrappers(testFile1, MATCH_ALL);
 		assertEquals(1, file1LanguageServers.size());
 
 		var file2LanguageServers = new ArrayList<>();
-		for (var future : getInitializedLanguageServers(testFile2, MATCH_ALL)) {
-			file2LanguageServers.add(future.get(2, TimeUnit.SECONDS));
+		for (var future : getLSWrappers(testFile2, MATCH_ALL)) {
+			file2LanguageServers.add(future.serverDefinition);
 		}
 		assertEquals(2, file2LanguageServers.size());
 
-		var file1LS = file1LanguageServers.get(0).get(2, TimeUnit.SECONDS);
+		var file1LS = file1LanguageServers.get(0).serverDefinition;
 		assertTrue(file2LanguageServers.contains(file1LS)); // LS from file1 is reused
 
 		assertEquals("Not right amount of language servers bound to project", 2,
-				getLanguageServers(project, MATCH_ALL).size());
+				LanguageServers.forProject(project).computeAll(ls -> CompletableFuture.completedFuture(null)).size());
 	}
 
 	@Test
@@ -172,8 +171,8 @@ public class LanguageServiceAccessorTest {
 		var editor1 = openEditor(testFile1);
 		var editor2 = openEditor(testFile2);
 
-		assertNotEmpty(getInitializedLanguageServers(testFile1, MATCH_ALL));
-		assertNotEmpty(getInitializedLanguageServers(testFile2, MATCH_ALL));
+		assertTrue(hasActiveLanguageServers(testFile1, MATCH_ALL));
+		assertTrue(hasActiveLanguageServers(testFile2, MATCH_ALL));
 
 		assertTrue(hasActiveLanguageServers(MATCH_ALL));
 
@@ -184,7 +183,7 @@ public class LanguageServiceAccessorTest {
 		assertFalse(hasActiveLanguageServers(MATCH_ALL));
 
 		editor1 = openEditor(testFile1);
-		assertNotEmpty(getInitializedLanguageServers(testFile1, MATCH_ALL));
+		assertTrue(hasActiveLanguageServers(testFile1, MATCH_ALL));
 
 		waitForCondition(5_000, () -> hasActiveLanguageServers(MATCH_ALL));
 		assertTrue(hasActiveLanguageServers(MATCH_ALL));
@@ -195,7 +194,7 @@ public class LanguageServiceAccessorTest {
 		var testFile1 = createUniqueTestFile(project, "");
 
 		openEditor(testFile1);
-		assertNotEmpty(getInitializedLanguageServers(testFile1, MATCH_ALL));
+		assertTrue(hasActiveLanguageServers(testFile1, MATCH_ALL));
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 
 		var wrappers = getLSWrappers(testFile1, MATCH_ALL);
@@ -211,7 +210,7 @@ public class LanguageServiceAccessorTest {
 		var testFile2 = createUniqueTestFile(project, "");
 
 		openEditor(testFile2);
-		assertNotEmpty(getInitializedLanguageServers(testFile2, MATCH_ALL));
+		assertTrue(hasActiveLanguageServers(testFile2, MATCH_ALL));
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 
 		wrappers = getLSWrappers(testFile2, MATCH_ALL);
@@ -231,7 +230,7 @@ public class LanguageServiceAccessorTest {
 		var testFile1 = createUniqueTestFile(project, "lsptWithMultiRoot", "");
 
 		openEditor(testFile1);
-		assertNotEmpty(getInitializedLanguageServers(testFile1, MATCH_ALL));
+		assertTrue(hasActiveLanguageServers(testFile1, MATCH_ALL));
 		// FIXME waitForCondition(5_000, () -> MockLanguageServerMultiRootFolders.INSTANCE.isRunning());
 
 		var wrappers = getLSWrappers(testFile1, MATCH_ALL);
@@ -247,7 +246,7 @@ public class LanguageServiceAccessorTest {
 		var testFile2 = createUniqueTestFile(project, "lsptWithMultiRoot", "");
 
 		openEditor(testFile2);
-		assertNotEmpty(getInitializedLanguageServers(testFile2, MATCH_ALL));
+		assertTrue(hasActiveLanguageServers(testFile2, MATCH_ALL));
 		// FIXME waitForAndAssertCondition(5_000, () -> MockLanguageServerMultiRootFolders.INSTANCE.isRunning());
 
 		wrappers = getLSWrappers(testFile2, MATCH_ALL);
@@ -382,31 +381,6 @@ public class LanguageServiceAccessorTest {
 	}
 
 	@Test
-	public void testStatusHandlerLSAsRunConfiguration() throws Exception {
-		// test which checks that status handler preferences is kept after the launch is done.
-		var testFile = createFile(project, "shouldUseRunConfiguration.lspt2", "");
-
-		// Test with default status handler (see DebugPlugin#getStatusHandler)
-		var oldStatusHandler = isStatusHandlersEnabled();
-		IDocument document = getDocument(testFile);
-		assertNotNull(document);
-		getLanguageServers(document, null).get(2, TimeUnit.SECONDS);
-		assertEquals(isStatusHandlersEnabled(), oldStatusHandler);
-
-		// Test with status handler set to false
-		setStatusHandlersEnabled(false);
-		oldStatusHandler = isStatusHandlersEnabled();
-		getLanguageServers(document, null).get(2, TimeUnit.SECONDS);
-		assertEquals(isStatusHandlersEnabled(), false);
-
-		// Test with status handler set to true
-		setStatusHandlersEnabled(true);
-		oldStatusHandler = isStatusHandlersEnabled();
-		getLanguageServers(document, null).get(2, TimeUnit.SECONDS);
-		assertEquals(isStatusHandlersEnabled(), true);
-	}
-
-	@Test
 	public void testLSforExternalThenLocalFile() throws Exception {
 		var wb = UI.getActiveWindow();
 		var local = createTempFile("testLSforExternalThenLocalFile", ".lspt");
@@ -417,11 +391,11 @@ public class LanguageServiceAccessorTest {
 			return hoverProvider.isLeft() ? hoverProvider.getLeft() : hoverProvider.getRight() != null;
 		};
 
-		assertEquals(1, getLanguageServers(getTextViewer(editor).getDocument(), hasHoverCapabilities).get().size());
+		assertTrue(LanguageServiceAccessor.hasActiveLanguageServers(LSPEclipseUtils.getFile(getTextViewer(editor).getDocument()) , hasHoverCapabilities));
 		wb.getActivePage().closeAllEditors(false);
 		// opening another file should either reuse the LS or spawn another one, but not both
-		assertEquals(1, getLanguageServers( //
-				openTextViewer(createUniqueTestFile(project, "")).getDocument(), hasHoverCapabilities).get().size());
+		assertTrue(LanguageServiceAccessor.hasActiveLanguageServers( //
+				LSPEclipseUtils.getFile(openTextViewer(createUniqueTestFile(project, "")).getDocument()), hasHoverCapabilities));
 	}
 
 	@Test
@@ -429,38 +403,14 @@ public class LanguageServiceAccessorTest {
 		var testFile1 = createFile(project, "shouldUseSingletonLS.lsp-singletonLS", "");
 		IDocument document1 = getDocument(testFile1);
 		assertNotNull(document1);
-		var languageServers = getLanguageServers(document1, MATCH_ALL);
+		var languageServers = getLSWrappers(LSPEclipseUtils.getFile(document1), MATCH_ALL);
 
 		var project2 = createProject("project2");
 		var testFile2 = createFile(project2, "shouldUseSingletonLS2.lsp-singletonLS", "");
 		IDocument document2 = getDocument(testFile2);
 		assertNotNull(document2);
-		var languageServers2 = getLanguageServers(document2, MATCH_ALL);
-		assertEquals(1, languageServers.get().size());
-		assertEquals(languageServers.get(), languageServers2.get());
-	}
-
-	private static boolean isStatusHandlersEnabled() {
-		return Platform.getPreferencesService().getBoolean(DebugPlugin.getUniqueIdentifier(),
-				IInternalDebugCoreConstants.PREF_ENABLE_STATUS_HANDLERS, true, null);
-	}
-
-	/**
-	 * Update the the status handler preferences
-	 *
-	 * @param enabled
-	 *            the status handler preferences
-	 */
-	private static void setStatusHandlersEnabled(boolean enabled) {
-		Preferences.setBoolean(DebugPlugin.getUniqueIdentifier(),
-				IInternalDebugCoreConstants.PREF_ENABLE_STATUS_HANDLERS, enabled, null);
-	}
-
-	private static <T> void assertEmpty(Collection<T> coll) {
-		assertTrue("Given collection is expected to be empty! " + coll, coll.isEmpty());
-	}
-
-	private static <T> void assertNotEmpty(Collection<T> coll) {
-		assertFalse("Given collection must not be empty!", coll.isEmpty());
+		var languageServers2 = getLSWrappers(LSPEclipseUtils.getFile(document2), MATCH_ALL);
+		assertEquals(1, languageServers.size());
+		assertEquals(languageServers, languageServers2);
 	}
 }

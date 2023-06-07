@@ -27,7 +27,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -62,14 +62,14 @@ public class DocumentDidChangeTest {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
-		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
+		LanguageServers.forDocument(viewer.getDocument()).withFilter(new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
 				TextDocumentSyncKind syncKind = getDocumentSyncKind(t);
 				assertEquals(TextDocumentSyncKind.Incremental, syncKind);
 				return true;
 			}
-		});
+		}).anyMatching();
 
 		// Test initial insert
 		viewer.getDocument().replace(0, 0, "Hello");
@@ -129,13 +129,13 @@ public class DocumentDidChangeTest {
 		IFile testFile = TestUtils.createUniqueTestFile(project, multiLineText);
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
-		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
+		LanguageServers.forDocument(viewer.getDocument()).withFilter(new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
 				assertEquals(TextDocumentSyncKind.Incremental, getDocumentSyncKind(t));
 				return true;
 			}
-		});
+		}).anyMatching();
 
 		// Test initial insert
 		viewer.getDocument().replace("line1\nline2\n".length(), "line3\n".length(), "");
@@ -180,13 +180,13 @@ public class DocumentDidChangeTest {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
-		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
+		LanguageServers.forDocument(viewer.getDocument()).withFilter(new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
 				assertEquals(TextDocumentSyncKind.Full, getDocumentSyncKind(t));
 				return true;
 			}
-		});
+		}).anyMatching();
 		// Test initial insert
 		String text = "Hello";
 		viewer.getDocument().replace(0, 0, text);
@@ -216,27 +216,27 @@ public class DocumentDidChangeTest {
 		File file = TestUtils.createTempFile("testFullSyncExternalFile", ".lspt");
 		IEditorPart editor = IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
-		LanguageServiceAccessor.getLanguageServers(viewer.getDocument(), new Predicate<ServerCapabilities>() {
+		LanguageServers.forDocument(viewer.getDocument()).withFilter(new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
 				assertEquals(TextDocumentSyncKind.Full, getDocumentSyncKind(t));
 				return true;
 			}
-		});
-        // Test initial insert
-        String text = "Hello";
-        viewer.getDocument().replace(0, 0, text);
-        waitForAndAssertCondition(1_000,  numberOfChangesIs(1));
-        DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);
+		}).anyMatching();
+		// Test initial insert
+		String text = "Hello";
+		viewer.getDocument().replace(0, 0, text);
+		waitForAndAssertCondition(1_000,  numberOfChangesIs(1));
+		DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
 		TextDocumentContentChangeEvent change0 = lastChange.getContentChanges().get(0);
 		assertEquals(text, change0.getText());
 
-        // Test additional insert
-        viewer.getDocument().replace(5, 0, " World");
-        waitForAndAssertCondition(1_000,  numberOfChangesIs(2));
-        lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(1);
+		// Test additional insert
+		viewer.getDocument().replace(5, 0, " World");
+		waitForAndAssertCondition(1_000,  numberOfChangesIs(2));
+		lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(1);
 		assertNotNull(lastChange.getContentChanges());
 		assertEquals(1, lastChange.getContentChanges().size());
 		change0 = lastChange.getContentChanges().get(0);

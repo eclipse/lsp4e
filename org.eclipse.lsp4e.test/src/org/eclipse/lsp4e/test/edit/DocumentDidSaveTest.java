@@ -28,7 +28,7 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -62,7 +62,7 @@ public class DocumentDidSaveTest {
 		// Force LS to initialize and open file
 		IDocument document = LSPEclipseUtils.getDocument(testFile);
 		assertNotNull(document);
-		LanguageServiceAccessor.getLanguageServers(document, capabilites -> Boolean.TRUE);
+		LanguageServers.forDocument(document).anyMatching();
 		final var didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidSaveCallback(didSaveExpectation);
 
@@ -88,7 +88,7 @@ public class DocumentDidSaveTest {
 //			testFile.setLocalTimeStamp(0);
 
 		// Force LS to initialize and open file
-		LanguageServiceAccessor.getLanguageServers(LSPEclipseUtils.getDocument(editor.getEditorInput()), capabilites -> Boolean.TRUE);
+		LanguageServers.forDocument(LSPEclipseUtils.getDocument(editor.getEditorInput())).anyMatching();
 		final var didSaveExpectation = new CompletableFuture<DidSaveTextDocumentParams>();
 		MockLanguageServer.INSTANCE.setDidSaveCallback(didSaveExpectation);
 
