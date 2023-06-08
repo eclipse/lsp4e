@@ -176,7 +176,7 @@ public class LanguageServiceAccessor {
 	private static CompletableFuture<LanguageServer> getInitializedLanguageServer(@NonNull IResource resource,
 			@NonNull LanguageServerDefinition lsDefinition, Predicate<ServerCapabilities> capabilitiesPredicate)
 			throws IOException {
-		LanguageServerWrapper wrapper = getLSWrapper(resource.getProject(), lsDefinition, resource.getFullPath());
+		LanguageServerWrapper wrapper = getLSWrapper(resource.getProject(), lsDefinition, resource.getFullPath(), resource.getLocationURI());
 		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
 			return wrapper.getInitializedServer();
 		}
@@ -250,7 +250,7 @@ public class LanguageServiceAccessor {
 					continue;
 				}
 
-				final var wrapper = getLSWrapper(project, serverDefinition, file.getFullPath());
+				final var wrapper = getLSWrapper(project, serverDefinition, file.getFullPath(), file.getLocationURI());
 				if (!wrappers.contains(wrapper) && capabilitiesComply(wrapper, request)) {
 					wrappers.add(wrapper);
 				}
@@ -352,12 +352,28 @@ public class LanguageServiceAccessor {
 	@NonNull
 	public static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
 			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
-		return getLSWrapper(project, serverDefinition, null);
+		return getLSWrapper(project, serverDefinition, null, null);
+	}
+
+	/**
+	 * Return existing {@link LanguageServerWrapper} for the given definition. If
+	 * not found, create a new one with the given definition.
+	 *
+	 * @param project
+	 * @param serverDefinition
+	 * @param initialUri
+	 * @return a new or existing {@link LanguageServerWrapper} for the given definition.
+	 * @throws IOException
+	 */
+	@NonNull
+	public static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
+			@NonNull LanguageServerDefinition serverDefinition, @Nullable URI initialUri) throws IOException {
+		return getLSWrapper(project, serverDefinition, null, initialUri);
 	}
 
 	@NonNull
 	private static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
-			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
+			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath, @Nullable URI initialUri) throws IOException {
 
 		final Predicate<LanguageServerWrapper> serverSelector = wrapper -> project != null && wrapper.canOperate(project)
 				&& wrapper.serverDefinition.equals(serverDefinition);
@@ -377,7 +393,7 @@ public class LanguageServiceAccessor {
 			final var wrapper = project != null //
 					? new LanguageServerWrapper(project, serverDefinition)
 					: new LanguageServerWrapper(serverDefinition, initialPath);
-			wrapper.start();
+			wrapper.start(initialUri);
 
 			startedServers.add(wrapper);
 			return wrapper;

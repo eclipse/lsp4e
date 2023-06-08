@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
@@ -143,11 +144,11 @@ public class LanguageServerWrapper {
 	@NonNull
 	public final LanguageServerDefinition serverDefinition;
 	@Nullable
-	protected final IProject initialProject;
+	protected IProject initialProject;
 	@NonNull
 	protected Map<@NonNull URI, @NonNull DocumentContentSynchronizer> connectedDocuments;
 	@Nullable
-	protected final IPath initialPath;
+	protected IPath initialPath;
 	protected final InitializeParams initParams = new InitializeParams();
 
 	protected StreamConnectionProvider lspStreamProvider;
@@ -233,13 +234,18 @@ public class LanguageServerWrapper {
 		return folders;
 	}
 
+	// for backward compatibility
+	public synchronized void start() throws IOException {
+		start(null);
+	}
+
 	/**
 	 * Starts a language server and triggers initialization. If language server is
 	 * started and active, does nothing. If language server is inactive, restart it.
 	 *
 	 * @throws IOException
 	 */
-	public synchronized void start() throws IOException {
+	public synchronized void start(@Nullable URI initialUri) throws IOException {
 		final var filesToReconnect = new HashMap<URI, IDocument>();
 		if (this.languageServer != null) {
 			if (isActive()) {
@@ -252,7 +258,7 @@ public class LanguageServerWrapper {
 			}
 		}
 		if (this.initializeFuture == null) {
-			final URI rootURI = getRootURI();
+			final URI rootURI = getRootURI(initialUri);
 			this.launcherFuture = new CompletableFuture<>();
 			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
 				if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
@@ -261,7 +267,8 @@ public class LanguageServerWrapper {
 				} else {
 					this.lspStreamProvider = serverDefinition.createConnectionProvider();
 				}
-				initParams.setInitializationOptions(this.lspStreamProvider.getInitializationOptions(rootURI));
+				var options = Optional.ofNullable(this.lspStreamProvider.getInitializationOptions(rootURI)).orElse(this.lspStreamProvider.getInitializationOptionsFromUri(initialUri));
+				initParams.setInitializationOptions(options);
 				try {
 					lspStreamProvider.start();
 				} catch (IOException e) {
@@ -353,7 +360,22 @@ public class LanguageServerWrapper {
 	}
 
 	@Nullable
-	private URI getRootURI() {
+	private URI getRootURI(URI initialUri) {
+		// after stop() the LS client has been terminated and the initialPath and initialProject are
+		// outdated. In this case use the initialUri to determine the root URI:
+		if (initialUri != null) {
+			var file = LSPEclipseUtils.getFileHandle(initialUri);
+			if (file != null) {
+				var newInitialProject = file.getProject();
+				if (newInitialProject != null && newInitialProject.exists()) {
+					//update initial project and path:
+					this.initialProject = newInitialProject;
+					this.initialPath = file.getLocation();
+					return LSPEclipseUtils.toUri(newInitialProject);
+				}
+			}
+		}
+
 		final IProject project = this.initialProject;
 		if (project != null && project.exists()) {
 			return LSPEclipseUtils.toUri(project);
@@ -569,7 +591,7 @@ public class LanguageServerWrapper {
 		if (this.connectedDocuments.containsKey(uri)) {
 			return CompletableFuture.completedFuture(this);
 		}
-		start();
+		start(uri);
 		if (this.initializeFuture == null) {
 			return null;
 		}
@@ -655,6 +677,11 @@ public class LanguageServerWrapper {
 		}
 	}
 
+	//To ensure backward compatibility.
+	protected CompletableFuture<LanguageServer> getInitializedServer(){
+		return getInitializedServer(null);
+	}
+
 	/**
 	 * Starts the language server, ensure it's and returns a CompletableFuture waiting for the
 	 * server to be initialized and up-to-date (all related pending document changes
@@ -664,9 +691,9 @@ public class LanguageServerWrapper {
 	 *
 	 */
 	@NonNull
-	protected CompletableFuture<LanguageServer> getInitializedServer() {
+	protected CompletableFuture<LanguageServer> getInitializedServer(@Nullable URI documentUri) {
 		try {
-			start();
+			start(documentUri);
 		} catch (IOException ex) {
 			LanguageServerPlugin.logError(ex);
 		}

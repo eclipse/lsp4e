@@ -227,6 +227,11 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	}
 
 	@Override
+	public Object getInitializationOptionsFromUri(@Nullable URI initialUri) {
+		return provider.getInitializationOptionsFromUri(initialUri);
+	}
+
+	@Override
 	public String getTrace(@Nullable URI rootUri) {
 		return provider.getTrace(rootUri);
 	}
