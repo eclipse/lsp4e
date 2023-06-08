@@ -413,7 +413,7 @@ public class LanguageServerWrapper {
 	/**
 	 * @return whether the underlying connection to language server is still active
 	 */
-	public boolean isActive() {
+	public synchronized boolean isActive() {
 		return this.launcherFuture != null && !this.launcherFuture.isDone() && !this.launcherFuture.isCancelled();
 	}
 
