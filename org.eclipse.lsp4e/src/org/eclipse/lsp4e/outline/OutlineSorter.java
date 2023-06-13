@@ -16,7 +16,7 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
+import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -46,8 +46,8 @@ public class OutlineSorter extends ViewerComparator {
 		if (element instanceof Either<?, ?> either) {
 			element = either.get();
 		}
-		if (element instanceof DocumentSymbolWithFile symbolWithFile) {
-			return symbolWithFile.symbol.getName();
+		if (element instanceof DocumentSymbolWithURI symbolWithURI) {
+			return symbolWithURI.symbol.getName();
 		}
 		if (element instanceof DocumentSymbol documentSymbol) {
 			return documentSymbol.getName();

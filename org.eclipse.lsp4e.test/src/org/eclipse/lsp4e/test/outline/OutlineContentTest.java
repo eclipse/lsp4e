@@ -30,7 +30,7 @@ import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.EditorToOutlineAdapterFactory;
-import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
+import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4e.test.AllCleanRule;
 import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -80,7 +80,7 @@ public class OutlineContentTest {
 		waitForAndAssertCondition(5_000, tree.getDisplay(), //
 				() -> Arrays.asList(symbolCow) //
 						.equals(Arrays.stream(tree.getItems())
-								.map(e -> ((DocumentSymbolWithFile) e.getData()).symbol)
+								.map(e -> ((DocumentSymbolWithURI) e.getData()).symbol)
 								.toList()) //
 		);
 
@@ -122,7 +122,7 @@ public class OutlineContentTest {
 		waitForAndAssertCondition(5_000, tree.getDisplay(), //
 				() -> Arrays.asList(symbolCow, symbolFox, symbolCat) //
 						.equals(Arrays.stream(tree.getItems())
-								.map(e -> ((DocumentSymbolWithFile) e.getData()).symbol)
+								.map(e -> ((DocumentSymbolWithURI) e.getData()).symbol)
 								.toList()) //
 		);
 
@@ -133,7 +133,7 @@ public class OutlineContentTest {
 		waitForAndAssertCondition(5_000, tree.getDisplay(), //
 				() -> Arrays.asList(symbolCat, symbolCow, symbolFox) //
 						.equals(Arrays.stream(tree.getItems())
-								.map(e -> ((DocumentSymbolWithFile) e.getData()).symbol)
+								.map(e -> ((DocumentSymbolWithURI) e.getData()).symbol)
 								.toList()) //
 		);
 
