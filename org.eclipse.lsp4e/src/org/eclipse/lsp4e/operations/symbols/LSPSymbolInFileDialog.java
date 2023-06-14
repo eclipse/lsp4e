@@ -26,7 +26,7 @@ import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.LSSymbolsContentProvider;
 import org.eclipse.lsp4e.outline.LSSymbolsContentProvider.OutlineViewerInput;
-import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
+import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Range;
@@ -102,7 +102,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 				range = symbolInformation.getLocation().getRange();
 			} else if (item instanceof DocumentSymbol documentSymbol) {
 				range = documentSymbol.getSelectionRange();
-			} else if (item instanceof DocumentSymbolWithFile documentSymbolWithFile) {
+			} else if (item instanceof DocumentSymbolWithURI documentSymbolWithFile) {
 				range = documentSymbolWithFile.symbol.getSelectionRange();
 			}
 			if (range != null) {

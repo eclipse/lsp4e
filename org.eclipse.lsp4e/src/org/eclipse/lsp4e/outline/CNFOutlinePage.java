@@ -42,7 +42,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.outline.LSSymbolsContentProvider.OutlineViewerInput;
-import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
+import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.swt.SWT;
@@ -134,8 +134,8 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 		if (selection instanceof SymbolInformation symbolInformation) {
 			return symbolInformation.getLocation().getRange();
 		}
-		if (selection instanceof DocumentSymbolWithFile symbolWithFile) {
-			return symbolWithFile.symbol.getSelectionRange();
+		if (selection instanceof DocumentSymbolWithURI symbolWithURI) {
+			return symbolWithURI.symbol.getSelectionRange();
 		}
 		return null;
 	}
@@ -228,9 +228,9 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 			range = symbol.getLocation().getRange();
 		} else {
 			@Nullable
-			DocumentSymbolWithFile documentSymbol = object instanceof DocumentSymbolWithFile symbolWithFile
-					? symbolWithFile
-					: Adapters.adapt(object, DocumentSymbolWithFile.class);
+			DocumentSymbolWithURI documentSymbol = object instanceof DocumentSymbolWithURI symbolWithURI
+					? symbolWithURI
+					: Adapters.adapt(object, DocumentSymbolWithURI.class);
 			if (documentSymbol != null) {
 				range = documentSymbol.symbol.getRange();
 			}
