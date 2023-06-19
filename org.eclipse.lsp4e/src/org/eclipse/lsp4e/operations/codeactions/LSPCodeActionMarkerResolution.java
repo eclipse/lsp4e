@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2022 Red Hat Inc. and others.
+ * Copyright (c) 2016-2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -155,7 +155,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					// wait a bit to avoid showing too much "Computing" without looking like a freeze
 				} catch (TimeoutException e) {
 					LanguageServerPlugin.logWarning(
-							"Could get code actions due to timeout after 300 miliseconds in `textDocument/codeAction`", e); //$NON-NLS-1$
+							"Could get code actions due to timeout after 300 milliseconds in `textDocument/codeAction`", e); //$NON-NLS-1$
 				}
 			}
 		}
