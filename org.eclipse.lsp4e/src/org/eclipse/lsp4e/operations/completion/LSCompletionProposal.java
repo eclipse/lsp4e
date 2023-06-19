@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2022 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -339,7 +339,7 @@ public class LSCompletionProposal
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
 			} catch (TimeoutException e) {
-				LanguageServerPlugin.logWarning("Could not resolve completion items due to timeout after " + RESOLVE_TIMEOUT + " miliseconds in `completionItem/resolve`", e);  //$NON-NLS-1$//$NON-NLS-2$
+				LanguageServerPlugin.logWarning("Could not resolve completion items due to timeout after " + RESOLVE_TIMEOUT + " milliseconds in `completionItem/resolve`", e);  //$NON-NLS-1$//$NON-NLS-2$
 			}
 		}
 

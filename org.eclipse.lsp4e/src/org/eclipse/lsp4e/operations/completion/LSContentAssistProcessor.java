@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2022 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -255,7 +255,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			Thread.currentThread().interrupt();
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not compute  context information due to timeout after " + CONTEXT_INFORMATION_TIMEOUT + " miliseconds", e);  //$NON-NLS-1$//$NON-NLS-2$
+			LanguageServerPlugin.logWarning("Could not compute  context information due to timeout after " + CONTEXT_INFORMATION_TIMEOUT + " milliseconds", e);  //$NON-NLS-1$//$NON-NLS-2$
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		}
 		return contextInformations.toArray(new IContextInformation[0]);
@@ -284,7 +284,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not get trigger characters due to timeout after " + TRIGGERS_TIMEOUT + " miliseconds", e); //$NON-NLS-1$//$NON-NLS-2$
+			LanguageServerPlugin.logWarning("Could not get trigger characters due to timeout after " + TRIGGERS_TIMEOUT + " milliseconds", e); //$NON-NLS-1$//$NON-NLS-2$
 		}
 	}
 

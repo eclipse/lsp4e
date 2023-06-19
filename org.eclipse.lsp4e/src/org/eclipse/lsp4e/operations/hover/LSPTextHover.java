@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2022 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -83,7 +83,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
 			} catch (TimeoutException e) {
-				LanguageServerPlugin.logWarning("Could not get hover information due to timeout after " + GET_TIMEOUT_MS + " miliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
+				LanguageServerPlugin.logWarning("Could not get hover information due to timeout after " + GET_TIMEOUT_MS + " milliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 		return null;
@@ -177,7 +177,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not get hover region due to timeout after " + GET_TIMEOUT_MS + " miliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
+			LanguageServerPlugin.logWarning("Could not get hover region due to timeout after " + GET_TIMEOUT_MS + " milliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		this.lastRegion = new Region(offset, 0);
 		return this.lastRegion;
