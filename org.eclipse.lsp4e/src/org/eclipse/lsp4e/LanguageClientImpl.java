@@ -192,4 +192,24 @@ public class LanguageClientImpl implements LanguageClient {
 	public void dispose() {
 		progressManager.dispose();
 	}
+
+	@Override
+	public CompletableFuture<Void> refreshInlineValues() {
+		return CompletableFuture.runAsync(() -> {
+			UI.getDisplay().syncExec(() -> {
+				IWorkbenchPage activePage = UI.getActivePage();
+				if (activePage == null) {
+					return;
+				}
+				IEditorReference[] editors = activePage.getEditorReferences();
+				for (IEditorReference ref : editors) {
+					var editor = ref.getEditor(false);
+					var codeMiningSourceViewer = Adapters.adapt(editor, ITextViewer.class, true);
+					if (codeMiningSourceViewer != null && codeMiningSourceViewer instanceof SourceViewer) {
+						((SourceViewer) codeMiningSourceViewer).updateCodeMinings();
+					}
+				}
+			});
+		});
+	}
 }

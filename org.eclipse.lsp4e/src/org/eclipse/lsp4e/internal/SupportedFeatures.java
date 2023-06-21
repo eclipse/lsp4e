@@ -39,6 +39,7 @@ import org.eclipse.lsp4j.FoldingRangeCapabilities;
 import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InlayHintCapabilities;
+import org.eclipse.lsp4j.InlineValueWorkspaceCapabilities;
 import org.eclipse.lsp4j.InsertTextMode;
 import org.eclipse.lsp4j.MarkupKind;
 import org.eclipse.lsp4j.RangeFormattingCapabilities;
@@ -142,6 +143,8 @@ public class SupportedFeatures {
 		workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
 		CodeLensWorkspaceCapabilities codeLensWorkspaceCapabilities = new CodeLensWorkspaceCapabilities(true);
 		workspaceClientCapabilities.setCodeLens(codeLensWorkspaceCapabilities);
+		InlineValueWorkspaceCapabilities inlineValueWorkspaceCapabilities = new InlineValueWorkspaceCapabilities(true);
+		workspaceClientCapabilities.setInlineValue(inlineValueWorkspaceCapabilities);
 		return workspaceClientCapabilities;
 	}
 

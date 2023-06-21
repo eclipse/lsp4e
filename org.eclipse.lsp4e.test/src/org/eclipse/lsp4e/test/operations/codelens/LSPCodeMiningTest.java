@@ -30,9 +30,9 @@ import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.command.LSPCommandHandler;
 import org.eclipse.lsp4e.operations.codelens.CodeLensProvider;
-import org.eclipse.lsp4e.operations.codelens.LSPCodeMining;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
-import org.eclipse.lsp4e.test.utils.TestUtils;
+import org.eclipse.lsp4e.operations.codelens.CodeLensCodeMining;
+import org.eclipse.lsp4e.test.AllCleanRule;
+import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.Command;
@@ -96,7 +96,7 @@ public class LSPCodeMiningTest {
 		CodeLensProvider provider = new CodeLensProvider();
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(project, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID));
 
-		LSPCodeMining sut = new LSPCodeMining(lens, document, wrapper, provider);
+		CodeLensCodeMining sut = new CodeLensCodeMining(lens, document, wrapper, provider);
 		MouseEvent mouseEvent = createMouseEvent();
 		sut.getAction().accept(mouseEvent);
 
@@ -122,7 +122,7 @@ public class LSPCodeMiningTest {
 
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(project, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID));
 
-		LSPCodeMining sut = new LSPCodeMining(lens, document, wrapper, provider);		MouseEvent mouseEvent = createMouseEvent();
+		CodeLensCodeMining sut = new CodeLensCodeMining(lens, document, wrapper, provider);		MouseEvent mouseEvent = createMouseEvent();
 		sut.getAction().accept(mouseEvent);
 
 		// We expect that the language server will be called to execute the command

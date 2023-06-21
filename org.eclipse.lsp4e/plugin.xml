@@ -629,6 +629,14 @@
             <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
          </enabledWhen>
       </codeMiningProvider>
+      <codeMiningProvider
+            class="org.eclipse.lsp4e.operations.inlinevalue.InlineValueProvider"
+            id="org.eclipse.lsp4e.inlinevalue"
+            label="InlineValue">
+         <enabledWhen>
+            <reference definitionId="org.eclipse.lsp4e.editorHasLanguageServer" />
+         </enabledWhen>
+      </codeMiningProvider>
    </extension>
    <extension
          point="org.eclipse.ui.quickAccess">
