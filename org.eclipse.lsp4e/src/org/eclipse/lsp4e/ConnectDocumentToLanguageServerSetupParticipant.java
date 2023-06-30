@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -34,7 +36,7 @@ import org.eclipse.jface.text.IDocument;
  *
  */
 public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumentSetupParticipant, IDocumentSetupParticipantExtension {
-	private static final WeakHashMap<CompletableFuture<?>, Void> PENDING_CONNECTIONS = new WeakHashMap<>();
+	private static final Map<CompletableFuture<?>, Void> PENDING_CONNECTIONS = Collections.synchronizedMap(new WeakHashMap<>());
 
 	public ConnectDocumentToLanguageServerSetupParticipant() {
 	}
