@@ -181,4 +181,11 @@ public class LanguageClientImpl implements LanguageClient {
 			});
 		});
 	}
+
+	/**
+	 * Dispose language client.
+	 */
+	public void dispose() {
+		progressManager.dispose();
+	}
 }

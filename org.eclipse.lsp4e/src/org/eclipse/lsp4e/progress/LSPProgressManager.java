@@ -24,7 +24,9 @@ import java.util.function.Function;
 import org.eclipse.core.runtime.ICoreRunnable;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
+import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.jobs.JobChangeAdapter;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
@@ -45,11 +47,13 @@ public class LSPProgressManager {
 	private LanguageServer languageServer;
 	private LanguageServerDefinition languageServerDefinition;
 	private final Set<String> done;
+	private final Set<Job> jobs;
 
 	public LSPProgressManager() {
 		this.progressMap = new ConcurrentHashMap<>();
 		this.currentPercentageMap = new ConcurrentHashMap<>();
 		this.done = new ConcurrentSkipListSet<>();
+		this.jobs = new ConcurrentSkipListSet<>();
 	}
 
 	public void connect(final LanguageServer languageServer, LanguageServerDefinition languageServerDefinition) {
@@ -122,6 +126,13 @@ public class LSPProgressManager {
 				Thread.currentThread().interrupt();
 			}
 		});
+		jobs.add(job);
+		Job.getJobManager().addJobChangeListener(new JobChangeAdapter()  {
+			@Override
+			public void done(IJobChangeEvent event) {
+				jobs.remove(event.getJob());
+			}
+		});
 		job.schedule();
 	}
 
@@ -184,4 +195,13 @@ public class LSPProgressManager {
 		}
 	}
 
+	/**
+	 * Dispose the progress manager.
+	 */
+	public void dispose() {
+		jobs.forEach(Job::cancel);
+		currentPercentageMap.clear();
+		progressMap.clear();
+		done.clear();
+	}
 }
