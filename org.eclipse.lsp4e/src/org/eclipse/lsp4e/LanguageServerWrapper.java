@@ -433,6 +433,11 @@ public class LanguageServerWrapper {
 			return;
 		}
 		removeStopTimerTask();
+
+		if (this.languageClient != null) {
+			this.languageClient.dispose();
+		}
+
 		if (this.initializeFuture != null) {
 			this.initializeFuture.cancel(true);
 			this.initializeFuture = null;
