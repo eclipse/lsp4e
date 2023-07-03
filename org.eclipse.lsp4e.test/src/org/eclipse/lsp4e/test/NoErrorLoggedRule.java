@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
+import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,13 +31,23 @@ public class NoErrorLoggedRule extends TestWatcher {
 
 	public NoErrorLoggedRule(ILog log) {
 		this.log = log;
-		listener = (status, message) -> {
-			if (status.getSeverity() == IStatus.ERROR) {
+		final var logger = System.getLogger(log.getBundle().getSymbolicName());
+		listener = (status, unused) -> {
+			switch (status.getSeverity()) {
+			case IStatus.ERROR:
 				loggedErrors.add(status);
+				logger.log(Level.ERROR, status.toString(), status.getException());
+				break;
+			case IStatus.WARNING:
+				logger.log(Level.WARNING, status.toString(), status.getException());
+				break;
+			case IStatus.INFO:
+				logger.log(Level.INFO, status.toString(), status.getException());
+				break;
 			}
 		};
 	}
-	
+
 	@Override
 	protected void starting(Description description) {
 		super.starting(description);
