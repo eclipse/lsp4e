@@ -48,7 +48,6 @@ import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
@@ -83,20 +82,20 @@ public class TestUtils {
 		part.setFocus();
 		return part;
 	}
-	
+
 	public static IEditorPart openExternalFileInEditor(File file) throws PartInitException {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
-		IWorkbenchPage page = workbenchWindow.getActivePage();	
+		IWorkbenchPage page = workbenchWindow.getActivePage();
 		IEditorPart part = IDE.openEditor(page, file.toURI(), "org.eclipse.ui.genericeditor.GenericEditor", false);
 		part.setFocus();
 		return part;
 	}
 
-	public static IEditorPart getEditor(IFile file) throws PartInitException {
+	public static IEditorPart getEditor(IFile file) throws PartInitException{
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
 		IEditorInput input = new FileEditorInput(file);
-		
+
 		return Arrays.asList(page.getEditorReferences()).stream()
 			.filter(r -> {
 				try {
@@ -271,21 +270,19 @@ public class TestUtils {
 	}
 
 	public static void waitForAndAssertCondition(int timeout_ms, Condition condition) {
-		assertTrue("Condition not met within expected time.",
-				waitForCondition(timeout_ms, condition));
+		waitForAndAssertCondition("Condition not met within expected time.", timeout_ms, condition);
 	}
 
 	public static void waitForAndAssertCondition(int timeout_ms, Display display, Condition condition) {
-		assertTrue("Condition not met within expected time.",
-				waitForCondition(timeout_ms, display, condition));
+		waitForAndAssertCondition("Condition not met within expected time.", timeout_ms, display, condition);
 	}
 
 	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Condition condition) {
-		assertTrue(errorMessage, waitForCondition(timeout_ms, condition));
+		waitForAndAssertCondition(errorMessage, timeout_ms, UI.getDisplay(), condition);
 	}
 
 	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Display display, Condition condition) {
-		var ex = new Exception[1];
+		var ex = new Throwable[1];
 		var isConditionMet = new DisplayHelper() {
 			@Override
 			protected boolean condition() {
@@ -293,7 +290,7 @@ public class TestUtils {
 					var isMet = condition.isMet();
 					ex[0] = null;
 					return isMet;
-				} catch (Exception e) {
+				} catch (AssertionError | Exception e) {
 					ex[0] = e;
 					return false;
 				}
@@ -307,11 +304,11 @@ public class TestUtils {
 	}
 
 	public static boolean waitForCondition(int timeout_ms, Condition condition) {
-		return waitForCondition(timeout_ms, PlatformUI.getWorkbench().getDisplay(), condition);
+		return waitForCondition(timeout_ms, UI.getDisplay(), condition);
 	}
 
 	public static boolean waitForCondition(int timeout_ms, Display display, Condition condition) {
-		var ex = new Exception[1];
+		var ex = new Throwable[1];
 		var isConditionMet = new DisplayHelper() {
 			@Override
 			protected boolean condition() {
@@ -319,7 +316,7 @@ public class TestUtils {
 					var isMet = condition.isMet();
 					ex[0] = null;
 					return isMet;
-				} catch (Exception e) {
+				} catch (AssertionError | Exception e) {
 					ex[0] = e;
 					return false;
 				}
@@ -338,7 +335,7 @@ public class TestUtils {
 			protected boolean condition() {
 				return !server.isRunning();
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 1000));
+		}.waitForCondition(UI.getDisplay(), 1000));
 	}
 
 	public static class JobSynchronizer extends NullProgressMonitor {
@@ -347,8 +344,8 @@ public class TestUtils {
 		@Override
 		public void done() {
 			latch.countDown();
-
 		}
+
 		@Override
 		public void setCanceled(boolean cancelled) {
 			super.setCanceled(cancelled);
