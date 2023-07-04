@@ -11,8 +11,8 @@ The project license is available at [LICENSE](LICENSE).
 This Eclipse Foundation open project is governed by the Eclipse Foundation
 Development Process and operates under the terms of the Eclipse IP Policy.
 
-Before your contribution can be accepted by the project team, 
-contributors must have an Eclipse Foundation account and 
+Before your contribution can be accepted by the project team,
+contributors must have an Eclipse Foundation account and
 must electronically sign the Eclipse Contributor Agreement (ECA).
 
 * [http://www.eclipse.org/legal/ECA.php](http://www.eclipse.org/legal/ECA.php)
@@ -20,41 +20,70 @@ must electronically sign the Eclipse Contributor Agreement (ECA).
 For more information, please see the Eclipse Committer Handbook:
 [https://www.eclipse.org/projects/handbook/#resources-commit](https://www.eclipse.org/projects/handbook/#resources-commit).
 
+
 ## 💬 Get in touch with the community
 
 Eclipse LSP4E use mainly 2 channels for strategical and technical discussions
 
-* 🐞 View and report issues through uses GitHub Issues at https://github.com/eclipse/lsp4e/issues. _📜 Migration to GitHub tracker took place in November 2021, for older tickets, see https://bugs.eclipse.org/bugs/buglist.cgi?product=lsp4e 📜_
+* 🐞 View and report issues through uses GitHub Issues at https://github.com/eclipse/lsp4e/issues.
 * 📧 Join the lsp4e-dev@eclipse.org mailing-list to get in touch with other contributors about project organization and planning, and browse archive at 📜 [https://accounts.eclipse.org/mailing-list/lsp4e-dev](https://accounts.eclipse.org/mailing-list/lsp4e-dev)
+
 
 ## 🆕 Trying latest builds
 
 Latest snapshot builds, for testing, can usually be found at `https://download.eclipse.org/lsp4e/snapshots/` .
 
+
 ## 🧑‍💻 Developer resources
 
-### Prerequisites
+### ⌨️ Setting up the Development Environment
 
-Eclipse IDE with Plugin Development Environment installed for development; and Maven 3.8.x or Eclipse m2e if you want to run Maven build
+#### Install Software
 
-### ⌨️ Setting up the Development Environment manually
+1. Install the **Eclipse IDE for Eclipse Committers** from https://www.eclipse.org/downloads/packages/ or
+  any another Eclipse distrubition with:
+    1. [Plug-in Development Environment (PDE)](https://www.eclipse.org/pde/) installed
+    1. Eclipse [m2e](https://www.eclipse.org/m2e/) installed
+1. To run Maven builds from the command line, install [JDK17](https://adoptium.net/temurin/releases/?version=17) and [Maven 3.9.x](https://maven.apache.org/download.cgi)
 
-* Clone this repository <a href="https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/redirect.html"><img src="https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/cloneToEclipseBadge.png" alt="Clone to Eclipse IDE"/></a> for lsp4e.
-* _File > Open Projects from Filesystem..._ , select the path to LSP4E Git repo and the relevant children projects you want to import
-* Depending on the task you're planning to work on, multiple workflows are available to configure the [target-platform](https://help.eclipse.org/latest/topic/org.eclipse.pde.doc.user/concepts/target.htm?cp=4_1_5)
+#### Import Project
+
+1. Clone this repository <a href="https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/redirect.html"><img src="https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/cloneToEclipseBadge.png" alt="Clone to Eclipse IDE"/></a> for LSP4E.
+1. _File > Open Projects from Filesystem..._ , select the path to the LSP4E Git repo and the relevant children projects you want to import
+1. Depending on the task you're planning to work on, multiple workflows are available to configure the [target-platform](https://help.eclipse.org/latest/topic/org.eclipse.pde.doc.user/concepts/target.htm?cp=4_1_5)
     * In many cases, this simplest workflow will be sufficient: Install latest LSP4E snapshot in your target-platform (can be your current IDE), or
-    * If you don't want to mix versions of LSP4E, open  __target-platforms/target-platform-latest/target-platform-latest.target__  and  _Set as Target-Platform_  from the editor, or
-* Open the project modules you want to work on (right-click > Open project) and their dependencies
-* Happy coding!
-
+    * If you don't want to mix versions of LSP4E, open [target-platforms/target-platform-latest/target-platform-latest.target](target-platforms/target-platform-latest/target-platform-latest.target) from within Eclipse and click **Set as Active Target-Platform** in the top right corner.
+1. Open the project modules you want to work on (right-click > Open project) and their dependencies
+1. Happy coding! 🤗
 
 ### 🏗️ Build
 
-Just `mvn clean verify`.
+1. From the command line: run `mvn clean verify`
+1. From within Eclipse : right-click on the LSP4E root folder > Run As > Maven build
+
+### Running single unit tests via the command line
+
+To run single unit tests via the command line, one can use the following command from the project's root:
+```
+mvn -Dtest=<TestClassName>#<MethodName> -DfailIfNoTests=false verify
+```
+
+For example:
+```
+mvn -Dtest=HighlightTest#testCheckIfOtherAnnotationsRemains -DfailIfNoTests=false verify
+```
+
+To run a unit test in JVM debug mode via the command line one can use:
+```
+mvn -Dtest=<TestClassName>#<MethodName> -DfailIfNoTests=false -Dtycho.testArgLine="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=localhost:8000" verify
+```
+Once Maven is about to execute the test it will wait for you to attach to the test JVM using a remote debugger, e.g. using Eclipse's `Remote Java Application` debug configuration.
+
 
 ### ⬆️ Version bump
 
-LSP4E tries to use OSGi Semantic Version (to properly expose its API contracts and breakage) and Reproducible Version Qualifiers (to minimize the avoid producing multiple equivalent artifacts for identical source). This requires the developer to manually bump version from time to time. Some rules are that:
+LSP4E tries to use OSGi Semantic Version (to properly expose its API contracts and breakage) and Reproducible Version Qualifiers (to minimize the avoid producing multiple equivalent artifacts for identical source).
+This requires the developer to manually bump version from time to time. Some rules are that:
 
 * Versions are bumped on a __per module grain__ (bump version of individual bundles/features one by one when necessary), __DON'T bump version of parent pom, nor of other modules you don't change__
 * __Versions are bumped maximum once per release__ (don't bump versions that were already bumped since last release)
@@ -72,3 +101,17 @@ The delta for version bumps are:
 ### ➕ Submit changes
 
 LSP4E only accepts contributions via GitHub Pull Requests against [https://github.com/eclipse/lsp4e](https://github.com/eclipse/lsp4e) repository.
+
+Before sending us a pull request, please ensure that:
+
+1. You are working against the latest source on the **master** branch.
+1. You check existing open and recently merged pull requests to make sure someone else hasn't already addressed the issue.
+
+To send us a pull request, please:
+
+1. Fork the repository.
+1. Modify the source while focusing on the specific change you are contributing.
+1. Commit to your fork using clear, descriptive commit messages.
+1. Send us a pull request, answering any default questions in the pull request interface.
+
+GitHub provides additional documentation on [forking a repository](https://help.github.com/articles/fork-a-repo/) and [creating a pull request](https://help.github.com/articles/creating-a-pull-request/)
