@@ -18,6 +18,7 @@ package org.eclipse.lsp4e.tests.mock;
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -103,7 +104,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	private Function<?, ? extends CompletableFuture<?>> _futureFactory;
 	private List<LanguageClient> remoteProxies;
-	private Location mockReferences;
+	private Location[] mockReferences = new Location[0];
 	private List<Diagnostic> diagnostics;
 	private List<Either<Command, CodeAction>> mockCodeActions;
 	private List<ColorInformation> mockDocumentColors;
@@ -157,7 +158,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
-		return futureFactory(Collections.singletonList(this.mockReferences));
+		return futureFactory(Arrays.asList(this.mockReferences));
 	}
 
 	@Override
@@ -337,8 +338,8 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockDefinitionLocations = definitionLocations;
 	}
 
-	public void setMockReferences(Location location) {
-		this.mockReferences = location;
+	public void setMockReferences(Location... locations) {
+		this.mockReferences = locations;
 	}
 
 	public void setMockFormattingTextEdits(List<? extends TextEdit> formattingTextEdits) {
