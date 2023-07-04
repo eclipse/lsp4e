@@ -254,4 +254,10 @@
          </adapter>
       </factory>
   </extension>
+  <extension
+        point="org.eclipse.ui.monitoring.logger">
+     <logger
+           class="org.eclipse.lsp4e.test.references.FindReferencesTest$UiFreezeEventLogger">
+     </logger>
+  </extension>
 </fragment>
