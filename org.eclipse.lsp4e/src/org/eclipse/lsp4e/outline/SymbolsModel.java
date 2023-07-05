@@ -38,7 +38,6 @@ public class SymbolsModel {
 
 	private volatile Map<SymbolInformation, List<SymbolInformation>> childrenMap = Collections.emptyMap();
 	private volatile List<DocumentSymbol> rootSymbols = Collections.emptyList();
-	private final Map<DocumentSymbol, DocumentSymbol> parent = new HashMap<>();
 
 	private URI uri;
 
@@ -93,7 +92,6 @@ public class SymbolsModel {
 
 	public synchronized boolean update(List<Either<SymbolInformation, DocumentSymbol>> response) {
 		// TODO update model only on real change
-		parent.clear();
 		if (response == null || response.isEmpty()) {
 			childrenMap = Collections.emptyMap();
 			rootSymbols = Collections.emptyList();
@@ -216,14 +214,6 @@ public class SymbolsModel {
 				if (entry.getValue().contains(element)) {
 					return entry.getKey();
 				}
-			}
-		} else if (element instanceof DocumentSymbol) {
-			return parent.get(element);
-		} else if (element instanceof DocumentSymbolWithURI) {
-			DocumentSymbol parentSymbol = parent.get(element);
-			final URI theUri = this.uri;
-			if (parentSymbol != null && theUri != null) {
-				return new DocumentSymbolWithURI(parentSymbol, theUri);
 			}
 		}
 		return null;
