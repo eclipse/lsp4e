@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.resources.IFile;
@@ -50,6 +51,7 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
@@ -280,8 +282,8 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		if (this.symbols != null && !this.symbols.isDone()) {
 			return new Object[] { COMPUTING };
 		}
-		if (this.lastError != null) {
-			return new Object[] { this.lastError };
+		if (this.lastError != null && symbolsModel.getElements().length == 0) {
+			return new Object[] { "An error occured, see log for details" }; //$NON-NLS-1$
 		}
 		return symbolsModel.getElements();
 	}
@@ -304,7 +306,9 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	protected void refreshTreeContentFromLS() {
 		final URI documentURI = outlineViewerInput.documentURI;
 		if (documentURI == null) {
-			lastError = new IllegalStateException("documentURI == null"); //$NON-NLS-1$
+			IllegalStateException exception = new IllegalStateException("documentURI == null");  //$NON-NLS-1$
+			lastError = exception;
+			LanguageServerPlugin.logError(exception);
 			viewer.getControl().getDisplay().asyncExec(viewer::refresh);
 			return;
 		}
@@ -350,7 +354,10 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		});
 
 		symbols.exceptionally(ex -> {
-			lastError = ex;
+			if (!(ex instanceof CancellationException || CancellationUtil.isRequestCancelledException(ex))) {
+				lastError = ex;
+				LanguageServerPlugin.logError(ex);
+			}
 			viewer.getControl().getDisplay().asyncExec(viewer::refresh);
 			return Collections.emptyList();
 		});
