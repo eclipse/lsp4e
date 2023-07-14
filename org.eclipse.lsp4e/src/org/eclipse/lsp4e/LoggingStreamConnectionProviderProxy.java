@@ -28,6 +28,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
+import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.console.ConsolePlugin;
@@ -270,10 +271,10 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		IConsoleManager conMan = plugin.getConsoleManager();
 		IConsole[] existing = conMan.getConsoles();
 		for (int i = 0; i < existing.length; i++)
-			if (LanguageServerPlugin.PLUGIN_ID.equals(existing[i].getName()))
+			if (Messages.LSConsoleName.equals(existing[i].getName()))
 				return (MessageConsole) existing[i];
 		// no console found, so create a new one
-		final var myConsole = new MessageConsole(LanguageServerPlugin.PLUGIN_ID, null);
+		final var myConsole = new MessageConsole(Messages.LSConsoleName, null);
 		conMan.addConsoles(new IConsole[] { myConsole });
 		return myConsole;
 	}
