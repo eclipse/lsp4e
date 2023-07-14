@@ -90,6 +90,10 @@ public final class Messages extends NLS {
 	public static String CreateFile_confirm_message;
 	public static String LSPProgressManager_BackgroundJobName;
 	public static String LSConsoleName;
+	public static String CH_no_call_hierarchy;
+	public static String CH_finding_callers;
+	public static String TH_no_type_hierarchy;
+	public static String TH_finding_types;
 
 	static {
 		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$

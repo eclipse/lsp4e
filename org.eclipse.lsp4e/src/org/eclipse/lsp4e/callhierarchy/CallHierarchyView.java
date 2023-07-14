@@ -19,6 +19,7 @@ import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.ui.views.HierarchyViewInput;
 import org.eclipse.lsp4j.CallHierarchyItem;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.ui.part.ViewPart;
@@ -29,7 +30,7 @@ import org.eclipse.ui.part.ViewPart;
 public class CallHierarchyView extends ViewPart {
 	public static final String ID = "org.eclipse.lsp4e.callHierarchy.callHierarchyView"; //$NON-NLS-1$
 
-	private TreeViewer treeViewer;
+	protected TreeViewer treeViewer;
 
 	private final CallHierarchyContentProvider contentProvider = new CallHierarchyContentProvider();
 
@@ -74,7 +75,7 @@ public class CallHierarchyView extends ViewPart {
 	 *            the offset into the document of the current selection.
 	 */
 	public void initialize(final IDocument document, final int offset) {
-		CallHierarchyViewInput viewInput = new CallHierarchyViewInput(document, offset);
+		HierarchyViewInput viewInput = new HierarchyViewInput(document, offset);
 		treeViewer.setInput(viewInput);
 	}
 }

@@ -27,6 +27,8 @@ import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.internal.Pair;
+import org.eclipse.lsp4e.ui.Messages;
+import org.eclipse.lsp4e.ui.views.HierarchyViewInput;
 import org.eclipse.lsp4j.CallHierarchyIncomingCall;
 import org.eclipse.lsp4j.CallHierarchyIncomingCallsParams;
 import org.eclipse.lsp4j.CallHierarchyItem;
@@ -39,13 +41,10 @@ import org.eclipse.ui.PlatformUI;
  * Content provider for the call hierarchy tree view.
  */
 public class CallHierarchyContentProvider implements ITreeContentProvider {
-	private static final String NO_CALL_HIERARCHY = "No Call Hierarchy for the selected element"; //$NON-NLS-1$
-	private static final String FINDING_CALLERS = "Finding callers ..."; //$NON-NLS-1$
-
 	private TreeViewer treeViewer;
 	private LanguageServerWrapper languageServerWrapper;
 	private List<CallHierarchyViewTreeNode> rootItems;
-	private String rootMessage = FINDING_CALLERS;
+	private String rootMessage = Messages.CH_finding_callers;
 
 	@Override
 	public Object[] getElements(final Object inputElement) {
@@ -82,8 +81,8 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 		ITreeContentProvider.super.inputChanged(viewer, oldInput, newInput);
 
 		treeViewer = (TreeViewer) viewer;
-		if (newInput instanceof CallHierarchyViewInput viewInput) {
-			rootMessage = FINDING_CALLERS;
+		if (newInput instanceof HierarchyViewInput viewInput) {
+			rootMessage = Messages.CH_finding_callers;
 			rootItems = null;
 
 			IDocument document = viewInput.getDocument();
@@ -120,7 +119,7 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 							rootItems.add(new CallHierarchyViewTreeNode(item));
 						}
 					} else {
-						rootMessage = NO_CALL_HIERARCHY;
+						rootMessage = Messages.CH_no_call_hierarchy;
 					}
 					PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
 						if (treeViewer != null) {
@@ -150,7 +149,7 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 		if (callee.getChildren() == null) {
 			treeViewer.getControl().setEnabled(false);
 			updateCallers(callee);
-			return new Object[] { FINDING_CALLERS };
+			return new Object[] { Messages.CH_finding_callers };
 		}
 		return callee.getChildren();
 	}
