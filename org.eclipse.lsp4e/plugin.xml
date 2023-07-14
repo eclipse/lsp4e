@@ -652,11 +652,17 @@
    <extension
          point="org.eclipse.ui.views">
       <view
+            category="org.eclipse.lsp4e.views"
             class="org.eclipse.lsp4e.callhierarchy.CallHierarchyView"
+            icon="icons/full/dlcl16/call_hierarchy.gif"
             id="org.eclipse.lsp4e.callHierarchy.callHierarchyView"
-            name="Call Hierarchy"
+            name="%callHierarchy.name"
             restorable="true">
       </view>
+      <category
+            id="org.eclipse.lsp4e.views"
+            name="%viewsCategory.name">
+      </category>
    </extension>
 
    <!-- reusable expression definitions, see https://wiki.eclipse.org/Command_Core_Expressions -->
