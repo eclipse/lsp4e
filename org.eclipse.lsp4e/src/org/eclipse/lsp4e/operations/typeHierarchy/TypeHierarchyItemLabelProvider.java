@@ -8,13 +8,15 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
+import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
+import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.TypeHierarchyItem;
 import org.eclipse.swt.graphics.Image;
 
-public class TypeHierarchyItemLabelProvider extends LabelProvider {
-	
+public class TypeHierarchyItemLabelProvider extends LabelProvider implements IStyledLabelProvider {
+
 	@Override
 	public String getText(Object element) {
 		if (element instanceof TypeHierarchyItem item) {
@@ -29,6 +31,16 @@ public class TypeHierarchyItemLabelProvider extends LabelProvider {
 			return LSPImages.imageFromSymbolKind(item.getKind());
 		}
 		return super.getImage(element);
+	}
+
+	@Override
+	public StyledString getStyledText(Object element) {
+		if (element instanceof TypeHierarchyItem item) {
+			return new StyledString(item.getName());
+		} else if (element instanceof String s) {
+			return new StyledString(s);
+		}
+		return new StyledString();
 	}
 
 }

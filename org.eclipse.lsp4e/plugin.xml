@@ -110,8 +110,15 @@
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
+            description="%command.open.quick.type.hierarchy.description"
             id="org.eclipse.lsp4e.typeHierarchy"
-            name="%typeHierarchy.command.name">
+            name="%command.open.quick.type.hierarchy.name">
+      </command>
+      <command
+            categoryId="org.eclipse.lsp4e.category"
+            description="%command.open.type.hierarchy.decription"
+            id="org.eclipse.lsp4e.openTypeHierarchy"
+            name="%command.open.type.hierarchy.name">
       </command>
    </extension>
    <extension
@@ -195,6 +202,13 @@
                   definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer">
             </reference>
          </activeWhen>
+      </handler>
+      <handler
+            class="org.eclipse.lsp4e.operations.typeHierarchy.TypeHierarchyViewHandler"
+            commandId="org.eclipse.lsp4e.openTypeHierarchy">
+         <activeWhen>
+            <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
+         </activeWhen>            
       </handler>      
    </extension>
    <extension
@@ -329,6 +343,24 @@
             </visibleWhen>
          </command>
       </menuContribution>
+      <menuContribution
+            locationURI="popup:#TextEditorContext?before=org.eclipse.ui.genericeditor.findReferences">
+         <command
+               commandId="org.eclipse.lsp4e.typeHierarchy">
+            <visibleWhen
+                  checkEnabled="true">
+            </visibleWhen>
+         </command>
+      </menuContribution>
+      <menuContribution
+            locationURI="popup:#TextEditorContext?before=org.eclipse.ui.genericeditor.findReferences">
+         <command
+               commandId="org.eclipse.lsp4e.openTypeHierarchy">
+            <visibleWhen
+                  checkEnabled="true">
+            </visibleWhen>
+         </command>
+      </menuContribution>
    </extension>
    <extension
          point="org.eclipse.ui.genericeditor.contentAssistProcessors">
@@ -394,6 +426,12 @@
       <key
             commandId="org.eclipse.lsp4e.typeHierarchy"
             contextId="org.eclipse.ui.textEditorScope"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="M1+T">
+      </key>
+      <key
+            commandId="org.eclipse.lsp4e.openTypeHierarchy"
+            contextId="org.eclipse.ui.genericeditor.genericEditorContext"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="F4">
       </key>
@@ -663,6 +701,14 @@
             id="org.eclipse.lsp4e.views"
             name="%viewsCategory.name">
       </category>
+      <view
+            category="org.eclipse.lsp4e.views"
+            class="org.eclipse.lsp4e.operations.typeHierarchy.TypeHierarchyView"
+            icon="icons/full/dlcl16/type_hierarchy.gif"
+            id="org.eclipse.lsp4e.operations.typeHierarchy.TypeHierarchyView"
+            name="%typeHierarchy.name"
+            restorable="true">
+      </view>
    </extension>
 
    <!-- reusable expression definitions, see https://wiki.eclipse.org/Command_Core_Expressions -->

@@ -58,7 +58,7 @@ public class CallHierarchyCommandHandler extends LSPDocumentAbstractHandler {
 		setEnabled(ServerCapabilities::getCallHierarchyProvider, this::hasSelection);
 	}
 
-	private static IWorkbenchPage getActivePage() {
+	protected static IWorkbenchPage getActivePage() {
 		IWorkbenchWindow activeWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		if (activeWindow != null) {
 			return activeWindow.getActivePage();

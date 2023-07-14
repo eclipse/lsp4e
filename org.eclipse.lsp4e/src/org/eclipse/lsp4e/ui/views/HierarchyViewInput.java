@@ -8,36 +8,37 @@
  *
  * Contributors:
  *  Andrew Lamb (Avaloq Group AG) - Initial implementation
+ *  Gesa Hentschke - made the class generic
  *******************************************************************************/
 
-package org.eclipse.lsp4e.callhierarchy;
+package org.eclipse.lsp4e.ui.views;
 
 import org.eclipse.jface.text.IDocument;
 
 /**
- * Simple type representing the input to the call hierarchy view.
+ * Simple type representing the input to a hierarchy view.
  */
-public class CallHierarchyViewInput {
+public class HierarchyViewInput {
 	private final IDocument document;
 	private final int offset;
 
 	/**
-	 * Creates a new instance of {@link CallHierarchyViewInput}.
+	 * Creates a new instance of {@link HierarchyViewInput}.
 	 *
 	 * @param document
-	 *            the document containing the selection to start a call hierarchy
+	 *            the document containing the selection to start a hierarchy
 	 *            from.
 	 * @param offset
 	 *            the offset into the document to select as the root of the
 	 *            hierarchy.
 	 */
-	public CallHierarchyViewInput(final IDocument document, final int offset) {
+	public HierarchyViewInput(final IDocument document, final int offset) {
 		this.document = document;
 		this.offset = offset;
 	}
 
 	/**
-	 * Get the document containing the selection to start a call hierarchy from.
+	 * Get the document containing the selection to start a hierarchy from.
 	 *
 	 * @return the document containing the selection to start a call hierarchy from.
 	 */
