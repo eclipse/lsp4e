@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -19,6 +20,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -42,18 +44,15 @@ import org.eclipse.ui.PlatformUI;
 public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 	private TreeViewer treeViewer;
 	private LanguageServerWrapper languageServerWrapper;
-	private List<TypeHierarchyItem> hierarchyItems;
+	private List<TypeHierarchyItem> hierarchyItems = new ArrayList<>();
 	public boolean showSuperTypes = true;
 
 	@Override
 	public Object[] getElements(Object inputElement) {
-		if (hierarchyItems != null) {
-			if (hierarchyItems.isEmpty()) {
-				return new Object[] { Messages.TH_no_type_hierarchy };
-			}
-			return hierarchyItems.toArray();
+		if (hierarchyItems.isEmpty()) {
+			return new Object[] { Messages.TH_no_type_hierarchy };
 		}
-		return new Object[] { Messages.TH_finding_types };
+		return hierarchyItems.toArray();
 	}
 
 	@Override
@@ -90,14 +89,12 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 	public void inputChanged(final Viewer viewer, final Object oldInput, final Object newInput) {
 		ITreeContentProvider.super.inputChanged(viewer, oldInput, newInput);
 
-		treeViewer = (TreeViewer) viewer;
 		if (newInput instanceof HierarchyViewInput viewInput) {
-			hierarchyItems = null;
 
 			IDocument document = viewInput.getDocument();
 			if (document != null) {
 				try {
-					initialise(document, viewInput.getOffset());
+					initialise(document, viewInput.getOffset(), (TreeViewer) viewer);
 				} catch (BadLocationException e) {
 					handleRootError();
 				}
@@ -110,7 +107,7 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 
 	}
 
-	private void initialise(final @NonNull IDocument document, final int offset) throws BadLocationException {
+	private void initialise(final @NonNull IDocument document, final int offset, TreeViewer viewer) throws BadLocationException {
 		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document)
 				.withCapability(ServerCapabilities::getTypeHierarchyProvider);
 		if (!executor.anyMatching()) {
@@ -121,14 +118,20 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 		executor.computeFirst((w, ls) -> ls.getTextDocumentService().prepareTypeHierarchy(prepareParams)
 				.thenApply(result -> new Pair<>(w, result))).thenAccept(o -> o.ifPresentOrElse(p -> {
 					languageServerWrapper = p.getFirst();
-					hierarchyItems = p.getSecond();
-					PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
-						if (treeViewer != null) {
-							treeViewer.refresh();
-							treeViewer.getControl().setEnabled(true);
-							treeViewer.expandToLevel(2);
-						}
-					});
+					if (!p.getSecond().isEmpty()) {
+						hierarchyItems = p.getSecond();
+						treeViewer = viewer;
+						PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
+							if (treeViewer != null) {
+								treeViewer.refresh();
+								treeViewer.expandToLevel(2);
+								if (hierarchyItems != null && !hierarchyItems.isEmpty()) {
+									treeViewer.getControl().setEnabled(true);
+									treeViewer.setSelection(new StructuredSelection(hierarchyItems.get(0)));
+								}
+							}
+						});
+					}
 				}, this::handleRootError)).handle((result, error) -> {
 					if (error != null) {
 						handleRootError();
