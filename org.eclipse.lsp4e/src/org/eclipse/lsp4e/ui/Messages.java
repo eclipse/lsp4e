@@ -93,7 +93,8 @@ public final class Messages extends NLS {
 	public static String CH_no_call_hierarchy;
 	public static String CH_finding_callers;
 	public static String TH_no_type_hierarchy;
-	public static String TH_finding_types;
+	public static String TH_diplay_hint;
+	public static String TH_finding_member;
 
 	static {
 		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$

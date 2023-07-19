@@ -15,7 +15,7 @@ import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.IFileBufferListener;
 import org.eclipse.core.runtime.IPath;
 
-class FileBufferListenerAdapter implements IFileBufferListener {
+public class FileBufferListenerAdapter implements IFileBufferListener {
 
 	@Override
 	public void bufferCreated(IFileBuffer buffer) {
