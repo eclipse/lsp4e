@@ -27,7 +27,7 @@
 				<groupId>com.googlecode.maven-download-plugin</groupId>
 				<artifactId>download-maven-plugin</artifactId>
 				<!-- 1.7.0 is broken, see https://github.com/maven-download-plugin/maven-download-plugin/releases/tag/1.7.0 -->
-				<version>1.6.8</version>
+				<version>1.7.1</version>
 				<configuration>
 					<!-- https://maven-download-plugin.github.io/maven-download-plugin/docsite/1.6.8/wget-mojo.html -->
 					<alwaysVerifyChecksum>true</alwaysVerifyChecksum>
