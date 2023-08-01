@@ -28,7 +28,6 @@ import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
@@ -87,7 +86,7 @@ public class TypeHierarchyView extends ViewPart {
 	class SymbolsContainer {
 		public final IFile file;
 		public final SymbolsModel symbolsModel;
-		public boolean isDirty = true;
+		public volatile boolean isDirty = true;
 		private boolean temporaryLoadedDocument = false;
 
 		SymbolsContainer(IFile file) {
@@ -132,10 +131,10 @@ public class TypeHierarchyView extends ViewPart {
 	protected TreeViewer treeViewer;
 
 	private volatile CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> symbols;
-	private String uri;
-	private IDocument document;
-	private String typeName;
 	private HashMap<URI, SymbolsContainer> cachedSymbols = new HashMap<>();
+	private IDocument document;
+	private volatile String typeName;
+	private String uri;
 
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
@@ -253,10 +252,10 @@ public class TypeHierarchyView extends ViewPart {
 		}
 	}
 
-	private synchronized void refreshMemberViewer(IFile file, boolean documentChanged) {
+	private synchronized void refreshMemberViewer(IFile file, boolean documentModified) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
 			if (file != null) {
-				refreshSymbols(getSymbolsContainer(file), documentChanged);
+				refreshSymbols(getSymbolsContainer(file), documentModified);
 				var symbol = getDocumentSymbol(typeName, file);
 				memberViewer.setInput(symbol);
 				memberLabel.setText(typeName);
@@ -341,8 +340,8 @@ public class TypeHierarchyView extends ViewPart {
 		return symbolsContainer;
 	}
 
-	private void refreshSymbols(SymbolsContainer symbolsContainer, boolean documentChanged) {
-		if (symbolsContainer == null || (!symbolsContainer.isDirty && !documentChanged)) {
+	private void refreshSymbols(SymbolsContainer symbolsContainer, boolean documentModified) {
+		if (symbolsContainer == null || (!symbolsContainer.isDirty && !documentModified)) {
 			return;
 		}
 		final IDocument document = symbolsContainer.getDocument();
@@ -361,7 +360,7 @@ public class TypeHierarchyView extends ViewPart {
 							.map(s -> s.execute(ls -> ls.getTextDocumentService().documentSymbol(params)))
 							.orElse(CompletableFuture.completedFuture(null));
 				} catch (TimeoutException | ExecutionException | InterruptedException e) {
-					Platform.getLog(getClass()).error(e.getMessage(), e);
+					LanguageServerPlugin.logError(e);
 					symbols = CompletableFuture.completedFuture(null);
 					if (e instanceof InterruptedException) {
 						Thread.currentThread().interrupt();
@@ -383,7 +382,7 @@ public class TypeHierarchyView extends ViewPart {
 				symbolsContainer.symbolsModel.update(null);
 			}
 		} catch (Exception e) {
-			Platform.getLog(getClass()).error(e.getMessage(), e);
+			LanguageServerPlugin.logError(e);
 		}
 	}
 
