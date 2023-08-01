@@ -140,7 +140,7 @@ public class TypeHierarchyView extends ViewPart {
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
 		public void dirtyStateChanged(IFileBuffer buffer, boolean isDirty) {
-			if (isDirty) {
+			if (isDirty && buffer != null) {
 				var uri = LSPEclipseUtils.toUri(buffer);
 				if (uri != null) {
 					var cachedSymbol = cachedSymbols.get(uri);
