@@ -11,33 +11,48 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4j.DocumentSymbol;
 
 public class TypeMemberContentProvider implements IStructuredContentProvider {
 	private static final Object[] NO_CHILDREN = new Object[0];
-	DocumentSymbol symbol;
+	DocumentSymbolWithURI symbolContainer;
 
 	@Override
 	final public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-		if (newInput instanceof DocumentSymbol) {
-			symbol = (DocumentSymbol) newInput;
+		if (newInput instanceof DocumentSymbolWithURI) {
+			symbolContainer = (DocumentSymbolWithURI) newInput;
 		}
 	}
 
 	@Override
 	public void dispose() {
-		symbol = null;
+		symbolContainer = null;
 	}
 
 	@Override
 	public Object[] getElements(Object inputElement) {
-		return Optional.ofNullable(symbol)
+		return Optional.ofNullable(symbolContainer)
+				.map(container -> container.symbol)
 				.map(symbol -> symbol.getChildren())
-				.map(children -> children.toArray()).orElse(NO_CHILDREN);
+				.map(this::toContainer).orElse(NO_CHILDREN);
+	}
+
+	private Object[] toContainer(List<DocumentSymbol> symbols) {
+		if (symbols != null) {
+			List<DocumentSymbolWithURI> container = new ArrayList<>();
+			for (var symbol : symbols) {
+				container.add(new DocumentSymbolWithURI(symbol, symbolContainer.uri));
+			}
+			return container.toArray();
+		}
+		return NO_CHILDREN;
 	}
 
 }

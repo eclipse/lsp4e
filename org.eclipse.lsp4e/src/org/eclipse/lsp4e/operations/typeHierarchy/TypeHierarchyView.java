@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
@@ -27,6 +28,7 @@ import org.eclipse.core.filebuffers.IFileBufferListener;
 import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
@@ -84,15 +86,14 @@ import org.eclipse.ui.part.ViewPart;
 public class TypeHierarchyView extends ViewPart {
 
 	class SymbolsContainer {
-		public final IFile file;
-		public final SymbolsModel symbolsModel;
-		public volatile boolean isDirty = true;
+		private final SymbolsModel symbolsModel;
+		private volatile boolean isDirty = true;
 		private boolean temporaryLoadedDocument = false;
+		private IFile file;
 
 		SymbolsContainer(IFile file) {
-			this.file = file;
 			this.symbolsModel = new SymbolsModel();
-			this.symbolsModel.setUri(file.getLocationURI());
+			setFile(file);
 		}
 
 		public IDocument getDocument() {
@@ -102,6 +103,11 @@ public class TypeHierarchyView extends ViewPart {
 				temporaryLoadedDocument = document != null;
 			}
 			return document;
+		}
+
+		public void setFile(IFile file) {
+			this.file = file;
+			this.symbolsModel.setUri(file.getLocationURI());
 		}
 
 		public void dispose() {
@@ -134,20 +140,39 @@ public class TypeHierarchyView extends ViewPart {
 	private HashMap<URI, SymbolsContainer> cachedSymbols = new HashMap<>();
 	private IDocument document;
 	private volatile String typeName;
-	private String uri;
 
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
 		public void dirtyStateChanged(IFileBuffer buffer, boolean isDirty) {
-			if (isDirty && buffer != null) {
-				var uri = LSPEclipseUtils.toUri(buffer);
-				if (uri != null) {
-					var cachedSymbol = cachedSymbols.get(uri);
-					if (cachedSymbol != null) {
-						cachedSymbol.isDirty = true;
-					}
+			if (isDirty) {
+				// check if this file has been cached:
+				var cachedSymbol = getSymbolsContainer(buffer);
+				if (cachedSymbol != null) {
+					cachedSymbol.isDirty = true;
 				}
 			}
+		}
+
+		@Override
+		public void underlyingFileMoved(IFileBuffer buffer, IPath path) {
+			var symbolsContainer = getSymbolsContainer(buffer);
+			// check if this file has been cached:
+			if (symbolsContainer != null) {
+				var file = LSPEclipseUtils.getFile(path);
+				if (file != null) {
+					//update old cache:
+					symbolsContainer.setFile(file);
+					//create new cache element under new URI
+					cachedSymbols.put(file.getLocationURI(), new SymbolsContainer(file));
+				}
+			}
+		}
+
+		private SymbolsContainer getSymbolsContainer(IFileBuffer buffer) {
+			if (buffer != null) {
+				return cachedSymbols.get(LSPEclipseUtils.toUri(buffer));
+			}
+			return null;
 		}
 
 	};
@@ -158,7 +183,7 @@ public class TypeHierarchyView extends ViewPart {
 		public void documentChanged(DocumentEvent event) {
 			var document = event.getDocument();
 			if (document != null) {
-				refreshMemberViewer(LSPEclipseUtils.getFile(document), true);
+				refreshMemberViewer(LSPEclipseUtils.getFile(document), typeName, true);
 			}
 		}
 
@@ -202,7 +227,14 @@ public class TypeHierarchyView extends ViewPart {
 			public void doubleClick(final DoubleClickEvent event) {
 				var selection = ((IStructuredSelection) event.getSelection()).getFirstElement();
 				if (selection instanceof TypeHierarchyItem item) {
-					LSPEclipseUtils.open(item.getUri(), item.getSelectionRange());
+					try {
+						var symbolsContainer = cachedSymbols.get(new URI(item.getUri()));
+						if (symbolsContainer != null) {
+							LSPEclipseUtils.open(symbolsContainer.file.getLocationURI().toASCIIString(), item.getSelectionRange());
+						}
+					} catch (URISyntaxException e) {
+						LanguageServerPlugin.logError(e);
+					}
 				}
 			}
 		});
@@ -245,16 +277,27 @@ public class TypeHierarchyView extends ViewPart {
 		if (selection instanceof TreeSelection && !selection.isEmpty()) {
 			var element = ((TreeSelection) selection).getFirstElement();
 			if (element instanceof TypeHierarchyItem item) {
-				this.uri = item.getUri();
-				this.typeName = item.getName();
-				refreshMemberViewer(LSPEclipseUtils.getFileHandle(uri), false);
+				typeName = item.getName();
+				IFile file = null;
+				SymbolsContainer symbolsContainer = null;
+				try {
+					symbolsContainer = cachedSymbols.get(new URI(item.getUri()));
+				} catch (URISyntaxException e) {
+					LanguageServerPlugin.logError(e);
+				}
+				if (symbolsContainer != null) {
+					file = symbolsContainer.file;
+				} else {
+					file = LSPEclipseUtils.getFileHandle(item.getUri());
+				}
+				refreshMemberViewer(file, typeName, false);
 			}
 		}
 	}
 
-	private synchronized void refreshMemberViewer(IFile file, boolean documentModified) {
+	private synchronized void refreshMemberViewer(IFile file, String typeName, boolean documentModified) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
-			if (file != null) {
+			if (file != null && file.exists()) {
 				refreshSymbols(getSymbolsContainer(file), documentModified);
 				var symbol = getDocumentSymbol(typeName, file);
 				memberViewer.setInput(symbol);
@@ -264,6 +307,14 @@ public class TypeHierarchyView extends ViewPart {
 					memberViewer.setSelection(new StructuredSelection(symbol));
 					memberLabel.setImage(symbolsLabelProvider.getImage(symbol));
 				}
+			} else {
+				memberViewer.setInput(null); // null clears it
+				var text = Messages.TH_cannot_find_file;
+				if (file != null) {
+					text = text + " " + file.getLocation().toOSString(); //$NON-NLS-1$
+				}
+				memberLabel.setText(text);
+				memberLabel.setImage(null); // null clears it
 			}
 		});
 	}
@@ -275,8 +326,11 @@ public class TypeHierarchyView extends ViewPart {
 		memberViewer.addOpenListener(new IOpenListener() {
 			@Override
 			public void open(OpenEvent event) {
-				DocumentSymbol symbol = (DocumentSymbol)((IStructuredSelection) event.getSelection()).getFirstElement();
-				LSPEclipseUtils.open(uri, symbol.getRange());
+				DocumentSymbolWithURI container = (DocumentSymbolWithURI)((IStructuredSelection) event.getSelection()).getFirstElement();
+				var symbolsContainer = cachedSymbols.get(container.uri);
+				if (symbolsContainer != null) {
+					LSPEclipseUtils.open(symbolsContainer.file.getLocationURI().toASCIIString(), container.symbol.getRange());
+				}
 			}
 		});
 		return memberViewer.getControl();
@@ -386,18 +440,18 @@ public class TypeHierarchyView extends ViewPart {
 		}
 	}
 
-	private DocumentSymbol getDocumentSymbol(String typeName, IFile file) {
+	private DocumentSymbolWithURI getDocumentSymbol(String typeName, IFile file) {
 		var symbolsContainer = cachedSymbols.get(file.getLocationURI());
 		if (symbolsContainer != null) {
 			var elements = symbolsContainer.symbolsModel.getElements();
 			for (var element : elements) {
 				if (element instanceof DocumentSymbolWithURI symbolContainer) {
 					if (isClass(symbolContainer.symbol.getKind()) && symbolContainer.symbol.getName().equals(typeName)) {
-						return symbolContainer.symbol;
+						return new DocumentSymbolWithURI(symbolContainer.symbol, symbolContainer.uri);
 					}
 					var grandchild = searchInChildren(symbolContainer.symbol.getChildren(), typeName);
 					if (grandchild != null) {
-						return grandchild;
+						return new DocumentSymbolWithURI(grandchild, symbolContainer.uri);
 					}
 				}
 			}
