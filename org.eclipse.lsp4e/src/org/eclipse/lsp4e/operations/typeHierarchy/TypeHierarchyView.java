@@ -33,6 +33,8 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
+import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
+import org.eclipse.jface.viewers.DecorationContext;
 import org.eclipse.jface.viewers.DoubleClickEvent;
 import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.IOpenListener;
@@ -124,7 +126,7 @@ public class TypeHierarchyView extends ViewPart {
 
 	public static final String ID = "org.eclipse.lsp4e.operations.typeHierarchy.TypeHierarchyView"; //$NON-NLS-1$
 	TypeHierarchyViewContentProvider contentProvider = new TypeHierarchyViewContentProvider();
-	SymbolsLabelProvider symbolsLabelProvider = new SymbolsLabelProvider();
+	DecoratingStyledCellLabelProvider symbolsLabelProvider = new DecoratingStyledCellLabelProvider(new SymbolsLabelProvider(), PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator(), DecorationContext.DEFAULT_CONTEXT);
 	// widgets
 	private PageBook pagebook;
 	private SashForm splitter;
