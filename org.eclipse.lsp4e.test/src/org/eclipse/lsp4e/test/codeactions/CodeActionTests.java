@@ -14,7 +14,6 @@ package org.eclipse.lsp4e.test.codeactions;
 import static org.eclipse.lsp4e.test.utils.TestUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -49,7 +48,6 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
@@ -269,12 +267,7 @@ public class CodeActionTests {
 	public static void assertResolution(IFile targetFile, IMarker m, String newText) {
 		IDE.getMarkerHelpRegistry().getResolutions(m)[0].run(m);
 
-		IEditorPart editorPart = null;
-		try {
-			editorPart = TestUtils.getEditor(targetFile);
-		} catch (PartInitException e) {
-			fail(e.getMessage());
-		}
+		IEditorPart editorPart = TestUtils.getEditor(targetFile);
 		assertTrue(editorPart instanceof AbstractTextEditor);
 		AbstractTextEditor editor = (AbstractTextEditor)editorPart;
 
