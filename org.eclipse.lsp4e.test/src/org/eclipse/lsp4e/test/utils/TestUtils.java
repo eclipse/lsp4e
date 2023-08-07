@@ -278,7 +278,8 @@ public class TestUtils {
 		waitForAndAssertCondition(errorMessage, timeout_ms, UI.getDisplay(), condition);
 	}
 
-	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Display display, Condition condition) {
+	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Display display,
+			Condition condition) {
 		var ex = new Throwable[1];
 		var isConditionMet = new DisplayHelper() {
 			@Override
@@ -295,6 +296,12 @@ public class TestUtils {
 		}.waitForCondition(display, timeout_ms, 50);
 		if (ex[0] != null) {
 			// if the condition was not met because of an exception throw it
+			if (ex[0] instanceof AssertionError ae) {
+				throw ae;
+			}
+			if (ex[0] instanceof RuntimeException re) {
+				throw re;
+			}
 			throw new AssertionError(errorMessage, ex[0]);
 		}
 		assertTrue(errorMessage, isConditionMet);
