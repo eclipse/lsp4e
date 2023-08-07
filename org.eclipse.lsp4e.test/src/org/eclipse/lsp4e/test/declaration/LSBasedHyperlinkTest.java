@@ -14,6 +14,9 @@ package org.eclipse.lsp4e.test.declaration;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -49,21 +52,22 @@ public class LSBasedHyperlinkTest {
 	}
 
 	@Test
-	public void testHyperlinkLabelForFileLocation() {
+	public void testHyperlinkLabelForFileLocation() throws URISyntaxException {
 		Location location = new Location();
 		location.setUri("file:///Users/someuser/testfile");
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
 
-		assertEquals("Open Declaration - testfile - /Users/someuser/testfile", hyperlink.getHyperlinkText());
+		assertEquals("Open Declaration - testfile - " + Path.of(new URI(location.getUri())),
+				hyperlink.getHyperlinkText());
 	}
 
 	@Test
-	public void testHyperlinkLabelForFileLocationLink() {
+	public void testHyperlinkLabelForFileLocationLink() throws URISyntaxException {
 		LocationLink location = new LocationLink();
 		location.setTargetUri("file:///Users/someuser/testfile");
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
 
-		assertEquals("Open Declaration - testfile - /Users/someuser/testfile", hyperlink.getHyperlinkText());
+		assertEquals("Open Declaration - testfile - " + Path.of(new URI(location.getTargetUri())), hyperlink.getHyperlinkText());
 	}
 
 	@Test
