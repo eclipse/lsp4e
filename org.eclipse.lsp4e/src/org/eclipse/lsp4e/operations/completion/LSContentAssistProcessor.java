@@ -98,7 +98,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		CompletionParams param;
 
 		try {
-			param = LSPEclipseUtils.toCompletionParams(uri, offset, document);
+			param = LSPEclipseUtils.toCompletionParams(uri, offset, document, this.completionTriggerChars);
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 			this.errorMessage = createErrorMessage(offset, e);

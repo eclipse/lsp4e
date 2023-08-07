@@ -82,7 +82,9 @@ public class SupportedFeatures {
 				.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
 		completionItemCapabilities.setInsertTextModeSupport(new CompletionItemInsertTextModeSupportCapabilities(List.of(InsertTextMode.AsIs, InsertTextMode.AdjustIndentation)));
 		completionItemCapabilities.setResolveSupport(new CompletionItemResolveSupportCapabilities(List.of("documentation", "detail", "additionalTextEdits"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		textDocumentClientCapabilities.setCompletion(new CompletionCapabilities(completionItemCapabilities));
+		final var completionCapabilities = new CompletionCapabilities(completionItemCapabilities);
+		completionCapabilities.setContextSupport(Boolean.TRUE);
+		textDocumentClientCapabilities.setCompletion(completionCapabilities);
 		final var definitionCapabilities = new DefinitionCapabilities();
 		definitionCapabilities.setLinkSupport(Boolean.TRUE);
 		textDocumentClientCapabilities.setDefinition(definitionCapabilities);

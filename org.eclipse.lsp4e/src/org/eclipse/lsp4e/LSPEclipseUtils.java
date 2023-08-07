@@ -93,7 +93,9 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CallHierarchyPrepareParams;
 import org.eclipse.lsp4j.Color;
+import org.eclipse.lsp4j.CompletionContext;
 import org.eclipse.lsp4j.CompletionParams;
+import org.eclipse.lsp4j.CompletionTriggerKind;
 import org.eclipse.lsp4j.CreateFile;
 import org.eclipse.lsp4j.DefinitionParams;
 import org.eclipse.lsp4j.DeleteFile;
@@ -217,10 +219,17 @@ public final class LSPEclipseUtils {
 		}
 	}
 
-	public static CompletionParams toCompletionParams(URI fileUri, int offset, IDocument document)
+	public static CompletionParams toCompletionParams(URI fileUri, int offset, IDocument document, char[] completionTriggerChars)
 			throws BadLocationException {
 		Position start = toPosition(offset, document);
 		final var param = new CompletionParams();
+		try {
+			String triggerCharacter = document.get(offset-1, 1);
+			if (new String(completionTriggerChars).contains(triggerCharacter)) {
+				param.setContext(new CompletionContext(CompletionTriggerKind.TriggerCharacter, triggerCharacter));
+			}
+		} catch (BadLocationException e) {
+		}
 		param.setPosition(start);
 		param.setTextDocument(toTextDocumentIdentifier(fileUri));
 		return param;
