@@ -36,9 +36,9 @@
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-surefire-plugin</artifactId>
 				<version>${tycho-version}</version>
+				<!-- https://tycho.eclipseprojects.io/doc/latest/tycho-surefire-plugin/test-mojo.html -->
 				<configuration>
 					<trimStackTrace>false</trimStackTrace>
-					<testClass>org.eclipse.lsp4e.test.AllTests</testClass>
 					<useUIHarness>true</useUIHarness>
 					<useUIThread>true</useUIThread>
 					<forkedProcessTimeoutInSeconds>1200</forkedProcessTimeoutInSeconds>
