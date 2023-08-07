@@ -12,7 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -29,7 +29,9 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.test.TestUtils.JobSynchronizer;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
+import org.eclipse.lsp4e.test.utils.TestUtils.JobSynchronizer;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockWorkspaceService;
 import org.eclipse.lsp4e.ui.UI;

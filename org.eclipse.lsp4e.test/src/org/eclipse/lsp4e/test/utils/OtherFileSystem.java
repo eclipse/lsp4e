@@ -7,9 +7,9 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *  Rubén Porras Campo (Avaloq) - Bug 576425 - Support Remote Files
+ *  Rubï¿½n Porras Campo (Avaloq) - Bug 576425 - Support Remote Files
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e.test.utils;
 
 import java.net.URI;
 

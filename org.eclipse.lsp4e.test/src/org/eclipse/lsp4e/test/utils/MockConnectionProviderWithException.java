@@ -9,7 +9,7 @@
  * Contributors:
  *  Lucia Jelinkova (Red Hat Inc.)  - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e.test.utils;
 
 public class MockConnectionProviderWithException extends MockConnectionProvider {
 

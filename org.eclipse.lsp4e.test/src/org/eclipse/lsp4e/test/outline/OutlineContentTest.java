@@ -8,8 +8,7 @@
  */
 package org.eclipse.lsp4e.test.outline;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
-import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.*;
 import static org.junit.Assert.assertFalse;
 
 import java.io.FileWriter;
@@ -31,8 +30,8 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.EditorToOutlineAdapterFactory;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Position;

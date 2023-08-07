@@ -4,37 +4,37 @@
    <extension
          point="org.eclipse.lsp4e.languageServer">
       <server
-            class="org.eclipse.lsp4e.test.MockConnectionProvider"
+            class="org.eclipse.lsp4e.test.utils.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server"
             lastDocumentDisconnectedTimeout="0"
             label="Test LS">
       </server>
       <server
-            class="org.eclipse.lsp4e.test.MockConnectionProvider"
+            class="org.eclipse.lsp4e.test.utils.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server2"
             lastDocumentDisconnectedTimeout="0"
             label="Test LS 2">
       </server>
        <server
-            class="org.eclipse.lsp4e.test.MockConnectionProviderWithException"
+            class="org.eclipse.lsp4e.test.utils.MockConnectionProviderWithException"
             id="org.eclipse.lsp4e.test.server-with-exception"
             lastDocumentDisconnectedTimeout="0"
             label="Test LS With Exception">
       </server>
        <server
-            class="org.eclipse.lsp4e.test.MockConnectionProviderMultiRootFolders"
+            class="org.eclipse.lsp4e.test.utils.MockConnectionProviderMultiRootFolders"
             id="org.eclipse.lsp4e.test.server-with-multi-root-support"
             lastDocumentDisconnectedTimeout="0"
             label="Test LS With Multi-Root Support">
       </server>
       <server
-            class="org.eclipse.lsp4e.test.MockConnectionProvider"
+            class="org.eclipse.lsp4e.test.utils.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server.disable"
             lastDocumentDisconnectedTimeout="0"
             label="Test LS Enablement">
       </server>
       <server
-            class="org.eclipse.lsp4e.test.MockConnectionProvider"
+            class="org.eclipse.lsp4e.test.utils.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server-with-last-document-disconnected-timeout"
             lastDocumentDisconnectedTimeout="2"
             label="Test LS with LastDocumentDisconnectedTimeout set to two seconds">
@@ -95,7 +95,7 @@
             </enabledWhen>
       </contentTypeMapping>
       <server
-            class="org.eclipse.lsp4e.test.MockConnectionProvider"
+            class="org.eclipse.lsp4e.test.utils.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.singletonLS"
             label="Singleton LS"
             lastDocumentDisconnectedTimeout="0"
@@ -204,14 +204,14 @@
    <extension
          point="org.eclipse.ui.startup">
       <startup
-            class="org.eclipse.lsp4e.test.CreateAndRegisterContentTypeLSPLaunchConfigMapping">
+            class="org.eclipse.lsp4e.test.utils.CreateAndRegisterContentTypeLSPLaunchConfigMapping">
       </startup>
    </extension>
 
   <extension
          point="org.eclipse.core.expressions.propertyTesters">
       <propertyTester
-            class="org.eclipse.lsp4e.test.MappingEnablementTester"
+            class="org.eclipse.lsp4e.test.utils.MappingEnablementTester"
             id="org.eclipse.lsp4e.test.MappingEnablementTester"
             namespace="org.eclipse.lsp4e.test"
             properties="enablementPropertyTester"
@@ -221,14 +221,14 @@
   <extension
          point="org.eclipse.core.filesystem.filesystems">
       <filesystem scheme="other">
-         <run class="org.eclipse.lsp4e.test.OtherFileSystem" />
+         <run class="org.eclipse.lsp4e.test.utils.OtherFileSystem" />
       </filesystem>
   </extension>"
   <extension
          point="org.eclipse.core.runtime.adapters">
       <factory
             adaptableType="java.lang.String"
-            class="org.eclipse.lsp4e.test.UriToResourceAdapterFactory">
+            class="org.eclipse.lsp4e.test.utils.UriToResourceAdapterFactory">
          <adapter
                type="org.eclipse.core.resources.IResource">
          </adapter>
@@ -238,7 +238,7 @@
          point="org.eclipse.core.runtime.adapters">
       <factory
             adaptableType="java.lang.String"
-            class="org.eclipse.lsp4e.test.UriToResourceAdapterFactory">
+            class="org.eclipse.lsp4e.test.utils.UriToResourceAdapterFactory">
          <adapter
                type="org.eclipse.core.resources.IFile">
          </adapter>
@@ -248,7 +248,7 @@
          point="org.eclipse.core.runtime.adapters">
       <factory
             adaptableType="org.eclipse.core.resources.IFile"
-            class="org.eclipse.lsp4e.test.UriToResourceAdapterFactory">
+            class="org.eclipse.lsp4e.test.utils.UriToResourceAdapterFactory">
          <adapter
                type="java.net.URI">
          </adapter>
