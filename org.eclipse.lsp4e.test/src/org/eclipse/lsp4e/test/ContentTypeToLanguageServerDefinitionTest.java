@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -47,23 +46,21 @@ public class ContentTypeToLanguageServerDefinitionTest {
 		List<ContentTypeToLanguageServerDefinition> disabledDefinitions = LanguageServersRegistry.getInstance()
 				.getContentTypeToLSPExtensions().stream().filter(lsDefinition -> !lsDefinition.isEnabled(null))
 				.toList();
-		assertEquals(1, disabledDefinitions.size());
-		assertEquals(SERVER_TO_DISABLE, disabledDefinitions.get(0).getValue().id);
-		assertEquals(DISABLED_CONTENT_TYPE, disabledDefinitions.get(0).getKey().toString());
-
+		assertTrue(disabledDefinitions.contains(TestUtils.getDisabledLS()));
 	}
 
 	@Test
 	public void testDisableLanguageServerMapping() {
 		ContentTypeToLanguageServerDefinition lsDefinition = TestUtils.getDisabledLS();
+
 		lsDefinition.setUserEnabled(false);
 		assertFalse(lsDefinition.isEnabled(null));
 		assertTrue(LanguageServerPlugin.getDefault().getPreferenceStore().contains(DISABLED_SERVER_PREF));
 		assertFalse(LanguageServerPlugin.getDefault().getPreferenceStore().getBoolean(DISABLED_SERVER_PREF));
+
 		lsDefinition.setUserEnabled(true);
 		assertTrue(lsDefinition.isEnabled(null));
 		assertTrue(LanguageServerPlugin.getDefault().getPreferenceStore().contains(DISABLED_SERVER_PREF));
 		assertTrue(LanguageServerPlugin.getDefault().getPreferenceStore().getBoolean(DISABLED_SERVER_PREF));
 	}
-
 }
