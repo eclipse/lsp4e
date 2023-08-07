@@ -11,8 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.format;
 
-import static org.eclipse.lsp4e.test.TestUtils.numberOfChangesIs;
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
@@ -37,8 +36,8 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.VersionedEdits;
 import org.eclipse.lsp4e.operations.format.LSPFormatter;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;

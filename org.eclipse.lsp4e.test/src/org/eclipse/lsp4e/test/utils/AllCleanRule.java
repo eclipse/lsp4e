@@ -9,7 +9,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e.test.utils;
 
 import java.util.function.Supplier;
 

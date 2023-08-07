@@ -9,7 +9,7 @@
  * Contributors:
  *  Rastislav Wagner (Red Hat Inc.) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e.test.utils;
 
 import org.eclipse.core.expressions.PropertyTester;
 

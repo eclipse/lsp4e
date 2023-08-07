@@ -12,7 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.references;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.*;
 
 import java.util.HashMap;
@@ -27,8 +27,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4e.operations.references.LSFindReferences;
 import org.eclipse.lsp4e.operations.references.LSSearchResult;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;

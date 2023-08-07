@@ -15,7 +15,7 @@ import static org.junit.Assert.*;
 
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.outline.SymbolsModel;
-import org.eclipse.lsp4e.test.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;

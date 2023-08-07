@@ -12,7 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.diagnostics;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -39,9 +39,9 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
 import org.eclipse.lsp4e.test.color.ColorTest;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Diagnostic;

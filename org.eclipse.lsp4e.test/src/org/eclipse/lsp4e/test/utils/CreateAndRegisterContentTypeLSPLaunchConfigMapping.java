@@ -9,7 +9,7 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - Initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e.test.utils;
 
 import java.io.File;
 import java.io.IOException;

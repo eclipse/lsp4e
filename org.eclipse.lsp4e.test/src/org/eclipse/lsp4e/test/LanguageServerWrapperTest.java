@@ -11,7 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -27,6 +27,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.ui.IEditorPart;
 import org.junit.Before;
 import org.junit.Rule;

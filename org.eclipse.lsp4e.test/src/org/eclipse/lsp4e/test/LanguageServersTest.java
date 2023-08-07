@@ -13,9 +13,7 @@
 package org.eclipse.lsp4e.test;
 
 import static org.eclipse.lsp4e.LanguageServiceAccessor.hasActiveLanguageServers;
-import static org.eclipse.lsp4e.test.TestUtils.createUniqueTestFile;
-import static org.eclipse.lsp4e.test.TestUtils.openEditor;
-import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -43,6 +41,9 @@ import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.internal.Pair;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.MockConnectionProvider;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
