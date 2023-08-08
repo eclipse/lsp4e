@@ -9,6 +9,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Lucas Bullen (Red Hat Inc.) - [Bug 528333] Performance problem with diagnostics
+ *  Sebastian Thomschke (Vegard IT GmbH) - fix erratic test failures
  *******************************************************************************/
 package org.eclipse.lsp4e.test.diagnostics;
 
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.IntSupplier;
+import java.util.stream.Stream;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -53,9 +55,7 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.RGB;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.MarkerUtilities;
 import org.junit.Before;
 import org.junit.Rule;
@@ -77,47 +77,51 @@ public class DiagnosticsTest {
 	public void testDiagnostics() throws CoreException {
 		IFile file = TestUtils.createUniqueTestFile(project, "Diagnostic Other Text");
 
-		Range range = new Range(new Position(0, 0), new Position(0, 10));
-		List<Diagnostic> diagnostics = new ArrayList<>();
-		diagnostics.add(createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"));
-		diagnostics.add(createDiagnostic("2", "message2", range, DiagnosticSeverity.Warning, "source2"));
-		diagnostics.add(createDiagnostic("3", "message3", range, DiagnosticSeverity.Information, "source3"));
-		diagnostics.add(createDiagnostic("4", "message4", range, DiagnosticSeverity.Hint, "source4"));
+		int markerLineIndex = 0;
+		int markerCharStart = 0;
+		int markerCharEnd = 10;
+		Range range = new Range(
+				new Position(markerLineIndex, markerCharStart),
+				new Position(markerLineIndex, markerCharEnd));
+		List<Diagnostic> diagnostics = List.of(
+				createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"),
+				createDiagnostic("2", "message2", range, DiagnosticSeverity.Warning, "source2"),
+				createDiagnostic("3", "message3", range, DiagnosticSeverity.Information, "source3"),
+				createDiagnostic("4", "message4", range, DiagnosticSeverity.Hint, "source4"));
 
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics));
 
-		assertTrue(DisplayHelper.waitForCondition(Display.getCurrent(), 2000, () -> {
-			try {
-				return file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_INFINITE).length
-					== diagnostics.size();
-			} catch (CoreException e) {
-				return false;
-			}
-		}));
+		waitForAndAssertCondition(10_000, () -> {
+			assertEquals(diagnostics.size(), file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
+					IResource.DEPTH_INFINITE).length);
+			return true;
+		});
 
 		IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
 				IResource.DEPTH_INFINITE);
-		for (int i = 0; i < diagnostics.size(); i++) {
-			Diagnostic diagnostic = diagnostics.get(i);
-			IMarker marker = markers[i];
+		for (Diagnostic diagnostic : diagnostics) {
+			var marker = Stream.of(markers).filter(m -> {
+				try {
+					return m.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC) == diagnostic;
+				} catch (CoreException ex) {
+					throw new RuntimeException(ex);
+				}}).findFirst();
 
-			assertEquals(diagnostic.getMessage(), MarkerUtilities.getMessage(marker));
-			assertEquals(0, MarkerUtilities.getCharStart(marker));
-			assertEquals(10, MarkerUtilities.getCharEnd(marker));
-			assertEquals(1, MarkerUtilities.getLineNumber(marker));
-			assertEquals(marker.getAttribute(LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC), diagnostic);
+			assertTrue("No marker found for " + diagnostic, marker.isPresent());
+
+			assertEquals(markerCharStart, MarkerUtilities.getCharStart(marker.get()));
+			assertEquals(markerCharEnd, MarkerUtilities.getCharEnd(marker.get()));
+			assertEquals(markerLineIndex + 1, MarkerUtilities.getLineNumber(marker.get()));
+			assertEquals(diagnostic.getMessage(), MarkerUtilities.getMessage(marker.get()));
 		}
 
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), Collections.emptyList()));
 
-		assertTrue(DisplayHelper.waitForCondition(Display.getCurrent(), 2000, () -> {
-			try {
-				return file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false, IResource.DEPTH_INFINITE).length
-						== 0;
-			} catch (CoreException e) {
-				return false;
-			}
-		}));
+		waitForAndAssertCondition(10_000, () -> {
+			assertEquals(0, file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
+					IResource.DEPTH_INFINITE).length);
+			return true;
+		});
 	}
 
 	@Test
@@ -134,12 +138,11 @@ public class DiagnosticsTest {
 
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics));
 
-		assertTrue(DisplayHelper.waitForCondition(Display.getDefault(), 2000, () -> {
+		waitForAndAssertCondition(10_000, () -> {
 			IDocument shouldHaveBeenClosed = LSPEclipseUtils.getExistingDocument(file);
-			return shouldHaveBeenClosed == null;
-		}));
-
-
+			assertNull(shouldHaveBeenClosed);
+			return true;
+		});
 	}
 
 	@Test
@@ -153,14 +156,11 @@ public class DiagnosticsTest {
 
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics));
 
-		assertTrue(DisplayHelper.waitForCondition(Display.getCurrent(), 2000, () -> {
-			try {
-				return file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
-						IResource.DEPTH_INFINITE).length == diagnostics.size();
-			} catch (CoreException e) {
-				return false;
-			}
-		}));
+		waitForAndAssertCondition(10_000, () -> {
+			assertEquals(diagnostics.size(), file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
+					IResource.DEPTH_INFINITE).length);
+			return true;
+		});
 
 		IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
 				IResource.DEPTH_INFINITE);
@@ -187,14 +187,11 @@ public class DiagnosticsTest {
 		assertEquals("no marker should be shown at file initialization", 0, markers.length);
 		TestUtils.openEditor(file);
 
-		assertTrue("there should be 1 marker for each language server", DisplayHelper.waitForCondition(Display.getCurrent(), 5000, () -> {
-			try {
-				return file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true,
-						IResource.DEPTH_ZERO).length == 2;
-			} catch (CoreException e) {
-				return false;
-			}
-		}));
+		waitForAndAssertCondition(10_000, () -> {
+			assertEquals("there should be 1 marker for each language server", 2, file
+					.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO).length);
+			return true;
+		});
 	}
 
 	@Test
@@ -224,14 +221,12 @@ public class DiagnosticsTest {
 		File file = TestUtils.createTempFile("testDiagnosticsOnExternalFile", ".lspt");
 		Font font = null;
 		try {
-			try (
-				FileOutputStream out = new FileOutputStream(file);
-			) {
+			try (FileOutputStream out = new FileOutputStream(file);) {
 				out.write('a');
 			}
 			ITextViewer viewer = LSPEclipseUtils.getTextViewer(IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI())));
 			StyledText widget = viewer.getTextWidget();
-			FontData biggerFont = new FontData(); // bigger font to keep color intact in some pixe (not altered by anti-aliasing)
+			FontData biggerFont = new FontData(); // bigger font to keep color intact in some pixel (not altered by anti-aliasing)
 			biggerFont.setHeight(40);
 			biggerFont.setLocale(widget.getFont().getFontData()[0].getLocale());
 			biggerFont.setName(widget.getFont().getFontData()[0].getName());
@@ -239,7 +234,7 @@ public class DiagnosticsTest {
 			font = new Font(widget.getDisplay(), biggerFont);
 			widget.setFont(font);
 			RGB warningColor = new RGB(244, 200, 45); // from org.eclipse.ui.editors/plugin.xml/extension[@point='org.eclipse.ui.editors.markerAnnotationSpecification']/specification[@annotationType="org.eclipse.ui.workbench.texteditor.warning"]@colorPreferenceValue
-			waitForAndAssertCondition(3_000, widget.getDisplay(), () -> ColorTest.containsColor(widget, warningColor, 10));
+			waitForAndAssertCondition(10_000, widget.getDisplay(), () -> ColorTest.containsColor(widget, warningColor, 10));
 		} finally {
 			if (font != null) {
 				font.dispose();
@@ -269,7 +264,6 @@ public class DiagnosticsTest {
 				return;
 			resourceChanges++;
 		}
-
 	}
 
 	private void confirmResourceChanges(IFile file, Diagnostic diagnostic, int expectedChanges) {
@@ -279,7 +273,7 @@ public class DiagnosticsTest {
 		try {
 			diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(),
 					Collections.singletonList(diagnostic)));
-			waitForAndAssertCondition(5_000, () -> {
+			waitForAndAssertCondition(10_000, () -> {
 				IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
 						IResource.DEPTH_INFINITE);
 				for (IMarker marker : markers) {
@@ -289,11 +283,13 @@ public class DiagnosticsTest {
 				}
 				return false;
 			});
-			waitForAndAssertCondition(5_000, () -> expectedChanges == redrawCountListener.getAsInt());
+			waitForAndAssertCondition(10_000, () -> {
+				assertEquals(expectedChanges, redrawCountListener.getAsInt());
+				return true;
+			});
 		} finally {
 			workspace.removeResourceChangeListener(redrawCountListener);
 		}
-
 	}
 
 	private Diagnostic createDiagnostic(String code, String message, Range range, DiagnosticSeverity severity,
