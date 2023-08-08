@@ -11,7 +11,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.internal;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
@@ -23,16 +25,14 @@ public final class CancellationUtil {
 		// this class shouldn't be instantiated
 	}
 
-	public static boolean isRequestCancelledException(final Throwable throwable) {
-		if (throwable instanceof final CompletionException completionException) {
-			Throwable cause = completionException.getCause();
-			if (cause instanceof final ResponseErrorException responseErrorException) {
-				return isRequestCancelled(responseErrorException);
-			}
-		} else if (throwable instanceof ResponseErrorException responseErrorException) {
+	public static boolean isRequestCancelledException(Throwable throwable) {
+		if (throwable instanceof CompletionException | throwable instanceof  ExecutionException) {
+			throwable = throwable.getCause();
+		}
+		if (throwable instanceof ResponseErrorException responseErrorException) {
 			return isRequestCancelled(responseErrorException);
 		}
-		return false;
+		return throwable instanceof CancellationException;
 	}
 
 	private static boolean isRequestCancelled(ResponseErrorException responseErrorException) {

@@ -44,6 +44,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.internal.CancellationSupport;
 import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
@@ -55,6 +56,7 @@ import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.SignatureHelpOptions;
 import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SignatureInformation;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -75,12 +77,16 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private final Object contextTriggerCharsSemaphore = new Object();
 	private char[] contextTriggerChars = new char[0];
 
+	// The cancellation support used to cancel previous LSP requests 'textDocument/completion' when completion is retriggered
+	private CancellationSupport cancellationSupport;
+
 	public LSContentAssistProcessor() {
 		this(true);
 	}
 
 	public LSContentAssistProcessor(boolean errorAsCompletionItem) {
 		this.errorAsCompletionItem = errorAsCompletionItem;
+		this.cancellationSupport = new CancellationSupport();
 	}
 
 	private final Comparator<LSCompletionProposal> proposalComparator = new LSCompletionProposalComparator();
@@ -107,12 +113,24 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 		List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
 		try {
+			// Cancel the previous LSP requests 'textDocument/completions' and completionLanguageServersFuture
+			this.cancellationSupport.cancel();
+
+			// Initialize a new cancel support to register:
+			// - LSP requests 'textDocument/completions'
+			// - completionLanguageServersFuture
+			CancellationSupport cancellationSupport = new CancellationSupport();
 			this.completionLanguageServersFuture = LanguageServers.forDocument(document)
-					.withFilter(capabilities -> capabilities.getCompletionProvider() != null)
-					.collectAll((w, ls) -> ls.getTextDocumentService().completion(param)
-							.thenAccept(completion -> proposals.addAll(toProposals(document, offset, completion, w))));
+					.withFilter(capabilities -> capabilities.getCompletionProvider() != null) //
+					.collectAll((w, ls) -> cancellationSupport.execute(ls.getTextDocumentService().completion(param)) //
+							.thenAccept(completion -> proposals
+									.addAll(toProposals(document, offset, completion, w, cancellationSupport))));
+			cancellationSupport.execute(completionLanguageServersFuture);
+			this.cancellationSupport = cancellationSupport;
+
+			// Wait for the result of all LSP requests 'textDocument/completions', this future will be canceled with the next completion
 			this.completionLanguageServersFuture.get();
-		} catch (ResponseErrorException | ExecutionException e) {
+		} catch (ResponseErrorException | ExecutionException | CancellationException e) {
 			if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
 				LanguageServerPlugin.logError(e);
 			}
@@ -203,10 +221,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 	}
 	private static List<ICompletionProposal> toProposals(IDocument document,
-			int offset, Either<List<CompletionItem>, CompletionList> completionList, LanguageServerWrapper languageServerWrapper) {
+			int offset, Either<List<CompletionItem>, CompletionList> completionList, LanguageServerWrapper languageServerWrapper, CancelChecker cancelChecker) {
 		if (completionList == null) {
 			return Collections.emptyList();
 		}
+		//Stop the compute of ICompletionProposal if the completion has been cancelled
+		cancelChecker.checkCanceled();
 		CompletionItemDefaults defaults = completionList.map(o -> null, CompletionList::getItemDefaults);
 		List<CompletionItem> items = completionList.isLeft() ? completionList.getLeft() : completionList.getRight().getItems();
 		boolean isIncomplete = completionList.isRight() ? completionList.getRight().isIncomplete() : false;
@@ -214,6 +234,11 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 				.filter(Objects::nonNull)
 				.map(item -> new LSCompletionProposal(document, offset, item, defaults,
 						languageServerWrapper, isIncomplete))
+				.filter(proposal -> {
+					//Stop the compute of ICompletionProposal if the completion has been cancelled
+					cancelChecker.checkCanceled();
+					return true;
+				})
 				.filter(proposal -> proposal.validate(document, offset, null))
 				.map(ICompletionProposal.class::cast)
 				.toList();
