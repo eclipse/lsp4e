@@ -80,15 +80,16 @@ public final class MockLanguageServer implements LanguageServer {
 	 */
 	public static String SUPPORTED_COMMAND_ID = "mock.command";
 
-	private MockTextDocumentService textDocumentService = new MockTextDocumentService(this::buildMaybeDelayedFuture);
-	private MockWorkspaceService workspaceService = new MockWorkspaceService(this::buildMaybeDelayedFuture);
-	private InitializeResult initializeResult = new InitializeResult();
-	private long delay = 0;
-	private boolean started;
+	private volatile MockTextDocumentService textDocumentService = new MockTextDocumentService(
+			this::buildMaybeDelayedFuture);
+	private final MockWorkspaceService workspaceService = new MockWorkspaceService(this::buildMaybeDelayedFuture);
+	private final InitializeResult initializeResult = new InitializeResult();
+	private volatile long delay = 0;
+	private volatile boolean started;
 
-	private List<LanguageClient> remoteProxies = new ArrayList<>();
+	private final List<LanguageClient> remoteProxies = new ArrayList<>();
 
-	private List<CompletableFuture<?>> inFlight = new CopyOnWriteArrayList<>();
+	private final List<CompletableFuture<?>> inFlight = new CopyOnWriteArrayList<>();
 
 	public static void reset() {
 		INSTANCE = new MockLanguageServer(MockLanguageServer::defaultServerCapabilities);
@@ -341,5 +342,4 @@ public final class MockLanguageServer implements LanguageServer {
 			}
 		};
 	}
-
 }
