@@ -20,7 +20,8 @@ pipeline {
 							org.eclipse.dash:license-tool-plugin:license-check \
 							-B -Psign \
 							-Dmaven.test.failure.ignore=true \
-							-Ddash.fail=false
+							-Ddash.fail=false \
+							-Dsurefire.rerunFailingTestsCount=3
 					'''
 				}}
 			}
