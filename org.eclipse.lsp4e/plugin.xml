@@ -377,11 +377,18 @@
             id="org.eclipse.lsp4e.operations.hover.LSPTextHover">
       </hoverProvider>
    </extension>
+   <extension point="org.eclipse.ui.contexts">
+       <context name="Language Server" 
+            description="Language Server Editor Context" 
+            id="org.eclipse.lsp4e.context" 
+            parentId="org.eclipse.ui.genericeditor.genericEditorContext">
+       </context>
+  </extension>
    <extension
          point="org.eclipse.ui.bindings">
       <key
             commandId="org.eclipse.lsp4e.symbolinfile"
-            contextId="org.eclipse.ui.textEditorScope"
+            contextId="org.eclipse.lsp4e.context"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+O">
       </key>
@@ -393,7 +400,7 @@
       </key>
       <key
             commandId="org.eclipse.lsp4e.format"
-            contextId="org.eclipse.ui.textEditorScope"
+            contextId="org.eclipse.lsp4e.context"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+M2+F">
       </key>
@@ -402,12 +409,12 @@
       <key
             sequence="M2+M3+R"
             commandId="org.eclipse.ui.edit.rename"
-            contextId="org.eclipse.ui.genericeditor.genericEditorContext"
+            contextId="org.eclipse.lsp4e.context"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration">
       </key>
       <key
             commandId="org.eclipse.lsp4e.openCallHierarchy"
-            contextId="org.eclipse.ui.genericeditor.genericEditorContext"
+            contextId="org.eclipse.lsp4e.context"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="Ctrl+Alt+H">
       </key>
@@ -415,23 +422,23 @@
       <!-- edit -->
       <key
             sequence="M2+M3+ARROW_UP"
-            contextId="org.eclipse.ui.genericeditor.genericEditorContext"
+            contextId="org.eclipse.lsp4e.context"
             commandId="org.eclipse.lsp4e.selectionRange.up"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
       <key
             sequence="M2+M3+ARROW_DOWN"
-            contextId="org.eclipse.ui.genericeditor.genericEditorContext"
+            contextId="org.eclipse.lsp4e.context"
             commandId="org.eclipse.lsp4e.selectionRange.down"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"/>
       <key
             commandId="org.eclipse.lsp4e.typeHierarchy"
-            contextId="org.eclipse.ui.textEditorScope"
+            contextId="org.eclipse.lsp4e.context"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+T">
       </key>
       <key
             commandId="org.eclipse.lsp4e.openTypeHierarchy"
-            contextId="org.eclipse.ui.genericeditor.genericEditorContext"
+            contextId="org.eclipse.lsp4e.context"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="F4">
       </key>
