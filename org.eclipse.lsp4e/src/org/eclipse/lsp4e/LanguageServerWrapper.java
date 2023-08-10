@@ -1009,6 +1009,16 @@ public class LanguageServerWrapper {
 		return serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
 	}
 
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this)) //
+				+ " [serverId=" + serverDefinition.id //$NON-NLS-1$
+				+ ", initialPath=" + initialPath //$NON-NLS-1$
+				+ ", initialProject=" + initialProject //$NON-NLS-1$
+				+ ", isActive=" + isActive() //$NON-NLS-1$
+				+ ']';
+	}
+
 	/**
 	 * Resource listener that translates Eclipse resource events into LSP workspace folder events
 	 * and dispatches them if the language server is still active
