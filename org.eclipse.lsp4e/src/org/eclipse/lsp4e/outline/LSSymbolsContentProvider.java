@@ -86,15 +86,18 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		public OutlineViewerInput(IDocument document, @NonNull LanguageServerWrapper wrapper, @Nullable ITextEditor textEditor) {
 			this.document = document;
 			IPath path = LSPEclipseUtils.toPath(document);
-			TextDocumentIdentifier docIdentifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
 			if (path == null) {
 				documentFile = null;
-				URI uri;
-				// Set the documentURI if valid URI for LSs that use custom protocols e.g. jdt://
-				try {
-					uri = new URI(docIdentifier.getUri());
-				} catch (URISyntaxException e) {
-					uri = null;
+				URI uri = null;
+				URI docUri = LSPEclipseUtils.toUri(document);
+				if (docUri != null) {
+					TextDocumentIdentifier docIdentifier = LSPEclipseUtils.toTextDocumentIdentifier(docUri);
+					// Set the documentURI if valid URI for LSs that use custom protocols e.g. jdt://
+					try {
+						uri = new URI(docIdentifier.getUri());
+					} catch (URISyntaxException e) {
+						// Ignore
+					}
 				}
 				documentURI = uri;
 			} else {
