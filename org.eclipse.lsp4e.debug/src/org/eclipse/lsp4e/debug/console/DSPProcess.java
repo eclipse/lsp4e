@@ -40,7 +40,11 @@ public class DSPProcess implements IProcess {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public <T> T getAdapter(Class<T> adapter) {
+		if (adapter.isInstance(handle)) {
+			return (T) handle.orElse(null);
+		}
 		return target.getAdapter(adapter);
 	}
 

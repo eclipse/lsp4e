@@ -12,8 +12,7 @@
 package org.eclipse.lsp4e.test;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -64,7 +63,7 @@ public class LanguageServerWrapperTest {
 		waitForAndAssertCondition(2_000, () -> wrapper.isActive());
 
 		// e.g. LanguageServerWrapper@69fe8c75 [serverId=org.eclipse.lsp4e.test.server-with-multi-root-support, initialPath=null, initialProject=P/LanguageServerWrapperTestProject11691664858710, isActive=true]
-		assertTrue(wrapper.toString().matches("LanguageServerWrapper@[0-9a-f]+ \\[serverId=org.eclipse.lsp4e.test.server-with-multi-root-support, initialPath=null, initialProject=P\\/LanguageServerWrapperTestProject1[0-9]+, isActive=true\\]"));
+		assertTrue(wrapper.toString().matches("LanguageServerWrapper@[0-9a-f]+ \\[serverId=org.eclipse.lsp4e.test.server-with-multi-root-support, initialPath=null, initialProject=P\\/LanguageServerWrapperTestProject1[0-9]+, isActive=true, pid=(null|[0-9])+\\]"));
 
 		assertTrue(wrapper.isConnectedTo(testFile1.getLocationURI()));
 		assertTrue(wrapper.isConnectedTo(testFile2.getLocationURI()));

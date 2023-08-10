@@ -52,6 +52,7 @@ import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.resources.WorkspaceJob;
+import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
@@ -344,6 +345,11 @@ public class LanguageServerWrapper {
 
 		// no then...Async future here as we want this chain of operation to be sequential and "atomic"-ish
 		return languageServer.initialize(initParams);
+	}
+
+	@Nullable
+	public ProcessHandle getProcessHandle() {
+		return Adapters.adapt(lspStreamProvider, ProcessHandle.class);
 	}
 
 	private ClientInfo getClientInfo(String name) {
@@ -1011,11 +1017,13 @@ public class LanguageServerWrapper {
 
 	@Override
 	public String toString() {
+		final var ph = getProcessHandle();
 		return getClass().getSimpleName() + '@' + Integer.toHexString(System.identityHashCode(this)) //
 				+ " [serverId=" + serverDefinition.id //$NON-NLS-1$
 				+ ", initialPath=" + initialPath //$NON-NLS-1$
 				+ ", initialProject=" + initialProject //$NON-NLS-1$
 				+ ", isActive=" + isActive() //$NON-NLS-1$
+				+ ", pid=" + (ph == null ? null : ph.pid()) //$NON-NLS-1$
 				+ ']';
 	}
 
