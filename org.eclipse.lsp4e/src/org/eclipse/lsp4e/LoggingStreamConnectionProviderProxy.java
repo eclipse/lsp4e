@@ -24,6 +24,8 @@ import java.nio.file.StandardOpenOption;
 import java.time.OffsetDateTime;
 
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.Adapters;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -37,7 +39,7 @@ import org.eclipse.ui.console.IConsoleManager;
 import org.eclipse.ui.console.MessageConsole;
 import org.eclipse.ui.console.MessageConsoleStream;
 
-public class LoggingStreamConnectionProviderProxy implements StreamConnectionProvider {
+public class LoggingStreamConnectionProviderProxy implements StreamConnectionProvider, IAdaptable {
 
 	public static File getLogDirectory() {
 		IPath root = ResourcesPlugin.getWorkspace().getRoot().getLocation();
@@ -157,6 +159,14 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 			};
 		}
 		return inputStream;
+	}
+
+	@Override
+	public <T> T getAdapter(Class<T> adapter) {
+		if(adapter == ProcessHandle.class) {
+			return Adapters.adapt(provider, adapter);
+		}
+		return null;
 	}
 
 	@Override

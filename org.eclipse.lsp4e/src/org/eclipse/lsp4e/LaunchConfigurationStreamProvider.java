@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.debug.core.DebugException;
@@ -44,7 +45,7 @@ import org.eclipse.lsp4e.server.StreamConnectionProvider;
  * Access and control IO streams from a Launch Configuration to connect
  * them to language server protocol client.
  */
-public class LaunchConfigurationStreamProvider implements StreamConnectionProvider  {
+public class LaunchConfigurationStreamProvider implements StreamConnectionProvider, IAdaptable {
 
 	private StreamProxyInputStream inputStream;
 	private StreamProxyInputStream errorStream;
@@ -207,6 +208,14 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 	}
 
 	@Override
+	public <T> T getAdapter(Class<T> adapter) {
+		if(adapter == ProcessHandle.class) {
+			return process.getAdapter(adapter);
+		}
+		return null;
+	}
+
+	@Override
 	public InputStream getInputStream() {
 		return this.inputStream;
 	}
@@ -254,5 +263,4 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		this.outputStream = null;
 		this.errorStream = null;
 	}
-
 }
