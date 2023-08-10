@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 Red Hat Inc. and others.
+ * Copyright (c) 2017, 2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -255,7 +255,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	public void dispose() {
 		preferences.removePreferenceChangeListener(this);
 		this.outlineViewer.dispose();
-		if (textEditorViewer != null) {
+		if (textEditorViewer != null && editorSelectionChangedListener != null) {
 			editorSelectionChangedListener.uninstall(textEditorViewer.getSelectionProvider());
 		}
 	}
