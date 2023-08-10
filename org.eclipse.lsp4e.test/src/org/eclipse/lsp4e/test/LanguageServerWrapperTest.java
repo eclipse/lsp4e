@@ -63,15 +63,18 @@ public class LanguageServerWrapperTest {
 		LanguageServerWrapper wrapper = wrappers.iterator().next();
 		waitForAndAssertCondition(2_000, () -> wrapper.isActive());
 
+		// e.g. LanguageServerWrapper@69fe8c75 [serverId=org.eclipse.lsp4e.test.server-with-multi-root-support, initialPath=null, initialProject=P/LanguageServerWrapperTestProject11691664858710, isActive=true]
+		assertTrue(wrapper.toString().matches("LanguageServerWrapper@[0-9a-f]+ \\[serverId=org.eclipse.lsp4e.test.server-with-multi-root-support, initialPath=null, initialProject=P\\/LanguageServerWrapperTestProject1[0-9]+, isActive=true\\]"));
+
 		assertTrue(wrapper.isConnectedTo(testFile1.getLocationURI()));
 		assertTrue(wrapper.isConnectedTo(testFile2.getLocationURI()));
 
 		TestUtils.closeEditor(editor1, false);
 		TestUtils.closeEditor(editor2, false);
 	}
-	
+
 	/**
-	 * Check if {@code isActive()} is correctly synchronized with  {@code stop()} 
+	 * Check if {@code isActive()} is correctly synchronized with  {@code stop()}
 	 * @see https://github.com/eclipse/lsp4e/pull/688
 	 */
 	@Test
@@ -110,8 +113,7 @@ public class LanguageServerWrapperTest {
 				}
 			}
 		} finally {
-			TestUtils.closeEditor(editor1, false);	
+			TestUtils.closeEditor(editor1, false);
 		}
-		
 	}
 }
