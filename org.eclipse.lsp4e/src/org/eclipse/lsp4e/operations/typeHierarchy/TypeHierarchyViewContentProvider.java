@@ -124,8 +124,10 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 							if (treeViewer != null) {
 								treeViewer.refresh();
 								treeViewer.expandToLevel(2);
-								treeViewer.getControl().setEnabled(true);
-								treeViewer.setSelection(new StructuredSelection(hierarchyItems.get(0)));
+								if (!hierarchyItems.isEmpty()) { // if handleRootError() has been called in the meantime
+									treeViewer.getControl().setEnabled(true);
+									treeViewer.setSelection(new StructuredSelection(hierarchyItems.get(0)));
+								}
 							}
 						});
 					}
