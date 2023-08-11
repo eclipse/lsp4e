@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +43,7 @@ import org.eclipse.ui.PlatformUI;
 public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 	private TreeViewer treeViewer;
 	private LanguageServerWrapper languageServerWrapper;
-	private List<TypeHierarchyItem> hierarchyItems = new ArrayList<>();
+	private List<TypeHierarchyItem> hierarchyItems = Collections.emptyList();
 	public boolean showSuperTypes = true;
 
 	@Override
@@ -125,10 +124,8 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 							if (treeViewer != null) {
 								treeViewer.refresh();
 								treeViewer.expandToLevel(2);
-								if (hierarchyItems != null && !hierarchyItems.isEmpty()) {
-									treeViewer.getControl().setEnabled(true);
-									treeViewer.setSelection(new StructuredSelection(hierarchyItems.get(0)));
-								}
+								treeViewer.getControl().setEnabled(true);
+								treeViewer.setSelection(new StructuredSelection(hierarchyItems.get(0)));
 							}
 						});
 					}
