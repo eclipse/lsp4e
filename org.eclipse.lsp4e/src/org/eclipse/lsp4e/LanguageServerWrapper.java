@@ -144,7 +144,7 @@ public class LanguageServerWrapper {
 	@NonNull
 	public final LanguageServerDefinition serverDefinition;
 	@Nullable
-	protected final IProject initialProject;
+	public final IProject initialProject;
 	@NonNull
 	protected Map<@NonNull URI, @NonNull DocumentContentSynchronizer> connectedDocuments;
 	@Nullable

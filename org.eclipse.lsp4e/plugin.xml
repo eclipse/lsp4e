@@ -208,8 +208,8 @@
             commandId="org.eclipse.lsp4e.openTypeHierarchy">
          <activeWhen>
             <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
-         </activeWhen>            
-      </handler>      
+         </activeWhen>
+      </handler>
    </extension>
    <extension
          point="org.eclipse.search.searchResultViewPages">
@@ -411,7 +411,7 @@
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="Ctrl+Alt+H">
       </key>
-      
+
       <!-- edit -->
       <key
             sequence="M2+M3+ARROW_UP"
@@ -694,7 +694,7 @@
             class="org.eclipse.lsp4e.callhierarchy.CallHierarchyView"
             icon="icons/full/dlcl16/call_hierarchy.gif"
             id="org.eclipse.lsp4e.callHierarchy.callHierarchyView"
-            name="%callHierarchy.name"
+            name="%view.callHierarchy.name"
             restorable="true">
       </view>
       <category
@@ -706,9 +706,17 @@
             class="org.eclipse.lsp4e.operations.typeHierarchy.TypeHierarchyView"
             icon="icons/full/dlcl16/type_hierarchy.gif"
             id="org.eclipse.lsp4e.operations.typeHierarchy.TypeHierarchyView"
-            name="%typeHierarchy.name"
+            name="%view.typeHierarchy.name"
             restorable="true">
       </view>
+      <view
+            category="org.eclipse.lsp4e.views"
+            class="org.eclipse.lsp4e.ui.LanguageServersView"
+            id="org.eclipse.lsp4e.ui.languageServersView"
+            name="%view.languageServers.name"
+            restorable="true">
+      </view>
+
    </extension>
 
    <!-- reusable expression definitions, see https://wiki.eclipse.org/Command_Core_Expressions -->
