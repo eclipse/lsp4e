@@ -72,6 +72,7 @@ public final class LSPImages {
 	public static final String IMG_SNIPPET = "IMG_SNIPPET"; //$NON-NLS-1$
 	public static final String IMG_COLOR = "IMG_COLOR"; //$NON-NLS-1$
 	public static final String IMG_REFERENCE = "IMG_REFERENCE"; //$NON-NLS-1$
+	public static final String IMG_TERMINATE_CO = "IMG_TERMINATE_CO"; //$NON-NLS-1$
 
 	public static final String IMG_SUPERTYPE = "IMG_SUPERTYPE"; //$NON-NLS-1$
 	public static final String IMG_SUBTYPE = "IMG_SUBTYPE"; //$NON-NLS-1$
@@ -107,9 +108,9 @@ public final class LSPImages {
 		declareRegistryImage(IMG_SNIPPET, OBJECT + "snippet.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_COLOR, OBJECT + "color.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_REFERENCE, OBJECT + "reference.png"); //$NON-NLS-1$
-
 		declareRegistryImage(IMG_SUPERTYPE, ACTION + "super_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_SUBTYPE, ACTION + "sub_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_TERMINATE_CO, OBJECT + "terminate_co.png"); //$NON-NLS-1$
 	}
 
 	private static final void declareRegistryImage(String key, String path) {
