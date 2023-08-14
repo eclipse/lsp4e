@@ -229,6 +229,7 @@ public final class LSPEclipseUtils {
 				param.setContext(new CompletionContext(CompletionTriggerKind.TriggerCharacter, triggerCharacter));
 			}
 		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
 		}
 		param.setPosition(start);
 		param.setTextDocument(toTextDocumentIdentifier(fileUri));
