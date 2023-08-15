@@ -94,7 +94,6 @@ public final class Messages extends NLS {
 	public static String CH_finding_callers;
 	public static String TH_no_type_hierarchy;
 	public static String TH_diplay_hint;
-	public static String TH_finding_member;
 	public static String TH_cannot_find_file;
 
 	static {

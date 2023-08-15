@@ -280,13 +280,13 @@ public class TypeHierarchyView extends ViewPart {
 			var element = ((TreeSelection) selection).getFirstElement();
 			if (element instanceof TypeHierarchyItem item) {
 				typeName = item.getName();
-				IFile file = null;
 				SymbolsContainer symbolsContainer = null;
 				try {
 					symbolsContainer = cachedSymbols.get(new URI(item.getUri()));
 				} catch (URISyntaxException e) {
 					LanguageServerPlugin.logError(e);
 				}
+				IFile file = null;
 				if (symbolsContainer != null) {
 					file = symbolsContainer.file;
 				} else {
@@ -388,12 +388,7 @@ public class TypeHierarchyView extends ViewPart {
 	}
 
 	private SymbolsContainer getSymbolsContainer(IFile file) {
-		SymbolsContainer symbolsContainer = cachedSymbols.get(file.getLocationURI());
-		if (symbolsContainer == null) {
-			symbolsContainer = new SymbolsContainer(file);
-			cachedSymbols.put(file.getLocationURI(), symbolsContainer);
-		}
-		return symbolsContainer;
+		return cachedSymbols.computeIfAbsent(file.getLocationURI(), uri -> new SymbolsContainer(file));
 	}
 
 	private void refreshSymbols(SymbolsContainer symbolsContainer, boolean documentModified) {
