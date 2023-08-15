@@ -138,7 +138,6 @@ public class TypeHierarchyView extends ViewPart {
 	private TableViewer memberViewer;
 	protected TreeViewer treeViewer;
 
-	private volatile CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> symbols;
 	private HashMap<URI, SymbolsContainer> cachedSymbols = new HashMap<>();
 	private IDocument document;
 	private volatile String typeName;
@@ -179,7 +178,7 @@ public class TypeHierarchyView extends ViewPart {
 
 	};
 
-	private IDocumentListener documentListener = new IDocumentListener() {
+	private final IDocumentListener documentListener = new IDocumentListener() {
 
 		@Override
 		public void documentChanged(DocumentEvent event) {
@@ -311,11 +310,11 @@ public class TypeHierarchyView extends ViewPart {
 				}
 			} else {
 				memberViewer.setInput(null); // null clears it
-				var text = Messages.TH_cannot_find_file;
+				var location = ""; //$NON-NLS-1$
 				if (file != null) {
-					text = text + " " + file.getLocation().toOSString(); //$NON-NLS-1$
+					location = file.getLocation().toOSString();
 				}
-				memberLabel.setText(text);
+				memberLabel.setText(Messages.bind(Messages.TH_cannot_find_file, location));
 				memberLabel.setImage(null); // null clears it
 			}
 		});
@@ -398,6 +397,7 @@ public class TypeHierarchyView extends ViewPart {
 		final IDocument document = symbolsContainer.getDocument();
 		try {
 			if (document != null) {
+				CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> symbols;
 				final var params = new DocumentSymbolParams(
 						LSPEclipseUtils.toTextDocumentIdentifier(document));
 				CompletableFuture<Optional<LanguageServerWrapper>> languageServer = LanguageServers
