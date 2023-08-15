@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,8 +25,8 @@ public class TypeMemberContentProvider implements IStructuredContentProvider {
 
 	@Override
 	final public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
-		if (newInput instanceof DocumentSymbolWithURI) {
-			symbolContainer = (DocumentSymbolWithURI) newInput;
+		if (newInput instanceof DocumentSymbolWithURI symbolWithURI) {
+			symbolContainer = symbolWithURI;
 		}
 	}
 
@@ -39,18 +38,16 @@ public class TypeMemberContentProvider implements IStructuredContentProvider {
 	@Override
 	public Object[] getElements(Object inputElement) {
 		return Optional.ofNullable(symbolContainer)
-				.map(container -> container.symbol)
-				.map(symbol -> symbol.getChildren())
-				.map(this::toContainer).orElse(NO_CHILDREN);
+				.map(container -> toContainer(container.symbol.getChildren())).orElse(NO_CHILDREN);
 	}
 
 	private Object[] toContainer(List<DocumentSymbol> symbols) {
 		if (symbols != null) {
-			List<DocumentSymbolWithURI> container = new ArrayList<>();
-			for (var symbol : symbols) {
-				container.add(new DocumentSymbolWithURI(symbol, symbolContainer.uri));
+			var container = new DocumentSymbolWithURI[symbols.size()];
+			for (int i = 0; i < symbols.size(); i++) {
+				container[i] = new DocumentSymbolWithURI(symbols.get(i), symbolContainer.uri);
 			}
-			return container.toArray();
+			return container;
 		}
 		return NO_CHILDREN;
 	}
