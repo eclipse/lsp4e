@@ -64,7 +64,6 @@ import com.google.common.base.Strings;
 public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	private static final long TRIGGERS_TIMEOUT = 50;
-	private static final long GET_TIMEOUT = 1000;
 	private static final long CONTEXT_INFORMATION_TIMEOUT = 1000;
 	private IDocument currentDocument;
 	private String errorMessage;
@@ -112,7 +111,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 					.withFilter(capabilities -> capabilities.getCompletionProvider() != null)
 					.collectAll((w, ls) -> ls.getTextDocumentService().completion(param)
 							.thenAccept(completion -> proposals.addAll(toProposals(document, offset, completion, w))));
-			this.completionLanguageServersFuture.get(GET_TIMEOUT, TimeUnit.MILLISECONDS);
+			this.completionLanguageServersFuture.get();
 		} catch (ResponseErrorException | ExecutionException e) {
 			if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
 				LanguageServerPlugin.logError(e);
@@ -124,8 +123,6 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			this.errorMessage = createErrorMessage(offset, e);
 			Thread.currentThread().interrupt();
 			return createErrorProposal(offset, e);
-		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not get completions due to timeout after " + GET_TIMEOUT + " milliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 
 		final var completeProposals = new LSCompletionProposal[proposals.size()];
@@ -258,7 +255,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			Thread.currentThread().interrupt();
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not compute context information due to timeout after " + CONTEXT_INFORMATION_TIMEOUT + " milliseconds", e);  //$NON-NLS-1$//$NON-NLS-2$
+			LanguageServerPlugin.logWarning("Could not compute  context information due to timeout after " + CONTEXT_INFORMATION_TIMEOUT + " milliseconds", e);  //$NON-NLS-1$//$NON-NLS-2$
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		}
 		return contextInformations.toArray(new IContextInformation[0]);
