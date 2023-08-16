@@ -296,7 +296,7 @@ public class TypeHierarchyView extends ViewPart {
 		}
 	}
 
-	private synchronized void refreshMemberViewer(IFile file, String typeName, boolean documentModified) {
+	private void refreshMemberViewer(IFile file, String typeName, boolean documentModified) {
 		PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
 			if (file != null && file.exists()) {
 				refreshSymbols(getSymbolsContainer(file), documentModified);
@@ -390,7 +390,7 @@ public class TypeHierarchyView extends ViewPart {
 		return cachedSymbols.computeIfAbsent(file.getLocationURI(), uri -> new SymbolsContainer(file));
 	}
 
-	private void refreshSymbols(SymbolsContainer symbolsContainer, boolean documentModified) {
+	private synchronized void refreshSymbols(SymbolsContainer symbolsContainer, boolean documentModified) {
 		if (symbolsContainer == null || (!symbolsContainer.isDirty && !documentModified)) {
 			return;
 		}
