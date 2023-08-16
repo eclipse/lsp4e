@@ -59,6 +59,7 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.views.HierarchyViewInput;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.TypeHierarchyItem;
@@ -402,8 +403,7 @@ public class TypeHierarchyView extends ViewPart {
 						LSPEclipseUtils.toTextDocumentIdentifier(document));
 				CompletableFuture<Optional<LanguageServerWrapper>> languageServer = LanguageServers
 						.forDocument(document)
-						.withFilter(
-								capabilities -> LSPEclipseUtils.hasCapability(capabilities.getDocumentSymbolProvider()))
+						.withCapability(ServerCapabilities::getDocumentSymbolProvider)
 						.computeFirst((w, ls) -> CompletableFuture.completedFuture(w));
 				try {
 					symbols = languageServer.get(500, TimeUnit.MILLISECONDS).filter(Objects::nonNull)
