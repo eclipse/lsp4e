@@ -60,7 +60,7 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 		}
 
 		try {
-			LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
+			LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition, resource.getLocationURI());
 			if (wrapper != null) {
 				ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
 				if (provider != null && provider.getCommands().contains(command.getCommand())) {

@@ -260,7 +260,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		 * Test whether this server supports the requested <code>ServerCapabilities</code>.
 		 */
 		private @NonNull CompletableFuture<@Nullable LanguageServerWrapper> filter(@NonNull LanguageServerWrapper wrapper) {
-			return wrapper.getInitializedServer()
+			return wrapper.getInitializedServer(LSPEclipseUtils.toUri(document))
 					.thenCompose(server -> CompletableFuture
 							.completedFuture(server != null && getFilter().test(wrapper.getServerCapabilities())))
 					.thenApply(matches -> matches ? wrapper: null);
@@ -316,7 +316,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 			Collection<@NonNull LanguageServerWrapper> startedWrappers = order(LanguageServiceAccessor.getStartedWrappers(project, getFilter(), !restartStopped));
 			List<@NonNull CompletableFuture<LanguageServerWrapper>> wrappers = new ArrayList<>(startedWrappers.size());
 			for (LanguageServerWrapper wrapper :  startedWrappers) {
-				wrappers.add(wrapper.getInitializedServer().thenApply(ls -> wrapper));
+				wrappers.add(wrapper.getInitializedServer(null).thenApply(ls -> wrapper));
 			}
 			return wrappers;
 		}

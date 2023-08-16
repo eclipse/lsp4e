@@ -76,7 +76,7 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 			if (definition != null) {
 				IResource resource = marker.getResource();
 				if (resource != null) {
-					wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
+					wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition, resource.getLocationURI());
 				}
 			}
 			if (wrapper != null) {

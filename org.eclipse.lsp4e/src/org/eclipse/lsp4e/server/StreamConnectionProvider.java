@@ -109,6 +109,14 @@ public interface StreamConnectionProvider {
 	}
 
 	/**
+	 * User provided initialization options from initial uri.
+	 * Will be called when the {@link #getInitializationOptions(URI)} returns null.
+	 */
+	public default Object getInitializationOptionsFromUri(@Nullable URI initialUri){
+		return null;
+	}
+
+	/**
 	 * Returns an object that describes the experimental features supported
 	 * by the client.
 	 * @implNote The returned object gets serialized by LSP4J, which itself uses
