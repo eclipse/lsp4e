@@ -227,9 +227,11 @@ public final class LSPEclipseUtils {
 		final var param = new CompletionParams();
 		try {
 			String positionCharacter = document.get(offset-1, 1);
-			if (Chars.contains(completionTriggerChars, positionCharacter.toCharArray()[0])) {
+			if (Chars.contains(completionTriggerChars, positionCharacter.charAt(0))) {
 				param.setContext(new CompletionContext(CompletionTriggerKind.TriggerCharacter, positionCharacter));
 			} else {
+				// According to LSP 3.17 specification: the triggerCharacter in CompletionContext is undefined if
+				// triggerKind != CompletionTriggerKind.TriggerCharacter
 				param.setContext(new CompletionContext(CompletionTriggerKind.Invoked, positionCharacter));
 			}
 		} catch (BadLocationException e) {
