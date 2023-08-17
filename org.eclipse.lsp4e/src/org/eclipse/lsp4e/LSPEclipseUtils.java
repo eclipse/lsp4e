@@ -154,6 +154,8 @@ import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import com.google.common.primitives.Chars;
+
 /**
  * Some utility methods to convert between Eclipse and LS-API types
  */
@@ -224,9 +226,11 @@ public final class LSPEclipseUtils {
 		Position start = toPosition(offset, document);
 		final var param = new CompletionParams();
 		try {
-			String triggerCharacter = document.get(offset-1, 1);
-			if (new String(completionTriggerChars).contains(triggerCharacter)) {
-				param.setContext(new CompletionContext(CompletionTriggerKind.TriggerCharacter, triggerCharacter));
+			String positionCharacter = document.get(offset-1, 1);
+			if (Chars.contains(completionTriggerChars, positionCharacter.toCharArray()[0])) {
+				param.setContext(new CompletionContext(CompletionTriggerKind.TriggerCharacter, positionCharacter));
+			} else {
+				param.setContext(new CompletionContext(CompletionTriggerKind.Invoked, positionCharacter));
 			}
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
