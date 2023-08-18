@@ -93,7 +93,9 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CallHierarchyPrepareParams;
 import org.eclipse.lsp4j.Color;
+import org.eclipse.lsp4j.CompletionContext;
 import org.eclipse.lsp4j.CompletionParams;
+import org.eclipse.lsp4j.CompletionTriggerKind;
 import org.eclipse.lsp4j.CreateFile;
 import org.eclipse.lsp4j.DefinitionParams;
 import org.eclipse.lsp4j.DeleteFile;
@@ -151,6 +153,8 @@ import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
+
+import com.google.common.primitives.Chars;
 
 /**
  * Some utility methods to convert between Eclipse and LS-API types
@@ -217,10 +221,22 @@ public final class LSPEclipseUtils {
 		}
 	}
 
-	public static CompletionParams toCompletionParams(URI fileUri, int offset, IDocument document)
+	public static CompletionParams toCompletionParams(URI fileUri, int offset, IDocument document, char[] completionTriggerChars)
 			throws BadLocationException {
 		Position start = toPosition(offset, document);
 		final var param = new CompletionParams();
+		try {
+			String positionCharacter = document.get(offset-1, 1);
+			if (Chars.contains(completionTriggerChars, positionCharacter.charAt(0))) {
+				param.setContext(new CompletionContext(CompletionTriggerKind.TriggerCharacter, positionCharacter));
+			} else {
+				// According to LSP 3.17 specification: the triggerCharacter in CompletionContext is undefined if
+				// triggerKind != CompletionTriggerKind.TriggerCharacter
+				param.setContext(new CompletionContext(CompletionTriggerKind.Invoked, positionCharacter));
+			}
+		} catch (BadLocationException e) {
+			LanguageServerPlugin.logError(e);
+		}
 		param.setPosition(start);
 		param.setTextDocument(toTextDocumentIdentifier(fileUri));
 		return param;
