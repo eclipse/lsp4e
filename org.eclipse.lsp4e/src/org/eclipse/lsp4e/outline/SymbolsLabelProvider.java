@@ -60,6 +60,7 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.internal.progress.ProgressManager;
 import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonLabelProvider;
+import org.eclipse.ui.progress.PendingUpdateAdapter;
 
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
@@ -119,7 +120,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element == null){
 			return null;
 		}
-		if (element == LSSymbolsContentProvider.COMPUTING) {
+		if (element == LSSymbolsContentProvider.COMPUTING || element instanceof PendingUpdateAdapter) {
 			return JFaceResources.getImage(ProgressManager.WAITING_JOB_KEY);
 		}
 		if (element instanceof Throwable) {
@@ -251,7 +252,7 @@ public class SymbolsLabelProvider extends LabelProvider
 	@Override
 	public StyledString getStyledText(Object element) {
 
-		if (element == LSSymbolsContentProvider.COMPUTING) {
+		if (element == LSSymbolsContentProvider.COMPUTING || element instanceof PendingUpdateAdapter) {
 			return new StyledString(Messages.outline_computingSymbols);
 		}
 		if (element instanceof Throwable throwable) {
