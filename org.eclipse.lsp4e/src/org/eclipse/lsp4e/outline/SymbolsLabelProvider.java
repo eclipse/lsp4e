@@ -120,7 +120,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element == null){
 			return null;
 		}
-		if (element == LSSymbolsContentProvider.COMPUTING || element instanceof PendingUpdateAdapter) {
+		if (element instanceof PendingUpdateAdapter) {
 			return JFaceResources.getImage(ProgressManager.WAITING_JOB_KEY);
 		}
 		if (element instanceof Throwable) {
@@ -252,7 +252,7 @@ public class SymbolsLabelProvider extends LabelProvider
 	@Override
 	public StyledString getStyledText(Object element) {
 
-		if (element == LSSymbolsContentProvider.COMPUTING || element instanceof PendingUpdateAdapter) {
+		if (element instanceof PendingUpdateAdapter) {
 			return new StyledString(Messages.outline_computingSymbols);
 		}
 		if (element instanceof Throwable throwable) {
@@ -329,14 +329,14 @@ public class SymbolsLabelProvider extends LabelProvider
 		}
 		return res;
 	}
-	
+
 	private boolean isDeprecated(List<SymbolTag> tags) {
 		if(tags != null){
 			return tags.contains(SymbolTag.Deprecated);
 		}
 		return false;
 	}
-	
+
 	@Override
 	public void restoreState(IMemento aMemento) {
 	}
