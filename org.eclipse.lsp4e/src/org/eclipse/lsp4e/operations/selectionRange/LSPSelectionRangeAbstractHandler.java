@@ -19,6 +19,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.runtime.Adapters;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -38,7 +39,6 @@ import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.swt.custom.CaretEvent;
 import org.eclipse.swt.custom.CaretListener;
 import org.eclipse.swt.custom.StyledText;
-import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -154,8 +154,8 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		if (part instanceof ITextEditor textEditor) {
+		ITextEditor textEditor = Adapters.adapt(HandlerUtil.getActiveEditor(event), ITextEditor.class);
+		if (textEditor != null) {
 			final ISelectionProvider provider = textEditor.getSelectionProvider();
 			if (provider == null) {
 				return null;
