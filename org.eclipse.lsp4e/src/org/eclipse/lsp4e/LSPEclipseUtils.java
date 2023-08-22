@@ -226,7 +226,8 @@ public final class LSPEclipseUtils {
 		Position start = toPosition(offset, document);
 		final var param = new CompletionParams();
 		try {
-			String positionCharacter = document.get(offset-1, 1);
+			int positionCharacterOffset = offset > 0 ? offset-1 : offset;
+			String positionCharacter = document.get(positionCharacterOffset, 1);
 			if (Chars.contains(completionTriggerChars, positionCharacter.charAt(0))) {
 				param.setContext(new CompletionContext(CompletionTriggerKind.TriggerCharacter, positionCharacter));
 			} else {
