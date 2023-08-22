@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -43,6 +44,7 @@ import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
+import org.eclipse.lsp4e.test.utils.MockConnectionProvider;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
@@ -65,6 +67,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Test;
 
 import com.google.gson.JsonPrimitive;
@@ -512,5 +515,18 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		assertEquals(1, proposals.length);
 		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
 		assertEquals("a\n\tb\n\tline1\n\tline2\nc", viewer.getDocument().get());
+	}
+
+	@Test
+	public void testCancellation() throws Exception {
+		MockConnectionProvider.cancellations.clear();
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "a\n\tb\n\t\nc"));
+		CompletionItem item = new CompletionItem("a");
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, List.of(item)));
+		MockLanguageServer.INSTANCE.setTimeToProceedQueries(10000);
+		CompletableFuture.runAsync(() -> contentAssistProcessor.computeCompletionProposals(viewer, 1));
+		Thread.sleep(500);
+		CompletableFuture.runAsync(() -> contentAssistProcessor.computeCompletionProposals(viewer, 1));
+		DisplayHelper.waitAndAssertCondition(viewer.getTextWidget().getDisplay(), () -> assertEquals(1, MockConnectionProvider.cancellations.size()));
 	}
 }
