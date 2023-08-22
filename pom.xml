@@ -13,7 +13,7 @@
 		<target-config>target-platform-latest</target-config>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jgit.dirtyWorkingTree>error</jgit.dirtyWorkingTree>
-		<enforcer.plugin.version>3.3.0</enforcer.plugin.version>
+		<enforcer.plugin.version>3.4.0</enforcer.plugin.version>
 		<maven-enforcer-rule.version>3.6.3</maven-enforcer-rule.version>
 	</properties>
 
