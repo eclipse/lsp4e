@@ -225,18 +225,20 @@ public final class LSPEclipseUtils {
 			throws BadLocationException {
 		Position start = toPosition(offset, document);
 		final var param = new CompletionParams();
-		try {
-			int positionCharacterOffset = offset > 0 ? offset-1 : offset;
-			String positionCharacter = document.get(positionCharacterOffset, 1);
-			if (Chars.contains(completionTriggerChars, positionCharacter.charAt(0))) {
-				param.setContext(new CompletionContext(CompletionTriggerKind.TriggerCharacter, positionCharacter));
-			} else {
-				// According to LSP 3.17 specification: the triggerCharacter in CompletionContext is undefined if
-				// triggerKind != CompletionTriggerKind.TriggerCharacter
-				param.setContext(new CompletionContext(CompletionTriggerKind.Invoked, positionCharacter));
+		if (document.getLength() > 0) {
+			try {
+				int positionCharacterOffset = offset > 0 ? offset-1 : offset;
+				String positionCharacter = document.get(positionCharacterOffset, 1);
+				if (Chars.contains(completionTriggerChars, positionCharacter.charAt(0))) {
+					param.setContext(new CompletionContext(CompletionTriggerKind.TriggerCharacter, positionCharacter));
+				} else {
+					// According to LSP 3.17 specification: the triggerCharacter in CompletionContext is undefined if
+					// triggerKind != CompletionTriggerKind.TriggerCharacter
+					param.setContext(new CompletionContext(CompletionTriggerKind.Invoked, positionCharacter));
+				}
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logError(e);
 			}
-		} catch (BadLocationException e) {
-			LanguageServerPlugin.logError(e);
 		}
 		param.setPosition(start);
 		param.setTextDocument(toTextDocumentIdentifier(fileUri));
