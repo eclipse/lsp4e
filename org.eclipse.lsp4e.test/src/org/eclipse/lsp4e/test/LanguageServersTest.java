@@ -808,5 +808,13 @@ public class LanguageServersTest {
 		request.cancel(false);
 		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 100);
 		assertTrue(DisplayHelper.waitForCondition(display, 3000, () -> !MockConnectionProvider.cancellations.isEmpty()));
+
+		// Test executor.collectAll() forwards cancellation
+		MockConnectionProvider.cancellations.clear();
+		request = executor.collectAll(ls -> ls.getTextDocumentService().references(new ReferenceParams()));
+		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 500);
+		request.cancel(false);
+		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 100);
+		assertTrue(DisplayHelper.waitForCondition(display, 3000, () -> !MockConnectionProvider.cancellations.isEmpty()));
 	}
 }
