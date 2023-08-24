@@ -787,16 +787,26 @@ public class LanguageServersTest {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "Here is some content");
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
-		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 2000);
+		Display display = viewer.getTextWidget().getDisplay();
+		DisplayHelper.sleep(display, 2000);
+		
 		final IDocument document = viewer.getDocument();
 		final LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document);
-		MockLanguageServer.INSTANCE.setTimeToProceedQueries(50000);
+		MockLanguageServer.INSTANCE.setTimeToProceedQueries(3000);
+		
+		// Test lsWrapper.execute() forwards cancellation
 		LanguageServerWrapper lsWrapper = executor.computeFirst((wrapper, ls) -> CompletableFuture.completedFuture(wrapper)).get().get();
 		CompletableFuture<?> request = lsWrapper.execute(ls -> ls.getTextDocumentService().references(new ReferenceParams()));
 		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 500);
 		request.cancel(false);
+		assertTrue(DisplayHelper.waitForCondition(display, 3000, () -> !MockConnectionProvider.cancellations.isEmpty()));
+		
+		// Test executor.computeFirst() forwards cancellation
+		MockConnectionProvider.cancellations.clear();
+		request = executor.computeFirst(ls -> ls.getTextDocumentService().references(new ReferenceParams()));
+		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 500);
+		request.cancel(false);
 		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 100);
-		assertNotEquals(List.of(), MockConnectionProvider.cancellations);
-		MockLanguageServer.INSTANCE.setTimeToProceedQueries(3000);
+		assertTrue(DisplayHelper.waitForCondition(display, 3000, () -> !MockConnectionProvider.cancellations.isEmpty()));
 	}
 }

@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -42,6 +43,22 @@ import org.eclipse.lsp4j.services.LanguageServer;
  * for manipulating the asynchronous response objects in streams
  */
 public abstract class LanguageServers<E extends LanguageServers<E>> {
+
+	private static void forwardCancellation(CompletableFuture<?> from, CompletableFuture<?>... to) {
+		from.exceptionally(t -> {
+			if (t instanceof CancellationException) {
+				Stream.of(to).forEach(f -> f.cancel(true));
+			}
+			return null;
+		});
+	}
+
+	/** creates a future that is running on het common async pool, ensuring it's not blocking UI Thread */
+	private static <T> CompletableFuture<T> onCommonPool(CompletableFuture<T> source) {
+		CompletableFuture<T> res = source.thenApplyAsync(Function.identity());
+		forwardCancellation(res, source);
+		return res;
+	}
 
 	/**
 	 * Runs an operation on all applicable language servers, returning an async result that will consist
@@ -119,29 +136,31 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * Runs an operation on all applicable language servers, returning an async result that will receive the first
 	 * non-null response
 	 * @param <T> Type of result being computed on the language server(s)
-	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
-	 * will return a <code>CompletableFuture&lt;T&gt;</code>.
+	 * @param queryLS An individual operation to be performed on the language server, which following the LSP4j API
+	 * will return a <code>CompletableFuture&lt;T&gt;</code>. The returned future should be a direct call to the
+	 * language server (no extra processing) for best performance and cancellation support.
 	 *
 	 * @return An asynchronous result that will complete with a populated <code>Optional&lt;T&gt;</code> from the first
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
-	public <T> CompletableFuture<Optional<T>> computeFirst(Function<LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
-		return computeFirst((w, ls) -> fn.apply(ls));
+	public <T> CompletableFuture<Optional<T>> computeFirst(Function<LanguageServer, ? extends @NonNull CompletableFuture<T>> queryLS) {
+		return computeFirst((w, ls) -> queryLS.apply(ls));
 	}
 
 	/**
 	 * Runs an operation on all applicable language servers, returning an async result that will receive the first
 	 * non-null response
 	 * @param <T> Type of result being computed on the language server(s)
-	 * @param fn An individual operation to be performed on the language server, which following the LSP4j API
+	 * @param queryLS An individual operation to be performed on the language server, which following the LSP4j API
 	 * will return a <code>CompletableFuture&lt;T&gt;</code>. This function additionally receives a {@link LanguageServerWrapper }
 	 * allowing fine-grained interrogation of server capabilities, or the construction of objects that can use this
-	 * handle to make further calls on the same server
+	 * handle to make further calls on the same server. The returned future should be a direct call to the
+	 * language server (no extra processing) for best performance and cancellation support.
 	 *
 	 * @return An asynchronous result that will complete with a populated <code>Optional&lt;T&gt;</code> from the first
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
-	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
+	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> queryLS) {
 		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
 
 		// Dispatch the request to the servers, appending a step to each such that
@@ -149,16 +168,21 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		// CompletableFuture.anyOf() almost does what we need, but we don't want
 		// a quickly-returned null to trump a slowly-returned result
 		CompletableFuture.allOf(
-				executeOnServers(fn)
-				.map(cf -> cf.thenApply(t -> {
-					if (!isEmpty(t)) { // some LS methods return null objects when they have nothing to report, and some return an empty List
-						result.complete(Optional.of(t));
-					}
-					return t;
-				})).toArray(CompletableFuture[]::new)
+				executeOnServers(queryLS)
+				.map(cf -> {
+					CompletableFuture<T> populateFuture = cf.thenApply(t -> {
+						if (!isEmpty(t)) { // some LS methods return null objects when they have nothing to report, and some return an empty List
+							result.complete(Optional.of(t));
+						}
+						return t;
+					});
+					// canceled or complete requests cancels all initial requests
+					result.whenComplete((v, t) ->
+						cf.cancel(true));
+					return populateFuture;
+				}).toArray(CompletableFuture[]::new)
 				).whenComplete((v, t) -> completeEmptyOrWithException(result, t));
-
-		return result.thenApplyAsync(Function.identity());
+		return onCommonPool(result);
 	}
 
 	public @NonNull E withPreferredServer(final @Nullable LanguageServerDefinition serverDefinition) {
@@ -397,12 +421,24 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		});
 	}
 
+	/**
+	 * Retrieves the intialized servers and apply the given query.
+	 * <p>The query must ideally be a direct query to the language server
+	 * (not chained with other futures) so cancelling the futures in
+	 * this stream will send a cancellation event to the LSs.</p>
+	 */
 	@NonNull
 	private <T> Stream<CompletableFuture<T>> executeOnServers(
 			BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
-		return getServers().stream().map(cf -> cf.thenCompose(
-				w -> w == null ? CompletableFuture.completedFuture((T) null) : w.executeImpl(ls -> fn.apply(w, ls)
-		)));
+		return getServers().stream().map(serverFuture -> {
+			// wrap in AtomicReference to allow dereferencing in downstream future
+			CompletableFuture<CompletableFuture<T>> lsRequestFuture = serverFuture.thenApply(w -> w == null
+				? CompletableFuture.completedFuture((T) null)
+				: w.executeImpl(ls -> fn.apply(w, ls)));
+			CompletableFuture<T> res = lsRequestFuture.thenCompose(Function.identity());
+			lsRequestFuture.thenAccept(request -> forwardCancellation(res, request));
+			return res;
+		});
 	}
 
 	/*
