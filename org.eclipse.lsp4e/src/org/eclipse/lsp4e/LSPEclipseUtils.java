@@ -593,7 +593,7 @@ public final class LSPEclipseUtils {
 	}
 
 	@Nullable
-	private static IDocument getDocument(URI uri) {
+	public static IDocument getDocument(URI uri) {
 		if (uri == null) {
 			return null;
 		}

@@ -25,14 +25,14 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.IFileBufferListener;
+import org.eclipse.core.filebuffers.ITextFileBufferManager;
 import org.eclipse.core.filebuffers.LocationKind;
-import org.eclipse.core.resources.IFile;
+import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jface.text.DocumentEvent;
+import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DecorationContext;
 import org.eclipse.jface.viewers.DoubleClickEvent;
@@ -83,8 +83,10 @@ import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
+import org.eclipse.ui.internal.progress.ProgressManager;
 import org.eclipse.ui.part.PageBook;
 import org.eclipse.ui.part.ViewPart;
+import org.eclipse.ui.progress.PendingUpdateAdapter;
 
 public class TypeHierarchyView extends ViewPart {
 
@@ -92,34 +94,55 @@ public class TypeHierarchyView extends ViewPart {
 		private final SymbolsModel symbolsModel;
 		private volatile boolean isDirty = true;
 		private boolean temporaryLoadedDocument = false;
-		private IFile file;
+		private volatile URI uri;
 
-		SymbolsContainer(IFile file) {
+		SymbolsContainer(URI uri) {
 			this.symbolsModel = new SymbolsModel();
-			setFile(file);
+			setUri(uri);
 		}
 
 		public IDocument getDocument() {
-			var document = LSPEclipseUtils.getExistingDocument(file);
-			if (document == null) {
-				document = LSPEclipseUtils.getDocument(file);
+			IDocument document = null;
+			var file = LSPEclipseUtils.getFileHandle(uri);
+			if (file == null) {
+				//load external file:
+				document = LSPEclipseUtils.getDocument(uri);
 				temporaryLoadedDocument = document != null;
+			} else {
+				document = LSPEclipseUtils.getExistingDocument(file);
+				if (document == null) {
+					document = LSPEclipseUtils.getDocument(file);
+					temporaryLoadedDocument = document != null;
+				}
 			}
 			return document;
 		}
 
-		public void setFile(IFile file) {
-			this.file = file;
-			this.symbolsModel.setUri(file.getLocationURI());
+		public void setUri(URI uri) {
+			dispose(); // disconnect old file
+			this.uri = uri;
+			this.symbolsModel.setUri(uri);
 		}
 
 		public void dispose() {
 			if (temporaryLoadedDocument) {
-				try {
-					FileBuffers.getTextFileBufferManager().disconnect(file.getFullPath(), LocationKind.IFILE,
-							new NullProgressMonitor());
-				} catch (CoreException e) {
-					LanguageServerPlugin.logError(e);
+				var file = LSPEclipseUtils.getFileHandle(uri);
+				if (file != null) {
+					try {
+						FileBuffers.getTextFileBufferManager().disconnect(file.getFullPath(), LocationKind.IFILE,
+								new NullProgressMonitor());
+					} catch (CoreException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				} else {
+					try {
+						ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
+						if (bufferManager != null) {
+							bufferManager.disconnectFileStore(EFS.getStore(uri), new NullProgressMonitor());
+						}
+					} catch (CoreException e) {
+						LanguageServerPlugin.logError(e);
+					}
 				}
 			}
 		}
@@ -140,7 +163,6 @@ public class TypeHierarchyView extends ViewPart {
 	protected TreeViewer treeViewer;
 
 	private HashMap<URI, SymbolsContainer> cachedSymbols = new HashMap<>();
-	private IDocument document;
 	private volatile String typeName;
 
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
@@ -159,13 +181,13 @@ public class TypeHierarchyView extends ViewPart {
 		public void underlyingFileMoved(IFileBuffer buffer, IPath path) {
 			var symbolsContainer = getSymbolsContainer(buffer);
 			// check if this file has been cached:
-			if (symbolsContainer != null) {
-				var file = LSPEclipseUtils.getFile(path);
-				if (file != null) {
+			if (symbolsContainer != null && buffer != null) {
+				var uri = LSPEclipseUtils.toUri(buffer);
+				if (uri != null) {
 					//update old cache:
-					symbolsContainer.setFile(file);
+					symbolsContainer.setUri(uri);
 					//create new cache element under new URI
-					cachedSymbols.put(file.getLocationURI(), new SymbolsContainer(file));
+					cachedSymbols.put(uri, new SymbolsContainer(uri));
 				}
 			}
 		}
@@ -177,22 +199,6 @@ public class TypeHierarchyView extends ViewPart {
 			return null;
 		}
 
-	};
-
-	private final IDocumentListener documentListener = new IDocumentListener() {
-
-		@Override
-		public void documentChanged(DocumentEvent event) {
-			var document = event.getDocument();
-			if (document != null) {
-				refreshMemberViewer(LSPEclipseUtils.getFile(document), typeName, true);
-			}
-		}
-
-		@Override
-		public void documentAboutToBeChanged(DocumentEvent event) {
-			// Do nothing
-		}
 	};
 
 	@Override
@@ -272,31 +278,28 @@ public class TypeHierarchyView extends ViewPart {
 		if (selection instanceof TreeSelection && !selection.isEmpty()) {
 			var element = ((TreeSelection) selection).getFirstElement();
 			if (element instanceof TypeHierarchyItem item) {
-				typeName = item.getName();
-				SymbolsContainer symbolsContainer = null;
+				URI uri = null;
 				try {
-					symbolsContainer = cachedSymbols.get(new URI(item.getUri()));
+					uri = new URI(item.getUri());
 				} catch (URISyntaxException e) {
 					LanguageServerPlugin.logError(e);
+					return;
 				}
-				IFile file = null;
-				if (symbolsContainer != null) {
-					file = symbolsContainer.file;
-				} else {
-					file = LSPEclipseUtils.getFileHandle(item.getUri());
-				}
-				refreshMemberViewer(file, typeName, false);
+				refreshMemberViewer(getSymbolsContainer(uri), item.getName(), false);
 			}
 		}
 	}
 
-	private void refreshMemberViewer(IFile file, String typeName, boolean documentModified) {
+	private void refreshMemberViewer(SymbolsContainer symbolsContainer, String typeName, boolean documentModified) {
+		memberViewer.setInput(new PendingUpdateAdapter());
+		memberLabel.setImage(JFaceResources.getImage(ProgressManager.WAITING_JOB_KEY));
+		memberLabel.setText(Messages.outline_computingSymbols);
 		PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
-			if (file != null && file.exists()) {
-				refreshSymbols(getSymbolsContainer(file), documentModified);
-				var symbol = getDocumentSymbol(typeName, file);
+			if (symbolsContainer != null) {
+				refreshSymbols(symbolsContainer, documentModified);
+				var symbol = getDocumentSymbol(symbolsContainer, typeName);
 				memberViewer.setInput(symbol);
-				memberLabel.setText(typeName);
+				memberLabel.setText(typeName + getFilePath(symbolsContainer.uri));
 				if (symbol != null ) {
 					memberViewer.getControl().setEnabled(true);
 					memberViewer.setSelection(new StructuredSelection(symbol));
@@ -304,14 +307,14 @@ public class TypeHierarchyView extends ViewPart {
 				}
 			} else {
 				memberViewer.setInput(null); // null clears it
-				var location = ""; //$NON-NLS-1$
-				if (file != null) {
-					location = file.getLocation().toOSString();
-				}
-				memberLabel.setText(Messages.bind(Messages.TH_cannot_find_file, location));
+				memberLabel.setText(Messages.TH_cannot_find_file);
 				memberLabel.setImage(null); // null clears it
 			}
 		});
+	}
+
+	private String getFilePath(URI uri) {
+		return Optional.ofNullable(uri.getPath()).map(path -> " - " + path).orElse(""); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private Control createMemberControl(ViewForm parent) {
@@ -324,7 +327,7 @@ public class TypeHierarchyView extends ViewPart {
 				DocumentSymbolWithURI container = (DocumentSymbolWithURI)((IStructuredSelection) event.getSelection()).getFirstElement();
 				var symbolsContainer = cachedSymbols.get(container.uri);
 				if (symbolsContainer != null) {
-					LSPEclipseUtils.open(symbolsContainer.file.getLocationURI().toASCIIString(), container.symbol.getRange());
+					LSPEclipseUtils.open(symbolsContainer.uri.toASCIIString(), container.symbol.getRange());
 				}
 			}
 		});
@@ -380,8 +383,8 @@ public class TypeHierarchyView extends ViewPart {
 		};
 	}
 
-	private SymbolsContainer getSymbolsContainer(IFile file) {
-		return cachedSymbols.computeIfAbsent(file.getLocationURI(), uri -> new SymbolsContainer(file));
+	private SymbolsContainer getSymbolsContainer(URI uri) {
+		return cachedSymbols.computeIfAbsent(uri, entry -> new SymbolsContainer(uri));
 	}
 
 	private synchronized void refreshSymbols(SymbolsContainer symbolsContainer, boolean documentModified) {
@@ -413,14 +416,6 @@ public class TypeHierarchyView extends ViewPart {
 				symbols.thenAcceptAsync(response -> {
 					symbolsContainer.symbolsModel.update(response);
 					symbolsContainer.isDirty = false;
-					//add listener:
-					if (!document.equals(this.document)) {
-						if (this.document != null) {
-							this.document.removeDocumentListener(documentListener);
-						}
-						this.document = document;
-						this.document.addDocumentListener(documentListener);
-					}
 				}).join();
 			} else {
 				symbolsContainer.symbolsModel.update(null);
@@ -430,8 +425,7 @@ public class TypeHierarchyView extends ViewPart {
 		}
 	}
 
-	private DocumentSymbolWithURI getDocumentSymbol(String typeName, IFile file) {
-		var symbolsContainer = cachedSymbols.get(file.getLocationURI());
+	private DocumentSymbolWithURI getDocumentSymbol(SymbolsContainer symbolsContainer, String typeName) {
 		if (symbolsContainer != null) {
 			var elements = symbolsContainer.symbolsModel.getElements();
 			for (var element : elements) {
