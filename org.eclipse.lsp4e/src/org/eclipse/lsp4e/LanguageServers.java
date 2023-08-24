@@ -90,9 +90,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	@NonNull
 	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
 		final CompletableFuture<@NonNull List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
-		return executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll)
-			// Ensure any subsequent computation added by caller does not block further incoming messages from language servers
-			.thenApplyAsync(Function.identity());
+		return onCommonPool(executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll));
 	}
 
 
@@ -397,12 +395,14 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	@SuppressWarnings("null")
 	@NonNull
 	private static <T> CompletableFuture<@NonNull List<@NonNull T>> add(@NonNull CompletableFuture<? extends @NonNull List<@NonNull T>> accumulator, @NonNull CompletableFuture<@Nullable T> element) {
-		return accumulator.thenCombine(element, (a, b) -> {
+		CompletableFuture<@NonNull List<@NonNull T>> res = accumulator.thenCombine(element, (a, b) -> {
 			if (b != null) {
 				a.add(b);
 			}
 			return a;
 		});
+		forwardCancellation(res, accumulator, element);
+		return res;
 	}
 
 	/**
@@ -415,10 +415,12 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	@SuppressWarnings("null")
 	@NonNull
 	public static <T> CompletableFuture<@NonNull List<T>> addAll(@NonNull CompletableFuture<@NonNull List<T>> accumulator, @NonNull CompletableFuture<@NonNull List<T>> another) {
-		return accumulator.thenCombine(another, (a, b) -> {
+		CompletableFuture<@NonNull List<T>> res = accumulator.thenCombine(another, (a, b) -> {
 			a.addAll(b);
 			return a;
 		});
+		forwardCancellation(res, accumulator, another);
+		return res;
 	}
 
 	/**
