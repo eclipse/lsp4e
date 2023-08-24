@@ -16,6 +16,7 @@ package org.eclipse.lsp4e;
 import java.io.File;
 import java.net.URI;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -31,6 +32,7 @@ import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.core.runtime.ServiceCaller;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -38,6 +40,9 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
+import org.eclipse.jface.text.IRegion;
+import org.eclipse.jface.text.MultiTextSelection;
+import org.eclipse.lsp4e.operations.format.LSPFormatter;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
@@ -65,11 +70,15 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private final @NonNull IDocument document;
 	private final @NonNull URI fileUri;
 	private final TextDocumentSyncKind syncKind;
+	private final LSPFormatter formatter = new LSPFormatter();
 
 	private int version = 0;
 	private DidChangeTextDocumentParams changeParams;
 	private long openSaveStamp;
 	private IPreferenceStore store;
+
+
+	private final ServiceCaller<IFormatOnSave> formatOnSave = new ServiceCaller<>(getClass(), IFormatOnSave.class);
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
 			@NonNull LanguageServer languageServer,
@@ -221,6 +230,9 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 	public void documentAboutToBeSaved() {
 		if (!serverSupportsWillSaveWaitUntil()) {
+			if (formatOnSave != null) {
+				formatOnSave.call(f -> formatDocument(f.isEnabledFor(document), f.getFormattingRegions(LSPEclipseUtils.toBuffer(document))));
+			}
 			return;
 		}
 
@@ -254,6 +266,27 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+		}
+	}
+
+	private void formatDocument(boolean enable, IRegion[] formattingRegions) {
+		if (enable && document != null && formattingRegions != null) {
+			try {
+				var textSelection = new MultiTextSelection(document, formattingRegions);
+				formatter.requestFormatting(document, textSelection).get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS)
+						.ifPresent(edits -> {
+							try {
+								edits.apply();
+							} catch (final ConcurrentModificationException ex) {
+								ServerMessageHandler.showMessage(Messages.LSPFormatHandler_DiscardedFormat, new MessageParams(MessageType.Error, Messages.LSPFormatHandler_DiscardedFormatResponse));
+							} catch (BadLocationException e) {
+								LanguageServerPlugin.logError(e);
+							}
+						});
+			} catch (BadLocationException | InterruptedException | ExecutionException
+					| TimeoutException e) {
+				LanguageServerPlugin.logError(e);
+			}
 		}
 	}
 
