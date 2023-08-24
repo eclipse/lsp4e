@@ -45,6 +45,7 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 	private LanguageServerWrapper languageServerWrapper;
 	private List<TypeHierarchyItem> hierarchyItems = Collections.emptyList();
 	public boolean showSuperTypes = true;
+	public IDocument document;
 
 	@Override
 	public Object[] getElements(Object inputElement) {
@@ -90,7 +91,8 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 
 		if (newInput instanceof HierarchyViewInput viewInput) {
 
-			IDocument document = viewInput.getDocument();
+			var document = viewInput.getDocument();
+			this.document = document;
 			if (document != null) {
 				try {
 					initialise(document, viewInput.getOffset(), (TreeViewer) viewer);
