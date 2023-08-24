@@ -229,14 +229,7 @@ public class TypeHierarchyView extends ViewPart {
 			public void doubleClick(final DoubleClickEvent event) {
 				var selection = ((IStructuredSelection) event.getSelection()).getFirstElement();
 				if (selection instanceof TypeHierarchyItem item) {
-					try {
-						var symbolsContainer = cachedSymbols.get(new URI(item.getUri()));
-						if (symbolsContainer != null) {
-							LSPEclipseUtils.open(symbolsContainer.file.getLocationURI().toASCIIString(), item.getSelectionRange());
-						}
-					} catch (URISyntaxException e) {
-						LanguageServerPlugin.logError(e);
-					}
+					LSPEclipseUtils.open(item.getUri(), item.getSelectionRange());
 				}
 			}
 		});
