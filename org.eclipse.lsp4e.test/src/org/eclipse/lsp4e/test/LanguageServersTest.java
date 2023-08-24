@@ -34,6 +34,8 @@ import java.util.function.Predicate;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -49,6 +51,7 @@ import org.eclipse.lsp4e.tests.mock.MockTextDocumentService;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
+import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ReferenceParams;
@@ -814,6 +817,14 @@ public class LanguageServersTest {
 		request = executor.collectAll(ls -> ls.getTextDocumentService().references(new ReferenceParams()));
 		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 500);
 		request.cancel(false);
+		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 100);
+		assertTrue(DisplayHelper.waitForCondition(display, 3000, () -> !MockConnectionProvider.cancellations.isEmpty()));
+		
+		// Test executor.computeAll() forwards cancellation
+		MockConnectionProvider.cancellations.clear();
+		@NonNull List<@NonNull CompletableFuture<@Nullable List<? extends Location>>> requests = executor.computeAll(ls -> ls.getTextDocumentService().references(new ReferenceParams()));
+		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 500);
+		requests.forEach(r -> r.cancel(false));
 		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 100);
 		assertTrue(DisplayHelper.waitForCondition(display, 3000, () -> !MockConnectionProvider.cancellations.isEmpty()));
 	}
