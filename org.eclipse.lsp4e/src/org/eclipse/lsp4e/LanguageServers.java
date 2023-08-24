@@ -124,10 +124,13 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	@NonNull
 	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
-		return getServers().stream()
-				.map(cf -> cf
-						.thenCompose(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)).thenApplyAsync(Function.identity())))
-				.toList();
+		return getServers().stream().map(serverFuture -> {
+					CompletableFuture<CompletableFuture<T>> requestFuture = serverFuture
+						.thenApply(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)));
+					CompletableFuture<T> res = requestFuture.thenCompose(Function.identity());
+					requestFuture.thenAccept(request -> forwardCancellation(res, request));
+					return res;
+				}).toList();
 	}
 
 	/**
@@ -167,16 +170,15 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		// a quickly-returned null to trump a slowly-returned result
 		CompletableFuture.allOf(
 				executeOnServers(queryLS)
-				.map(cf -> {
-					CompletableFuture<T> populateFuture = cf.thenApply(t -> {
+				.map(lsRequest -> {
+					CompletableFuture<T> populateFuture = lsRequest.thenApply(t -> {
 						if (!isEmpty(t)) { // some LS methods return null objects when they have nothing to report, and some return an empty List
 							result.complete(Optional.of(t));
 						}
 						return t;
 					});
 					// canceled or complete requests cancels all initial requests
-					result.whenComplete((v, t) ->
-						cf.cancel(true));
+					result.whenComplete((v, t) -> lsRequest.cancel(true));
 					return populateFuture;
 				}).toArray(CompletableFuture[]::new)
 				).whenComplete((v, t) -> completeEmptyOrWithException(result, t));
