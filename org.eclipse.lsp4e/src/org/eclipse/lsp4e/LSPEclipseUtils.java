@@ -355,7 +355,7 @@ public final class LSPEclipseUtils {
 
 	}
 
-	private static ITextFileBuffer toBuffer(IDocument document) {
+	public static ITextFileBuffer toBuffer(IDocument document) {
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
 		if (bufferManager == null)
 			return null;

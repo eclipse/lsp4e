@@ -57,3 +57,4 @@ Bundle-Vendor: Eclipse.org
 Import-Package: com.google.common.base,
  com.google.gson;version="2.7.0"
 Automatic-Module-Name: org.eclipse.lsp4e
+Service-Component: OSGI-INF/org.eclipse.lsp4e.DefaultFormatOnSave.xml
