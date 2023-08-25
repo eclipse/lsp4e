@@ -18,8 +18,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -55,6 +57,7 @@ public class LSPFoldingReconcilingStrategy
 	private IDocument document;
 	private ProjectionAnnotationModel projectionAnnotationModel;
 	private ProjectionViewer viewer;
+	private @NonNull List<CompletableFuture<List<FoldingRange>>> requests = List.of(); 
 
 	/**
 	 * A FoldingAnnotation is a {@link ProjectionAnnotation} it is folding and
@@ -125,9 +128,11 @@ public class LSPFoldingReconcilingStrategy
 		}
 		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(uri);
 		final var params = new FoldingRangeRequestParams(identifier);
-		LanguageServers.forDocument(theDocument).withCapability(ServerCapabilities::getFoldingRangeProvider)
-				.computeAll(server -> server.getTextDocumentService().foldingRange(params))
-				.forEach(ranges -> ranges.thenAccept(this::applyFolding));
+		// cancel previous requests
+		requests.forEach(request -> request.cancel(true));
+		requests = LanguageServers.forDocument(theDocument).withCapability(ServerCapabilities::getFoldingRangeProvider)
+				.computeAll(server -> server.getTextDocumentService().foldingRange(params));
+		requests.forEach(ranges -> ranges.thenAccept(this::applyFolding));
 	}
 
 	private void applyFolding(List<FoldingRange> ranges) {
