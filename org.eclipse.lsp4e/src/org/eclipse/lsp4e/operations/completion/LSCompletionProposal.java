@@ -162,6 +162,11 @@ public class LSCompletionProposal
 			if (item.getInsertTextMode() == null) {
 				item.setInsertTextMode(defaults.getInsertTextMode());
 			}
+			if (item.getTextEditText() != null && defaults.getEditRange() != null) {
+				item.setTextEdit(defaults.getEditRange().map(
+					range -> Either.forLeft(new TextEdit(range, item.getTextEditText())),
+					insertReplaceRange -> Either.forRight(new InsertReplaceEdit(item.getTextEditText(), insertReplaceRange.getInsert(), insertReplaceRange.getReplace()))));
+			}
 		}
 	}
 
