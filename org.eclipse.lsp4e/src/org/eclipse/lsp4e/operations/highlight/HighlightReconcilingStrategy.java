@@ -26,6 +26,7 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -125,6 +126,8 @@ public class HighlightReconcilingStrategy
 
 	private EditorSelectionChangedListener editorSelectionChangedListener;
 
+	private @NonNull List<@NonNull CompletableFuture<@Nullable List<? extends DocumentHighlight>>> requests = List.of();
+
 	@Override
 	public void install(ITextViewer viewer) {
 		if (viewer instanceof ISourceViewer thisSourceViewer) {
@@ -197,23 +200,20 @@ public class HighlightReconcilingStrategy
 		}
 		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(uri);
 		final var params = new DocumentHighlightParams(identifier, position);
-		request = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDocumentHighlightProvider)
-				.collectAll(languageServer -> languageServer.getTextDocumentService().documentHighlight(params)
-						.thenAcceptAsync(highlights -> {
-							if (!monitor.isCanceled()) {
-								updateAnnotations(highlights, sourceViewer.getAnnotationModel());
-							}
-						}));
+		requests = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDocumentHighlightProvider)
+				.computeAll(languageServer -> languageServer.getTextDocumentService().documentHighlight(params));
+		requests.forEach(request -> request.thenAcceptAsync(highlights -> {
+			if (!monitor.isCanceled()) {
+				updateAnnotations(highlights, sourceViewer.getAnnotationModel());
+			}
+		}));
 	}
 
 	/**
 	 * Cancel the last call of 'documentHighlight'.
 	 */
 	private void cancel() {
-		if (request != null && !request.isDone()) {
-			request.cancel(true);
-			request = null;
-		}
+		requests.forEach(request -> request.cancel(true));
 	}
 
 	/**
