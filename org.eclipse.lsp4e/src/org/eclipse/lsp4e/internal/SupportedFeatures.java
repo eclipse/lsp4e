@@ -28,6 +28,7 @@ import org.eclipse.lsp4j.CompletionCapabilities;
 import org.eclipse.lsp4j.CompletionItemCapabilities;
 import org.eclipse.lsp4j.CompletionItemInsertTextModeSupportCapabilities;
 import org.eclipse.lsp4j.CompletionItemResolveSupportCapabilities;
+import org.eclipse.lsp4j.CompletionListCapabilities;
 import org.eclipse.lsp4j.DefinitionCapabilities;
 import org.eclipse.lsp4j.DocumentHighlightCapabilities;
 import org.eclipse.lsp4j.DocumentLinkCapabilities;
@@ -84,6 +85,10 @@ public class SupportedFeatures {
 		completionItemCapabilities.setResolveSupport(new CompletionItemResolveSupportCapabilities(List.of("documentation", "detail", "additionalTextEdits"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		final var completionCapabilities = new CompletionCapabilities(completionItemCapabilities);
 		completionCapabilities.setContextSupport(Boolean.TRUE);
+		completionCapabilities.setCompletionList(new CompletionListCapabilities(List.of("commitCharacters", //$NON-NLS-1$
+                        "editRange", //$NON-NLS-1$
+                        "insertTextFormat", //$NON-NLS-1$
+                        "insertTextMode"))); //$NON-NLS-1$
 		textDocumentClientCapabilities.setCompletion(completionCapabilities);
 		final var definitionCapabilities = new DefinitionCapabilities();
 		definitionCapabilities.setLinkSupport(Boolean.TRUE);
