@@ -128,7 +128,7 @@ public class LSSearchQuery extends FileSearchQuery {
 					int endOffset = LSPEclipseUtils.toOffset(location.getRange().getEnd(), document);
 
 					IRegion lineInformation = document.getLineInformationOfOffset(startOffset);
-					final var lineEntry = new LineElement(resource, document.getLineOfOffset(startOffset),
+					final var lineEntry = new LineElement(resource, document.getLineOfOffset(startOffset) + 1,
 							lineInformation.getOffset(),
 							document.get(lineInformation.getOffset(), lineInformation.getLength()));
 					return new FileMatch((IFile) resource, startOffset, endOffset - startOffset, lineEntry);
@@ -146,7 +146,7 @@ public class LSSearchQuery extends FileSearchQuery {
 			}
 
 			Position startPosition = location.getRange().getStart();
-			final var lineEntry = new LineElement(resource, startPosition.getLine(), 0,
+			final var lineEntry = new LineElement(resource, startPosition.getLine() + 1, 0,
 					String.format("%s:%s", startPosition.getLine(), startPosition.getCharacter())); //$NON-NLS-1$
 			return new FileMatch((IFile) resource, 0, 0, lineEntry);
 		}
