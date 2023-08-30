@@ -33,6 +33,7 @@ import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.search.internal.ui.text.FileMatch;
 import org.eclipse.search.ui.IQueryListener;
 import org.eclipse.search.ui.ISearchQuery;
 import org.eclipse.search.ui.ISearchResult;
@@ -194,10 +195,16 @@ public class FindReferencesTest {
 				final var match1 = lsSearchResult.getMatches(file)[0];
 				assertEquals(6, match1.getOffset());
 				assertEquals(5, match1.getLength());
+				if(match1 instanceof FileMatch fileMatch) {
+					assertEquals(1, fileMatch.getLineElement().getLine());
+				}
 
 				final var match2 = lsSearchResult.getMatches(file)[1];
 				assertEquals(18, match2.getOffset());
 				assertEquals(5, match2.getLength());
+				if(match2 instanceof FileMatch fileMatch) {
+					assertEquals(2, fileMatch.getLineElement().getLine());
+				}
 
 				if (searchDuration.get() < 0) {
 					searchDuration.set(now - startAt);
