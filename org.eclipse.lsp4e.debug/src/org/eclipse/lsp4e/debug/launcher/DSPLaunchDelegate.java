@@ -25,6 +25,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.core.variables.VariablesPlugin;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
@@ -39,9 +40,6 @@ import org.eclipse.lsp4e.debug.debugmodel.TransportStreams;
 import org.eclipse.lsp4e.debug.debugmodel.TransportStreams.DefaultTransportStreams;
 import org.eclipse.lsp4e.debug.debugmodel.TransportStreams.SocketTransportStreams;
 import org.eclipse.osgi.util.NLS;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 
@@ -209,20 +207,16 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		builder.port = configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_PORT, 0);
 
 		String dspParametersJson = configuration.getAttribute(DSPPlugin.ATTR_DSP_PARAM, (String) null);
-		builder.dspParameters = jsonToMap(dspParametersJson);
+		try {
+			JsonParserWithStringSubstitution jsonUtils = new JsonParserWithStringSubstitution(
+					VariablesPlugin.getDefault().getStringVariableManager());
+			Map<String, Object> customParams = jsonUtils.parseJsonObject(dspParametersJson);
+			builder.dspParameters.putAll(customParams);
+		} catch (IllegalStateException e) {
+			abort("Json launch parameters were not correctly formatted.", e); //$NON-NLS-1$
+		}
 
 		launch(builder);
-	}
-
-	private Map<String, Object> jsonToMap(String dspParametersJson) {
-		final var gson = new Gson();
-		final var type = new TypeToken<Map<String, Object>>() {
-		}.getType();
-		Map<String, Object> dspParameters = gson.fromJson(dspParametersJson, type);
-		if (dspParameters == null) {
-			dspParameters = new HashMap<>();
-		}
-		return dspParameters;
 	}
 
 	public void launch(DSPLaunchDelegateLaunchBuilder builderSrc) throws CoreException {
@@ -247,8 +241,14 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		}
 		if (customLaunchParameters) {
 			String dspParametersJson = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_PARAM, (String) null);
-			Map<String, Object> customParams = jsonToMap(dspParametersJson);
-			builder.dspParameters.putAll(customParams);
+			try {
+				JsonParserWithStringSubstitution jsonUtils = new JsonParserWithStringSubstitution(
+						VariablesPlugin.getDefault().getStringVariableManager());
+				Map<String, Object> customParams = jsonUtils.parseJsonObject(dspParametersJson);
+				builder.dspParameters.putAll(customParams);
+			} catch (IllegalStateException | CoreException e) {
+				abort("Json launch parameters were not correctly formatted.", e); //$NON-NLS-1$
+			}
 		}
 
 		// DSP supports run/debug as a simple flag to the debug server.
@@ -366,8 +366,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 
 			ILaunch launch = builder.launch;
 			Map<String, Object> dspParameters = builder.dspParameters;
-			IDebugTarget target = createDebugTarget(subMonitor, streamSupplier, launch,
-					dspParameters);
+			IDebugTarget target = createDebugTarget(subMonitor, streamSupplier, launch, dspParameters);
 			builder.launch.addDebugTarget(target);
 		} catch (OperationCanceledException e1) {
 			abort("Failed to start debugging", e1);
@@ -383,7 +382,8 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	 * of {@link DSPDebugTarget}, but does not have to be. The arguments to this
 	 * method are normally just passed to {@link DSPDebugTarget} constructor.
 	 */
-	protected IDebugTarget createDebugTarget(SubMonitor subMonitor, Supplier<TransportStreams> streamsSupplier, ILaunch launch, Map<String, Object> dspParameters) throws CoreException {
+	protected IDebugTarget createDebugTarget(SubMonitor subMonitor, Supplier<TransportStreams> streamsSupplier,
+			ILaunch launch, Map<String, Object> dspParameters) throws CoreException {
 		final var target = new DSPDebugTarget(launch, streamsSupplier, dspParameters);
 		target.initialize(subMonitor.split(80));
 		return target;
