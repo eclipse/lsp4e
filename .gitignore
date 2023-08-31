@@ -5,3 +5,4 @@ bin/
 .META-INF_MANIFEST.MF
 dash-licenses/
 *.log
+**/.settings
