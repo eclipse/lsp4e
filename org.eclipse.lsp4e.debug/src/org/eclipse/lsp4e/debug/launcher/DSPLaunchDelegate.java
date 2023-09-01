@@ -36,6 +36,7 @@ import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
 import org.eclipse.debug.core.model.IProcess;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
+import org.eclipse.lsp4e.debug.debugmodel.JsonParserWithStringSubstitution;
 import org.eclipse.lsp4e.debug.debugmodel.TransportStreams;
 import org.eclipse.lsp4e.debug.debugmodel.TransportStreams.DefaultTransportStreams;
 import org.eclipse.lsp4e.debug.debugmodel.TransportStreams.SocketTransportStreams;

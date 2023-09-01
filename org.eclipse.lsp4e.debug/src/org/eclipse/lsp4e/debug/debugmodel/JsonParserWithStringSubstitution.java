@@ -1,4 +1,12 @@
-package org.eclipse.lsp4e.debug.launcher;
+/*******************************************************************************
+ * Copyright (c) 2023 HIS Hochschul-Informations-System eG.
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.eclipse.lsp4e.debug.debugmodel;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
