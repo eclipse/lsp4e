@@ -1,4 +1,12 @@
-package org.eclipse.lsp4e.test.debug;
+/*******************************************************************************
+ * Copyright (c) 2023 HIS Hochschul-Informations-System eG.
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *******************************************************************************/
+package org.eclipse.lsp4e.test.debug.debugmodel;
 
 import static org.junit.Assert.assertEquals;
 
@@ -12,7 +20,7 @@ import org.eclipse.core.variables.IStringVariable;
 import org.eclipse.core.variables.IStringVariableManager;
 import org.eclipse.core.variables.IValueVariable;
 import org.eclipse.core.variables.IValueVariableListener;
-import org.eclipse.lsp4e.debug.launcher.JsonParserWithStringSubstitution;
+import org.eclipse.lsp4e.debug.debugmodel.JsonParserWithStringSubstitution;
 import org.junit.Test;
 
 public class JsonParserWithStringSubstitutionTest {
