@@ -230,9 +230,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 	public void documentAboutToBeSaved() {
 		if (!serverSupportsWillSaveWaitUntil()) {
-			if (formatOnSave != null) {
-				formatOnSave.call(f -> formatDocument(f.isEnabledFor(document), f.getFormattingRegions(LSPEclipseUtils.toBuffer(document))));
-			}
+			// format document if service has been provided:
+			formatOnSave.call(f -> formatDocument(f.isEnabledFor(document), f.getFormattingRegions(LSPEclipseUtils.toBuffer(document))));
 			return;
 		}
 
