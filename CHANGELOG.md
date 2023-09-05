@@ -1,5 +1,8 @@
 ## LSP4E Changelog and New and Noteworthy
 
+The [GitHub releases page](https://github.com/eclipse/lsp4e/releases) provides changelog and details on all releases.
+Older releases are listed below.
+
 ### 0.20.2
 
 📅 Release Date: February 3rd, 2022
