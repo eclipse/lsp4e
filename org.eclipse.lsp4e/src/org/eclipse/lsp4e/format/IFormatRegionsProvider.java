@@ -9,26 +9,20 @@
  * Contributors:
  *   See git history
  *******************************************************************************/
-package org.eclipse.lsp4e;
+package org.eclipse.lsp4e.format;
 
-import org.eclipse.core.filebuffers.ITextFileBuffer;
+import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 
-public interface IFormatOnSave {
+public interface IFormatRegionsProvider {
 
 	/**
-	 * Checks whether formatting shall be performed prior to file buffer saving.
+	 * Get the formatting regions
 	 * @param document
-	 * @return true if document buffer shall be formatted prior saving
+	 * @return region to be formatted or null
+	 * @throws CoreException
 	 */
-	boolean isEnabledFor(IDocument document);
-
-	/**
-	 * Get the regions to be formatted (e.g. full file, lines edited this session, lines edited vs. source control baseline).
-	 * @param buffer the buffer to compare contents from
-	 * @return regions to be formatted before saving.
-	 */
-	IRegion[] getFormattingRegions(ITextFileBuffer buffer);
+	IRegion[] getFormattingRegions(IDocument document) throws CoreException;
 
 }

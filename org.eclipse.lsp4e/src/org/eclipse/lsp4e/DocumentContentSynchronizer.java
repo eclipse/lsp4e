@@ -42,6 +42,8 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.MultiTextSelection;
+import org.eclipse.lsp4e.format.FormatRegionsProvider;
+import org.eclipse.lsp4e.format.IFormatRegionsProvider;
 import org.eclipse.lsp4e.operations.format.LSPFormatter;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
@@ -71,6 +73,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private final @NonNull URI fileUri;
 	private final TextDocumentSyncKind syncKind;
 	private final LSPFormatter formatter = new LSPFormatter();
+	private final FormatRegionsProvider regionsProvider = new FormatRegionsProvider();
 
 	private int version = 0;
 	private DidChangeTextDocumentParams changeParams;
@@ -78,7 +81,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private IPreferenceStore store;
 
 
-	private final ServiceCaller<IFormatOnSave> formatOnSave = new ServiceCaller<>(getClass(), IFormatOnSave.class);
+//	private final ServiceCaller<IFormatOnSave> formatOnSave = new ServiceCaller<>(getClass(), IFormatOnSave.class);
+	private final ServiceCaller<IFormatRegionsProvider> formatRegionsProvider = new ServiceCaller<>(getClass(), IFormatRegionsProvider.class);
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
 			@NonNull LanguageServer languageServer,
@@ -231,7 +235,13 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	public void documentAboutToBeSaved() {
 		if (!serverSupportsWillSaveWaitUntil()) {
 			// format document if service has been provided:
-			formatOnSave.call(f -> formatDocument(f.isEnabledFor(document), f.getFormattingRegions(LSPEclipseUtils.toBuffer(document))));
+			formatRegionsProvider.call(f -> {
+				try {
+					formatDocument(f.getFormattingRegions(document));
+				} catch (CoreException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			});
 			return;
 		}
 
@@ -268,10 +278,10 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 	}
 
-	private void formatDocument(boolean enable, IRegion[] formattingRegions) {
-		if (enable && document != null && formattingRegions != null) {
+	private void formatDocument(IRegion[] regions) {
+		if (regions != null && document != null) {
 			try {
-				var textSelection = new MultiTextSelection(document, formattingRegions);
+				var textSelection = new MultiTextSelection(document, regions);
 				formatter.requestFormatting(document, textSelection).get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS)
 						.ifPresent(edits -> {
 							try {
@@ -282,8 +292,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 								LanguageServerPlugin.logError(e);
 							}
 						});
-			} catch (BadLocationException | InterruptedException | ExecutionException
-					| TimeoutException e) {
+			} catch (BadLocationException | InterruptedException | ExecutionException | TimeoutException e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
