@@ -19,7 +19,7 @@ import org.osgi.service.component.annotations.Component;
 
 @Component(property = { "service.ranking:Integer=0" })
 public class DefaultRegionsProvider implements IFormatRegionsProvider {
-	private final FormatEditedLines formatEditedLines = new FormatEditedLines();
+	private final IFormatRegions notFormat = new NoFormat();
 
 	@Override
 	public boolean isEnabledFor(URI uri) {
@@ -29,7 +29,7 @@ public class DefaultRegionsProvider implements IFormatRegionsProvider {
 	@Override
 	public IRegion[] getFormattingRegions(IDocument document) {
 		//TODO: return regions provider depending on LSP4E preference e.g. NO_FORMAT, EDITED_LINES, ALL_LINES
-		return formatEditedLines.getFormattingRegions(document);
+		return notFormat.getFormattingRegions(document);
 	}
 }
 
