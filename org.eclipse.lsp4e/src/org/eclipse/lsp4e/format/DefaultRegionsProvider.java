@@ -11,21 +11,17 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.format;
 
-/**
- * Format strategy to be applied to a document.
- *
- */
-public enum FormatStrategy {
-	/**
-	 * No formatting. Disables the formatting for the given document.
-	 */
-	NO_FORMAT,
-	/**
-	 * Format all lines
-	 */
-	ALL_LINES,
-	/**
-	 * Format edited lines
-	 */
-	EDITED_LINES;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IRegion;
+import org.osgi.service.component.annotations.Component;
+
+@Component(property = { "service.ranking:Integer=0" })
+public class DefaultRegionsProvider implements IFormatRegionsProvider {
+
+	@Override
+	public IRegion[] getFormattingRegions(IDocument document) {
+		//TODO: return regions provider depending on LSP4E preference e.g. NO_FORMAT, EDITED_LINES, ALL_LINES
+		return new EditedLinesRegionsProvider().getFormattingRegions(document);
+	}
 }
+
