@@ -15,14 +15,18 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 
+/**
+ * Can be implemented by clients as OSGi service
+ * to provide editor specific formatting regions for format-on-save feature.
+ */
 public interface IFormatRegionsProvider {
 
 	/**
 	 * Get the formatting regions
 	 * @param document
-	 * @return region to be formatted or null
+	 * @return region to be formatted or null if document should not be formatted on save.
 	 * @throws CoreException
 	 */
-	IRegion[] getFormattingRegions(IDocument document) throws CoreException;
+	IRegion[] getFormattingRegions(IDocument document);
 
 }

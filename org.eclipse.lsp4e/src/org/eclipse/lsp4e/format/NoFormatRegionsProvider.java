@@ -12,17 +12,16 @@
 package org.eclipse.lsp4e.format;
 
 import org.eclipse.jface.text.IDocument;
-import org.osgi.service.component.annotations.Component;
+import org.eclipse.jface.text.IRegion;
 
-@Component(property = { "service.ranking:Integer=0" })
-public class DefaultFormatOnSave implements IFormatOnSave {
+/**
+ * Default implementation if format-on-save should be disabled.
+ */
+public class NoFormatRegionsProvider implements IFormatRegionsProvider {
 
 	@Override
-	public FormatStrategy getFormatStrategy(IDocument document) {
-		//TODO: return format strategy depending on LSP4E preferences.
-		// Currently disabled
-		return FormatStrategy.NO_FORMAT;
+	public IRegion[] getFormattingRegions(IDocument document) {
+		return null;
 	}
 
 }
-

@@ -42,7 +42,6 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.MultiTextSelection;
-import org.eclipse.lsp4e.format.FormatRegionsProvider;
 import org.eclipse.lsp4e.format.IFormatRegionsProvider;
 import org.eclipse.lsp4e.operations.format.LSPFormatter;
 import org.eclipse.lsp4e.ui.Messages;
@@ -73,7 +72,6 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private final @NonNull URI fileUri;
 	private final TextDocumentSyncKind syncKind;
 	private final LSPFormatter formatter = new LSPFormatter();
-	private final FormatRegionsProvider regionsProvider = new FormatRegionsProvider();
 
 	private int version = 0;
 	private DidChangeTextDocumentParams changeParams;
@@ -81,7 +79,6 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private IPreferenceStore store;
 
 
-//	private final ServiceCaller<IFormatOnSave> formatOnSave = new ServiceCaller<>(getClass(), IFormatOnSave.class);
 	private final ServiceCaller<IFormatRegionsProvider> formatRegionsProvider = new ServiceCaller<>(getClass(), IFormatRegionsProvider.class);
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
@@ -235,13 +232,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	public void documentAboutToBeSaved() {
 		if (!serverSupportsWillSaveWaitUntil()) {
 			// format document if service has been provided:
-			formatRegionsProvider.call(f -> {
-				try {
-					formatDocument(f.getFormattingRegions(document));
-				} catch (CoreException e) {
-					LanguageServerPlugin.logError(e);
-				}
-			});
+			formatRegionsProvider.call(f -> { formatDocument(f.getFormattingRegions(document));});
 			return;
 		}
 
