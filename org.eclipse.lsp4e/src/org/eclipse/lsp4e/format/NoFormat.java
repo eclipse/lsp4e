@@ -11,20 +11,17 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.format;
 
-import java.net.URI;
+import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.IRegion;
 
 /**
- * Can be implemented by clients as OSGi service
- * to provide editor specific formatting regions for the format-on-save feature.
+ * Default implementation if nothing should be formatted during format-on-save.
  */
-public interface IFormatRegionsProvider extends IFormatRegions {
+public class NoFormat implements IFormatRegions {
 
-	/**
-	 * Checks whether this provider can be applied to the given URI.
-	 * Ensures that this service is only used for its associated language.
-	 * @param uri
-	 * @return true if the provider can be applied to the given URI
-	 */
-	boolean isEnabledFor(URI uri);
+	@Override
+	public IRegion[] getFormattingRegions(IDocument document) {
+		return null;
+	}
 
 }

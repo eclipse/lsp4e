@@ -11,17 +11,25 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.format;
 
+import java.net.URI;
+
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.osgi.service.component.annotations.Component;
 
 @Component(property = { "service.ranking:Integer=0" })
 public class DefaultRegionsProvider implements IFormatRegionsProvider {
+	private final FormatEditedLines formatEditedLines = new FormatEditedLines();
+
+	@Override
+	public boolean isEnabledFor(URI uri) {
+		return true; //The default provider can be used for all languages.
+	}
 
 	@Override
 	public IRegion[] getFormattingRegions(IDocument document) {
 		//TODO: return regions provider depending on LSP4E preference e.g. NO_FORMAT, EDITED_LINES, ALL_LINES
-		return new EditedLinesRegionsProvider().getFormattingRegions(document);
+		return formatEditedLines.getFormattingRegions(document);
 	}
 }
 
