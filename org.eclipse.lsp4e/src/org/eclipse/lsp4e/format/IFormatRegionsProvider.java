@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.format;
 
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 
@@ -25,7 +24,6 @@ public interface IFormatRegionsProvider {
 	 * Get the formatting regions
 	 * @param document
 	 * @return region to be formatted or null if document should not be formatted on save.
-	 * @throws CoreException
 	 */
 	IRegion[] getFormattingRegions(IDocument document);
 
