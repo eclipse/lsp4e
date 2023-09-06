@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -74,7 +74,11 @@ public class LanguageClientImpl implements LanguageClient {
 	@Override
 	public CompletableFuture<List<Object>> configuration(ConfigurationParams configurationParams) {
 		// override as needed
-		return CompletableFuture.completedFuture(Collections.emptyList());
+		List<Object> list = new ArrayList<>(configurationParams.getItems().size());
+		for (int i = 0; i < configurationParams.getItems().size(); i++) {
+			list.add(null);
+		}
+		return CompletableFuture.completedFuture(list);
 	}
 
 	@Override
