@@ -13,15 +13,16 @@ package org.eclipse.lsp4e.format;
 
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
+import org.eclipse.jface.text.Region;
 
 /**
- * Default implementation if format-on-save should be disabled.
+ * Default implementation. Can be returned by a {@link IFormatRegionsProvider} if 'Format all lines' is selected.
  */
-public class NoFormatRegionsProvider implements IFormatRegionsProvider {
+public class FormatAllLines implements IFormatRegions {
 
 	@Override
 	public IRegion[] getFormattingRegions(IDocument document) {
-		return null;
+		return new IRegion[] { new Region(0, document.getLength()) };
 	}
 
 }

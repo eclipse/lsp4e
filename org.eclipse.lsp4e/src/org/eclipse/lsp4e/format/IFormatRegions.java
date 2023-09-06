@@ -13,17 +13,14 @@ package org.eclipse.lsp4e.format;
 
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
-import org.eclipse.jface.text.Region;
 
-/**
- * Default implementation for a {@link IFormatRegionsProvider}.
- * Can be returned by clients if 'Format all lines' is selected.
- */
-public class AllLinesRegionsProvider implements IFormatRegionsProvider {
+public interface IFormatRegions {
 
-	@Override
-	public IRegion[] getFormattingRegions(IDocument document) {
-		return new IRegion[] { new Region(0, document.getLength()) };
-	}
+	/**
+	 * Get the formatting regions
+	 * @param document
+	 * @return region to be formatted or null if document should not be formatted on save.
+	 */
+	IRegion[] getFormattingRegions(IDocument document);
 
 }

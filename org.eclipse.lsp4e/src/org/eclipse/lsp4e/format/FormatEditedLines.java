@@ -36,10 +36,9 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 
 /**
- * Default implementation for a {@link IFormatRegionsProvider}.
- * Can be returned by clients if 'Format edited lines'  is selected.
+ * Default implementation. Can be returned by a {@link IFormatRegionsProvider} if 'Format edited lines' is selected.
  */
-public class EditedLinesRegionsProvider implements IFormatRegionsProvider {
+public class FormatEditedLines implements IFormatRegions {
 
 	@Override
 	public IRegion[] getFormattingRegions(IDocument document) {
