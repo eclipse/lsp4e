@@ -32,7 +32,6 @@ import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.core.runtime.ServiceCaller;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -41,19 +40,23 @@ import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentListener;
 import org.eclipse.jface.text.IRegion;
+import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.MultiTextSelection;
 import org.eclipse.lsp4e.format.IFormatRegionsProvider;
+import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4e.operations.format.LSPFormatter;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.lsp4j.FormattingOptions;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.TextDocumentSaveReason;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
@@ -64,6 +67,9 @@ import org.eclipse.lsp4j.WillSaveTextDocumentParams;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.osgi.util.NLS;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
 
@@ -71,15 +77,12 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private final @NonNull IDocument document;
 	private final @NonNull URI fileUri;
 	private final TextDocumentSyncKind syncKind;
-	private final LSPFormatter formatter = new LSPFormatter();
 
 	private int version = 0;
 	private DidChangeTextDocumentParams changeParams;
 	private long openSaveStamp;
 	private IPreferenceStore store;
-
-
-	private final ServiceCaller<IFormatRegionsProvider> formatRegionsProvider = new ServiceCaller<>(getClass(), IFormatRegionsProvider.class);
+	private IFormatRegionsProvider formatRegionsProvider;
 
 	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
 			@NonNull LanguageServer languageServer,
@@ -232,7 +235,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	public void documentAboutToBeSaved() {
 		if (!serverSupportsWillSaveWaitUntil()) {
 			// format document if service has been provided:
-			formatRegionsProvider.call(f -> { formatDocument(f.getFormattingRegions(document));});
+			formatDocument();
 			return;
 		}
 
@@ -269,24 +272,70 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 	}
 
-	private void formatDocument(IRegion[] regions) {
+	private void formatDocument() {
+		var regions = getFormatRegions();
 		if (regions != null && document != null) {
 			try {
 				var textSelection = new MultiTextSelection(document, regions);
-				formatter.requestFormatting(document, textSelection).get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS)
-						.ifPresent(edits -> {
-							try {
-								edits.apply();
-							} catch (final ConcurrentModificationException ex) {
-								ServerMessageHandler.showMessage(Messages.LSPFormatHandler_DiscardedFormat, new MessageParams(MessageType.Error, Messages.LSPFormatHandler_DiscardedFormatResponse));
-							} catch (BadLocationException e) {
-								LanguageServerPlugin.logError(e);
-							}
-						});
+				var edits = requestFormatting(document, textSelection).get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS);
+				if (edits != null) {
+					try {
+						edits.apply();
+					} catch (final ConcurrentModificationException ex) {
+						ServerMessageHandler.showMessage(Messages.LSPFormatHandler_DiscardedFormat, new MessageParams(MessageType.Error, Messages.LSPFormatHandler_DiscardedFormatResponse));
+					} catch (BadLocationException e) {
+						LanguageServerPlugin.logError(e);
+					}
+				};
 			} catch (BadLocationException | InterruptedException | ExecutionException | TimeoutException e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
+	}
+
+	private synchronized IRegion[] getFormatRegions() {
+		if (formatRegionsProvider != null) {
+			return formatRegionsProvider.getFormattingRegions(document);
+		}
+		var serverId = "(serverDefinitionId=" + languageServerWrapper.serverDefinition.id + ")";  //$NON-NLS-1$ //$NON-NLS-2$
+		var bundleContext = FrameworkUtil.getBundle(this.getClass()).getBundleContext();
+		if (bundleContext != null) {
+			try {
+				ServiceReference<?> reference = null;
+				var serviceReferences = bundleContext.getAllServiceReferences(IFormatRegionsProvider.class.getName(), serverId);
+				if (serviceReferences != null) {
+					reference = serviceReferences[0];
+				} else {
+					//Use LSP4E default implementation:
+					reference = bundleContext.getServiceReference(IFormatRegionsProvider.class.getName());
+				}
+				if (reference != null) {
+					formatRegionsProvider = (IFormatRegionsProvider) bundleContext.getService(reference);
+					if (formatRegionsProvider != null) {
+						return formatRegionsProvider.getFormattingRegions(document);
+					}
+				}
+			} catch (InvalidSyntaxException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
+		return null;
+	}
+
+	private CompletableFuture<VersionedEdits> requestFormatting(@NonNull IDocument document, @NonNull ITextSelection textSelection) throws BadLocationException {
+		long modificationStamp = DocumentUtil.getDocumentModificationStamp(document);
+
+		FormattingOptions formatOptions = LSPFormatter.getFormatOptions();
+		TextDocumentIdentifier docId = new TextDocumentIdentifier(fileUri.toString());
+
+		final ServerCapabilities capabilities = languageServerWrapper.getServerCapabilities();
+		if (LSPFormatter.isDocumentRangeFormattingSupported(capabilities)
+				&& !(LSPFormatter.isDocumentFormattingSupported(capabilities) && textSelection.getLength() == 0)) {
+			var rangeParams = LSPFormatter.getRangeFormattingParams(document, textSelection, formatOptions, docId);
+			return languageServerWrapper.executeImpl(ls -> ls.getTextDocumentService().rangeFormatting(rangeParams).thenApply(edits -> new VersionedEdits(modificationStamp, edits, document)));
+		}
+		var params = LSPFormatter.getFullFormatParams(formatOptions, docId);
+		return languageServerWrapper.executeImpl(ls -> ls.getTextDocumentService().formatting(params).thenApply(edits -> new VersionedEdits(modificationStamp, edits, document)));
 	}
 
 	public void documentSaved(IFileBuffer buffer) {
