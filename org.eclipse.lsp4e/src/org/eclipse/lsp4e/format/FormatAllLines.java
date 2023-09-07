@@ -16,7 +16,7 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.Region;
 
 /**
- * Default implementation. Can be returned by a {@link IFormatRegionsProvider} if 'Format all lines' is selected.
+ * Default implementation if 'Format all lines' is selected.
  */
 public class FormatAllLines implements IFormatRegions {
 

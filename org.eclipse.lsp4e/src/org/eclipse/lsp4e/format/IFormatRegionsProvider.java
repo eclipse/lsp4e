@@ -11,20 +11,22 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.format;
 
-import java.net.URI;
-
 /**
  * Can be implemented by clients as OSGi service
  * to provide editor specific formatting regions for the format-on-save feature.
+ * The OSGi component service has to implement the {@code serverDefinitionId} property.
+ * The value must be the {@code server id} of the corresponding {@code languageServer} extension point.
+ * This service will then be used for documents who are connected to this language server.
+ * <p>Example:
+ * <pre>{@code
+ * @Component(property = { "serverDefinitionId:String=org.eclipse.cdt.lsp.server" })
+ * public interface IFormatRegionsProvider {
+ *  	IRegion[] getFormattingRegions(IDocument document){
+ *  		//formats whole document:
+ * 			new IRegion[] { new Region(0, document.getLength()) };
+ * }
+ * }</pre>
  */
 public interface IFormatRegionsProvider extends IFormatRegions {
-
-	/**
-	 * Checks whether this provider can be applied to the given URI.
-	 * Ensures that this service is only used for its associated language.
-	 * @param uri
-	 * @return true if the provider can be applied to the given URI
-	 */
-	boolean isEnabledFor(URI uri);
 
 }

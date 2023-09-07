@@ -36,7 +36,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 
 /**
- * Default implementation. Can be returned by a {@link IFormatRegionsProvider} if 'Format edited lines' is selected.
+ * Default implementation if 'Format edited lines' is selected.
  */
 public class FormatEditedLines implements IFormatRegions {
 
