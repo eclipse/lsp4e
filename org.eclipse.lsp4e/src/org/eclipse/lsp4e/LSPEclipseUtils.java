@@ -234,7 +234,7 @@ public final class LSPEclipseUtils {
 				} else {
 					// According to LSP 3.17 specification: the triggerCharacter in CompletionContext is undefined if
 					// triggerKind != CompletionTriggerKind.TriggerCharacter
-					param.setContext(new CompletionContext(CompletionTriggerKind.Invoked, null));
+					param.setContext(new CompletionContext(CompletionTriggerKind.Invoked));
 				}
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logError(e);
