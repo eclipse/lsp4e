@@ -110,10 +110,10 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	private final IProject project;
 
-	public LSPSymbolInWorkspaceDialog(Shell shell, IProject project) {
+	public LSPSymbolInWorkspaceDialog(Shell shell, IProject project, BoldStylerProvider stylerProvider) {
 		super(shell);
 		this.project = project;
-		this.labelProvider = new InternalSymbolsLabelProvider(new BoldStylerProvider(shell.getFont()));
+		this.labelProvider = new InternalSymbolsLabelProvider(stylerProvider);
 		setMessage(Messages.LSPSymbolInWorkspaceDialog_DialogLabel);
 		setTitle(Messages.LSPSymbolInWorkspaceDialog_DialogTitle);
 		setListLabelProvider(labelProvider);
