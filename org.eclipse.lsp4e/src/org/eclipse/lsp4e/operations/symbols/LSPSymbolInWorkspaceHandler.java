@@ -17,6 +17,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
@@ -56,10 +57,13 @@ public class LSPSymbolInWorkspaceHandler extends LSPDocumentAbstractHandler {
 		if (site == null) {
 			return null;
 		}
-		final var dialog = new LSPSymbolInWorkspaceDialog(site.getShell(), project);
+		var styleProvider = new BoldStylerProvider(site.getShell().getFont());
+		final var dialog = new LSPSymbolInWorkspaceDialog(site.getShell(), project, styleProvider);
 		if (dialog.open() != IDialogConstants.OK_ID) {
+			styleProvider.dispose();
 			return null;
 		}
+		styleProvider.dispose();
 		final var symbolInformation = ((WorkspaceSymbol) dialog.getFirstResult()).getLocation();
 		if (symbolInformation.isLeft()) {
 			LSPEclipseUtils.openInEditor(symbolInformation.getLeft());
