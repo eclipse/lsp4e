@@ -59,11 +59,11 @@ public class LSPSymbolInWorkspaceHandler extends LSPDocumentAbstractHandler {
 		}
 		var styleProvider = new BoldStylerProvider(site.getShell().getFont());
 		final var dialog = new LSPSymbolInWorkspaceDialog(site.getShell(), project, styleProvider);
-		if (dialog.open() != IDialogConstants.OK_ID) {
-			styleProvider.dispose();
+		int code = dialog.open();
+		styleProvider.dispose();
+		if (code != IDialogConstants.OK_ID) {
 			return null;
 		}
-		styleProvider.dispose();
 		final var symbolInformation = ((WorkspaceSymbol) dialog.getFirstResult()).getLocation();
 		if (symbolInformation.isLeft()) {
 			LSPEclipseUtils.openInEditor(symbolInformation.getLeft());
