@@ -21,13 +21,11 @@ import org.osgi.service.component.annotations.Component;
  */
 @Component
 public class DefaultFormatRegionsProvider implements IFormatRegionsProvider {
-	private final IFormatRegions noFormat = new NoFormat();
 
 	@Override
 	public IRegion[] getFormattingRegions(IDocument document) {
-		//TODO: return region depending on a LSP4E preference: NO_FORMAT, EDITED_LINES, ALL_LINES
-		// return NO_FORMAT until user can disable the format-on-save feature.
-		return noFormat.getFormattingRegions(document);
+		// return null until user can disable the format-on-save feature in LSP4E.
+		return null;
 	}
 
 }
