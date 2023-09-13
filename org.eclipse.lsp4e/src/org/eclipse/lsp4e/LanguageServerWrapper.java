@@ -65,6 +65,8 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.internal.FileBufferListenerAdapter;
 import org.eclipse.lsp4e.internal.SupportedFeatures;
@@ -74,6 +76,7 @@ import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.ClientInfo;
 import org.eclipse.lsp4j.CodeActionOptions;
+import org.eclipse.lsp4j.DidChangeConfigurationParams;
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
 import org.eclipse.lsp4j.DocumentFormattingOptions;
 import org.eclipse.lsp4j.DocumentRangeFormattingOptions;
@@ -140,6 +143,15 @@ public class LanguageServerWrapper {
 			}
 		}
 
+	};
+
+	private final IPropertyChangeListener propertyChangeListener = new IPropertyChangeListener() {
+		@Override
+		public void propertyChange(PropertyChangeEvent event) {
+			final IConfigurationHandler configHandler = serverDefinition.getConfigurationHandler();
+			languageServer.getWorkspaceService().didChangeConfiguration(
+					new DidChangeConfigurationParams(configHandler.getConfiguration(event.getProperty())));
+		}
 	};
 
 	@NonNull
@@ -307,6 +319,11 @@ public class LanguageServerWrapper {
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
 			}).thenRun(() -> {
 				this.languageServer.initialized(new InitializedParams());
+			}).thenRun(() -> {
+				final IConfigurationHandler configHandler = serverDefinition.getConfigurationHandler();
+				this.languageServer.getWorkspaceService().didChangeConfiguration(
+						new DidChangeConfigurationParams(configHandler.getConfiguration()));
+				configHandler.getPreferenceStore().addPropertyChangeListener(propertyChangeListener);
 			}).thenRun(() -> {
 				final Map<URI, IDocument> toReconnect = filesToReconnect;
 				initializeFuture.thenRunAsync(() -> {
@@ -495,6 +512,8 @@ public class LanguageServerWrapper {
 		this.languageServer = null;
 
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
+		this.serverDefinition.getConfigurationHandler()
+			.getPreferenceStore().removePropertyChangeListener(propertyChangeListener);
 	}
 
 	public @Nullable CompletableFuture<@NonNull LanguageServerWrapper> connect(IDocument document, @NonNull IFile file)

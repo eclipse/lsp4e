@@ -89,6 +89,7 @@ public class LanguageServersRegistry {
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_ATTRIBUTE = "enabledWhen"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_DESC = "description"; //$NON-NLS-1$
+	private static final String CONFIGURATION_HANDLER_ATTRIBUTE = "configurationHandler"; //$NON-NLS-1$
 
 	public abstract static class LanguageServerDefinition {
 		public final @NonNull String id;
@@ -121,6 +122,10 @@ public class LanguageServersRegistry {
 
 		public <S extends LanguageServer> Launcher.Builder<S> createLauncherBuilder() {
 			return new Launcher.Builder<>();
+		}
+
+		public IConfigurationHandler getConfigurationHandler() {
+			return new IConfigurationHandler.DefaultConfigurationHandler();
 		}
 
 	}
@@ -222,6 +227,19 @@ public class LanguageServersRegistry {
 				}
 			}
 			return super.createLauncherBuilder();
+		}
+
+		@Override
+		public IConfigurationHandler getConfigurationHandler() {
+			final String configHandler = extension.getAttribute(CONFIGURATION_HANDLER_ATTRIBUTE);
+			if (configHandler != null && !configHandler.isEmpty()) {
+				try {
+					return (IConfigurationHandler) extension.createExecutableExtension(CONFIGURATION_HANDLER_ATTRIBUTE);
+				} catch (CoreException e) {
+					LanguageServerPlugin.logError(e);
+				}
+			}
+			return super.getConfigurationHandler();
 		}
 
 	}

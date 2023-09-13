@@ -151,6 +151,16 @@ If set to a number bigger than zero, the server will run until the timeout is re
                </documentation>
             </annotation>
          </attribute>
+         <attribute name="configurationHandler" type="string">
+            <annotation>
+               <documentation>
+                  An optional configuration handler that enables to send and update the configuration of the language server. The initial configuration is sent after receiving the initialized notification message from the language server.
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="java" basedOn=":org.eclipse.lsp4e.IConfigurationHandler"/>
+               </appinfo>
+            </annotation>
+         </attribute>
       </complexType>
    </element>
 
