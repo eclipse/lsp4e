@@ -17,6 +17,7 @@ import java.util.ConcurrentModificationException;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -38,34 +39,33 @@ public class LSPFormatHandler extends LSPDocumentAbstractHandler {
 
 	@Override
 	public Object execute(final ExecutionEvent event) throws ExecutionException {
-		final ITextEditor textEditor = UI.getActiveTextEditor();
-		if (textEditor == null)
-			return null;
+		if (HandlerUtil.getActiveEditor(event) instanceof ITextEditor textEditor) {
+			final ISelection selection = HandlerUtil.getCurrentSelection(event);
+			if (selection instanceof final ITextSelection textSelection && !textSelection.isEmpty()) {
 
-		final ISelection selection = HandlerUtil.getCurrentSelection(event);
-		if (selection instanceof final ITextSelection textSelection && !textSelection.isEmpty()) {
+				final IDocument doc = LSPEclipseUtils.getDocument(textEditor);
+				if (doc == null)
+					return null;
 
-			final IDocument doc = LSPEclipseUtils.getDocument(textEditor);
-			if (doc == null)
-				return null;
-
-			try {
-				formatter.requestFormatting(doc, textSelection)
-					.thenAcceptAsync(result -> {
-						result.ifPresent(edits -> {
-							try {
-								edits.apply();
-							} catch (final ConcurrentModificationException ex) {
-								ServerMessageHandler.showMessage(Messages.LSPFormatHandler_DiscardedFormat,
-										new MessageParams(MessageType.Error,
-												Messages.LSPFormatHandler_DiscardedFormatResponse));
-							} catch (BadLocationException e) {
-								LanguageServerPlugin.logError(e);
-							}
-						});
-					}, UI.getDisplay());
-			} catch (BadLocationException e) {
-				LanguageServerPlugin.logError(e);
+				try {
+					IPreferenceStore editorPreferenceStore = textEditor.getAdapter(IPreferenceStore.class);
+					formatter.requestFormatting(doc, textSelection, editorPreferenceStore)
+						.thenAcceptAsync(result -> {
+							result.ifPresent(edits -> {
+								try {
+									edits.apply();
+								} catch (final ConcurrentModificationException ex) {
+									ServerMessageHandler.showMessage(Messages.LSPFormatHandler_DiscardedFormat,
+											new MessageParams(MessageType.Error,
+													Messages.LSPFormatHandler_DiscardedFormatResponse));
+								} catch (BadLocationException e) {
+									LanguageServerPlugin.logError(e);
+								}
+							});
+						}, UI.getDisplay());
+				} catch (BadLocationException e) {
+					LanguageServerPlugin.logError(e);
+				}
 			}
 		}
 		return null;

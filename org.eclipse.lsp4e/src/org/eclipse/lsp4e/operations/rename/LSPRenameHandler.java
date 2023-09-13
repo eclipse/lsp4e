@@ -31,7 +31,6 @@ import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.ltk.core.refactoring.participants.ProcessorBasedRefactoring;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -39,8 +38,7 @@ public class LSPRenameHandler extends LSPDocumentAbstractHandler {
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		if (part instanceof ITextEditor textEditor) {
+		if (HandlerUtil.getActiveEditor(event) instanceof ITextEditor textEditor) {
 			ISelectionProvider provider = textEditor.getSelectionProvider();
 			if (provider == null) {
 				return null;
@@ -49,7 +47,7 @@ public class LSPRenameHandler extends LSPDocumentAbstractHandler {
 			if (sel instanceof ITextSelection textSelection && !textSelection.isEmpty()) {
 				IDocument document = LSPEclipseUtils.getDocument(textEditor);
 				if (document != null) {
-					Shell shell = part.getSite().getShell();
+					Shell shell = textEditor.getSite().getShell();
 					LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getRenameProvider);
 					if (executor.anyMatching()) {
 						int offset = textSelection.getOffset();

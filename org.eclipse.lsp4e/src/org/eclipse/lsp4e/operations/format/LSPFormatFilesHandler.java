@@ -34,6 +34,7 @@ import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.e4.core.commands.ExpressionContext;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
@@ -84,9 +85,10 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 			if (doc == null)
 				return;
 
+			IPreferenceStore filePreferenceStore = getFilePreferenceStore(file);
 			monitor.setTaskName(NLS.bind(Messages.LSPFormatFilesHandler_FormattingFile, file.getFullPath()));
 			final Optional<VersionedEdits> formatting = formatter.requestFormatting(doc,
-					new TextSelection(0, 0)).get(SINGLE_FILE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+					new TextSelection(0, 0), filePreferenceStore).get(SINGLE_FILE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
 
 			formatting.ifPresent(edits -> {
 				docProvider.aboutToChange(doc);
@@ -112,6 +114,12 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 		} finally {
 			docProvider.disconnect(file);
 		}
+	}
+
+	private static IPreferenceStore getFilePreferenceStore(@NonNull IFile file) {
+		// TODO : use preference extension point to get the proper preference store of the file
+		// See https://github.com/eclipse-platform/eclipse.platform.text/pull/130
+		return null;
 	}
 
 	protected IDocumentProvider getDocumentProvider(IFile file) {

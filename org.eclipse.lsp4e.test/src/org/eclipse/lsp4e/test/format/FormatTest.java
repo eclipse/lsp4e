@@ -63,7 +63,7 @@ public class FormatTest {
 		LSPFormatter formatter = new LSPFormatter();
 		ITextSelection selection = TextSelection.emptySelection();
 
-		Optional<VersionedEdits> edits = formatter.requestFormatting(new Document(), selection).get();
+		Optional<VersionedEdits> edits = formatter.requestFormatting(new Document(), selection, null).get();
 		assertTrue(edits.isEmpty());
 	}
 
@@ -72,26 +72,26 @@ public class FormatTest {
 		MockLanguageServer.INSTANCE.setFormattingTextEdits(Collections.emptyList());
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
-		IEditorPart editor = TestUtils.openEditor(file);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextEditor textEditor = (ITextEditor) TestUtils.openEditor(file);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(textEditor);
 
 		LSPFormatter formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
 
-		Optional<VersionedEdits> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection).get();
-		assertTrue(edits.isPresent());
-		editor.getSite().getShell().getDisplay().syncExec(() -> {
+		Optional<VersionedEdits> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection, textEditor).get();
+		assertTrue(textEditor.isPresent());
+		textEditor.getSite().getShell().getDisplay().syncExec(() -> {
 			try {
 				edits.get().apply();
 			} catch (ConcurrentModificationException | BadLocationException e) {
 				fail(e.getMessage());
 			}
 		});
-		ITextEditor textEditor = (ITextEditor) editor;
+		
 		textEditor.getDocumentProvider().getDocument(textEditor.getEditorInput());
 		assertEquals("Formatting Other Text", viewer.getDocument().get());
 
-		TestUtils.closeEditor(editor, false);
+		TestUtils.closeEditor(textEditor, false);
 	}
 
 	@Test
@@ -104,15 +104,15 @@ public class FormatTest {
 		MockLanguageServer.INSTANCE.setFormattingTextEdits(formattingTextEdits);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
-		IEditorPart editor = TestUtils.openEditor(file);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextEditor textEditor = (ITextEditor) TestUtils.openEditor(file);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(textEditor);
 
 		LSPFormatter formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
 
-		Optional<VersionedEdits> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection).get();
+		Optional<VersionedEdits> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection, textEditor).get();
 		assertTrue(edits.isPresent());
-		editor.getSite().getShell().getDisplay().syncExec(() -> {
+		textEditor.getSite().getShell().getDisplay().syncExec(() -> {
 			try {
 				edits.get().apply();
 			} catch (ConcurrentModificationException | BadLocationException e) {
@@ -120,11 +120,10 @@ public class FormatTest {
 			}
 		});
 
-		ITextEditor textEditor = (ITextEditor) editor;
 		textEditor.getDocumentProvider().getDocument(textEditor.getEditorInput());
 		assertEquals("MyFormattingOther Text Second", viewer.getDocument().get());
 
-		TestUtils.closeEditor(editor, false);
+		TestUtils.closeEditor(textEditor, false);
 	}
 
 	@Test
@@ -133,20 +132,20 @@ public class FormatTest {
 		MockLanguageServer.INSTANCE.setFormattingTextEdits(Collections.emptyList());
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
-		IEditorPart editor = TestUtils.openEditor(file);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextEditor textEditor = (ITextEditor) TestUtils.openEditor(file);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(textEditor);
 
 		LSPFormatter formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
 
-		Optional<VersionedEdits> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection).get();
+		Optional<VersionedEdits> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection, textEditor).get();
 		assertTrue(edits.isPresent());
 		viewer.getDocument().replace(0, 0, "Hello");
 		waitForAndAssertCondition(1_000,  numberOfChangesIs(1));
 
 		assertThrows(ConcurrentModificationException.class, () -> edits.get().apply());
 
-		TestUtils.closeEditor(editor, false);
+		TestUtils.closeEditor(textEditor, false);
 	}
 
 }
