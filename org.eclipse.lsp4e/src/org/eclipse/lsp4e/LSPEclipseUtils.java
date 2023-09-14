@@ -1433,7 +1433,8 @@ public final class LSPEclipseUtils {
 	}
 
 	public static URI toUri(String uri) {
-		return toUri(Path.fromPortableString(URI.create(uri).getPath()));
+		URI initialUri = URI.create(uri);
+		return FILE_SCHEME.equals(initialUri.getScheme()) ? toUri(Path.fromPortableString(initialUri.getPath())) : initialUri;
 	}
 
 	/**

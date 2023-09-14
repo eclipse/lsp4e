@@ -214,7 +214,7 @@
    <extension
          point="org.eclipse.search.searchResultViewPages">
       <viewPage
-            class="org.eclipse.search.internal.ui.text.FileSearchPage"
+            class="org.eclipse.lsp4e.operations.references.LSSearchResultPage"
             id="org.eclipse.lsp4e.lsResultPage"
             searchResultClass="org.eclipse.lsp4e.operations.references.LSSearchResult">
       </viewPage>
