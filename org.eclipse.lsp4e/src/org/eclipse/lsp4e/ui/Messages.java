@@ -95,6 +95,7 @@ public final class Messages extends NLS {
 	public static String TH_no_type_hierarchy;
 	public static String TH_diplay_hint;
 	public static String TH_cannot_find_file;
+	public static String occurrences;
 
 	static {
 		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$
