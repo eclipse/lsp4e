@@ -105,6 +105,17 @@
             contentType="org.eclipse.lsp4e.test.singleton-ls-content-type"
             id="org.eclipse.lsp4e.test.singletonLS">
       </contentTypeMapping>
+       <server
+               class="org.eclipse.lsp4e.test.utils.MockConnectionProviderWithStartException"
+               id="org.eclipse.lsp4e.test.connection-provider-with-start-exception"
+               label="Connection Provider with start exception"
+               lastDocumentDisconnectedTimeout="0"
+               >
+       </server>
+       <contentTypeMapping
+               contentType="org.eclipse.lsp4e.test.stream-provider-start-exception-content-type"
+               id="org.eclipse.lsp4e.test.connection-provider-with-start-exception">
+       </contentTypeMapping>
    </extension>
    <extension
          point="org.eclipse.core.contenttype.contentTypes">
@@ -200,6 +211,12 @@
             name="Test Content-Type associated with Singleton LS"
             priority="normal">
       </content-type>
+       <content-type
+               file-extensions="lsptStartException"
+               id="org.eclipse.lsp4e.test.stream-provider-start-exception-content-type"
+               name="Test Content-Type associated with stream provider that causes an exception in start()"
+               priority="normal">
+       </content-type>
    </extension>
    <extension
          point="org.eclipse.ui.startup">
