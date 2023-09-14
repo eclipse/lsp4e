@@ -104,6 +104,11 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		public boolean isConsistentItem(Object item) {
 			return true;
 		}
+
+		@Override
+		public boolean isSubFilter(ItemsFilter filter) {
+			return false;
+		}
 	}
 
 	private final InternalSymbolsLabelProvider labelProvider;
