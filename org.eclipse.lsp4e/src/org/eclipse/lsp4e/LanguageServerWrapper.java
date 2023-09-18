@@ -604,7 +604,7 @@ public class LanguageServerWrapper {
 				TextDocumentSyncKind syncKind = initializeFuture == null ? null
 						: serverCapabilities.getTextDocumentSync().map(Functions.identity(), TextDocumentSyncOptions::getChange);
 				final var listener = new DocumentContentSynchronizer(this, languageServer, theDocument, syncKind);
-				theDocument.addDocumentListener(listener);
+				theDocument.addPrenotifiedDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
 			}
 		}).thenApply(theVoid -> this);
@@ -618,7 +618,7 @@ public class LanguageServerWrapper {
 		DocumentContentSynchronizer documentListener = this.connectedDocuments.remove(uri);
 		CompletableFuture<Void> documentClosedFuture = null;
 		if (documentListener != null) {
-			documentListener.getDocument().removeDocumentListener(documentListener);
+			documentListener.getDocument().removePrenotifiedDocumentListener(documentListener);
 			documentClosedFuture = documentListener.documentClosed();
 		}
 		if (this.connectedDocuments.isEmpty()) {
