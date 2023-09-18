@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -27,6 +28,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.MockConnectionProviderWithStartException;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.ui.IEditorPart;
 import org.junit.Before;
@@ -114,5 +116,33 @@ public class LanguageServerWrapperTest {
 		} finally {
 			TestUtils.closeEditor(editor1, false);
 		}
+	}
+
+
+	@Test
+	public void testStartExceptionRace() throws Exception {
+		IFile testFile1 = TestUtils.createFile(project1, "shouldUseExtension.lsptStartException", "");
+
+		IEditorPart editor1 = TestUtils.openEditor(testFile1);
+
+		MockConnectionProviderWithStartException.resetCounters();
+		final int RUNS = 10;
+
+		for (int i = 0; i < RUNS; i++) {
+			MockConnectionProviderWithStartException.resetStartFuture();
+			@NonNull Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1, request -> true);
+			try {
+				MockConnectionProviderWithStartException.waitForStart();
+			} catch (TimeoutException e) {
+				throw new RuntimeException("Start #" + i + " was not called", e);
+			}
+			assertEquals(1, wrappers.size());
+			LanguageServerWrapper wrapper = wrappers.iterator().next();
+			assertTrue(!wrapper.isActive());
+			assertTrue(MockConnectionProviderWithStartException.getStartCounter() >= i);
+		}
+		waitForAndAssertCondition(2_000, () -> MockConnectionProviderWithStartException.getStopCounter() >= RUNS);
+
+		TestUtils.closeEditor(editor1, false);
 	}
 }

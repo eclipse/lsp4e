@@ -322,10 +322,13 @@ public class LanguageServerWrapper {
 				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
 			}).exceptionally(e -> {
 				LanguageServerPlugin.logError(e);
-				initializeFuture.completeExceptionally(e);
 				stop();
-				return null;
+				throw new RuntimeException(e);
 			});
+			if (this.initializeFuture.isCompletedExceptionally()) {
+				// This might happen if an exception occurred and stop() was called before this.initializeFuture was assigned
+				this.initializeFuture = null;
+			}
 		}
 	}
 
