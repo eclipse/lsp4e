@@ -482,10 +482,10 @@ public class LSCompletionProposal
 			insertText = textEdit.getNewText();
 			final var regions = new LinkedHashMap<String, List<LinkedPosition>>();
 			int insertionOffset = LSPEclipseUtils.toOffset(textEdit.getRange().getStart(), document);
-			insertionOffset = computeNewOffset(item.getAdditionalTextEdits(), insertionOffset, document);
 			if (item.getInsertTextMode() == InsertTextMode.AdjustIndentation) {
 				insertText = adjustIndentation(document, insertText, insertionOffset);
 			}
+			insertionOffset = computeNewOffset(item.getAdditionalTextEdits(), insertionOffset, document);
 			if (item.getInsertTextFormat() == InsertTextFormat.Snippet) {
 				insertText = substituteVariables(insertText);
 				// next is for tabstops, placeholders and linked edition
