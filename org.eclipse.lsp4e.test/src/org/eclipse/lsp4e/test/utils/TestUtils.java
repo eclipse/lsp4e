@@ -162,6 +162,11 @@ public class TestUtils {
 	public static synchronized IFile createUniqueTestFile(IProject p, String extension, String content)
 			throws CoreException {
 		long fileNameSalt = System.currentTimeMillis();
+		if (p == null) {
+			p = ResourcesPlugin.getWorkspace().getRoot().getProject(Long.toString(fileNameSalt));
+			p.create(null);
+			p.open(null);
+		}
 		while (p.getFile("test" + fileNameSalt + '.' + extension).exists()) {
 			fileNameSalt++;
 		}

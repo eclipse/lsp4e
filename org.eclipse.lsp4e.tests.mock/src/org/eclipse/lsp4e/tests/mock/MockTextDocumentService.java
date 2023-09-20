@@ -50,6 +50,8 @@ import org.eclipse.lsp4j.DocumentOnTypeFormattingParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
+import org.eclipse.lsp4j.FoldingRange;
+import org.eclipse.lsp4j.FoldingRangeRequestParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.LinkedEditingRangeParams;
@@ -112,6 +114,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior> mockPrepareRenameResult;
 	private List<DocumentSymbol> documentSymbols;
 	private SemanticTokens mockSemanticTokens;
+	private List<FoldingRange> foldingRanges;
 
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -255,6 +258,13 @@ public class MockTextDocumentService implements TextDocumentService {
 				Collections.rotate(this.remoteProxies, 1);
 			}
 		}
+//		if (this.foldingRanges != null && !this.foldingRanges.isEmpty()) {
+//			synchronized (this.remoteProxies) {
+//				// and we synchronize to avoid concurrent read/write on the list
+//				this.remoteProxies.get(0).foldpublishDiagnostics(
+//						new PublishDiagnosticsParams(params.getTextDocument().getUri(), this.diagnostics));
+//				Collections.rotate(this.remoteProxies, 1);
+//		}
 	}
 
 	@Override
@@ -361,6 +371,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockCodeActions = new ArrayList<>();
 		this.mockRenameEdit = null;
 		this.documentSymbols = Collections.emptyList();
+		this.foldingRanges = new ArrayList<>();
 	}
 
 	public void setDiagnostics(List<Diagnostic> diagnostics) {
@@ -438,4 +449,13 @@ public class MockTextDocumentService implements TextDocumentService {
 			new TypeHierarchyItem("Y" + params.getItem().getName(), SymbolKind.Class, params.getItem().getUri() + "/Y", DUMMY_RANGE, DUMMY_RANGE, null)
 		));
 	}
+
+	public void setFoldingRanges(List<FoldingRange> foldingRanges) {
+		this.foldingRanges = foldingRanges;
+	}
+
+	@Override
+	public CompletableFuture<List<FoldingRange>> foldingRange(FoldingRangeRequestParams params) {
+		return CompletableFuture.completedFuture(this.foldingRanges);
+	} 
 }

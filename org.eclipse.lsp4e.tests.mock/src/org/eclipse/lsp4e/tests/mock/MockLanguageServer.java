@@ -48,6 +48,8 @@ import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkOptions;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
+import org.eclipse.lsp4j.FoldingRange;
+import org.eclipse.lsp4j.FoldingRangeProviderOptions;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
@@ -176,6 +178,7 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setDocumentSymbolProvider(Boolean.TRUE);
 		capabilities.setLinkedEditingRangeProvider(new LinkedEditingRangeRegistrationOptions());
 		capabilities.setTypeHierarchyProvider(new TypeHierarchyRegistrationOptions());
+		capabilities.setFoldingRangeProvider(new FoldingRangeProviderOptions());
 		return capabilities;
 	}
 
@@ -341,5 +344,9 @@ public final class MockLanguageServer implements LanguageServer {
 				// TODO Auto-generated method stub
 			}
 		};
+	}
+
+	public void setFoldingRanges(List<FoldingRange> foldingRanges) {
+		this.textDocumentService.setFoldingRanges(foldingRanges);
 	}
 }

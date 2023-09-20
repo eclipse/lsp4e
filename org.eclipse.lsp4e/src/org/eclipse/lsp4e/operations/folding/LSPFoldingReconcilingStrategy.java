@@ -39,6 +39,7 @@ import org.eclipse.jface.text.source.projection.ProjectionViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4j.FoldingRange;
+import org.eclipse.lsp4j.FoldingRangeKind;
 import org.eclipse.lsp4j.FoldingRangeRequestParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.swt.graphics.FontMetrics;
@@ -151,7 +152,7 @@ public class LSPFoldingReconcilingStrategy
 				Collections.sort(ranges, Comparator.comparing(FoldingRange::getEndLine));
 				for (FoldingRange foldingRange : ranges) {
 					updateAnnotation(modifications, deletions, existing, additions, foldingRange.getStartLine(),
-							foldingRange.getEndLine());
+							foldingRange.getEndLine(), FoldingRangeKind.Imports.equals(foldingRange.getKind()));
 				}
 			}
 		} catch (BadLocationException e) {
@@ -227,7 +228,7 @@ public class LSPFoldingReconcilingStrategy
 	 * @throws BadLocationException
 	 */
 	private void updateAnnotation(List<Annotation> modifications, List<FoldingAnnotation> deletions,
-			List<FoldingAnnotation> existing, Map<Annotation, Position> additions, int line, Integer endLineNumber)
+			List<FoldingAnnotation> existing, Map<Annotation, Position> additions, int line, Integer endLineNumber, boolean collapsedByDefault)
 			throws BadLocationException {
 		int startOffset = document.getLineOffset(line);
 		int endOffset = document.getLineOffset(endLineNumber) + document.getLineLength(endLineNumber);
@@ -236,7 +237,7 @@ public class LSPFoldingReconcilingStrategy
 			FoldingAnnotation existingAnnotation = existing.remove(existing.size() - 1);
 			updateAnnotations(existingAnnotation, newPos, modifications, deletions);
 		} else {
-			additions.put(new FoldingAnnotation(false), newPos);
+			additions.put(new FoldingAnnotation(collapsedByDefault), newPos);
 		}
 	}
 
