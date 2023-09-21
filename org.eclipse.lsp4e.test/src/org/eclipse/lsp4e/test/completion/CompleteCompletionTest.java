@@ -518,6 +518,19 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
+	public void testAdjustIndentationWithPrefixInLine() throws Exception {
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "a\n\tb\n\tprefix\nc"));
+		CompletionItem item = new CompletionItem("line1\n\tline2\nline3");
+		item.setInsertTextMode(InsertTextMode.AdjustIndentation);
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, List.of(item)));
+		int invokeOffset = 12;
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+		assertEquals(1, proposals.length);
+		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
+		assertEquals("a\n\tb\n\tprefixline1\n\t\tline2\n\tline3\nc", viewer.getDocument().get());
+	}
+
+	@Test
 	public void testCancellation() throws Exception {
 		MockConnectionProvider.cancellations.clear();
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "a\n\tb\n\t\nc"));
