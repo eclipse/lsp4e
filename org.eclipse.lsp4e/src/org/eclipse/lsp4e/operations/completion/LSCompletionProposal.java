@@ -626,14 +626,14 @@ public class LSCompletionProposal
 	}
 
 	private String adjustIndentation(IDocument document, String insertText, int insertionOffset) throws BadLocationException {
+		int line = document.getLineOfOffset(insertionOffset);
+		int whitespaceOffset = document.getLineOffset(line);
 		final var whitespacesBeforeInsertion = new StringBuilder();
-		int whitespaceOffset = insertionOffset - 1;
-		while (whitespaceOffset >= 0 && document.getChar(whitespaceOffset) != '\n' && Character.isWhitespace(document.getChar(whitespaceOffset))) {
-			whitespacesBeforeInsertion.append(document.getChar(whitespaceOffset));
-			whitespaceOffset--;
-		}
 		whitespacesBeforeInsertion.append('\n');
-		whitespacesBeforeInsertion.reverse();
+		while (whitespaceOffset < insertionOffset && Character.isWhitespace(document.getChar(whitespaceOffset))) {
+			whitespacesBeforeInsertion.append(document.getChar(whitespaceOffset));
+			whitespaceOffset++;
+		}
 		return insertText.replace("\n", whitespacesBeforeInsertion); //$NON-NLS-1$
 	}
 
