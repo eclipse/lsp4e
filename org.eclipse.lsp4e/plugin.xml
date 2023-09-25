@@ -754,4 +754,40 @@
          </and>
       </definition>
    </extension>
+   <extension point="org.eclipse.ltk.core.refactoring.renameParticipants">
+   	<renameParticipant
+          id="org.eclipse.lsp4e.renameParticipant"
+          class="org.eclipse.lsp4e.operations.rename.LSPRenameParticipant"
+          name="LSPRenameParticipant"
+          >
+          <enablement>
+          	<and>
+          		<instanceof
+		              value="org.eclipse.core.resources.IFile">
+		        </instanceof>
+		        <test
+                     forcePluginActivation="true"
+                     property="org.eclipse.lsp4e.hasLanguageServer"/>
+          	</and>
+          </enablement>
+   	</renameParticipant>
+   	</extension>
+   	<extension point="org.eclipse.ltk.core.refactoring.moveParticipants">
+   	<moveParticipant
+          id="org.eclipse.lsp4e.renameParticipant"
+          class="org.eclipse.lsp4e.operations.rename.LSPMoveParticipant"
+          name="LSPMoveParticipant"
+          >
+          <enablement>
+          	<and>
+          		<instanceof
+		              value="org.eclipse.core.resources.IFile">
+		        </instanceof>
+		        <test
+                     forcePluginActivation="true"
+                     property="org.eclipse.lsp4e.hasLanguageServer"/>
+          	</and>
+          </enablement>
+   	</moveParticipant>
+   </extension>
 </plugin>

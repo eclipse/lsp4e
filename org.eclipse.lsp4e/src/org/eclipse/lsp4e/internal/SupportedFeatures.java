@@ -35,6 +35,7 @@ import org.eclipse.lsp4j.DocumentLinkCapabilities;
 import org.eclipse.lsp4j.DocumentSymbolCapabilities;
 import org.eclipse.lsp4j.ExecuteCommandCapabilities;
 import org.eclipse.lsp4j.FailureHandlingKind;
+import org.eclipse.lsp4j.FileOperationsWorkspaceCapabilities;
 import org.eclipse.lsp4j.FoldingRangeCapabilities;
 import org.eclipse.lsp4j.FormattingCapabilities;
 import org.eclipse.lsp4j.HoverCapabilities;
@@ -134,6 +135,9 @@ public class SupportedFeatures {
 		workspaceClientCapabilities.setExecuteCommand(new ExecuteCommandCapabilities(Boolean.TRUE));
 		workspaceClientCapabilities.setSymbol(new SymbolCapabilities(Boolean.TRUE));
 		workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);
+		FileOperationsWorkspaceCapabilities cpb = new FileOperationsWorkspaceCapabilities();
+		cpb.setWillRename(true);
+		workspaceClientCapabilities.setFileOperations(cpb);
 		WorkspaceEditCapabilities editCapabilities = new WorkspaceEditCapabilities();
 		editCapabilities.setDocumentChanges(Boolean.TRUE);
 		editCapabilities.setResourceOperations(Arrays.asList(ResourceOperationKind.Create,
