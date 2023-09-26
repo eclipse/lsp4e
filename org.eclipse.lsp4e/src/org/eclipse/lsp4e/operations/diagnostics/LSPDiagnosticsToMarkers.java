@@ -133,6 +133,10 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 
 	private WorkspaceJob updateMarkers(PublishDiagnosticsParams diagnostics, IResource resource) throws CoreException {
 		WorkspaceJob job = new WorkspaceJob("Update markers from diagnostics") { //$NON-NLS-1$
+			@Override
+			public boolean belongsTo(Object family) {
+				return LanguageServerPlugin.FAMILY_UPDATE_MARKERS == family;
+			}
 
 			@Override
 			public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
