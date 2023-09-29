@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -400,6 +401,50 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
 		assertEquals("foo and foo", viewer.getDocument().get());
 		// TODO check link edit groups
+	}
+
+	@Test
+	public void testComplexSnippets() throws PartInitException, CoreException {
+		Map<String, String> tests = Map.ofEntries(
+				// Variables and escaped dollars
+				Map.entry("$TM_LINE_NUMBER - \\$TM_LINE_NUMBER - ${TM_LINE_NUMBER} - \\${TM_LINE_NUMBER}", "1 - $TM_LINE_NUMBER - 1 - ${TM_LINE_NUMBER}"),
+				// Default values for variables
+				Map.entry("${TM_SELECTED_TEXT:defaultval}", "defaultval"),
+				// Escaped dollars
+				Map.entry("\\$1 and \\$", "$1 and $"),
+				// Escaped escapes
+				Map.entry("\\\\$1 and ${3:foo}", "\\ and foo"),
+				// Escaped values in a choice
+				Map.entry("${2|a\\,b\\},c|}", "a,b}"),
+				// Snippets with syntax errors: Make sure they don't cause endless loops or crashes
+				Map.entry("$", "$"),
+				Map.entry("${", "${"),
+				Map.entry("$$", "$$"),
+				Map.entry("$$TM_LINE_NUMBER", "$1"),
+				Map.entry("${VARIABLE", "${VARIABLE"),
+				Map.entry("${VARIABLE:", "${VARIABLE:"),
+				Map.entry("${VARIABLE:foo", "${VARIABLE:foo"),
+				Map.entry("${1|a", "${1|a"),
+				Map.entry("${1|a,}", "${1|a,}")
+		);
+		for (Map.Entry<String, String> entry : tests.entrySet()) {
+			CompletionItem completionItem = createCompletionItem(
+					entry.getKey(),
+					CompletionItemKind.Class,
+					new Range(new Position(0, 0), new Position(0, 1))
+			);
+			completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+			MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, Collections.singletonList(completionItem)));
+			ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,""));
+			int invokeOffset = 0;
+			ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+			assertEquals(1, proposals.length);
+			((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
+			assertEquals(
+					entry.getValue(),
+					viewer.getDocument().get());
+
+		}
 	}
 
 	@Test
