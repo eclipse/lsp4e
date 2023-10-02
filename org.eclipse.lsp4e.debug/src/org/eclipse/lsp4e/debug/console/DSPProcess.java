@@ -36,7 +36,7 @@ public class DSPProcess implements IProcess {
 		this.target = dspDebugTarget;
 		this.proxy = new DSPStreamsProxy(target.getDebugProtocolServer());
 		this.processArgs = args;
-		handle = ProcessHandle.of(args.getSystemProcessId());
+		handle = args != null && args.getSystemProcessId() != null ? ProcessHandle.of(args.getSystemProcessId()) : Optional.empty();
 	}
 
 	@Override

@@ -17,7 +17,7 @@ public class DSPStreamMonitor implements IFlushableStreamMonitor {
 
 	private final ListenerList<IStreamListener> listeners = new ListenerList<>();
 	private final StringBuilder stream = new StringBuilder();
-	private boolean buffer;
+	private boolean buffer = true; // buffer by default as first output can happen before listeners are in place
 
 	@Override
 	public String getContents() {
