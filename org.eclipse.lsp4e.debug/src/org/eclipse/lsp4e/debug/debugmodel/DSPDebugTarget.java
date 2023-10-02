@@ -556,7 +556,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			}
 		}
 		try {
-			CompletableFuture<ThreadsResponse> threads2 = getDebugProtocolServer().threads();
+			var server = getDebugProtocolServer();
+			if (server == null) {
+				return new DSPThread[0];
+			}
+			CompletableFuture<ThreadsResponse> threads2 = server.threads();
 			CompletableFuture<DSPThread[]> future = threads2.thenApplyAsync(threadsResponse -> {
 				synchronized (threads) {
 					final var lastThreads = new TreeMap<Integer, DSPThread>(threads);
@@ -628,18 +632,20 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	@Override
 	public void output(OutputEventArguments args) {
 		boolean outputted = false;
-		if (process != null) {
-			DSPStreamsProxy dspStreamsProxy = process.getStreamsProxy();
-			String output = args.getOutput();
-			if (args.getCategory() == null || OutputEventArgumentsCategory.CONSOLE.equals(args.getCategory())
-					|| OutputEventArgumentsCategory.STDOUT.equals(args.getCategory())) {
-				// TODO put this data in a different region with a different colour
-				dspStreamsProxy.getOutputStreamMonitor().append(output);
-				outputted = true;
-			} else if (OutputEventArgumentsCategory.STDERR.equals(args.getCategory())) {
-				dspStreamsProxy.getErrorStreamMonitor().append(output);
-				outputted = true;
-			}
+		DSPStreamsProxy dspStreamsProxy;
+		if (process == null) {
+			process(null); // create dummy process to have a console
+		}
+		dspStreamsProxy = process.getStreamsProxy();
+		String output = args.getOutput();
+		if (args.getCategory() == null || OutputEventArgumentsCategory.CONSOLE.equals(args.getCategory())
+				|| OutputEventArgumentsCategory.STDOUT.equals(args.getCategory())) {
+			// TODO put this data in a different region with a different colour
+			dspStreamsProxy.getOutputStreamMonitor().append(output);
+			outputted = true;
+		} else if (OutputEventArgumentsCategory.STDERR.equals(args.getCategory())) {
+			dspStreamsProxy.getErrorStreamMonitor().append(output);
+			outputted = true;
 		}
 		if (!outputted && DSPPlugin.DEBUG) {
 			System.out.println("output: " + args);
