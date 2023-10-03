@@ -310,16 +310,17 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			try {
 				t.terminate();
 			} catch (DebugException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				DSPPlugin.logError(e);
 			}
 		});
-		fireTerminateEvent();
-		if (process != null) {
-			// Disable the terminate button of the console associated with the DSPProcess.
-			DebugPlugin.getDefault()
-					.fireDebugEventSet(new DebugEvent[] { new DebugEvent(process, DebugEvent.TERMINATE) });
+		if (process != null && process.canTerminate()) {
+			try {
+				process.terminate();
+			} catch (DebugException e) {
+				DSPPlugin.logError(e);
+			}
 		}
+		fireTerminateEvent();
 		if (breakpointManager != null) {
 			breakpointManager.shutdown();
 		}
