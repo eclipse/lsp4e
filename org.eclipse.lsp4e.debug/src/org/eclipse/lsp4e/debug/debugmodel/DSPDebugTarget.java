@@ -278,18 +278,19 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 					}
 					return q;
 				});
-		final CompletableFuture<Void> configurationDoneFuture;
+		CompletableFuture<Void> configurationDoneFuture = CompletableFuture.allOf(initialized, capabilitiesFuture).thenRun(() -> {
+			monitor.worked(10);
+		});
 		if (ILaunchManager.DEBUG_MODE.equals(launch.getLaunchMode())) {
-			var initializedAndCapable = CompletableFuture.allOf(initialized, capabilitiesFuture);
-			configurationDoneFuture = initializedAndCapable.thenRun(() -> {
-				monitor.worked(10);
-			}).thenCompose(v -> {
+			configurationDoneFuture = configurationDoneFuture.thenCompose(v -> {
 				monitor.worked(10);
 				monitor.subTask("Sending breakpoints");
 				breakpointManager = new DSPBreakpointManager(getBreakpointManager(), getDebugProtocolServer(),
 						getCapabilities());
 				return breakpointManager.initialize();
-			}).thenCompose(v -> {
+			});
+		}
+		configurationDoneFuture = configurationDoneFuture.thenCompose(v -> {
 				monitor.worked(30);
 				monitor.subTask("Sending configuration done");
 				if (Boolean.TRUE.equals(getCapabilities().getSupportsConfigurationDoneRequest())) {
@@ -297,10 +298,6 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				}
 				return CompletableFuture.completedFuture(null);
 			});
-		} else {
-			// No debug mode, so just the launching itself happening
-			configurationDoneFuture = CompletableFuture.completedFuture(null);
-		}
 		return CompletableFuture.allOf(launchAttachFuture, configurationDoneFuture);
 	}
 
