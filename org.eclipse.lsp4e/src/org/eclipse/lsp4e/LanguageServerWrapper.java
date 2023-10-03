@@ -66,6 +66,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.configuration.ConfigurationRegistry;
 import org.eclipse.lsp4e.internal.FileBufferListenerAdapter;
 import org.eclipse.lsp4e.internal.SupportedFeatures;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
@@ -74,6 +75,7 @@ import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.ClientInfo;
 import org.eclipse.lsp4j.CodeActionOptions;
+import org.eclipse.lsp4j.DidChangeConfigurationParams;
 import org.eclipse.lsp4j.DidChangeWorkspaceFoldersParams;
 import org.eclipse.lsp4j.DocumentFormattingOptions;
 import org.eclipse.lsp4j.DocumentRangeFormattingOptions;
@@ -161,6 +163,7 @@ public class LanguageServerWrapper {
 	private final Timer timer = new Timer("Stop Language Server Task Processor"); //$NON-NLS-1$
 	private TimerTask stopTimerTask;
 	private AtomicBoolean stopping = new AtomicBoolean(false);
+	private String[] subscribedConfig;
 
 	private final ExecutorService dispatcher;
 
@@ -189,6 +192,7 @@ public class LanguageServerWrapper {
 		this.initialPath = initialPath;
 		this.serverDefinition = serverDefinition;
 		this.connectedDocuments = new HashMap<>();
+		this.subscribedConfig = serverDefinition.subcribedConfigurations;
 		String projectName = (project != null && project.getName() != null && !serverDefinition.isSingleton) ? ("@" + project.getName()) : "";  //$NON-NLS-1$//$NON-NLS-2$
 		String dispatcherThreadNameFormat = "LS-" + serverDefinition.id + projectName + "#dispatcher"; //$NON-NLS-1$ //$NON-NLS-2$
 		this.dispatcher = Executors
@@ -307,6 +311,10 @@ public class LanguageServerWrapper {
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
 			}).thenRun(() -> {
 				this.languageServer.initialized(new InitializedParams());
+			}).thenRun(() -> {
+				if (this.subscribedConfig != null && this.subscribedConfig.length > 0) {
+					sendConfiguration();
+				}
 			}).thenRun(() -> {
 				final Map<URI, IDocument> toReconnect = filesToReconnect;
 				initializeFuture.thenRunAsync(() -> {
@@ -718,6 +726,34 @@ public class LanguageServerWrapper {
 		getInitializedServer().thenAcceptAsync(fn, this.dispatcher);
 	}
 
+	public void configurationChanged(String[] paths) {
+		if (this.subscribedConfig == null) {
+			return;
+		}
+		if (subscribedConfig.length == 0) {
+			sendNotification(ls -> ls.getWorkspaceService().didChangeConfiguration(new DidChangeConfigurationParams()));
+		} else {
+			for (String prefix : subscribedConfig) {
+				for (String path : paths) {
+					if (path.startsWith(prefix)) {
+						sendConfiguration();
+						return;
+					}
+				}
+			}
+		}
+	}
+
+	private void sendConfiguration()
+	{
+		Map<String, Object> obj = new HashMap<>();
+		for (String prefx : subscribedConfig) {
+			obj.put(prefx, ConfigurationRegistry.getInstance().resolve(prefx));
+		}
+
+		sendNotification(ls -> ls.getWorkspaceService().didChangeConfiguration(new DidChangeConfigurationParams(obj)));
+	}
+
 	/**
 	 * Runs a request on the language server
 	 *
@@ -912,6 +948,16 @@ public class LanguageServerWrapper {
 				final Either<Boolean, TypeHierarchyRegistrationOptions> typeHierarchyBeforeRegistration = serverCapabilities.getTypeHierarchyProvider();
 				serverCapabilities.setTypeHierarchyProvider(Boolean.TRUE);
 				addRegistration(reg, () -> serverCapabilities.setTypeHierarchyProvider(typeHierarchyBeforeRegistration));
+				break;
+
+			case "workspace/didChangeConfiguration": //$NON-NLS-1$
+				synchronized(this) {
+					this.subscribedConfig = new String[0];
+					addRegistration(reg, () -> {
+						subscribedConfig = null;
+					});
+				}
+
 				break;
 		}});
 	}
