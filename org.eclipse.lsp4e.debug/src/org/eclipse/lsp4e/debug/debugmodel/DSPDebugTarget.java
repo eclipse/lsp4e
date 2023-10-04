@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -116,6 +117,12 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * Once we have received initialized event, this member will be "done" as a flag
 	 */
 	private final CompletableFuture<Void> initialized = new CompletableFuture<>();
+
+	/**
+	 * The debuggees that this target has spawned, for example when handling
+	 * the {@link #startDebugging(StartDebuggingRequestArguments)} notification
+	 */
+	private final Set<DSPDebugTarget> debuggees = new HashSet<>();
 
 	/**
 	 * The cached set of current threads. This should generally not be directly
@@ -318,6 +325,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			}
 		}
 		fireTerminateEvent();
+		debuggees.forEach(DSPDebugTarget::terminated);
 		if (breakpointManager != null) {
 			breakpointManager.shutdown();
 		}
@@ -348,6 +356,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			DSPDebugTarget newTarget = new DSPDebugTarget(launch, streamsSupplier, parameters);
 			launch.addDebugTarget(newTarget);
 			newTarget.initialize(new NullProgressMonitor());
+			debuggees.add(newTarget);
 		} catch (CoreException e) {
 			DSPPlugin.logError(e);
 		}
