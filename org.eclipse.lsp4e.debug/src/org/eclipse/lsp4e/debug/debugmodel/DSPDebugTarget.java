@@ -21,23 +21,22 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.runtime.CoreException;
@@ -79,7 +78,6 @@ import org.eclipse.lsp4j.debug.TerminateArguments;
 import org.eclipse.lsp4j.debug.TerminatedEventArguments;
 import org.eclipse.lsp4j.debug.Thread;
 import org.eclipse.lsp4j.debug.ThreadEventArguments;
-import org.eclipse.lsp4j.debug.ThreadsResponse;
 import org.eclipse.lsp4j.debug.launch.DSPLauncher;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolClient;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
@@ -130,10 +128,6 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * they are up to date (against the {@link #refreshThreads} flag).
 	 */
 	private final Map<Integer, DSPThread> threads = Collections.synchronizedMap(new TreeMap<>());
-	/**
-	 * Set to true to update the threads list from the debug adapter.
-	 */
-	private final AtomicBoolean refreshThreads = new AtomicBoolean(true);
 
 	private boolean fTerminated = false;
 	private boolean fSentTerminateRequest = false;
@@ -214,6 +208,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			debugProtocolServer = debugProtocolLauncher.getRemoteProxy();
 
 			CompletableFuture<?> future = initialize(dspParameters, subMonitor);
+			future.thenRun(this::triggerUpdateThreads); // VSCode always queries "threads" after configurationDone
 			monitorGet(future, subMonitor);
 		} catch (Exception e) {
 			terminated();
@@ -458,7 +453,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public void stopped(StoppedEventArguments body) {
-		threadPool.execute(() -> {
+		triggerUpdateThreads().thenRunAsync(() -> {
 			DSPThread source = null;
 			if (body.getThreadId() != null) {
 				source = getThread(body.getThreadId());
@@ -474,7 +469,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				source.stopped();
 				source.fireSuspendEvent(calcDetail(body.getReason()));
 			}
-		});
+		}, threadPool);
 	}
 
 	private int calcDetail(String reason) {
@@ -556,46 +551,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public DSPThread[] getThreads() {
-		if (!refreshThreads.getAndSet(false)) {
-			synchronized (threads) {
-				Collection<DSPThread> values = threads.values();
-				return values.toArray(new DSPThread[values.size()]);
-			}
-		}
-		try {
-			var server = getDebugProtocolServer();
-			if (server == null) {
-				return new DSPThread[0];
-			}
-			CompletableFuture<ThreadsResponse> threads2 = server.threads();
-			CompletableFuture<DSPThread[]> future = threads2.thenApplyAsync(threadsResponse -> {
-				synchronized (threads) {
-					final var lastThreads = new TreeMap<Integer, DSPThread>(threads);
-					threads.clear();
-					Thread[] body = threadsResponse.getThreads();
-					for (Thread thread : body) {
-						DSPThread dspThread = lastThreads.get(thread.getId());
-						if (dspThread == null) {
-							dspThread = new DSPThread(this, thread.getId());
-						}
-						dspThread.update(thread);
-						threads.put(thread.getId(), dspThread);
-						// fireChangeEvent(DebugEvent.CONTENT);
-					}
-					Collection<DSPThread> values = threads.values();
-					return values.toArray(new DSPThread[values.size()]);
-				}
-			});
-			return future.get();
-		} catch (RuntimeException | ExecutionException e) {
-			if (isTerminated()) {
-				return new DSPThread[0];
-			}
-			DSPPlugin.logError(e);
-		} catch (InterruptedException e) {
-			java.lang.Thread.currentThread().interrupt();
-		}
-		return new DSPThread[0];
+		return threads.values().toArray(DSPThread[]::new);
 	}
 
 	/**
@@ -632,8 +588,29 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public void thread(ThreadEventArguments args) {
-		refreshThreads.set(true);
-		fireChangeEvent(DebugEvent.CONTENT);
+		triggerUpdateThreads();
+	}
+
+	private CompletableFuture<?> triggerUpdateThreads() {
+		return getDebugProtocolServer().threads().thenAcceptAsync(threadsResponse -> {
+			var threadIds = Arrays.stream(threadsResponse.getThreads()).map(Thread::getId).collect(Collectors.toSet());
+			boolean contentChanged = false;
+			synchronized (threads) {
+				contentChanged = threads.keySet().removeIf(Predicate.not(threadIds::contains));
+				for (Thread thread : threadsResponse.getThreads()) {
+					DSPThread dspThread = threads.get(thread.getId());
+					if (dspThread == null) {
+						dspThread = new DSPThread(this, thread.getId());
+						threads.put(dspThread.getId(), dspThread);
+						contentChanged = true;
+					}
+					dspThread.update(thread);
+				}
+			}
+			if (contentChanged) {
+				fireChangeEvent(DebugEvent.CONTENT);
+			}
+		});
 	}
 
 	@Override
