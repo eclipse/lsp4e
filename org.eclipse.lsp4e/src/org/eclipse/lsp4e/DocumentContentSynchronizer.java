@@ -97,8 +97,11 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 			IFileStore store = EFS.getStore(fileUri);
 			this.openSaveStamp = store.fetchInfo().getLastModified();
 		} catch (CoreException e) {
-			LanguageServerPlugin.logError(e);
-			this.openSaveStamp = new File(fileUri).lastModified();
+			try {
+				this.openSaveStamp = new File(fileUri).lastModified();
+			} catch (IllegalArgumentException iae) {
+				this.openSaveStamp = 0L;
+			}
 		}
 		this.syncKind = syncKind != null ? syncKind : TextDocumentSyncKind.Full;
 
