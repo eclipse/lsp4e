@@ -400,7 +400,9 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		assertEquals(1, proposals.length);
 		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
 		assertEquals("foo and foo", viewer.getDocument().get());
-		// TODO check link edit groups
+		// check linked edit groups
+		viewer.getTextWidget().insert("a");
+		assertEquals("a and a", viewer.getDocument().get());
 	}
 
 	@Test
