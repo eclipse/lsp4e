@@ -772,7 +772,7 @@ public class LSCompletionProposal
 		try {
 			String documentFilter = getDocumentFilter(offset);
 			if (!documentFilter.isEmpty()) {
-				return CompletionProposalTools.isSubstringFoundOrderedInString(documentFilter, getFilterString());
+				return !(isIncomplete && currentOffset != initialOffset) && CompletionProposalTools.isSubstringFoundOrderedInString(documentFilter, getFilterString());
 			} else if (item.getTextEdit() != null) {
 				return offset == LSPEclipseUtils.toOffset(getTextEditRange().getStart(), document);
 			}
