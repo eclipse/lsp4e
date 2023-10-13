@@ -596,11 +596,25 @@ public class LSCompletionProposal
 		case TM_FILENAME -> LSPEclipseUtils.toPath(document).lastSegment();
 		case TM_FILEPATH -> getAbsoluteLocation(LSPEclipseUtils.toPath(document));
 		case TM_DIRECTORY -> getAbsoluteLocation(LSPEclipseUtils.toPath(document).removeLastSegments(1));
-		case TM_LINE_INDEX -> Integer.toString(getTextEditRange().getStart().getLine()); // TODO probably wrong, should use viewer state
-		case TM_LINE_NUMBER -> Integer.toString(getTextEditRange().getStart().getLine() + 1);  // TODO probably wrong, should use viewer state
-		case TM_CURRENT_LINE -> {  // TODO probably wrong, should use viewer state
-			int currentLineIndex = getTextEditRange().getStart().getLine();
+		case TM_LINE_INDEX -> {
 			try {
+				yield Integer.toString(getTextEditRange().getStart().getLine()); // TODO probably wrong, should use viewer state
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logWarning(e.getMessage(), e);
+				yield ""; //$NON-NLS-1$
+			}
+		}
+		case TM_LINE_NUMBER -> {
+			try {
+				yield Integer.toString(getTextEditRange().getStart().getLine() + 1); // TODO probably wrong, should use viewer state
+			} catch (BadLocationException e) {
+				LanguageServerPlugin.logWarning(e.getMessage(), e);
+				yield ""; //$NON-NLS-1$
+			}
+		}
+		case TM_CURRENT_LINE -> {  // TODO probably wrong, should use viewer state
+			try {
+				int currentLineIndex = getTextEditRange().getStart().getLine();
 				IRegion lineInformation = document.getLineInformation(currentLineIndex);
 				String line = document.get(lineInformation.getOffset(), lineInformation.getLength());
 				yield line;
@@ -641,8 +655,15 @@ public class LSCompletionProposal
 		};
 	}
 
-	private Range getTextEditRange() {
-		return item.getTextEdit().map(TextEdit::getRange, InsertReplaceEdit::getInsert);
+	private Range getTextEditRange() throws BadLocationException {
+		Either<TextEdit, InsertReplaceEdit> textEdit = item.getTextEdit();
+		if (textEdit != null) {
+			return textEdit.map(TextEdit::getRange, InsertReplaceEdit::getInsert);
+		} else {
+				Position start = LSPEclipseUtils.toPosition(this.bestOffset, document);
+				Position end = LSPEclipseUtils.toPosition(initialOffset, document);
+				return new Range(start, end);
+		}
 	}
 
 	/**
