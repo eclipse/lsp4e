@@ -75,7 +75,6 @@ public class HighlightReconcilingStrategy
 	private ISourceViewer sourceViewer;
 	private IDocument document;
 
-	private CompletableFuture<?> request;
 	private Job highlightJob;
 
 	/**
