@@ -151,6 +151,13 @@ If set to a number bigger than zero, the server will run until the timeout is re
                </documentation>
             </annotation>
          </attribute>
+         <attribute name="watchConfiguration" type="string">
+            <annotation>
+               <documentation>
+                  comma separated list of configuration prefix that will be send after initialization and after ConfigurationRegistry.notifyChange calls
+               </documentation>
+            </annotation>
+         </attribute>
       </complexType>
    </element>
 

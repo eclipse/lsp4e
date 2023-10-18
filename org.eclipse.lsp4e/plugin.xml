@@ -2,6 +2,7 @@
 <?eclipse version="3.4"?>
 <plugin>
    <extension-point id="languageServer" name="Language Server" schema="schema/languageServer.exsd"/>
+   <extension-point id="languageServerConfiguration" name="Language Server configuration providers" schema="schema/languageServerConfiguration.exsd"/>
    <!-- Extension point will ideally be "org.eclipse.text...." because
    the feature should be part of the generic text editor -->
    <extension
@@ -753,5 +754,11 @@
             </with>
          </and>
       </definition>
+   </extension>
+   <extension
+         point="org.eclipse.core.runtime.preferences">
+      <modifier
+            class="org.eclipse.lsp4e.PreferenceModifyListener2">
+      </modifier>
    </extension>
 </plugin>

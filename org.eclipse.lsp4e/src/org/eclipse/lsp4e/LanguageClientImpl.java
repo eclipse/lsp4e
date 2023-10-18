@@ -26,11 +26,13 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.source.SourceViewer;
+import org.eclipse.lsp4e.configuration.ConfigurationRegistry;
 import org.eclipse.lsp4e.progress.LSPProgressManager;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ApplyWorkspaceEditParams;
 import org.eclipse.lsp4j.ApplyWorkspaceEditResponse;
+import org.eclipse.lsp4j.ConfigurationItem;
 import org.eclipse.lsp4j.ConfigurationParams;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.MessageActionItem;
@@ -75,8 +77,12 @@ public class LanguageClientImpl implements LanguageClient {
 	public CompletableFuture<List<Object>> configuration(ConfigurationParams configurationParams) {
 		// override as needed
 		List<Object> list = new ArrayList<>(configurationParams.getItems().size());
-		for (int i = 0; i < configurationParams.getItems().size(); i++) {
-			list.add(null);
+		for (ConfigurationItem item: configurationParams.getItems()) {
+			if (item.getScopeUri() == null) {
+				list.add(ConfigurationRegistry.getInstance().resolve(item.getSection()));
+			} else {
+				list.add(null);
+			}
 		}
 		return CompletableFuture.completedFuture(list);
 	}

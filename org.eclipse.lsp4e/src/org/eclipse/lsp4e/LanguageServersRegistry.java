@@ -89,6 +89,8 @@ public class LanguageServersRegistry {
 	private static final String LABEL_ATTRIBUTE = "label"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_ATTRIBUTE = "enabledWhen"; //$NON-NLS-1$
 	private static final String ENABLED_WHEN_DESC = "description"; //$NON-NLS-1$
+	private static final String WATCH_CONFIGURATION = "watchConfiguration"; //$NON-NLS-1$
+	private static final String COMMA = ","; //$NON-NLS-1$
 
 	public abstract static class LanguageServerDefinition {
 		public final @NonNull String id;
@@ -96,13 +98,15 @@ public class LanguageServersRegistry {
 		public final boolean isSingleton;
 		public final int lastDocumentDisconnectedTimeout;
 		public final @NonNull Map<IContentType, String> languageIdMappings;
+		public final String[] subcribedConfigurations;
 
-		LanguageServerDefinition(@NonNull String id, @NonNull String label, boolean isSingleton, int lastDocumentDisconnectedTimeout) {
+		LanguageServerDefinition(@NonNull String id, @NonNull String label, boolean isSingleton, int lastDocumentDisconnectedTimeout, String[] subscribedConfigurations) {
 			this.id = id;
 			this.label = label;
 			this.isSingleton = isSingleton;
 			this.lastDocumentDisconnectedTimeout = lastDocumentDisconnectedTimeout;
 			this.languageIdMappings = new ConcurrentHashMap<>();
+			this.subcribedConfigurations = subscribedConfigurations;
 		}
 
 		public void registerAssociation(@NonNull IContentType contentType, @NonNull String languageId) {
@@ -159,7 +163,7 @@ public class LanguageServersRegistry {
 		}
 
 		public ExtensionLanguageServerDefinition(@NonNull IConfigurationElement element) {
-			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE), getIsSingleton(element), getLastDocumentDisconnectedTimeout(element));
+			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE), getIsSingleton(element), getLastDocumentDisconnectedTimeout(element), element.getAttribute(WATCH_CONFIGURATION) == null ? null : element.getAttribute(WATCH_CONFIGURATION).split(COMMA));
 			this.extension = element;
 		}
 
@@ -232,7 +236,7 @@ public class LanguageServersRegistry {
 
 		public LaunchConfigurationLanguageServerDefinition(ILaunchConfiguration launchConfiguration,
 				Set<String> launchModes) {
-			super(launchConfiguration.getName(), launchConfiguration.getName(), DEFAULT_SINGLETON, DEFAULT_LAST_DOCUMENTED_DISCONNECTED_TIEMOUT);
+			super(launchConfiguration.getName(), launchConfiguration.getName(), DEFAULT_SINGLETON, DEFAULT_LAST_DOCUMENTED_DISCONNECTED_TIEMOUT, null);
 			this.launchConfiguration = launchConfiguration;
 			this.launchModes = launchModes;
 		}
