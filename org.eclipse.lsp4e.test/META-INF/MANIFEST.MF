@@ -25,5 +25,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.jdt.annotation;bundle-version="[2.0.0,3.0.0)",
  org.eclipse.ui.tests.harness,
  org.eclipse.ui.monitoring,
- org.eclipse.core.variables
+ org.eclipse.core.variables,
+ org.eclipse.e4.ui.model.workbench,
+ org.eclipse.e4.ui.workbench
 Automatic-Module-Name: org.eclipse.lsp4e.test

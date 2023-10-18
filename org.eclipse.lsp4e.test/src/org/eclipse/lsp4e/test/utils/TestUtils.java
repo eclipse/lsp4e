@@ -8,6 +8,7 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Joao Dinis Ferreira (Avaloq Group AG) - Create splitActiveEditor
  *******************************************************************************/
 package org.eclipse.lsp4e.test.utils;
 
@@ -21,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
@@ -31,6 +33,8 @@ import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -82,7 +86,20 @@ public class TestUtils {
 		part.setFocus();
 		return part;
 	}
-
+	
+	public static List<IEditorReference> splitActiveEditor() {
+		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
+		IWorkbenchPage page = workbenchWindow.getActivePage();
+		IEditorPart part = page.getActiveEditor();
+		
+		MPart editorPart = part.getSite().getService(MPart.class);
+		if (editorPart != null) {
+			editorPart.getTags().add(IPresentationEngine.SPLIT_HORIZONTAL);
+		}
+		
+		return Arrays.asList(page.getEditorReferences());
+	}
+	
 	public static IEditorPart openExternalFileInEditor(File file) throws PartInitException {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();

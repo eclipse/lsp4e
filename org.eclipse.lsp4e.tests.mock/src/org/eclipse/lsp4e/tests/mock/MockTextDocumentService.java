@@ -12,6 +12,7 @@
  *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 525411 - [rename] input field should be filled with symbol to rename
  *  Rubén Porras Campo (Avaloq Evolution AG) - Add support for willSaveWaitUntil.
+ *  Joao Dinis Ferreira (Avaloq Group AG) - Add support for position-dependent mock document highlights
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
@@ -95,7 +97,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private SignatureHelp mockSignatureHelp;
 	private List<CodeLens> mockCodeLenses;
 	private List<DocumentLink> mockDocumentLinks;
-	private List<? extends DocumentHighlight> mockDocumentHighlights;
+	private Map<Position, List<? extends DocumentHighlight>> mockDocumentHighlights;
 	private LinkedEditingRanges mockLinkedEditingRanges;
 
 	private CompletableFuture<DidOpenTextDocumentParams> didOpenCallback;
@@ -165,8 +167,10 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(DocumentHighlightParams position) {
-		return CompletableFuture.completedFuture(mockDocumentHighlights);
+	public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(DocumentHighlightParams params) {
+		return CompletableFuture.completedFuture((mockDocumentHighlights != null) //
+				? mockDocumentHighlights.getOrDefault(params.getPosition(), Collections.emptyList())
+				: null);
 	}
 
 	@Override
@@ -390,7 +394,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockSignatureHelp = signatureHelp;
 	}
 
-	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
+	public void setDocumentHighlights(Map<Position, List<? extends DocumentHighlight>> documentHighlights) {
 		this.mockDocumentHighlights = documentHighlights;
 	}
 
@@ -457,5 +461,5 @@ public class MockTextDocumentService implements TextDocumentService {
 	@Override
 	public CompletableFuture<List<FoldingRange>> foldingRange(FoldingRangeRequestParams params) {
 		return CompletableFuture.completedFuture(this.foldingRanges);
-	} 
+	}
 }
