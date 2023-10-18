@@ -98,7 +98,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		try {
 			att = marker.getAttribute(LSP_REMEDIATION);
 			if (att == null) {
-				checkMarkerResoultion(marker);
+				checkMarkerResolution(marker);
 				att = marker.getAttribute(LSP_REMEDIATION);
 			}
 		} catch (IOException | CoreException | ExecutionException e) {
@@ -119,7 +119,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				.toArray(IMarkerResolution[]::new);
 	}
 
-	private void checkMarkerResoultion(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException {
+	private void checkMarkerResolution(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException {
 		IResource res = marker.getResource();
 		if (res instanceof IFile file) {
 			Object[] attributes = marker.getAttributes(new String[]{LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC});
@@ -205,7 +205,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		try {
 			Object remediation = marker.getAttribute(LSP_REMEDIATION);
 			if (remediation == null) {
-				checkMarkerResoultion(marker);
+				checkMarkerResolution(marker);
 				remediation = marker.getAttribute(LSP_REMEDIATION);
 			}
 			return remediation == COMPUTING || (remediation instanceof Collection<?> collection && !collection.isEmpty());

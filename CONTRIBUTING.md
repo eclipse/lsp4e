@@ -41,7 +41,7 @@ Latest snapshot builds, for testing, can usually be found at `https://download.e
 #### Install Software
 
 1. Install the **Eclipse IDE for Eclipse Committers** from https://www.eclipse.org/downloads/packages/ or
-  any another Eclipse distrubition with:
+  any another Eclipse distribution with:
     1. [Plug-in Development Environment (PDE)](https://www.eclipse.org/pde/) installed
     1. Eclipse [m2e](https://www.eclipse.org/m2e/) installed
 1. To run Maven builds from the command line, install [JDK17](https://adoptium.net/temurin/releases/?version=17) and [Maven 3.9.x](https://maven.apache.org/download.cgi)
