@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
@@ -31,6 +32,8 @@ import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -57,323 +60,336 @@ import com.google.common.io.RecursiveDeleteOption;
 
 public class TestUtils {
 
-	@FunctionalInterface
-	public interface Condition {
-		boolean isMet() throws Exception;
-	}
+    @FunctionalInterface
+    public interface Condition {
+        boolean isMet() throws Exception;
+    }
 
-	private static Set<File> tempFiles = new HashSet<>();
+    private static Set<File> tempFiles = new HashSet<>();
 
-	private TestUtils() {
-		// this class shouldn't be instantiated
-	}
+    private TestUtils() {
+        // this class shouldn't be instantiated
+    }
 
-	public static ITextViewer openTextViewer(IFile file) throws PartInitException {
-		IEditorPart editor = openEditor(file);
-		return LSPEclipseUtils.getTextViewer(editor);
-	}
+    public static ITextViewer openTextViewer(IFile file) throws PartInitException {
+        IEditorPart editor = openEditor(file);
+        return LSPEclipseUtils.getTextViewer(editor);
+    }
 
-	public static IEditorPart openEditor(IFile file) throws PartInitException {
-		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
-		IWorkbenchPage page = workbenchWindow.getActivePage();
-		IEditorInput input = new FileEditorInput(file);
+    public static IEditorPart openEditor(IFile file) throws PartInitException {
+        IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
+        IWorkbenchPage page = workbenchWindow.getActivePage();
+        IEditorInput input = new FileEditorInput(file);
 
-		IEditorPart part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", false);
-		part.setFocus();
-		return part;
-	}
+        IEditorPart part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", false);
+        part.setFocus();
+        return part;
+    }
+    
+    public static List<IEditorReference> splitActiveEditor() {
+    	IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
+        IWorkbenchPage page = workbenchWindow.getActivePage();
+        IEditorPart part = page.getActiveEditor();
+        
+        MPart editorPart = part.getSite().getService(MPart.class);
+        if (editorPart != null) {
+        	editorPart.getTags().add(IPresentationEngine.SPLIT_HORIZONTAL);
+        }
+        
+        return Arrays.asList(page.getEditorReferences());
+    }
+    
+    public static IEditorPart openExternalFileInEditor(File file) throws PartInitException {
+        IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
+        IWorkbenchPage page = workbenchWindow.getActivePage();
+        IEditorPart part = IDE.openEditor(page, file.toURI(), "org.eclipse.ui.genericeditor.GenericEditor", false);
+        part.setFocus();
+        return part;
+    }
 
-	public static IEditorPart openExternalFileInEditor(File file) throws PartInitException {
-		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
-		IWorkbenchPage page = workbenchWindow.getActivePage();
-		IEditorPart part = IDE.openEditor(page, file.toURI(), "org.eclipse.ui.genericeditor.GenericEditor", false);
-		part.setFocus();
-		return part;
-	}
+    public static IEditorPart getEditor(IFile file) {
+        IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
+        IWorkbenchPage page = workbenchWindow.getActivePage();
+        IEditorInput input = new FileEditorInput(file);
 
-	public static IEditorPart getEditor(IFile file) {
-		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
-		IWorkbenchPage page = workbenchWindow.getActivePage();
-		IEditorInput input = new FileEditorInput(file);
+        return Arrays.asList(page.getEditorReferences()).stream().filter(r -> {
+            try {
+                return r.getEditorInput().equals(input);
+            } catch (PartInitException e) {
+                return false;
+            }
+        }).map(r -> r.getEditor(false)).findAny().orElse(null);
+    }
 
-		return Arrays.asList(page.getEditorReferences()).stream().filter(r -> {
-			try {
-				return r.getEditorInput().equals(input);
-			} catch (PartInitException e) {
-				return false;
-			}
-		}).map(r -> r.getEditor(false)).findAny().orElse(null);
-	}
+    public static IEditorPart getActiveEditor() {
+        IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
+        IWorkbenchPage page = workbenchWindow.getActivePage();
+        return page.getActiveEditor();
+    }
 
-	public static IEditorPart getActiveEditor() {
-		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
-		IWorkbenchPage page = workbenchWindow.getActivePage();
-		return page.getActiveEditor();
-	}
+    public static boolean closeEditor(IEditorPart editor, boolean save) {
+        IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
+        IWorkbenchPage page = workbenchWindow.getActivePage();
+        return page.closeEditor(editor, save);
+    }
 
-	public static boolean closeEditor(IEditorPart editor, boolean save) {
-		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
-		IWorkbenchPage page = workbenchWindow.getActivePage();
-		return page.closeEditor(editor, save);
-	}
+    public static IProject createProject(String projectName) throws CoreException {
+        IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
+        if (project.exists()) {
+            return project;
+        }
+        project.create(null);
+        project.open(null);
+        // configure nature
+        return project;
+    }
 
-	public static IProject createProject(String projectName) throws CoreException {
-		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
-		if (project.exists()) {
-			return project;
-		}
-		project.create(null);
-		project.open(null);
-		// configure nature
-		return project;
-	}
+    public static IProject createNestedProject(IProject parent, String projectName) throws CoreException {
 
-	public static IProject createNestedProject(IProject parent, String projectName) throws CoreException {
+        IFolder nestedFolder = parent.getFolder(projectName);
+        nestedFolder.create(true, true, new NullProgressMonitor());
 
-		IFolder nestedFolder = parent.getFolder(projectName);
-		nestedFolder.create(true, true, new NullProgressMonitor());
+        IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
+        if (project.exists()) {
+            return project;
+        }
 
-		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
-		if (project.exists()) {
-			return project;
-		}
+        IProjectDescription desc = ResourcesPlugin.getWorkspace().newProjectDescription(projectName);
+        desc.setLocation(nestedFolder.getLocation());
 
-		IProjectDescription desc = ResourcesPlugin.getWorkspace().newProjectDescription(projectName);
-		desc.setLocation(nestedFolder.getLocation());
+        project.create(desc, null);
+        project.open(null);
+        // configure nature
+        return project;
+    }
 
-		project.create(desc, null);
-		project.open(null);
-		// configure nature
-		return project;
-	}
+    public static IFile createUniqueTestFile(IProject p, String content) throws CoreException {
+        return createUniqueTestFile(p, "lspt", content);
+    }
 
-	public static IFile createUniqueTestFile(IProject p, String content) throws CoreException {
-		return createUniqueTestFile(p, "lspt", content);
-	}
+    public static IFile createUniqueTestFileMultiLS(IProject p, String content) throws CoreException {
+        return createUniqueTestFile(p, "lsptmultils", content);
+    }
 
-	public static IFile createUniqueTestFileMultiLS(IProject p, String content) throws CoreException {
-		return createUniqueTestFile(p, "lsptmultils", content);
-	}
+    public static IFile createUniqueTestFileOfUnknownType(IProject p, String content) throws CoreException {
+        return createUniqueTestFile(p, "lsptunknown", content);
+    }
 
-	public static IFile createUniqueTestFileOfUnknownType(IProject p, String content) throws CoreException {
-		return createUniqueTestFile(p, "lsptunknown", content);
-	}
+    public static synchronized IFile createUniqueTestFile(IProject p, String extension, String content)
+            throws CoreException {
+        long fileNameSalt = System.currentTimeMillis();
+        if (p == null) {
+            p = ResourcesPlugin.getWorkspace().getRoot().getProject(Long.toString(fileNameSalt));
+            p.create(null);
+            p.open(null);
+        }
+        while (p.getFile("test" + fileNameSalt + '.' + extension).exists()) {
+            fileNameSalt++;
+        }
+        return createFile(p, "test" + fileNameSalt + '.' + extension, content);
+    }
 
-	public static synchronized IFile createUniqueTestFile(IProject p, String extension, String content)
-			throws CoreException {
-		long fileNameSalt = System.currentTimeMillis();
-		if (p == null) {
-			p = ResourcesPlugin.getWorkspace().getRoot().getProject(Long.toString(fileNameSalt));
-			p.create(null);
-			p.open(null);
-		}
-		while (p.getFile("test" + fileNameSalt + '.' + extension).exists()) {
-			fileNameSalt++;
-		}
-		return createFile(p, "test" + fileNameSalt + '.' + extension, content);
-	}
+    public static IFile createFile(IProject p, String name, String content) throws CoreException {
+        IFile testFile = p.getFile(name);
+        testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
+        return testFile;
+    }
 
-	public static IFile createFile(IProject p, String name, String content) throws CoreException {
-		IFile testFile = p.getFile(name);
-		testFile.create(new ByteArrayInputStream(content.getBytes()), true, null);
-		return testFile;
-	}
+    public static void delete(IProject project) throws CoreException {
+        if (project != null) {
+            project.delete(true, new NullProgressMonitor());
+        }
+    }
 
-	public static void delete(IProject project) throws CoreException {
-		if (project != null) {
-			project.delete(true, new NullProgressMonitor());
-		}
-	}
+    public static void delete(IProject... projects) throws CoreException {
+        if (projects != null && projects.length > 0) {
+            for (IProject project : projects) {
+                delete(project);
+            }
+        }
+    }
 
-	public static void delete(IProject... projects) throws CoreException {
-		if (projects != null && projects.length > 0) {
-			for (IProject project : projects) {
-				delete(project);
-			}
-		}
-	}
+    public static void delete(Path path) throws IOException {
+        if (path != null && Files.exists(path)) {
+            MoreFiles.deleteRecursively(path, RecursiveDeleteOption.ALLOW_INSECURE);
+        }
+    }
 
-	public static void delete(Path path) throws IOException {
-		if (path != null && Files.exists(path)) {
-			MoreFiles.deleteRecursively(path, RecursiveDeleteOption.ALLOW_INSECURE);
-		}
-	}
+    public static void delete(Path... paths) throws IOException {
+        if (paths != null && paths.length > 0) {
+            for (Path path : paths) {
+                delete(path);
+            }
+        }
+    }
 
-	public static void delete(Path... paths) throws IOException {
-		if (paths != null && paths.length > 0) {
-			for (Path path : paths) {
-				delete(path);
-			}
-		}
-	}
+    public static File createTempFile(String prefix, String suffix) throws IOException {
+        File tmp = File.createTempFile(prefix, suffix);
+        tempFiles.add(tmp);
+        return tmp;
+    }
 
-	public static File createTempFile(String prefix, String suffix) throws IOException {
-		File tmp = File.createTempFile(prefix, suffix);
-		tempFiles.add(tmp);
-		return tmp;
-	}
+    public static void addManagedTempFile(File file) {
+        tempFiles.add(file);
+    }
 
-	public static void addManagedTempFile(File file) {
-		tempFiles.add(file);
-	}
+    public static void tearDown() {
+        tempFiles.forEach(file -> {
+            try {
+                Files.deleteIfExists(file.toPath());
+            } catch (IOException e) {
+                // Trying to have the tests run quieter but I suppose if there's an actual
+                // problem we'd better find out about it
+                e.printStackTrace();
+            }
+        });
+        tempFiles.clear();
+    }
 
-	public static void tearDown() {
-		tempFiles.forEach(file -> {
-			try {
-				Files.deleteIfExists(file.toPath());
-			} catch (IOException e) {
-				// Trying to have the tests run quieter but I suppose if there's an actual
-				// problem we'd better find out about it
-				e.printStackTrace();
-			}
-		});
-		tempFiles.clear();
-	}
+    public static ContentTypeToLanguageServerDefinition getDisabledLS() {
+        return LanguageServersRegistry.getInstance().getContentTypeToLSPExtensions().stream()
+                .filter(definition -> "org.eclipse.lsp4e.test.server.disable".equals(definition.getValue().id)
+                        && "org.eclipse.lsp4e.test.content-type-disabled".equals(definition.getKey().toString()))
+                .findFirst().get();
+    }
 
-	public static ContentTypeToLanguageServerDefinition getDisabledLS() {
-		return LanguageServersRegistry.getInstance().getContentTypeToLSPExtensions().stream()
-				.filter(definition -> "org.eclipse.lsp4e.test.server.disable".equals(definition.getValue().id)
-						&& "org.eclipse.lsp4e.test.content-type-disabled".equals(definition.getKey().toString()))
-				.findFirst().get();
-	}
+    public static Shell findNewShell(Set<Shell> beforeShells, Display display) {
+        Shell[] afterShells = Arrays.stream(display.getShells())
+                .filter(Shell::isVisible)
+                .filter(shell -> !beforeShells.contains(shell))
+                .toArray(Shell[]::new);
+        assertEquals("No new shell found", 1, afterShells.length);
+        return afterShells[0];
+    }
 
-	public static Shell findNewShell(Set<Shell> beforeShells, Display display) {
-		Shell[] afterShells = Arrays.stream(display.getShells())
-				.filter(Shell::isVisible)
-				.filter(shell -> !beforeShells.contains(shell))
-				.toArray(Shell[]::new);
-		assertEquals("No new shell found", 1, afterShells.length);
-		return afterShells[0];
-	}
+    public static Table findCompletionSelectionControl(Widget control) {
+        if (control instanceof Table table) {
+            return table;
+        } else if (control instanceof Composite composite) {
+            for (Widget child : composite.getChildren()) {
+                Table res = findCompletionSelectionControl(child);
+                if (res != null) {
+                    return res;
+                }
+            }
+        }
+        return null;
+    }
 
-	public static Table findCompletionSelectionControl(Widget control) {
-		if (control instanceof Table table) {
-			return table;
-		} else if (control instanceof Composite composite) {
-			for (Widget child : composite.getChildren()) {
-				Table res = findCompletionSelectionControl(child);
-				if (res != null) {
-					return res;
-				}
-			}
-		}
-		return null;
-	}
+    public static IEditorReference[] getEditors() {
+        IWorkbenchWindow wWindow = UI.getActiveWindow();
+        if (wWindow != null) {
+            IWorkbenchPage wPage = wWindow.getActivePage();
+            if (wPage != null) {
+                return wPage.getEditorReferences();
+            }
+        }
+        return null;
+    }
 
-	public static IEditorReference[] getEditors() {
-		IWorkbenchWindow wWindow = UI.getActiveWindow();
-		if (wWindow != null) {
-			IWorkbenchPage wPage = wWindow.getActivePage();
-			if (wPage != null) {
-				return wPage.getEditorReferences();
-			}
-		}
-		return null;
-	}
+    public static void waitForAndAssertCondition(int timeout_ms, Condition condition) {
+        waitForAndAssertCondition("Condition not met within expected time.", timeout_ms, condition);
+    }
 
-	public static void waitForAndAssertCondition(int timeout_ms, Condition condition) {
-		waitForAndAssertCondition("Condition not met within expected time.", timeout_ms, condition);
-	}
+    public static void waitForAndAssertCondition(int timeout_ms, Display display, Condition condition) {
+        waitForAndAssertCondition("Condition not met within expected time.", timeout_ms, display, condition);
+    }
 
-	public static void waitForAndAssertCondition(int timeout_ms, Display display, Condition condition) {
-		waitForAndAssertCondition("Condition not met within expected time.", timeout_ms, display, condition);
-	}
+    public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Condition condition) {
+        waitForAndAssertCondition(errorMessage, timeout_ms, UI.getDisplay(), condition);
+    }
 
-	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Condition condition) {
-		waitForAndAssertCondition(errorMessage, timeout_ms, UI.getDisplay(), condition);
-	}
+    public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Display display,
+            Condition condition) {
+        var ex = new Throwable[1];
+        var isConditionMet = new DisplayHelper() {
+            @Override
+            protected boolean condition() {
+                try {
+                    var isMet = condition.isMet();
+                    ex[0] = null;
+                    return isMet;
+                } catch (AssertionError | Exception e) {
+                    ex[0] = e;
+                    return false;
+                }
+            }
+        }.waitForCondition(display, timeout_ms, 50);
+        if (ex[0] != null) {
+            // if the condition was not met because of an exception throw it
+            if (ex[0] instanceof AssertionError ae) {
+                throw ae;
+            }
+            if (ex[0] instanceof RuntimeException re) {
+                throw re;
+            }
+            throw new AssertionError(errorMessage, ex[0]);
+        }
+        assertTrue(errorMessage, isConditionMet);
+    }
 
-	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Display display,
-			Condition condition) {
-		var ex = new Throwable[1];
-		var isConditionMet = new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					var isMet = condition.isMet();
-					ex[0] = null;
-					return isMet;
-				} catch (AssertionError | Exception e) {
-					ex[0] = e;
-					return false;
-				}
-			}
-		}.waitForCondition(display, timeout_ms, 50);
-		if (ex[0] != null) {
-			// if the condition was not met because of an exception throw it
-			if (ex[0] instanceof AssertionError ae) {
-				throw ae;
-			}
-			if (ex[0] instanceof RuntimeException re) {
-				throw re;
-			}
-			throw new AssertionError(errorMessage, ex[0]);
-		}
-		assertTrue(errorMessage, isConditionMet);
-	}
+    public static boolean waitForCondition(int timeout_ms, Condition condition) {
+        return waitForCondition(timeout_ms, UI.getDisplay(), condition);
+    }
 
-	public static boolean waitForCondition(int timeout_ms, Condition condition) {
-		return waitForCondition(timeout_ms, UI.getDisplay(), condition);
-	}
+    public static boolean waitForCondition(int timeout_ms, Display display, Condition condition) {
+        var ex = new Throwable[1];
+        var isConditionMet = new DisplayHelper() {
+            @Override
+            protected boolean condition() {
+                try {
+                    var isMet = condition.isMet();
+                    ex[0] = null;
+                    return isMet;
+                } catch (AssertionError | Exception e) {
+                    ex[0] = e;
+                    return false;
+                }
+            }
+        }.waitForCondition(display, timeout_ms, 50);
+        if (ex[0] != null) {
+            // if the condition was not met because of an exception log it
+            ex[0].printStackTrace();
+        }
+        return isConditionMet;
+    }
 
-	public static boolean waitForCondition(int timeout_ms, Display display, Condition condition) {
-		var ex = new Throwable[1];
-		var isConditionMet = new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					var isMet = condition.isMet();
-					ex[0] = null;
-					return isMet;
-				} catch (AssertionError | Exception e) {
-					ex[0] = e;
-					return false;
-				}
-			}
-		}.waitForCondition(display, timeout_ms, 50);
-		if (ex[0] != null) {
-			// if the condition was not met because of an exception log it
-			ex[0].printStackTrace();
-		}
-		return isConditionMet;
-	}
+    public void waitForLanguageServerNotRunning(MockLanguageServer server) {
+        assertTrue(new DisplayHelper() {
+            @Override
+            protected boolean condition() {
+                return !server.isRunning();
+            }
+        }.waitForCondition(UI.getDisplay(), 1000));
+    }
 
-	public void waitForLanguageServerNotRunning(MockLanguageServer server) {
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return !server.isRunning();
-			}
-		}.waitForCondition(UI.getDisplay(), 1000));
-	}
+    public static class JobSynchronizer extends NullProgressMonitor {
+        private final CountDownLatch latch = new CountDownLatch(1);
 
-	public static class JobSynchronizer extends NullProgressMonitor {
-		private final CountDownLatch latch = new CountDownLatch(1);
+        @Override
+        public void done() {
+            latch.countDown();
+        }
 
-		@Override
-		public void done() {
-			latch.countDown();
-		}
+        @Override
+        public void setCanceled(boolean cancelled) {
+            super.setCanceled(cancelled);
+            if (cancelled) {
+                latch.countDown();
+            }
+        }
 
-		@Override
-		public void setCanceled(boolean cancelled) {
-			super.setCanceled(cancelled);
-			if (cancelled) {
-				latch.countDown();
-			}
-		}
+        public void await() throws InterruptedException {
+            latch.await();
+        }
 
-		public void await() throws InterruptedException {
-			latch.await();
-		}
+        @Override
+        public void worked(int work) {
+            latch.countDown();
+        }
+    }
 
-		@Override
-		public void worked(int work) {
-			latch.countDown();
-		}
-	}
-
-	public static Condition numberOfChangesIs(int changes) {
-		return () -> MockLanguageServer.INSTANCE.getDidChangeEvents().size() == changes;
-	}
+    public static Condition numberOfChangesIs(int changes) {
+        return () -> MockLanguageServer.INSTANCE.getDidChangeEvents().size() == changes;
+    }
 }

@@ -17,6 +17,7 @@ package org.eclipse.lsp4e.tests.mock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -41,6 +42,7 @@ import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureHelpOptions;
@@ -186,7 +188,7 @@ public final class MockLanguageServerMultiRootFolders implements LanguageServer 
 		this.textDocumentService.setMockFormattingTextEdits(formattingTextEdits);
 	}
 
-	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
+	public void setDocumentHighlights(Map<Position, List<? extends DocumentHighlight>> documentHighlights) {
 		this.textDocumentService.setDocumentHighlights(documentHighlights);
 	}
 

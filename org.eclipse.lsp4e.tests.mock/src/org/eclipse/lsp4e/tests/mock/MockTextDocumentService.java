@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
@@ -95,7 +96,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private SignatureHelp mockSignatureHelp;
 	private List<CodeLens> mockCodeLenses;
 	private List<DocumentLink> mockDocumentLinks;
-	private List<? extends DocumentHighlight> mockDocumentHighlights;
+	private Map<Position, List<? extends DocumentHighlight>> mockDocumentHighlights;
 	private LinkedEditingRanges mockLinkedEditingRanges;
 
 	private CompletableFuture<DidOpenTextDocumentParams> didOpenCallback;
@@ -165,8 +166,8 @@ public class MockTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
-	public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(DocumentHighlightParams position) {
-		return CompletableFuture.completedFuture(mockDocumentHighlights);
+	public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(DocumentHighlightParams params) {
+		return CompletableFuture.completedFuture(mockDocumentHighlights.get(params.getPosition()));
 	}
 
 	@Override
@@ -390,7 +391,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockSignatureHelp = signatureHelp;
 	}
 
-	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
+	public void setDocumentHighlights(Map<Position, List<? extends DocumentHighlight>> documentHighlights) {
 		this.mockDocumentHighlights = documentHighlights;
 	}
 

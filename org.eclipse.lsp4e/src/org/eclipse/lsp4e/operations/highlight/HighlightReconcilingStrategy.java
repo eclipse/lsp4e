@@ -141,6 +141,7 @@ public class HighlightReconcilingStrategy
 
 	@Override
 	public void uninstall() {
+		removeOccurrenceAnnotations();
 		if (sourceViewer != null) {
 			editorSelectionChangedListener.uninstall(sourceViewer.getSelectionProvider());
 		}

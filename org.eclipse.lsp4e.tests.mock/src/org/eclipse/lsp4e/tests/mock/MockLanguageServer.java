@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -57,6 +58,7 @@ import org.eclipse.lsp4j.LinkedEditingRangeRegistrationOptions;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.RenameOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelp;
@@ -237,7 +239,7 @@ public final class MockLanguageServer implements LanguageServer {
 		this.textDocumentService.setMockFormattingTextEdits(formattingTextEdits);
 	}
 
-	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
+	public void setDocumentHighlights(Map<Position, List<? extends DocumentHighlight>> documentHighlights) {
 		this.textDocumentService.setDocumentHighlights(documentHighlights);
 	}
 
