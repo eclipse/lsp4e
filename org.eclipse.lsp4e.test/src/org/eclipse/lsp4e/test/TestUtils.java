@@ -206,7 +206,7 @@ public class TestUtils {
 	}
 
 	public static File createTempFile(String prefix, String suffix) throws IOException {
-		File tmp = File.createTempFile(prefix, suffix);
+		File tmp = Files.createTempFile(prefix, suffix).toFile();
 		tempFiles.add(tmp);
 		return tmp;
 	}

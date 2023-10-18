@@ -27,6 +27,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -104,7 +105,7 @@ public class LSPEclipseUtilsTest {
 
 	private AbstractTextEditor applyWorkspaceTextEdit(TextEdit textEdit) throws CoreException, PartInitException {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile f = TestUtils.createFile(p, "dummy"+new Random().nextInt(), "Here");
+		IFile f = TestUtils.createFile(p, "dummy"+new SecureRandom().nextInt(), "Here");
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		WorkspaceEdit workspaceEdit = new WorkspaceEdit(Collections.singletonMap(
 			LSPEclipseUtils.toUri(f).toString(),
