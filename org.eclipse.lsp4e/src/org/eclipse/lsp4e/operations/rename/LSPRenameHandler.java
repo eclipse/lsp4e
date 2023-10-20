@@ -16,10 +16,8 @@
 package org.eclipse.lsp4e.operations.rename;
 
 import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -38,39 +36,33 @@ import org.eclipse.ui.texteditor.ITextEditor;
 public class LSPRenameHandler extends LSPDocumentAbstractHandler {
 
 	@Override
-	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		if (part instanceof ITextEditor textEditor) {
-			ISelectionProvider provider = textEditor.getSelectionProvider();
-			if (provider == null) {
-				return null;
-			}
-			ISelection sel = provider.getSelection();
-			if (sel instanceof ITextSelection textSelection && !textSelection.isEmpty()) {
-				IDocument document = LSPEclipseUtils.getDocument(textEditor);
-				if (document != null) {
-					Shell shell = part.getSite().getShell();
-					LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getRenameProvider);
-					if (executor.anyMatching()) {
-						int offset = textSelection.getOffset();
+	protected void execute(ExecutionEvent event, ITextEditor textEditor) {
+		ISelectionProvider provider = textEditor.getSelectionProvider();
 
-						final var processor = new LSPRenameProcessor(document, offset);
-						final var refactoring = new ProcessorBasedRefactoring(processor);
-						final var wizard = new LSPRenameRefactoringWizard(refactoring);
-						final var operation = new RefactoringWizardOpenOperation(wizard);
-						shell.getDisplay().asyncExec(() -> {
-							try {
-								operation.run(shell, Messages.rename_title);
-							} catch (InterruptedException e1) {
-								LanguageServerPlugin.logError(e1);
-								Thread.currentThread().interrupt();
-							}
-						});
-					}
+		if (provider != null && provider.getSelection() instanceof ITextSelection textSelection && !textSelection.isEmpty()) {
+			IDocument document = LSPEclipseUtils.getDocument(textEditor);
+			if (document != null) {
+				IEditorPart part = HandlerUtil.getActiveEditor(event);
+				Shell shell = part.getSite().getShell();
+				LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getRenameProvider);
+				if (executor.anyMatching()) {
+					int offset = textSelection.getOffset();
+
+					final var processor = new LSPRenameProcessor(document, offset);
+					final var refactoring = new ProcessorBasedRefactoring(processor);
+					final var wizard = new LSPRenameRefactoringWizard(refactoring);
+					final var operation = new RefactoringWizardOpenOperation(wizard);
+					shell.getDisplay().asyncExec(() -> {
+						try {
+							operation.run(shell, Messages.rename_title);
+						} catch (InterruptedException e1) {
+							LanguageServerPlugin.logError(e1);
+							Thread.currentThread().interrupt();
+						}
+					});
 				}
 			}
 		}
-		return null;
 	}
 
 	@Override
