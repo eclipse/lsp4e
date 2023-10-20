@@ -28,6 +28,7 @@ import org.eclipse.lsp4j.WorkspaceSymbol;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPSymbolInWorkspaceHandler extends LSPDocumentAbstractHandler {
 
@@ -72,6 +73,11 @@ public class LSPSymbolInWorkspaceHandler extends LSPDocumentAbstractHandler {
 		}
 
 		return null;
+	}
+
+	@Override
+	protected void execute(ExecutionEvent event, ITextEditor textEditor) {
+		// not required here, see implementation above
 	}
 
 	@Override

@@ -35,7 +35,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IViewPart;
-import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.ContentOutline;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
 
@@ -88,11 +87,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 	}
 
 	private static CNFOutlinePage createOutlinePage(IEditorPart editorPart, @NonNull LanguageServerWrapper wrapper) {
-		ITextEditor textEditor = null;
-		if (editorPart instanceof ITextEditor thisTextEditor) {
-			textEditor = thisTextEditor;
-		}
-		return new CNFOutlinePage(wrapper, textEditor);
+		return new CNFOutlinePage(wrapper, UI.asTextEditor(editorPart));
 	}
 
 	private static void refreshContentOutlineAsync(CompletableFuture<Optional<LanguageServerWrapper>> wrapper,

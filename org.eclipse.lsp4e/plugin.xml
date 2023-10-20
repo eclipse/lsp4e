@@ -748,9 +748,14 @@
             <with variable="selection">
                <instanceof value="org.eclipse.jface.text.ITextSelection" />
             </with>
-            <with variable="activeEditorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer" />
-            </with>
+            <or>
+	            <with variable="activeEditorInput">
+               		<test property="org.eclipse.lsp4e.hasLanguageServer" />
+            	</with>
+				<with variable="activeEditor">
+               		<test property="org.eclipse.lsp4e.hasLanguageServer"/>
+            	</with>
+            </or>
          </and>
       </definition>
    </extension>
