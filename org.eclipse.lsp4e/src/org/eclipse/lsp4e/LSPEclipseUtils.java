@@ -1180,7 +1180,8 @@ public final class LSPEclipseUtils {
 	}
 
 	@Nullable public static URI toUri(@NonNull IFileBuffer buffer) {
-		IFile res = ResourcesPlugin.getWorkspace().getRoot().getFile(buffer.getLocation());
+		IPath bufferLocation = buffer.getLocation();
+		IFile res = bufferLocation != null && bufferLocation.segmentCount() > 1 ? ResourcesPlugin.getWorkspace().getRoot().getFile(buffer.getLocation()) : null;
 		if (res != null) {
 			URI uri = toUri(res);
 			if (uri != null) {
@@ -1427,7 +1428,8 @@ public final class LSPEclipseUtils {
 			return toUri(fileEditorInput.getFile());
 		}
 		if (editorInput instanceof IURIEditorInput uriEditorInput) {
-			return toUri(Path.fromPortableString((uriEditorInput.getURI()).getPath()));
+			URI uri = uriEditorInput.getURI();
+			return uri.getPath() != null ? toUri(Path.fromPortableString(uri.getPath())) : uri;
 		}
 		return null;
 	}

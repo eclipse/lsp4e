@@ -291,7 +291,6 @@ public class LanguageServiceAccessor {
 		final var directContentTypes = LSPEclipseUtils.getDocumentContentTypes(document);
 		final var contentTypesToProcess = new ArrayDeque<IContentType>(directContentTypes);
 		final var processedContentTypes = new HashSet<IContentType>(directContentTypes.size());
-		final var path = new Path(uri.getPath());
 		final var file = LSPEclipseUtils.getFile(document);
 
 		while (!contentTypesToProcess.isEmpty()) {
@@ -324,6 +323,7 @@ public class LanguageServiceAccessor {
 					}
 
 					final var fileProject = file != null ? file.getProject() : null;
+					final var path = uri.getPath() != null ? new Path(uri.getPath()) : null;
 					final var wrapper = fileProject != null //
 							? new LanguageServerWrapper(fileProject, serverDefinition)
 							: new LanguageServerWrapper(serverDefinition, path);

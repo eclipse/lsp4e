@@ -117,12 +117,22 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
 
-		IPath fromPortableString = Path.fromPortableString(this.fileUri.getPath());
-		if (languageId == null) {
-			languageId = fromPortableString.getFileExtension();
+		if (languageId == null && this.fileUri.getPath() != null) {
+			IPath path = Path.fromPortableString(this.fileUri.getPath());
+			languageId = path.getFileExtension();
 			if (languageId == null) {
-				languageId = fromPortableString.lastSegment();
+				languageId = path.lastSegment();
 			}
+		}
+		if (languageId == null && this.fileUri.getSchemeSpecificPart() != null) {
+			String part = this.fileUri.getSchemeSpecificPart();
+			int lastSeparatorIndex = Math.max(part.lastIndexOf('.'), part.lastIndexOf('/'));
+			languageId = part.substring(lastSeparatorIndex + 1);
+		}
+		if (languageId == null) {
+			String uriString = uri.toString();
+			int lastSeparatorIndex = Math.max(uriString.lastIndexOf('.'), uriString.lastIndexOf('/'));
+			languageId = uriString.substring(lastSeparatorIndex + 1);
 		}
 
 		textDocument.setLanguageId(languageId);
