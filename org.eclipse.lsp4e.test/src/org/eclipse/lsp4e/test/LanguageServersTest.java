@@ -14,11 +14,7 @@ package org.eclipse.lsp4e.test;
 
 import static org.eclipse.lsp4e.LanguageServiceAccessor.hasActiveLanguageServers;
 import static org.eclipse.lsp4e.test.utils.TestUtils.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -330,16 +326,15 @@ public class LanguageServersTest {
 				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				if (hoverCount.get() == 1) {
 					return CompletableFuture.completedFuture(null);
-				} else {
-					return CompletableFuture.completedFuture(hoverResponse).thenApplyAsync(t -> {
-						try {
-							Thread.sleep(2000);
-						} catch (InterruptedException e) {
-
-						}
-						return t;
-					});
 				}
+				return CompletableFuture.completedFuture(hoverResponse).thenApplyAsync(t -> {
+					try {
+						Thread.sleep(2000);
+					} catch (InterruptedException e) {
+
+					}
+					return t;
+				});
 			}
 		});
 
@@ -412,16 +407,15 @@ public class LanguageServersTest {
 				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				if (hoverCount.get() == 1) {
 					return CompletableFuture.completedFuture(null);
-				} else {
-					return CompletableFuture.completedFuture(hoverResponse).thenApplyAsync(t -> {
-						try {
-							Thread.sleep(2000);
-						} catch (InterruptedException e) {
-
-						}
-						return t;
-					});
 				}
+				return CompletableFuture.completedFuture(hoverResponse).thenApplyAsync(t -> {
+					try {
+						Thread.sleep(2000);
+					} catch (InterruptedException e) {
+
+					}
+					return t;
+				});
 			}
 		});
 

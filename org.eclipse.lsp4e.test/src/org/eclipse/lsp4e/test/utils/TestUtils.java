@@ -66,7 +66,7 @@ public class TestUtils {
 		boolean isMet() throws Exception;
 	}
 
-	private static Set<File> tempFiles = new HashSet<>();
+	private static final Set<File> tempFiles = new HashSet<>();
 
 	private TestUtils() {
 		// this class shouldn't be instantiated

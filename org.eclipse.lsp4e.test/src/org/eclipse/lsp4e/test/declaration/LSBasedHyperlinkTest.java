@@ -113,6 +113,6 @@ public class LSBasedHyperlinkTest {
 		location.setTargetUri(LSPEclipseUtils.toUri(new File(file.getLocation().toOSString())).toASCIIString());
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
 
-		assertEquals("Open Declaration - my-test.txt - HyperlinkLabelTest", hyperlink.getHyperlinkText());
+		assertEquals("Open Declaration - my-test.txt - " + project.getName(), hyperlink.getHyperlinkText());
 	}
 }

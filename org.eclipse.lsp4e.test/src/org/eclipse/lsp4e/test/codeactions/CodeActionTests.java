@@ -12,8 +12,7 @@
 package org.eclipse.lsp4e.test.codeactions;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -27,7 +26,6 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourceAttributes;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.test.utils.AllCleanRule;
 import org.eclipse.lsp4e.test.utils.NoErrorLoggedRule;
@@ -228,11 +226,11 @@ public class CodeActionTests {
 		assertEquals(new FileEditorInput(targetFile), ((AbstractTextEditor)activeEditorPart).getEditorInput());
 	}
 
-	public static IMarker assertDiagnostics(IFile f, String markerMessage, String resolutionLabel) throws CoreException {
+	private static IMarker assertDiagnostics(IFile f, String markerMessage, String resolutionLabel) throws CoreException {
 		return assertDiagnostics(f, markerMessage, resolutionLabel, true);
 	}
 
-	public static IMarker assertDiagnostics(IFile f, String markerMessage, String resolutionLabel, boolean resolutionExpected) throws CoreException {
+	private static IMarker assertDiagnostics(IFile f, String markerMessage, String resolutionLabel, boolean resolutionExpected) throws CoreException {
 		waitForAndAssertCondition(2_000, () -> {
 			IMarker[] markers = f.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true,
 					IResource.DEPTH_ZERO);
@@ -252,7 +250,7 @@ public class CodeActionTests {
 		return m;
 	}
 
-	public static void assertResolution(AbstractTextEditor editor, IMarker m, String newText) {
+	private static void assertResolution(AbstractTextEditor editor, IMarker m, String newText) {
 		IDE.getMarkerHelpRegistry().getResolutions(m)[0].run(m);
 
 		waitForCondition(1_000,
@@ -264,7 +262,7 @@ public class CodeActionTests {
 		assertEquals(newText, ((StyledText) editor.getAdapter(Control.class)).getText());
 	}
 
-	public static void assertResolution(IFile targetFile, IMarker m, String newText) {
+	private static void assertResolution(IFile targetFile, IMarker m, String newText) {
 		IDE.getMarkerHelpRegistry().getResolutions(m)[0].run(m);
 
 		IEditorPart editorPart = TestUtils.getEditor(targetFile);

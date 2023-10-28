@@ -14,6 +14,7 @@ package org.eclipse.lsp4e.test.utils;
 import java.util.function.Supplier;
 
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant;
@@ -66,7 +67,7 @@ public class AllCleanRule extends TestWatcher {
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 		for (IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
 			try {
-				project.delete(true, null);
+				project.delete(IResource.FORCE, null);
 			} catch (CoreException e) {
 				e.printStackTrace();
 			}

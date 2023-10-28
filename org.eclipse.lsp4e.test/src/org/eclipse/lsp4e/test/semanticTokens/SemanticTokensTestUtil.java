@@ -104,9 +104,8 @@ public class SemanticTokensTestUtil {
 		return t -> {
 			if ("keyword".equals(t)) {
 				return token;
-			} else {
-				return null;
 			}
+			return null;
 		};
 	}
 

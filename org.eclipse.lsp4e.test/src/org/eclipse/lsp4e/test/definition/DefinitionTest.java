@@ -86,9 +86,8 @@ public class DefinitionTest {
 		Set<String> uris = Arrays.stream(hyperlinks).map(LSBasedHyperlink.class::cast).map(LSBasedHyperlink::getLocation).map(location -> {
 			if (location.isLeft()) {
 				return location.getLeft().getUri();
-			} else {
-				return location.getRight().getTargetUri();
 			}
+			return location.getRight().getTargetUri();
 		}).collect(Collectors.toSet());
 		assertTrue(uris.contains("file://testDefinition"));
 		assertTrue(uris.contains("file://testTypeDefinition"));
