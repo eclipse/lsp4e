@@ -106,7 +106,7 @@ public class DynamicRegistrationTest {
 		LanguageClient client = getMockClient();
 		Unregistration unregistration = new Unregistration(registration.toString(), WORKSPACE_EXECUTE_COMMAND);
 		client.unregisterCapability(new UnregistrationParams(Arrays.asList(unregistration)))
-		.get(1, TimeUnit.SECONDS);
+			.get(1, TimeUnit.SECONDS);
 	}
 
 	private UUID registerWorkspaceFolders() throws Exception {
@@ -116,7 +116,7 @@ public class DynamicRegistrationTest {
 		registration.setId(id.toString());
 		registration.setMethod(WORKSPACE_DID_CHANGE_FOLDERS);
 		client.registerCapability(new RegistrationParams(Arrays.asList(registration)))
-		.get(1, TimeUnit.SECONDS);
+			.get(1, TimeUnit.SECONDS);
 		return id;
 	}
 
@@ -156,5 +156,4 @@ public class DynamicRegistrationTest {
 		}
 		return false;
 	}
-
 }

@@ -118,7 +118,6 @@ public class LanguageServerWrapperTest {
 		}
 	}
 
-
 	@Test
 	public void testStartExceptionRace() throws Exception {
 		IFile testFile1 = TestUtils.createFile(project1, "shouldUseExtension.lsptStartException", "");

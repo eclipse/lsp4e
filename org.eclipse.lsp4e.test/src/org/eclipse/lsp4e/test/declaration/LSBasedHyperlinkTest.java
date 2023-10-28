@@ -105,15 +105,14 @@ public class LSBasedHyperlinkTest {
 
 		assertEquals("Open Declaration - http://eclipse.org", hyperlink.getHyperlinkText());
 	}
-	
+
 	@Test
 	public void testHyperlinkLabelForFileInProject() throws Exception {
 		IFile file = TestUtils.createFile(project, "my-test.txt", "Example Text");
 		LocationLink location = new LocationLink();
 		location.setTargetUri(LSPEclipseUtils.toUri(new File(file.getLocation().toOSString())).toASCIIString());
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
-		
+
 		assertEquals("Open Declaration - my-test.txt - HyperlinkLabelTest", hyperlink.getHyperlinkText());
 	}
-
 }

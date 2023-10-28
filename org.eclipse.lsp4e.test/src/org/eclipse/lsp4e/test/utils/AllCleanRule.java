@@ -31,11 +31,11 @@ public class AllCleanRule extends TestWatcher {
 	private static final boolean LOG_TEST_NAMES = Boolean.getBoolean("lsp4e.log.test.names");
 	
 	private final Supplier<ServerCapabilities> serverConfigurer;
-	
+
 	public AllCleanRule() {
 		this.serverConfigurer = MockLanguageServer::defaultServerCapabilities;
 	}
-	
+
 	public AllCleanRule(final Supplier<ServerCapabilities> serverConfigurer) {
 		this.serverConfigurer = serverConfigurer;
 	}
@@ -52,7 +52,7 @@ public class AllCleanRule extends TestWatcher {
 		}
 		clear();
 	}
-	
+
 	@Override
 	protected void finished(Description description) {
 		clear();

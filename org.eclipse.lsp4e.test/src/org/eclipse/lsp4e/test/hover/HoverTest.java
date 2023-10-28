@@ -220,5 +220,4 @@ public class HoverTest {
 			shell.dispose();
 		}
 	}
-
 }

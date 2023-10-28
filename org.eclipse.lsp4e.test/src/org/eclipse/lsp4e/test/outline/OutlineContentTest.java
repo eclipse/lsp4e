@@ -55,11 +55,11 @@ public class OutlineContentTest {
 	@Test
 	public void testExternalFile() throws CoreException, IOException {
 		var testFile = TestUtils.createTempFile("test" + System.currentTimeMillis(), ".lspt");
-		
+
 		try (FileWriter fileWriter =  new FileWriter(testFile)) {
 			fileWriter.write("content\n does\n not\n matter\n but needs to cover the ranges described below");
-		}	
-		
+		}
+
 		DocumentSymbol symbolCow = new DocumentSymbol("cow", SymbolKind.Constant,
 				new Range(new Position(0, 0), new Position(0, 2)),
 				new Range(new Position(0, 0), new Position(0, 2)));
@@ -67,7 +67,7 @@ public class OutlineContentTest {
 		MockLanguageServer.INSTANCE.setDocumentSymbols(symbolCow);
 
 		ITextEditor editor = (ITextEditor) TestUtils.openExternalFileInEditor(testFile);
-		
+
 		CNFOutlinePage outlinePage = (CNFOutlinePage) new EditorToOutlineAdapterFactory().getAdapter(editor, IContentOutlinePage.class);
 		Shell shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
 		shell.setLayout(new FillLayout());
@@ -137,7 +137,6 @@ public class OutlineContentTest {
 		);
 
 		shell.close();
-
 	}
 
 	@Test
@@ -175,7 +174,6 @@ public class OutlineContentTest {
 		));
 
 		shell.close();
-
 	}
 
 	@Test
@@ -215,7 +213,6 @@ public class OutlineContentTest {
 		));
 
 		shell.close();
-
 	}
 
 	private boolean itemBselectedAndVisibile(Tree tree) {

@@ -80,7 +80,7 @@ public class LanguageServersTest {
 
 	@Before
 	public void setUp() throws CoreException {
-		project = TestUtils.createProject("LanguageServersTest"+System.currentTimeMillis());
+		project = TestUtils.createProject("LanguageServersTest" + System.currentTimeMillis());
 	}
 
 	@Test
@@ -534,7 +534,6 @@ public class LanguageServersTest {
 	 */
 	@Test
 	public void testBlockingServerDoesNotBlockUIThread() throws Exception {
-
 		final AtomicInteger uiDispatchCount = new AtomicInteger();
 
 		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
@@ -726,7 +725,6 @@ public class LanguageServersTest {
 		});
 
 		assertEquals("Wrapper should have used same LS", 2, matching.get());
-
 	}
 
 	/**
@@ -774,7 +772,6 @@ public class LanguageServersTest {
 
 	@Test
 	public void testGetDocument() throws Exception {
-
 		IFile testFile = TestUtils.createUniqueTestFile(project, "Here is some content");
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
@@ -792,18 +789,18 @@ public class LanguageServersTest {
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		Display display = viewer.getTextWidget().getDisplay();
 		DisplayHelper.sleep(display, 2000);
-		
+
 		final IDocument document = viewer.getDocument();
 		final LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document);
 		MockLanguageServer.INSTANCE.setTimeToProceedQueries(3000);
-		
+
 		// Test lsWrapper.execute() forwards cancellation
 		LanguageServerWrapper lsWrapper = executor.computeFirst((wrapper, ls) -> CompletableFuture.completedFuture(wrapper)).get().get();
 		CompletableFuture<?> request = lsWrapper.execute(ls -> ls.getTextDocumentService().references(new ReferenceParams()));
 		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 500);
 		request.cancel(false);
 		assertTrue(DisplayHelper.waitForCondition(display, 3000, () -> !MockConnectionProvider.cancellations.isEmpty()));
-		
+
 		// Test executor.computeFirst() forwards cancellation
 		MockConnectionProvider.cancellations.clear();
 		request = executor.computeFirst(ls -> ls.getTextDocumentService().references(new ReferenceParams()));
@@ -819,7 +816,7 @@ public class LanguageServersTest {
 		request.cancel(false);
 		DisplayHelper.sleep(viewer.getTextWidget().getDisplay(), 100);
 		assertTrue(DisplayHelper.waitForCondition(display, 3000, () -> !MockConnectionProvider.cancellations.isEmpty()));
-		
+
 		// Test executor.computeAll() forwards cancellation
 		MockConnectionProvider.cancellations.clear();
 		@NonNull List<@NonNull CompletableFuture<@Nullable List<? extends Location>>> requests = executor.computeAll(ls -> ls.getTextDocumentService().references(new ReferenceParams()));

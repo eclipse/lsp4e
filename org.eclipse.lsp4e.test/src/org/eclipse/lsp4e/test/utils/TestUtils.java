@@ -113,13 +113,16 @@ public class TestUtils {
 		IWorkbenchPage page = workbenchWindow.getActivePage();
 		IEditorInput input = new FileEditorInput(file);
 
-		return Arrays.asList(page.getEditorReferences()).stream().filter(r -> {
-			try {
-				return r.getEditorInput().equals(input);
-			} catch (PartInitException e) {
-				return false;
-			}
-		}).map(r -> r.getEditor(false)).findAny().orElse(null);
+		return Arrays.asList(page.getEditorReferences()).stream()
+			.filter(r -> {
+				try {
+					return r.getEditorInput().equals(input);
+				} catch (PartInitException e) {
+					return false;
+				}
+			})
+			.map(r -> r.getEditor(false))
+			.findAny().orElse(null);
 	}
 
 	public static IEditorPart getActiveEditor() {

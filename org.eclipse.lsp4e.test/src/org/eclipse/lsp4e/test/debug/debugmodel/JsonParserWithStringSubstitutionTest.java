@@ -29,14 +29,14 @@ public class JsonParserWithStringSubstitutionTest {
 
 		String variableReference = "";
 		String variableReplacement = "";
-		
+
 		StringVariableManagerMock(String variableReference, String variableReplacement) {
 			this.variableReference = variableReference;
 			this.variableReplacement = variableReplacement;
 		}
-		
+
 		StringVariableManagerMock() {}
-		
+
 		@Override
 		public IStringVariable[] getVariables() {
 			throw new UnsupportedOperationException();
@@ -121,15 +121,13 @@ public class JsonParserWithStringSubstitutionTest {
 		public String generateVariableExpression(String varName, String arg) {
 			throw new UnsupportedOperationException();
 		}
-		
 	}
-	
-	
+
 	/**
-	 * {@link JsonParserWithStringSubstitution} can only 
-	 * process json strings that define an object at the top level. 
-	 * 
-	 * Test if an exception is thrown when the json is _not_ an object at the top level. 
+	 * {@link JsonParserWithStringSubstitution} can only
+	 * process json strings that define an object at the top level.
+	 *
+	 * Test if an exception is thrown when the json is _not_ an object at the top level.
 	 */
 	@Test(expected = IllegalStateException.class)
 	public void testThrowsIllegaStateException() throws IllegalStateException, CoreException {
@@ -137,84 +135,83 @@ public class JsonParserWithStringSubstitutionTest {
 		JsonParserWithStringSubstitution jsonParser = new JsonParserWithStringSubstitution(new StringVariableManagerMock());
 		jsonParser.parseJsonObject(json);
 	}
-	
+
 	/**
-	 * {@link JsonParserWithStringSubstitution} can only substitute 
-	 * variables known to the {@link IStringVariableManager}. 
-	 * 
-	 * Test if an exception is thrown when the json contains a variable that is _not_ 
+	 * {@link JsonParserWithStringSubstitution} can only substitute
+	 * variables known to the {@link IStringVariableManager}.
+	 *
+	 * Test if an exception is thrown when the json contains a variable that is _not_
 	 * known to the {@link IStringVariableManager}.
 	 */
 	@Test(expected = CoreException.class)
 	public void testThrowsCoreException() throws IllegalStateException, CoreException {
-		String json = "{\"key\":\"unknown_variable\"}"; 
+		String json = "{\"key\":\"unknown_variable\"}";
 		StringVariableManagerMock stringVariableManager = new StringVariableManagerMock("Test", "Test");
 		JsonParserWithStringSubstitution jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
 		jsonParser.parseJsonObject(json);
 	}
-	
-	
+
 	/**
 	 * Substitute a known variable in a json object
 	 */
 	@Test
 	public void testSubstituteVariableInJsonObject() throws IllegalStateException, CoreException {
-		// # SETUP # 
+		// # SETUP #
 		String key = "key";
 		String variableReference = "variableReference";
 		String variableReplacement = "variableReplacement";
- 		String json = "{\"" + key + "\":\"" + variableReference + "\"}"; 
+ 		String json = "{\"" + key + "\":\"" + variableReference + "\"}";
 		StringVariableManagerMock stringVariableManager = new StringVariableManagerMock(variableReference, variableReplacement);
 		JsonParserWithStringSubstitution jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
-		
-		// # TEST # 
+
+		// # TEST #
 		Map<String, Object> parsedJson = jsonParser.parseJsonObject(json);
-		
+
 		// # ASSERT #
 		String resultValue = (String) parsedJson.get(key);
 		assertEquals(variableReplacement, resultValue);
 	}
-	
+
 	/**
 	 * Substitute a known variable in an array in a json object.
 	 */
 	@Test
 	public void testSubstituteVariableInJsonObjectWithArray() throws IllegalStateException, CoreException {
-		// # SETUP # 
+		// # SETUP #
 		String key = "key";
 		String variableReference = "variableReference";
 		String variableReplacement = "variableReplacement";
- 		String json = "{\"" + key + "\":[\"" + variableReference + "\"]}"; 
+ 		String json = "{\"" + key + "\":[\"" + variableReference + "\"]}";
 		StringVariableManagerMock stringVariableManager = new StringVariableManagerMock(variableReference, variableReplacement);
 		JsonParserWithStringSubstitution jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
-		
-		// # TEST # 
+
+		// # TEST #
 		Map<String, Object> parsedJson = jsonParser.parseJsonObject(json);
-		
+
 		// # ASSERT #
 		@SuppressWarnings("unchecked")
 		ArrayList<Object> resultArray =  (ArrayList<Object>) parsedJson.get(key);
 		String resultValue = (String) resultArray.get(0);
 		assertEquals(variableReplacement, resultValue);
 	}
-	
+
 	/**
 	 * Substitute a known variable in a json object in a json object.
 	 */
 	@Test
 	public void testSubstituteVariableInJsonObjectInJsonObject() throws IllegalStateException, CoreException {
-		// # SETUP # 
+		// # SETUP #
 		String key1 = "key1";
 		String key2 = "key2";
 		String variableReference = "variableReference";
 		String variableReplacement = "variableReplacement";
- 		String json = "{\"" + key1 + "\":{\"" + key2 + "\":\"" + variableReference + "\"}}"; 
+ 		String json = "{\"" + key1 + "\":{\"" + key2 + "\":\"" + variableReference + "\"}}";
 		StringVariableManagerMock stringVariableManager = new StringVariableManagerMock(variableReference, variableReplacement);
 		JsonParserWithStringSubstitution jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
-		
-		// # TEST # 
+
+		// # TEST #
 		Map<String, Object> parsedJson = jsonParser.parseJsonObject(json);
-		
+
 		// # ASSERT #
 		@SuppressWarnings("unchecked")
 		Map<String, Object> secondObject =  (Map<String, Object>) parsedJson.get(key1);

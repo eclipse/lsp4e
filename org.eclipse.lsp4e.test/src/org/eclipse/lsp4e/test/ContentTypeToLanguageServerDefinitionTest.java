@@ -32,8 +32,7 @@ public class ContentTypeToLanguageServerDefinitionTest {
 
 	@BeforeClass
 	public static void setup() {
-		LanguageServerPlugin.getDefault().getPreferenceStore()
-				.setValue(DISABLED_SERVER_PREF, "false");
+		LanguageServerPlugin.getDefault().getPreferenceStore().setValue(DISABLED_SERVER_PREF, "false");
 	}
 
 	@AfterClass

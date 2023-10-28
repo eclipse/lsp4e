@@ -48,7 +48,7 @@ public class LSPTextChangeTest {
 		assertNotNull(document);
 		assertEquals(edit.getNewText(), document.get());
 	}
-	
+
 	@Test
 	public void testRefactoringPreview() throws Exception {
 		IProject project = TestUtils.createProject("blah");
@@ -68,5 +68,4 @@ public class LSPTextChangeTest {
 		operation.run(new NullProgressMonitor());
 		assertEquals(edit.getNewText(), new String(Files.readAllBytes(file.toPath())));
 	}
-
 }
