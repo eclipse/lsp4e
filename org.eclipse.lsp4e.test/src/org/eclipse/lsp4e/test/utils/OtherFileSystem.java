@@ -26,5 +26,4 @@ public class OtherFileSystem extends FileSystem {
 	public IFileStore getStore(URI uri) {
 		return new OtherFileStore(uri);
 	}
-
 }

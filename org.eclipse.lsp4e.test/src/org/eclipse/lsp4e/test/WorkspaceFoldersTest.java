@@ -206,5 +206,4 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		base.setWorkspace(wsc);
 		return base;
 	}
-
 }

@@ -48,5 +48,4 @@ public class ShowMessageTest {
 		waitForAndAssertCondition(3_000,
 				() -> Stream.of(display.getShells()).filter(Shell::isVisible).count() > currentShells.size());
 	}
-
 }

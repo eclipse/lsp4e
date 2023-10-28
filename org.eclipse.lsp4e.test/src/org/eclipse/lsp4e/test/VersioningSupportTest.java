@@ -48,12 +48,10 @@ public class VersioningSupportTest {
 
 	private IProject project;
 
-
 	@Before
 	public void setUp() throws CoreException {
-		project = TestUtils.createProject("VersioningSupportTest"+System.currentTimeMillis());
+		project = TestUtils.createProject("VersioningSupportTest" + System.currentTimeMillis());
 	}
-
 
 	@Test
 	public void testVersionSupportSuccess() throws Exception {
@@ -122,5 +120,4 @@ public class VersioningSupportTest {
 
 		edits.apply();
 	}
-
 }

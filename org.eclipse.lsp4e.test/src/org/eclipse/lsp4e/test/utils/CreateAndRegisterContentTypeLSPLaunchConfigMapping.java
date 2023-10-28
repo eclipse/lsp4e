@@ -122,5 +122,4 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 					}).collect(Collectors.joining(System.getProperty("path.separator")));
 		}
 	}
-
 }

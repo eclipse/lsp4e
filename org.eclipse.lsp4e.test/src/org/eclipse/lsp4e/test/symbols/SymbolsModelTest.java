@@ -170,5 +170,4 @@ public class SymbolsModelTest {
 		symbolInformation.setLocation(new Location("file://test", range));
 		return symbolInformation;
 	}
-
 }

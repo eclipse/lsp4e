@@ -109,5 +109,4 @@ public class ColorTest {
 
 		return (int) Math.sqrt((dR * dR + dG * dG + dB * dB) / 3);
 	}
-
 }

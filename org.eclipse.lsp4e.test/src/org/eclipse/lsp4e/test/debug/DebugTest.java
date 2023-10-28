@@ -39,11 +39,11 @@ public class DebugTest {
 
 	/**
 	 * Test for the `IllegalStateException: Duplicate RPC method runInTerminal` issue.
-	 * 
-	 * The issue has started to appear after the move of `runInTerminal` method from the `IDebugProtocolServer` 
-	 * interface to `IDebugProtocolClient` interface in LSP5J while the DSPDebugTarget class that implements `runInTerminal` 
+	 *
+	 * The issue has started to appear after the move of `runInTerminal` method from the `IDebugProtocolServer`
+	 * interface to `IDebugProtocolClient` interface in LSP5J while the DSPDebugTarget class that implements `runInTerminal`
 	 * method of `IDebugProtocolClient` interface leaved unchanged thus creating an RPC method duplication.
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	@Test

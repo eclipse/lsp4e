@@ -279,5 +279,4 @@ public class CodeActionTests {
 				() -> newText.equals(((StyledText) editor.getAdapter(Control.class)).getText()));
 		assertEquals(newText, ((StyledText) editor.getAdapter(Control.class)).getText());
 	}
-
 }

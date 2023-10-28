@@ -61,5 +61,4 @@ public class NoErrorLoggedRule extends TestWatcher {
 		Assert.assertEquals("Some errors were logged", Collections.emptyList(), loggedErrors);
 		super.finished(description);
 	}
-
 }

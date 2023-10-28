@@ -148,5 +148,4 @@ public class FormatTest {
 
 		TestUtils.closeEditor(editor, false);
 	}
-
 }

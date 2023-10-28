@@ -556,5 +556,4 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no exception is sent
 		assertFalse(addInfo.isEmpty());
 	}
-
 }

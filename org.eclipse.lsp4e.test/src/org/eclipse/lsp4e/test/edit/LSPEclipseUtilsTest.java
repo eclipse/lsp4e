@@ -83,7 +83,6 @@ public class LSPEclipseUtilsTest {
 		File externalFile = TestUtils.createTempFile("externalFile", ".txt");
 		Location location = new Location(LSPEclipseUtils.toUri(externalFile).toString(), new Range(new Position(0, 0), new Position(0, 0)));
 		LSPEclipseUtils.openInEditor(location, UI.getActivePage());
-
 	}
 
 	@Test
@@ -93,7 +92,7 @@ public class LSPEclipseUtilsTest {
 		Assert.assertEquals("insertHere", ((StyledText)editor.getAdapter(Control.class)).getText());
 		Assert.assertEquals("insertHere", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
 	}
-	
+
 	@Test
 	public void testWorkspaceEdit_WithExaggeratedRange() throws Exception {
 		TextEdit textEdit = new TextEdit(new Range(new Position(0, 0), new Position(Integer.MAX_VALUE, Integer.MAX_VALUE)), "insert");
@@ -102,10 +101,9 @@ public class LSPEclipseUtilsTest {
 		Assert.assertEquals("insert", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
 	}
 
-
 	private AbstractTextEditor applyWorkspaceTextEdit(TextEdit textEdit) throws CoreException, PartInitException {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile f = TestUtils.createFile(p, "dummy"+new Random().nextInt(), "Here");
+		IFile f = TestUtils.createFile(p, "dummy" + new Random().nextInt(), "Here");
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		WorkspaceEdit workspaceEdit = new WorkspaceEdit(Collections.singletonMap(
 			LSPEclipseUtils.toUri(f).toString(),
@@ -113,7 +111,7 @@ public class LSPEclipseUtilsTest {
 		LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
 		return editor;
 	}
-	
+
 	@Test
 	public void testWorkspaceEditMultipleChanges() throws Exception {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
@@ -130,7 +128,6 @@ public class LSPEclipseUtilsTest {
 		Assert.assertEquals("abcHere\nabcHere2", ((StyledText) editor.getAdapter(Control.class)).getText());
 		Assert.assertEquals("abcHere\nabcHere2",
 				editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
-
 	}
 
 	@Test
@@ -149,7 +146,6 @@ public class LSPEclipseUtilsTest {
 		LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
 		assertTrue(file.exists());
 		assertEquals("abcHere\nabcHere2", new String(Files.readAllBytes(file.getLocation().toFile().toPath())));
-
 	}
 
 	@Test
@@ -164,7 +160,6 @@ public class LSPEclipseUtilsTest {
 		project1.getFile("suffix").create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
 		project2 = TestUtils.createProject(project1.getName() + "suffix");
 		Assert.assertEquals(project2, LSPEclipseUtils.findResourceFor(project2.getLocationURI().toString()));
-
 	}
 
 	@Test
@@ -180,7 +175,6 @@ public class LSPEclipseUtilsTest {
 
 		IFile someFile = project1.getFile("folder/res");
 		someFile.create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
-
 
 		Assert.assertEquals(mostNestedFile, LSPEclipseUtils.findMostNested(new IFile[] {mostNestedFile, someFile}));
 		Assert.assertEquals(mostNestedFile, LSPEclipseUtils.findMostNested(new IFile[] {someFile, mostNestedFile}));
@@ -212,7 +206,6 @@ public class LSPEclipseUtilsTest {
 		IFile linkedFolderFile = linkedFolder.getFile("child");
 		Assert.assertEquals(linkedFolderFile,
 				LSPEclipseUtils.findResourceFor(linkedFolderFile.getLocationURI().toString()));
-
 	}
 
 	@Test
@@ -251,7 +244,6 @@ public class LSPEclipseUtilsTest {
 		IFile linkedFolderFile = linkedFolder.getFile("child");
 		Assert.assertEquals(linkedFolderFile,
 				LSPEclipseUtils.findResourceFor(linkedFolderFile.getLocationURI().toString()));
-
 	}
 
 	@Test
@@ -264,7 +256,6 @@ public class LSPEclipseUtilsTest {
 		file.createLink(uri, IResource.REPLACE | IResource.ALLOW_MISSING_LOCAL, new NullProgressMonitor());
 		Assert.assertEquals(file, LSPEclipseUtils.findResourceFor(file.getLocationURI().toString()));
 		Assert.assertEquals(file, LSPEclipseUtils.getFileHandle(file.getLocationURI()));
-
 	}
 
 	@Test
@@ -276,7 +267,6 @@ public class LSPEclipseUtilsTest {
 		IFile file = project.getFile("res.txt");
 		file.createLink(uri, IResource.REPLACE | IResource.ALLOW_MISSING_LOCAL, new NullProgressMonitor());
 		Assert.assertEquals(LSPEclipseUtils.toUri(file).toString(), "other://a/res.txt");
-
 	}
 
 	@Test
@@ -321,7 +311,6 @@ public class LSPEclipseUtilsTest {
 		IDocument document = viewer.getDocument();
 		LSPEclipseUtils.applyEdits(document, Arrays.asList(edits));
 		Assert.assertEquals(" throws Exception", document.get());
-
 	}
 
 	@Test
@@ -469,31 +458,31 @@ public class LSPEclipseUtilsTest {
 	public void testToCompletionParams_EmptyDocument() throws Exception {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		// Given an empty file/document
-		var file = TestUtils.createFile(p, "dummy"+new Random().nextInt(), "");
+		var file = TestUtils.createFile(p, "dummy" + new Random().nextInt(), "");
 		var triggerChars = new  char[] {':', '>'};
 		// When toCompletionParams get called with offset == 0 and document.getLength() == 0:
 		var param = LSPEclipseUtils.toCompletionParams(file.getLocationURI(), 0, LSPEclipseUtils.getDocument(file), triggerChars);
 		// Then no context has been added to param:
 		Assert.assertNull(param.getContext());
 	}
-	
+
 	@Test
 	public void testToCompletionParams_ZeroOffset() throws Exception {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		// Given a non empty file/document containing a non trigger character at position 3:
-		var file = TestUtils.createFile(p, "dummy"+new Random().nextInt(), "std");
+		var file = TestUtils.createFile(p, "dummy" + new Random().nextInt(), "std");
 		var triggerChars = new  char[] {':', '>'};
 		// When toCompletionParams get called with offset == 0 and document.getLength() > 0:
 		var param = LSPEclipseUtils.toCompletionParams(file.getLocationURI(), 0, LSPEclipseUtils.getDocument(file), triggerChars);
 		// Then the trigger kind is Invoked:
 		Assert.assertEquals(param.getContext().getTriggerKind(), CompletionTriggerKind.Invoked);
 	}
-	
+
 	@Test
 	public void testToCompletionParams_MatchingTriggerCharacter() throws Exception {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		// Given a non empty file/document containing a trigger character at position 4:
-		var file = TestUtils.createFile(p, "dummy"+new Random().nextInt(), "std:");
+		var file = TestUtils.createFile(p, "dummy" + new Random().nextInt(), "std:");
 		var triggerChars = new  char[] {':', '>'};
 		// When toCompletionParams get called with offset > 0 and document.getLength() > 0:
 		var param = LSPEclipseUtils.toCompletionParams(file.getLocationURI(), 4, LSPEclipseUtils.getDocument(file), triggerChars);
@@ -502,19 +491,19 @@ public class LSPEclipseUtilsTest {
 		// And the trigger kind is TriggerCharacter:
 		Assert.assertEquals(param.getContext().getTriggerKind(), CompletionTriggerKind.TriggerCharacter);
 	}
-	
+
 	@Test
 	public void testToCompletionParams_NonMatchingTriggerCharacter() throws Exception {
 		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		// Given a non empty file/document containing a non trigger character at position 3:
-		var file = TestUtils.createFile(p, "dummy"+new Random().nextInt(), "std");
+		var file = TestUtils.createFile(p, "dummy" + new Random().nextInt(), "std");
 		var triggerChars = new  char[] {':', '>'};
 		// When toCompletionParams get called with offset > 0 and document.getLength() > 0:
 		var param = LSPEclipseUtils.toCompletionParams(file.getLocationURI(), 3, LSPEclipseUtils.getDocument(file), triggerChars);
 		// Then the trigger kind is Invoked:
 		Assert.assertEquals(param.getContext().getTriggerKind(), CompletionTriggerKind.Invoked);
 	}
-	
+
 	@Test
 	public void parseRange_shouldReturnRange_UriWithStartLineNo() {
 		Range actual = LSPEclipseUtils.parseRange("file:///a/b#L35");
@@ -561,12 +550,13 @@ public class LSPEclipseUtilsTest {
 		assertEquals(36, actual.getEnd().getLine());
 		assertEquals(33, actual.getEnd().getCharacter());
 	}
-	
+
 	@Test
 	public void parseRange_shouldReturnNullRange_BlankFragment() {
 		Range actual = LSPEclipseUtils.parseRange("file:///a/b#");
 		assertNull(actual);
 	}
+
 	@Test
 	public void parseRange_shouldReturnNullRange_NoFragment() {
 		Range actual = LSPEclipseUtils.parseRange("file:///a/b");

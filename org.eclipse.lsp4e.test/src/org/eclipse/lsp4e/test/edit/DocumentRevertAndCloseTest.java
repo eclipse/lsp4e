@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertNotNull;
 
@@ -61,5 +60,4 @@ public class DocumentRevertAndCloseTest {
 
 		waitForAndAssertCondition(3_000, () -> !MockLanguageServer.INSTANCE.isRunning());
 	}
-
 }

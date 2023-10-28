@@ -27,7 +27,6 @@ import org.eclipse.lsp4e.test.edit.LSPEclipseUtilsTest;
  */
 public class UriToResourceAdapterFactory implements IAdapterFactory{
 
-
 	private static final String A_SEGMENT = "/a/";
 
 	@SuppressWarnings("unchecked")
@@ -46,7 +45,7 @@ public class UriToResourceAdapterFactory implements IAdapterFactory{
 	        }
 	    } else if (adaptableObject instanceof IResource file) {
 	    	URI uri = file.getLocationURI();
-	    	if (uri != null) {	    		
+	    	if (uri != null) {
 	    		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(LSPEclipseUtilsTest.class.getSimpleName() + uri.getScheme());
 	    		if (project != null && uri.getScheme().equals("other")) {
 	    			return (T) URI.create(uri.toString().replaceAll("//", "/" + A_SEGMENT));
