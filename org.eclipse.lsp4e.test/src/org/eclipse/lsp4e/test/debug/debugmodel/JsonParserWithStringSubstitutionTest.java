@@ -25,7 +25,7 @@ import org.junit.Test;
 
 public class JsonParserWithStringSubstitutionTest {
 
-	class StringVariableManagerMock implements IStringVariableManager {
+	private static final class StringVariableManagerMock implements IStringVariableManager {
 
 		String variableReference = "";
 		String variableReplacement = "";

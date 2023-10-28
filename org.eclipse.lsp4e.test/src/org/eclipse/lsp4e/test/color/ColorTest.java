@@ -72,9 +72,6 @@ public class ColorTest {
 
 	/**
 	 * TODO consider reusing directly code from Test_org_eclipse_swt_custom_StyledText
-	 * @param widget
-	 * @param expectedRGB
-	 * @return
 	 */
 	public static boolean containsColor(Control widget, RGB expectedRGB, int tolerance) {
 		if (widget.getSize().x == 0) {

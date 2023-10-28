@@ -60,8 +60,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile1);
-		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
-				c -> Boolean.TRUE);
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1, c -> true);
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 
 		LanguageServerWrapper wrapper1 = wrappers.iterator().next();
@@ -76,14 +75,14 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile2 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile2);
-		wrappers = LanguageServiceAccessor.getLSWrappers(testFile2, c -> Boolean.TRUE);
+		wrappers = LanguageServiceAccessor.getLSWrappers(testFile2, c -> true);
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 
 		LanguageServerWrapper wrapper2 = wrappers.iterator().next();
 		assertTrue(wrapper2.isActive());
 
-		// See corresponding LanguageServiceAccessorTest.testCreateNewLSAfterInitialProjectGotDeleted() - if WorkspaceFolders capability present
-		// then can recycle the wrapper/server, otherwise a new one gets created
+		// See corresponding LanguageServiceAccessorTest.testCreateNewLSAfterInitialProjectGotDeleted() -
+		// if WorkspaceFolders capability present then can recycle the wrapper/server, otherwise a new one gets created
 		assertTrue(wrapper1 == wrapper2);
 	}
 
@@ -92,8 +91,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile1);
-		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
-				c -> Boolean.TRUE);
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1, c -> true);
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 
@@ -116,16 +114,17 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile1);
-		LanguageServiceAccessor.getLSWrappers(testFile1, capabilities -> Boolean.TRUE).iterator()
-				.next();
+		LanguageServiceAccessor.getLSWrappers(testFile1, capabilities -> true).iterator().next();
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 		final JobSynchronizer synchronizer = new JobSynchronizer();
 		project.close(synchronizer);
 		synchronizer.await();
 
-		waitForAndAssertCondition(5_000,
-				() -> MockLanguageServer.INSTANCE.getWorkspaceService().getWorkspaceFoldersEvents().size() == 2);
+		waitForAndAssertCondition(5_000, () -> {
+			assertEquals(2, MockLanguageServer.INSTANCE.getWorkspaceService().getWorkspaceFoldersEvents().size());
+			return true;
+		});
 		final MockWorkspaceService mockWorkspaceService = MockLanguageServer.INSTANCE.getWorkspaceService();
 		final List<DidChangeWorkspaceFoldersParams> events = mockWorkspaceService.getWorkspaceFoldersEvents();
 		assertEquals(2, events.size());
@@ -139,8 +138,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile1);
-		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1,
-				c -> Boolean.TRUE);
+		Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1, c -> true);
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 
@@ -167,8 +165,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile1);
-		LanguageServiceAccessor.getLSWrappers(testFile1, capabilities -> Boolean.TRUE).iterator()
-				.next();
+		LanguageServiceAccessor.getLSWrappers(testFile1, capabilities -> true).iterator().next();
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 
@@ -184,8 +181,10 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 
 		waitForAndAssertCondition(5_000, () -> project.isOpen());
 
-		waitForAndAssertCondition(5_000,
-				() -> MockLanguageServer.INSTANCE.getWorkspaceService().getWorkspaceFoldersEvents().size() == 3);
+		waitForAndAssertCondition(5_000, () -> {
+			assertEquals(3, MockLanguageServer.INSTANCE.getWorkspaceService().getWorkspaceFoldersEvents().size());
+			return true;
+		});
 		final MockWorkspaceService mockWorkspaceService = MockLanguageServer.INSTANCE.getWorkspaceService();
 		final List<DidChangeWorkspaceFoldersParams> events = mockWorkspaceService.getWorkspaceFoldersEvents();
 		final List<WorkspaceFolder> added = events.get(2).getEvent().getAdded();
