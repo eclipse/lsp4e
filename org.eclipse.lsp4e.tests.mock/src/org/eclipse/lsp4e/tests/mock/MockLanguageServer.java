@@ -352,4 +352,10 @@ public final class MockLanguageServer implements LanguageServer {
 	public void setFoldingRanges(List<FoldingRange> foldingRanges) {
 		this.textDocumentService.setFoldingRanges(foldingRanges);
 	}
+
+	@Override
+	public String toString() {
+		return "MockLanguageServer [started=" + started + ", delay=" + delay + ", remoteProxies=" + remoteProxies.size()
+				+ ", inFlight=" + inFlight.size() + "]";
+	}
 }

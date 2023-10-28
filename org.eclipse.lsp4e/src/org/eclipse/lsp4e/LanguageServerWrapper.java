@@ -493,7 +493,7 @@ public class LanguageServerWrapper {
 				} catch (InterruptedException ex) {
 					Thread.currentThread().interrupt();
 				} catch (Exception ex) {
-					LanguageServerPlugin.logError(ex);
+					LanguageServerPlugin.logError(ex.getClass().getSimpleName() + " occurred during shutdown of " + languageServerInstance, ex); //$NON-NLS-1$
 				}
 			}
 
