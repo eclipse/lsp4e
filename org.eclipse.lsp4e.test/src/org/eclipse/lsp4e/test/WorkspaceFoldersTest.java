@@ -162,7 +162,8 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 		assertEquals(expected, new File(new URI(removed.get(0).getUri())));
 	}
 
-	public void projectReopenTest() throws Exception {
+	@Test
+	public void testProjectReopen() throws Exception {
 		IFile testFile1 = TestUtils.createUniqueTestFile(project, "");
 
 		TestUtils.openEditor(testFile1);
