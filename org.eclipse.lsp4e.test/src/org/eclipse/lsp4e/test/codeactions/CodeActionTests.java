@@ -58,8 +58,8 @@ import org.junit.Test;
 
 public class CodeActionTests {
 
-	@Rule public NoErrorLoggedRule rule = new NoErrorLoggedRule(LanguageServerPlugin.getDefault().getLog());
-	@Rule public AllCleanRule clear = new AllCleanRule();
+	public final @Rule NoErrorLoggedRule rule = new NoErrorLoggedRule();
+	public final @Rule AllCleanRule clear = new AllCleanRule();
 
 	@Test
 	public void testCodeActionsClientCommandForTextEdit() throws CoreException {
