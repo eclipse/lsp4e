@@ -17,25 +17,13 @@ import static org.junit.Assert.fail;
 
 import java.util.Map;
 
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
-import org.eclipse.lsp4e.test.utils.TestUtils;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4j.jsonrpc.json.JsonRpcMethod;
 import org.eclipse.lsp4j.jsonrpc.services.ServiceEndpoints;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class DebugTest {
-	@Rule public AllCleanRule clear = new AllCleanRule();
-	protected IProject project;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("CompletionTest" + System.currentTimeMillis());
-	}
+public class DebugTest extends AbstractTestWithProject {
 
 	/**
 	 * Test for the `IllegalStateException: Duplicate RPC method runInTerminal` issue.

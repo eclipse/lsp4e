@@ -16,9 +16,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
@@ -28,15 +27,12 @@ import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.ide.IDE;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class ShowMessageTest {
-	@Rule public AllCleanRule clear = new AllCleanRule();
+public class ShowMessageTest extends AbstractTestWithProject {
 
 	@Test
 	public void testShowMessage() throws CoreException {
-		IProject project = TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "");
 		IDE.openEditor(UI.getActivePage(), file);
 		String messageContent = "test notification " + System.currentTimeMillis();

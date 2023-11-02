@@ -27,31 +27,25 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.MockConnectionProviderWithStartException;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.ui.IEditorPart;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class LanguageServerWrapperTest {
+public class LanguageServerWrapperTest extends AbstractTestWithProject {
 
-	private IProject project1;
 	private IProject project2;
 
-	@Rule
-	public AllCleanRule clear = new AllCleanRule();
-
 	@Before
-	public void setUp() throws CoreException {
-		project1 = TestUtils.createProject("LanguageServerWrapperTestProject1" + System.currentTimeMillis());
+	public void setUp() throws Exception {
 		project2 = TestUtils.createProject("LanguageServerWrapperTestProject2" + System.currentTimeMillis());
 	}
 
 	@Test
 	public void testConnect() throws Exception {
-		IFile testFile1 = TestUtils.createFile(project1, "shouldUseExtension.lsptWithMultiRoot", "");
+		IFile testFile1 = TestUtils.createFile(project, "shouldUseExtension.lsptWithMultiRoot", "");
 		IFile testFile2 = TestUtils.createFile(project2, "shouldUseExtension.lsptWithMultiRoot", "");
 
 		IEditorPart editor1 = TestUtils.openEditor(testFile1);
@@ -65,7 +59,9 @@ public class LanguageServerWrapperTest {
 		waitForAndAssertCondition(2_000, () -> wrapper.isActive());
 
 		// e.g. LanguageServerWrapper@69fe8c75 [serverId=org.eclipse.lsp4e.test.server-with-multi-root-support, initialPath=null, initialProject=P/LanguageServerWrapperTestProject11691664858710, isActive=true]
-		assertTrue(wrapper.toString().matches("LanguageServerWrapper@[0-9a-f]+ \\[serverId=org.eclipse.lsp4e.test.server-with-multi-root-support, initialPath=null, initialProject=P\\/LanguageServerWrapperTestProject1[0-9]+, isActive=true, pid=(null|[0-9])+\\]"));
+		assertTrue(wrapper.toString().matches(
+				"LanguageServerWrapper@[0-9a-f]+ \\[serverId=org.eclipse.lsp4e.test.server-with-multi-root-support, initialPath=null, initialProject=P\\/"
+						+ project.getName() + ", isActive=true, pid=(null|[0-9])+\\]"));
 
 		assertTrue(wrapper.isConnectedTo(testFile1.getLocationURI()));
 		assertTrue(wrapper.isConnectedTo(testFile2.getLocationURI()));
@@ -80,7 +76,7 @@ public class LanguageServerWrapperTest {
 	 */
 	@Test
 	public void testStopAndActive() throws CoreException, IOException, AssertionError, InterruptedException, ExecutionException {
-		IFile testFile1 = TestUtils.createFile(project1, "shouldUseExtension.lsptWithMultiRoot", "");
+		IFile testFile1 = TestUtils.createFile(project, "shouldUseExtension.lsptWithMultiRoot", "");
 		IEditorPart editor1 = TestUtils.openEditor(testFile1);
 		@NonNull Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1, request -> true);
 		assertEquals(1, wrappers.size());
@@ -120,7 +116,7 @@ public class LanguageServerWrapperTest {
 
 	@Test
 	public void testStartExceptionRace() throws Exception {
-		IFile testFile1 = TestUtils.createFile(project1, "shouldUseExtension.lsptStartException", "");
+		IFile testFile1 = TestUtils.createFile(project, "shouldUseExtension.lsptStartException", "");
 
 		IEditorPart editor1 = TestUtils.openEditor(testFile1);
 

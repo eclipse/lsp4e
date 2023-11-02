@@ -20,32 +20,20 @@ import static org.junit.Assert.assertTrue;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class RunningLanguageServerTest {
-
-	private IProject project;
-
-	@Rule public AllCleanRule clear = new AllCleanRule();
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("StartStopServerTest" + System.currentTimeMillis());
-	}
+public class RunningLanguageServerTest extends AbstractTestWithProject {
 
 	/**
 	 * checks if language servers get started and shutdown correctly if opening and

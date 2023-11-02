@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.text.ITextViewer;
@@ -30,7 +29,7 @@ import org.eclipse.jface.text.source.IAnnotationModel;
 import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.highlight.HighlightReconcilingStrategy;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.DocumentHighlight;
@@ -40,22 +39,11 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.ui.IEditorReference;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
 
-public class HighlightTest {
-
-	@Rule
-	public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("HighlightTest" + System.currentTimeMillis());
-	}
+public class HighlightTest extends AbstractTestWithProject{
 
 	@Test
 	public void testHighlight() throws CoreException {

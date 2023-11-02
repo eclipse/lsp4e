@@ -22,14 +22,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.hover.LSPTextHover;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
@@ -48,19 +47,14 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 @SuppressWarnings("restriction")
-public class HoverTest {
-
-	@Rule public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
+public class HoverTest extends AbstractTestWithProject {
 	private LSPTextHover hover;
 
 	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("HoverTest" + System.currentTimeMillis());
+	public void setUp() {
 		hover = new LSPTextHover();
 	}
 
