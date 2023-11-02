@@ -24,33 +24,22 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.link.LinkedPosition;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
 import org.eclipse.jface.text.source.ISourceViewer;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class LinkedEditingTest {
-
-	@Rule public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("LinkedEditingTest" + System.currentTimeMillis());
-	}
+public class LinkedEditingTest extends AbstractTestWithProject {
 
 	@Test
 	public void testLinkedEditing() throws CoreException {

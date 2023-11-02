@@ -22,12 +22,10 @@ import java.util.function.Predicate;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
@@ -39,19 +37,9 @@ import org.eclipse.lsp4j.TextDocumentSyncKind;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.ide.IDE;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class DocumentDidChangeTest {
-
-	@Rule public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("DocumentDidChangeTest" + System.currentTimeMillis());
-	}
+public class DocumentDidChangeTest extends AbstractTestWithProject {
 
 	@Test
 	public void testIncrementalSync() throws Exception {

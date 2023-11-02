@@ -21,13 +21,11 @@ import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourceAttributes;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.NoErrorLoggedRule;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -54,15 +52,13 @@ import org.eclipse.ui.texteditor.TextOperationAction;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CodeActionTests {
+public class CodeActionTests extends AbstractTestWithProject {
 
-	public final @Rule NoErrorLoggedRule rule = new NoErrorLoggedRule();
-	public final @Rule AllCleanRule clear = new AllCleanRule();
+	public final @Rule NoErrorLoggedRule noErrorLoggedRule = new NoErrorLoggedRule();
 
 	@Test
 	public void testCodeActionsClientCommandForTextEdit() throws CoreException {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile f = TestUtils.createUniqueTestFile(p, "error");
+		IFile f = TestUtils.createUniqueTestFile(project, "error");
 		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forLeft(new Command(
 				"fixme",
 				"edit",
@@ -81,14 +77,12 @@ public class CodeActionTests {
 			assertResolution(editor, m, "fixed");
 		} finally {
 			editor.close(false);
-			p.delete(true, new NullProgressMonitor());
 		}
 	}
 
 	@Test
 	public void testCodeActionsClientCommandForWorkspaceEdit() throws CoreException {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile f = TestUtils.createUniqueTestFile(p, "error");
+		IFile f = TestUtils.createUniqueTestFile(project, "error");
 
 		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
 		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
@@ -118,8 +112,7 @@ public class CodeActionTests {
 	@Test
 	public void testCodeActionsQuickAssist() throws CoreException {
 		MockLanguageServer.reset();
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile f = TestUtils.createUniqueTestFile(p, "error");
+		IFile f = TestUtils.createUniqueTestFile(project, "error");
 
 		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
 		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
@@ -143,8 +136,7 @@ public class CodeActionTests {
 
 	@Test
 	public void testCodeActionLiteralWorkspaceEdit() throws CoreException {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile f = TestUtils.createUniqueTestFile(p, "error");
+		IFile f = TestUtils.createUniqueTestFile(project, "error");
 
 		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
 		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
@@ -160,8 +152,7 @@ public class CodeActionTests {
 
 	@Test
 	public void testNoCodeActionOnReadOnlySource() throws CoreException {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile f = TestUtils.createUniqueTestFile(p, "error");
+		IFile f = TestUtils.createUniqueTestFile(project, "error");
 		f.setResourceAttributes(new ResourceAttributes() {
 			@Override
 			public boolean isReadOnly() {
@@ -182,8 +173,7 @@ public class CodeActionTests {
 
 	@Test
 	public void testCodeActionLiteralWithClientCommand() throws CoreException {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile f = TestUtils.createUniqueTestFile(p, "error");
+		IFile f = TestUtils.createUniqueTestFile(project, "error");
 
 		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
 		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
@@ -199,9 +189,8 @@ public class CodeActionTests {
 
 	@Test
 	public void testCodeActionWorkspaceEditlWithDifferentURI() throws CoreException {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile sourceFile = TestUtils.createUniqueTestFile(p, "error");
-		IFile targetFile = TestUtils.createUniqueTestFile(p, "fixme");
+		IFile sourceFile = TestUtils.createUniqueTestFile(project, "error");
+		IFile targetFile = TestUtils.createUniqueTestFile(project, "fixme");
 
 		// create a diagnostic on the sourceFile with a code action
 		// that changes the targetFile

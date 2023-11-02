@@ -18,34 +18,22 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.ui.IEditorPart;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class DocumentWillSaveWaitUntilTest {
-
-	@Rule public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
-
-	@Before
-	public void setUp() throws CoreException {
-		project =  TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
-	}
+public class DocumentWillSaveWaitUntilTest extends AbstractTestWithProject {
 
 	private List<TextEdit> createSingleTextEditAtFileStart(String newText) {
 		TextEdit textEdit = new TextEdit();
