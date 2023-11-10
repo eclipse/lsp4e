@@ -11,8 +11,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.codeactions;
 
-import static org.eclipse.lsp4e.test.utils.TestUtils.*;
-import static org.junit.Assert.*;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForCondition;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -139,6 +141,39 @@ public class CodeActionTests {
 		Shell completionShell= TestUtils.findNewShell(beforeShells, editor.getSite().getShell().getDisplay());
 		final Table completionProposalList = TestUtils.findCompletionSelectionControl(completionShell);
 		checkCompletionContent(completionProposalList);
+	}
+
+	@Test
+	public void testSlowCodeActionsQuickAssist() throws CoreException {
+		MockLanguageServer.reset();
+		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
+		IFile f = TestUtils.createUniqueTestFile(p, "error");
+
+		TextEdit tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
+		WorkspaceEdit wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
+		MockLanguageServer.INSTANCE.setCodeActions(Collections
+				.singletonList(Either.forLeft(new Command(
+				"fixme",
+				"edit",
+				Collections.singletonList(wEdit))
+			)
+		));
+		MockLanguageServer.INSTANCE.setTimeToProceedQueries(1000);
+		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
+		final Set<Shell> beforeShells = Arrays.stream(editor.getSite().getShell().getDisplay().getShells()).filter(Shell::isVisible).collect(Collectors.toSet());
+		editor.selectAndReveal(3, 0);
+		TextOperationAction action = (TextOperationAction) editor.getAction(ITextEditorActionConstants.QUICK_ASSIST);
+		action.update();
+		action.run();
+		waitForAndAssertCondition(3000, () -> {
+			Shell completionShell= TestUtils.findNewShell(beforeShells, editor.getSite().getShell().getDisplay());
+			if (completionShell == null) {
+				return false;
+			}
+			final Table completionProposalList = TestUtils.findCompletionSelectionControl(completionShell);
+			return completionProposalList.getItemCount() == 1 && "fixme".equals(completionProposalList.getItem(0).getText());
+		});
+		assertEquals(1, MockLanguageServer.INSTANCE.getTextDocumentService().codeActionRequests);
 	}
 
 	@Test

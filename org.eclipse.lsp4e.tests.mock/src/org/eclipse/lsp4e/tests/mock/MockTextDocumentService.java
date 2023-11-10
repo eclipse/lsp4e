@@ -117,6 +117,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private List<DocumentSymbol> documentSymbols;
 	private SemanticTokens mockSemanticTokens;
 	private List<FoldingRange> foldingRanges;
+	public int codeActionRequests = 0;
 
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -129,6 +130,7 @@ public class MockTextDocumentService implements TextDocumentService {
 				.forSecond(new PrepareRenameResult(new Range(new Position(0, 0), new Position(0, 0)), "placeholder"));
 		this.remoteProxies = new ArrayList<>();
 		this.documentSymbols = Collections.emptyList();
+		this.codeActionRequests = 0;
 	}
 
 	private <U> CompletableFuture<U> futureFactory(U value) {
@@ -195,7 +197,8 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
-		return CompletableFuture.completedFuture(this.mockCodeActions);
+		codeActionRequests++;
+		return futureFactory(this.mockCodeActions);
 	}
 
 	@Override
@@ -376,6 +379,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockRenameEdit = null;
 		this.documentSymbols = Collections.emptyList();
 		this.foldingRanges = new ArrayList<>();
+		this.codeActionRequests = 0;
 	}
 
 	public void setDiagnostics(List<Diagnostic> diagnostics) {

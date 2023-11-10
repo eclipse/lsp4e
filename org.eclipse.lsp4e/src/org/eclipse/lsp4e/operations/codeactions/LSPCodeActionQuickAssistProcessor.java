@@ -34,12 +34,9 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.ui.Messages;
-import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
-import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.ui.internal.progress.ProgressInfoItem;
@@ -104,29 +101,12 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 			return false;
 		}
 		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPCodeActionMarkerResolution::providesCodeActions);
-		if (!executor.anyMatching()) {
-			return false;
-		}
-
-		CodeActionParams params = prepareCodeActionParams(document, invocationContext.getOffset(), invocationContext.getLength());
-
-		try {
-			CompletableFuture<List<Either<Command, CodeAction>>> anyActions = executor.collectAll(ls -> ls.getTextDocumentService().codeAction(params)).thenApply(s -> s.stream().flatMap(List::stream).toList());
-			if (anyActions.get(200, TimeUnit.MILLISECONDS).stream().noneMatch(LSPCodeActionMarkerResolution::canPerform)) {
-				return false;
-			}
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
-			LanguageServerPlugin.logError(e);
-			return false;
-		}
-
-		return true;
+		return executor.anyMatching();
 	}
 
 	@Override
 	public ICompletionProposal[] computeQuickAssistProposals(IQuickAssistInvocationContext invocationContext) {
 		IDocument document = invocationContext.getSourceViewer().getDocument();
-
 		if (document == null) {
 			return NO_PROPOSALS;
 		}
@@ -140,7 +120,12 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		// the UI
 		boolean needNewQuery = true;
 		synchronized (lock) {
-			needNewQuery = (cachedContext != invocationContext);
+			needNewQuery = cachedContext == null || invocationContext == null ||
+				cachedContext.getClass() != invocationContext.getClass() ||
+				cachedContext.getSourceViewer() != invocationContext.getSourceViewer() ||
+				cachedContext.getOffset() != invocationContext.getOffset() ||
+				cachedContext.getLength() != invocationContext.getLength();
+				// should also check whether (same) document content changed
 			if (needNewQuery) {
 				cachedContext = invocationContext;
 			}

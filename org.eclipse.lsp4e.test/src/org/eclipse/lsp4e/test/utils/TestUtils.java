@@ -12,7 +12,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.utils;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -262,8 +261,7 @@ public class TestUtils {
 				.filter(Shell::isVisible)
 				.filter(shell -> !beforeShells.contains(shell))
 				.toArray(Shell[]::new);
-		assertEquals("No new shell found", 1, afterShells.length);
-		return afterShells[0];
+		return afterShells.length > 0 ? afterShells[0] : null;
 	}
 
 	public static Table findCompletionSelectionControl(Widget control) {
