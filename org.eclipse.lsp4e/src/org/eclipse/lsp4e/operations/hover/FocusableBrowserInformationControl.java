@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2020 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -91,21 +91,21 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 			@Nullable
 			Point constraints = getSizeConstraints();
 			Point hint = computeSizeHint();
-
 			setSize(hint.x, hint.y);
-			browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"nowrap\""); //$NON-NLS-1$
-			Double width = 20 + (Double) browser.evaluate("return document.body.scrollWidth;"); //$NON-NLS-1$
 
+			safeExecute(browser, "document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"nowrap\""); //$NON-NLS-1$
+			Double width = 20 + (safeEvaluate(browser, "return document.body.scrollWidth;") instanceof Double evaluated ? evaluated : 0); //$NON-NLS-1$
 			setSize(width.intValue(), hint.y);
-			browser.execute("document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"normal\""); //$NON-NLS-1$
-			Double height = (Double) browser.evaluate("return document.body.scrollHeight;"); //$NON-NLS-1$
-			Object marginTop = browser.evaluate("return window.getComputedStyle(document.body).marginTop;"); //$NON-NLS-1$
-			Object marginBottom = browser.evaluate("return getComputedStyle(document.body).marginBottom;"); //$NON-NLS-1$
+
+			safeExecute(browser, "document.getElementsByTagName(\"html\")[0].style.whiteSpace = \"normal\""); //$NON-NLS-1$
+			Double height = safeEvaluate(browser, "return document.body.scrollHeight;") instanceof Double evaluated ? evaluated : 0; //$NON-NLS-1$
+			Object marginTop = safeEvaluate(browser, "return window.getComputedStyle(document.body).marginTop;"); //$NON-NLS-1$
+			Object marginBottom = safeEvaluate(browser, "return window.getComputedStyle(document.body).marginBottom;"); //$NON-NLS-1$
 			if (Platform.getPreferencesService().getBoolean(EditorsUI.PLUGIN_ID,
 					AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SHOW_TEXT_HOVER_AFFORDANCE, true,
 					null)) {
 				FontData[] fontDatas = JFaceResources.getDialogFont().getFontData();
-				height = fontDatas[0].getHeight() + height;
+				height += fontDatas[0].getHeight();
 			}
 
 			width = Double.valueOf(width * 1.5);
@@ -123,6 +123,24 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 			setSize(width.intValue(), height.intValue());
 		}));
 		b.setJavascriptEnabled(true);
+	}
+
+	private static Object safeEvaluate(Browser browser, String expression) {
+		try {
+			return browser.evaluate(expression);
+		} catch (Throwable ex) {
+			LanguageServerPlugin.logError(ex);
+		}
+		return null;
+	}
+
+	private static boolean safeExecute(Browser browser, String expression) {
+		try {
+			return browser.execute(expression);
+		} catch (Throwable ex) {
+			LanguageServerPlugin.logError(ex);
+		}
+		return false;
 	}
 
 	@Override
