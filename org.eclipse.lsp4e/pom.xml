@@ -9,9 +9,13 @@
 	<packaging>eclipse-plugin</packaging>
 	<version>0.18.1-SNAPSHOT</version>
 
+	<properties>
+		<forceSkipCache>false</forceSkipCache>
+	</properties>
+
 	<build>
 		<plugins>
-			<plugin>
+			<!-- plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-clean-plugin</artifactId>
 				<version>3.3.2</version>
@@ -22,17 +26,18 @@
 						</fileset>
 					</filesets>
 				</configuration>
-			</plugin>
+			</plugin -->
 			<plugin>
 				<groupId>com.googlecode.maven-download-plugin</groupId>
 				<artifactId>download-maven-plugin</artifactId>
 				<!-- 1.7.0 is broken, see https://github.com/maven-download-plugin/maven-download-plugin/releases/tag/1.7.0 -->
-				<version>1.7.1</version>
+				<version>1.6.8</version>
 				<configuration>
 					<!-- https://maven-download-plugin.github.io/maven-download-plugin/docsite/1.6.8/wget-mojo.html -->
 					<alwaysVerifyChecksum>true</alwaysVerifyChecksum>
 					<overwrite>true</overwrite>
-					<skipCache>false</skipCache>
+					<!-- skipCache>${forceSkipCache}</skipCache -->
+					<followRedirects>tue</followRedirects>
 					<readTimeOut>5000</readTimeOut>
 				</configuration>
 				<executions>
@@ -44,7 +49,7 @@
 						</goals>
 						<configuration>
 							<url>https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js</url>
-							<sha256>837a6fa5b0c736b52bbde2b2b6190f305da3fc9ed41681db5321507057b5c846</sha256>
+							<sha256>f178f9e890cb9129fc25944d1ea1f1f4d556af0783ec5a867a930d5cdccabab4</sha256>
 							<outputDirectory>resources/highlight.min.js</outputDirectory>
 						</configuration>
 					</execution>
@@ -56,7 +61,7 @@
 						</goals>
 						<configuration>
 							<url>https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/default.min.css</url>
-							<sha256>fbde0ac0921d86c356c41532e7319c887a23bd1b8ff00060cab447249f03c7cf</sha256>
+							<sha256>66e72de7f9149fe9ea64702180eb56c25e2a886825ffab790b0ad6d18a33bca5</sha256>
 							<outputDirectory>resources/highlight.min.js/styles</outputDirectory>
 						</configuration>
 					</execution>
@@ -68,7 +73,7 @@
 						</goals>
 						<configuration>
 							<url>https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/dark.min.css</url>
-							<sha256>bf437be81145907d1d081f1b52be1c1d254df00ff309a3a8a4cb92989595ff9c</sha256>
+							<sha256>8e52f19e63ccdc4625637db7de06d5494a5aea0694d2c56248f1d46e20aa0885</sha256>
 							<outputDirectory>resources/highlight.min.js/styles</outputDirectory>
 						</configuration>
 					</execution>
