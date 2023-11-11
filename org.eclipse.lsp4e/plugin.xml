@@ -24,7 +24,7 @@
       <hyperlinkDetector
             activate="true"
             class="org.eclipse.lsp4e.operations.declaration.OpenDeclarationHyperlinkDetector"
-            description="%openDeclarationHyperlink_decription"
+            description="%openDeclarationHyperlink_description"
             id="org.eclipse.lsp4e.hyperlinkDetector"
             name="%openDeclarationHyperlink_name"
             targetId="org.eclipse.ui.DefaultTextEditor">
@@ -92,19 +92,19 @@
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
-            description="%command.open.call.hierarchy.decription"
+            description="%command.open.call.hierarchy.description"
             id="org.eclipse.lsp4e.openCallHierarchy"
             name="%command.open.call.hierarchy.name">
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
-            description="%command.selection.range.up.decription"
+            description="%command.selection.range.up.description"
             id="org.eclipse.lsp4e.selectionRange.up"
             name="%command.selection.range.up.name">
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
-            description="%command.selection.range.down.decription"
+            description="%command.selection.range.down.description"
             id="org.eclipse.lsp4e.selectionRange.down"
             name="%command.selection.range.down.name">
       </command>
@@ -116,7 +116,7 @@
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
-            description="%command.open.type.hierarchy.decription"
+            description="%command.open.type.hierarchy.description"
             id="org.eclipse.lsp4e.openTypeHierarchy"
             name="%command.open.type.hierarchy.name">
       </command>
