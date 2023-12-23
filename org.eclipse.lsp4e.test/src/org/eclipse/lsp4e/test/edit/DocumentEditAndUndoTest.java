@@ -40,8 +40,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import com.google.common.collect.Iterators;
-
 public class DocumentEditAndUndoTest {
 
 	@Rule
@@ -78,10 +76,13 @@ public class DocumentEditAndUndoTest {
 
 		// Wait for Linked Editing to be established
 		waitForAndAssertCondition("Linked Editing not established", 3_000, () -> {
-			return Iterators
-					.tryFind(((ISourceViewer) viewer).getAnnotationModel().getAnnotationIterator(),
-							anno -> anno.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link"))
-					.isPresent();
+			final var it = ((ISourceViewer) viewer).getAnnotationModel().getAnnotationIterator();
+			while (it.hasNext()) {
+				if (it.next().getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")) {
+					return true;
+				}
+			}
+			return false;
 		});
 
 		// perform text editing operation
