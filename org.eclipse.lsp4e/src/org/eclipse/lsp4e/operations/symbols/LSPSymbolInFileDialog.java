@@ -113,6 +113,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 				} catch (BadLocationException e) {
 					LanguageServerPlugin.logError(e);
 				}
+				close();
 			}
 		});
 
