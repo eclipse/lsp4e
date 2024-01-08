@@ -14,6 +14,8 @@
 package org.eclipse.lsp4e.test.diagnostics;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -37,12 +39,16 @@ import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.test.color.ColorTest;
 import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.BlockingWorkspaceJob;
+import org.eclipse.lsp4e.test.utils.NoErrorLoggedRule;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
@@ -64,6 +70,7 @@ import org.junit.Test;
 public class DiagnosticsTest {
 
 	@Rule public AllCleanRule clear = new AllCleanRule();
+	public final @Rule NoErrorLoggedRule noErrorLoggedRule = new NoErrorLoggedRule();
 	private IProject project;
 	private LSPDiagnosticsToMarkers diagnosticsToMarkers;
 
@@ -122,6 +129,76 @@ public class DiagnosticsTest {
 					IResource.DEPTH_INFINITE).length);
 			return true;
 		});
+	}
+
+	@Test
+	public void testDiagnosticsForMarkerUpdateAfterProjectClose() throws CoreException, InterruptedException {
+		IFile file = TestUtils.createUniqueTestFile(project, "Diagnostic Marker Update After Project Close");
+		int markerLineIndex = 0;
+		int markerCharStart = 0;
+		int markerCharEnd = 10;
+		Range range = new Range(
+				new Position(markerLineIndex, markerCharStart),
+				new Position(markerLineIndex, markerCharEnd));
+		List<Diagnostic> diagnostics = List.of(
+				createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"),
+				createDiagnostic("2", "message2", range, DiagnosticSeverity.Warning, "source2"),
+				createDiagnostic("3", "message3", range, DiagnosticSeverity.Information, "source3"),
+				createDiagnostic("4", "message4", range, DiagnosticSeverity.Hint, "source4"));
+		PublishDiagnosticsParams diagnosticsParamsForFileDeletedInTheMeantime = new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics);
+		Job.getJobManager().suspend();
+		diagnosticsToMarkers.accept(diagnosticsParamsForFileDeletedInTheMeantime);
+		waitForAndAssertCondition(1_000, () -> {
+			Job[] allMarkerJobs = Job.getJobManager().find(LanguageServerPlugin.FAMILY_UPDATE_MARKERS);
+			assertThat("Marker Job not scheduled", allMarkerJobs.length, is(1));
+			return true;
+		});
+		Job[] allMarkerJobs = Job.getJobManager().find(LanguageServerPlugin.FAMILY_UPDATE_MARKERS);
+		Job markerJob = allMarkerJobs[0];
+		IProject project = file.getProject();
+		project.close(null);
+		waitForAndAssertCondition(1_000, () -> {
+			assertEquals(project.isAccessible(), false);
+			return true;
+		});
+		Job.getJobManager().resume();
+		markerJob.join();
+		assertThat(markerJob.getResult().isOK(), is(true));
+	}
+
+
+	// TODO this test is probably wrong but I don't know how to write it correctly. How can you simulate the patterns of concurrency?
+	@Test
+	public void testDiagnosticsForMarkerUpdateAfterDeletedFile() throws CoreException, InterruptedException {
+		IFile file = TestUtils.createUniqueTestFile(project, "Diagnostic Marker Update After File Deletion");
+		int markerLineIndex = 0;
+		int markerCharStart = 0;
+		int markerCharEnd = 10;
+		Range range = new Range(
+				new Position(markerLineIndex, markerCharStart),
+				new Position(markerLineIndex, markerCharEnd));
+		List<Diagnostic> diagnostics = Collections.singletonList(
+				createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"));
+		PublishDiagnosticsParams diagnosticsParamsForFileDeletedInTheMeantime = new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics);
+		BlockingWorkspaceJob blockingWorkspaceJob = new BlockingWorkspaceJob("blockingJob");
+		blockingWorkspaceJob.setRule(file.getWorkspace().getRuleFactory().markerRule(file));
+		blockingWorkspaceJob.schedule();
+		waitForAndAssertCondition(1_000, () -> {
+			assertEquals(blockingWorkspaceJob.getState(), Job.RUNNING);
+			return true;
+		});
+		diagnosticsToMarkers.accept(diagnosticsParamsForFileDeletedInTheMeantime);
+		Job[] allMarkerJobs = Job.getJobManager().find(LanguageServerPlugin.FAMILY_UPDATE_MARKERS);
+		assertThat(allMarkerJobs.length, is(1));
+		Job markerJob = allMarkerJobs[0];
+		file.delete(true, null);
+		waitForAndAssertCondition(1_000, () -> {
+			assertEquals(file.exists(), false);
+			return true;
+		});
+		blockingWorkspaceJob.progress();
+		markerJob.join();
+		assertThat(markerJob.getResult().isOK(), is(true));
 	}
 
 	@Test
