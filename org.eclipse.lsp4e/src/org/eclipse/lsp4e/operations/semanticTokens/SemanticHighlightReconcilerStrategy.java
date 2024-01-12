@@ -93,7 +93,7 @@ public class SemanticHighlightReconcilerStrategy
 	private SemanticTokensDataStreamProcessor semanticTokensDataStreamProcessor;
 
 	private boolean isInstalled;
-	
+
 	/**
 	 * Written in {@link this.class#applyTextPresentation(TextPresentation)}
 	 * applyTextPresentation and read in the lambda in
@@ -270,15 +270,13 @@ public class SemanticHighlightReconcilerStrategy
 						.ifPresent(versionedSemanticTokens -> {
 							versionedSemanticTokens.apply(this::saveStyle, this::invalidateTextPresentation);
 						});
-			} catch (ResponseErrorException | ExecutionException e) {
-				if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
-					LanguageServerPlugin.logError(e);
-				}
 			} catch (InterruptedException e) {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
-			} catch (CancellationException e) {
-				// nothing to do, the client has cancelled the request because the document has been closed or a new request has been sent
+			} catch (ResponseErrorException | ExecutionException | CancellationException e) {
+				if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
+					LanguageServerPlugin.logError(e);
+				}
 			}
 		}
 	}
