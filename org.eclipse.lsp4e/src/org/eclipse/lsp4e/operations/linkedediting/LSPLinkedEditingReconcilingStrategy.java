@@ -43,6 +43,7 @@ import org.eclipse.jface.viewers.ISelectionProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.swt.custom.StyledText;
@@ -165,7 +166,9 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 			collectLinkedEditingRanges(fDocument, offset).thenAcceptAsync(optional -> {
 				optional.ifPresent(this::applyLinkedEdit);
 			}).exceptionally(e -> {
-				LanguageServerPlugin.logError(e);
+				if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
+					LanguageServerPlugin.logError(e);
+				}
 				return null;
 			});
 		}

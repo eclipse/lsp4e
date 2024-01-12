@@ -26,7 +26,7 @@ public final class CancellationUtil {
 	}
 
 	public static boolean isRequestCancelledException(Throwable throwable) {
-		if (throwable instanceof CompletionException | throwable instanceof  ExecutionException) {
+		if (throwable instanceof CompletionException | throwable instanceof ExecutionException) {
 			throwable = throwable.getCause();
 		}
 		if (throwable instanceof ResponseErrorException responseErrorException) {
