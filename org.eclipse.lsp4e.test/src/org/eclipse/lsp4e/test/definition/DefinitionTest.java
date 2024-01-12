@@ -23,15 +23,13 @@ import java.util.stream.Collectors;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.declaration.LSBasedHyperlink;
 import org.eclipse.lsp4e.operations.declaration.OpenDeclarationHyperlinkDetector;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
@@ -42,21 +40,11 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class DefinitionTest {
+public class DefinitionTest extends AbstractTestWithProject {
 
-	@Rule public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
-	private OpenDeclarationHyperlinkDetector hyperlinkDetector;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("DefinitionTest" + System.currentTimeMillis());
-		hyperlinkDetector = new OpenDeclarationHyperlinkDetector();
-	}
+	private final OpenDeclarationHyperlinkDetector hyperlinkDetector = new OpenDeclarationHyperlinkDetector();
 
 	@Test
 	public void testDefinitionOneLocation() throws Exception {

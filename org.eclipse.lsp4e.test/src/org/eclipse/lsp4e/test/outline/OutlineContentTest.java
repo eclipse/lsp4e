@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -30,7 +29,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.EditorToOutlineAdapterFactory;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.DocumentSymbol;
@@ -44,14 +43,10 @@ import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.views.contentoutline.IContentOutlinePage;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class OutlineContentTest {
+public class OutlineContentTest extends AbstractTestWithProject {
 
-	@Rule
-	public AllCleanRule rule = new AllCleanRule();
-	
 	@Test
 	public void testExternalFile() throws CoreException, IOException {
 		var testFile = TestUtils.createTempFile("test" + System.currentTimeMillis(), ".lspt");
@@ -88,8 +83,6 @@ public class OutlineContentTest {
 
 	@Test
 	public void testOutlineSorting() throws CoreException, IOException {
-		IProject project = TestUtils
-				.createProject("OutlineContentTest_testOutlineSorting" + System.currentTimeMillis());
 		IFile testFile = TestUtils.createUniqueTestFile(project, "content\n does\n not\n matter\n but needs to cover the ranges described below");
 		DocumentSymbol symbolCow = new DocumentSymbol("cow", SymbolKind.Constant,
 				new Range(new Position(0, 0), new Position(0, 2)),
@@ -141,8 +134,6 @@ public class OutlineContentTest {
 
 	@Test
 	public void testNodeRemainExpandedUponSelection() throws CoreException, IOException {
-		IProject project = TestUtils
-				.createProject("OutlineContentTest_testNodeRemainExpandedUponSelection" + System.currentTimeMillis());
 		IFile testFile = TestUtils.createUniqueTestFile(project, "a(b())");
 		MockLanguageServer.INSTANCE.setDocumentSymbols(
 				new DocumentSymbol("a", SymbolKind.Constant, new Range(new Position(0, 0), new Position(0, 6)),
@@ -178,8 +169,6 @@ public class OutlineContentTest {
 
 	@Test
 	public void testNodeRemainExpandedUponModification() throws CoreException, BadLocationException, IOException {
-		IProject project = TestUtils.createProject(
-				"OutlineContentTest_testNodeRemainExpandedUponModification" + System.currentTimeMillis());
 		IFile testFile = TestUtils.createUniqueTestFile(project, "a(b())");
 		MockLanguageServer.INSTANCE.setDocumentSymbols(
 				new DocumentSymbol("a", SymbolKind.Constant, new Range(new Position(0, 0), new Position(0, 6)),

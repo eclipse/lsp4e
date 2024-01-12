@@ -15,15 +15,12 @@ import java.util.List;
 
 import org.eclipse.jface.text.Document;
 import org.eclipse.lsp4e.operations.semanticTokens.SemanticTokensDataStreamProcessor;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTest;
 import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.swt.custom.StyleRange;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class SemanticTokensDataStreamProcessorTest {
-	@Rule
-	public AllCleanRule clear = new AllCleanRule();
+public class SemanticTokensDataStreamProcessorTest extends AbstractTest {
 
 	@Test
 	public void testKeyword() {
