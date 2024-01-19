@@ -239,7 +239,10 @@ public class SemanticHighlightReconcilerStrategy
 		StyledText textWidget = viewer.getTextWidget();
 		textWidget.getDisplay().asyncExec(() -> {
 			if (!textWidget.isDisposed() && outdatedTextPresentation(documentTimestamp)) {
-				viewer.invalidateTextPresentation();
+				ITextViewer theViewer = viewer;
+				if (theViewer != null) {
+					theViewer.invalidateTextPresentation();
+			        }
 			}
 		});
 	}
