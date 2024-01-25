@@ -11,8 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.symbols;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.PopupDialog;
@@ -34,9 +32,18 @@ import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.internal.navigator.NavigatorContentService;
@@ -48,6 +55,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 	private final OutlineViewerInput outlineViewerInput;
 	private final ITextEditor textEditor;
+	private TreeViewer treeViewer;
 
 	public LSPSymbolInFileDialog(@NonNull Shell parentShell, @NonNull ITextEditor textEditor,
 			@NonNull IDocument document, @NonNull LanguageServerWrapper wrapper) {
@@ -63,48 +71,92 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		getShell().setText(NLS.bind(Messages.symbolsInFile, documentFile == null ? null : documentFile.getName()));
 
 		final var filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false);
-		TreeViewer viewer = filteredTree.getViewer();
-		viewer.setData(LSSymbolsContentProvider.VIEWER_PROPERTY_IS_QUICK_OUTLINE, Boolean.TRUE);
+		treeViewer = filteredTree.getViewer();
+		treeViewer.setData(LSSymbolsContentProvider.VIEWER_PROPERTY_IS_QUICK_OUTLINE, Boolean.TRUE);
 
-		final var contentService = new NavigatorContentService(CNFOutlinePage.ID, viewer);
+		final var contentService = new NavigatorContentService(CNFOutlinePage.ID, treeViewer);
 		filteredTree.addDisposeListener(ev -> contentService.dispose());
 		final var contentProvider = contentService.createCommonContentProvider();
-		viewer.setContentProvider(contentProvider);
+		treeViewer.setContentProvider(contentProvider);
 
 		final var sorter = new CommonViewerSorter();
 		sorter.setContentService(contentService);
-		viewer.setComparator(sorter);
+		treeViewer.setComparator(sorter);
 
-		viewer.setLabelProvider(new NavigatorDecoratingLabelProvider(contentService.createCommonLabelProvider()));
-		viewer.setUseHashlookup(true);
+		treeViewer.setLabelProvider(new NavigatorDecoratingLabelProvider(contentService.createCommonLabelProvider()));
+		treeViewer.setUseHashlookup(true);
 
-		final var isFirstSelectionEvent = new AtomicBoolean(true);
-		viewer.addSelectionChangedListener(event -> {
-			// ignore the first selection event which is fired when the current editor
-			// selection is pre-selected in the tree view when the outline popup is opens
-			if (isFirstSelectionEvent.get()) {
-				isFirstSelectionEvent.set(false);
-				return;
+		final Tree tree = treeViewer.getTree();
+
+		// listen to ESC key
+		tree.addKeyListener(new KeyListener() {
+			@Override
+			public void keyPressed(KeyEvent e)  {
+				if (e.character == 0x1B) { // ESC
+					close();
+				}
 			}
-
-			final var selection = (IStructuredSelection) event.getSelection();
-			if (selection.isEmpty()) {
-				return;
+			@Override
+			public void keyReleased(KeyEvent e) {
+				// do nothing
 			}
+		});
 
-			Object item = selection.getFirstElement();
-			if (item instanceof final Either<?, ?> either) {
-				item = either.get();
+		// listen to double-click or enter key
+		tree.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				// do nothing
 			}
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				gotoSelectedElement();
+			}
+		});
+
+		// listen to left mouse button's single click
+		tree.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseUp(MouseEvent e) {
+
+				if (tree.getSelectionCount() < 1)
+					return;
+
+				if (e.button != 1)
+					return;
+
+				if (tree.equals(e.getSource())) {
+					Object o= tree.getItem(new Point(e.x, e.y));
+					TreeItem selection= tree.getSelection()[0];
+					if (selection.equals(o))
+						gotoSelectedElement();
+				}
+			}
+		});
+
+		treeViewer.setInput(outlineViewerInput);
+		return filteredTree;
+	}
+
+	private void gotoSelectedElement() {
+		Object selectedElement= getSelectedElement();
+
+		if (selectedElement instanceof Either<?, ?> either) {
+			selectedElement = either.get();
+		}
+
+		if (selectedElement != null) {
+			close();
 
 			Range range = null;
-			if (item instanceof SymbolInformation symbolInformation) {
+			if (selectedElement instanceof SymbolInformation symbolInformation) {
 				range = symbolInformation.getLocation().getRange();
-			} else if (item instanceof DocumentSymbol documentSymbol) {
+			} else if (selectedElement instanceof DocumentSymbol documentSymbol) {
 				range = documentSymbol.getSelectionRange();
-			} else if (item instanceof DocumentSymbolWithURI documentSymbolWithFile) {
+			} else if (selectedElement instanceof DocumentSymbolWithURI documentSymbolWithFile) {
 				range = documentSymbolWithFile.symbol.getSelectionRange();
 			}
+
 			if (range != null) {
 				try {
 					int offset = LSPEclipseUtils.toOffset(range.getStart(), outlineViewerInput.document);
@@ -113,12 +165,21 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 				} catch (BadLocationException e) {
 					LanguageServerPlugin.logError(e);
 				}
-				close();
 			}
-		});
+		}
+	}
 
-		viewer.setInput(outlineViewerInput);
-		return filteredTree;
+	protected Object getSelectedElement() {
+		if (treeViewer == null) {
+			return null;
+		}
+
+		IStructuredSelection selection = treeViewer.getStructuredSelection();
+		if (selection == null) {
+			return null;
+		}
+
+		return selection.getFirstElement();
 	}
 
 	@Override
