@@ -90,7 +90,6 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 		final Tree tree = viewer.getTree();
 
-		// listen to ESC key
 		tree.addKeyListener(new KeyListener() {
 			@Override
 			public void keyPressed(KeyEvent e)  {
@@ -104,7 +103,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 			}
 		});
 
-		// listen to double-click or enter key
+		// listen to enter key or other platform-specific default selection events
 		tree.addSelectionListener(new SelectionListener() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -173,11 +172,13 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 	}
 
 	private Object getSelectedElement() {
-		if (viewer == null) {
+		TreeViewer treeViewer = this.viewer;
+
+		if (treeViewer == null) {
 			return null;
 		}
 
-		IStructuredSelection selection = viewer.getStructuredSelection();
+		IStructuredSelection selection = treeViewer.getStructuredSelection();
 		if (selection == null) {
 			return null;
 		}
