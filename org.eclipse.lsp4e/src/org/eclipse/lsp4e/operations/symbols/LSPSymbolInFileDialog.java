@@ -148,6 +148,8 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		Object selectedElement= getSelectedElement();
 
 		if (selectedElement != null) {
+			close();
+
 			Range range = null;
 			if (selectedElement instanceof SymbolInformation symbolInformation) {
 				range = symbolInformation.getLocation().getRange();
@@ -166,8 +168,6 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 					LanguageServerPlugin.logError(e);
 				}
 			}
-
-			close();
 		}
 	}
 
