@@ -93,7 +93,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		tree.addKeyListener(new KeyListener() {
 			@Override
 			public void keyPressed(KeyEvent e)  {
-				if (e.character == org.eclipse.swt.SWT.ESC) {
+				if (e.character == SWT.ESC) {
 					close();
 				}
 			}
