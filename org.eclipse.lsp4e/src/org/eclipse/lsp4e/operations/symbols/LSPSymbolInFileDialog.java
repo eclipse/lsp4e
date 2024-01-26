@@ -57,7 +57,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 	private final OutlineViewerInput outlineViewerInput;
 	private final ITextEditor textEditor;
-	private TreeViewer treeViewer;
+	private TreeViewer viewer;
 
 	public LSPSymbolInFileDialog(@NonNull Shell parentShell, @NonNull ITextEditor textEditor,
 			@NonNull IDocument document, @NonNull LanguageServerWrapper wrapper) {
@@ -73,28 +73,28 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		getShell().setText(NLS.bind(Messages.symbolsInFile, documentFile == null ? null : documentFile.getName()));
 
 		final var filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false);
-		treeViewer = filteredTree.getViewer();
-		treeViewer.setData(LSSymbolsContentProvider.VIEWER_PROPERTY_IS_QUICK_OUTLINE, Boolean.TRUE);
+		viewer = filteredTree.getViewer();
+		viewer.setData(LSSymbolsContentProvider.VIEWER_PROPERTY_IS_QUICK_OUTLINE, Boolean.TRUE);
 
-		final var contentService = new NavigatorContentService(CNFOutlinePage.ID, treeViewer);
+		final var contentService = new NavigatorContentService(CNFOutlinePage.ID, viewer);
 		filteredTree.addDisposeListener(ev -> contentService.dispose());
 		final var contentProvider = contentService.createCommonContentProvider();
-		treeViewer.setContentProvider(contentProvider);
+		viewer.setContentProvider(contentProvider);
 
 		final var sorter = new CommonViewerSorter();
 		sorter.setContentService(contentService);
-		treeViewer.setComparator(sorter);
+		viewer.setComparator(sorter);
 
-		treeViewer.setLabelProvider(new NavigatorDecoratingLabelProvider(contentService.createCommonLabelProvider()));
-		treeViewer.setUseHashlookup(true);
+		viewer.setLabelProvider(new NavigatorDecoratingLabelProvider(contentService.createCommonLabelProvider()));
+		viewer.setUseHashlookup(true);
 
-		final Tree tree = treeViewer.getTree();
+		final Tree tree = viewer.getTree();
 
 		// listen to ESC key
 		tree.addKeyListener(new KeyListener() {
 			@Override
 			public void keyPressed(KeyEvent e)  {
-				if (e.character == 0x1B) { // ESC
+				if (e.character == org.eclipse.swt.SWT.ESC) {
 					close();
 				}
 			}
@@ -120,18 +120,15 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		tree.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseUp(MouseEvent e) {
-
-				if (tree.getSelectionCount() < 1)
+				if (tree.getSelectionCount() < 1 || e.button != 1) {
 					return;
-
-				if (e.button != 1)
-					return;
+				}
 
 				if (tree.equals(e.getSource())) {
-					Object o= tree.getItem(new Point(e.x, e.y));
 					TreeItem selection= tree.getSelection()[0];
-					if (selection.equals(o))
+					if (selection.equals(tree.getItem(new Point(e.x, e.y)))) {
 						gotoSelectedElement();
+					}
 				}
 			}
 		});
@@ -140,20 +137,16 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 			@Override
 			public void widgetDisposed(DisposeEvent e) {
-				treeViewer = null;
+				viewer = null;
 			}
 		});
 
-		treeViewer.setInput(outlineViewerInput);
+		viewer.setInput(outlineViewerInput);
 		return filteredTree;
 	}
 
 	private void gotoSelectedElement() {
 		Object selectedElement= getSelectedElement();
-
-		if (selectedElement instanceof Either<?, ?> either) {
-			selectedElement = either.get();
-		}
 
 		if (selectedElement != null) {
 			Range range = null;
@@ -179,17 +172,23 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		}
 	}
 
-	protected Object getSelectedElement() {
-		if (treeViewer == null) {
+	private Object getSelectedElement() {
+		if (viewer == null) {
 			return null;
 		}
 
-		IStructuredSelection selection = treeViewer.getStructuredSelection();
+		IStructuredSelection selection = viewer.getStructuredSelection();
 		if (selection == null) {
 			return null;
 		}
 
-		return selection.getFirstElement();
+		Object selectedElement = selection.getFirstElement();
+
+		if (selectedElement instanceof Either<?, ?> either) {
+			selectedElement = either.get();
+		}
+
+		return selectedElement;
 	}
 
 	@Override
