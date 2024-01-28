@@ -524,8 +524,11 @@ public final class LSPEclipseUtils {
 				// check if that edit would actually change the document
 				if (!document.get(offset, length).equals(textEdit.getNewText())) {
 					var newText = textEdit.getNewText();
+					var zeroBasedDocumentLines = Math.max(0, document.getNumberOfLines() - 1);
+					var endLine = textEdit.getRange().getEnd().getLine();
+					endLine = endLine > zeroBasedDocumentLines ? zeroBasedDocumentLines : endLine;
 					// Do not split "\r\n" line ending:
-					if ("\r\n".equals(document.getLineDelimiter(textEdit.getRange().getEnd().getLine()))) { //$NON-NLS-1$;
+					if ("\r\n".equals(document.getLineDelimiter(endLine))) { //$NON-NLS-1$;
 						// if last char in the newText is a carriage return:
 						if ('\r' == newText.charAt(newText.length()-1) && offset + length < document.getLength()) {
 							// replace the whole line:
