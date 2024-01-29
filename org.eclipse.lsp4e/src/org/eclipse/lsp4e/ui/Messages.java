@@ -70,6 +70,8 @@ public final class Messages extends NLS {
 	public static String rename_empty_message;
 	public static String rename_invalidated;
 	public static String completionError;
+	public static String completionIncomplete;
+	public static String continueIncomplete;
 	public static String linkWithEditor_label;
 	public static String linkWithEditor_description;
 	public static String linkWithEditor_tooltip;
