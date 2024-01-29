@@ -280,16 +280,6 @@
             </visibleWhen>
          </command>
       </menuContribution>
-      <menuContribution locationURI="menu:org.eclipse.tm4e.source.menu">
-         <!-- Source/Format" menu entry in window menu -->
-         <separator name="formatStart" visible="true" />
-         <command commandId="org.eclipse.lsp4e.format">
-            <visibleWhen>
-                <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
-            </visibleWhen>
-          </command>
-          <separator name="formatEnd" visible="true" />
-      </menuContribution>
       <menuContribution
             allPopups="true"
             locationURI="popup:org.eclipse.ui.genericeditor.source.menu?after=additions">
