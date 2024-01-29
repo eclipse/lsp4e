@@ -42,6 +42,7 @@ import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
+import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
@@ -655,5 +656,29 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 				item, wrapper);
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no exception is sent
 		assertFalse(addInfo.isEmpty());
+	}
+	
+	@Test
+	public void testIncompleteIndication() throws CoreException {
+		List<CompletionItem> items = new ArrayList<>();
+		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
+
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+
+		// without incomplete indication
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
+		assertEquals(1, proposals.length);
+
+		// with incomplete indication
+		LSContentAssistProcessor incompleIndicatingProcessor = new LSContentAssistProcessor(true, true);
+		ICompletionProposal[] proposalsWithIncompleteProposal = incompleIndicatingProcessor.computeCompletionProposals(viewer, 0);
+		assertEquals(2, proposalsWithIncompleteProposal.length);
+
+		// compare both proposal lists
+		assertEquals("FirstClass", proposals[0].getDisplayString());
+		assertEquals("FirstClass", proposalsWithIncompleteProposal[0].getDisplayString());
+		assertEquals("➕ Continue typing for more proposals...", proposalsWithIncompleteProposal[1].getDisplayString());
 	}
 }
