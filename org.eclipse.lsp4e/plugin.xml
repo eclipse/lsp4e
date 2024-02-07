@@ -491,6 +491,11 @@
 			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4EReadOccurrenceIndicationColor"
 			colorPreferenceValue="212,212,212" presentationLayer="4"
 			showInNextPrevDropdownToolbarAction="true"
+			showInNextPrevDropdownToolbarActionKey="org.eclipse.lsp4e.read.showInNextPrevDropdownToolbarAction"
+            isGoToNextNavigationTarget="true"
+            isGoToNextNavigationTargetKey="org.eclipse.lsp4e.read.isGoToNextNavigationTarget"
+            isGoToPreviousNavigationTarget="true"
+            isGoToPreviousNavigationTargetKey="org.eclipse.lsp4e.read.isGoToPreviousNavigationTarget"
 			textStylePreferenceKey="LSP4EReadOccurrenceTextStyle"
 			textStylePreferenceValue="NONE">
 		</specification>
@@ -507,6 +512,11 @@
 			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4EWriteOccurrenceIndicationColor"
 			colorPreferenceValue="240,216,168" presentationLayer="4"
 			showInNextPrevDropdownToolbarAction="true"
+			showInNextPrevDropdownToolbarActionKey="org.eclipse.lsp4e.write.showInNextPrevDropdownToolbarAction"
+			isGoToNextNavigationTarget="true"
+            isGoToNextNavigationTargetKey="org.eclipse.lsp4e.write.isGoToNextNavigationTarget"
+            isGoToPreviousNavigationTarget="true"
+            isGoToPreviousNavigationTargetKey="org.eclipse.lsp4e.write.isGoToPreviousNavigationTarget"
 			textStylePreferenceKey="LSP4EWriteOccurrenceTextStyle"
 			textStylePreferenceValue="NONE">
 		</specification>
@@ -523,6 +533,11 @@
 			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4ETextOccurrenceIndicationColor"
 			colorPreferenceValue="212,212,212" presentationLayer="4"
 			showInNextPrevDropdownToolbarAction="true"
+			showInNextPrevDropdownToolbarActionKey="org.eclipse.lsp4e.text.showInNextPrevDropdownToolbarAction"
+			isGoToNextNavigationTarget="true"
+            isGoToNextNavigationTargetKey="org.eclipse.lsp4e.text.isGoToNextNavigationTarget"
+            isGoToPreviousNavigationTarget="true"
+            isGoToPreviousNavigationTargetKey="org.eclipse.lsp4e.text.isGoToPreviousNavigationTarget"
 			textStylePreferenceKey="LSP4ETextOccurrenceTextStyle"
 			textStylePreferenceValue="NONE">
 		</specification>
