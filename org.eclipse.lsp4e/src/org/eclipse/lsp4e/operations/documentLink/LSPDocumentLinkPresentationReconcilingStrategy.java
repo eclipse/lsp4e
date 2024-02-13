@@ -62,10 +62,11 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 	}
 
 	private void underline() {
-		if (viewer == null)
+		ITextViewer theViewer = viewer;
+		if (theViewer == null)
 			return;
 
-		final IDocument document = viewer.getDocument();
+		final IDocument document = theViewer.getDocument();
 		if (document == null) {
 			return;
 		}
@@ -76,7 +77,7 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 		}
 		cancel();
 		final var params = new DocumentLinkParams(LSPEclipseUtils.toTextDocumentIdentifier(uri));
-		final Control control = viewer.getTextWidget();
+		final Control control = theViewer.getTextWidget();
 		if (control != null && !control.isDisposed()) {
 			Display display = control.getDisplay();
 			request = LanguageServers.forDocument(document)
