@@ -13,7 +13,6 @@ pipeline {
 	stages {
 		stage('Build') {
 			steps {
-				withMaven(maven:'apache-maven-latest', mavenLocalRepo: '$WORKSPACE/.m2/repository') {
 				wrap([$class: 'Xvnc', useXauthority: true]) {
 					sh '''
 						mvn clean verify \
@@ -23,7 +22,7 @@ pipeline {
 							-Ddash.fail=false \
 							-Dsurefire.rerunFailingTestsCount=3
 					'''
-				}}
+				}
 			}
 			post {
 				always {
