@@ -174,9 +174,9 @@ public class LanguageClientImpl implements LanguageClient {
 		IEditorReference[] editors = activePage.getEditorReferences();
 		for (IEditorReference ref : editors) {
 			var editor = ref.getEditor(false);
-			var codeMiningSourceViewer = Adapters.adapt(editor, ITextViewer.class, true);
-			if (codeMiningSourceViewer != null && codeMiningSourceViewer instanceof SourceViewer) {
-				((SourceViewer) codeMiningSourceViewer).updateCodeMinings();
+			var textViewer = Adapters.adapt(editor, ITextViewer.class, true);
+			if (textViewer != null && textViewer instanceof SourceViewer sourceViewer) {
+				sourceViewer.updateCodeMinings();
 			}
 		}
 	}
