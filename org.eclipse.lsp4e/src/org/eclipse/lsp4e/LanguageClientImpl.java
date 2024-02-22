@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2022 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2024 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -166,24 +166,29 @@ public class LanguageClientImpl implements LanguageClient {
 		});
 	}
 
+	private void updateCodeMinings() {
+		IWorkbenchPage activePage = UI.getActivePage();
+		if (activePage == null) {
+			return;
+		}
+		IEditorReference[] editors = activePage.getEditorReferences();
+		for (IEditorReference ref : editors) {
+			var editor = ref.getEditor(false);
+			var textViewer = Adapters.adapt(editor, ITextViewer.class, true);
+			if (textViewer != null && textViewer instanceof SourceViewer sourceViewer) {
+				sourceViewer.updateCodeMinings();
+			}
+		}
+	}
+
 	@Override
 	public CompletableFuture<Void> refreshCodeLenses() {
-		return CompletableFuture.runAsync(() -> {
-			UI.getDisplay().syncExec(() -> {
-				IWorkbenchPage activePage = UI.getActivePage();
-				if (activePage == null) {
-					return;
-				}
-				IEditorReference[] editors = activePage.getEditorReferences();
-				for (IEditorReference ref : editors) {
-					var editor = ref.getEditor(false);
-					var codeMiningSourceViewer = Adapters.adapt(editor, ITextViewer.class, true);
-					if (codeMiningSourceViewer != null && codeMiningSourceViewer instanceof SourceViewer) {
-						((SourceViewer) codeMiningSourceViewer).updateCodeMinings();
-					}
-				}
-			});
-		});
+		return CompletableFuture.runAsync(() -> UI.getDisplay().syncExec(this::updateCodeMinings));
+	}
+
+	@Override
+	public CompletableFuture<Void> refreshInlayHints() {
+		return CompletableFuture.runAsync(() -> UI.getDisplay().syncExec(this::updateCodeMinings));
 	}
 
 	/**
