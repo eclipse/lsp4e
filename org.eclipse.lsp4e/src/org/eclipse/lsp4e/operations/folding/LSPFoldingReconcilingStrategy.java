@@ -308,7 +308,7 @@ public class LSPFoldingReconcilingStrategy
 
 	@Override
 	public void reconcile(DirtyRegion dirtyRegion, IRegion partition) {
-		// Do nothing
+		reconcile(dirtyRegion);
 	}
 
 	@Override
