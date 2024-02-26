@@ -58,7 +58,7 @@ public class LSPFoldingReconcilingStrategy
 	private IDocument document;
 	private ProjectionAnnotationModel projectionAnnotationModel;
 	private ProjectionViewer viewer;
-	private @NonNull List<CompletableFuture<List<FoldingRange>>> requests = List.of(); 
+	private @NonNull List<CompletableFuture<List<FoldingRange>>> requests = List.of();
 
 	/**
 	 * A FoldingAnnotation is a {@link ProjectionAnnotation} it is folding and
@@ -160,13 +160,14 @@ public class LSPFoldingReconcilingStrategy
 		}
 
 		// be sure projection has not been disabled
-		if (projectionAnnotationModel != null) {
+		var theProjectionAnnotationModel = projectionAnnotationModel; //use local variable to prevent possible NPE
+		if (theProjectionAnnotationModel != null) {
 			if (!existing.isEmpty()) {
 				deletions.addAll(existing);
 			}
 			// send the calculated updates to the annotations to the
 			// annotation model
-			projectionAnnotationModel.modifyAnnotations(deletions.toArray(new Annotation[1]), additions,
+			theProjectionAnnotationModel.modifyAnnotations(deletions.toArray(new Annotation[1]), additions,
 					modifications.toArray(new Annotation[0]));
 		}
 	}
@@ -205,8 +206,10 @@ public class LSPFoldingReconcilingStrategy
 
 	@Override
 	public void projectionEnabled() {
-		if (viewer != null) {
-			projectionAnnotationModel = viewer.getProjectionAnnotationModel();
+		//prevent NPE on concurrent access on viewer:
+		var theViewer = viewer;
+		if (theViewer != null) {
+			projectionAnnotationModel = theViewer.getProjectionAnnotationModel();
 		}
 	}
 
@@ -261,8 +264,9 @@ public class LSPFoldingReconcilingStrategy
 			// if a new position can be calculated then update the position of
 			// the annotation,
 			// else the annotation needs to be deleted
-			if (newPos != null && newPos.length > 0 && projectionAnnotationModel != null) {
-				Position oldPos = projectionAnnotationModel.getPosition(foldingAnnotation);
+			var theProjectionAnnotationModel = projectionAnnotationModel;
+			if (newPos != null && newPos.length > 0 && theProjectionAnnotationModel != null) {
+				Position oldPos = theProjectionAnnotationModel.getPosition(foldingAnnotation);
 				// only update the position if we have to
 				if (!newPos.equals(oldPos)) {
 					oldPos.setOffset(newPos.offset);
