@@ -269,9 +269,7 @@ public class LSPFoldingReconcilingStrategy
 				Position oldPos = theProjectionAnnotationModel.getPosition(foldingAnnotation);
 				// only update the position if we have to
 				if (!newPos.equals(oldPos)) {
-					oldPos.setOffset(newPos.offset);
-					oldPos.setLength(newPos.length);
-					modifications.add(foldingAnnotation);
+					theProjectionAnnotationModel.modifyAnnotationPosition(foldingAnnotation, newPos);
 				}
 			} else {
 				deletions.add(foldingAnnotation);
