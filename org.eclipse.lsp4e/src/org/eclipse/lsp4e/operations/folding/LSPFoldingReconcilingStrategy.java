@@ -38,6 +38,7 @@ import org.eclipse.jface.text.source.projection.ProjectionAnnotationModel;
 import org.eclipse.jface.text.source.projection.ProjectionViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.FoldingRangeKind;
 import org.eclipse.lsp4j.FoldingRangeRequestParams;
@@ -59,6 +60,7 @@ public class LSPFoldingReconcilingStrategy
 	private ProjectionAnnotationModel projectionAnnotationModel;
 	private ProjectionViewer viewer;
 	private @NonNull List<CompletableFuture<List<FoldingRange>>> requests = List.of();
+	private volatile long timestamp = 0;
 
 	/**
 	 * A FoldingAnnotation is a {@link ProjectionAnnotation} it is folding and
@@ -119,9 +121,11 @@ public class LSPFoldingReconcilingStrategy
 	@Override
 	public void reconcile(IRegion subRegion) {
 		IDocument theDocument = document;
-		if (projectionAnnotationModel == null || theDocument == null) {
+		var ts = DocumentUtil.getDocumentModificationStamp(theDocument);
+		if (projectionAnnotationModel == null || theDocument == null || ts == timestamp) {
 			return;
 		}
+		timestamp = ts;
 
 		URI uri = LSPEclipseUtils.toUri(theDocument);
 		if (uri == null) {

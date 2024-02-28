@@ -105,6 +105,8 @@ public class SemanticHighlightReconcilerStrategy
 	 */
 	private volatile long documentTimestampAtLastAppliedTextPresentation;
 
+	private volatile long timestamp = 0;
+
 	private CompletableFuture<Optional<VersionedSemanticTokens>> semanticTokensFullFuture;
 
 	public SemanticHighlightReconcilerStrategy() {
@@ -254,10 +256,12 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void fullReconcile() {
-		if (disabled || !isInstalled) { // Skip any processing
+		IDocument theDocument = document;
+		var ts = DocumentUtil.getDocumentModificationStamp(theDocument);
+		if (disabled || !isInstalled || ts == timestamp) { // Skip any processing
 			return;
 		}
-		IDocument theDocument = document;
+		timestamp = ts;
 		cancelSemanticTokensFull();
 		if (theDocument != null) {
 			long modificationStamp = DocumentUtil.getDocumentModificationStamp(theDocument);
