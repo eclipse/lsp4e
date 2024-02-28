@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2022 Pivotal Inc. and others.
+ * Copyright (c) 2017, 2024 Pivotal Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -23,6 +23,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.ui.text.java.ContentAssistInvocationContext;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposalComputer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
+import org.eclipse.jface.text.contentassist.ICompletionProposalExtension;
+import org.eclipse.jface.text.contentassist.ICompletionProposalExtension2;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
@@ -84,7 +86,13 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 		final var javaProposals = new ICompletionProposal[originalProposals.length];
 
 		for (int i = 0; i < originalProposals.length; i++) {
-			javaProposals[i] = new LSJavaProposal(originalProposals[i], relevance--);
+			if (originalProposals[i] instanceof ICompletionProposalExtension2) {
+				javaProposals[i] = new LSJavaProposalExtension2(originalProposals[i], relevance--);
+			} else if (originalProposals[i] instanceof ICompletionProposalExtension) {
+				javaProposals[i] = new LSJavaProposalExtension(originalProposals[i], relevance--);
+			} else {
+				javaProposals[i] = new LSJavaProposal(originalProposals[i], relevance--);
+			}
 		}
 
 		return javaProposals;

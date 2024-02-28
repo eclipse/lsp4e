@@ -9,6 +9,7 @@
  *  Michal Niewrzal (Rogue Wave Software Inc.) - initial implementation
  *  Angelo Zerr <angelo.zerr@gmail.com> - fix Bug 521020
  *  Lucas Bullen (Red Hat Inc.) - fix Bug 522737, 517428, 527426
+ *  Joao Dinis Ferreira (Avaloq Group AG) - Remove all annotations when uninstalling
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.highlight;
 
@@ -75,7 +76,6 @@ public class HighlightReconcilingStrategy
 	private ISourceViewer sourceViewer;
 	private IDocument document;
 
-	private CompletableFuture<?> request;
 	private Job highlightJob;
 
 	/**
@@ -142,6 +142,7 @@ public class HighlightReconcilingStrategy
 
 	@Override
 	public void uninstall() {
+		removeOccurrenceAnnotations();
 		if (sourceViewer != null) {
 			editorSelectionChangedListener.uninstall(sourceViewer.getSelectionProvider());
 		}

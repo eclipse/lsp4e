@@ -521,10 +521,25 @@ public final class LSPEclipseUtils {
 					// Must be a bad location: we bail out to avoid corrupting the document.
 					throw new BadLocationException("Invalid location information found applying edits"); //$NON-NLS-1$
 				}
-
 				// check if that edit would actually change the document
-				if (!document.get(offset, length).equals(textEdit.getNewText()))
-					edit.addChild(new ReplaceEdit(offset, length, textEdit.getNewText()));
+				var newText = textEdit.getNewText();
+				if (!document.get(offset, length).equals(newText)) {
+					if (newText.length() > 0) {
+						var zeroBasedDocumentLines = Math.max(0, document.getNumberOfLines() - 1);
+						var endLine = textEdit.getRange().getEnd().getLine();
+						endLine = endLine > zeroBasedDocumentLines ? zeroBasedDocumentLines : endLine;
+						// Do not split "\r\n" line ending:
+						if ("\r\n".equals(document.getLineDelimiter(endLine))) { //$NON-NLS-1$;
+							// if last char in the newText is a carriage return:
+							if ('\r' == newText.charAt(newText.length()-1) && offset + length < document.getLength()) {
+								// replace the whole line:
+								newText = newText + '\n';
+								length++;
+							}
+						}
+					}
+					edit.addChild(new ReplaceEdit(offset, length, newText));
+				}
 			}
 		}
 
@@ -1180,7 +1195,8 @@ public final class LSPEclipseUtils {
 	}
 
 	@Nullable public static URI toUri(@NonNull IFileBuffer buffer) {
-		IFile res = ResourcesPlugin.getWorkspace().getRoot().getFile(buffer.getLocation());
+		IPath bufferLocation = buffer.getLocation();
+		IFile res = bufferLocation != null && bufferLocation.segmentCount() > 1 ? ResourcesPlugin.getWorkspace().getRoot().getFile(buffer.getLocation()) : null;
 		if (res != null) {
 			URI uri = toUri(res);
 			if (uri != null) {
@@ -1427,7 +1443,8 @@ public final class LSPEclipseUtils {
 			return toUri(fileEditorInput.getFile());
 		}
 		if (editorInput instanceof IURIEditorInput uriEditorInput) {
-			return toUri(Path.fromPortableString((uriEditorInput.getURI()).getPath()));
+			URI uri = uriEditorInput.getURI();
+			return uri.getPath() != null ? toUri(Path.fromPortableString(uri.getPath())) : uri;
 		}
 		return null;
 	}

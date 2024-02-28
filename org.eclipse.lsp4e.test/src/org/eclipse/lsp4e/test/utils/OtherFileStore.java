@@ -34,7 +34,7 @@ public class OtherFileStore  extends FileStore {
 	public OtherFileStore(URI location) {
 		this.location = location;
 	}
-	
+
 	@Override
 	public String[] childNames(int options, IProgressMonitor monitor) throws CoreException {
 		return FileStore.EMPTY_STRING_ARRAY;
@@ -78,5 +78,4 @@ public class OtherFileStore  extends FileStore {
 	public URI toURI() {
 		return location;
 	}
-
 }

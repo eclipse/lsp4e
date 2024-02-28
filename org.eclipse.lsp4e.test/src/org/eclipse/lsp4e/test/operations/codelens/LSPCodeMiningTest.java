@@ -149,5 +149,4 @@ public class LSPCodeMiningTest {
 		lens.setCommand(command);
 		return lens;
 	}
-
 }

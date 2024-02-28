@@ -11,34 +11,28 @@ package org.eclipse.lsp4e.operations.typeHierarchy;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.internal.LSPDocumentAbstractHandler;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 public class TypeHierarchyHandler extends LSPDocumentAbstractHandler {
 
 	@Override
-	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IEditorPart editor = HandlerUtil.getActiveEditor(event);
-		if (editor instanceof ITextEditor textEditor) {
-			IDocument document = LSPEclipseUtils.getDocument(textEditor);
-			LanguageServers.forDocument(document)
-				.withCapability(ServerCapabilities::getTypeHierarchyProvider)
-				.computeFirst((wrapper, ls) -> CompletableFuture.completedFuture(wrapper.serverDefinition))
-				.thenAcceptAsync(definition -> definition.ifPresent(def -> new TypeHierarchyDialog(editor.getSite().getShell(), (ITextSelection)textEditor.getSelectionProvider().getSelection(), document, def).open()), editor.getSite().getShell().getDisplay());
-		}
-		return null;
+	protected void execute(ExecutionEvent event, ITextEditor editor) {
+		IDocument document = LSPEclipseUtils.getDocument(editor);
+		LanguageServers.forDocument(document)
+			.withCapability(ServerCapabilities::getTypeHierarchyProvider)
+			.computeFirst((wrapper, ls) -> CompletableFuture.completedFuture(wrapper.serverDefinition))
+			.thenAcceptAsync(definition -> definition.ifPresent(def -> new TypeHierarchyDialog(editor.getSite().getShell(), (ITextSelection)editor.getSelectionProvider().getSelection(), document, def).open()), editor.getSite().getShell().getDisplay());
 	}
 
 	@Override
 	public void setEnabled(Object evaluationContext) {
 		setEnabled(ServerCapabilities::getTypeDefinitionProvider, editor -> true);
 	}
+
 }

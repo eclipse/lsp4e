@@ -36,13 +36,13 @@ public class MockConnectionProviderMultiRootFolders implements StreamConnectionP
 	private OutputStream clientOutputStream;
 	private InputStream errorStream;
 	private Collection<Closeable> streams = new ArrayList<>(4);
-	
+
 	@Override
 	public void start() throws IOException {
 		Pipe serverOutputToClientInput = Pipe.open();
 		Pipe clientOutputToServerInput = Pipe.open();
 		errorStream = new ByteArrayInputStream("Error output on console".getBytes(StandardCharsets.UTF_8));
-		
+
 		InputStream serverInputStream = Channels.newInputStream(clientOutputToServerInput.source());
 		OutputStream serverOutputStream = Channels.newOutputStream(serverOutputToClientInput.sink());
 		Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(MockLanguageServerMultiRootFolders.INSTANCE, serverInputStream,
@@ -76,5 +76,4 @@ public class MockConnectionProviderMultiRootFolders implements StreamConnectionP
 	@Override
 	public void stop() {
 	}
-
 }

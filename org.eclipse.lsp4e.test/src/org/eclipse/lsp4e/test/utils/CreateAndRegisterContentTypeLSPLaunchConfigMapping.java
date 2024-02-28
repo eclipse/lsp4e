@@ -41,6 +41,7 @@ import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 
+@SuppressWarnings("restriction")
 public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStartup {
 
 	@Override
@@ -88,39 +89,36 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 		ClassLoader loader = clazz.getClassLoader();
 		if (loader instanceof URLClassLoader urlClassLoader) {
 			return Arrays.asList(urlClassLoader.getURLs()).stream().map(url -> url.getFile()).collect(Collectors.joining(System.getProperty("path.separator")));
-		} else {
-			LinkedList<Bundle> toProcess = new LinkedList<>();
-			Set<Bundle> processed = new HashSet<>();
-			Bundle current = FrameworkUtil.getBundle(clazz);
-			if (current != null) {
-				toProcess.add(current);
-			}
-			while (!toProcess.isEmpty()) {
-				current = toProcess.pop();
-				if (processed.contains(current)) {
-					continue;
-				}
-				for (BundleWire dep : current.adapt(BundleWiring.class).getRequiredWires(null)) {
-					toProcess.add(dep.getProvider().getBundle());
-				}
-				processed.add(current);
-			}
-			return processed.stream()
-					.filter(bundle -> bundle.getBundleId() != 0)
-					.map(bundle -> {
-						try {
-							return FileLocator.getBundleFile(bundle);
-						} catch (IOException e) {
-							return null;
-						}
-					}).flatMap(location -> {
-						if (location.isFile()) {
-							return Arrays.stream(new String[] { location.getAbsolutePath() });
-						} else {
-							return Arrays.stream(new String[] { location.getAbsolutePath(), new File(location, "bin").getAbsolutePath()} );
-						}
-					}).collect(Collectors.joining(System.getProperty("path.separator")));
 		}
+		LinkedList<Bundle> toProcess = new LinkedList<>();
+		Set<Bundle> processed = new HashSet<>();
+		Bundle current = FrameworkUtil.getBundle(clazz);
+		if (current != null) {
+			toProcess.add(current);
+		}
+		while (!toProcess.isEmpty()) {
+			current = toProcess.pop();
+			if (processed.contains(current)) {
+				continue;
+			}
+			for (BundleWire dep : current.adapt(BundleWiring.class).getRequiredWires(null)) {
+				toProcess.add(dep.getProvider().getBundle());
+			}
+			processed.add(current);
+		}
+		return processed.stream()
+				.filter(bundle -> bundle.getBundleId() != 0)
+				.map(bundle -> {
+					try {
+						return FileLocator.getBundleFile(bundle);
+					} catch (IOException e) {
+						return null;
+					}
+				}).flatMap(location -> {
+					if (location.isFile()) {
+						return Arrays.stream(new String[] { location.getAbsolutePath() });
+					}
+					return Arrays.stream(new String[] { location.getAbsolutePath(), new File(location, "bin").getAbsolutePath()} );
+				}).collect(Collectors.joining(System.getProperty("path.separator")));
 	}
-
 }

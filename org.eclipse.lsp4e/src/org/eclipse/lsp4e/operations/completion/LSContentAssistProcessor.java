@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.annotation.NonNull;
@@ -76,6 +77,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private CompletableFuture<@NonNull List<@NonNull Void>> contextInformationLanguageServersFuture;
 	private final Object contextTriggerCharsSemaphore = new Object();
 	private char[] contextTriggerChars = new char[0];
+	private final boolean incompleteAsCompletionItem;
 
 	// The cancellation support used to cancel previous LSP requests 'textDocument/completion' when completion is retriggered
 	private CancellationSupport cancellationSupport;
@@ -85,8 +87,13 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	}
 
 	public LSContentAssistProcessor(boolean errorAsCompletionItem) {
+		this(errorAsCompletionItem, true);
+	}
+
+	public LSContentAssistProcessor(boolean errorAsCompletionItem, boolean incompleteAsCompletionItem) {
 		this.errorAsCompletionItem = errorAsCompletionItem;
 		this.cancellationSupport = new CancellationSupport();
+		this.incompleteAsCompletionItem = incompleteAsCompletionItem;
 	}
 
 	private final Comparator<LSCompletionProposal> proposalComparator = new LSCompletionProposalComparator();
@@ -112,6 +119,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 
 		List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
+		AtomicBoolean anyIncomplete = new AtomicBoolean(false);
 		try {
 			// Cancel the previous LSP requests 'textDocument/completions' and completionLanguageServersFuture
 			this.cancellationSupport.cancel();
@@ -123,8 +131,13 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			this.completionLanguageServersFuture = LanguageServers.forDocument(document)
 					.withFilter(capabilities -> capabilities.getCompletionProvider() != null) //
 					.collectAll((w, ls) -> cancellationSupport.execute(ls.getTextDocumentService().completion(param)) //
-							.thenAccept(completion -> proposals
-									.addAll(toProposals(document, offset, completion, w, cancellationSupport))));
+							.thenAccept(completion -> {
+								boolean isIncomplete = completion != null && completion.isRight() ? completion.getRight().isIncomplete() : false;
+								proposals.addAll(toProposals(document, offset, completion, w, cancellationSupport, isIncomplete));
+								if (isIncomplete) {
+									anyIncomplete.set(true);
+								}
+							}));
 			cancellationSupport.execute(completionLanguageServersFuture);
 			this.cancellationSupport = cancellationSupport;
 
@@ -154,6 +167,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			}
 		}
 		Arrays.sort(completeProposals, proposalComparator);
+		ICompletionProposal[] incompleteProposal = createIncompleProposal(offset, anyIncomplete.get());
+		if (incompleteProposal.length > 0) {
+			ICompletionProposal[] incompleteProposals = Arrays.copyOf(completeProposals, completeProposals.length + incompleteProposal.length, ICompletionProposal[].class);
+			System.arraycopy(incompleteProposal, 0, incompleteProposals, completeProposals.length, incompleteProposal.length);
+			return incompleteProposals;
+		}
 		return completeProposals;
 	}
 
@@ -168,6 +187,13 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	private String createErrorMessage(int offset, Exception ex) {
 		return Messages.completionError + " : " + ex.getMessage(); //$NON-NLS-1$
+	}
+
+	private ICompletionProposal[] createIncompleProposal(int offset, boolean incomplete) {
+		if (incompleteAsCompletionItem && incomplete) {
+			return new ICompletionProposal[] {new CompletionProposal("", offset, 0, 0, null, Messages.completionIncomplete, null, Messages.continueIncomplete)}; //$NON-NLS-1$
+		}
+		return new ICompletionProposal[0];
 	}
 
 	private void initiateLanguageServers(@NonNull IDocument document) {
@@ -221,7 +247,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 	}
 	private static List<ICompletionProposal> toProposals(IDocument document,
-			int offset, Either<List<CompletionItem>, CompletionList> completionList, LanguageServerWrapper languageServerWrapper, CancelChecker cancelChecker) {
+			int offset, Either<List<CompletionItem>, CompletionList> completionList, LanguageServerWrapper languageServerWrapper, CancelChecker cancelChecker, boolean isIncomplete) {
 		if (completionList == null) {
 			return Collections.emptyList();
 		}
@@ -229,7 +255,6 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		cancelChecker.checkCanceled();
 		CompletionItemDefaults defaults = completionList.map(o -> null, CompletionList::getItemDefaults);
 		List<CompletionItem> items = completionList.isLeft() ? completionList.getLeft() : completionList.getRight().getItems();
-		boolean isIncomplete = completionList.isRight() ? completionList.getRight().isIncomplete() : false;
 		return items.stream() //
 				.filter(Objects::nonNull)
 				.map(item -> new LSCompletionProposal(document, offset, item, defaults,

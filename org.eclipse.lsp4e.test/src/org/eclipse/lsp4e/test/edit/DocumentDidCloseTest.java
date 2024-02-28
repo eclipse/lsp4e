@@ -76,5 +76,4 @@ public class DocumentDidCloseTest {
 		assertNotNull(lastChange.getTextDocument());
 		assertEquals(LSPEclipseUtils.toUri(testFile).toString(), lastChange.getTextDocument().getUri());
 	}
-
 }

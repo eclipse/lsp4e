@@ -66,6 +66,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.internal.FileBufferListenerAdapter;
 import org.eclipse.lsp4e.internal.SupportedFeatures;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
@@ -493,7 +494,7 @@ public class LanguageServerWrapper {
 				} catch (InterruptedException ex) {
 					Thread.currentThread().interrupt();
 				} catch (Exception ex) {
-					LanguageServerPlugin.logError(ex);
+					LanguageServerPlugin.logError(ex.getClass().getSimpleName() + " occurred during shutdown of " + languageServerInstance, ex); //$NON-NLS-1$
 				}
 			}
 
@@ -836,7 +837,9 @@ public class LanguageServerWrapper {
 		} catch (TimeoutException e) {
 			LanguageServerPlugin.logError("LanguageServer not initialized within 10s", e); //$NON-NLS-1$
 		} catch (ExecutionException | CancellationException e) {
-			LanguageServerPlugin.logError(e);
+			if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
+				LanguageServerPlugin.logError(e);
+			}
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			LanguageServerPlugin.logError(e);

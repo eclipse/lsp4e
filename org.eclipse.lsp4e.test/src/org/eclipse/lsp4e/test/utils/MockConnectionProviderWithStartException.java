@@ -21,6 +21,7 @@ public class MockConnectionProviderWithStartException extends MockConnectionProv
 	private static volatile CompletableFuture<Void> startFuture = new CompletableFuture<>();
 	private static volatile int startCounter = 0;
 	private static volatile int stopCounter = 0;
+
 	public static void resetStartFuture() {
 		startFuture = new CompletableFuture<>();
 	}

@@ -97,5 +97,4 @@ public class ContextInformationTest {
 
 		assertArrayEquals(new char[0], contentAssistProcessor.getContextInformationAutoActivationCharacters());
 	}
-
 }

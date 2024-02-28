@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2023 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2024 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -487,6 +487,8 @@ public class LSCompletionProposal
 			textEdit.setNewText(insertText); // insertText now has placeholder removed
 			List<TextEdit> additionalEdits = item.getAdditionalTextEdits();
 			if (additionalEdits != null && !additionalEdits.isEmpty()) {
+				Position initialPosition = LSPEclipseUtils.toPosition(initialOffset, document);
+
 				final var allEdits = new ArrayList<TextEdit>();
 				allEdits.add(textEdit);
 				additionalEdits.stream().forEach(te -> {
@@ -495,8 +497,8 @@ public class LSCompletionProposal
 						try {
 							int start = LSPEclipseUtils.toOffset(te.getRange().getStart(), document);
 							int end = LSPEclipseUtils.toOffset(te.getRange().getEnd(), document);
-							if (start > this.initialOffset) {
-								// We need to shift the Range according to the shift
+							if (start > this.initialOffset && te.getRange().getStart().getLine() == initialPosition.getLine()) {
+								// We need to shift the Range according to the shift (if on the same line)
 								te.getRange().setStart(LSPEclipseUtils.toPosition(start + shift, document));
 								te.getRange().setEnd(LSPEclipseUtils.toPosition(end + shift, document));
 							}

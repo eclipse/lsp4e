@@ -12,6 +12,7 @@
  *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens.
  *  Kris De Volder (Pivotal Inc.) - Provide test code access to Client proxy.
  *  Rubén Porras Campo (Avaloq Evolution AG) - Add support for willSaveWaitUntil.
+ *  Joao Dinis Ferreira (Avaloq Group AG) - Add support for position-dependent mock document highlights
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -57,6 +59,7 @@ import org.eclipse.lsp4j.LinkedEditingRangeRegistrationOptions;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.RenameOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.SignatureHelp;
@@ -237,7 +240,7 @@ public final class MockLanguageServer implements LanguageServer {
 		this.textDocumentService.setMockFormattingTextEdits(formattingTextEdits);
 	}
 
-	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
+	public void setDocumentHighlights(Map<Position, List<? extends DocumentHighlight>> documentHighlights) {
 		this.textDocumentService.setDocumentHighlights(documentHighlights);
 	}
 
@@ -348,5 +351,11 @@ public final class MockLanguageServer implements LanguageServer {
 
 	public void setFoldingRanges(List<FoldingRange> foldingRanges) {
 		this.textDocumentService.setFoldingRanges(foldingRanges);
+	}
+
+	@Override
+	public String toString() {
+		return "MockLanguageServer [started=" + started + ", delay=" + delay + ", remoteProxies=" + remoteProxies.size()
+				+ ", inFlight=" + inFlight.size() + "]";
 	}
 }

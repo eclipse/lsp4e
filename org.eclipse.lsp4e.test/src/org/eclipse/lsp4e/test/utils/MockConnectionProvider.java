@@ -97,7 +97,8 @@ public class MockConnectionProvider implements StreamConnectionProvider {
 		listener = null;
 	}
 
-	public static Collection<Message> cancellations = new ArrayList<>();
+	public static final Collection<Message> cancellations = new ArrayList<>();
+
 	@Override
 	public void handleMessage(Message message, LanguageServer languageServer, @Nullable URI rootURI) {
 		if (message.toString().contains("cancelRequest")) {
@@ -105,5 +106,4 @@ public class MockConnectionProvider implements StreamConnectionProvider {
 		}
 		StreamConnectionProvider.super.handleMessage(message, languageServer, rootURI);
 	}
-
 }

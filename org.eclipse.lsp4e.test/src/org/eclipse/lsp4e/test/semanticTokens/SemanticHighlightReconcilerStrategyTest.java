@@ -12,7 +12,6 @@ import static org.junit.Assert.assertArrayEquals;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -49,7 +48,7 @@ public class SemanticHighlightReconcilerStrategyTest {
 	}
 
 	@Test
-	public void testKeyword() throws InterruptedException, ExecutionException, CoreException {
+	public void testKeyword() throws CoreException {
 		SemanticTokens semanticTokens = new SemanticTokens();
 		semanticTokens.setData(SemanticTokensTestUtil.keywordSemanticTokens());
 

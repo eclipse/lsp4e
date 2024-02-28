@@ -24,7 +24,7 @@
       <hyperlinkDetector
             activate="true"
             class="org.eclipse.lsp4e.operations.declaration.OpenDeclarationHyperlinkDetector"
-            description="%openDeclarationHyperlink_decription"
+            description="%openDeclarationHyperlink_description"
             id="org.eclipse.lsp4e.hyperlinkDetector"
             name="%openDeclarationHyperlink_name"
             targetId="org.eclipse.ui.DefaultTextEditor">
@@ -92,19 +92,19 @@
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
-            description="%command.open.call.hierarchy.decription"
+            description="%command.open.call.hierarchy.description"
             id="org.eclipse.lsp4e.openCallHierarchy"
             name="%command.open.call.hierarchy.name">
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
-            description="%command.selection.range.up.decription"
+            description="%command.selection.range.up.description"
             id="org.eclipse.lsp4e.selectionRange.up"
             name="%command.selection.range.up.name">
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
-            description="%command.selection.range.down.decription"
+            description="%command.selection.range.down.description"
             id="org.eclipse.lsp4e.selectionRange.down"
             name="%command.selection.range.down.name">
       </command>
@@ -116,7 +116,7 @@
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
-            description="%command.open.type.hierarchy.decription"
+            description="%command.open.type.hierarchy.description"
             id="org.eclipse.lsp4e.openTypeHierarchy"
             name="%command.open.type.hierarchy.name">
       </command>
@@ -279,16 +279,6 @@
                <reference definitionId="org.eclipse.lsp4e.activePartHasCNFOutlinePage" />
             </visibleWhen>
          </command>
-      </menuContribution>
-      <menuContribution locationURI="menu:org.eclipse.tm4e.source.menu">
-         <!-- Source/Format" menu entry in window menu -->
-         <separator name="formatStart" visible="true" />
-         <command commandId="org.eclipse.lsp4e.format">
-            <visibleWhen>
-                <reference definitionId="org.eclipse.lsp4e.textSelectionHasLanguageServer" />
-            </visibleWhen>
-          </command>
-          <separator name="formatEnd" visible="true" />
       </menuContribution>
       <menuContribution
             allPopups="true"
@@ -501,6 +491,11 @@
 			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4EReadOccurrenceIndicationColor"
 			colorPreferenceValue="212,212,212" presentationLayer="4"
 			showInNextPrevDropdownToolbarAction="true"
+			showInNextPrevDropdownToolbarActionKey="org.eclipse.lsp4e.read.showInNextPrevDropdownToolbarAction"
+			isGoToNextNavigationTarget="true"
+			isGoToNextNavigationTargetKey="org.eclipse.lsp4e.read.isGoToNextNavigationTarget"
+			isGoToPreviousNavigationTarget="true"
+			isGoToPreviousNavigationTargetKey="org.eclipse.lsp4e.read.isGoToPreviousNavigationTarget"
 			textStylePreferenceKey="LSP4EReadOccurrenceTextStyle"
 			textStylePreferenceValue="NONE">
 		</specification>
@@ -517,6 +512,11 @@
 			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4EWriteOccurrenceIndicationColor"
 			colorPreferenceValue="240,216,168" presentationLayer="4"
 			showInNextPrevDropdownToolbarAction="true"
+			showInNextPrevDropdownToolbarActionKey="org.eclipse.lsp4e.write.showInNextPrevDropdownToolbarAction"
+			isGoToNextNavigationTarget="true"
+			isGoToNextNavigationTargetKey="org.eclipse.lsp4e.write.isGoToNextNavigationTarget"
+			isGoToPreviousNavigationTarget="true"
+			isGoToPreviousNavigationTargetKey="org.eclipse.lsp4e.write.isGoToPreviousNavigationTarget"
 			textStylePreferenceKey="LSP4EWriteOccurrenceTextStyle"
 			textStylePreferenceValue="NONE">
 		</specification>
@@ -533,6 +533,11 @@
 			verticalRulerPreferenceValue="false" colorPreferenceKey="LSP4ETextOccurrenceIndicationColor"
 			colorPreferenceValue="212,212,212" presentationLayer="4"
 			showInNextPrevDropdownToolbarAction="true"
+			showInNextPrevDropdownToolbarActionKey="org.eclipse.lsp4e.text.showInNextPrevDropdownToolbarAction"
+			isGoToNextNavigationTarget="true"
+			isGoToNextNavigationTargetKey="org.eclipse.lsp4e.text.isGoToNextNavigationTarget"
+			isGoToPreviousNavigationTarget="true"
+			isGoToPreviousNavigationTargetKey="org.eclipse.lsp4e.text.isGoToPreviousNavigationTarget"
 			textStylePreferenceKey="LSP4ETextOccurrenceTextStyle"
 			textStylePreferenceValue="NONE">
 		</specification>
@@ -756,9 +761,14 @@
             <with variable="selection">
                <instanceof value="org.eclipse.jface.text.ITextSelection" />
             </with>
-            <with variable="activeEditorInput">
-               <test property="org.eclipse.lsp4e.hasLanguageServer" />
-            </with>
+            <or>
+	            <with variable="activeEditorInput">
+               		<test property="org.eclipse.lsp4e.hasLanguageServer" />
+            	</with>
+				<with variable="activeEditor">
+               		<test property="org.eclipse.lsp4e.hasLanguageServer"/>
+            	</with>
+            </or>
          </and>
       </definition>
    </extension>

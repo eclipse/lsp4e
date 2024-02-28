@@ -21,5 +21,4 @@ public class MappingEnablementTester extends PropertyTester {
 	public boolean test(Object receiver, String property, Object[] args, Object expectedValue) {
 		return enabled;
 	}
-
 }

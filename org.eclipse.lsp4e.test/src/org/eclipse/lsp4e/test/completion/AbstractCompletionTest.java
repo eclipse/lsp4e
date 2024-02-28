@@ -11,7 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +45,7 @@ public abstract class AbstractCompletionTest {
 	@Before
 	public void setUp() throws CoreException {
 		project = TestUtils.createProject("CompletionTest" + System.currentTimeMillis());
-		contentAssistProcessor = new LSContentAssistProcessor();
+		contentAssistProcessor = new LSContentAssistProcessor(true, false);
 	}
 
 	protected CompletionItem createCompletionItem(String label, CompletionItemKind kind) {

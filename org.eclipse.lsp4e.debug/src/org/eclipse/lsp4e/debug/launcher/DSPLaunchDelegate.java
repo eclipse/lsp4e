@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017, 2019 Kichwa Coders Ltd. and others.
+ * Copyright (c) 2017, 2023 Kichwa Coders Ltd. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -98,6 +98,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 			this.mode = mode;
 			this.launch = launch;
 			this.monitor = monitor;
+			this.dspParameters = new HashMap<>();
 		}
 
 		public DSPLaunchDelegateLaunchBuilder setLaunchDebugAdapter(String debugCmd, List<String> debugCmdArgs) {

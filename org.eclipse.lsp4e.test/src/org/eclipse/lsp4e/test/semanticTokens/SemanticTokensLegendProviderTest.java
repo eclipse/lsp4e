@@ -14,12 +14,10 @@ import static org.junit.Assert.assertNotNull;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.semanticTokens.SemanticHighlightReconcilerStrategy;
@@ -43,7 +41,7 @@ public class SemanticTokensLegendProviderTest {
 	}
 
 	@Test
-	public void testSemanticTokensLegendProvider() throws BadLocationException, CoreException, IOException, InterruptedException, ExecutionException {
+	public void testSemanticTokensLegendProvider() throws CoreException, IOException {
 		// Setup Server Capabilities
 		List<String> tokenTypes = Arrays.asList("keyword","other");
 		List<String> tokenModifiers = Arrays.asList("obsolete");

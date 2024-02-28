@@ -16,7 +16,9 @@ import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
 
 public class HasLanguageServerPropertyTester extends PropertyTester {
 
@@ -29,6 +31,15 @@ public class HasLanguageServerPropertyTester extends PropertyTester {
 		} else if (receiver instanceof IDocument document) {
 			return LanguageServersRegistry.getInstance().canUseLanguageServer(document);
 		} else if (receiver instanceof ITextViewer viewer) {
+			return test(viewer);
+		} else if (receiver instanceof IEditorPart part) {
+			return test(UI.asTextViewer(part));
+		}
+		return false;
+	}
+
+	private boolean test(ITextViewer viewer) {
+		if (viewer != null) {
 			IDocument document = viewer.getDocument();
 			if (document != null) {
 				return LanguageServersRegistry.getInstance().canUseLanguageServer(document);

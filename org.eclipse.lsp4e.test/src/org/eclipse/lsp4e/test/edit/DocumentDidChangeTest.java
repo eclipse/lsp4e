@@ -50,7 +50,7 @@ public class DocumentDidChangeTest {
 
 	@Before
 	public void setUp() throws CoreException {
-		project = TestUtils.createProject("DocumentDidChangeTest"+System.currentTimeMillis());
+		project = TestUtils.createProject("DocumentDidChangeTest" + System.currentTimeMillis());
 	}
 
 	@Test
@@ -242,7 +242,6 @@ public class DocumentDidChangeTest {
 		assertEquals("Hello World", change0.getText());
 	}
 
-
 	private TextDocumentSyncKind getDocumentSyncKind(ServerCapabilities t) {
 		TextDocumentSyncKind syncKind = null;
 		if (t.getTextDocumentSync().isLeft()) {
@@ -252,5 +251,4 @@ public class DocumentDidChangeTest {
 		}
 		return syncKind;
 	}
-
 }

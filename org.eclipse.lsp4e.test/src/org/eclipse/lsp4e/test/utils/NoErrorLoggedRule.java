@@ -19,6 +19,7 @@ import java.util.List;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.ILogListener;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.junit.Assert;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -27,7 +28,11 @@ public class NoErrorLoggedRule extends TestWatcher {
 
 	private ILog log;
 	private ILogListener listener;
-	private List<IStatus> loggedErrors;
+	private final List<IStatus> loggedErrors = new ArrayList<>();
+
+	public NoErrorLoggedRule() {
+		this(LanguageServerPlugin.getDefault().getLog());
+	}
 
 	public NoErrorLoggedRule(ILog log) {
 		this.log = log;
@@ -51,7 +56,7 @@ public class NoErrorLoggedRule extends TestWatcher {
 	@Override
 	protected void starting(Description description) {
 		super.starting(description);
-		this.loggedErrors = new ArrayList<>();
+		loggedErrors.clear();
 		log.addLogListener(listener);
 	}
 
@@ -61,5 +66,4 @@ public class NoErrorLoggedRule extends TestWatcher {
 		Assert.assertEquals("Some errors were logged", Collections.emptyList(), loggedErrors);
 		super.finished(description);
 	}
-
 }

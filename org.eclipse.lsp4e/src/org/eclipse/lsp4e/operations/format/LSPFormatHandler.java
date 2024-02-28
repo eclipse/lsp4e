@@ -16,7 +16,6 @@ package org.eclipse.lsp4e.operations.format;
 import java.util.ConcurrentModificationException;
 
 import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -37,17 +36,13 @@ public class LSPFormatHandler extends LSPDocumentAbstractHandler {
 	private final LSPFormatter formatter = new LSPFormatter();
 
 	@Override
-	public Object execute(final ExecutionEvent event) throws ExecutionException {
-		final ITextEditor textEditor = UI.getActiveTextEditor();
-		if (textEditor == null)
-			return null;
-
+	protected void execute(ExecutionEvent event, ITextEditor textEditor) {
 		final ISelection selection = HandlerUtil.getCurrentSelection(event);
 		if (selection instanceof final ITextSelection textSelection && !textSelection.isEmpty()) {
 
 			final IDocument doc = LSPEclipseUtils.getDocument(textEditor);
 			if (doc == null)
-				return null;
+				return;
 
 			try {
 				formatter.requestFormatting(doc, textSelection)
@@ -68,7 +63,6 @@ public class LSPFormatHandler extends LSPDocumentAbstractHandler {
 				LanguageServerPlugin.logError(e);
 			}
 		}
-		return null;
 	}
 
 	@Override
