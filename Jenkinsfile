@@ -15,14 +15,14 @@ pipeline {
 		stage('Build') {
 			steps {
 				wrap([$class: 'Xvnc', useXauthority: true]) {
-					sh '''
+					sh """
 						mvn clean verify \
 							org.eclipse.dash:license-tool-plugin:license-check \
-							-B -Psign \
+							-B ${env.BRANCH_NAME=='master' ? '-Psign': ''} \
 							-Dmaven.test.failure.ignore=true \
 							-Ddash.fail=false \
 							-Dsurefire.rerunFailingTestsCount=3
-					'''
+					"""
 				}
 			}
 			post {
