@@ -256,12 +256,10 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void fullReconcile() {
-		IDocument theDocument = document;
-		var ts = DocumentUtil.getDocumentModificationStamp(theDocument);
-		if (disabled || !isInstalled || ts == timestamp) { // Skip any processing
+		if (disabled || !isInstalled) { // Skip any processing
 			return;
 		}
-		timestamp = ts;
+		IDocument theDocument = document;
 		cancelSemanticTokensFull();
 		if (theDocument != null) {
 			long modificationStamp = DocumentUtil.getDocumentModificationStamp(theDocument);
@@ -295,12 +293,24 @@ public class SemanticHighlightReconcilerStrategy
 
 	@Override
 	public void reconcile(final DirtyRegion dirtyRegion, final IRegion subRegion) {
-		fullReconcile();
+		fullReconcileOnce();
 	}
 
 	@Override
 	public void reconcile(final IRegion partition) {
-		fullReconcile();
+		fullReconcileOnce();
+	}
+
+	/**
+	 * Because a full reconcile will be performed always on the whole document,
+	 * prevent consecutive reconciling on dirty regions or partitions if the document has not changed.
+	 */
+	private void fullReconcileOnce() {
+		var ts = DocumentUtil.getDocumentModificationStamp(document);
+		if (ts != timestamp) {
+			fullReconcile();
+			timestamp = ts;
+		}
 	}
 
 	@Override

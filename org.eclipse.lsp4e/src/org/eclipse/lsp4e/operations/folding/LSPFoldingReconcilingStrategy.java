@@ -121,11 +121,9 @@ public class LSPFoldingReconcilingStrategy
 	@Override
 	public void reconcile(IRegion subRegion) {
 		IDocument theDocument = document;
-		var ts = DocumentUtil.getDocumentModificationStamp(theDocument);
-		if (projectionAnnotationModel == null || theDocument == null || ts == timestamp) {
+		if (projectionAnnotationModel == null || theDocument == null) {
 			return;
 		}
-		timestamp = ts;
 
 		URI uri = LSPEclipseUtils.toUri(theDocument);
 		if (uri == null) {
@@ -316,7 +314,13 @@ public class LSPFoldingReconcilingStrategy
 
 	@Override
 	public void reconcile(DirtyRegion dirtyRegion, IRegion partition) {
-		reconcile(dirtyRegion);
+		// Because a reconcile will be performed always on the whole document (this is specified by the LSP),
+		// prevent consecutive reconciling on every dirty region if the document has not changed.
+		var ts = DocumentUtil.getDocumentModificationStamp(document);
+		if (ts != timestamp) {
+			reconcile(dirtyRegion);
+			timestamp = ts;
+		}
 	}
 
 	@Override
