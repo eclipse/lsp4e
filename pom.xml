@@ -7,7 +7,6 @@
 
 	<properties>
 		<tycho-version>4.0.6</tycho-version>
-		<sonar.jacoco.reportPath>../target/jacoco.exec</sonar.jacoco.reportPath>
 		<tycho.scmUrl>scm:git:https://github.com/eclipse/lsp4e.git</tycho.scmUrl>
 		<ui.test.vmargs></ui.test.vmargs>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -128,23 +127,6 @@
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.jacoco</groupId>
-				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.11</version>
-				<executions>
-					<execution>
-						<goals><goal>prepare-agent</goal></goals>
-					</execution>
-				</executions>
-				<configuration>
-					<append>true</append>
-					<destFile>${sonar.jacoco.reportPath}</destFile>
-					<includes>
-						<include>org.eclipse.lsp4e*</include>
-					</includes>
-				</configuration>
 			</plugin>
 		</plugins>
 		<pluginManagement>
