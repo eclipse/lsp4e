@@ -61,11 +61,11 @@ public class SemanticHighlightReconcilerStrategyTest {
 		DisplayHelper.sleep(display, 2_000); // Give some time to the editor to update
 
 		StyleRange[] styleRanges = textViewer.getTextWidget().getStyleRanges();
-
+		//default theme is dark, that's why we have to expect a blue foreground color:
 		List<StyleRange> expectedStyleRanges = Arrays.asList(//
-				new StyleRange(0, 4, SemanticTokensTestUtil.GREEN, null), //
-				new StyleRange(15, 4, SemanticTokensTestUtil.GREEN, null), //
-				new StyleRange(24, 7, SemanticTokensTestUtil.GREEN, null)//
+				new StyleRange(0, 4, SemanticTokensTestUtil.BLUE, null), //
+				new StyleRange(15, 4, SemanticTokensTestUtil.BLUE, null), //
+				new StyleRange(24, 7, SemanticTokensTestUtil.BLUE, null)//
 		);
 		assertArrayEquals(expectedStyleRanges.toArray(), styleRanges);
 	}

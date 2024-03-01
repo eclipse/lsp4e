@@ -44,6 +44,7 @@ public class SemanticTokensTestUtil {
 	}
 
 	public static final Color GREEN = new Color(133, 153, 0, 255);
+	public static final Color BLUE = new Color(86, 156, 214, 255);
 	public static final Color RED = new Color(255, 0, 0);
 
 	public static final IToken GREEN_TOKEN = new IToken() {

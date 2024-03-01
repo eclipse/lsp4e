@@ -16,7 +16,9 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.tm4e.ui.TMUIPlugin;
 import org.eclipse.tm4e.ui.text.TMPresentationReconciler;
+import org.eclipse.tm4e.ui.themes.ITheme;
 import org.eclipse.tm4e.ui.themes.ITokenProvider;
+import org.eclipse.ui.PlatformUI;
 
 /**
  * A Class that maps TokenTypes to {@link IToken}.
@@ -42,6 +44,9 @@ public class TokenTypeMapper implements Function<String, IToken> {
 				return tokenProvider.getToken(tokenType);
 			}
 		}
-		return TMUIPlugin.getThemeManager().getDefaultTheme().getToken(tokenType);
+		final ITheme[] defaultTheme = new ITheme[1];
+		// Needs to be executed in UI-thread:
+		PlatformUI.getWorkbench().getDisplay().syncExec(() -> defaultTheme[0] = TMUIPlugin.getThemeManager().getDefaultTheme());
+		return defaultTheme[0].getToken(tokenType);
 	}
 }
