@@ -105,6 +105,8 @@ public class SemanticHighlightReconcilerStrategy
 	 */
 	private volatile long documentTimestampAtLastAppliedTextPresentation;
 
+	private volatile long timestamp = 0;
+
 	private CompletableFuture<Optional<VersionedSemanticTokens>> semanticTokensFullFuture;
 
 	public SemanticHighlightReconcilerStrategy() {
@@ -291,12 +293,24 @@ public class SemanticHighlightReconcilerStrategy
 
 	@Override
 	public void reconcile(final DirtyRegion dirtyRegion, final IRegion subRegion) {
-		fullReconcile();
+		fullReconcileOnce();
 	}
 
 	@Override
 	public void reconcile(final IRegion partition) {
-		fullReconcile();
+		fullReconcileOnce();
+	}
+
+	/**
+	 * Because a full reconcile will be performed always on the whole document,
+	 * prevent consecutive reconciling on dirty regions or partitions if the document has not changed.
+	 */
+	private void fullReconcileOnce() {
+		var ts = DocumentUtil.getDocumentModificationStamp(document);
+		if (ts != timestamp) {
+			fullReconcile();
+			timestamp = ts;
+		}
 	}
 
 	@Override
