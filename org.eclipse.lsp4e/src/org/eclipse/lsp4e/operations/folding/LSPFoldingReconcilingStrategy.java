@@ -141,7 +141,7 @@ public class LSPFoldingReconcilingStrategy
 	private void applyFolding(List<FoldingRange> ranges) {
 		// these are what are passed off to the annotation model to
 		// actually create and maintain the annotations
-		final var modifications = new ArrayList<Annotation>();
+		final var modifications = new ArrayList<Annotation>(); // not used anymore, can be removed later with the deprecated updateAnnotations method
 		final var deletions = new ArrayList<FoldingAnnotation>();
 		final var existing = new ArrayList<FoldingAnnotation>();
 		final var additions = new HashMap<Annotation, Position>();
@@ -255,13 +255,10 @@ public class LSPFoldingReconcilingStrategy
 	 * @param newPos
 	 *            the new position that caused the annotations need for updating and
 	 *            null otherwise.
-	 * @param modifications
-	 *            the list of annotations to be modified
 	 * @param deletions
 	 *            the list of annotations to be deleted
 	 */
-	protected void updateAnnotations(Annotation existingAnnotation, Position newPos, List<Annotation> modifications,
-			List<FoldingAnnotation> deletions) {
+	protected void updateAnnotations(Annotation existingAnnotation, Position newPos, List<FoldingAnnotation> deletions) {
 		if (existingAnnotation instanceof FoldingAnnotation foldingAnnotation) {
 			// if a new position can be calculated then update the position of
 			// the annotation,
@@ -271,14 +268,33 @@ public class LSPFoldingReconcilingStrategy
 				Position oldPos = theProjectionAnnotationModel.getPosition(foldingAnnotation);
 				// only update the position if we have to
 				if (!newPos.equals(oldPos)) {
-					oldPos.setOffset(newPos.offset);
-					oldPos.setLength(newPos.length);
-					modifications.add(foldingAnnotation);
+					theProjectionAnnotationModel.modifyAnnotationPosition(foldingAnnotation, newPos);
 				}
 			} else {
 				deletions.add(foldingAnnotation);
 			}
 		}
+	}
+
+	/**
+	 * Update annotations.
+	 *
+	 * @param existingAnnotation
+	 *            the existing annotations that need to be updated based on the
+	 *            given dirtied IndexRegion
+	 * @param newPos
+	 *            the new position that caused the annotations need for updating and
+	 *            null otherwise.
+	 * @param modifications
+	 *            the list of annotations to be modified - not used anymore, that's why this method is deprecated.
+	 * @param deletions
+	 *            the list of annotations to be deleted
+	 * @deprecated use {@link LSPFoldingReconcilingStrategy#updateAnnotations(Annotation, Position, List)}
+	 */
+	@Deprecated(since = "0.18.6", forRemoval = true)
+	protected void updateAnnotations(Annotation existingAnnotation, Position newPos, List<Annotation> modifications,
+			List<FoldingAnnotation> deletions) {
+		updateAnnotations(existingAnnotation, newPos, deletions);
 	}
 
 	/**
