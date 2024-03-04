@@ -13,7 +13,11 @@
 package org.eclipse.lsp4e.test.references;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.List;
@@ -38,8 +42,6 @@ import org.eclipse.search.ui.IQueryListener;
 import org.eclipse.search.ui.ISearchQuery;
 import org.eclipse.search.ui.ISearchResult;
 import org.eclipse.search.ui.NewSearchUI;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.internal.monitoring.EventLoopMonitorThread;
 import org.eclipse.ui.monitoring.IUiFreezeEventLogger;
@@ -53,7 +55,6 @@ import org.junit.Test;
 
 @SuppressWarnings("restriction")
 public class FindReferencesTest {
-	private Shell shell;
 
 	public static final class UiFreezeEventLogger implements IUiFreezeEventLogger {
 
@@ -78,14 +79,12 @@ public class FindReferencesTest {
 
 	@Before
 	public void setUp() throws CoreException {
-		shell = new Shell();
 		project = TestUtils.createProject("CompletionTest" + System.currentTimeMillis());
 		ensureSearchResultViewIsClosed();
 
 		final var testFile = TestUtils.createUniqueTestFile(project, "word1 word2\nword3 word2");
-		TestUtils.openTextViewer(testFile);
-		Display display = shell.getDisplay();
-		DisplayHelper.sleep(display, 2_000); // Give some time to the editor to update
+		var textViewer = TestUtils.openTextViewer(testFile);
+		DisplayHelper.sleep(textViewer.getTextWidget().getDisplay(), 2_000); // Give some time to the editor to update
 		MockLanguageServer.INSTANCE.getTextDocumentService().setMockReferences(
 				new Location(testFile.getLocationURI().toString(), new Range(new Position(0, 6), new Position(0, 11))),
 				new Location(testFile.getLocationURI().toString(), new Range(new Position(1, 6), new Position(1, 11))));
