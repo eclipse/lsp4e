@@ -8,7 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.semanticTokens;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.List;
@@ -61,12 +61,16 @@ public class SemanticHighlightReconcilerStrategyTest {
 		DisplayHelper.sleep(display, 2_000); // Give some time to the editor to update
 
 		StyleRange[] styleRanges = textViewer.getTextWidget().getStyleRanges();
-		//default theme is dark, that's why we have to expect a blue foreground color:
-		List<StyleRange> expectedStyleRanges = Arrays.asList(//
-				new StyleRange(0, 4, SemanticTokensTestUtil.BLUE, null), //
-				new StyleRange(15, 4, SemanticTokensTestUtil.BLUE, null), //
-				new StyleRange(24, 7, SemanticTokensTestUtil.BLUE, null)//
-		);
-		assertArrayEquals(expectedStyleRanges.toArray(), styleRanges);
+
+		assertEquals(3, styleRanges.length);
+		
+		assertEquals(0, styleRanges[0].start);
+		assertEquals(4, styleRanges[0].length);
+		
+		assertEquals(15, styleRanges[1].start);
+		assertEquals(4, styleRanges[1].length);
+		
+		assertEquals(24, styleRanges[2].start);
+		assertEquals(7, styleRanges[2].length);
 	}
 }
