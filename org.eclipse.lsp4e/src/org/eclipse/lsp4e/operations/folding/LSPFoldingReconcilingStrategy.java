@@ -139,7 +139,7 @@ public class LSPFoldingReconcilingStrategy
 	private void applyFolding(List<FoldingRange> ranges) {
 		// these are what are passed off to the annotation model to
 		// actually create and maintain the annotations
-		final var modifications = new ArrayList<Annotation>(); // not used anymore
+		final var modifications = new ArrayList<Annotation>(); // not used anymore, can be removed later with the deprecated updateAnnotations method
 		final var deletions = new ArrayList<FoldingAnnotation>();
 		final var existing = new ArrayList<FoldingAnnotation>();
 		final var additions = new HashMap<Annotation, Position>();
