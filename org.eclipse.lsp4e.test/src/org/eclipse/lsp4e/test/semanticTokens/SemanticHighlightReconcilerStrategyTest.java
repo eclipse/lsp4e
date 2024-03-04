@@ -9,6 +9,7 @@
 package org.eclipse.lsp4e.test.semanticTokens;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -61,16 +62,20 @@ public class SemanticHighlightReconcilerStrategyTest {
 		DisplayHelper.sleep(display, 2_000); // Give some time to the editor to update
 
 		StyleRange[] styleRanges = textViewer.getTextWidget().getStyleRanges();
+		var backgroundColor = textViewer.getTextWidget().getBackground();
 
 		assertEquals(3, styleRanges.length);
 		
 		assertEquals(0, styleRanges[0].start);
 		assertEquals(4, styleRanges[0].length);
+		assertTrue(styleRanges[0].foreground != backgroundColor);
 		
 		assertEquals(15, styleRanges[1].start);
 		assertEquals(4, styleRanges[1].length);
+		assertTrue(styleRanges[1].foreground != backgroundColor);
 		
 		assertEquals(24, styleRanges[2].start);
 		assertEquals(7, styleRanges[2].length);
+		assertTrue(styleRanges[2].foreground != backgroundColor);
 	}
 }
