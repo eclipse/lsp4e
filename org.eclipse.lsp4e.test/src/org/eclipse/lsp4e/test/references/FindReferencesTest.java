@@ -38,11 +38,14 @@ import org.eclipse.search.ui.IQueryListener;
 import org.eclipse.search.ui.ISearchQuery;
 import org.eclipse.search.ui.ISearchResult;
 import org.eclipse.search.ui.NewSearchUI;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.internal.monitoring.EventLoopMonitorThread;
 import org.eclipse.ui.monitoring.IUiFreezeEventLogger;
 import org.eclipse.ui.monitoring.UiFreezeEvent;
 import org.eclipse.ui.services.IEvaluationService;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -50,6 +53,7 @@ import org.junit.Test;
 
 @SuppressWarnings("restriction")
 public class FindReferencesTest {
+	private Shell shell;
 
 	public static final class UiFreezeEventLogger implements IUiFreezeEventLogger {
 
@@ -74,11 +78,14 @@ public class FindReferencesTest {
 
 	@Before
 	public void setUp() throws CoreException {
+		shell = new Shell();
 		project = TestUtils.createProject("CompletionTest" + System.currentTimeMillis());
 		ensureSearchResultViewIsClosed();
 
 		final var testFile = TestUtils.createUniqueTestFile(project, "word1 word2\nword3 word2");
 		TestUtils.openTextViewer(testFile);
+		Display display = shell.getDisplay();
+		DisplayHelper.sleep(display, 2_000); // Give some time to the editor to update
 		MockLanguageServer.INSTANCE.getTextDocumentService().setMockReferences(
 				new Location(testFile.getLocationURI().toString(), new Range(new Position(0, 6), new Position(0, 11))),
 				new Location(testFile.getLocationURI().toString(), new Range(new Position(1, 6), new Position(1, 11))));
