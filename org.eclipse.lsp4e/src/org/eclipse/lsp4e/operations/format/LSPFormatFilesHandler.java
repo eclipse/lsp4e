@@ -98,11 +98,7 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 					}
 				});
 				docProvider.changed(doc);
-				try {
-					docProvider.saveDocument(monitor, file, doc, true);
-				} catch (CoreException e) {
-					LanguageServerPlugin.logError(e);
-				}
+				saveDocument(docProvider, file, monitor);
 			});
 		} catch (InterruptedException ex) {
 			Thread.currentThread().interrupt();
@@ -116,6 +112,14 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 
 	protected IDocumentProvider getDocumentProvider(IFile file) {
 		return DocumentProviderRegistry.getDefault().getDocumentProvider(new FileEditorInput(file));
+	}
+
+	protected void saveDocument(IDocumentProvider docProvider, IFile file, IProgressMonitor monitor) {
+		try {
+			docProvider.saveDocument(monitor, file, docProvider.getDocument(file), true);
+		} catch (CoreException e) {
+			LanguageServerPlugin.logError(e);
+		}
 	}
 
 	protected Set<@NonNull IFile> getSelectedFiles(final ExpressionContext ctx) {
