@@ -238,7 +238,7 @@ public class LSPFoldingReconcilingStrategy
 		final var newPos = new Position(startOffset, endOffset - startOffset);
 		if (!existing.isEmpty()) {
 			FoldingAnnotation existingAnnotation = existing.remove(existing.size() - 1);
-			updateAnnotations(existingAnnotation, newPos, deletions);
+			updateAnnotations(existingAnnotation, newPos, modifications, deletions);
 		} else {
 			additions.put(new FoldingAnnotation(collapsedByDefault), newPos);
 		}
