@@ -139,6 +139,7 @@ public class LSPFoldingReconcilingStrategy
 	private void applyFolding(List<FoldingRange> ranges) {
 		// these are what are passed off to the annotation model to
 		// actually create and maintain the annotations
+		final var modifications = new ArrayList<Annotation>(); // not used anymore
 		final var deletions = new ArrayList<FoldingAnnotation>();
 		final var existing = new ArrayList<FoldingAnnotation>();
 		final var additions = new HashMap<Annotation, Position>();
@@ -150,7 +151,7 @@ public class LSPFoldingReconcilingStrategy
 			if (ranges != null) {
 				Collections.sort(ranges, Comparator.comparing(FoldingRange::getEndLine));
 				for (FoldingRange foldingRange : ranges) {
-					updateAnnotation(deletions, existing, additions, foldingRange.getStartLine(),
+					updateAnnotation(modifications, deletions, existing, additions, foldingRange.getStartLine(),
 							foldingRange.getEndLine(), FoldingRangeKind.Imports.equals(foldingRange.getKind()));
 				}
 			}
@@ -228,7 +229,8 @@ public class LSPFoldingReconcilingStrategy
 	 *            the end line number
 	 * @throws BadLocationException
 	 */
-	private void updateAnnotation(List<FoldingAnnotation> deletions, List<FoldingAnnotation> existing, Map<Annotation, Position> additions, int line, Integer endLineNumber, boolean collapsedByDefault)
+	private void updateAnnotation(List<Annotation> modifications, List<FoldingAnnotation> deletions,
+			List<FoldingAnnotation> existing, Map<Annotation, Position> additions, int line, Integer endLineNumber, boolean collapsedByDefault)
 			throws BadLocationException {
 		int startOffset = document.getLineOffset(line);
 		int endOffset = document.getLineOffset(endLineNumber) + document.getLineLength(endLineNumber);
