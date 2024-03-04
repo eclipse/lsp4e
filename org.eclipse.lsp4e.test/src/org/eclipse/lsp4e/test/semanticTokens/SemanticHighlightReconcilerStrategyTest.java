@@ -9,7 +9,7 @@
 package org.eclipse.lsp4e.test.semanticTokens;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotEquals;
 
 import java.util.Arrays;
 import java.util.List;
@@ -68,14 +68,14 @@ public class SemanticHighlightReconcilerStrategyTest {
 		
 		assertEquals(0, styleRanges[0].start);
 		assertEquals(4, styleRanges[0].length);
-		assertTrue(styleRanges[0].foreground != backgroundColor);
+		assertNotEquals(styleRanges[0].foreground, backgroundColor);
 		
 		assertEquals(15, styleRanges[1].start);
 		assertEquals(4, styleRanges[1].length);
-		assertTrue(styleRanges[1].foreground != backgroundColor);
+		assertNotEquals(styleRanges[1].foreground, backgroundColor);
 		
 		assertEquals(24, styleRanges[2].start);
 		assertEquals(7, styleRanges[2].length);
-		assertTrue(styleRanges[2].foreground != backgroundColor);
+		assertNotEquals(styleRanges[2].foreground, backgroundColor);
 	}
 }
