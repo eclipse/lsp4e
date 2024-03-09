@@ -85,20 +85,20 @@ public class TestUtils {
 		part.setFocus();
 		return part;
 	}
-	
+
 	public static List<IEditorReference> splitActiveEditor() {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
 		IEditorPart part = page.getActiveEditor();
-		
+
 		MPart editorPart = part.getSite().getService(MPart.class);
 		if (editorPart != null) {
 			editorPart.getTags().add(IPresentationEngine.SPLIT_HORIZONTAL);
 		}
-		
+
 		return Arrays.asList(page.getEditorReferences());
 	}
-	
+
 	public static IEditorPart openExternalFileInEditor(File file) throws PartInitException {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
@@ -289,6 +289,10 @@ public class TestUtils {
 		return null;
 	}
 
+	public static boolean isGitHubActions() {
+		return "true".equals(System.getenv("GITHUB_ACTIONS"));
+	}
+
 	public static void waitForAndAssertCondition(int timeout_ms, Condition condition) {
 		waitForAndAssertCondition("Condition not met within expected time.", timeout_ms, condition);
 	}
@@ -303,6 +307,10 @@ public class TestUtils {
 
 	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Display display,
 			Condition condition) {
+		if (isGitHubActions()) {
+			// everything seems to be a bit slower on GHA
+			timeout_ms = 4 * timeout_ms;
+		}
 		var ex = new Throwable[1];
 		var isConditionMet = new DisplayHelper() {
 			@Override
@@ -335,6 +343,10 @@ public class TestUtils {
 	}
 
 	public static boolean waitForCondition(int timeout_ms, Display display, Condition condition) {
+		if (isGitHubActions()) {
+			// everything seems to be a bit slower on GHA
+			timeout_ms = 4 * timeout_ms;
+		}
 		var ex = new Throwable[1];
 		var isConditionMet = new DisplayHelper() {
 			@Override

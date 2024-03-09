@@ -80,6 +80,22 @@ mvn -Dtest=<TestClassName>#<MethodName> -DfailIfNoTests=false -Dtycho.testArgLin
 Once Maven is about to execute the test it will wait for you to attach to the test JVM using a remote debugger, e.g. using Eclipse's `Remote Java Application` debug configuration.
 
 
+#### Running the CI job locally:
+
+The GitHub actions wokflow is compatible with [nektos/act](https://github.com/nektos/act) a command-line tool that allows you to run GitHub action workflows locally.
+
+1. Install the [docker engine](https://docs.docker.com/engine/install/)
+1. Install [nektos/act](https://github.com/nektos/act)
+1. From the command line navigate into the LSP4E project root
+1. Run the command `act`
+1. On subsequent re-runs you can use `act -r` to reuse previous container which avoids reinstallation system packages and reduces build time.
+
+In case of build failures the docker container will still be running and you can ssh into it for analysis using `docker exec -u root -it <CONTAINER_ID> /bin/bash`, e.g.:
+```bash
+container_id=$(docker container ps --filter status=running --filter name=act-Build-build --format {{.ID}})
+docker exec -u root -it $container_id /bin/bash
+```
+
 ### ⬆️ Version bump
 
 LSP4E tries to use OSGi Semantic Version (to properly expose its API contracts and breakage) and Reproducible Version Qualifiers (to minimize the avoid producing multiple equivalent artifacts for identical source).
