@@ -63,6 +63,7 @@ import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonContentProvider;
 import org.eclipse.ui.progress.PendingUpdateAdapter;
 import org.eclipse.ui.texteditor.ITextEditor;
+import org.eclipse.ui.views.WorkbenchViewerSetup;
 
 public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeContentProvider {
 
@@ -256,6 +257,10 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		}
 
 		this.viewer = (TreeViewer) viewer;
+		
+		// this enables limiting the number of outline entries to mitigate UI freezes
+		WorkbenchViewerSetup.setupViewer(this.viewer);
+
 		isQuickOutline = Boolean.TRUE.equals(viewer.getData(VIEWER_PROPERTY_IS_QUICK_OUTLINE));
 
 		outlineViewerInput = (OutlineViewerInput) newInput;
