@@ -60,6 +60,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.NonNull;
@@ -104,6 +105,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.services.LanguageServer;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 
@@ -350,11 +352,34 @@ public class LanguageServerWrapper {
 				stop();
 				throw new RuntimeException(e);
 			});
+
 			if (this.initializeFuture.isCompletedExceptionally()) {
 				// This might happen if an exception occurred and stop() was called before this.initializeFuture was assigned
 				this.initializeFuture = null;
+			} else {
+				createInitializeLanguageServerJob().schedule();
 			}
 		}
+	}
+
+	private synchronized Job createInitializeLanguageServerJob() {
+		return new Job(NLS.bind(Messages.initializeLanguageServer_job, serverDefinition.label)) {
+			@Override
+			protected IStatus run(IProgressMonitor monitor) {
+				SubMonitor progress = SubMonitor.convert(monitor, 1);
+				CompletableFuture<Void> currentInitializeFuture = initializeFuture;
+				if (currentInitializeFuture != null) {
+					currentInitializeFuture.join();
+				}
+				progress.done();
+				return Status.OK_STATUS;
+			}
+
+			@Override
+			public boolean belongsTo(Object family) {
+				return LanguageServerPlugin.FAMILY_INITIALIZE_LANGUAGE_SERVER == family;
+			}
+		};
 	}
 
 	private CompletableFuture<InitializeResult> initServer(final URI rootURI) {
@@ -696,10 +721,10 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Starts the language server, ensure it's and returns a CompletableFuture waiting for the
+	 * Starts the language server and returns a CompletableFuture waiting for the
 	 * server to be initialized and up-to-date (all related pending document changes
 	 * notifications are sent).
-	 * <p>If done in the UI stream, a job will be created
+	 * <p>If done in the UI thread, a job will be created
 	 * displaying that the server is being initialized</p>
 	 *
 	 */
@@ -713,13 +738,7 @@ public class LanguageServerWrapper {
 
 		if (initializeFuture != null && !this.initializeFuture.isDone()) {
 			if (Display.getCurrent() != null) { // UI Thread
-				final var waitForInitialization = new Job(Messages.initializeLanguageServer_job) {
-					@Override
-					protected IStatus run(IProgressMonitor monitor) {
-						initializeFuture.join();
-						return Status.OK_STATUS;
-					}
-				};
+				final Job waitForInitialization = createInitializeLanguageServerJob();
 				waitForInitialization.setUser(true);
 				waitForInitialization.setSystem(false);
 				PlatformUI.getWorkbench().getProgressService().showInDialog(UI.getActiveShell(), waitForInitialization);

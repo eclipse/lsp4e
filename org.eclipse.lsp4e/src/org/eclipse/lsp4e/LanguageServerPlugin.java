@@ -21,11 +21,10 @@ import org.osgi.framework.BundleContext;
 
 public class LanguageServerPlugin extends AbstractUIPlugin {
 
-	/**
-	 * Constant identifying the job family identifier for the background update markers from diagnostics job.
-	 *
-	 */
+	/** Job family identifier for the "background update markers from diagnostics" job. */
 	public static final Object FAMILY_UPDATE_MARKERS = new Object();
+	/** Job family identifier for the "initialize language server" job. */
+	public static final Object FAMILY_INITIALIZE_LANGUAGE_SERVER = new Object();
 
 	public static final String PLUGIN_ID = "org.eclipse.lsp4e"; //$NON-NLS-1$
 
