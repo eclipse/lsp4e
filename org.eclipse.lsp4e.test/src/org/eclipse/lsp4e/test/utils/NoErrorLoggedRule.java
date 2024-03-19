@@ -9,8 +9,9 @@
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e.test.utils;
 
+import java.lang.System.Logger.Level;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.List;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.ILogListener;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.junit.Assert;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -26,21 +28,35 @@ public class NoErrorLoggedRule extends TestWatcher {
 
 	private ILog log;
 	private ILogListener listener;
-	private List<IStatus> loggedErrors;
+	private final List<IStatus> loggedErrors = new ArrayList<>();
+
+	public NoErrorLoggedRule() {
+		this(LanguageServerPlugin.getDefault().getLog());
+	}
 
 	public NoErrorLoggedRule(ILog log) {
 		this.log = log;
-		listener = (status, message) -> {
-			if (status.getSeverity() == IStatus.ERROR) {
+		final var logger = System.getLogger(log.getBundle().getSymbolicName());
+		listener = (status, unused) -> {
+			switch (status.getSeverity()) {
+			case IStatus.ERROR:
 				loggedErrors.add(status);
+				logger.log(Level.ERROR, status.toString(), status.getException());
+				break;
+			case IStatus.WARNING:
+				logger.log(Level.WARNING, status.toString(), status.getException());
+				break;
+			case IStatus.INFO:
+				logger.log(Level.INFO, status.toString(), status.getException());
+				break;
 			}
 		};
 	}
-	
+
 	@Override
 	protected void starting(Description description) {
 		super.starting(description);
-		this.loggedErrors = new ArrayList<>();
+		loggedErrors.clear();
 		log.addLogListener(listener);
 	}
 
@@ -50,5 +66,4 @@ public class NoErrorLoggedRule extends TestWatcher {
 		Assert.assertEquals("Some errors were logged", Collections.emptyList(), loggedErrors);
 		super.finished(description);
 	}
-
 }

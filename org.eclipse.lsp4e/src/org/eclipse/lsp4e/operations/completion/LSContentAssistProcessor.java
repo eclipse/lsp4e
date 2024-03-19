@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2022 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -27,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.jdt.annotation.NonNull;
@@ -44,6 +45,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.internal.CancellationSupport;
 import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.UI;
@@ -55,6 +57,7 @@ import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.SignatureHelpOptions;
 import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SignatureInformation;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -74,13 +77,23 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private CompletableFuture<@NonNull List<@NonNull Void>> contextInformationLanguageServersFuture;
 	private final Object contextTriggerCharsSemaphore = new Object();
 	private char[] contextTriggerChars = new char[0];
+	private final boolean incompleteAsCompletionItem;
+
+	// The cancellation support used to cancel previous LSP requests 'textDocument/completion' when completion is retriggered
+	private CancellationSupport cancellationSupport;
 
 	public LSContentAssistProcessor() {
 		this(true);
 	}
 
 	public LSContentAssistProcessor(boolean errorAsCompletionItem) {
+		this(errorAsCompletionItem, true);
+	}
+
+	public LSContentAssistProcessor(boolean errorAsCompletionItem, boolean incompleteAsCompletionItem) {
 		this.errorAsCompletionItem = errorAsCompletionItem;
+		this.cancellationSupport = new CancellationSupport();
+		this.incompleteAsCompletionItem = incompleteAsCompletionItem;
 	}
 
 	private final Comparator<LSCompletionProposal> proposalComparator = new LSCompletionProposalComparator();
@@ -98,7 +111,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		CompletionParams param;
 
 		try {
-			param = LSPEclipseUtils.toCompletionParams(uri, offset, document);
+			param = LSPEclipseUtils.toCompletionParams(uri, offset, document, this.completionTriggerChars);
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 			this.errorMessage = createErrorMessage(offset, e);
@@ -106,13 +119,31 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 
 		List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
+		AtomicBoolean anyIncomplete = new AtomicBoolean(false);
 		try {
+			// Cancel the previous LSP requests 'textDocument/completions' and completionLanguageServersFuture
+			this.cancellationSupport.cancel();
+
+			// Initialize a new cancel support to register:
+			// - LSP requests 'textDocument/completions'
+			// - completionLanguageServersFuture
+			CancellationSupport cancellationSupport = new CancellationSupport();
 			this.completionLanguageServersFuture = LanguageServers.forDocument(document)
-					.withFilter(capabilities -> capabilities.getCompletionProvider() != null)
-					.collectAll((w, ls) -> ls.getTextDocumentService().completion(param)
-							.thenAccept(completion -> proposals.addAll(toProposals(document, offset, completion, w))));
+					.withFilter(capabilities -> capabilities.getCompletionProvider() != null) //
+					.collectAll((w, ls) -> cancellationSupport.execute(ls.getTextDocumentService().completion(param)) //
+							.thenAccept(completion -> {
+								boolean isIncomplete = completion != null && completion.isRight() ? completion.getRight().isIncomplete() : false;
+								proposals.addAll(toProposals(document, offset, completion, w, cancellationSupport, isIncomplete));
+								if (isIncomplete) {
+									anyIncomplete.set(true);
+								}
+							}));
+			cancellationSupport.execute(completionLanguageServersFuture);
+			this.cancellationSupport = cancellationSupport;
+
+			// Wait for the result of all LSP requests 'textDocument/completions', this future will be canceled with the next completion
 			this.completionLanguageServersFuture.get();
-		} catch (ResponseErrorException | ExecutionException e) {
+		} catch (ResponseErrorException | ExecutionException | CancellationException e) {
 			if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
 				LanguageServerPlugin.logError(e);
 			}
@@ -136,6 +167,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			}
 		}
 		Arrays.sort(completeProposals, proposalComparator);
+		ICompletionProposal[] incompleteProposal = createIncompleProposal(offset, anyIncomplete.get());
+		if (incompleteProposal.length > 0) {
+			ICompletionProposal[] incompleteProposals = Arrays.copyOf(completeProposals, completeProposals.length + incompleteProposal.length, ICompletionProposal[].class);
+			System.arraycopy(incompleteProposal, 0, incompleteProposals, completeProposals.length, incompleteProposal.length);
+			return incompleteProposals;
+		}
 		return completeProposals;
 	}
 
@@ -150,6 +187,13 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	private String createErrorMessage(int offset, Exception ex) {
 		return Messages.completionError + " : " + ex.getMessage(); //$NON-NLS-1$
+	}
+
+	private ICompletionProposal[] createIncompleProposal(int offset, boolean incomplete) {
+		if (incompleteAsCompletionItem && incomplete) {
+			return new ICompletionProposal[] {new CompletionProposal("", offset, 0, 0, null, Messages.completionIncomplete, null, Messages.continueIncomplete)}; //$NON-NLS-1$
+		}
+		return new ICompletionProposal[0];
 	}
 
 	private void initiateLanguageServers(@NonNull IDocument document) {
@@ -203,17 +247,23 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 	}
 	private static List<ICompletionProposal> toProposals(IDocument document,
-			int offset, Either<List<CompletionItem>, CompletionList> completionList, LanguageServerWrapper languageServerWrapper) {
+			int offset, Either<List<CompletionItem>, CompletionList> completionList, LanguageServerWrapper languageServerWrapper, CancelChecker cancelChecker, boolean isIncomplete) {
 		if (completionList == null) {
 			return Collections.emptyList();
 		}
+		//Stop the compute of ICompletionProposal if the completion has been cancelled
+		cancelChecker.checkCanceled();
 		CompletionItemDefaults defaults = completionList.map(o -> null, CompletionList::getItemDefaults);
 		List<CompletionItem> items = completionList.isLeft() ? completionList.getLeft() : completionList.getRight().getItems();
-		boolean isIncomplete = completionList.isRight() ? completionList.getRight().isIncomplete() : false;
 		return items.stream() //
 				.filter(Objects::nonNull)
 				.map(item -> new LSCompletionProposal(document, offset, item, defaults,
 						languageServerWrapper, isIncomplete))
+				.filter(proposal -> {
+					//Stop the compute of ICompletionProposal if the completion has been cancelled
+					cancelChecker.checkCanceled();
+					return true;
+				})
 				.filter(proposal -> proposal.validate(document, offset, null))
 				.map(ICompletionProposal.class::cast)
 				.toList();
@@ -255,7 +305,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			Thread.currentThread().interrupt();
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not compute  context information due to timeout after " + CONTEXT_INFORMATION_TIMEOUT + " miliseconds", e);  //$NON-NLS-1$//$NON-NLS-2$
+			LanguageServerPlugin.logWarning("Could not compute  context information due to timeout after " + CONTEXT_INFORMATION_TIMEOUT + " milliseconds", e);  //$NON-NLS-1$//$NON-NLS-2$
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		}
 		return contextInformations.toArray(new IContextInformation[0]);
@@ -284,7 +334,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not get trigger characters due to timeout after " + TRIGGERS_TIMEOUT + " miliseconds", e); //$NON-NLS-1$//$NON-NLS-2$
+			LanguageServerPlugin.logWarning("Could not get trigger characters due to timeout after " + TRIGGERS_TIMEOUT + " milliseconds", e); //$NON-NLS-1$//$NON-NLS-2$
 		}
 	}
 

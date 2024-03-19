@@ -8,11 +8,12 @@
  *
  * Contributors:
  *   Victor Rubezhny (Red Hat Inc.) - initial implementation
+ *   Sebastian Thomschke (Vegard IT GmbH) - refactor and fix erratic test failures
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForCondition;
-import static org.junit.Assert.assertEquals;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
+import static org.junit.Assert.*;
 
 import java.util.List;
 
@@ -21,12 +22,11 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.jface.text.TextSelection;
-import org.eclipse.jface.text.TextViewer;
+import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Position;
@@ -34,56 +34,64 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.BusyIndicator;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import com.google.common.collect.Iterators;
+
 public class DocumentEditAndUndoTest {
 
-	@Rule public AllCleanRule clear = new AllCleanRule();
+	@Rule
+	public final AllCleanRule clear = new AllCleanRule();
 	private IProject project;
-	private Shell shell;
 
 	@Before
 	public void setUp() throws CoreException {
-		project =  TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
-		shell= new Shell();
+		project = TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
 	}
 
 	@Test
 	public void testDocumentEditAndUndo() throws Exception {
-		MockLanguageServer.INSTANCE.setLinkedEditingRanges(new LinkedEditingRanges(List.of(
-				new Range(new Position(0, 1), new Position(0, 2)),
+		MockLanguageServer.INSTANCE.setLinkedEditingRanges(new LinkedEditingRanges(List.of( //
+				new Range(new Position(0, 1), new Position(0, 2)), //
 				new Range(new Position(0, 5), new Position(0, 6))),
 				"[:A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02ff\\u0370-\\u037d\\u037f-\\u1fff\\u200c\\u200d\\u2070-\\u218f\\u2c00-\\u2fef\\u3001-\\udfff\\uf900-\\ufdcf\\ufdf0-\\ufffd\\u10000-\\uEFFFF][:A-Z_a-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02ff\\u0370-\\u037d\\u037f-\\u1fff\\u200c\\u200d\\u2070-\\u218f\\u2c00-\\u2fef\\u3001-\\udfff\\uf900-\\ufdcf\\ufdf0-\\ufffd\\u10000-\\uEFFFF\\-\\.0-9\\u00b7\\u0300-\\u036f\\u203f-\\u2040]*"));
 
-		IFile testFile = TestUtils.createUniqueTestFile(project, "<a></a>");
+		final var initialContent = "<a></a>";
+		IFile testFile = TestUtils.createUniqueTestFile(project, initialContent);
 		IEditorPart editor = TestUtils.openEditor(testFile);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
-		// Force LS to initialize and open file
-		LanguageServers.forDocument(LSPEclipseUtils.getDocument(testFile)).anyMatching();
 
-		System.out.println("Document initial:\t[" + viewer.getDocument().get() + "]");
+		final var doc = viewer.getDocument();
+		assertEquals(initialContent, doc.get());
+
+		// Force LS to initialize and open file
+		assertTrue(LanguageServers.forDocument(doc).anyMatching());
+
+		final var textWidget = viewer.getTextWidget();
 
 		// Initialize Linked Editing by setting up the text cursor position
-		viewer.getTextWidget().setCaretOffset(2);
-		((TextViewer)viewer).setSelection(new TextSelection(viewer.getDocument(), 2, 0), true);
-		System.out.println("Document viewer.setSelection(2, 2)");
+		textWidget.setCaretOffset(2);
 
-		Display display= shell.getDisplay();
-		Control control= viewer.getTextWidget();
-		DisplayHelper.sleep(display, 2000); // Give some time to the editor to update
+		// Wait for Linked Editing to be established
+		waitForAndAssertCondition("Linked Editing not established", 3_000, () -> {
+			return Iterators
+					.tryFind(((ISourceViewer) viewer).getAnnotationModel().getAnnotationIterator(),
+							anno -> anno.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link"))
+					.isPresent();
+		});
+
+		// perform text editing operation
+		final var display = textWidget.getDisplay();
 		display.asyncExec(new Runnable() {
 
 			@Override
 			public void run() {
-				type(control, 'b');
-				type(control, 'c');
+				type(textWidget, 'b');
+				type(textWidget, 'c');
 			}
 
 			private void type(Control control, char c) {
@@ -99,14 +107,18 @@ public class DocumentEditAndUndoTest {
 			}
 		});
 
-		waitForCondition(3_000, () -> viewer.getDocument().get().equals("<abc></abc>"));
-		assertEquals("Document isn't correctly changed", "<abc></abc>", viewer.getDocument().get());
+		waitForAndAssertCondition(3_000, () -> {
+			assertEquals("Document content isn't correctly changed", "<abc></abc>", doc.get());
+			return true;
+		});
 
-		ITextOperationTarget fOperationTarget= editor.getAdapter(ITextOperationTarget.class);
-		BusyIndicator.showWhile(viewer.getTextWidget().getDisplay(),
-				() -> fOperationTarget.doOperation(ITextOperationTarget.UNDO));
+		// perform undo operation
+		final var textOperationTarget = editor.getAdapter(ITextOperationTarget.class);
+		BusyIndicator.showWhile(display, () -> textOperationTarget.doOperation(ITextOperationTarget.UNDO));
 
-		waitForCondition(3_000, () -> viewer.getDocument().get().equals("<a></a>"));
-		assertEquals("Document isn't correctly restored", "<a></a>", viewer.getDocument().get());
+		waitForAndAssertCondition(3_000, () -> {
+			assertEquals("Document content isn't correctly reverted", initialContent, doc.get());
+			return true;
+		});
 	}
 }

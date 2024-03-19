@@ -74,7 +74,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 800 miliseconds", e);  //$NON-NLS-1$
+			LanguageServerPlugin.logWarning("Could not detect hyperlinks due to timeout after 800 milliseconds", e);  //$NON-NLS-1$
 		}
 		if (allLinks.isEmpty()) {
 			return null;

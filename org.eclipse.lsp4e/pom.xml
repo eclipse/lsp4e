@@ -7,14 +7,14 @@
 	</parent>
 	<artifactId>org.eclipse.lsp4e</artifactId>
 	<packaging>eclipse-plugin</packaging>
-	<version>0.17.0-SNAPSHOT</version>
+	<version>0.18.7-SNAPSHOT</version>
 
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-clean-plugin</artifactId>
-				<version>3.2.0</version>
+				<version>3.3.2</version>
 				<configuration>
 					<filesets>
 						<fileset>
@@ -26,7 +26,15 @@
 			<plugin>
 				<groupId>com.googlecode.maven-download-plugin</groupId>
 				<artifactId>download-maven-plugin</artifactId>
-				<version>1.7.0</version>
+				<!-- 1.7.0 is broken, see https://github.com/maven-download-plugin/maven-download-plugin/releases/tag/1.7.0 -->
+				<version>1.8.1</version>
+				<configuration>
+					<!-- https://maven-download-plugin.github.io/maven-download-plugin/docsite/1.6.8/wget-mojo.html -->
+					<alwaysVerifyChecksum>true</alwaysVerifyChecksum>
+					<overwrite>true</overwrite>
+					<skipCache>false</skipCache>
+					<readTimeOut>5000</readTimeOut>
+				</configuration>
 				<executions>
 					<execution>
 						<id>fetch-highlight.min.js</id>
@@ -35,11 +43,9 @@
 							<goal>wget</goal>
 						</goals>
 						<configuration>
-							<url>https://unpkg.com/@highlightjs/cdn-assets@11.8.0/highlight.min.js</url>
-							<unpack>false</unpack>
-							<overwrite>true</overwrite>
-							<skipCache>true</skipCache>
-							<outputDirectory>${project.basedir}/resources/highlight.min.js</outputDirectory>
+							<url>https://unpkg.com/@highlightjs/cdn-assets@11.9.0/highlight.min.js</url>
+							<sha256>837a6fa5b0c736b52bbde2b2b6190f305da3fc9ed41681db5321507057b5c846</sha256>
+							<outputDirectory>resources/highlight.min.js</outputDirectory>
 						</configuration>
 					</execution>
 					<execution>
@@ -49,11 +55,9 @@
 							<goal>wget</goal>
 						</goals>
 						<configuration>
-							<url>https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/default.min.css</url>
-							<unpack>false</unpack>
-							<overwrite>true</overwrite>
-							<skipCache>true</skipCache>
-							<outputDirectory>${project.basedir}/resources/highlight.min.js/styles</outputDirectory>
+							<url>https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/default.min.css</url>
+							<sha256>fbde0ac0921d86c356c41532e7319c887a23bd1b8ff00060cab447249f03c7cf</sha256>
+							<outputDirectory>resources/highlight.min.js/styles</outputDirectory>
 						</configuration>
 					</execution>
 					<execution>
@@ -63,11 +67,9 @@
 							<goal>wget</goal>
 						</goals>
 						<configuration>
-							<url>https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/dark.min.css</url>
-							<unpack>false</unpack>
-							<overwrite>true</overwrite>
-							<skipCache>true</skipCache>
-							<outputDirectory>${project.basedir}/resources/highlight.min.js/styles</outputDirectory>
+							<url>https://unpkg.com/@highlightjs/cdn-assets@11.9.0/styles/dark.min.css</url>
+							<sha256>bf437be81145907d1d081f1b52be1c1d254df00ff309a3a8a4cb92989595ff9c</sha256>
+							<outputDirectory>resources/highlight.min.js/styles</outputDirectory>
 						</configuration>
 					</execution>
 				</executions>

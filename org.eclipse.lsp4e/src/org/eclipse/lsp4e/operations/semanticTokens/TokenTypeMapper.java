@@ -39,7 +39,7 @@ public class TokenTypeMapper implements Function<String, IToken> {
 		if (tmPresentationReconciler != null) {
 			ITokenProvider tokenProvider = tmPresentationReconciler.getTokenProvider();
 			if (tokenProvider != null) {
-				tokenProvider.getToken(tokenType);
+				return tokenProvider.getToken(tokenType);
 			}
 		}
 		return TMUIPlugin.getThemeManager().getDefaultTheme().getToken(tokenType);

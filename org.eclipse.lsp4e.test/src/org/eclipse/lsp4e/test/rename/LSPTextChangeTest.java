@@ -23,8 +23,8 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.refactoring.LSPTextChange;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
@@ -48,7 +48,7 @@ public class LSPTextChangeTest {
 		assertNotNull(document);
 		assertEquals(edit.getNewText(), document.get());
 	}
-	
+
 	@Test
 	public void testRefactoringPreview() throws Exception {
 		IProject project = TestUtils.createProject("blah");
@@ -68,5 +68,4 @@ public class LSPTextChangeTest {
 		operation.run(new NullProgressMonitor());
 		assertEquals(edit.getNewText(), new String(Files.readAllBytes(file.toPath())));
 	}
-
 }

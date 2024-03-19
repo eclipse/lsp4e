@@ -15,45 +15,39 @@ package org.eclipse.lsp4e.operations.symbols;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.internal.LSPDocumentAbstractHandler;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPSymbolInFileHandler extends LSPDocumentAbstractHandler {
 
 	@Override
-	public Object execute(ExecutionEvent event) throws ExecutionException {
-		IEditorPart part = HandlerUtil.getActiveEditor(event);
-		if (part instanceof ITextEditor textEditor) {
-			final IDocument document = LSPEclipseUtils.getDocument(textEditor);
-			if (document == null) {
-				return null;
-			}
-
-			final Shell shell = HandlerUtil.getActiveShell(event);
-
-			if (shell == null) {
-				return null;
-			}
-
-			// TODO maybe consider better strategy such as iterating on all LS until we have
-			// a good result
-			LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDocumentSymbolProvider)
-					.computeFirst((w, ls) -> CompletableFuture.completedFuture(w))
-					.thenAcceptAsync(oW -> oW.ifPresent(w -> {
-						if (w != null) {
-							new LSPSymbolInFileDialog(shell, textEditor, document, w).open();
-						}
-					}), shell.getDisplay());
+	protected void execute(ExecutionEvent event, ITextEditor textEditor) {
+		final IDocument document = LSPEclipseUtils.getDocument(textEditor);
+		if (document == null) {
+			return;
 		}
-		return null;
+
+		final Shell shell = HandlerUtil.getActiveShell(event);
+
+		if (shell == null) {
+			return;
+		}
+
+		// TODO maybe consider better strategy such as iterating on all LS until we have
+		// a good result
+		LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDocumentSymbolProvider)
+				.computeFirst((w, ls) -> CompletableFuture.completedFuture(w))
+				.thenAcceptAsync(oW -> oW.ifPresent(w -> {
+					if (w != null) {
+						new LSPSymbolInFileDialog(shell, textEditor, document, w).open();
+					}
+				}), shell.getDisplay());
 	}
 
 	@Override

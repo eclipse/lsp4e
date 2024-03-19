@@ -24,10 +24,13 @@ import java.nio.file.StandardOpenOption;
 import java.time.OffsetDateTime;
 
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.Adapters;
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
+import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.ui.console.ConsolePlugin;
@@ -36,7 +39,7 @@ import org.eclipse.ui.console.IConsoleManager;
 import org.eclipse.ui.console.MessageConsole;
 import org.eclipse.ui.console.MessageConsoleStream;
 
-public class LoggingStreamConnectionProviderProxy implements StreamConnectionProvider {
+public class LoggingStreamConnectionProviderProxy implements StreamConnectionProvider, IAdaptable {
 
 	public static File getLogDirectory() {
 		IPath root = ResourcesPlugin.getWorkspace().getRoot().getLocation();
@@ -159,6 +162,14 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	}
 
 	@Override
+	public <T> T getAdapter(Class<T> adapter) {
+		if(adapter == ProcessHandle.class) {
+			return Adapters.adapt(provider, adapter);
+		}
+		return null;
+	}
+
+	@Override
 	public InputStream getErrorStream() {
 		if (errorStream != null) {
 			return errorStream;
@@ -270,10 +281,10 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		IConsoleManager conMan = plugin.getConsoleManager();
 		IConsole[] existing = conMan.getConsoles();
 		for (int i = 0; i < existing.length; i++)
-			if (LanguageServerPlugin.PLUGIN_ID.equals(existing[i].getName()))
+			if (Messages.LSConsoleName.equals(existing[i].getName()))
 				return (MessageConsole) existing[i];
 		// no console found, so create a new one
-		final var myConsole = new MessageConsole(LanguageServerPlugin.PLUGIN_ID, null);
+		final var myConsole = new MessageConsole(Messages.LSConsoleName, null);
 		conMan.addConsoles(new IConsole[] { myConsole });
 		return myConsole;
 	}

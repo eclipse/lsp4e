@@ -15,6 +15,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -51,25 +52,33 @@ public final class UI {
 		if (activePage == null) {
 			return null;
 		}
-		var editorPart = activePage.getActiveEditor();
+		return asTextEditor(activePage.getActiveEditor());
+	}
+
+	@Nullable
+	public static ITextEditor asTextEditor(@Nullable IEditorPart editorPart) {
 		if (editorPart instanceof ITextEditor textEditor) {
 			return textEditor;
-		} else if (editorPart instanceof MultiPageEditorPart multiPageEditorPart) {
-			Object page = multiPageEditorPart.getSelectedPage();
-			if (page instanceof ITextEditor textEditor) {
-				return textEditor;
-			}
+		} else if (editorPart instanceof MultiPageEditorPart multiPageEditorPart
+				&& multiPageEditorPart.getSelectedPage() instanceof ITextEditor textEditor) {
+			return textEditor;
+		}
+		return null;
+//		TODO consider returning Adapters.adapt(editorPart, ITextEditor.class) instead
+	}
+
+	@Nullable
+	public static ITextViewer asTextViewer(@Nullable IEditorPart editorPart) {
+		if (editorPart != null) {
+			return editorPart.getAdapter(ITextViewer.class);
+//			TODO consider returning Adapters.adapt(asTextEditor(editorPart), ITextViewer.class)
 		}
 		return null;
 	}
 
 	@Nullable
 	public static ITextViewer getActiveTextViewer() {
-		ITextEditor editor = getActiveTextEditor();
-		if (editor != null) {
-			return editor.getAdapter(ITextViewer.class);
-		}
-		return null;
+		return asTextViewer(getActiveTextEditor());
 	}
 
 	@Nullable

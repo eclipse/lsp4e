@@ -93,7 +93,7 @@ public class SemanticHighlightReconcilerStrategy
 	private SemanticTokensDataStreamProcessor semanticTokensDataStreamProcessor;
 
 	private boolean isInstalled;
-	
+
 	/**
 	 * Written in {@link this.class#applyTextPresentation(TextPresentation)}
 	 * applyTextPresentation and read in the lambda in
@@ -104,6 +104,8 @@ public class SemanticHighlightReconcilerStrategy
 	 * called by use while the presentation is being updated.
 	 */
 	private volatile long documentTimestampAtLastAppliedTextPresentation;
+
+	private volatile long timestamp = 0;
 
 	private CompletableFuture<Optional<VersionedSemanticTokens>> semanticTokensFullFuture;
 
@@ -239,7 +241,10 @@ public class SemanticHighlightReconcilerStrategy
 		StyledText textWidget = viewer.getTextWidget();
 		textWidget.getDisplay().asyncExec(() -> {
 			if (!textWidget.isDisposed() && outdatedTextPresentation(documentTimestamp)) {
-				viewer.invalidateTextPresentation();
+				ITextViewer theViewer = viewer;
+				if (theViewer != null) {
+					theViewer.invalidateTextPresentation();
+			        }
 			}
 		});
 	}
@@ -270,15 +275,13 @@ public class SemanticHighlightReconcilerStrategy
 						.ifPresent(versionedSemanticTokens -> {
 							versionedSemanticTokens.apply(this::saveStyle, this::invalidateTextPresentation);
 						});
-			} catch (ResponseErrorException | ExecutionException e) {
-				if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
-					LanguageServerPlugin.logError(e);
-				}
 			} catch (InterruptedException e) {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
-			} catch (CancellationException e) {
-				// nothing to do, the client has cancelled the request because the document has been closed or a new request has been sent
+			} catch (ResponseErrorException | ExecutionException | CancellationException e) {
+				if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
+					LanguageServerPlugin.logError(e);
+				}
 			}
 		}
 	}
@@ -290,12 +293,24 @@ public class SemanticHighlightReconcilerStrategy
 
 	@Override
 	public void reconcile(final DirtyRegion dirtyRegion, final IRegion subRegion) {
-		fullReconcile();
+		fullReconcileOnce();
 	}
 
 	@Override
 	public void reconcile(final IRegion partition) {
-		fullReconcile();
+		fullReconcileOnce();
+	}
+
+	/**
+	 * Because a full reconcile will be performed always on the whole document,
+	 * prevent consecutive reconciling on dirty regions or partitions if the document has not changed.
+	 */
+	private void fullReconcileOnce() {
+		var ts = DocumentUtil.getDocumentModificationStamp(document);
+		if (ts != timestamp) {
+			fullReconcile();
+			timestamp = ts;
+		}
 	}
 
 	@Override

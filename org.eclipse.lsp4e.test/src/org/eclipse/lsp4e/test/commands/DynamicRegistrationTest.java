@@ -28,8 +28,8 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.Registration;
@@ -106,7 +106,7 @@ public class DynamicRegistrationTest {
 		LanguageClient client = getMockClient();
 		Unregistration unregistration = new Unregistration(registration.toString(), WORKSPACE_EXECUTE_COMMAND);
 		client.unregisterCapability(new UnregistrationParams(Arrays.asList(unregistration)))
-		.get(1, TimeUnit.SECONDS);
+			.get(1, TimeUnit.SECONDS);
 	}
 
 	private UUID registerWorkspaceFolders() throws Exception {
@@ -116,7 +116,7 @@ public class DynamicRegistrationTest {
 		registration.setId(id.toString());
 		registration.setMethod(WORKSPACE_DID_CHANGE_FOLDERS);
 		client.registerCapability(new RegistrationParams(Arrays.asList(registration)))
-		.get(1, TimeUnit.SECONDS);
+			.get(1, TimeUnit.SECONDS);
 		return id;
 	}
 
@@ -156,5 +156,4 @@ public class DynamicRegistrationTest {
 		}
 		return false;
 	}
-
 }

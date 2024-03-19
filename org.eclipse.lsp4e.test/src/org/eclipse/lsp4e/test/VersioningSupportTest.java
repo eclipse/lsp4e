@@ -12,8 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test;
 
-import static org.eclipse.lsp4e.test.TestUtils.numberOfChangesIs;
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.*;
 import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
@@ -29,6 +28,8 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.VersionedEdits;
 import org.eclipse.lsp4e.internal.DocumentUtil;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.FormattingOptions;
@@ -47,12 +48,10 @@ public class VersioningSupportTest {
 
 	private IProject project;
 
-
 	@Before
 	public void setUp() throws CoreException {
-		project = TestUtils.createProject("VersioningSupportTest"+System.currentTimeMillis());
+		project = TestUtils.createProject("VersioningSupportTest" + System.currentTimeMillis());
 	}
-
 
 	@Test
 	public void testVersionSupportSuccess() throws Exception {
@@ -121,5 +120,4 @@ public class VersioningSupportTest {
 
 		edits.apply();
 	}
-
 }

@@ -11,8 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.symbols;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.PopupDialog;
@@ -26,7 +24,7 @@ import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.LSSymbolsContentProvider;
 import org.eclipse.lsp4e.outline.LSSymbolsContentProvider.OutlineViewerInput;
-import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
+import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Range;
@@ -34,9 +32,20 @@ import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
+import org.eclipse.swt.events.MouseAdapter;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.dialogs.FilteredTree;
 import org.eclipse.ui.dialogs.PatternFilter;
 import org.eclipse.ui.internal.navigator.NavigatorContentService;
@@ -48,6 +57,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 	private final OutlineViewerInput outlineViewerInput;
 	private final ITextEditor textEditor;
+	private TreeViewer viewer;
 
 	public LSPSymbolInFileDialog(@NonNull Shell parentShell, @NonNull ITextEditor textEditor,
 			@NonNull IDocument document, @NonNull LanguageServerWrapper wrapper) {
@@ -63,7 +73,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		getShell().setText(NLS.bind(Messages.symbolsInFile, documentFile == null ? null : documentFile.getName()));
 
 		final var filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false);
-		TreeViewer viewer = filteredTree.getViewer();
+		viewer = filteredTree.getViewer();
 		viewer.setData(LSSymbolsContentProvider.VIEWER_PROPERTY_IS_QUICK_OUTLINE, Boolean.TRUE);
 
 		final var contentService = new NavigatorContentService(CNFOutlinePage.ID, viewer);
@@ -78,33 +88,77 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		viewer.setLabelProvider(new NavigatorDecoratingLabelProvider(contentService.createCommonLabelProvider()));
 		viewer.setUseHashlookup(true);
 
-		final var isFirstSelectionEvent = new AtomicBoolean(true);
-		viewer.addSelectionChangedListener(event -> {
-			// ignore the first selection event which is fired when the current editor
-			// selection is pre-selected in the tree view when the outline popup is opens
-			if (isFirstSelectionEvent.get()) {
-				isFirstSelectionEvent.set(false);
-				return;
-			}
+		final Tree tree = viewer.getTree();
 
-			final var selection = (IStructuredSelection) event.getSelection();
-			if (selection.isEmpty()) {
-				return;
+		tree.addKeyListener(new KeyListener() {
+			@Override
+			public void keyPressed(KeyEvent e)  {
+				if (e.character == SWT.ESC) {
+					close();
+				}
 			}
+			@Override
+			public void keyReleased(KeyEvent e) {
+				// do nothing
+			}
+		});
 
-			Object item = selection.getFirstElement();
-			if (item instanceof final Either<?, ?> either) {
-				item = either.get();
+		// listen to enter key or other platform-specific default selection events
+		tree.addSelectionListener(new SelectionListener() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				// do nothing
 			}
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+				gotoSelectedElement();
+			}
+		});
+
+		// listen to left mouse button's single click
+		tree.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseUp(MouseEvent e) {
+				if (tree.getSelectionCount() < 1 || e.button != 1) {
+					return;
+				}
+
+				if (tree.equals(e.getSource())) {
+					TreeItem selection= tree.getSelection()[0];
+					if (selection.equals(tree.getItem(new Point(e.x, e.y)))) {
+						gotoSelectedElement();
+					}
+				}
+			}
+		});
+
+		this.getShell().addDisposeListener(new DisposeListener() {
+
+			@Override
+			public void widgetDisposed(DisposeEvent e) {
+				viewer = null;
+			}
+		});
+
+		viewer.setInput(outlineViewerInput);
+		return filteredTree;
+	}
+
+	private void gotoSelectedElement() {
+		Object selectedElement= getSelectedElement();
+
+		if (selectedElement != null) {
+			close();
 
 			Range range = null;
-			if (item instanceof SymbolInformation symbolInformation) {
+			if (selectedElement instanceof SymbolInformation symbolInformation) {
 				range = symbolInformation.getLocation().getRange();
-			} else if (item instanceof DocumentSymbol documentSymbol) {
+			} else if (selectedElement instanceof DocumentSymbol documentSymbol) {
 				range = documentSymbol.getSelectionRange();
-			} else if (item instanceof DocumentSymbolWithFile documentSymbolWithFile) {
+			} else if (selectedElement instanceof DocumentSymbolWithURI documentSymbolWithFile) {
 				range = documentSymbolWithFile.symbol.getSelectionRange();
 			}
+
 			if (range != null) {
 				try {
 					int offset = LSPEclipseUtils.toOffset(range.getStart(), outlineViewerInput.document);
@@ -114,10 +168,28 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 					LanguageServerPlugin.logError(e);
 				}
 			}
-		});
+		}
+	}
 
-		viewer.setInput(outlineViewerInput);
-		return filteredTree;
+	private Object getSelectedElement() {
+		TreeViewer treeViewer = this.viewer;
+
+		if (treeViewer == null) {
+			return null;
+		}
+
+		IStructuredSelection selection = treeViewer.getStructuredSelection();
+		if (selection == null) {
+			return null;
+		}
+
+		Object selectedElement = selection.getFirstElement();
+
+		if (selectedElement instanceof Either<?, ?> either) {
+			selectedElement = either.get();
+		}
+
+		return selectedElement;
 	}
 
 	@Override

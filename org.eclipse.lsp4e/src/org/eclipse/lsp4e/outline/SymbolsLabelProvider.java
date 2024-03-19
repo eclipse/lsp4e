@@ -42,7 +42,7 @@ import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.internal.StyleUtil;
-import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithFile;
+import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.DocumentSymbol;
@@ -60,6 +60,7 @@ import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.internal.progress.ProgressManager;
 import org.eclipse.ui.navigator.ICommonContentExtensionSite;
 import org.eclipse.ui.navigator.ICommonLabelProvider;
+import org.eclipse.ui.progress.PendingUpdateAdapter;
 
 import com.google.common.collect.RangeMap;
 import com.google.common.collect.TreeRangeMap;
@@ -119,7 +120,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element == null){
 			return null;
 		}
-		if (element == LSSymbolsContentProvider.COMPUTING) {
+		if (element instanceof PendingUpdateAdapter) {
 			return JFaceResources.getImage(ProgressManager.WAITING_JOB_KEY);
 		}
 		if (element instanceof Throwable) {
@@ -135,16 +136,16 @@ public class SymbolsLabelProvider extends LabelProvider
 			res = LSPImages.imageFromSymbolKind(symbol.getKind());
 		} else if (element instanceof DocumentSymbol symbol) {
 			res = LSPImages.imageFromSymbolKind(symbol.getKind());
-		} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
-			res = LSPImages.imageFromSymbolKind(symbolWithFile.symbol.getKind());
+		} else if (element instanceof DocumentSymbolWithURI symbolWithURI) {
+			res = LSPImages.imageFromSymbolKind(symbolWithURI.symbol.getKind());
 		}
 		IResource file = null;
 		if (element instanceof SymbolInformation symbol) {
 			file = LSPEclipseUtils.findResourceFor(symbol.getLocation().getUri());
 		} else if (element instanceof WorkspaceSymbol symbol) {
 			file = LSPEclipseUtils.findResourceFor(getUri(symbol));
-		} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
-			file = LSPEclipseUtils.findResourceFor(symbolWithFile.uri);
+		} else if (element instanceof DocumentSymbolWithURI symbolWithURI) {
+			file = LSPEclipseUtils.findResourceFor(symbolWithURI.uri);
 		}
 		/*
 		 * Implementation node: for problem decoration,m aybe consider using a ILabelDecorator/IDelayedLabelDecorator?
@@ -157,8 +158,8 @@ public class SymbolsLabelProvider extends LabelProvider
 				range = symbol.getLocation().getLeft().getRange();
 			} else if (element instanceof DocumentSymbol documentSymbol) {
 				range = documentSymbol.getRange();
-			} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
-				range = symbolWithFile.symbol.getRange();
+			} else if (element instanceof DocumentSymbolWithURI symbolWithURI) {
+				range = symbolWithURI.symbol.getRange();
 			}
 			if (range != null) {
 				try {
@@ -251,7 +252,7 @@ public class SymbolsLabelProvider extends LabelProvider
 	@Override
 	public StyledString getStyledText(Object element) {
 
-		if (element == LSSymbolsContentProvider.COMPUTING) {
+		if (element instanceof PendingUpdateAdapter) {
 			return new StyledString(Messages.outline_computingSymbols);
 		}
 		if (element instanceof Throwable throwable) {
@@ -297,12 +298,12 @@ public class SymbolsLabelProvider extends LabelProvider
 			kind = documentSymbol.getKind();
 			detail = documentSymbol.getDetail();
 			deprecated = isDeprecated(documentSymbol.getTags()) || documentSymbol.getDeprecated() == null ? false: documentSymbol.getDeprecated();
-		} else if (element instanceof DocumentSymbolWithFile symbolWithFile) {
-			name = symbolWithFile.symbol.getName();
-			kind = symbolWithFile.symbol.getKind();
-			detail = symbolWithFile.symbol.getDetail();
-			location = symbolWithFile.uri;
-			deprecated = isDeprecated(symbolWithFile.symbol.getTags()) || symbolWithFile.symbol.getDeprecated() == null ? false: symbolWithFile.symbol.getDeprecated();
+		} else if (element instanceof DocumentSymbolWithURI symbolWithURI) {
+			name = symbolWithURI.symbol.getName();
+			kind = symbolWithURI.symbol.getKind();
+			detail = symbolWithURI.symbol.getDetail();
+			location = symbolWithURI.uri;
+			deprecated = isDeprecated(symbolWithURI.symbol.getTags()) || symbolWithURI.symbol.getDeprecated() == null ? false: symbolWithURI.symbol.getDeprecated();
 		}
 		if (name != null) {
 			if (deprecated) {
@@ -328,14 +329,14 @@ public class SymbolsLabelProvider extends LabelProvider
 		}
 		return res;
 	}
-	
+
 	private boolean isDeprecated(List<SymbolTag> tags) {
 		if(tags != null){
 			return tags.contains(SymbolTag.Deprecated);
 		}
 		return false;
 	}
-	
+
 	@Override
 	public void restoreState(IMemento aMemento) {
 	}

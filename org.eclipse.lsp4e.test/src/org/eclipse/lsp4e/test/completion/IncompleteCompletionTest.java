@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2022 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2024 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -12,7 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -42,7 +42,8 @@ import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CompletionItem;
@@ -208,7 +209,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	}
 
 	@Test
-	public void testCompletionWithAdditionalEdits() throws CoreException {
+	public void testCompletionWithAdditionalEditsBeforeOffsetInSameLine() throws CoreException {
 		List<CompletionItem> items = new ArrayList<>();
 		CompletionItem item = new CompletionItem("additionaEditsCompletion");
 		item.setKind(CompletionItemKind.Function);
@@ -237,6 +238,106 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 		String newContent = viewer.getDocument().get();
 		assertEquals("this <addOnText1> is <addOnText2> the main <MainInsertText> content of the file", newContent);
+	}
+
+	@Test
+	public void testCompletionWithAdditionalEditsBeforeAndAfterOffsetInSameLine() throws CoreException {
+		List<CompletionItem> items = new ArrayList<>();
+		CompletionItem item = new CompletionItem("additionaEditsCompletion");
+		item.setKind(CompletionItemKind.Function);
+		item.setInsertText("MainInsertText");
+
+		List<TextEdit> additionalTextEdits = new ArrayList<>();
+
+		TextEdit additionaEdit1 = new TextEdit(new Range(new Position(0, 6), new Position(0, 6)), "addOnText1");
+		TextEdit additionaEdit2 = new TextEdit(new Range(new Position(0, 24), new Position(0, 24)), "addOnText2");
+		additionalTextEdits.add(additionaEdit1);
+		additionalTextEdits.add(additionaEdit2);
+
+		item.setAdditionalTextEdits(additionalTextEdits);
+		items.add(item);
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
+
+		String content = "this <> is <> the main <> content of the file";
+		IFile testFile = TestUtils.createUniqueTestFile(project, content);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 12);
+		assertEquals(items.size(), proposals.length);
+		// TODO compare both structures
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
+		LSIncompleteCompletionProposal.apply(viewer.getDocument());
+
+		String newContent = viewer.getDocument().get();
+		assertEquals("this <addOnText1> is <MainInsertText> the main <addOnText2> content of the file", newContent);
+	}
+
+	@Test
+	public void testCompletionWithAdditionalEditsBeforeAndAfterOffsetInVariousLines() throws CoreException {
+		List<CompletionItem> items = new ArrayList<>();
+		CompletionItem item = new CompletionItem("additionaEditsCompletion");
+		item.setKind(CompletionItemKind.Function);
+		item.setInsertText("MainInsertText");
+
+		List<TextEdit> additionalTextEdits = new ArrayList<>();
+
+		TextEdit additionaEdit1 = new TextEdit(new Range(new Position(0, 6), new Position(0, 6)), "addOnText1");
+		TextEdit additionaEdit2 = new TextEdit(new Range(new Position(0, 24), new Position(0, 24)), "addOnText2");
+		TextEdit additionaEdit3 = new TextEdit(new Range(new Position(1, 9), new Position(1, 9)), "addOnText3");
+		additionalTextEdits.add(additionaEdit1);
+		additionalTextEdits.add(additionaEdit2);
+		additionalTextEdits.add(additionaEdit3);
+
+		item.setAdditionalTextEdits(additionalTextEdits);
+		items.add(item);
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
+
+		String content = "this <> is <> the main <> content of the file\nthis is <> the second line";
+		IFile testFile = TestUtils.createUniqueTestFile(project, content);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 12);
+		assertEquals(items.size(), proposals.length);
+		// TODO compare both structures
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
+		LSIncompleteCompletionProposal.apply(viewer.getDocument());
+
+		String newContent = viewer.getDocument().get();
+		assertEquals("this <addOnText1> is <MainInsertText> the main <addOnText2> content of the file\nthis is <addOnText3> the second line", newContent);
+	}
+
+	@Test
+	public void testCompletionWithAdditionalEditsBeforeAndAfterOffsetInVariousLinesAndTypedText() throws CoreException {
+		List<CompletionItem> items = new ArrayList<>();
+		CompletionItem item = new CompletionItem("additionaEditsCompletion");
+		item.setKind(CompletionItemKind.Function);
+		item.setInsertText("MainInsertText");
+
+		List<TextEdit> additionalTextEdits = new ArrayList<>();
+
+		TextEdit additionaEdit1 = new TextEdit(new Range(new Position(0, 6), new Position(0, 6)), "addOnText1");
+		TextEdit additionaEdit2 = new TextEdit(new Range(new Position(0, 24), new Position(0, 24)), "addOnText2");
+		TextEdit additionaEdit3 = new TextEdit(new Range(new Position(1, 9), new Position(1, 9)), "addOnText3");
+		additionalTextEdits.add(additionaEdit1);
+		additionalTextEdits.add(additionaEdit2);
+		additionalTextEdits.add(additionaEdit3);
+
+		item.setAdditionalTextEdits(additionalTextEdits);
+		items.add(item);
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
+
+		String content = "this <> is <Main> the main <> content of the file\nthis is <> the second line";
+		IFile testFile = TestUtils.createUniqueTestFile(project, content);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 12);
+		assertEquals(items.size(), proposals.length);
+		// TODO compare both structures
+		LSCompletionProposal LSIncompleteCompletionProposal = (LSCompletionProposal) proposals[0];
+		LSIncompleteCompletionProposal.apply(viewer.getDocument(), Character.MIN_VALUE, 16);
+
+		String newContent = viewer.getDocument().get();
+		assertEquals("this <addOnText1> is <MainInsertText> the main <addOnText2> content of the file\nthis is <addOnText3> the second line", newContent);
 	}
 
 	@Test
@@ -556,5 +657,28 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		String addInfo = completionProposal.getAdditionalProposalInfo(new NullProgressMonitor()); // check no exception is sent
 		assertFalse(addInfo.isEmpty());
 	}
+	
+	@Test
+	public void testIncompleteIndication() throws CoreException {
+		List<CompletionItem> items = new ArrayList<>();
+		items.add(createCompletionItem("FirstClass", CompletionItemKind.Class));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
+		IFile testFile = TestUtils.createUniqueTestFile(project, "");
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+
+		// without incomplete indication
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, 0);
+		assertEquals(1, proposals.length);
+
+		// with incomplete indication
+		LSContentAssistProcessor incompleIndicatingProcessor = new LSContentAssistProcessor(true, true);
+		ICompletionProposal[] proposalsWithIncompleteProposal = incompleIndicatingProcessor.computeCompletionProposals(viewer, 0);
+		assertEquals(2, proposalsWithIncompleteProposal.length);
+
+		// compare both proposal lists
+		assertEquals("FirstClass", proposals[0].getDisplayString());
+		assertEquals("FirstClass", proposalsWithIncompleteProposal[0].getDisplayString());
+		assertEquals("➕ Continue typing for more proposals...", proposalsWithIncompleteProposal[1].getDisplayString());
+	}
 }

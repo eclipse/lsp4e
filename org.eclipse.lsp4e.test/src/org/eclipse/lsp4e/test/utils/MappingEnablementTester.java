@@ -9,7 +9,7 @@
  * Contributors:
  *  Rastislav Wagner (Red Hat Inc.) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e.test.utils;
 
 import org.eclipse.core.expressions.PropertyTester;
 
@@ -21,5 +21,4 @@ public class MappingEnablementTester extends PropertyTester {
 	public boolean test(Object receiver, String property, Object[] args, Object expectedValue) {
 		return enabled;
 	}
-
 }

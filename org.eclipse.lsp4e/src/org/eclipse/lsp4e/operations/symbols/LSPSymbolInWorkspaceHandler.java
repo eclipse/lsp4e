@@ -17,6 +17,7 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
@@ -27,6 +28,7 @@ import org.eclipse.lsp4j.WorkspaceSymbol;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchSite;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPSymbolInWorkspaceHandler extends LSPDocumentAbstractHandler {
 
@@ -56,8 +58,11 @@ public class LSPSymbolInWorkspaceHandler extends LSPDocumentAbstractHandler {
 		if (site == null) {
 			return null;
 		}
-		final var dialog = new LSPSymbolInWorkspaceDialog(site.getShell(), project);
-		if (dialog.open() != IDialogConstants.OK_ID) {
+		var styleProvider = new BoldStylerProvider(site.getShell().getFont());
+		final var dialog = new LSPSymbolInWorkspaceDialog(site.getShell(), project, styleProvider);
+		int code = dialog.open();
+		styleProvider.dispose();
+		if (code != IDialogConstants.OK_ID) {
 			return null;
 		}
 		final var symbolInformation = ((WorkspaceSymbol) dialog.getFirstResult()).getLocation();
@@ -68,6 +73,11 @@ public class LSPSymbolInWorkspaceHandler extends LSPDocumentAbstractHandler {
 		}
 
 		return null;
+	}
+
+	@Override
+	protected void execute(ExecutionEvent event, ITextEditor textEditor) {
+		// not required here, see implementation above
 	}
 
 	@Override

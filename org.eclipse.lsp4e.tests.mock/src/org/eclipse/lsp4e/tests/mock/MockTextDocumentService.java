@@ -12,14 +12,17 @@
  *  Lucas Bullen (Red Hat Inc.) - Bug 508458 - Add support for codelens
  *  Pierre-Yves B. <pyvesdev@gmail.com> - Bug 525411 - [rename] input field should be filled with symbol to rename
  *  Rubén Porras Campo (Avaloq Evolution AG) - Add support for willSaveWaitUntil.
+ *  Joao Dinis Ferreira (Avaloq Group AG) - Add support for position-dependent mock document highlights
  *******************************************************************************/
 package org.eclipse.lsp4e.tests.mock;
 
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
@@ -49,6 +52,8 @@ import org.eclipse.lsp4j.DocumentOnTypeFormattingParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
+import org.eclipse.lsp4j.FoldingRange;
+import org.eclipse.lsp4j.FoldingRangeRequestParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
 import org.eclipse.lsp4j.LinkedEditingRangeParams;
@@ -92,7 +97,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private SignatureHelp mockSignatureHelp;
 	private List<CodeLens> mockCodeLenses;
 	private List<DocumentLink> mockDocumentLinks;
-	private List<? extends DocumentHighlight> mockDocumentHighlights;
+	private Map<Position, List<? extends DocumentHighlight>> mockDocumentHighlights;
 	private LinkedEditingRanges mockLinkedEditingRanges;
 
 	private CompletableFuture<DidOpenTextDocumentParams> didOpenCallback;
@@ -103,7 +108,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	private Function<?, ? extends CompletableFuture<?>> _futureFactory;
 	private List<LanguageClient> remoteProxies;
-	private Location mockReferences;
+	private Location[] mockReferences = new Location[0];
 	private List<Diagnostic> diagnostics;
 	private List<Either<Command, CodeAction>> mockCodeActions;
 	private List<ColorInformation> mockDocumentColors;
@@ -111,6 +116,8 @@ public class MockTextDocumentService implements TextDocumentService {
 	private Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior> mockPrepareRenameResult;
 	private List<DocumentSymbol> documentSymbols;
 	private SemanticTokens mockSemanticTokens;
+	private List<FoldingRange> foldingRanges;
+	public int codeActionRequests = 0;
 
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
@@ -123,6 +130,7 @@ public class MockTextDocumentService implements TextDocumentService {
 				.forSecond(new PrepareRenameResult(new Range(new Position(0, 0), new Position(0, 0)), "placeholder"));
 		this.remoteProxies = new ArrayList<>();
 		this.documentSymbols = Collections.emptyList();
+		this.codeActionRequests = 0;
 	}
 
 	private <U> CompletableFuture<U> futureFactory(U value) {
@@ -157,12 +165,14 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
-		return futureFactory(Collections.singletonList(this.mockReferences));
+		return futureFactory(Arrays.asList(this.mockReferences));
 	}
 
 	@Override
-	public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(DocumentHighlightParams position) {
-		return CompletableFuture.completedFuture(mockDocumentHighlights);
+	public CompletableFuture<List<? extends DocumentHighlight>> documentHighlight(DocumentHighlightParams params) {
+		return CompletableFuture.completedFuture((mockDocumentHighlights != null) //
+				? mockDocumentHighlights.getOrDefault(params.getPosition(), Collections.emptyList())
+				: null);
 	}
 
 	@Override
@@ -187,7 +197,8 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
-		return CompletableFuture.completedFuture(this.mockCodeActions);
+		codeActionRequests++;
+		return futureFactory(this.mockCodeActions);
 	}
 
 	@Override
@@ -254,6 +265,13 @@ public class MockTextDocumentService implements TextDocumentService {
 				Collections.rotate(this.remoteProxies, 1);
 			}
 		}
+//		if (this.foldingRanges != null && !this.foldingRanges.isEmpty()) {
+//			synchronized (this.remoteProxies) {
+//				// and we synchronize to avoid concurrent read/write on the list
+//				this.remoteProxies.get(0).foldpublishDiagnostics(
+//						new PublishDiagnosticsParams(params.getTextDocument().getUri(), this.diagnostics));
+//				Collections.rotate(this.remoteProxies, 1);
+//		}
 	}
 
 	@Override
@@ -337,8 +355,8 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockDefinitionLocations = definitionLocations;
 	}
 
-	public void setMockReferences(Location location) {
-		this.mockReferences = location;
+	public void setMockReferences(Location... locations) {
+		this.mockReferences = locations;
 	}
 
 	public void setMockFormattingTextEdits(List<? extends TextEdit> formattingTextEdits) {
@@ -360,6 +378,8 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockCodeActions = new ArrayList<>();
 		this.mockRenameEdit = null;
 		this.documentSymbols = Collections.emptyList();
+		this.foldingRanges = new ArrayList<>();
+		this.codeActionRequests = 0;
 	}
 
 	public void setDiagnostics(List<Diagnostic> diagnostics) {
@@ -378,7 +398,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockSignatureHelp = signatureHelp;
 	}
 
-	public void setDocumentHighlights(List<? extends DocumentHighlight> documentHighlights) {
+	public void setDocumentHighlights(Map<Position, List<? extends DocumentHighlight>> documentHighlights) {
 		this.mockDocumentHighlights = documentHighlights;
 	}
 
@@ -436,5 +456,14 @@ public class MockTextDocumentService implements TextDocumentService {
 			new TypeHierarchyItem("X" + params.getItem().getName(), SymbolKind.Class, params.getItem().getUri() + "/X", DUMMY_RANGE, DUMMY_RANGE, null),
 			new TypeHierarchyItem("Y" + params.getItem().getName(), SymbolKind.Class, params.getItem().getUri() + "/Y", DUMMY_RANGE, DUMMY_RANGE, null)
 		));
+	}
+
+	public void setFoldingRanges(List<FoldingRange> foldingRanges) {
+		this.foldingRanges = foldingRanges;
+	}
+
+	@Override
+	public CompletableFuture<List<FoldingRange>> foldingRange(FoldingRangeRequestParams params) {
+		return CompletableFuture.completedFuture(this.foldingRanges);
 	}
 }

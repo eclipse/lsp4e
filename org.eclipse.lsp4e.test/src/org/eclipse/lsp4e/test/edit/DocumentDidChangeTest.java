@@ -12,8 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.eclipse.lsp4e.test.TestUtils.numberOfChangesIs;
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -28,8 +27,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
@@ -51,7 +50,7 @@ public class DocumentDidChangeTest {
 
 	@Before
 	public void setUp() throws CoreException {
-		project = TestUtils.createProject("DocumentDidChangeTest"+System.currentTimeMillis());
+		project = TestUtils.createProject("DocumentDidChangeTest" + System.currentTimeMillis());
 	}
 
 	@Test
@@ -243,7 +242,6 @@ public class DocumentDidChangeTest {
 		assertEquals("Hello World", change0.getText());
 	}
 
-
 	private TextDocumentSyncKind getDocumentSyncKind(ServerCapabilities t) {
 		TextDocumentSyncKind syncKind = null;
 		if (t.getTextDocumentSync().isLeft()) {
@@ -253,5 +251,4 @@ public class DocumentDidChangeTest {
 		}
 		return syncKind;
 	}
-
 }

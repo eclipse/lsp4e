@@ -65,9 +65,11 @@ public class DSPThread extends DSPDebugElement implements IThread {
 	 */
 	public void update(Thread thread) {
 		Assert.isTrue(Objects.equals(this.id, thread.getId()));
-		this.name = thread.getName();
+		if (!Objects.equals(this.name, thread.getName())) {
+			fireChangeEvent(DebugEvent.STATE);
+			this.name = thread.getName();
+		}
 		refreshFrames.set(true);
-		// fireChangeEvent(DebugEvent.STATE);
 	}
 
 	@Override
@@ -101,7 +103,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 	public void stopped() {
 		isSuspended = true;
 		stepping = false;
-		refreshFrames.set(true);
+		frames.clear();
 	}
 
 	@Override
@@ -226,8 +228,10 @@ public class DSPThread extends DSPDebugElement implements IThread {
 		}
 	}
 
-	@Override
-	public IStackFrame[] getStackFrames() throws DebugException {
+	@Override public IStackFrame[] getStackFrames() throws DebugException {
+		if (!isSuspended()) {
+			return new IStackFrame[0];
+		}
 		if (!refreshFrames.getAndSet(false)) {
 			synchronized (frames) {
 				return frames.toArray(new DSPStackFrame[frames.size()]);

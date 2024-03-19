@@ -8,10 +8,10 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Joao Dinis Ferreira (Avaloq Group AG) - Create splitActiveEditor
  *******************************************************************************/
-package org.eclipse.lsp4e.test;
+package org.eclipse.lsp4e.test.utils;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
@@ -31,6 +32,8 @@ import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -48,7 +51,6 @@ import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.part.FileEditorInput;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
@@ -63,7 +65,7 @@ public class TestUtils {
 		boolean isMet() throws Exception;
 	}
 
-	private static Set<File> tempFiles = new HashSet<>();
+	private static final Set<File> tempFiles = new HashSet<>();
 
 	private TestUtils() {
 		// this class shouldn't be instantiated
@@ -84,19 +86,32 @@ public class TestUtils {
 		return part;
 	}
 	
+	public static List<IEditorReference> splitActiveEditor() {
+		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
+		IWorkbenchPage page = workbenchWindow.getActivePage();
+		IEditorPart part = page.getActiveEditor();
+		
+		MPart editorPart = part.getSite().getService(MPart.class);
+		if (editorPart != null) {
+			editorPart.getTags().add(IPresentationEngine.SPLIT_HORIZONTAL);
+		}
+		
+		return Arrays.asList(page.getEditorReferences());
+	}
+	
 	public static IEditorPart openExternalFileInEditor(File file) throws PartInitException {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
-		IWorkbenchPage page = workbenchWindow.getActivePage();	
+		IWorkbenchPage page = workbenchWindow.getActivePage();
 		IEditorPart part = IDE.openEditor(page, file.toURI(), "org.eclipse.ui.genericeditor.GenericEditor", false);
 		part.setFocus();
 		return part;
 	}
 
-	public static IEditorPart getEditor(IFile file) throws PartInitException {
+	public static IEditorPart getEditor(IFile file) {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
 		IEditorInput input = new FileEditorInput(file);
-		
+
 		return Arrays.asList(page.getEditorReferences()).stream()
 			.filter(r -> {
 				try {
@@ -109,7 +124,7 @@ public class TestUtils {
 			.findAny().orElse(null);
 	}
 
-	public static IEditorPart getActiveEditor() throws PartInitException {
+	public static IEditorPart getActiveEditor() {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
 		return page.getActiveEditor();
@@ -166,6 +181,11 @@ public class TestUtils {
 	public static synchronized IFile createUniqueTestFile(IProject p, String extension, String content)
 			throws CoreException {
 		long fileNameSalt = System.currentTimeMillis();
+		if (p == null) {
+			p = ResourcesPlugin.getWorkspace().getRoot().getProject(Long.toString(fileNameSalt));
+			p.create(null);
+			p.open(null);
+		}
 		while (p.getFile("test" + fileNameSalt + '.' + extension).exists()) {
 			fileNameSalt++;
 		}
@@ -241,8 +261,7 @@ public class TestUtils {
 				.filter(Shell::isVisible)
 				.filter(shell -> !beforeShells.contains(shell))
 				.toArray(Shell[]::new);
-		assertEquals("No new shell found", 1, afterShells.length);
-		return afterShells[0];
+		return afterShells.length > 0 ? afterShells[0] : null;
 	}
 
 	public static Table findCompletionSelectionControl(Widget control) {
@@ -271,21 +290,20 @@ public class TestUtils {
 	}
 
 	public static void waitForAndAssertCondition(int timeout_ms, Condition condition) {
-		assertTrue("Condition not met within expected time.",
-				waitForCondition(timeout_ms, condition));
+		waitForAndAssertCondition("Condition not met within expected time.", timeout_ms, condition);
 	}
 
 	public static void waitForAndAssertCondition(int timeout_ms, Display display, Condition condition) {
-		assertTrue("Condition not met within expected time.",
-				waitForCondition(timeout_ms, display, condition));
+		waitForAndAssertCondition("Condition not met within expected time.", timeout_ms, display, condition);
 	}
 
 	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Condition condition) {
-		assertTrue(errorMessage, waitForCondition(timeout_ms, condition));
+		waitForAndAssertCondition(errorMessage, timeout_ms, UI.getDisplay(), condition);
 	}
 
-	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Display display, Condition condition) {
-		var ex = new Exception[1];
+	public static void waitForAndAssertCondition(String errorMessage, int timeout_ms, Display display,
+			Condition condition) {
+		var ex = new Throwable[1];
 		var isConditionMet = new DisplayHelper() {
 			@Override
 			protected boolean condition() {
@@ -293,7 +311,7 @@ public class TestUtils {
 					var isMet = condition.isMet();
 					ex[0] = null;
 					return isMet;
-				} catch (Exception e) {
+				} catch (AssertionError | Exception e) {
 					ex[0] = e;
 					return false;
 				}
@@ -301,17 +319,23 @@ public class TestUtils {
 		}.waitForCondition(display, timeout_ms, 50);
 		if (ex[0] != null) {
 			// if the condition was not met because of an exception throw it
+			if (ex[0] instanceof AssertionError ae) {
+				throw ae;
+			}
+			if (ex[0] instanceof RuntimeException re) {
+				throw re;
+			}
 			throw new AssertionError(errorMessage, ex[0]);
 		}
 		assertTrue(errorMessage, isConditionMet);
 	}
 
 	public static boolean waitForCondition(int timeout_ms, Condition condition) {
-		return waitForCondition(timeout_ms, PlatformUI.getWorkbench().getDisplay(), condition);
+		return waitForCondition(timeout_ms, UI.getDisplay(), condition);
 	}
 
 	public static boolean waitForCondition(int timeout_ms, Display display, Condition condition) {
-		var ex = new Exception[1];
+		var ex = new Throwable[1];
 		var isConditionMet = new DisplayHelper() {
 			@Override
 			protected boolean condition() {
@@ -319,7 +343,7 @@ public class TestUtils {
 					var isMet = condition.isMet();
 					ex[0] = null;
 					return isMet;
-				} catch (Exception e) {
+				} catch (AssertionError | Exception e) {
 					ex[0] = e;
 					return false;
 				}
@@ -338,7 +362,7 @@ public class TestUtils {
 			protected boolean condition() {
 				return !server.isRunning();
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 1000));
+		}.waitForCondition(UI.getDisplay(), 1000));
 	}
 
 	public static class JobSynchronizer extends NullProgressMonitor {
@@ -347,8 +371,8 @@ public class TestUtils {
 		@Override
 		public void done() {
 			latch.countDown();
-
 		}
+
 		@Override
 		public void setCanceled(boolean cancelled) {
 			super.setCanceled(cancelled);

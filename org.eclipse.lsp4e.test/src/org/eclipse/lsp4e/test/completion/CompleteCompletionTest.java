@@ -12,7 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -27,7 +27,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -43,7 +45,8 @@ import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.completion.LSCompletionProposal;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.MockConnectionProvider;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Command;
@@ -65,6 +68,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.ui.PartInitException;
+import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Test;
 
 import com.google.gson.JsonPrimitive;
@@ -396,7 +400,53 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		assertEquals(1, proposals.length);
 		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
 		assertEquals("foo and foo", viewer.getDocument().get());
-		// TODO check link edit groups
+		// check linked edit groups
+		viewer.getTextWidget().insert("a");
+		assertEquals("a and a", viewer.getDocument().get());
+	}
+
+	@Test
+	public void testComplexSnippets() throws PartInitException, CoreException {
+		Map<String, String> tests = Map.ofEntries(
+				// Variables and escaped dollars
+				Map.entry("$TM_LINE_NUMBER - \\$TM_LINE_NUMBER - ${TM_LINE_NUMBER} - \\${TM_LINE_NUMBER}", "1 - $TM_LINE_NUMBER - 1 - ${TM_LINE_NUMBER}"),
+				// Default values for variables
+				Map.entry("${TM_SELECTED_TEXT:defaultval}", "defaultval"),
+				// Escaped dollars
+				Map.entry("\\$1 and \\$", "$1 and $"),
+				// Escaped escapes
+				Map.entry("\\\\$1 and ${3:foo}", "\\ and foo"),
+				// Escaped values in a choice
+				Map.entry("${2|a\\,b\\},c|}", "a,b}"),
+				// Snippets with syntax errors: Make sure they don't cause endless loops or crashes
+				Map.entry("$", "$"),
+				Map.entry("${", "${"),
+				Map.entry("$$", "$$"),
+				Map.entry("$$TM_LINE_NUMBER", "$1"),
+				Map.entry("${VARIABLE", "${VARIABLE"),
+				Map.entry("${VARIABLE:", "${VARIABLE:"),
+				Map.entry("${VARIABLE:foo", "${VARIABLE:foo"),
+				Map.entry("${1|a", "${1|a"),
+				Map.entry("${1|a,}", "${1|a,}")
+		);
+		for (Map.Entry<String, String> entry : tests.entrySet()) {
+			CompletionItem completionItem = createCompletionItem(
+					entry.getKey(),
+					CompletionItemKind.Class,
+					new Range(new Position(0, 0), new Position(0, 1))
+			);
+			completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
+			MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, Collections.singletonList(completionItem)));
+			ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,""));
+			int invokeOffset = 0;
+			ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+			assertEquals(1, proposals.length);
+			((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
+			assertEquals(
+					entry.getValue(),
+					viewer.getDocument().get());
+
+		}
 	}
 
 	@Test
@@ -512,5 +562,31 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		assertEquals(1, proposals.length);
 		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
 		assertEquals("a\n\tb\n\tline1\n\tline2\nc", viewer.getDocument().get());
+	}
+
+	@Test
+	public void testAdjustIndentationWithPrefixInLine() throws Exception {
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "a\n\tb\n\tprefix\nc"));
+		CompletionItem item = new CompletionItem("line1\n\tline2\nline3");
+		item.setInsertTextMode(InsertTextMode.AdjustIndentation);
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, List.of(item)));
+		int invokeOffset = 12;
+		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
+		assertEquals(1, proposals.length);
+		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
+		assertEquals("a\n\tb\n\tprefixline1\n\t\tline2\n\tline3\nc", viewer.getDocument().get());
+	}
+
+	@Test
+	public void testCancellation() throws Exception {
+		MockConnectionProvider.cancellations.clear();
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "a\n\tb\n\t\nc"));
+		CompletionItem item = new CompletionItem("a");
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, List.of(item)));
+		MockLanguageServer.INSTANCE.setTimeToProceedQueries(10000);
+		CompletableFuture.runAsync(() -> contentAssistProcessor.computeCompletionProposals(viewer, 1));
+		Thread.sleep(500);
+		CompletableFuture.runAsync(() -> contentAssistProcessor.computeCompletionProposals(viewer, 1));
+		DisplayHelper.waitAndAssertCondition(viewer.getTextWidget().getDisplay(), () -> assertEquals(1, MockConnectionProvider.cancellations.size()));
 	}
 }

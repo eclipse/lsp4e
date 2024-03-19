@@ -13,7 +13,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.rename;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -43,8 +43,8 @@ import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.rename.LSPRenameProcessor;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
@@ -80,32 +80,35 @@ public class RenameTest {
 		editor.selectAndReveal(1, 0);
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
-		assertTrue(command.isEnabled());
+
+		waitForAndAssertCondition(2_000, () -> command.isEnabled());
 		assertTrue(command.isHandled());
 	}
 
 	@Test
 	public void testAsyncRenameHandlerEnablement() throws Exception {
-		long delay = 2000;
+		final int delay = 2_000;
 		// this fixed value is not really an optimal solution, since it depends on the following things
 		// to happen within that time frame. Should maybe re-work this in the future towards a more
 		// precise way of steering the execution from the test here
-
 		MockLanguageServer.INSTANCE.setTimeToProceedQueries(delay);
 
-		IProject project = TestUtils.createProject("blah");
-		IFile file = TestUtils.createUniqueTestFile(project, "old");
-		ITextEditor editor = (ITextEditor) TestUtils.openEditor(file);
-		editor.selectAndReveal(1, 0);
-		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
-		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
-		assertFalse(command.isEnabled() && command.isHandled());
+		try {
+			IProject project = TestUtils.createProject("blah");
+			IFile file = TestUtils.createUniqueTestFile(project, "old");
+			ITextEditor editor = (ITextEditor) TestUtils.openEditor(file);
+			editor.selectAndReveal(1, 0);
 
-		Thread.sleep(delay * 3);
+			ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
+			Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
+			assertFalse(command.isEnabled());
 
-		// Put back so shutdown doesn't time out
-		MockLanguageServer.INSTANCE.setTimeToProceedQueries(0);
-		assertTrue(command.isEnabled() && command.isHandled());
+			waitForAndAssertCondition(3 * delay, () -> command.isEnabled());
+			assertTrue(command.isHandled());
+		} finally {
+			// Put back so shutdown doesn't time out
+			MockLanguageServer.INSTANCE.setTimeToProceedQueries(0);
+		}
 	}
 
 	@Test
@@ -266,7 +269,7 @@ public class RenameTest {
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
 		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
-		
+
 		try {
 			processor.checkInitialConditions(new NullProgressMonitor());
 		} catch (CoreException e) {
@@ -285,7 +288,7 @@ public class RenameTest {
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
 		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
-		
+
 		try {
 			processor.checkInitialConditions(new NullProgressMonitor());
 		} catch (CoreException e) {

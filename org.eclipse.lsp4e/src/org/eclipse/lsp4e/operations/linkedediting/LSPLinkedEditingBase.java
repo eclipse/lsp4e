@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.linkedediting;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -33,7 +34,7 @@ import org.eclipse.lsp4j.TextDocumentPositionParams;
 public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 	public static final String LINKED_EDITING_PREFERENCE = "org.eclipse.ui.genericeditor.linkedediting"; //$NON-NLS-1$
 
-	private CompletableFuture<Void> request;
+	private CompletableFuture<List<LinkedEditingRanges>> request;
 	protected boolean fEnabled;
 
 	protected void install() {
@@ -56,10 +57,10 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 		}
 		try {
 			TextDocumentPositionParams params = LSPEclipseUtils.toTextDocumentPosistionParams(offset, document);
-			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getLinkedEditingRangeProvider)
+			request = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getLinkedEditingRangeProvider)
 					.collectAll(languageServer -> languageServer.getTextDocumentService()
-							.linkedEditingRange(LSPEclipseUtils.toLinkedEditingRangeParams(params)))
-					.thenApply(linkedEditRanges -> linkedEditRanges.stream().filter(Objects::nonNull)
+							.linkedEditingRange(LSPEclipseUtils.toLinkedEditingRangeParams(params)));
+			return request.thenApply(linkedEditRanges -> linkedEditRanges.stream().filter(Objects::nonNull)
 							.filter(linkedEditRange -> rangesContainOffset(linkedEditRange, offset, document)).findFirst());
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
@@ -80,7 +81,7 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 	 * Cancel the last call of 'linkedEditing'.
 	 */
 	private void cancel() {
-		if (request != null && !request.isDone()) {
+		if (request != null) {
 			request.cancel(true);
 			request = null;
 		}

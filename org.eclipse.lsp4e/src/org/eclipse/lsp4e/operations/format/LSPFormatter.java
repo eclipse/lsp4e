@@ -68,7 +68,7 @@ public class LSPFormatter {
 		});
 	}
 
-	private DocumentFormattingParams getFullFormatParams(FormattingOptions formatOptions,
+	public static DocumentFormattingParams getFullFormatParams(FormattingOptions formatOptions,
 			TextDocumentIdentifier docId) {
 		DocumentFormattingParams params = new DocumentFormattingParams();
 		params.setTextDocument(docId);
@@ -76,7 +76,7 @@ public class LSPFormatter {
 		return params;
 	}
 
-	private DocumentRangeFormattingParams getRangeFormattingParams(IDocument document, ITextSelection textSelection,
+	public static DocumentRangeFormattingParams getRangeFormattingParams(IDocument document, ITextSelection textSelection,
 			FormattingOptions formatOptions, TextDocumentIdentifier docId) throws BadLocationException {
 		DocumentRangeFormattingParams rangeParams = new DocumentRangeFormattingParams();
 		rangeParams.setTextDocument(docId);
@@ -90,18 +90,18 @@ public class LSPFormatter {
 		return rangeParams;
 	}
 
-	private FormattingOptions getFormatOptions() {
+	public static FormattingOptions getFormatOptions() {
 		IPreferenceStore store = EditorsUI.getPreferenceStore();
 		int tabWidth = store.getInt(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_TAB_WIDTH);
 		boolean insertSpaces = store.getBoolean(AbstractDecoratedTextEditorPreferenceConstants.EDITOR_SPACES_FOR_TABS);
 		return new FormattingOptions(tabWidth, insertSpaces);
 	}
 
-	private static boolean isDocumentRangeFormattingSupported(ServerCapabilities capabilities) {
+	public static boolean isDocumentRangeFormattingSupported(ServerCapabilities capabilities) {
 		return LSPEclipseUtils.hasCapability(capabilities.getDocumentRangeFormattingProvider());
 	}
 
-	private static boolean isDocumentFormattingSupported(ServerCapabilities capabilities) {
+	public static boolean isDocumentFormattingSupported(ServerCapabilities capabilities) {
 		return LSPEclipseUtils.hasCapability(capabilities.getDocumentFormattingProvider());
 	}
 

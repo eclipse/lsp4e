@@ -31,8 +31,8 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.declaration.LSBasedHyperlink;
 import org.eclipse.lsp4e.operations.declaration.OpenDeclarationHyperlinkDetector;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Location;
@@ -86,9 +86,8 @@ public class DefinitionTest {
 		Set<String> uris = Arrays.stream(hyperlinks).map(LSBasedHyperlink.class::cast).map(LSBasedHyperlink::getLocation).map(location -> {
 			if (location.isLeft()) {
 				return location.getLeft().getUri();
-			} else {
-				return location.getRight().getTargetUri();
 			}
+			return location.getRight().getTargetUri();
 		}).collect(Collectors.toSet());
 		assertTrue(uris.contains("file://testDefinition"));
 		assertTrue(uris.contains("file://testTypeDefinition"));

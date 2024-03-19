@@ -34,12 +34,9 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.ui.Messages;
-import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
-import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.ui.internal.progress.ProgressInfoItem;
@@ -104,29 +101,12 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 			return false;
 		}
 		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPCodeActionMarkerResolution::providesCodeActions);
-		if (!executor.anyMatching()) {
-			return false;
-		}
-
-		CodeActionParams params = prepareCodeActionParams(document, invocationContext.getOffset(), invocationContext.getLength());
-
-		try {
-			CompletableFuture<List<Either<Command, CodeAction>>> anyActions = executor.collectAll(ls -> ls.getTextDocumentService().codeAction(params)).thenApply(s -> s.stream().flatMap(List::stream).toList());
-			if (anyActions.get(200, TimeUnit.MILLISECONDS).stream().noneMatch(LSPCodeActionMarkerResolution::canPerform)) {
-				return false;
-			}
-		} catch (InterruptedException | ExecutionException | TimeoutException e) {
-			LanguageServerPlugin.logError(e);
-			return false;
-		}
-
-		return true;
+		return executor.anyMatching();
 	}
 
 	@Override
 	public ICompletionProposal[] computeQuickAssistProposals(IQuickAssistInvocationContext invocationContext) {
 		IDocument document = invocationContext.getSourceViewer().getDocument();
-
 		if (document == null) {
 			return NO_PROPOSALS;
 		}
@@ -135,51 +115,57 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 			return NO_PROPOSALS;
 		}
 
-		// If context has changed, i.e. neq quick assist invocation rather than old
+		// If context has changed, i.e. new quick assist invocation rather than old
 		// proposals computed and calling this method artificially to show proposals in
 		// the UI
-		boolean proposalsRefreshInProgress = false;
+		boolean needNewQuery = true;
 		synchronized (lock) {
-			if (cachedContext != invocationContext) {
+			needNewQuery = cachedContext == null || invocationContext == null ||
+				cachedContext.getClass() != invocationContext.getClass() ||
+				cachedContext.getSourceViewer() != invocationContext.getSourceViewer() ||
+				cachedContext.getOffset() != invocationContext.getOffset() ||
+				cachedContext.getLength() != invocationContext.getLength();
+				// should also check whether (same) document content changed
+			if (needNewQuery) {
 				cachedContext = invocationContext;
-				proposals.clear();
-			} else {
-				proposalsRefreshInProgress = true;
-				proposals.remove(COMPUTING);
 			}
 		}
 
-		// Get the codeActions
-		CodeActionParams params = prepareCodeActionParams(document, invocationContext.getOffset(), invocationContext.getLength());
-		List<CompletableFuture<Void>> futures = Collections.emptyList();
-		try {
+		if (needNewQuery) {
+			// Get the codeActions
+			CodeActionParams params = prepareCodeActionParams(document, invocationContext.getOffset(), invocationContext.getLength());
 			// Prevent infinite re-entrance by only computing proposals if there aren't any
-			if (!proposalsRefreshInProgress) {
-				proposals.clear();
-				// Start all the servers computing actions - each server will append any code actions to the ongoing list of proposals
-				// as a side effect of this request
-				futures = executor.computeAll((w, ls) -> ls.getTextDocumentService()
-						.codeAction(params)
-						.thenAccept(actions -> LanguageServers.streamSafely(actions)
-								.filter(LSPCodeActionMarkerResolution::canPerform)
-								.forEach(action -> processNewProposal(invocationContext, new CodeActionCompletionProposal(action, w)))));
+			proposals.clear();
+			// Start all the servers computing actions - each server will append any code actions to the ongoing list of proposals
+			// as a side effect of this request
+			List<CompletableFuture<Void>> futures = executor.computeAll((w, ls) -> ls.getTextDocumentService()
+					.codeAction(params)
+					.thenAccept(actions -> LanguageServers.streamSafely(actions)
+							.filter(LSPCodeActionMarkerResolution::canPerform)
+							.forEach(action -> processNewProposal(invocationContext, new CodeActionCompletionProposal(action, w)))));
 
-				CompletableFuture<?> aggregateFutures = CompletableFuture
-						.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+			CompletableFuture<?> aggregateFutures = CompletableFuture
+					.allOf(futures.toArray(new CompletableFuture[futures.size()]));
 
-				// If the result completes quickly without blocking the UI, then return result directly
-				aggregateFutures.get(200, TimeUnit.MILLISECONDS);
+			try {
+					// If the result completes quickly without blocking the UI, then return result directly
+					aggregateFutures.get(200, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException | ExecutionException e) {
+				LanguageServerPlugin.logError(e);
+			} catch (TimeoutException e) {
+				// Server calls didn't complete in time;  those that did will have added their results to <code>this.proposals</code> and can be returned
+				// as an intermediate result; as we're returning control to the UI, we need any stragglers to trigger a refresh when they arrive later on
+				proposals.add(COMPUTING);
+				for (CompletableFuture<Void> future : futures) {
+					// Refresh will effectively re-enter this method with the same invocationContext and already computed proposals simply to show the proposals in the UI
+					future.whenComplete((r, t) -> {
+						if (futures.stream().allMatch(CompletableFuture::isDone)) {
+							proposals.remove(COMPUTING);
+						}
+						this.refreshProposals(invocationContext);
+					});
+				}
 			}
-		} catch (InterruptedException | ExecutionException e) {
-			LanguageServerPlugin.logError(e);
-		} catch (TimeoutException e) {
-			// Server calls didn't complete in time;  those that did will have added their results to <code>this.proposals</code> and can be returned
-			// as an intermediate result; as we're returning control to the UI, we need any stragglers to trigger a refresh when they arrive later on
-			for (CompletableFuture<Void> future : futures) {
-				// Refresh will effectively re-enter this method with the same invocationContext and already computed proposals simply to show the proposals in the UI
-				future.whenComplete((r, t) -> this.refreshProposals(invocationContext));
-			}
-			proposals.add(COMPUTING);
 		}
 		return proposals.toArray(new ICompletionProposal[proposals.size()]);
 	}

@@ -6,19 +6,16 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<tycho-version>3.0.4</tycho-version>
-		<sonar.jacoco.reportPath>../target/jacoco.exec</sonar.jacoco.reportPath>
+		<tycho-version>4.0.6</tycho-version>
 		<tycho.scmUrl>scm:git:https://github.com/eclipse/lsp4e.git</tycho.scmUrl>
 		<ui.test.vmargs></ui.test.vmargs>
-		<target-config>target-platform-latest</target-config>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jgit.dirtyWorkingTree>error</jgit.dirtyWorkingTree>
-		<enforcer.plugin.version>3.3.0</enforcer.plugin.version>
+		<enforcer.plugin.version>3.4.1</enforcer.plugin.version>
 		<maven-enforcer-rule.version>3.6.3</maven-enforcer-rule.version>
 	</properties>
 
 	<modules>
-		<module>target-platforms/target-platform-latest</module>
 		<module>org.eclipse.lsp4e</module>
 		<module>org.eclipse.lsp4e.jdt</module>
 		<module>org.eclipse.lsp4e.debug</module>
@@ -62,11 +59,7 @@
 				<version>${tycho-version}</version>
 				<configuration>
 					<target>
-						<artifact>
-							<groupId>${project.groupId}</groupId>
-							<artifactId>${target-config}</artifactId>
-							<version>0.13.1-SNAPSHOT</version>
-						</artifact>
+						<file>${maven.multiModuleProjectDirectory}/target-platforms/target-platform-latest/target-platform-latest.target</file>
 					</target>
 					<environments>
 						<environment>
@@ -103,7 +96,6 @@
 			<plugin>
 				<groupId>org.eclipse.tycho</groupId>
 				<artifactId>tycho-packaging-plugin</artifactId>
-				<version>${tycho-version}</version>
 				<configuration>
 					<sourceReferences>
 						<generate>true</generate>
@@ -132,27 +124,9 @@
 							<baselines>
 								<url>http://download.eclipse.org/lsp4e/releases/latest</url>
 							</baselines>
-							<comparator>zip</comparator>
 						</configuration>
 					</execution>
 				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.jacoco</groupId>
-				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.10</version>
-				<executions>
-					<execution>
-						<goals><goal>prepare-agent</goal></goals>
-					</execution>
-				</executions>
-				<configuration>
-					<append>true</append>
-					<destFile>${sonar.jacoco.reportPath}</destFile>
-					<includes>
-						<include>org.eclipse.lsp4e*</include>
-					</includes>
-				</configuration>
 			</plugin>
 		</plugins>
 		<pluginManagement>
@@ -192,13 +166,25 @@
 
 	<profiles>
 		<profile>
+			<!-- This profile prevents local maven builds from failing if uncommitted changes are present -->
+			<id>local-dev</id>
+			<activation>
+				<property>
+					<name>!env.CI</name>
+				</property>
+			</activation>
+			<properties>
+				<jgit.dirtyWorkingTree>warning</jgit.dirtyWorkingTree>
+			</properties>
+		</profile>
+		<profile>
 			<id>sign</id>
 			<build>
 				<plugins>
 					<plugin>
 						<groupId>org.eclipse.cbi.maven.plugins</groupId>
 						<artifactId>eclipse-jarsigner-plugin</artifactId>
-						<version>1.4.2</version>
+						<version>1.4.3</version>
 						<executions>
 							<execution>
 								<id>sign</id>

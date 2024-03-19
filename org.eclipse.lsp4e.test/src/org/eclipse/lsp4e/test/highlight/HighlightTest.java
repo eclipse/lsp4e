@@ -8,16 +8,15 @@
  *
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
+ *  Sebastian Thomschke (Vegard IT GmbH) - refactoring to fix erratic test failures
+ *  Joao Dinis Ferreira (Avaloq Group AG) - Create testHighlightsInMultipleViewersForOneSource
  *******************************************************************************/
 package org.eclipse.lsp4e.test.highlight;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.assertEquals;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -29,14 +28,16 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
 import org.eclipse.jface.text.source.ISourceViewer;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.highlight.HighlightReconcilingStrategy;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentHighlightKind;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.ui.IEditorReference;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -47,7 +48,8 @@ import org.osgi.framework.Version;
 
 public class HighlightTest {
 
-	@Rule public AllCleanRule clear = new AllCleanRule();
+	@Rule
+	public AllCleanRule clear = new AllCleanRule();
 	private IProject project;
 
 	@Before
@@ -59,103 +61,180 @@ public class HighlightTest {
 	public void testHighlight() throws CoreException {
 		checkGenericEditorVersion();
 
-		List<DocumentHighlight> highlights = new ArrayList<>();
-		highlights.add(
-				new DocumentHighlight(new Range(new Position(0, 2), new Position(0, 6)), DocumentHighlightKind.Read));
-		highlights.add(
-				new DocumentHighlight(new Range(new Position(0, 7), new Position(0, 12)), DocumentHighlightKind.Write));
-		highlights.add(
-				new DocumentHighlight(new Range(new Position(0, 13), new Position(0, 17)), DocumentHighlightKind.Text));
-		MockLanguageServer.INSTANCE.setDocumentHighlights(highlights);
+		MockLanguageServer.INSTANCE.setDocumentHighlights(Map.ofEntries( //
+				Map.entry(new Position(0, 1), List.of( //
+						new DocumentHighlight(new Range(new Position(0, 2), new Position(0, 6)), DocumentHighlightKind.Read),
+						new DocumentHighlight(new Range(new Position(0, 7), new Position(0, 12)), DocumentHighlightKind.Write),
+						new DocumentHighlight(new Range(new Position(0, 13), new Position(0, 17)), DocumentHighlightKind.Text) //
+				))));
 
-		IFile testFile = TestUtils.createUniqueTestFile(project, "  READ WRITE TEXT");
-		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+		final IFile testFile = TestUtils.createUniqueTestFile(project, "  READ WRITE TEXT");
+		final ITextViewer viewer = TestUtils.openTextViewer(testFile);
 
-		viewer.getTextWidget().setCaretOffset(1);
+		if (viewer instanceof ISourceViewer sourceViewer) {
+			final var annotationModel = sourceViewer.getAnnotationModel();
 
-		if (!(viewer instanceof ISourceViewer)) {
-			Assert.fail();
+			sourceViewer.getTextWidget().setCaretOffset(1); // emulate cursor move
+
+			waitForAndAssertCondition(3_000, () -> {
+				assertAnnotationExists(annotationModel, HighlightReconcilingStrategy.READ_ANNOTATION_TYPE, 2, 4);
+				assertAnnotationExists(annotationModel, HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, 7, 5);
+				assertAnnotationExists(annotationModel, HighlightReconcilingStrategy.TEXT_ANNOTATION_TYPE, 13, 4);
+				return true;
+			});
+		} else {
+			Assert.fail("ISourceViewer expected but got: " + viewer);
 		}
-
-		ISourceViewer sourceViewer = (ISourceViewer) viewer;
-
-		Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
-
-		waitForAndAssertCondition(3_000, () -> sourceViewer.getAnnotationModel().getAnnotationIterator().hasNext());
-
-		IAnnotationModel model = sourceViewer.getAnnotationModel();
-		final Iterator<Annotation> iterator = model.getAnnotationIterator();
-		while (iterator.hasNext()) {
-			Annotation annotation = iterator.next();
-			annotations.put(model.getPosition(annotation), annotation);
-		}
-
-		Annotation annotation = annotations.get(new org.eclipse.jface.text.Position(2, 4));
-		Assert.assertNotNull(annotation);
-		assertEquals(HighlightReconcilingStrategy.READ_ANNOTATION_TYPE, annotation.getType());
-
-		annotation = annotations.get(new org.eclipse.jface.text.Position(7, 5));
-		Assert.assertNotNull(annotation);
-		assertEquals(HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, annotation.getType());
-
-		annotation = annotations.get(new org.eclipse.jface.text.Position(13, 4));
-		Assert.assertNotNull(annotation);
-		assertEquals(HighlightReconcilingStrategy.TEXT_ANNOTATION_TYPE, annotation.getType());
-
-		assertEquals(false, iterator.hasNext());
 	}
 
 	@Test
 	public void testCheckIfOtherAnnotationsRemains() throws CoreException {
 		checkGenericEditorVersion();
+		
+		MockLanguageServer.INSTANCE.setDocumentHighlights(Map.ofEntries( //
+				Map.entry(new Position(0, 1), List.of( //
+						new DocumentHighlight(new Range(new Position(0, 2), new Position(0, 6)), DocumentHighlightKind.Read)
+				))));
 
-		IFile testFile = TestUtils.createUniqueTestFile(project, "  READ WRITE TEXT");
-		ITextViewer viewer = TestUtils.openTextViewer(testFile);
+		final IFile testFile = TestUtils.createUniqueTestFile(project, "  READ WRITE TEXT");
+		final ITextViewer viewer = TestUtils.openTextViewer(testFile);
 
-		List<DocumentHighlight> highlights = Collections.singletonList(
-				new DocumentHighlight(new Range(new Position(0, 2), new Position(0, 6)), DocumentHighlightKind.Read));
-		MockLanguageServer.INSTANCE.setDocumentHighlights(highlights);
+		if (viewer instanceof ISourceViewer sourceViewer) {
+			final var annotationModel = sourceViewer.getAnnotationModel();
 
-		if (!(viewer instanceof ISourceViewer)) {
-			Assert.fail();
+			final var fakeAnnotationType = "FAKE_TYPE";
+			final var fakeAnnotation = new Annotation(fakeAnnotationType, false, null);
+			final var fakeAnnotationPosition = new org.eclipse.jface.text.Position(0, 10);
+			annotationModel.addAnnotation(fakeAnnotation, fakeAnnotationPosition);
+
+			viewer.getTextWidget().setCaretOffset(1); // emulate cursor move
+
+			waitForAndAssertCondition(3_000, () -> {
+				assertAnnotationExists(annotationModel, HighlightReconcilingStrategy.READ_ANNOTATION_TYPE, 2, 4);
+				assertAnnotationExists(annotationModel, fakeAnnotationType, fakeAnnotationPosition.offset,
+						fakeAnnotationPosition.length);
+				return true;
+			});
 		}
+	}
 
-		ISourceViewer sourceViewer = (ISourceViewer) viewer;
-		IAnnotationModel model = sourceViewer.getAnnotationModel();
+	@Test
+	public void testHighlightsInMultipleViewersForOneSource() throws CoreException, InterruptedException {
+		checkGenericEditorVersion();
 
-		String fakeAnnotationType = "FAKE_TYPE";
-		Annotation fakeAnnotation = new Annotation(fakeAnnotationType, false, null);
-		org.eclipse.jface.text.Position fakeAnnotationPosition = new org.eclipse.jface.text.Position(0, 10);
-		model.addAnnotation(fakeAnnotation, fakeAnnotationPosition);
+		// Create a test file with two sets of highlights
+		final IFile testFile = TestUtils.createUniqueTestFile(project, "ONE\nTWO");
+		
+		MockLanguageServer.INSTANCE.setDocumentHighlights(Map.ofEntries( //
+				Map.entry(new Position(0, 1), List.of( //
+						new DocumentHighlight(new Range(new Position(0, 0), new Position(0, 3)), DocumentHighlightKind.Write)
+				)),
+				Map.entry(new Position(1, 1), List.of( //
+						new DocumentHighlight(new Range(new Position(1, 0), new Position(1, 3)), DocumentHighlightKind.Write)
+				))));
 
-		// emulate cursor move
-		viewer.getTextWidget().setCaretOffset(1);
+		// Open the first viewer
+		final ISourceViewer viewer1 = (ISourceViewer) TestUtils.openTextViewer(testFile);
+		final var annotationModel1 = viewer1.getAnnotationModel();
+
+		// Set the caret offset to activate the first set of highlights
+		viewer1.getTextWidget().setCaretOffset(1);
 
 		waitForAndAssertCondition(3_000, () -> {
-			IAnnotationModel annotationModel = sourceViewer.getAnnotationModel();
-			Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
-			annotationModel.getAnnotationIterator().forEachRemaining(ann -> annotations.put(model.getPosition(ann), ann));
-			if (annotations.size() != 2) {
-				return false;
-			}
+			assertAnnotationExists(annotationModel1, HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, 0, 3);
+			return true;
+		});
 
-			Annotation annotation = annotations.get(new org.eclipse.jface.text.Position(2, 4));
-			if (annotation == null || !HighlightReconcilingStrategy.READ_ANNOTATION_TYPE.equals(annotation.getType())) {
-				return false;
+		// Split the view in the active editor
+		List<IEditorReference> editorReferences = TestUtils.splitActiveEditor();
+		
+		// Keep track of the newly opened editor, so we can close it later
+		ISourceViewer viewer2 = null;
+		IEditorReference editorToClose = null;
+		for (IEditorReference editorReference : editorReferences) {
+			ISourceViewer viewer = (ISourceViewer) LSPEclipseUtils.getTextViewer(editorReference.getEditor(false));
+			if (viewer != viewer1) {
+				editorToClose = editorReference;
+				viewer2 = viewer;
+				break;
 			}
+		}
+		Assert.assertNotNull(viewer2);
+		
+		final var annotationModel2 = viewer2.getAnnotationModel();
 
-			annotation = annotations.get(fakeAnnotationPosition);
-			if (annotation == null || !fakeAnnotationType.equals(annotation.getType())) {
-				return false;
-			}
+		// Set the caret offset to activate the second set of highlights
+		viewer2.getTextWidget().setCaretOffset(5);
+
+		// The annotation models of both viewers should now contain both sets of highlights
+		waitForAndAssertCondition(3_000, () -> {
+			assertAnnotationExists(annotationModel1, HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, 0, 3);
+			assertAnnotationExists(annotationModel1, HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, 4, 3);
+			assertAnnotationExists(annotationModel2, HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, 0, 3);
+			assertAnnotationExists(annotationModel2, HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, 4, 3);
+			return true;
+		});
+
+		// Close the second viewer
+		TestUtils.closeEditor(editorToClose.getEditor(false), false);
+
+		// Check that the highlights are the same as in the first case
+		waitForAndAssertCondition(3_000, () -> {
+			assertAnnotationExists(annotationModel1, HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, 0, 3);
+			assertAnnotationDoesNotExist(annotationModel1, HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, 4, 3);
+			assertAnnotationExists(annotationModel2, HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, 0, 3);
+			assertAnnotationDoesNotExist(annotationModel2, HighlightReconcilingStrategy.WRITE_ANNOTATION_TYPE, 4, 3);
 			return true;
 		});
 	}
 
+	private void assertAnnotationExists(IAnnotationModel annotationModel, String annotationType, int posOffset, int posLen) {
+		final var hasAnnotation = new boolean[] { false };
+		final var annotations = new ArrayList<String>();
+		annotationModel.getAnnotationIterator().forEachRemaining(anno -> {
+			final var annoPos = annotationModel.getPosition(anno);
+			if (anno.getType().equals(annotationType) && annoPos.offset == posOffset && annoPos.length == posLen) {
+				hasAnnotation[0] = true;
+			}
+			annotations.add("Annotation[" + //
+					"type=" + anno.getType() + //
+					", text=" + anno.getText() + //
+					", offset=" + annoPos.offset + //
+					", length=" + annoPos.length + //
+					"]");
+		});
+
+		if (!hasAnnotation[0]) {
+			fail("Annotation of type [" + annotationType + "] not found at position {offset=" + posOffset + //
+					" length=" + posLen + "}. Annotations found: " + annotations);
+		}
+	}
+	
+	private void assertAnnotationDoesNotExist(IAnnotationModel annotationModel, String annotationType, int posOffset, int posLen) {
+		final var hasAnnotation = new boolean[] { false };
+		final var annotations = new ArrayList<String>();
+		annotationModel.getAnnotationIterator().forEachRemaining(anno -> {
+			final var annoPos = annotationModel.getPosition(anno);
+			if (anno.getType().equals(annotationType) && annoPos.offset == posOffset && annoPos.length == posLen) {
+				hasAnnotation[0] = true;
+			}
+			annotations.add("Annotation[" + //
+					"type=" + anno.getType() + //
+					", text=" + anno.getText() + //
+					", offset=" + annoPos.offset + //
+					", length=" + annoPos.length + //
+					"]");
+		});
+
+		if (hasAnnotation[0]) {
+			fail("Unexpected annotation of type [" + annotationType + "] found at position {offset=" + posOffset + //
+					" length=" + posLen + "}. Annotations found: " + annotations);
+		}
+	}
+
 	private void checkGenericEditorVersion() {
-		// ignore tests for generic editor wihtout reconciler API
+		// ignore tests for generic editor without reconciler API
 		Bundle bundle = Platform.getBundle("org.eclipse.ui.genericeditor");
 		Assume.assumeTrue(bundle.getVersion().compareTo(new Version(1, 1, 0)) >= 0);
 	}
-
 }

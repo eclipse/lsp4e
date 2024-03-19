@@ -20,8 +20,8 @@ import java.util.Map;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4j.jsonrpc.json.JsonRpcMethod;
 import org.eclipse.lsp4j.jsonrpc.services.ServiceEndpoints;
 import org.junit.Before;
@@ -39,11 +39,11 @@ public class DebugTest {
 
 	/**
 	 * Test for the `IllegalStateException: Duplicate RPC method runInTerminal` issue.
-	 * 
-	 * The issue has started to appear after the move of `runInTerminal` method from the `IDebugProtocolServer` 
-	 * interface to `IDebugProtocolClient` interface in LSP5J while the DSPDebugTarget class that implements `runInTerminal` 
+	 *
+	 * The issue has started to appear after the move of `runInTerminal` method from the `IDebugProtocolServer`
+	 * interface to `IDebugProtocolClient` interface in LSP5J while the DSPDebugTarget class that implements `runInTerminal`
 	 * method of `IDebugProtocolClient` interface leaved unchanged thus creating an RPC method duplication.
-	 * 
+	 *
 	 * @throws Exception
 	 */
 	@Test

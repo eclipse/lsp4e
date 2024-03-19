@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-23 Red Hat Inc. and others.
+ * Copyright (c) 2016-2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -14,7 +14,6 @@
 package org.eclipse.lsp4e.operations.references;
 
 import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -35,22 +34,19 @@ import org.eclipse.ui.texteditor.ITextEditor;
 public class LSFindReferences extends LSPDocumentAbstractHandler implements IHandler {
 
 	@Override
-	public Object execute(ExecutionEvent event) throws ExecutionException {
-		if (HandlerUtil.getActiveEditor(event) instanceof ITextEditor editor) {
-			ISelection sel = editor.getSelectionProvider().getSelection();
-			if (sel instanceof ITextSelection textSelection) {
-				IDocument document = LSPEclipseUtils.getDocument(editor);
-				if (document != null) {
-					try {
-						final var query = new LSSearchQuery(textSelection.getOffset(), document);
-						HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
-					} catch (BadLocationException e) {
-						LanguageServerPlugin.logError(e);
-					}
+	protected void execute(ExecutionEvent event, ITextEditor textEditor) {
+		ISelection sel = textEditor.getSelectionProvider().getSelection();
+		if (sel instanceof ITextSelection textSelection) {
+			IDocument document = LSPEclipseUtils.getDocument(textEditor);
+			if (document != null) {
+				try {
+					final var query = new LSSearchQuery(textSelection.getOffset(), document);
+					HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
+				} catch (BadLocationException e) {
+					LanguageServerPlugin.logError(e);
 				}
 			}
 		}
-		return null;
 	}
 
 	@Override

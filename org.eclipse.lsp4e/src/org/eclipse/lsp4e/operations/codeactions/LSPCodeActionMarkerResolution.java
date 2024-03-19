@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016-2022 Red Hat Inc. and others.
+ * Copyright (c) 2016-2023 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -98,7 +98,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		try {
 			att = marker.getAttribute(LSP_REMEDIATION);
 			if (att == null) {
-				checkMarkerResoultion(marker);
+				checkMarkerResolution(marker);
 				att = marker.getAttribute(LSP_REMEDIATION);
 			}
 		} catch (IOException | CoreException | ExecutionException e) {
@@ -119,7 +119,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				.toArray(IMarkerResolution[]::new);
 	}
 
-	private void checkMarkerResoultion(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException {
+	private void checkMarkerResolution(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException {
 		IResource res = marker.getResource();
 		if (res instanceof IFile file) {
 			Object[] attributes = marker.getAttributes(new String[]{LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC});
@@ -155,7 +155,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					// wait a bit to avoid showing too much "Computing" without looking like a freeze
 				} catch (TimeoutException e) {
 					LanguageServerPlugin.logWarning(
-							"Could get code actions due to timeout after 300 miliseconds in `textDocument/codeAction`", e); //$NON-NLS-1$
+							"Could get code actions due to timeout after 300 milliseconds in `textDocument/codeAction`", e); //$NON-NLS-1$
 				}
 			}
 		}
@@ -205,7 +205,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		try {
 			Object remediation = marker.getAttribute(LSP_REMEDIATION);
 			if (remediation == null) {
-				checkMarkerResoultion(marker);
+				checkMarkerResolution(marker);
 				remediation = marker.getAttribute(LSP_REMEDIATION);
 			}
 			return remediation == COMPUTING || (remediation instanceof Collection<?> collection && !collection.isEmpty());

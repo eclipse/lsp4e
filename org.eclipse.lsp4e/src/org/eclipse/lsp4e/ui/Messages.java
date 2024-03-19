@@ -70,6 +70,8 @@ public final class Messages extends NLS {
 	public static String rename_empty_message;
 	public static String rename_invalidated;
 	public static String completionError;
+	public static String completionIncomplete;
+	public static String continueIncomplete;
 	public static String linkWithEditor_label;
 	public static String linkWithEditor_description;
 	public static String linkWithEditor_tooltip;
@@ -89,6 +91,13 @@ public final class Messages extends NLS {
 	public static String CreateFile_confirm_title;
 	public static String CreateFile_confirm_message;
 	public static String LSPProgressManager_BackgroundJobName;
+	public static String LSConsoleName;
+	public static String CH_no_call_hierarchy;
+	public static String CH_finding_callers;
+	public static String TH_no_type_hierarchy;
+	public static String TH_diplay_hint;
+	public static String TH_cannot_find_file;
+	public static String occurrences;
 
 	static {
 		NLS.initializeMessages("org.eclipse.lsp4e.ui.messages", Messages.class); //$NON-NLS-1$

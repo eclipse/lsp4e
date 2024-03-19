@@ -14,6 +14,7 @@ package org.eclipse.lsp4e.operations.symbols;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -96,13 +97,17 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 		@Override
 		public boolean matchItem(Object item) {
-			return item instanceof WorkspaceSymbol info && //
-					info.getName().toLowerCase().indexOf(getPattern().toLowerCase()) != -1;
+			return true;
 		}
 
 		@Override
 		public boolean isConsistentItem(Object item) {
 			return true;
+		}
+
+		@Override
+		public boolean isSubFilter(ItemsFilter filter) {
+			return false;
 		}
 	}
 
@@ -110,10 +115,12 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	private final IProject project;
 
-	public LSPSymbolInWorkspaceDialog(Shell shell, IProject project) {
+	private List<CompletableFuture<Either<List<? extends SymbolInformation>, List<? extends WorkspaceSymbol>>>> request;
+
+	public LSPSymbolInWorkspaceDialog(Shell shell, IProject project, BoldStylerProvider stylerProvider) {
 		super(shell);
 		this.project = project;
-		this.labelProvider = new InternalSymbolsLabelProvider(new BoldStylerProvider(shell.getFont()));
+		this.labelProvider = new InternalSymbolsLabelProvider(stylerProvider);
 		setMessage(Messages.LSPSymbolInWorkspaceDialog_DialogLabel);
 		setTitle(Messages.LSPSymbolInWorkspaceDialog_DialogTitle);
 		setListLabelProvider(labelProvider);
@@ -129,13 +136,16 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 	@Override
 	protected void fillContentProvider(AbstractContentProvider contentProvider, ItemsFilter itemsFilter,
 			IProgressMonitor monitor) throws CoreException {
+		if (request != null) {
+			request.forEach(f -> f.cancel(true));
+		}
 		if (itemsFilter.getPattern().isEmpty()) {
 			return;
 		}
 		final var params = new WorkspaceSymbolParams(itemsFilter.getPattern());
-		LanguageServers.forProject(project).withCapability(ServerCapabilities::getWorkspaceSymbolProvider)
-			.computeAll((w, ls) -> ls.getWorkspaceService()
-				.symbol(params)).stream().map(s -> s.thenApply(LSPSymbolInWorkspaceDialog::eitherToWorkspaceSymbols))
+		request = LanguageServers.forProject(project).withCapability(ServerCapabilities::getWorkspaceSymbolProvider)
+			.computeAll((w, ls) -> ls.getWorkspaceService().symbol(params));
+		request.stream().map(s -> s.thenApply(LSPSymbolInWorkspaceDialog::eitherToWorkspaceSymbols))
 			.forEach(cf -> {
 				if (monitor.isCanceled()) {
 					return;

@@ -11,7 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.color;
 
-import static org.eclipse.lsp4e.test.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,8 +20,8 @@ import java.util.Collections;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Color;
@@ -72,9 +72,6 @@ public class ColorTest {
 
 	/**
 	 * TODO consider reusing directly code from Test_org_eclipse_swt_custom_StyledText
-	 * @param widget
-	 * @param expectedRGB
-	 * @return
 	 */
 	public static boolean containsColor(Control widget, RGB expectedRGB, int tolerance) {
 		if (widget.getSize().x == 0) {
@@ -109,5 +106,4 @@ public class ColorTest {
 
 		return (int) Math.sqrt((dR * dR + dG * dG + dB * dB) / 3);
 	}
-
 }

@@ -20,13 +20,14 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
  *
  * @since 0.1.0
  */
-public abstract class ProcessStreamConnectionProvider implements StreamConnectionProvider {
+public abstract class ProcessStreamConnectionProvider implements StreamConnectionProvider, IAdaptable {
 
 	private @Nullable Process process;
 	private List<String> commands;
@@ -93,6 +94,20 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 		}
 	}
 
+	@Override
+	@SuppressWarnings("unchecked")
+	public <T> T getAdapter(Class<T> adapter) {
+		final var process = this.process;
+		if(adapter == ProcessHandle.class) {
+			try {
+				return process == null ? null : (T) process.toHandle();
+			} catch(UnsupportedOperationException ex) {
+				// ignore
+			}
+		}
+		return null;
+	}
+
 	protected List<String> getCommands() {
 		return commands;
 	}
@@ -129,5 +144,4 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 		return "ProcessStreamConnectionProvider [commands=" + this.getCommands() + ", workingDir=" //$NON-NLS-1$//$NON-NLS-2$
 				+ this.getWorkingDirectory() + "]"; //$NON-NLS-1$
 	}
-
 }

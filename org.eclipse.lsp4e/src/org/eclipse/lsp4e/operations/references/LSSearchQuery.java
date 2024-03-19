@@ -1,9 +1,10 @@
 /*******************************************************************************
  * Copyright (c) 2016-23 Red Hat Inc. and others.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This program and the accompanying materials are made
+ * available under the terms of the Eclipse Public License 2.0
+ * which is available at https://www.eclipse.org/legal/epl-2.0/
+ *
+ * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
  *   Mickael Istria (Red Hat Inc.) - initial implementation
@@ -13,8 +14,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.references;
 
-import java.net.URI;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.LocationKind;
@@ -25,7 +27,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
@@ -41,7 +42,6 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.ReferenceContext;
 import org.eclipse.lsp4j.ReferenceParams;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.osgi.util.NLS;
 import org.eclipse.search.internal.ui.text.FileMatch;
 import org.eclipse.search.internal.ui.text.FileSearchQuery;
 import org.eclipse.search.internal.ui.text.LineElement;
@@ -50,7 +50,6 @@ import org.eclipse.search.ui.text.Match;
 
 /**
  * {@link ISearchQuery} implementation for LSP.
- *
  */
 public class LSSearchQuery extends FileSearchQuery {
 
@@ -58,7 +57,6 @@ public class LSSearchQuery extends FileSearchQuery {
 	private final int offset;
 
 	private LSSearchResult result;
-	private long startTime;
 
 	/**
 	 * LSP search query to "Find references" from the given offset of the given
@@ -69,14 +67,13 @@ public class LSSearchQuery extends FileSearchQuery {
 	 */
 	public LSSearchQuery(int offset, @NonNull IDocument document)
 			throws BadLocationException {
-		super("", false, false, null); //$NON-NLS-1$
+		super("", false, false, true, true, null); //$NON-NLS-1$
 		this.document = document;
 		this.offset = offset;
 	}
 
 	@Override
 	public IStatus run(IProgressMonitor monitor) throws OperationCanceledException {
-		startTime = System.currentTimeMillis();
 		getSearchResult().removeAll();
 
 		try {
@@ -86,20 +83,20 @@ public class LSSearchQuery extends FileSearchQuery {
 			params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(document));
 			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
 
-			LanguageServers.forDocument(document).withCapability(ServerCapabilities::getReferencesProvider)
-				.collectAll(languageServer -> languageServer.getTextDocumentService().references(params)
-					.thenAcceptAsync(locations -> {
+			@NonNull List<@NonNull CompletableFuture<List<? extends Location>>> requests = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getReferencesProvider)
+				.computeAll(languageServer -> languageServer.getTextDocumentService().references(params));
+			CompletableFuture<?>[] populateUIFutures = requests.stream().map(request ->
+				request.thenAcceptAsync(locations -> {
 						if (locations != null) {
 							// Convert each LSP Location to a Match search.
-							locations.stream().filter(Objects::nonNull).map(LSSearchQuery::toMatch)
-							.filter(Objects::nonNull).forEach(result::addMatch);
+							locations.stream() //
+								.filter(Objects::nonNull) //
+								.map(LSSearchQuery::toMatch) //
+								.filter(Objects::nonNull) //
+								.forEach(result::addMatch);
 						}
-					}).exceptionally(e -> {
-						LanguageServerPlugin.logError(e);
-						return null;
-					})
-			);
-
+				})).toArray(CompletableFuture[]::new);
+			CompletableFuture.allOf(populateUIFutures).join();
 			return Status.OK_STATUS;
 		} catch (Exception ex) {
 			return new Status(IStatus.ERROR, LanguageServerPlugin.getDefault().getBundle().getSymbolicName(),
@@ -128,7 +125,7 @@ public class LSSearchQuery extends FileSearchQuery {
 					int endOffset = LSPEclipseUtils.toOffset(location.getRange().getEnd(), document);
 
 					IRegion lineInformation = document.getLineInformationOfOffset(startOffset);
-					final var lineEntry = new LineElement(resource, document.getLineOfOffset(startOffset),
+					final var lineEntry = new LineElement(resource, document.getLineOfOffset(startOffset) + 1,
 							lineInformation.getOffset(),
 							document.get(lineInformation.getOffset(), lineInformation.getLength()));
 					return new FileMatch((IFile) resource, startOffset, endOffset - startOffset, lineEntry);
@@ -146,11 +143,16 @@ public class LSSearchQuery extends FileSearchQuery {
 			}
 
 			Position startPosition = location.getRange().getStart();
-			final var lineEntry = new LineElement(resource, startPosition.getLine(), 0,
+			final var lineEntry = new LineElement(resource, startPosition.getLine() + 1, 0,
 					String.format("%s:%s", startPosition.getLine(), startPosition.getCharacter())); //$NON-NLS-1$
 			return new FileMatch((IFile) resource, 0, 0, lineEntry);
 		}
-		return null;
+		try {
+			return new URIMatch(location);
+		} catch (BadLocationException ex) {
+			LanguageServerPlugin.logError(ex);
+			return null;
+		} 
 	}
 
 	@Override
@@ -167,36 +169,17 @@ public class LSSearchQuery extends FileSearchQuery {
 	}
 
 	@Override
-	public String getResultLabel(int nMatches) {
-		long time = 0;
-		if (startTime > 0) {
-			time = System.currentTimeMillis() - startTime;
-		}
-		URI uri = LSPEclipseUtils.toUri(document);
-		String filename;
-		if (uri != null) {
-			filename = Path.fromPortableString(uri.getPath()).lastSegment();
-		} else {
-			filename = "unkown"; //$NON-NLS-1$
-		}
-		Position position;
-		try {
-			position = LSPEclipseUtils.toPosition(offset, document);
-		} catch (BadLocationException ex) {
-			LanguageServerPlugin.logError(ex);
-			position = new Position(0,0);
-		}
-		if (nMatches == 1) {
-			return NLS.bind(Messages.LSSearchQuery_singularReference,
-					new Object[] { filename, position.getLine() + 1, position.getCharacter() + 1, time });
-		}
-		return NLS.bind(Messages.LSSearchQuery_pluralReferences,
-				new Object[] { filename, position.getLine() + 1, position.getCharacter() + 1, nMatches, time });
+	public boolean canRerun() {
+		return true;
+	}
+
+	@Override
+	public boolean canRunInBackground() {
+		return true;
 	}
 
 	@Override
 	public boolean isFileNameSearch() {
-		// Return false to display lines where references are found
 		return false;
 	}
 }

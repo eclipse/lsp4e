@@ -13,7 +13,6 @@
 package org.eclipse.lsp4e.callhierarchy;
 
 import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -24,7 +23,6 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
@@ -33,24 +31,21 @@ import org.eclipse.ui.texteditor.ITextEditor;
 public class CallHierarchyCommandHandler extends LSPDocumentAbstractHandler {
 
 	@Override
-	public Object execute(final ExecutionEvent event) throws ExecutionException {
-		if (HandlerUtil.getActiveEditor(event) instanceof ITextEditor editor) {
-			IDocument document = LSPEclipseUtils.getDocument(editor);
-			if (document == null) {
-				return null;
-			}
-			if (editor.getSelectionProvider().getSelection() instanceof ITextSelection sel) {
-				int offset = sel.getOffset();
+	protected void execute(ExecutionEvent event, ITextEditor editor) {
+		IDocument document = LSPEclipseUtils.getDocument(editor);
+		if (document == null) {
+			return;
+		}
+		if (editor.getSelectionProvider().getSelection() instanceof ITextSelection sel) {
+			int offset = sel.getOffset();
 
-				try {
-					CallHierarchyView theView = (CallHierarchyView) getActivePage().showView(CallHierarchyView.ID);
-					theView.initialize(document, offset);
-				} catch (PartInitException e) {
-					LanguageServerPlugin.logError("Error while opening the Call Hierarchy view", e); //$NON-NLS-1$
-				}
+			try {
+				CallHierarchyView theView = (CallHierarchyView) getActivePage().showView(CallHierarchyView.ID);
+				theView.initialize(document, offset);
+			} catch (PartInitException e) {
+				LanguageServerPlugin.logError("Error while opening the Call Hierarchy view", e); //$NON-NLS-1$
 			}
 		}
-		return null;
 	}
 
 	@Override
@@ -58,7 +53,7 @@ public class CallHierarchyCommandHandler extends LSPDocumentAbstractHandler {
 		setEnabled(ServerCapabilities::getCallHierarchyProvider, this::hasSelection);
 	}
 
-	private static IWorkbenchPage getActivePage() {
+	protected static IWorkbenchPage getActivePage() {
 		IWorkbenchWindow activeWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
 		if (activeWindow != null) {
 			return activeWindow.getActivePage();

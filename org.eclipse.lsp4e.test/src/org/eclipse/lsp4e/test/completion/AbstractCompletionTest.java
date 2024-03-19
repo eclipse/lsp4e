@@ -11,7 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +21,8 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
@@ -45,7 +45,7 @@ public abstract class AbstractCompletionTest {
 	@Before
 	public void setUp() throws CoreException {
 		project = TestUtils.createProject("CompletionTest" + System.currentTimeMillis());
-		contentAssistProcessor = new LSContentAssistProcessor();
+		contentAssistProcessor = new LSContentAssistProcessor(true, false);
 	}
 
 	protected CompletionItem createCompletionItem(String label, CompletionItemKind kind) {

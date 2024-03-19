@@ -18,7 +18,7 @@ import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.TextEvent;
 import org.eclipse.lsp4e.operations.semanticTokens.StyleRangeHolder;
-import org.eclipse.lsp4e.test.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Color;
 import org.junit.Rule;

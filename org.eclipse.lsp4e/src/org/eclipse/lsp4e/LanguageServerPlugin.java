@@ -21,6 +21,12 @@ import org.osgi.framework.BundleContext;
 
 public class LanguageServerPlugin extends AbstractUIPlugin {
 
+	/**
+	 * Constant identifying the job family identifier for the background update markers from diagnostics job.
+	 *
+	 */
+	public static final Object FAMILY_UPDATE_MARKERS = new Object();
+
 	public static final String PLUGIN_ID = "org.eclipse.lsp4e"; //$NON-NLS-1$
 
 	public static final boolean DEBUG = Boolean.parseBoolean(Platform.getDebugOption("org.eclipse.lsp4e/debug")); //$NON-NLS-1$

@@ -14,14 +14,17 @@ package org.eclipse.lsp4e.test.declaration;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.declaration.LSBasedHyperlink;
-import org.eclipse.lsp4e.test.AllCleanRule;
-import org.eclipse.lsp4e.test.TestUtils;
+import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.junit.Before;
@@ -49,21 +52,22 @@ public class LSBasedHyperlinkTest {
 	}
 
 	@Test
-	public void testHyperlinkLabelForFileLocation() {
+	public void testHyperlinkLabelForFileLocation() throws URISyntaxException {
 		Location location = new Location();
 		location.setUri("file:///Users/someuser/testfile");
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
 
-		assertEquals("Open Declaration - testfile - /Users/someuser/testfile", hyperlink.getHyperlinkText());
+		assertEquals("Open Declaration - testfile - " + Path.of(new URI(location.getUri())),
+				hyperlink.getHyperlinkText());
 	}
 
 	@Test
-	public void testHyperlinkLabelForFileLocationLink() {
+	public void testHyperlinkLabelForFileLocationLink() throws URISyntaxException {
 		LocationLink location = new LocationLink();
 		location.setTargetUri("file:///Users/someuser/testfile");
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
 
-		assertEquals("Open Declaration - testfile - /Users/someuser/testfile", hyperlink.getHyperlinkText());
+		assertEquals("Open Declaration - testfile - " + Path.of(new URI(location.getTargetUri())), hyperlink.getHyperlinkText());
 	}
 
 	@Test
@@ -101,15 +105,14 @@ public class LSBasedHyperlinkTest {
 
 		assertEquals("Open Declaration - http://eclipse.org", hyperlink.getHyperlinkText());
 	}
-	
+
 	@Test
 	public void testHyperlinkLabelForFileInProject() throws Exception {
 		IFile file = TestUtils.createFile(project, "my-test.txt", "Example Text");
 		LocationLink location = new LocationLink();
 		location.setTargetUri(LSPEclipseUtils.toUri(new File(file.getLocation().toOSString())).toASCIIString());
 		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
-		
-		assertEquals("Open Declaration - my-test.txt - HyperlinkLabelTest", hyperlink.getHyperlinkText());
-	}
 
+		assertEquals("Open Declaration - my-test.txt - " + project.getName(), hyperlink.getHyperlinkText());
+	}
 }
