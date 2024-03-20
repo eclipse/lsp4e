@@ -19,7 +19,15 @@ import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSPDocumentInfosFor;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSWrapper;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSWrappers;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.hasActiveLanguageServers;
-import static org.eclipse.lsp4e.test.utils.TestUtils.*;
+import static org.eclipse.lsp4e.test.utils.TestUtils.createFile;
+import static org.eclipse.lsp4e.test.utils.TestUtils.createProject;
+import static org.eclipse.lsp4e.test.utils.TestUtils.createTempFile;
+import static org.eclipse.lsp4e.test.utils.TestUtils.createUniqueTestFile;
+import static org.eclipse.lsp4e.test.utils.TestUtils.createUniqueTestFileMultiLS;
+import static org.eclipse.lsp4e.test.utils.TestUtils.openEditor;
+import static org.eclipse.lsp4e.test.utils.TestUtils.openTextViewer;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -43,7 +51,6 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServersRegistry;
-import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.utils.AllCleanRule;
 import org.eclipse.lsp4e.test.utils.MappingEnablementTester;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -51,7 +58,6 @@ import org.eclipse.lsp4e.tests.mock.MockLanguageServerMultiRootFolders;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.ui.ide.IDE;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.Before;
 import org.junit.Rule;
@@ -170,8 +176,8 @@ public class LanguageServiceAccessorTest {
 
 		assertTrue(hasActiveLanguageServers(MATCH_ALL));
 
-		((AbstractTextEditor) editor1).close(false);
-		((AbstractTextEditor) editor2).close(false);
+		editor1.getSite().getPage().closeEditor(editor1, false);
+		editor2.getSite().getPage().closeEditor(editor2, false);
 
 		waitForCondition(5_000, () -> !hasActiveLanguageServers(MATCH_ALL));
 		assertFalse(hasActiveLanguageServers(MATCH_ALL));
@@ -385,11 +391,13 @@ public class LanguageServiceAccessorTest {
 			return hoverProvider.isLeft() ? hoverProvider.getLeft() : hoverProvider.getRight() != null;
 		};
 
-		assertTrue(LanguageServiceAccessor.hasActiveLanguageServers(LSPEclipseUtils.getFile(getTextViewer(editor).getDocument()) , hasHoverCapabilities));
+		final IDocument externalDocument = getTextViewer(editor).getDocument();
+		assertTrue(hasActiveLanguageServers(externalDocument, hasHoverCapabilities));
 		wb.getActivePage().closeAllEditors(false);
+
 		// opening another file should either reuse the LS or spawn another one, but not both
-		assertTrue(LanguageServiceAccessor.hasActiveLanguageServers( //
-				LSPEclipseUtils.getFile(openTextViewer(createUniqueTestFile(project, "")).getDocument()), hasHoverCapabilities));
+		final IDocument internalDocument = openTextViewer(createUniqueTestFile(project, "")).getDocument();
+		assertTrue(hasActiveLanguageServers(internalDocument, hasHoverCapabilities));
 	}
 
 	@Test
