@@ -158,6 +158,8 @@ public class LanguageServerWrapper {
 	protected StreamConnectionProvider lspStreamProvider;
 	private Future<?> launcherFuture;
 	private CompletableFuture<Void> initializeFuture;
+	private IProgressMonitor initializeFutureMonitor;
+	private final int initializeFutureNumberOfStages = 7;
 	private LanguageServer languageServer;
 	private LanguageClientImpl languageClient;
 	private ServerCapabilities serverCapabilities;
@@ -284,6 +286,7 @@ public class LanguageServerWrapper {
 			final URI rootURI = getRootURI();
 			this.launcherFuture = new CompletableFuture<>();
 			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
+				advanceinitializeFutureMonitor();
 				if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
 					this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
 							serverDefinition.createConnectionProvider(), serverDefinition.id);
@@ -298,6 +301,7 @@ public class LanguageServerWrapper {
 				}
 				return null;
 			}).thenRun(() -> {
+				advanceinitializeFutureMonitor();
 				languageClient = serverDefinition.createLanguageClient();
 
 				initParams.setProcessId((int) ProcessHandle.current().pid());
@@ -328,13 +332,19 @@ public class LanguageServerWrapper {
 				languageClient.connect(languageServer, this);
 				this.launcherFuture = launcher.startListening();
 			})
-			.thenCompose(unused -> initServer(rootURI))
+			.thenCompose(unused -> {
+				advanceinitializeFutureMonitor();
+				return initServer(rootURI);
+			})
 			.thenAccept(res -> {
+				advanceinitializeFutureMonitor();
 				serverCapabilities = res.getCapabilities();
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
 			}).thenRun(() -> {
+				advanceinitializeFutureMonitor();
 				this.languageServer.initialized(new InitializedParams());
 			}).thenRun(() -> {
+				advanceinitializeFutureMonitor();
 				final Map<URI, IDocument> toReconnect = filesToReconnect;
 				initializeFuture.thenRunAsync(() -> {
 					watchProjects();
@@ -347,6 +357,7 @@ public class LanguageServerWrapper {
 					}
 				});
 				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
+				advanceinitializeFutureMonitor();
 			}).exceptionally(e -> {
 				LanguageServerPlugin.logError(e);
 				stop();
@@ -362,16 +373,23 @@ public class LanguageServerWrapper {
 		}
 	}
 
+	private void advanceinitializeFutureMonitor() {
+		if (initializeFutureMonitor != null) {
+			initializeFutureMonitor.worked(1);
+		}
+	}
+
 	private synchronized Job createInitializeLanguageServerJob() {
 		return new Job(NLS.bind(Messages.initializeLanguageServer_job, serverDefinition.label)) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				SubMonitor progress = SubMonitor.convert(monitor, 1);
+				initializeFutureMonitor = SubMonitor.convert(monitor, initializeFutureNumberOfStages);
 				CompletableFuture<Void> currentInitializeFuture = initializeFuture;
 				if (currentInitializeFuture != null) {
 					currentInitializeFuture.join();
 				}
-				progress.done();
+				initializeFutureMonitor.done();
+				initializeFutureMonitor = null;
 				return Status.OK_STATUS;
 			}
 
