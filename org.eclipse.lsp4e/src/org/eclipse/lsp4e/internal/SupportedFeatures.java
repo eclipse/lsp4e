@@ -30,6 +30,7 @@ import org.eclipse.lsp4j.CompletionItemInsertTextModeSupportCapabilities;
 import org.eclipse.lsp4j.CompletionItemResolveSupportCapabilities;
 import org.eclipse.lsp4j.CompletionListCapabilities;
 import org.eclipse.lsp4j.DefinitionCapabilities;
+import org.eclipse.lsp4j.DidChangeConfigurationCapabilities;
 import org.eclipse.lsp4j.DocumentHighlightCapabilities;
 import org.eclipse.lsp4j.DocumentLinkCapabilities;
 import org.eclipse.lsp4j.DocumentSymbolCapabilities;
@@ -142,6 +143,7 @@ public class SupportedFeatures {
 		workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
 		CodeLensWorkspaceCapabilities codeLensWorkspaceCapabilities = new CodeLensWorkspaceCapabilities(true);
 		workspaceClientCapabilities.setCodeLens(codeLensWorkspaceCapabilities);
+		workspaceClientCapabilities.setDidChangeConfiguration(new DidChangeConfigurationCapabilities(Boolean.FALSE));
 		return workspaceClientCapabilities;
 	}
 
