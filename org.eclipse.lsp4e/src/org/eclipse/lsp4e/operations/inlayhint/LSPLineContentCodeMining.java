@@ -26,7 +26,6 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.command.CommandExecutor;
-import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InlayHint;
@@ -118,21 +117,19 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 		return me -> {
 			String title= getLabel();
 			if (title != null && !title.isEmpty()) {
-				findLabelPart(me).ifPresent(labelPart -> {
-					final Command command = labelPart.getCommand();
-					if(command != null && command.getCommand() != null && !command.getCommand().isEmpty()) {
-						ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
-						if (provider != null && provider.getCommands().contains(command.getCommand())) {
-							LanguageServerDocumentExecutor.forDocument(document).computeAll((w, ls) -> {
-								if (w == this.wrapper) {
-									return ls.getWorkspaceService()
-											.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments()));
-								}
-								return CompletableFuture.completedFuture(null);
-							});
-						} else  {
-							CommandExecutor.executeCommandClientSide(command, document);
-						}
+				findLabelPart(me).map(InlayHintLabelPart::getCommand).ifPresent(command -> {
+					ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
+					String commandId = command.getCommand();
+					if (provider != null && provider.getCommands().contains(commandId)) {
+						LanguageServerDocumentExecutor.forDocument(document).computeAll((w, ls) -> {
+							if (w == this.wrapper) {
+								return ls.getWorkspaceService()
+										.executeCommand(new ExecuteCommandParams(commandId, command.getArguments()));
+							}
+							return CompletableFuture.completedFuture(null);
+						});
+					} else  {
+						CommandExecutor.executeCommandClientSide(command, document);
 					}
 				});
 			}
@@ -141,8 +138,9 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 
 	private Optional<InlayHintLabelPart> findLabelPart(MouseEvent me) {
 		if (inlayHint.getLabel().isRight()) {
-			if (inlayHint.getLabel().getRight().size() == 1) {
-				return Optional.of(inlayHint.getLabel().getRight().get(0));
+			List<InlayHintLabelPart> labelParts = inlayHint.getLabel().getRight();
+			if (labelParts.size() == 1) {
+				return Optional.of(labelParts.get(0));
 			}
 			if (location != null && fontData != null) {
 				Point relativeLocation = new Point(me.x - location.x, me.y - location.y);
@@ -156,11 +154,11 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 					font = new Font(display, fontData);
 					gc.setFont(font);
 					Point origin = new Point(0, 0);
-					for (InlayHintLabelPart l : inlayHint.getLabel().getRight()) {
-						Point size = gc.stringExtent(l.getValue());
+					for (InlayHintLabelPart labelPart : labelParts) {
+						Point size = gc.stringExtent(labelPart.getValue());
 						Rectangle bounds = new Rectangle(origin.x, origin.y, size.x, size.y);
 						if (bounds.contains(relativeLocation)) {
-							return Optional.of(l);
+							return Optional.of(labelPart);
 						} else {
 							origin.x += size.x;
 						}
