@@ -934,7 +934,7 @@ public final class LSPEclipseUtils {
 		Map<URI, Range> changedURIs = new HashMap<>();
 		CompositeChange change = toCompositeChange(wsEdit, name, changedURIs);
 
-		if (wsEdit.getChangeAnnotations().values().stream().anyMatch(ca -> ca.getNeedsConfirmation())) {
+		if (wsEdit.getChangeAnnotations() != null && wsEdit.getChangeAnnotations().values().stream().anyMatch(ca -> ca.getNeedsConfirmation())) {
 			Refactoring refactoring = new Refactoring() {
 
 				@Override
