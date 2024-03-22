@@ -72,7 +72,6 @@ import org.eclipse.lsp4e.internal.FileBufferListenerAdapter;
 import org.eclipse.lsp4e.internal.SupportedFeatures;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.ui.Messages;
-import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.ClientInfo;
 import org.eclipse.lsp4j.CodeActionOptions;
@@ -107,7 +106,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseMessage;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.PlatformUI;
 
 import com.google.common.base.Functions;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -754,16 +752,9 @@ public class LanguageServerWrapper {
 			LanguageServerPlugin.logError(ex);
 		}
 
-		if (initializeFuture != null && !this.initializeFuture.isDone()) {
-			if (Display.getCurrent() != null) { // UI Thread
-				final Job waitForInitialization = createInitializeLanguageServerJob();
-				waitForInitialization.setUser(true);
-				waitForInitialization.setSystem(false);
-				PlatformUI.getWorkbench().getProgressService().showInDialog(UI.getActiveShell(), waitForInitialization);
-			}
-			if (initializeFuture != null) {
-				return initializeFuture.thenApply(r -> this.languageServer);
-			}
+		final CompletableFuture<Void> currentInitializeFuture = initializeFuture;
+		if (currentInitializeFuture != null && !currentInitializeFuture.isDone()) {
+			return currentInitializeFuture.thenApply(r -> this.languageServer);
 		}
 		return CompletableFuture.completedFuture(this.languageServer);
 	}
