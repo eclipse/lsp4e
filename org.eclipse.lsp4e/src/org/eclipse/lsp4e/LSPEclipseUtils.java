@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2022 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2024 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -70,9 +70,12 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.core.runtime.content.IContentTypeManager;
 import org.eclipse.jdt.annotation.NonNull;
@@ -120,11 +123,16 @@ import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.CompositeChange;
 import org.eclipse.ltk.core.refactoring.DocumentChange;
 import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
+import org.eclipse.ltk.core.refactoring.Refactoring;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
+import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.resource.DeleteResourceChange;
+import org.eclipse.ltk.ui.refactoring.RefactoringWizard;
+import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
 import org.eclipse.swt.graphics.RGB;
@@ -925,25 +933,79 @@ public final class LSPEclipseUtils {
 		String name = label == null ? DEFAULT_LABEL : label;
 		Map<URI, Range> changedURIs = new HashMap<>();
 		CompositeChange change = toCompositeChange(wsEdit, name, changedURIs);
-		final var changeOperation = new PerformChangeOperation(change);
-		changeOperation.setUndoManager(RefactoringCore.getUndoManager(), name);
-		try {
-			ResourcesPlugin.getWorkspace().run(changeOperation, new NullProgressMonitor());
 
-			// Open the resource in editor if there is the only one URI
-			if (changedURIs.size() == 1) {
-				changedURIs.keySet().stream().findFirst().ifPresent(uri -> {
-					// Select the only start position of the range or the document start
-					Range range = changedURIs.get(uri);
-					Position start = range.getStart() != null ? range.getStart() : new Position(0, 0);
-					if (Display.getCurrent() != null) {
-						open(uri.toString(), new Range(start, start));
-					} else {
-						UI.getDisplay().asyncExec(() -> open(uri.toString(), new Range(start, start)));
-					}
-				});
+		if (wsEdit.getChangeAnnotations().values().stream().anyMatch(ca -> ca.getNeedsConfirmation())) {
+			Refactoring refactoring = new Refactoring() {
+
+				@Override
+				public String getName() {
+					return label;
+				}
+
+				@Override
+				public RefactoringStatus checkInitialConditions(IProgressMonitor pm)
+						throws CoreException, OperationCanceledException {
+					return RefactoringStatus.create(Status.OK_STATUS);
+				}
+
+				@Override
+				public RefactoringStatus checkFinalConditions(IProgressMonitor pm)
+						throws CoreException, OperationCanceledException {
+					return RefactoringStatus.create(Status.OK_STATUS);
+				}
+
+				@Override
+				public Change createChange(IProgressMonitor pm) throws CoreException, OperationCanceledException {
+					return change;
+				}
+
+			};
+			RefactoringWizard wizard = new RefactoringWizard(refactoring,
+					RefactoringWizard.DIALOG_BASED_USER_INTERFACE |
+					RefactoringWizard.NO_BACK_BUTTON_ON_STATUS_DIALOG
+			) {
+
+				@Override
+				protected void addUserInputPages() {
+					//no inputs required
+				}
+
+			};
+			if (Display.getCurrent() == null) {
+				UI.getDisplay().asyncExec(() -> runRefactorWizardOperation(wizard, label));
+			} else {
+				runRefactorWizardOperation(wizard, label);
 			}
-		} catch (CoreException e) {
+		} else {
+			final var changeOperation = new PerformChangeOperation(change);
+			changeOperation.setUndoManager(RefactoringCore.getUndoManager(), name);
+			try {
+				ResourcesPlugin.getWorkspace().run(changeOperation, new NullProgressMonitor());
+
+				// Open the resource in editor if there is the only one URI
+				if (changedURIs.size() == 1) {
+					changedURIs.keySet().stream().findFirst().ifPresent(uri -> {
+						// Select the only start position of the range or the document start
+						Range range = changedURIs.get(uri);
+						Position start = range.getStart() != null ? range.getStart() : new Position(0, 0);
+						if (Display.getCurrent() != null) {
+							open(uri.toString(), new Range(start, start));
+						} else {
+							UI.getDisplay().asyncExec(() -> open(uri.toString(), new Range(start, start)));
+						}
+					});
+				}
+			} catch (CoreException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		}
+
+	}
+
+	private static void runRefactorWizardOperation(RefactoringWizard wizard, String label) {
+		try {
+			new RefactoringWizardOpenOperation(wizard).run(Display.getCurrent().getActiveShell(), label);
+		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 		}
 	}
@@ -1039,7 +1101,7 @@ public final class LSPEclipseUtils {
 					VersionedTextDocumentIdentifier id = edit.getTextDocument();
 					URI uri = URI.create(id.getUri());
 					List<TextEdit> textEdits = edit.getEdits();
-					change.addAll(toChanges(uri, textEdits));
+					change.add(toChanges(uri, textEdits));
 					collectChangedURI(uri, textEdits, collector);
 				} else if (action.isRight()) {
 					ResourceOperation resourceOperation = action.getRight();
@@ -1112,7 +1174,7 @@ public final class LSPEclipseUtils {
 				for (java.util.Map.Entry<String, List<TextEdit>> edit : changes.entrySet()) {
 					URI uri = URI.create(edit.getKey());
 					List<TextEdit> textEdits = edit.getValue();
-					change.addAll(toChanges(uri, textEdits));
+					change.add(toChanges(uri, textEdits));
 					collectChangedURI(uri, textEdits, collector);
 				}
 			}
@@ -1169,13 +1231,15 @@ public final class LSPEclipseUtils {
 	 * @param uri
 	 *            document URI to update
 	 * @param textEdits
-	 *            LSP text edits
+	 *            CompositeChange with LSP text edits
 	 */
-	private static LSPTextChange[] toChanges(URI uri, List<TextEdit> textEdits) {
+	private static Change toChanges(URI uri, List<TextEdit> textEdits) {
 		Collections.sort(textEdits, Comparator.comparing(edit -> edit.getRange().getStart(),
 				Comparator.comparingInt(Position::getLine).thenComparingInt(Position::getCharacter).reversed()));
-		return textEdits.stream().map(te -> new LSPTextChange("LSP Text Edit", uri, te)) //$NON-NLS-1$
+		LSPTextChange[] changes = textEdits.stream().map(te -> new LSPTextChange("Line: %d".formatted(te.getRange().getStart().getLine() + 1), uri, te)) //$NON-NLS-1$
 				.toArray(LSPTextChange[]::new);
+		CompositeChange cc = new CompositeChange(Paths.get(uri).toString(), changes);
+		return cc;
 	}
 
 	public static URI toUri(IPath absolutePath) {
