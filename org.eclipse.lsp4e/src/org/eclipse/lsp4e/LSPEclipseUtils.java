@@ -137,7 +137,6 @@ import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
 import org.eclipse.mylyn.wikitext.parser.MarkupParser;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.RGBA;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.text.edits.MalformedTreeException;
 import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
@@ -925,58 +924,20 @@ public final class LSPEclipseUtils {
 			return;
 		}
 
-		if (applyWorkspaceEditIfSingleOpenFile(wsEdit)) {
-			return;
-		}
-
-		// multiple documents or some ResourceChanges => create a refactoring
 		String name = label == null ? DEFAULT_LABEL : label;
-		Map<URI, Range> changedURIs = new HashMap<>();
-		CompositeChange change = toCompositeChange(wsEdit, name, changedURIs);
 
 		if (wsEdit.getChangeAnnotations() != null && wsEdit.getChangeAnnotations().values().stream().anyMatch(ca -> ca.getNeedsConfirmation())) {
-			Refactoring refactoring = new Refactoring() {
-
-				@Override
-				public String getName() {
-					return label;
-				}
-
-				@Override
-				public RefactoringStatus checkInitialConditions(IProgressMonitor pm)
-						throws CoreException, OperationCanceledException {
-					return RefactoringStatus.create(Status.OK_STATUS);
-				}
-
-				@Override
-				public RefactoringStatus checkFinalConditions(IProgressMonitor pm)
-						throws CoreException, OperationCanceledException {
-					return RefactoringStatus.create(Status.OK_STATUS);
-				}
-
-				@Override
-				public Change createChange(IProgressMonitor pm) throws CoreException, OperationCanceledException {
-					return change;
-				}
-
-			};
-			RefactoringWizard wizard = new RefactoringWizard(refactoring,
-					RefactoringWizard.DIALOG_BASED_USER_INTERFACE |
-					RefactoringWizard.NO_BACK_BUTTON_ON_STATUS_DIALOG
-			) {
-
-				@Override
-				protected void addUserInputPages() {
-					//no inputs required
-				}
-
-			};
-			if (Display.getCurrent() == null) {
-				UI.getDisplay().asyncExec(() -> runRefactorWizardOperation(wizard, label));
-			} else {
-				runRefactorWizardOperation(wizard, label);
-			}
+			runRefactorWizardOperation(toCompositeChange(wsEdit, name));
 		} else {
+
+			if (applyWorkspaceEditIfSingleOpenFile(wsEdit)) {
+				return;
+			}
+
+			// multiple documents or some ResourceChanges => create a refactoring
+			Map<URI, Range> changedURIs = new HashMap<>();
+			CompositeChange change = toCompositeChange(wsEdit, name, changedURIs);
+
 			final var changeOperation = new PerformChangeOperation(change);
 			changeOperation.setUndoManager(RefactoringCore.getUndoManager(), name);
 			try {
@@ -988,11 +949,7 @@ public final class LSPEclipseUtils {
 						// Select the only start position of the range or the document start
 						Range range = changedURIs.get(uri);
 						Position start = range.getStart() != null ? range.getStart() : new Position(0, 0);
-						if (Display.getCurrent() != null) {
-							open(uri.toString(), new Range(start, start));
-						} else {
-							UI.getDisplay().asyncExec(() -> open(uri.toString(), new Range(start, start)));
-						}
+						UI.runOnUIThread(() -> open(uri.toString(), new Range(start, start)));
 					});
 				}
 			} catch (CoreException e) {
@@ -1002,12 +959,51 @@ public final class LSPEclipseUtils {
 
 	}
 
-	private static void runRefactorWizardOperation(RefactoringWizard wizard, String label) {
-		try {
-			new RefactoringWizardOpenOperation(wizard).run(Display.getCurrent().getActiveShell(), label);
-		} catch (InterruptedException e) {
-			LanguageServerPlugin.logError(e);
-		}
+	private static void runRefactorWizardOperation(Change change) {
+		Refactoring refactoring = new Refactoring() {
+
+			@Override
+			public String getName() {
+				return change.getName();
+			}
+
+			@Override
+			public RefactoringStatus checkInitialConditions(IProgressMonitor pm)
+					throws CoreException, OperationCanceledException {
+				return RefactoringStatus.create(Status.OK_STATUS);
+			}
+
+			@Override
+			public RefactoringStatus checkFinalConditions(IProgressMonitor pm)
+					throws CoreException, OperationCanceledException {
+				return RefactoringStatus.create(Status.OK_STATUS);
+			}
+
+			@Override
+			public Change createChange(IProgressMonitor pm) throws CoreException, OperationCanceledException {
+				return change;
+			}
+
+		};
+		RefactoringWizard wizard = new RefactoringWizard(refactoring,
+				RefactoringWizard.DIALOG_BASED_USER_INTERFACE |
+				RefactoringWizard.NO_BACK_BUTTON_ON_STATUS_DIALOG
+		) {
+
+
+			@Override
+			protected void addUserInputPages() {
+				//no inputs required
+			}
+
+		};
+		UI.runOnUIThread(() -> {
+			try {
+				new RefactoringWizardOpenOperation(wizard).run(UI.getActiveShell(), change.getName());
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+			}
+		});
 	}
 
 	/**
