@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2021, 2022 Vegard IT GmbH and others.
+ * Copyright (c) 2021, 2024 Vegard IT GmbH and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -98,6 +98,14 @@ public final class UI {
 			return display;
 
 		return Display.getDefault();
+	}
+
+	public static void runOnUIThread(Runnable runnable) {
+		if (Display.getCurrent() == null) {
+			getDisplay().asyncExec(runnable);
+		} else {
+			runnable.run();
+		}
 	}
 
 	private UI() {

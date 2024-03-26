@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2022 Rogue Wave Software Inc. and others.
+ * Copyright (c) 2016, 2024 Rogue Wave Software Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -26,7 +26,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.ISharedImages;
 
 public class ServerMessageHandler {
@@ -104,8 +103,7 @@ public class ServerMessageHandler {
 		final var future = new CompletableFuture<MessageActionItem>();
 
 		Display.getDefault().asyncExec(() -> {
-			final var shell = new Shell(Display.getCurrent());
-			final var dialog = new MessageDialog(shell, wrapper.serverDefinition.label,
+			final var dialog = new MessageDialog(UI.getActiveShell(), wrapper.serverDefinition.label,
 					null, params.getMessage(), MessageDialog.INFORMATION, 0, options);
 			final var result = new MessageActionItem();
 			int dialogResult = dialog.open();

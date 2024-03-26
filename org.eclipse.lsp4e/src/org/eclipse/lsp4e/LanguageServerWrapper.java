@@ -282,6 +282,7 @@ public class LanguageServerWrapper {
 		}
 		if (this.initializeFuture == null) {
 			final URI rootURI = getRootURI();
+			final Job job = createInitializeLanguageServerJob();
 			this.launcherFuture = new CompletableFuture<>();
 			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
 				advanceinitializeFutureMonitor();
@@ -357,22 +358,30 @@ public class LanguageServerWrapper {
 				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
 				advanceinitializeFutureMonitor();
 			}).exceptionally(e -> {
-				LanguageServerPlugin.logError(e);
 				stop();
-				throw new RuntimeException(e);
+				final Throwable cause = e.getCause();
+				if (cause instanceof CancellationException c) {
+					throw c;
+				} else {
+					LanguageServerPlugin.logError(e);
+					throw new RuntimeException(e);
+				}
 			});
 
 			if (this.initializeFuture.isCompletedExceptionally()) {
 				// This might happen if an exception occurred and stop() was called before this.initializeFuture was assigned
 				this.initializeFuture = null;
 			} else {
-				createInitializeLanguageServerJob().schedule();
+				job.schedule();
 			}
 		}
 	}
 
 	private void advanceinitializeFutureMonitor() {
 		if (initializeFutureMonitor != null) {
+			if (initializeFutureMonitor.isCanceled()) {
+				throw new CancellationException();
+			}
 			initializeFutureMonitor.worked(1);
 		}
 	}
@@ -383,11 +392,20 @@ public class LanguageServerWrapper {
 			protected IStatus run(IProgressMonitor monitor) {
 				initializeFutureMonitor = SubMonitor.convert(monitor, initializeFutureNumberOfStages);
 				CompletableFuture<Void> currentInitializeFuture = initializeFuture;
-				if (currentInitializeFuture != null) {
-					currentInitializeFuture.join();
+				try {
+					if (currentInitializeFuture != null) {
+						currentInitializeFuture.join();
+					}
+				} catch (Exception e) {
+					if (e instanceof CancellationException) {
+						return Status.CANCEL_STATUS;
+					} else {
+						return new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, e.getMessage(), e);
+					}
+				} finally {
+					initializeFutureMonitor.done();
+					initializeFutureMonitor = null;
 				}
-				initializeFutureMonitor.done();
-				initializeFutureMonitor = null;
 				return Status.OK_STATUS;
 			}
 
