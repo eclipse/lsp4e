@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2022-3 Cocotec Ltd and others.
+ * Copyright (c) 2022-2024 Cocotec Ltd and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -58,6 +58,7 @@ import org.eclipse.lsp4j.WindowClientCapabilities;
 import org.eclipse.lsp4j.WindowShowMessageRequestCapabilities;
 import org.eclipse.lsp4j.WorkspaceClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceEditCapabilities;
+import org.eclipse.lsp4j.WorkspaceEditChangeAnnotationSupportCapabilities;
 
 /**
  *
@@ -139,6 +140,7 @@ public class SupportedFeatures {
 		editCapabilities.setResourceOperations(Arrays.asList(ResourceOperationKind.Create,
 				ResourceOperationKind.Delete, ResourceOperationKind.Rename));
 		editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
+		editCapabilities.setChangeAnnotationSupport(new WorkspaceEditChangeAnnotationSupportCapabilities(true));
 		workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
 		CodeLensWorkspaceCapabilities codeLensWorkspaceCapabilities = new CodeLensWorkspaceCapabilities(true);
 		workspaceClientCapabilities.setCodeLens(codeLensWorkspaceCapabilities);
