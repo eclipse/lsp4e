@@ -1139,11 +1139,10 @@ public final class LSPEclipseUtils {
 							if (!newFile.exists() || rename.getOptions().getOverwrite()) {
 								if (oldFile.getParent().equals(newFile.getParent())) {
 									change.add(new RenameResourceChange(oldFile.getFullPath(), newFile.getName()));
-									return;
 								} else {
 									change.add(new MoveRenameResourceChange(oldFile, newFile.getParent(), newFile.getName()));
-									return;
 								}
+								return;
 							}
 						}
 
