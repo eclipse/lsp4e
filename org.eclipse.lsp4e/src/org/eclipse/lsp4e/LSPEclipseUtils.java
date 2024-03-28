@@ -1135,14 +1135,15 @@ public final class LSPEclipseUtils {
 
 						// If both files are within Eclipse workspace utilize Eclipse ltk MoveRenameResourceChange and RenameResourceChange
 						if (oldFile != null && oldFile.exists() && oldFile.getParent() != null
-								&& newFile != null && newFile.getParent() != null) {
+								&& newFile != null && newFile.getParent() != null && newFile.getParent().exists()) {
 							if (!newFile.exists() || rename.getOptions().getOverwrite()) {
 								if (oldFile.getParent().equals(newFile.getParent())) {
 									change.add(new RenameResourceChange(oldFile.getFullPath(), newFile.getName()));
+									return;
 								} else {
 									change.add(new MoveRenameResourceChange(oldFile, newFile.getParent(), newFile.getName()));
+									return;
 								}
-								return;
 							}
 						}
 
