@@ -63,7 +63,7 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 	@Override
 	public void apply(IDocument document) {
 		if (fcodeAction != null) {
-			if (isCodeActionResolveSupported(serverWrapper.getServerCapabilities()) && fcodeAction.getEdit() == null) {
+			if (fcodeAction.getEdit() == null && fcodeAction.getCommand() == null && isCodeActionResolveSupported(serverWrapper.getServerCapabilities())) {
 				// Unresolved code action "edit" property. Resolve it.
 				serverWrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(fcodeAction)).thenAccept(this::apply);
 			} else {
