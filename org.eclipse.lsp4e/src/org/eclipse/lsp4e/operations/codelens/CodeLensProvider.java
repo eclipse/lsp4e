@@ -47,12 +47,12 @@ public class CodeLensProvider extends AbstractCodeMiningProvider {
 		}
 	}
 
-	private LSPCodeMining toCodeMining(IDocument document, LanguageServerWrapper languageServerWrapper, CodeLens codeLens) {
+	private CodeLensCodeMining toCodeMining(IDocument document, LanguageServerWrapper languageServerWrapper, CodeLens codeLens) {
 		if (codeLens == null) {
 			return null;
 		}
 		try {
-			return new LSPCodeMining(codeLens, document, languageServerWrapper, CodeLensProvider.this);
+			return new CodeLensCodeMining(codeLens, document, languageServerWrapper, CodeLensProvider.this);
 		} catch (BadLocationException e) {
 			LanguageServerPlugin.logError(e);
 			return null;

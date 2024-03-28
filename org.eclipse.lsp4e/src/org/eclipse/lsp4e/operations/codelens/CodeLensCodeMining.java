@@ -26,13 +26,13 @@ import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.swt.events.MouseEvent;
 
-public class LSPCodeMining extends LineHeaderCodeMining {
+public class CodeLensCodeMining extends LineHeaderCodeMining {
 	private CodeLens codeLens;
 
 	private final LanguageServerWrapper languageServerWrapper;
 	private final @NonNull IDocument document;
 
-	public LSPCodeMining(CodeLens codeLens, @NonNull IDocument document, LanguageServerWrapper languageServerWrapper,
+	public CodeLensCodeMining(CodeLens codeLens, @NonNull IDocument document, LanguageServerWrapper languageServerWrapper,
 			CodeLensProvider provider) throws BadLocationException {
 		super(codeLens.getRange().getStart().getLine(), document, provider, null);
 		this.codeLens = codeLens;
