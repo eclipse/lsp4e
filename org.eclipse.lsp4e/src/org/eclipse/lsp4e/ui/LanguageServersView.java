@@ -244,7 +244,7 @@ public class LanguageServersView extends ViewPart {
 
 	private void updateViewerInput() {
 		final var currentElements = (Object[]) viewer.getInput();
-		final var newElements = LanguageServiceAccessor.getStartedWrappers(null, capability -> true, true).toArray();
+		final var newElements = LanguageServiceAccessor.getStartedWrappers(capability -> true, true).toArray();
 		if (!Arrays.equals(currentElements, newElements)) {
 			UI.getDisplay().execute(() -> {
 				actionButtons.values().forEach(Widget::dispose);

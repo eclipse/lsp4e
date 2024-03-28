@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.commands;
 
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForCondition;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -64,6 +65,8 @@ public class DynamicRegistrationTest {
 		IDocument document = LSPEclipseUtils.getDocument(testFile);
 		assertNotNull(document);
 		LanguageServers.forDocument(document).anyMatching();
+
+		waitForCondition(5_000, () -> !MockLanguageServer.INSTANCE.getRemoteProxies().isEmpty());
 		getMockClient();
 	}
 

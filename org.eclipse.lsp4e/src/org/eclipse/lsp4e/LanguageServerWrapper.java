@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CancellationException;
@@ -467,9 +468,10 @@ public class LanguageServerWrapper {
 	}
 
 	private static boolean supportsWorkspaceFolders(ServerCapabilities serverCapabilities) {
-		return serverCapabilities != null && serverCapabilities.getWorkspace() != null
-				&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
-				&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
+		return serverCapabilities != null
+			&& serverCapabilities.getWorkspace() != null
+			&& serverCapabilities.getWorkspace().getWorkspaceFolders() != null
+			&& Boolean.TRUE.equals(serverCapabilities.getWorkspace().getWorkspaceFolders().getSupported());
 	}
 
 	private void logMessage(Message message) {
@@ -628,19 +630,37 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Check whether this LS is suitable for provided project. Starts the LS if not
-	 * already started.
+	 * Check whether this LS is suitable for provided project.
 	 *
 	 * @return whether this language server can operate on the given project
 	 * @since 0.5
 	 */
-	public boolean canOperate(@NonNull IProject project) {
-		return project.equals(this.initialProject) || serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
+	public boolean canOperate(@Nullable IProject project) {
+		return Objects.equals(project, this.initialProject)
+			|| serverDefinition.isSingleton
+			|| supportsWorkspaceFolderCapability();
+	}
+
+	public boolean canOperate(@NonNull IDocument document) {
+		URI documentUri = LSPEclipseUtils.toUri(document);
+		if (documentUri == null) {
+			return false;
+		}
+		if (this.isConnectedTo(documentUri)) {
+			return true;
+		}
+		if (this.initialProject == null && this.connectedDocuments.isEmpty()) {
+			return true;
+		}
+		IFile file = LSPEclipseUtils.getFile(document);
+		if (file != null && file.exists() && canOperate(file.getProject())) {
+			return true;
+		}
+		return serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
 	}
 
 	/**
-	 * @return true, if the server supports multi-root workspaces via workspace
-	 *         folders
+	 * @return true, if the server supports multi-root workspaces via workspace folders
 	 * @since 0.6
 	 */
 	private boolean supportsWorkspaceFolderCapability() {
@@ -1081,24 +1101,6 @@ public class LanguageServerWrapper {
 			return documentContentSynchronizer.getVersion();
 		}
 		return -1;
-	}
-
-	public boolean canOperate(@NonNull IDocument document) {
-		URI documentUri = LSPEclipseUtils.toUri(document);
-		if (documentUri == null) {
-			return false;
-		}
-		if (this.isConnectedTo(documentUri)) {
-			return true;
-		}
-		if (this.initialProject == null && this.connectedDocuments.isEmpty()) {
-			return true;
-		}
-		IFile file = LSPEclipseUtils.getFile(document);
-		if (file != null && file.exists() && canOperate(file.getProject())) {
-			return true;
-		}
-		return serverDefinition.isSingleton || supportsWorkspaceFolderCapability();
 	}
 
 	@Override

@@ -13,8 +13,14 @@
 package org.eclipse.lsp4e.test;
 
 import static org.eclipse.lsp4e.LanguageServiceAccessor.hasActiveLanguageServers;
-import static org.eclipse.lsp4e.test.utils.TestUtils.*;
-import static org.junit.Assert.*;
+import static org.eclipse.lsp4e.test.utils.TestUtils.createUniqueTestFile;
+import static org.eclipse.lsp4e.test.utils.TestUtils.openEditor;
+import static org.eclipse.lsp4e.test.utils.TestUtils.waitForCondition;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
 import java.util.List;
@@ -59,7 +65,6 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
@@ -743,8 +748,8 @@ public class LanguageServersTest {
 		assertTrue(serversForProject.contains("Server1"));
 		assertTrue(serversForProject.contains("Server2"));
 
-		((AbstractTextEditor) editor1).close(false);
-		((AbstractTextEditor) editor2).close(false);
+		editor1.getSite().getPage().closeEditor(editor1, false);
+		editor2.getSite().getPage().closeEditor(editor2, false);
 
 		waitForCondition(5_000, () -> !hasActiveLanguageServers(MATCH_ALL));
 
