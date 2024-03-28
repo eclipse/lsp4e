@@ -131,6 +131,8 @@ import org.eclipse.ltk.core.refactoring.Refactoring;
 import org.eclipse.ltk.core.refactoring.RefactoringCore;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 import org.eclipse.ltk.core.refactoring.resource.DeleteResourceChange;
+import org.eclipse.ltk.core.refactoring.resource.MoveRenameResourceChange;
+import org.eclipse.ltk.core.refactoring.resource.RenameResourceChange;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizard;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
 import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
@@ -1130,6 +1132,20 @@ public final class LSPEclipseUtils {
 						URI newURI = URI.create(rename.getNewUri());
 						IFile oldFile = getFileHandle(oldURI);
 						IFile newFile = getFileHandle(newURI);
+
+						// If both files are within Eclipse workspace utilize Eclipse ltk MoveRenameResourceChange and RenameResourceChange
+						if (oldFile != null && oldFile.exists() && oldFile.getParent() != null
+								&& newFile != null && newFile.getParent() != null) {
+							if (!newFile.exists() || rename.getOptions().getOverwrite()) {
+								if (oldFile.getParent().equals(newFile.getParent())) {
+									change.add(new RenameResourceChange(oldFile.getFullPath(), newFile.getName()));
+								} else {
+									change.add(new MoveRenameResourceChange(oldFile, newFile.getParent(), newFile.getName()));
+								}
+								return;
+							}
+						}
+
 						DeleteResourceChange removeNewFile = null;
 						if (newFile != null && newFile.exists()) {
 							if (rename.getOptions().getOverwrite()) {
