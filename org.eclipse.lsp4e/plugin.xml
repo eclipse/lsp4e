@@ -239,6 +239,7 @@
             allPopups="true"
             locationURI="popup:#TextEditorContext?after=additions">
          <menu
+               id="org.eclipse.lsp4e.menu.refactorings"
                label="%refactorings.menu.label">
             <command
                   commandId="org.eclipse.ui.edit.rename"
@@ -249,6 +250,7 @@
             </separator>
          </menu>
          <menu
+               id="org.eclipse.lsp4e.menu.codeActions"
                label="%codeactions.menu.label">
             <dynamic
                   class="org.eclipse.lsp4e.operations.codeactions.LSPCodeActionsMenu"
@@ -293,7 +295,10 @@
       <menuContribution locationURI="popup:org.eclipse.ui.popup.any?endof=group.generate">
          <!-- https://github.com/eclipse-mirrors/org.eclipse.ui/blob/master/bundles/org.eclipse.ui.navigator/src/org/eclipse/ui/navigator/ICommonMenuConstants.java -->
          <!-- "Source/Format" menu entry in navigator popup menu -->
-         <menu label="Source" mnemonic="S" >
+         <menu
+               id="org.eclipse.lsp4e.menu.source"
+               label="Source"
+               mnemonic="S">
             <command commandId="org.eclipse.lsp4e.formatfile">
                <visibleWhen>
                   <iterate>
