@@ -6,7 +6,7 @@
 	<packaging>pom</packaging>
 
 	<properties>
-		<tycho-version>4.0.6</tycho-version>
+		<tycho-version>4.0.7</tycho-version>
 		<tycho.scmUrl>scm:git:https://github.com/eclipse/lsp4e.git</tycho.scmUrl>
 		<ui.test.vmargs></ui.test.vmargs>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
