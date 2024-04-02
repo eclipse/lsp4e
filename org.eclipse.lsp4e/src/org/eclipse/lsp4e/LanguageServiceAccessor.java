@@ -359,7 +359,7 @@ public class LanguageServiceAccessor {
 	private static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
 			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
 
-		final Predicate<LanguageServerWrapper> serverSelector = wrapper -> project != null && wrapper.canOperate(project)
+		final Predicate<LanguageServerWrapper> serverSelector = wrapper -> wrapper.canOperate(project)
 				&& wrapper.serverDefinition.equals(serverDefinition);
 
 		var matchingServer = startedServers.stream().filter(serverSelector).findFirst();
@@ -408,35 +408,83 @@ public class LanguageServiceAccessor {
 	}
 
 	@NonNull
+	public static List<@NonNull LanguageServerWrapper> getStartedWrappers(Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
+		return getStartedWrappers(w -> true, request, onlyActiveLS);
+	}
+
+	@NonNull
 	public static List<@NonNull LanguageServerWrapper> getStartedWrappers(@Nullable IProject project, Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
+		return getStartedWrappers(w -> w.canOperate(project), request, onlyActiveLS);
+	}
+
+	@NonNull
+	public static List<@NonNull LanguageServerWrapper> getStartedWrappers(@NonNull IDocument document, Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
+		return getStartedWrappers(w -> w.canOperate(document), request, onlyActiveLS);
+	}
+
+	@NonNull
+	private static List<@NonNull LanguageServerWrapper> getStartedWrappers(Predicate<LanguageServerWrapper> canOperatePredicate, Predicate<ServerCapabilities> capabilitiesPredicate, boolean onlyActiveLS) {
 		List<@NonNull LanguageServerWrapper> result = new ArrayList<>();
 		for (LanguageServerWrapper wrapper : startedServers) {
-			if ((!onlyActiveLS || wrapper.isActive()) && (project == null || wrapper.canOperate(project))) {
-				if (capabilitiesComply(wrapper, request)) {
+			if ((!onlyActiveLS || wrapper.isActive()) && canOperatePredicate.test(wrapper) && capabilitiesComply(wrapper, capabilitiesPredicate)) {
 					result.add(wrapper);
-				}
 			}
 		}
 		return result;
 	}
 
 	/**
-	 * Returns {@code true} if there are running language servers satisfying a capability predicate. This does not
-	 * start any matching language servers.
+	 * Returns {@code true} if there are running language servers satisfying a capability predicate.
+	 * This does not start any matching language servers.
 	 *
 	 * @param request
 	 * @return {@code true} if there are running language servers satisfying a capability predicate
 	 */
-	public static boolean hasActiveLanguageServers(Predicate<ServerCapabilities> request) {
-		return !getLanguageServers(null, request, true).isEmpty();
+	public static boolean hasActiveLanguageServers(@NonNull Predicate<ServerCapabilities> request) {
+		return !getLanguageServers(request).isEmpty();
 	}
 
-	public static boolean hasActiveLanguageServers(IFile file, Predicate<ServerCapabilities> request) {
-		return !getLanguageServers(null, request, true).isEmpty();
+	public static boolean hasActiveLanguageServers(@Nullable IFile file, @NonNull Predicate<ServerCapabilities> request) {
+		final IProject project = file != null ? file.getProject() : null;
+		return !getLanguageServers(project, request).isEmpty();
+	}
+
+	public static boolean hasActiveLanguageServers(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> request) {
+		return !getLanguageServers(document, request).isEmpty();
+	}
+
+	/**
+	 * Gets list of LS initialized for any project
+	 *
+	 * @param onlyActiveLS
+	 *			true if this method should return only the already running
+	 *			language servers, otherwise previously started language servers
+	 *			will be re-activated
+	 * @return list of Language Servers
+	 */
+	@NonNull
+	private static List<@NonNull LanguageServer> getLanguageServers(Predicate<ServerCapabilities> capabilitiesPredicate) {
+		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(capabilitiesPredicate, true);
+		return getLanguageServersFromWrappers(wrappers);
 	}
 
 	/**
 	 * Gets list of LS initialized for given project
+	 *
+	 * @param onlyActiveLS
+	 *			true if this method should return only the already running
+	 *			language servers, otherwise previously started language servers
+	 *			will be re-activated
+	 * @return list of Language Servers
+	 */
+	@NonNull
+	private static List<@NonNull LanguageServer> getLanguageServers(@Nullable IProject project, Predicate<ServerCapabilities> capabilitiesPredicate) {
+		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(project, capabilitiesPredicate, true);
+		return getLanguageServersFromWrappers(wrappers);
+	}
+
+	/**
+	 * Gets list of LS initialized for given document
 	 *
 	 * @param onlyActiveLS
 	 *            true if this method should return only the already running
@@ -445,9 +493,12 @@ public class LanguageServiceAccessor {
 	 * @return list of Language Servers
 	 */
 	@NonNull
-	private static List<@NonNull LanguageServer> getLanguageServers(@Nullable IProject project,
-			Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
-		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(project, request, onlyActiveLS);
+	private static List<@NonNull LanguageServer> getLanguageServers(@NonNull IDocument document, Predicate<ServerCapabilities> capabilitiesPredicate) {
+		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(document, capabilitiesPredicate, true);
+		return getLanguageServersFromWrappers(wrappers);
+	}
+
+	private static List<@NonNull LanguageServer> getLanguageServersFromWrappers(List<@NonNull LanguageServerWrapper> wrappers) {
 		final var servers = new ArrayList<@NonNull LanguageServer>(wrappers.size());
 		for (LanguageServerWrapper wrapper : wrappers) {
 			@Nullable
