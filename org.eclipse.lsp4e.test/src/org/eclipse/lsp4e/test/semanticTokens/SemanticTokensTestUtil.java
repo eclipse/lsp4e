@@ -36,9 +36,9 @@ public class SemanticTokensTestUtil {
 
 	public static List<Integer> keywordSemanticTokens() {
 		List<List<Integer>> expectedTokens = new ArrayList<>();
-		expectedTokens.add(Arrays.asList(0,0,4,1,0));
-		expectedTokens.add(Arrays.asList(3,0,4,1,0));
-		expectedTokens.add(Arrays.asList(0,9,7,1,0));
+		expectedTokens.add(Arrays.asList(0,0,4,0,0));
+		expectedTokens.add(Arrays.asList(3,0,4,0,0));
+		expectedTokens.add(Arrays.asList(0,9,7,0,0));
 
 		return expectedTokens.stream().flatMap(List::stream).toList();
 	}
