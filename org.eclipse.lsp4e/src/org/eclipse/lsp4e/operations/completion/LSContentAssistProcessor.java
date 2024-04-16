@@ -317,8 +317,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		if (docString!=null && !docString.isEmpty()) {
 			signature.append('\n').append(docString);
 		}
-		final var contextInformation = new ContextInformation(information.getLabel(), signature.toString());
-		return contextInformation;
+		return new ContextInformation(information.getLabel(), signature.toString());
 	}
 
 	private void getFuture(CompletableFuture<@NonNull List<@NonNull Void>> future) {
@@ -328,13 +327,15 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 		try {
 			future.get(TRIGGERS_TIMEOUT, TimeUnit.MILLISECONDS);
-		} catch (OperationCanceledException | ExecutionException e) {
-			LanguageServerPlugin.logError(e);
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
 		} catch (TimeoutException e) {
 			LanguageServerPlugin.logWarning("Could not get trigger characters due to timeout after " + TRIGGERS_TIMEOUT + " milliseconds", e); //$NON-NLS-1$//$NON-NLS-2$
+		} catch (OperationCanceledException | ResponseErrorException | ExecutionException | CancellationException e) {
+			if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
+				LanguageServerPlugin.logError(e);
+			}
 		}
 	}
 
