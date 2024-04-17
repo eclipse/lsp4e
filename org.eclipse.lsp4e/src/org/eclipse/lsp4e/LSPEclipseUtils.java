@@ -100,6 +100,7 @@ import org.eclipse.lsp4j.CompletionContext;
 import org.eclipse.lsp4j.CompletionParams;
 import org.eclipse.lsp4j.CompletionTriggerKind;
 import org.eclipse.lsp4j.CreateFile;
+import org.eclipse.lsp4j.DeclarationParams;
 import org.eclipse.lsp4j.DefinitionParams;
 import org.eclipse.lsp4j.DeleteFile;
 import org.eclipse.lsp4j.DiagnosticSeverity;
@@ -313,6 +314,10 @@ public final class LSPEclipseUtils {
 
 	public static DefinitionParams toDefinitionParams(TextDocumentPositionParams params) {
 		return toTextDocumentPositionParamsCommon(new DefinitionParams(), params);
+	}
+
+	public static DeclarationParams toDeclarationParams(TextDocumentPositionParams params) {
+		return toTextDocumentPositionParamsCommon(new DeclarationParams(), params);
 	}
 
 	public static TypeDefinitionParams toTypeDefinitionParams(TextDocumentPositionParams params) {

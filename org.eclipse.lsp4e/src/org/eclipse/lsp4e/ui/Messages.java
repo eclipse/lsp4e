@@ -17,6 +17,7 @@ import org.eclipse.osgi.util.NLS;
 
 public final class Messages extends NLS {
 
+	public static String definitionHyperlinkLabel;
 	public static String declarationHyperlinkLabel;
 	public static String typeDefinitionHyperlinkLabel;
 	public static String implementationHyperlinkLabel;
