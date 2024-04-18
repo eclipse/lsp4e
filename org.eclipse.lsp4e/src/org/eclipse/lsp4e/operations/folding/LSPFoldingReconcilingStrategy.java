@@ -22,6 +22,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -37,6 +38,7 @@ import org.eclipse.jface.text.source.projection.ProjectionAnnotation;
 import org.eclipse.jface.text.source.projection.ProjectionAnnotationModel;
 import org.eclipse.jface.text.source.projection.ProjectionViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4j.FoldingRange;
@@ -61,6 +63,12 @@ public class LSPFoldingReconcilingStrategy
 	private ProjectionViewer viewer;
 	private @NonNull List<CompletableFuture<List<FoldingRange>>> requests = List.of();
 	private volatile long timestamp = 0;
+	private final boolean collapseImports;
+
+	public LSPFoldingReconcilingStrategy() {
+		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
+		collapseImports = store.getBoolean("foldingReconcilingStrategy.collapseImports"); //$NON-NLS-1$
+	}
 
 	/**
 	 * A FoldingAnnotation is a {@link ProjectionAnnotation} it is folding and
@@ -153,7 +161,7 @@ public class LSPFoldingReconcilingStrategy
 				Collections.sort(ranges, Comparator.comparing(FoldingRange::getEndLine));
 				for (FoldingRange foldingRange : ranges) {
 					updateAnnotation(deletions, existing, additions, foldingRange.getStartLine(),
-							foldingRange.getEndLine(), FoldingRangeKind.Imports.equals(foldingRange.getKind()));
+							foldingRange.getEndLine(), collapseImports && FoldingRangeKind.Imports.equals(foldingRange.getKind()));
 				}
 			}
 		} catch (BadLocationException e) {

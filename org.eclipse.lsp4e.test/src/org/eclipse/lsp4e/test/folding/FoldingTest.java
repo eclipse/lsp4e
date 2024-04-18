@@ -14,6 +14,8 @@ import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.test.utils.AllCleanRule;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -22,27 +24,49 @@ import org.eclipse.lsp4j.FoldingRangeKind;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class FoldingTest {
 
+	private static final String CONTENT = """
+		import
+		import
+		import
+		visible
+		""";
+
 	@Rule
 	public final AllCleanRule clear = new AllCleanRule();
 
 	@Test
-	public void testImportsFoldedByDefault() throws CoreException {
-		IFile file = TestUtils.createUniqueTestFile(null, """
-			import
-			import
-			import
-			visible
-			""");
+	public void testImportsFoldedByDefaultEnabled() throws CoreException {
+		collapseImports(true);
+		IEditorPart editor = createEditor();
+		DisplayHelper.waitAndAssertCondition(editor.getSite().getShell().getDisplay(), () -> assertEquals("import\nvisible", ((StyledText)editor.getAdapter(Control.class)).getText().trim()));
+	}
+
+	@Test
+	public void testImportsFoldedByDefaultDisabled() throws CoreException {
+		collapseImports(false);
+		IEditorPart editor = createEditor();
+		DisplayHelper.waitAndAssertCondition(editor.getSite().getShell().getDisplay(), () -> assertEquals(CONTENT, ((StyledText)editor.getAdapter(Control.class)).getText()));
+	}
+
+	private IEditorPart createEditor() throws CoreException, PartInitException {
+		IFile file = TestUtils.createUniqueTestFile(null, CONTENT);
 		FoldingRange foldingRange = new FoldingRange(0, 2);
 		foldingRange.setKind(FoldingRangeKind.Imports);
 		MockLanguageServer.INSTANCE.setFoldingRanges(List.of(foldingRange));
 		IEditorPart editor = TestUtils.openEditor(file);
-		DisplayHelper.waitAndAssertCondition(editor.getSite().getShell().getDisplay(), () -> assertEquals("import\nvisible", ((StyledText)editor.getAdapter(Control.class)).getText().trim()));
+		return editor;
 	}
+	
+	private void collapseImports(boolean collapseImports) {
+		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
+		store.setValue("foldingReconcilingStrategy.collapseImports", true); //$NON-NLS-1$
+	}
+
 }
