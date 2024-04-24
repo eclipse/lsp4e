@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2016, 2023 Red Hat Inc. and others.
+ * Copyright (c) 2016, 2024 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -11,6 +11,7 @@
  *  Michał Niewrzał (Rogue Wave Software Inc.) - hyperlink range detection
  *  Lucas Bullen (Red Hat Inc.) - [Bug 517428] Requests sent before initialization
  *  Martin Lippert (Pivotal Inc.) - [Bug 561270] labels include more details now
+ *  Yvan Lussaud (Obeo) - Issue 973 show decraration line
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.declaration;
 
@@ -29,6 +30,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.intro.config.IIntroURL;
 import org.eclipse.ui.intro.config.IntroURLFactory;
@@ -92,7 +94,12 @@ public class LSBasedHyperlink implements IHyperlink {
 			String uri = this.location.isLeft() ? this.location.getLeft().getUri() : this.location.getRight().getTargetUri();
 			if (uri != null) {
 				if (uri.startsWith(LSPEclipseUtils.FILE_URI) && uri.length() > LSPEclipseUtils.FILE_URI.length()) {
-					return getFileBasedLabel(uri);
+					Range range = this.location.isLeft() ? this.location.getLeft().getRange() : this.location.getRight().getTargetSelectionRange();
+					int line = -1;
+					if (range != null && range.getStart() != null) {
+						line = range.getStart().getLine();
+					}
+					return getFileBasedLabel(uri, line);
 				}
 				else if (uri.startsWith(LSPEclipseUtils.INTRO_URL)) {
 					return getIntroUrlBasedLabel(uri);
@@ -125,15 +132,22 @@ public class LSBasedHyperlink implements IHyperlink {
 		return locationType + DASH_SEPARATOR + uri;
 	}
 
-	private String getFileBasedLabel(String uriStr) {
+	private String getFileBasedLabel(String uriStr, int line) {
 		URI uri = URI.create(uriStr);
 		IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace().getRoot();
 		IFile[] files = workspaceRoot.findFilesForLocationURI(uri);
 		if (files != null && files.length == 1 && files[0].getProject() != null) {
 			IFile file = files[0];
-			IPath containerPath = file.getParent().getProjectRelativePath();
-			return locationType + DASH_SEPARATOR + file.getName() + DASH_SEPARATOR + file.getProject().getName()
-					+ (containerPath.isEmpty() ? "" : IPath.SEPARATOR + containerPath.toString()); //$NON-NLS-1$
+
+			@SuppressWarnings("null")
+			String lineContent = LSPEclipseUtils.getLineContent(line, file);
+			if (lineContent != null) {
+				return locationType + DASH_SEPARATOR + lineContent;
+			} else {
+				IPath containerPath = file.getParent().getProjectRelativePath();
+				return locationType + DASH_SEPARATOR + file.getName() + DASH_SEPARATOR + file.getProject().getName()
+						+ (containerPath.isEmpty() ? "" : IPath.SEPARATOR + containerPath.toString()); //$NON-NLS-1$
+			}
 		}
 		Path path = Paths.get(uri);
 		return locationType + DASH_SEPARATOR + path.getFileName()

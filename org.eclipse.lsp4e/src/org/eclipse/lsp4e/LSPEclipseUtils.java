@@ -18,6 +18,7 @@
  *  Rubén Porras Campo (Avaloq) - Bug 576425 - Support Remote Files
  *  Pierre-Yves Bigourdan <pyvesdev@gmail.com> - Issue 29
  *  Bastian Doetsch (Snyk Ltd)
+ *  Yvan Lussaud (Obeo) - Issue 973 show decraration line
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
@@ -31,6 +32,7 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,6 +84,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextOperationTarget;
 import org.eclipse.jface.text.ITextViewer;
@@ -1575,5 +1578,29 @@ public final class LSPEclipseUtils {
 	public static boolean isReadOnly(final @NonNull IResource resource) {
 		ResourceAttributes attributes = resource.getResourceAttributes();
 		return attributes != null && attributes.isReadOnly();
+	}
+
+	/**
+	 * Gets the text content of the given line in the given {@link IFile}.
+	 *
+	 * @param line
+	 *            the line index
+	 * @param file
+	 *            the {@link IFile}
+	 * @return the text content of the given line in the given {@link IFile}
+	 */
+	public static String getLineContent(int line, final @NonNull IFile file) {
+		try (InputStream is = file.getContents()) {
+			String content = new String(is.readNBytes((int) file.getLocation().toFile().length()),
+					Charset.forName(file.getCharset()));
+			IDocument document = new Document(content);
+
+			int offset = document.getLineOffset(line);
+			int length = document.getLineLength(line);
+
+			return document.get(offset, length).trim();
+		} catch (Exception e) {
+			return null;
+		}
 	}
 }
