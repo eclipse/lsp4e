@@ -933,7 +933,7 @@ public final class LSPEclipseUtils {
 
 		String name = label == null ? DEFAULT_LABEL : label;
 
-		if (wsEdit.getChangeAnnotations() != null && wsEdit.getChangeAnnotations().values().stream().anyMatch(ca -> ca.getNeedsConfirmation())) {
+		if (wsEdit.getChangeAnnotations() != null && wsEdit.getChangeAnnotations().values().stream().anyMatch(ca -> ca.getNeedsConfirmation() != null && ca.getNeedsConfirmation())) {
 			runRefactorWizardOperation(toCompositeChange(wsEdit, name));
 		} else {
 
