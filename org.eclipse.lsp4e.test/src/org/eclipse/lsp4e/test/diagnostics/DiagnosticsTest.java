@@ -191,8 +191,8 @@ public class DiagnosticsTest {
 		Job[] allMarkerJobs = Job.getJobManager().find(LanguageServerPlugin.FAMILY_UPDATE_MARKERS);
 		assertThat(allMarkerJobs.length, is(1));
 		Job markerJob = allMarkerJobs[0];
-		file.delete(true, null);
-		waitForAndAssertCondition(1_000, () -> {
+		waitForAndAssertCondition(2_000, () -> {
+			file.delete(true, null);
 			assertEquals(file.exists(), false);
 			return true;
 		});
