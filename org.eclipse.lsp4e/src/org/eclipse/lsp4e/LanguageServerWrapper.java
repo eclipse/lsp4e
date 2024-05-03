@@ -157,7 +157,7 @@ public class LanguageServerWrapper {
 	protected StreamConnectionProvider lspStreamProvider;
 	private Future<?> launcherFuture;
 	private CompletableFuture<Void> initializeFuture;
-	private IProgressMonitor initializeFutureMonitor;
+	private final AtomicReference<IProgressMonitor> initializeFutureMonitorRef = new AtomicReference<>();
 	private final int initializeFutureNumberOfStages = 7;
 	private LanguageServer languageServer;
 	private LanguageClientImpl languageClient;
@@ -379,6 +379,7 @@ public class LanguageServerWrapper {
 	}
 
 	private void advanceinitializeFutureMonitor() {
+		final var initializeFutureMonitor = initializeFutureMonitorRef.get();
 		if (initializeFutureMonitor != null) {
 			if (initializeFutureMonitor.isCanceled()) {
 				throw new CancellationException();
@@ -387,11 +388,12 @@ public class LanguageServerWrapper {
 		}
 	}
 
-	private synchronized Job createInitializeLanguageServerJob() {
+	private Job createInitializeLanguageServerJob() {
 		return new Job(NLS.bind(Messages.initializeLanguageServer_job, serverDefinition.label)) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				initializeFutureMonitor = SubMonitor.convert(monitor, initializeFutureNumberOfStages);
+				final var initializeFutureMonitor = SubMonitor.convert(monitor, initializeFutureNumberOfStages);
+				initializeFutureMonitorRef.set(initializeFutureMonitor);
 				CompletableFuture<Void> currentInitializeFuture = initializeFuture;
 				try {
 					if (currentInitializeFuture != null) {
@@ -405,7 +407,7 @@ public class LanguageServerWrapper {
 					}
 				} finally {
 					initializeFutureMonitor.done();
-					initializeFutureMonitor = null;
+					initializeFutureMonitorRef.compareAndSet(initializeFutureMonitor, null);
 				}
 				return Status.OK_STATUS;
 			}
