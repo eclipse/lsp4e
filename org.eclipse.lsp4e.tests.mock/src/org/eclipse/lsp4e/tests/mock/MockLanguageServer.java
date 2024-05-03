@@ -92,7 +92,7 @@ public final class MockLanguageServer implements LanguageServer {
 	private volatile long delay = 0;
 	private volatile boolean started;
 
-	private final List<LanguageClient> remoteProxies = new ArrayList<>();
+	private final List<LanguageClient> remoteProxies = new CopyOnWriteArrayList<>();
 
 	private final List<CompletableFuture<?>> inFlight = new CopyOnWriteArrayList<>();
 
