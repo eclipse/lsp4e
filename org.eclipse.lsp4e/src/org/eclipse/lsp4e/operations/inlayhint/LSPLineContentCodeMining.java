@@ -63,6 +63,14 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 		setLabel(getInlayHintString(inlayHint));
 	}
 
+	@Override
+	public void setLabel(final String label) {
+		if (label == null || label.isEmpty() || Character.isWhitespace(label.charAt(label.length() - 1)))
+			super.setLabel(label);
+		else
+			super.setLabel(label + " "); //$NON-NLS-1$
+	}
+
 	protected static @Nullable String getInlayHintString(@NonNull InlayHint inlayHint) {
 		Either<String, List<InlayHintLabelPart>> label = inlayHint.getLabel();
 		return label.map(Function.identity(), (parts) -> {
@@ -186,6 +194,5 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 		this.fontData = gc.getFont().getFontData();
 		return size;
 	}
-
 
 }
