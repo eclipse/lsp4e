@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
 import org.eclipse.lsp4j.CodeAction;
@@ -107,7 +108,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	private ConcurrentLinkedQueue<DidChangeTextDocumentParams> didChangeEvents = new ConcurrentLinkedQueue<>();
 
 	private Function<?, ? extends CompletableFuture<?>> _futureFactory;
-	private List<LanguageClient> remoteProxies;
+	private final List<LanguageClient> remoteProxies = new CopyOnWriteArrayList<>();
 	private Location[] mockReferences = new Location[0];
 	private List<Diagnostic> diagnostics;
 	private List<Either<Command, CodeAction>> mockCodeActions;
@@ -128,7 +129,6 @@ public class MockTextDocumentService implements TextDocumentService {
 		mockHover = new Hover(Collections.singletonList(Either.forLeft("Mock hover")), null);
 		mockPrepareRenameResult = Either3
 				.forSecond(new PrepareRenameResult(new Range(new Position(0, 0), new Position(0, 0)), "placeholder"));
-		this.remoteProxies = new ArrayList<>();
 		this.documentSymbols = Collections.emptyList();
 		this.codeActionRequests = 0;
 	}
@@ -374,7 +374,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.mockHover = null;
 		this.mockCodeLenses = null;
 		this.mockReferences = null;
-		this.remoteProxies = new ArrayList<>();
+		this.remoteProxies.clear();
 		this.mockCodeActions = new ArrayList<>();
 		this.mockRenameEdit = null;
 		this.documentSymbols = Collections.emptyList();
