@@ -42,7 +42,7 @@
 					<useUIHarness>true</useUIHarness>
 					<useUIThread>true</useUIThread>
 					<forkedProcessTimeoutInSeconds>1200</forkedProcessTimeoutInSeconds>
-					<argLine>-Djava.util.logging.config.file=${project.basedir}/src/jul.properties ${ui.test.vmargs} ${os-jvm-flags}</argLine>
+					<argLine>-Xms1g -Xmx1g -Djava.util.logging.config.file=${project.basedir}/src/jul.properties ${ui.test.vmargs} ${os-jvm-flags}</argLine>
 				</configuration>
 			</plugin>
 		</plugins>
