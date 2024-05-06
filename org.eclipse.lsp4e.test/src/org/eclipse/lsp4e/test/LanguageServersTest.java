@@ -63,7 +63,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Assume;
 import org.junit.Before;
@@ -101,8 +100,7 @@ public class LanguageServersTest {
 		});
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		final HoverParams params = new HoverParams();
@@ -138,8 +136,7 @@ public class LanguageServersTest {
 		});
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		final HoverParams params = new HoverParams();
@@ -183,8 +180,7 @@ public class LanguageServersTest {
 		});
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		final HoverParams params = new HoverParams();
@@ -225,8 +221,7 @@ public class LanguageServersTest {
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		final HoverParams params = new HoverParams();
@@ -293,8 +288,7 @@ public class LanguageServersTest {
 		});
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		final HoverParams params = new HoverParams();
@@ -344,8 +338,7 @@ public class LanguageServersTest {
 		});
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		final HoverParams params = new HoverParams();
@@ -380,8 +373,7 @@ public class LanguageServersTest {
 		});
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		final HoverParams params = new HoverParams();
@@ -425,8 +417,7 @@ public class LanguageServersTest {
 		});
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		final HoverParams params = new HoverParams();
@@ -483,8 +474,7 @@ public class LanguageServersTest {
 		CompletableFuture<?> initial = CompletableFuture.completedFuture(null);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		StyledText text = viewer.getTextWidget();
@@ -561,8 +551,7 @@ public class LanguageServersTest {
 		CompletableFuture<?> initial = CompletableFuture.completedFuture(null);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 		StyledText text = viewer.getTextWidget();
 		Thread.sleep(1000);
@@ -622,8 +611,7 @@ public class LanguageServersTest {
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(sc -> false);
@@ -666,8 +654,7 @@ public class LanguageServersTest {
 		});
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		final HoverParams params = new HoverParams();
@@ -694,8 +681,7 @@ public class LanguageServersTest {
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		final HoverParams params = new HoverParams();
@@ -772,8 +758,7 @@ public class LanguageServersTest {
 	@Test
 	public void testGetDocument() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
 		final LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document);
@@ -784,8 +769,7 @@ public class LanguageServersTest {
 	@Test
 	public void testCancellable() throws Exception {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "Here is some content");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		Display display = viewer.getTextWidget().getDisplay();
 		DisplayHelper.sleep(display, 2000);
 
