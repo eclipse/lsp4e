@@ -1,19 +1,35 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
 	<groupId>org.eclipse.lsp4e</groupId>
 	<artifactId>parent</artifactId>
 	<version>0.13.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
 
 	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.minimum.version>3.6.3</maven.minimum.version>
 		<tycho-version>4.0.7</tycho-version>
 		<tycho.scmUrl>scm:git:https://github.com/eclipse/lsp4e.git</tycho.scmUrl>
 		<ui.test.vmargs></ui.test.vmargs>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<jgit.dirtyWorkingTree>error</jgit.dirtyWorkingTree>
-		<enforcer.plugin.version>3.4.1</enforcer.plugin.version>
-		<maven-enforcer-rule.version>3.6.3</maven-enforcer-rule.version>
 	</properties>
+
+	<organization>
+		<name>Eclipse LSP4E project</name>
+		<url>https://projects.eclipse.org/projects/technology.lsp4e</url>
+	</organization>
+	<inceptionYear>2016</inceptionYear>
+
+	<licenses>
+		<license>
+			<name>Eclipse Public License</name>
+			<url>https://www.eclipse.org/legal/epl-v20.html</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 
 	<modules>
 		<module>org.eclipse.lsp4e</module>
@@ -29,7 +45,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>${enforcer.plugin.version}</version>
+				<version>3.4.1</version>
 				<executions>
 					<execution>
 						<id>enforce</id>
@@ -40,7 +56,7 @@
 							<fail>true</fail>
 							<rules>
 								<requireMavenVersion>
-									<version>${maven-enforcer-rule.version}</version>
+									<version>${maven.minimum.version}</version>
 								</requireMavenVersion>
 							</rules>
 						</configuration>
@@ -122,7 +138,7 @@
 						</goals>
 						<configuration>
 							<baselines>
-								<url>http://download.eclipse.org/lsp4e/releases/latest</url>
+								<url>https://download.eclipse.org/lsp4e/releases/latest</url>
 							</baselines>
 						</configuration>
 					</execution>
@@ -187,7 +203,7 @@
 						<version>1.4.3</version>
 						<executions>
 							<execution>
-								<id>sign</id>
+								<id>sign-jars</id>
 								<phase>package</phase>
 								<goals>
 									<goal>sign</goal>
@@ -231,26 +247,34 @@
 
 	<pluginRepositories>
 		<pluginRepository>
+			<!--
+				listing maven central first ensures that maven will query maven central first and
+				only uses other repositories as fallback, which reduces download/build times.
+				This is a workaround for https://issues.apache.org/jira/browse/MNG-6763
+			 -->
+			<id>central</id>
+			<url>https://repo.maven.apache.org/maven2/</url>
+			<snapshots><enabled>false</enabled></snapshots>
+			<releases><enabled>true</enabled></releases>
+		</pluginRepository>
+		<pluginRepository>
+			<!-- org.eclipse.cbi.maven.plugins:eclipse-jarsigner-plugin not present in central maven repo -->
 			<id>cbi</id>
 			<url>https://repo.eclipse.org/content/groups/cbi</url>
 			<snapshots><enabled>true</enabled></snapshots>
-		</pluginRepository>
-		<pluginRepository>
-			<id>cbi-release</id>
-			<url>https://repo.eclipse.org/content/repositories/cbi-releases</url>
-			<snapshots><enabled>false</enabled></snapshots>
 			<releases><enabled>true</enabled></releases>
 		</pluginRepository>
 		<pluginRepository>
 			<id>tycho-snapshots</id>
 			<url>https://repo.eclipse.org/content/repositories/tycho-snapshots/</url>
+			<snapshots><enabled>true</enabled></snapshots>
+			<releases><enabled>false</enabled></releases>
 		</pluginRepository>
 		<pluginRepository>
 		  	<id>dash-licenses-snapshots</id>
 		  	<url>https://repo.eclipse.org/content/repositories/dash-licenses-snapshots/</url>
-		  	<snapshots>
-		  	  <enabled>true</enabled>
-		  	</snapshots>
+			<snapshots><enabled>true</enabled></snapshots>
+			<releases><enabled>false</enabled></releases>
   		</pluginRepository>
 	</pluginRepositories>
 
