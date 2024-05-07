@@ -1,5 +1,8 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
 	<parent>
 		<groupId>org.eclipse.lsp4e</groupId>
 		<artifactId>parent</artifactId>
@@ -26,14 +29,13 @@
 			<plugin>
 				<groupId>com.googlecode.maven-download-plugin</groupId>
 				<artifactId>download-maven-plugin</artifactId>
-				<!-- 1.7.0 is broken, see https://github.com/maven-download-plugin/maven-download-plugin/releases/tag/1.7.0 -->
 				<version>1.9.0</version>
 				<configuration>
-					<!-- https://maven-download-plugin.github.io/maven-download-plugin/docsite/1.6.8/wget-mojo.html -->
+					<!-- https://maven-download-plugin.github.io/maven-download-plugin/docsite/1.9.0/wget-mojo.html -->
 					<alwaysVerifyChecksum>true</alwaysVerifyChecksum>
 					<overwrite>true</overwrite>
 					<skipCache>false</skipCache>
-					<readTimeOut>5000</readTimeOut>
+					<readTimeOut>10000</readTimeOut>
 				</configuration>
 				<executions>
 					<execution>
