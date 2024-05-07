@@ -21,7 +21,7 @@ pipeline {
 						ulimit -a
 						cat /proc/sys/kernel/pid_max
 						cat /proc/sys/kernel/threads-max
-						java -XX:+PrintFlagsFinal -version | findstr HeapSize
+						java -XX:+PrintFlagsFinal -version | grep HeapSize
 
 						mvn clean verify \
 							org.eclipse.dash:license-tool-plugin:license-check \
