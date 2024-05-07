@@ -59,8 +59,7 @@ public class DocumentDidChangeTest {
 				.setTextDocumentSync(TextDocumentSyncKind.Incremental);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		LanguageServers.forDocument(viewer.getDocument()).withFilter(new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
@@ -126,8 +125,7 @@ public class DocumentDidChangeTest {
 
 		String multiLineText = "line1\nline2\nline3\n";
 		IFile testFile = TestUtils.createUniqueTestFile(project, multiLineText);
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		LanguageServers.forDocument(viewer.getDocument()).withFilter(new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {
@@ -157,8 +155,7 @@ public class DocumentDidChangeTest {
 	public void testIncrementalEditOrdering() throws Exception {
 		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities().setTextDocumentSync(TextDocumentSyncKind.Incremental);
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		StyledText text = viewer.getTextWidget();
 		for (int i = 0; i < 500; i++) {
 			text.append(i + "\n");
@@ -177,8 +174,7 @@ public class DocumentDidChangeTest {
 				.setTextDocumentSync(TextDocumentSyncKind.Full);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
-		IEditorPart editor = TestUtils.openEditor(testFile);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		LanguageServers.forDocument(viewer.getDocument()).withFilter(new Predicate<ServerCapabilities>() {
 			@Override
 			public boolean test(ServerCapabilities t) {

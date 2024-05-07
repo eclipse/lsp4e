@@ -99,8 +99,7 @@ public class VersioningSupportTest {
 		MockLanguageServer.INSTANCE.setFormattingTextEdits(formattingTextEdits);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Formatting Other Text");
-		IEditorPart editor = TestUtils.openEditor(file);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(file);
 
 		final var doc = viewer.getDocument();
 		final var docId = LSPEclipseUtils.toTextDocumentIdentifier(doc);

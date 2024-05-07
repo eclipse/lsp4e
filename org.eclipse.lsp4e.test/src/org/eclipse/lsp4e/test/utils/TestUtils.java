@@ -73,6 +73,7 @@ public class TestUtils {
 
 	public static ITextViewer openTextViewer(IFile file) throws PartInitException {
 		IEditorPart editor = openEditor(file);
+		waitForAndAssertCondition(5_000, () -> LSPEclipseUtils.getTextViewer(editor) != null);
 		return LSPEclipseUtils.getTextViewer(editor);
 	}
 
@@ -85,20 +86,20 @@ public class TestUtils {
 		part.setFocus();
 		return part;
 	}
-	
+
 	public static List<IEditorReference> splitActiveEditor() {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
 		IEditorPart part = page.getActiveEditor();
-		
+
 		MPart editorPart = part.getSite().getService(MPart.class);
 		if (editorPart != null) {
 			editorPart.getTags().add(IPresentationEngine.SPLIT_HORIZONTAL);
 		}
-		
+
 		return Arrays.asList(page.getEditorReferences());
 	}
-	
+
 	public static IEditorPart openExternalFileInEditor(File file) throws PartInitException {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();

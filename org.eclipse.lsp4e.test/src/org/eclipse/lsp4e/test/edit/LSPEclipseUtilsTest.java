@@ -268,11 +268,9 @@ public class LSPEclipseUtilsTest {
 	@Test
 	public void testApplyTextEditLongerThanOrigin() throws Exception {
 		IProject project = null;
-		IEditorPart editor = null;
 		project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineInsertHere");
-		editor = TestUtils.openEditor(file);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(file);
 		TextEdit textEdit = new TextEdit(new Range(new Position(1, 4), new Position(1, 4 + "InsertHere".length())), "Inserted");
 		IDocument document = viewer.getDocument();
 		LSPEclipseUtils.applyEdit(textEdit, document);
@@ -282,11 +280,9 @@ public class LSPEclipseUtilsTest {
 	@Test
 	public void testApplyTextEditShorterThanOrigin() throws Exception {
 		IProject project = null;
-		IEditorPart editor = null;
 		project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineHERE");
-		editor = TestUtils.openEditor(file);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(file);
 		TextEdit textEdit = new TextEdit(new Range(new Position(1, 4), new Position(1, 4 + "HERE".length())), "Inserted");
 		IDocument document = viewer.getDocument();
 		LSPEclipseUtils.applyEdit(textEdit, document);
@@ -296,11 +292,9 @@ public class LSPEclipseUtilsTest {
 	@Test
 	public void testTextEditInsertSameOffset() throws Exception {
 		IProject project = null;
-		IEditorPart editor = null;
 		project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "");
-		editor = TestUtils.openEditor(file);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(file);
 		TextEdit[] edits = new TextEdit[] {
 				new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), " throws "),
 				new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "Exception") };
@@ -308,15 +302,13 @@ public class LSPEclipseUtilsTest {
 		LSPEclipseUtils.applyEdits(document, Arrays.asList(edits));
 		Assert.assertEquals(" throws Exception", document.get());
 	}
-	
+
 	@Test
 	public void testTextEditSplittedLineEndings() throws Exception {
 		IProject project = null;
-		IEditorPart editor = null;
 		project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\r\nline2\r\nline3\r\n");
-		editor = TestUtils.openEditor(file);
-		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
+		ITextViewer viewer = TestUtils.openTextViewer(file);
 		// GIVEN a TextEdit which splits the '\r\n' line ending in the third line:
 		TextEdit[] edits = new TextEdit[] { new TextEdit(new Range(new Position(0, 0), new Position(2, 6)), "line3\r\nline2\r\nline1\r") };
 		IDocument document = viewer.getDocument();
