@@ -1,6 +1,6 @@
 pipeline {
 	options {
-		timeout(time: 40, unit: 'MINUTES')
+		timeout(time: 15, unit: 'MINUTES')
 		buildDiscarder(logRotator(numToKeepStr: '10'))
 		disableConcurrentBuilds(abortPrevious: true)
 	}
@@ -15,7 +15,18 @@ pipeline {
 		stage('Build') {
 			steps {
 				wrap([$class: 'Xvnc', useXauthority: true]) {
-					sh """
+					sh """#!/bin/bash
+						set -eux
+
+						# https://www.elastic.co/cn/blog/we-are-out-of-memory-systemd-process-limits
+						# output some system settings to troubleshoot OOMs
+						ulimit -a
+						cat /proc/meminfo
+						cat /proc/sys/kernel/pid_max
+						cat /proc/sys/kernel/threads-max
+						cat /sys/fs/cgroup/pids/system.slice/runsvdir.service/pids.max
+						java -XX:+PrintFlagsFinal -version | findstr HeapSize
+
 						mvn clean verify \
 							org.eclipse.dash:license-tool-plugin:license-check \
 							-B ${env.BRANCH_NAME=='master' ? '-Psign': ''} \
