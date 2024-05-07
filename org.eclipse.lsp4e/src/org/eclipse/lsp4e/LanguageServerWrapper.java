@@ -286,7 +286,7 @@ public class LanguageServerWrapper {
 			final Job job = createInitializeLanguageServerJob();
 			this.launcherFuture = new CompletableFuture<>();
 			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
 					this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
 							serverDefinition.createConnectionProvider(), serverDefinition.id);
@@ -301,7 +301,7 @@ public class LanguageServerWrapper {
 				}
 				return null;
 			}).thenRun(() -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				languageClient = serverDefinition.createLanguageClient();
 
 				initParams.setProcessId((int) ProcessHandle.current().pid());
@@ -333,18 +333,18 @@ public class LanguageServerWrapper {
 				this.launcherFuture = launcher.startListening();
 			})
 			.thenCompose(unused -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				return initServer(rootURI);
 			})
 			.thenAccept(res -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				serverCapabilities = res.getCapabilities();
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
 			}).thenRun(() -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				this.languageServer.initialized(new InitializedParams());
 			}).thenRun(() -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				final Map<URI, IDocument> toReconnect = filesToReconnect;
 				initializeFuture.thenRunAsync(() -> {
 					watchProjects();
@@ -357,7 +357,7 @@ public class LanguageServerWrapper {
 					}
 				});
 				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 			}).exceptionally(e -> {
 				stop();
 				final Throwable cause = e.getCause();
@@ -378,7 +378,7 @@ public class LanguageServerWrapper {
 		}
 	}
 
-	private void advanceinitializeFutureMonitor() {
+	private void advanceInitializeFutureMonitor() {
 		final var initializeFutureMonitor = initializeFutureMonitorRef.get();
 		if (initializeFutureMonitor != null) {
 			if (initializeFutureMonitor.isCanceled()) {
