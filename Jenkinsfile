@@ -16,25 +16,6 @@ pipeline {
 			steps {
 				wrap([$class: 'Xvnc', useXauthority: true]) {
 					sh """#!/bin/bash
-
-						# output some system settings to troubleshoot OOMs
-						if [ -f "/proc/1/cgroup" ] && grep -q docker /proc/1/cgroup; then
-							local container_id=$(cat /proc/self/cgroup | grep "docker" | sed 's/^.*\///' | tail -n1)
-							if [ -z "$container_id" ]; then
-								echo "Error: Could not find Docker container ID."
-							else
-								echo "Memory Limit: $(cat "/sys/fs/cgroup/memory/docker/$container_id/memory.limit_in_bytes")"
-							fi
-						elif [ -f "/proc/1/environ" ] && grep -q containerd /proc/1/environ; then
-							local container_id=$(cat /proc/self/cgroup | grep "containerd" | grep "pod" | sed 's/^.*\///' | tail -n1)
-							if [ -z "$container_id" ]; then
-								echo "Error: Could not find containerd container ID."
-							else
-								echo "Memory Limit: $(cat "/sys/fs/cgroup/memory/containerd/$container_id/memory.limit_in_bytes")"
-							fi
-						else
-							echo "Memory Limit: unknown - unsupported container runtime"
-						fi
 						set -eux
 						# https://www.elastic.co/cn/blog/we-are-out-of-memory-systemd-process-limits
 						ulimit -a
