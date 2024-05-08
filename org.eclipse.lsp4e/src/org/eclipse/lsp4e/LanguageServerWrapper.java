@@ -19,6 +19,7 @@ package org.eclipse.lsp4e;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -157,7 +158,7 @@ public class LanguageServerWrapper {
 	protected StreamConnectionProvider lspStreamProvider;
 	private Future<?> launcherFuture;
 	private CompletableFuture<Void> initializeFuture;
-	private IProgressMonitor initializeFutureMonitor;
+	private final AtomicReference<IProgressMonitor> initializeFutureMonitorRef = new AtomicReference<>();
 	private final int initializeFutureNumberOfStages = 7;
 	private LanguageServer languageServer;
 	private LanguageClientImpl languageClient;
@@ -286,7 +287,7 @@ public class LanguageServerWrapper {
 			final Job job = createInitializeLanguageServerJob();
 			this.launcherFuture = new CompletableFuture<>();
 			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
 					this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
 							serverDefinition.createConnectionProvider(), serverDefinition.id);
@@ -297,11 +298,11 @@ public class LanguageServerWrapper {
 				try {
 					lspStreamProvider.start();
 				} catch (IOException e) {
-					throw new RuntimeException(e);
+					throw new UncheckedIOException(e);
 				}
 				return null;
 			}).thenRun(() -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				languageClient = serverDefinition.createLanguageClient();
 
 				initParams.setProcessId((int) ProcessHandle.current().pid());
@@ -333,18 +334,18 @@ public class LanguageServerWrapper {
 				this.launcherFuture = launcher.startListening();
 			})
 			.thenCompose(unused -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				return initServer(rootURI);
 			})
 			.thenAccept(res -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				serverCapabilities = res.getCapabilities();
 				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
 			}).thenRun(() -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				this.languageServer.initialized(new InitializedParams());
 			}).thenRun(() -> {
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 				final Map<URI, IDocument> toReconnect = filesToReconnect;
 				initializeFuture.thenRunAsync(() -> {
 					watchProjects();
@@ -357,7 +358,7 @@ public class LanguageServerWrapper {
 					}
 				});
 				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
-				advanceinitializeFutureMonitor();
+				advanceInitializeFutureMonitor();
 			}).exceptionally(e -> {
 				stop();
 				final Throwable cause = e.getCause();
@@ -378,7 +379,8 @@ public class LanguageServerWrapper {
 		}
 	}
 
-	private void advanceinitializeFutureMonitor() {
+	private void advanceInitializeFutureMonitor() {
+		final var initializeFutureMonitor = initializeFutureMonitorRef.get();
 		if (initializeFutureMonitor != null) {
 			if (initializeFutureMonitor.isCanceled()) {
 				throw new CancellationException();
@@ -387,11 +389,12 @@ public class LanguageServerWrapper {
 		}
 	}
 
-	private synchronized Job createInitializeLanguageServerJob() {
+	private Job createInitializeLanguageServerJob() {
 		return new Job(NLS.bind(Messages.initializeLanguageServer_job, serverDefinition.label)) {
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
-				initializeFutureMonitor = SubMonitor.convert(monitor, initializeFutureNumberOfStages);
+				final var initializeFutureMonitor = SubMonitor.convert(monitor, initializeFutureNumberOfStages);
+				initializeFutureMonitorRef.set(initializeFutureMonitor);
 				CompletableFuture<Void> currentInitializeFuture = initializeFuture;
 				try {
 					if (currentInitializeFuture != null) {
@@ -405,7 +408,7 @@ public class LanguageServerWrapper {
 					}
 				} finally {
 					initializeFutureMonitor.done();
-					initializeFutureMonitor = null;
+					initializeFutureMonitorRef.compareAndSet(initializeFutureMonitor, null);
 				}
 				return Status.OK_STATUS;
 			}
