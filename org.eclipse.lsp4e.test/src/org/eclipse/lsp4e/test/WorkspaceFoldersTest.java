@@ -20,16 +20,13 @@ import java.io.File;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.lsp4e.ConnectDocumentToLanguageServerSetupParticipant;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.test.utils.TestUtils.JobSynchronizer;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -41,18 +38,13 @@ import org.eclipse.lsp4j.WorkspaceFolder;
 import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
-
-	@Rule public AllCleanRule clear = new AllCleanRule(this);
-	private IProject project;
+public class WorkspaceFoldersTest extends AbstractTestWithProject {
 
 	@Before
-	public void setUp() throws CoreException {
+	public void setUp() {
 		MockLanguageServer.INSTANCE.getWorkspaceService().getWorkspaceFoldersEvents().clear();
-		project = TestUtils.createProject("WorkspaceFoldersTest" + System.currentTimeMillis());
 	}
 
 	@Test
@@ -193,7 +185,7 @@ public class WorkspaceFoldersTest implements Supplier<ServerCapabilities> {
 	}
 
 	@Override
-	public ServerCapabilities get() {
+	public ServerCapabilities getServerCapabilities() {
 		// Enable workspace folders on the mock server (for this test only)
 		final ServerCapabilities base = MockLanguageServer.defaultServerCapabilities();
 

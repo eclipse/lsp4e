@@ -18,15 +18,12 @@ import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.TextEvent;
 import org.eclipse.lsp4e.operations.semanticTokens.StyleRangeHolder;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTest;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.graphics.Color;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class StyleRangeHolderTest {
-	@Rule
-	public AllCleanRule clear = new AllCleanRule();
+public class StyleRangeHolderTest extends AbstractTest {
 
 	private static final Color RED = new Color(255, 0, 0);
 	private List<StyleRange> originalStyleRanges = Arrays.asList(new StyleRange(0, 4, RED, null), new StyleRange(15, 4, RED, null), new StyleRange(24, 7, RED, null));

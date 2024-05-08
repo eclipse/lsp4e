@@ -12,9 +12,8 @@
 package org.eclipse.lsp4e.test.outline;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
@@ -24,15 +23,11 @@ import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.eclipse.ui.views.contentoutline.ContentOutline;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class EditorToOutlineAdapterFactoryTest {
+public class EditorToOutlineAdapterFactoryTest extends AbstractTestWithProject {
 
 	private static ContentOutline outline;
-
-	@Rule
-	public AllCleanRule rule = new AllCleanRule();
 
 	@BeforeClass
 	public static void setUpBeforeClass() {
@@ -49,7 +44,6 @@ public class EditorToOutlineAdapterFactoryTest {
 
 	@Test
 	public void testGetAdapter() throws CoreException {
-		IProject project = TestUtils.createProject("EditorToOutlineAdapterFactoryTest" + System.currentTimeMillis());
 		IFile testFile = TestUtils.createUniqueTestFile(project, "Hello World !!");
 		outline.partClosed(outline);
 

@@ -16,9 +16,7 @@ package org.eclipse.lsp4e.test.diagnostics;
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,7 +29,6 @@ import java.util.stream.Stream;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IResourceChangeEvent;
 import org.eclipse.core.resources.IResourceChangeListener;
@@ -46,9 +43,8 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4e.test.color.ColorTest;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.BlockingWorkspaceJob;
-import org.eclipse.lsp4e.test.utils.NoErrorLoggedRule;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
@@ -63,22 +59,11 @@ import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.MarkerUtilities;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class DiagnosticsTest {
+public class DiagnosticsTest extends AbstractTestWithProject {
 
-	@Rule public AllCleanRule clear = new AllCleanRule();
-	public final @Rule NoErrorLoggedRule noErrorLoggedRule = new NoErrorLoggedRule();
-	private IProject project;
-	private LSPDiagnosticsToMarkers diagnosticsToMarkers;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("DiagnoticsTest" + System.currentTimeMillis());
-		diagnosticsToMarkers = new LSPDiagnosticsToMarkers("dummy");
-	}
+	private LSPDiagnosticsToMarkers diagnosticsToMarkers = new LSPDiagnosticsToMarkers("dummy");
 
 	@Test
 	public void testDiagnostics() throws CoreException {
@@ -155,7 +140,6 @@ public class DiagnosticsTest {
 		});
 		Job[] allMarkerJobs = Job.getJobManager().find(LanguageServerPlugin.FAMILY_UPDATE_MARKERS);
 		Job markerJob = allMarkerJobs[0];
-		IProject project = file.getProject();
 		project.close(null);
 		waitForAndAssertCondition(1_000, () -> {
 			assertEquals(project.isAccessible(), false);

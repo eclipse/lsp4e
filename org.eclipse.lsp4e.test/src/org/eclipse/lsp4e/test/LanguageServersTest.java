@@ -34,8 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
@@ -45,7 +43,7 @@ import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.internal.Pair;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.MockConnectionProvider;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -65,23 +63,11 @@ import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class LanguageServersTest {
-
-	@Rule
-	public AllCleanRule clear = new AllCleanRule();
-
-	private IProject project;
+public class LanguageServersTest extends AbstractTestWithProject {
 
 	private final Predicate<ServerCapabilities> MATCH_ALL = sc -> true;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("LanguageServersTest" + System.currentTimeMillis());
-	}
 
 	@Test
 	public void testCollectAll() throws Exception {

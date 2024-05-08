@@ -18,30 +18,23 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.completion.LSContentAssistProcessor;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureInformation;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class ContextInformationTest {
+public class ContextInformationTest extends AbstractCompletionTest {
 
-	@Rule public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
-	private LSContentAssistProcessor contentAssistProcessor;
-
+	@Override
 	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("ContextInformationTest" + System.currentTimeMillis());
+	public void setUp() {
 		contentAssistProcessor = new LSContentAssistProcessor();
 	}
 

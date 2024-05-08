@@ -41,7 +41,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.NoErrorLoggedRule;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.ui.UI;
@@ -69,10 +69,9 @@ import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class LSPEclipseUtilsTest {
+public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 
 	public final @Rule NoErrorLoggedRule noErrorLoggedRule = new NoErrorLoggedRule();
-	public final @Rule AllCleanRule clear = new AllCleanRule();
 
 	@Test
 	public void testOpenInEditorExternalFile() throws Exception {
@@ -98,8 +97,7 @@ public class LSPEclipseUtilsTest {
 	}
 
 	private AbstractTextEditor applyWorkspaceTextEdit(TextEdit textEdit) throws CoreException, PartInitException {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile f = TestUtils.createFile(p, "dummy" + new Random().nextInt(), "Here");
+		IFile f = TestUtils.createFile(project, "dummy" + new Random().nextInt(), "Here");
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		WorkspaceEdit workspaceEdit = new WorkspaceEdit(Collections.singletonMap(
 			LSPEclipseUtils.toUri(f).toString(),
@@ -110,8 +108,7 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testWorkspaceEditMultipleChanges() throws Exception {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile f = TestUtils.createFile(p, "dummy", "Here\nHere2");
+		IFile f = TestUtils.createFile(project, "dummy", "Here\nHere2");
 		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		final var edits = new LinkedList<TextEdit>();
 		// order the TextEdits from the top of the document to the bottom
@@ -128,8 +125,7 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testWorkspaceEdit_CreateAndPopulateFile() throws Exception {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile file = p.getFile("test-file.test");
+		IFile file = project.getFile("test-file.test");
 		LinkedList<Either<TextDocumentEdit, ResourceOperation>> edits = new LinkedList<>();
 		// order the TextEdits from the top of the document to the bottom
 		String uri = file.getLocation().toFile().toURI().toString();
@@ -146,30 +142,24 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testURIToResourceMapping() throws CoreException { // bug 508841
-		IProject project1 = null;
-		IProject project2 = null;
-		project1 = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-		IFile file = project1.getFile("res");
+		IFile file = project.getFile("res");
 		file.create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
 		Assert.assertEquals(file, LSPEclipseUtils.findResourceFor(file.getLocationURI().toString()));
 
-		project1.getFile("suffix").create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
-		project2 = TestUtils.createProject(project1.getName() + "suffix");
+		project.getFile("suffix").create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
+		IProject project2 = TestUtils.createProject(project.getName() + "suffix");
 		Assert.assertEquals(project2, LSPEclipseUtils.findResourceFor(project2.getLocationURI().toString()));
 	}
 
 	@Test
 	public void testReturnMostNestedFileRegardlessArrayOrder() throws CoreException { // like maven nested modules
-		IProject project1 = null;
-		project1 = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-
-		IFile mostNestedFile = project1.getFile("res");
+		IFile mostNestedFile = project.getFile("res");
 		mostNestedFile.create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
 
-		IFolder folder = project1.getFolder("folder");
+		IFolder folder = project.getFolder("folder");
 		folder.create(true, true, new NullProgressMonitor());
 
-		IFile someFile = project1.getFile("folder/res");
+		IFile someFile = project.getFile("folder/res");
 		someFile.create(new ByteArrayInputStream(new byte[0]), true, new NullProgressMonitor());
 
 		Assert.assertEquals(mostNestedFile, LSPEclipseUtils.findMostNested(new IFile[] {mostNestedFile, someFile}));
@@ -178,21 +168,15 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testLinkedResourceURIToResourceMapping() throws CoreException, IOException { // bug 577159
-		IProject project1 = null;
-		Path externalFile = null;
-		Path externalFolder = null;
+		Path externalFile = Files.createTempFile("tmp_file-", null);
+		Path externalFolder = Files.createTempDirectory("tmp_dir-");
 
-		externalFile = Files.createTempFile("tmp_file-", null);
-		externalFolder = Files.createTempDirectory("tmp_dir-");
-
-		project1 = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-
-		IFile linkedFile = project1.getFile("linked_file");
+		IFile linkedFile = project.getFile("linked_file");
 		linkedFile.createLink(externalFile.toUri(), 0, new NullProgressMonitor());
 		Assert.assertTrue(linkedFile.isLinked());
 		Assert.assertEquals(linkedFile, LSPEclipseUtils.findResourceFor(linkedFile.getLocationURI().toString()));
 
-		IFolder linkedFolder = project1.getFolder("linked_folder");
+		IFolder linkedFolder = project.getFolder("linked_folder");
 		linkedFolder.createLink(externalFolder.toUri(), 0, new NullProgressMonitor());
 		Assert.assertTrue(linkedFolder.isLinked());
 		Assert.assertEquals(linkedFolder,
@@ -206,16 +190,10 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testVirtualResourceURIToResourceMapping() throws CoreException, IOException { // bug 577159
-		IProject project1 = null;
-		Path externalFile = null;
-		Path externalFolder = null;
+		Path externalFile = Files.createTempFile("tmp_file-", null);
+		Path externalFolder = Files.createTempDirectory("tmp_dir-");
 
-		externalFile = Files.createTempFile("tmp_file-", null);
-		externalFolder = Files.createTempDirectory("tmp_dir-");
-
-		project1 = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
-
-		IFolder virtualFolder = project1.getFolder("virtual_folder");
+		IFolder virtualFolder = project.getFolder("virtual_folder");
 		virtualFolder.create(IResource.VIRTUAL, true, new NullProgressMonitor());
 
 		Assert.assertEquals(virtualFolder.isVirtual(), true);
@@ -244,10 +222,11 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testCustomURIToResourceMapping() throws CoreException { // bug 576425
-		IProject project = null;
-
 		URI uri = URI.create("other://a/res.txt");
-		project = TestUtils.createProject(getClass().getSimpleName() + uri.getScheme());
+
+		// this project name is magic, see UriToResourceAdapterFactory#getAdapter(Object, Class)
+		project = TestUtils.createProject(LSPEclipseUtilsTest.class.getSimpleName() + uri.getScheme());
+
 		IFile file = project.getFile("res.txt");
 		file.createLink(uri, IResource.REPLACE | IResource.ALLOW_MISSING_LOCAL, new NullProgressMonitor());
 		Assert.assertEquals(file, LSPEclipseUtils.findResourceFor(file.getLocationURI().toString()));
@@ -256,10 +235,7 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testCustomResourceToURIMapping() throws CoreException { // bug 576425
-		IProject project = null;
-
 		URI uri = URI.create("other://res.txt");
-		project = TestUtils.createProject(getClass().getSimpleName() + uri.getScheme());
 		IFile file = project.getFile("res.txt");
 		file.createLink(uri, IResource.REPLACE | IResource.ALLOW_MISSING_LOCAL, new NullProgressMonitor());
 		Assert.assertEquals(LSPEclipseUtils.toUri(file).toString(), "other://a/res.txt");
@@ -267,8 +243,6 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testApplyTextEditLongerThanOrigin() throws Exception {
-		IProject project = null;
-		project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineInsertHere");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 		TextEdit textEdit = new TextEdit(new Range(new Position(1, 4), new Position(1, 4 + "InsertHere".length())), "Inserted");
@@ -279,8 +253,6 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testApplyTextEditShorterThanOrigin() throws Exception {
-		IProject project = null;
-		project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineHERE");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 		TextEdit textEdit = new TextEdit(new Range(new Position(1, 4), new Position(1, 4 + "HERE".length())), "Inserted");
@@ -291,8 +263,6 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testTextEditInsertSameOffset() throws Exception {
-		IProject project = null;
-		project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 		TextEdit[] edits = new TextEdit[] {
@@ -305,8 +275,6 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testTextEditSplittedLineEndings() throws Exception {
-		IProject project = null;
-		project = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\r\nline2\r\nline3\r\n");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 		// GIVEN a TextEdit which splits the '\r\n' line ending in the third line:
@@ -340,16 +308,13 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testToWorkspaceFolder() throws Exception {
-		IProject project = TestUtils.createProject("testToWorkspaceFolder");
-
 		WorkspaceFolder folder = LSPEclipseUtils.toWorkspaceFolder(project);
-		Assert.assertEquals("testToWorkspaceFolder", folder.getName());
+		Assert.assertEquals(project.getName(), folder.getName());
 		Assert.assertEquals("file://", folder.getUri().substring(0, "file://".length()));
 	}
 
 	@Test
 	public void testResourceOperations() throws Exception {
-		IProject project = TestUtils.createProject("testResourceOperations");
 		IFile targetFile = project.getFile("some/folder/file.txt");
 		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(
 				Collections.singletonList(Either.forRight(new CreateFile(targetFile.getLocationURI().toString())))));
@@ -418,7 +383,6 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testTextEditDoesntAutomaticallySaveOpenResourceFiles() throws Exception {
-		IProject project = TestUtils.createProject("testTextEditDoesntAutomaticallySaveOpenFiles");
 		IFile targetFile = project.getFile("blah.txt");
 		targetFile.create(new ByteArrayInputStream("".getBytes()), true, null);
 		IEditorPart editor = IDE.openEditor(UI.getActivePage(),
@@ -464,9 +428,8 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testToCompletionParams_EmptyDocument() throws Exception {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		// Given an empty file/document
-		var file = TestUtils.createFile(p, "dummy" + new Random().nextInt(), "");
+		var file = TestUtils.createFile(project, "dummy" + new Random().nextInt(), "");
 		var triggerChars = new  char[] {':', '>'};
 		// When toCompletionParams get called with offset == 0 and document.getLength() == 0:
 		var param = LSPEclipseUtils.toCompletionParams(file.getLocationURI(), 0, LSPEclipseUtils.getDocument(file), triggerChars);
@@ -476,9 +439,8 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testToCompletionParams_ZeroOffset() throws Exception {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		// Given a non empty file/document containing a non trigger character at position 3:
-		var file = TestUtils.createFile(p, "dummy" + new Random().nextInt(), "std");
+		var file = TestUtils.createFile(project, "dummy" + new Random().nextInt(), "std");
 		var triggerChars = new  char[] {':', '>'};
 		// When toCompletionParams get called with offset == 0 and document.getLength() > 0:
 		var param = LSPEclipseUtils.toCompletionParams(file.getLocationURI(), 0, LSPEclipseUtils.getDocument(file), triggerChars);
@@ -488,9 +450,8 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testToCompletionParams_MatchingTriggerCharacter() throws Exception {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		// Given a non empty file/document containing a trigger character at position 4:
-		var file = TestUtils.createFile(p, "dummy" + new Random().nextInt(), "std:");
+		var file = TestUtils.createFile(project, "dummy" + new Random().nextInt(), "std:");
 		var triggerChars = new  char[] {':', '>'};
 		// When toCompletionParams get called with offset > 0 and document.getLength() > 0:
 		var param = LSPEclipseUtils.toCompletionParams(file.getLocationURI(), 4, LSPEclipseUtils.getDocument(file), triggerChars);
@@ -502,9 +463,8 @@ public class LSPEclipseUtilsTest {
 
 	@Test
 	public void testToCompletionParams_NonMatchingTriggerCharacter() throws Exception {
-		IProject p = TestUtils.createProject(getClass().getSimpleName() + System.currentTimeMillis());
 		// Given a non empty file/document containing a non trigger character at position 3:
-		var file = TestUtils.createFile(p, "dummy" + new Random().nextInt(), "std");
+		var file = TestUtils.createFile(project, "dummy" + new Random().nextInt(), "std");
 		var triggerChars = new  char[] {':', '>'};
 		// When toCompletionParams get called with offset > 0 and document.getLength() > 0:
 		var param = LSPEclipseUtils.toCompletionParams(file.getLocationURI(), 3, LSPEclipseUtils.getDocument(file), triggerChars);

@@ -24,12 +24,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
@@ -42,23 +41,17 @@ import org.eclipse.lsp4j.WorkspaceFoldersOptions;
 import org.eclipse.lsp4j.WorkspaceServerCapabilities;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import com.google.gson.Gson;
 
-public class DynamicRegistrationTest {
+public class DynamicRegistrationTest extends AbstractTestWithProject {
 
 	private static final String WORKSPACE_EXECUTE_COMMAND = "workspace/executeCommand";
 	private static final String WORKSPACE_DID_CHANGE_FOLDERS = "workspace/didChangeWorkspaceFolders";
 
-	@Rule public AllCleanRule clear = new AllCleanRule();
-
-	private IProject project;
-
 	@Before
 	public void setUp() throws Exception {
-		project = TestUtils.createProject("CommandRegistrationTest" + System.currentTimeMillis());
 		IFile testFile = TestUtils.createFile(project, "shouldUseExtension.lspt", "");
 
 		// Make sure mock language server is created...

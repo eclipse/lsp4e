@@ -19,14 +19,12 @@ import java.util.List;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.operations.documentLink.DocumentLinkDetector;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
@@ -35,21 +33,11 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class DocumentLinkTest {
+public class DocumentLinkTest extends AbstractTestWithProject {
 
-	@Rule public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
-	private DocumentLinkDetector documentLinkDetector;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("DocumentLinkTest" + System.currentTimeMillis());
-		documentLinkDetector = new DocumentLinkDetector();
-	}
+	private final DocumentLinkDetector documentLinkDetector = new DocumentLinkDetector();
 
 	@Test
 	public void testDocumentLinkNoResults() throws Exception {
@@ -102,6 +90,4 @@ public class DocumentLinkTest {
 		IHyperlink[] hyperlinks = documentLinkDetector.detectHyperlinks(viewer, new Region(0, 0), true);
 		assertArrayEquals(null, hyperlinks);
 	}
-
-
 }

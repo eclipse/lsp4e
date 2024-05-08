@@ -20,7 +20,7 @@ import java.util.Collections;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
@@ -36,12 +36,10 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.ide.IDE;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class ColorTest {
+public class ColorTest extends AbstractTestWithProject {
 
-	@Rule public AllCleanRule cleanRule = new AllCleanRule();
 	private RGB color;
 
 	@Before
@@ -52,7 +50,7 @@ public class ColorTest {
 
 	@Test
 	public void testColorProvider() throws Exception {
-		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(TestUtils.createProject("testColorProvider"), "\u2588\u2588\u2588\u2588\u2588"));
+		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "\u2588\u2588\u2588\u2588\u2588"));
 		StyledText widget = viewer.getTextWidget();
 		waitForAndAssertCondition(3_000, widget.getDisplay(), () -> containsColor(widget, color, 10));
 	}

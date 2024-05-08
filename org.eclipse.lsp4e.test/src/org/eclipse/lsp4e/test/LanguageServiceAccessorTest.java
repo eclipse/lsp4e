@@ -19,15 +19,7 @@ import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSPDocumentInfosFor;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSWrapper;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.getLSWrappers;
 import static org.eclipse.lsp4e.LanguageServiceAccessor.hasActiveLanguageServers;
-import static org.eclipse.lsp4e.test.utils.TestUtils.createFile;
-import static org.eclipse.lsp4e.test.utils.TestUtils.createProject;
-import static org.eclipse.lsp4e.test.utils.TestUtils.createTempFile;
-import static org.eclipse.lsp4e.test.utils.TestUtils.createUniqueTestFile;
-import static org.eclipse.lsp4e.test.utils.TestUtils.createUniqueTestFileMultiLS;
-import static org.eclipse.lsp4e.test.utils.TestUtils.openEditor;
-import static org.eclipse.lsp4e.test.utils.TestUtils.openTextViewer;
-import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
-import static org.eclipse.lsp4e.test.utils.TestUtils.waitForCondition;
+import static org.eclipse.lsp4e.test.utils.TestUtils.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -40,7 +32,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 
 import org.eclipse.core.filesystem.EFS;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
@@ -51,7 +42,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServersRegistry;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.MappingEnablementTester;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServerMultiRootFolders;
@@ -59,22 +50,11 @@ import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.ITextEditor;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class LanguageServiceAccessorTest {
+public class LanguageServiceAccessorTest extends AbstractTestWithProject {
 
 	private static final Predicate<ServerCapabilities> MATCH_ALL = capabilities -> true;
-
-	@Rule
-	public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = createProject("LanguageServiceAccessorTest" + System.currentTimeMillis());
-	}
 
 	@Test
 	public void testGetLSWrapper() throws IOException {
