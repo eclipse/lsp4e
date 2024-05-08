@@ -27,7 +27,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.eclipse.lsp4j.CodeAction;
@@ -90,6 +92,7 @@ public final class MockLanguageServer implements LanguageServer {
 	private final MockWorkspaceService workspaceService = new MockWorkspaceService(this::buildMaybeDelayedFuture);
 	private final InitializeResult initializeResult = new InitializeResult();
 	private volatile long delay = 0;
+	private volatile Executor delayedExecutor = null;
 	private volatile boolean started;
 
 	private final List<LanguageClient> remoteProxies = new CopyOnWriteArrayList<>();
@@ -142,14 +145,9 @@ public final class MockLanguageServer implements LanguageServer {
 	}
 
 	public <U> CompletableFuture<U> buildMaybeDelayedFuture(U value) {
-		if (delay > 0) {
-			CompletableFuture<U> future = CompletableFuture.runAsync(() -> {
-				try {
-					Thread.sleep(delay);
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-			}).thenApply(v -> value);
+		final Executor delayedExecutor = this.delayedExecutor;
+		if (delayedExecutor != null) {
+			final CompletableFuture<U> future = CompletableFuture.supplyAsync(() -> value, delayedExecutor);
 			inFlight.add(future);
 			return future;
 		}
@@ -284,8 +282,9 @@ public final class MockLanguageServer implements LanguageServer {
 	public void exit() {
 	}
 
-	public void setTimeToProceedQueries(long l) {
-		this.delay = l;
+	public void setTimeToProceedQueries(final long delayInMS) {
+		this.delay = delayInMS;
+		this.delayedExecutor = CompletableFuture.delayedExecutor(delayInMS, TimeUnit.MILLISECONDS);
 	}
 
 	public void setDiagnostics(List<Diagnostic> diagnostics) {
