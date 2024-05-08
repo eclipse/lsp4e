@@ -13,11 +13,7 @@
 package org.eclipse.lsp4e.test.references;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,12 +22,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.core.commands.ExecutionEvent;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4e.operations.references.LSFindReferences;
 import org.eclipse.lsp4e.operations.references.LSSearchResult;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Location;
@@ -50,11 +44,10 @@ import org.eclipse.ui.services.IEvaluationService;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 @SuppressWarnings("restriction")
-public class FindReferencesTest {
+public class FindReferencesTest extends AbstractTestWithProject {
 
 	public static final class UiFreezeEventLogger implements IUiFreezeEventLogger {
 
@@ -73,13 +66,8 @@ public class FindReferencesTest {
 		}
 	}
 
-	@Rule
-	public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
-
 	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject("CompletionTest" + System.currentTimeMillis());
+	public void setUp() throws Exception {
 		ensureSearchResultViewIsClosed();
 
 		final var testFile = TestUtils.createUniqueTestFile(project, "word1 word2\nword3 word2");

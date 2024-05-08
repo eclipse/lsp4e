@@ -16,7 +16,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.lsp4e.LanguageServerPlugin;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTest;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.FoldingRange;
@@ -26,10 +26,9 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class FoldingTest {
+public class FoldingTest extends AbstractTest {
 
 	private static final String CONTENT = """
 		import
@@ -37,9 +36,6 @@ public class FoldingTest {
 		import
 		visible
 		""";
-
-	@Rule
-	public final AllCleanRule clear = new AllCleanRule();
 
 	@Test
 	public void testImportsFoldedByDefaultEnabled() throws CoreException {

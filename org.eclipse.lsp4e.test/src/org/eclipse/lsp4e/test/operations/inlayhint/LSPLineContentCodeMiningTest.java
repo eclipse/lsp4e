@@ -6,7 +6,7 @@
  * https://www.eclipse.org/legal/epl-2.0/
  *
  * SPDX-License-Identifier: EPL-2.0
- * 
+ *
  * Contributors:
  *     Broadcom, Inc. - initial API and implementation
  *******************************************************************************/
@@ -18,8 +18,6 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.LanguageServerWrapper;
@@ -27,7 +25,7 @@ import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.inlayhint.InlayHintProvider;
 import org.eclipse.lsp4e.operations.inlayhint.LSPLineContentCodeMining;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Command;
@@ -39,29 +37,17 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-public class LSPLineContentCodeMiningTest {
-	
+public class LSPLineContentCodeMiningTest extends AbstractTestWithProject {
+
 	private static final String MOCK_SERVER_ID = "org.eclipse.lsp4e.test.server";
 
-	@Rule
-	public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
-	}
-	
 	@Test
-	public void singleLabelPartCommand()
-			throws Exception {
+	public void singleLabelPartCommand() throws Exception {
 		final InlayHint inlay = createMultiLabelInlayHint(createInlayLabelPart("Label-Text", MockLanguageServer.SUPPORTED_COMMAND_ID));
 		Command command = inlay.getLabel().getRight().get(0).getCommand();
 		JsonObject jsonObject = new JsonObject();
@@ -89,14 +75,14 @@ public class LSPLineContentCodeMiningTest {
 		assertEquals(MockLanguageServer.SUPPORTED_COMMAND_ID, executedCommand.getCommand());
 		assertEquals(command.getArguments(), executedCommand.getArguments());
 	}
-	
+
 	private static InlayHintLabelPart createInlayLabelPart(String text, String commandID) {
 		InlayHintLabelPart labelPart = new InlayHintLabelPart(text);
 		Command command = new Command(text, commandID);
 		labelPart.setCommand(command);
 		return labelPart;
 	}
-	
+
 	private static InlayHint createMultiLabelInlayHint(InlayHintLabelPart... parts) {
 		InlayHint inlay = new InlayHint();
 		inlay.setLabel(Arrays.asList(parts));

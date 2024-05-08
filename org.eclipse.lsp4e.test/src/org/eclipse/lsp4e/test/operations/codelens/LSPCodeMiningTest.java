@@ -21,8 +21,6 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
-import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServerWrapper;
@@ -31,7 +29,7 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.command.LSPCommandHandler;
 import org.eclipse.lsp4e.operations.codelens.CodeLensProvider;
 import org.eclipse.lsp4e.operations.codelens.LSPCodeMining;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.CodeLens;
@@ -45,8 +43,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.handlers.IHandlerService;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import com.google.gson.JsonObject;
@@ -56,18 +52,9 @@ import com.google.gson.JsonPrimitive;
  * Tests executing actions on server side or client side via registered
  * IHandler.
  */
-public class LSPCodeMiningTest {
+public class LSPCodeMiningTest extends AbstractTestWithProject {
 
 	private static final String MOCK_SERVER_ID = "org.eclipse.lsp4e.test.server";
-
-	@Rule
-	public AllCleanRule clear = new AllCleanRule();
-	private IProject project;
-
-	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
-	}
 
 	@Test
 	public void testLSPCodeMiningActionClientSideHandling() throws Exception {

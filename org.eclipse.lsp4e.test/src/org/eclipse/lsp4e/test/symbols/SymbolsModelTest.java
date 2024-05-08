@@ -20,7 +20,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.lsp4e.outline.SymbolsModel;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTest;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
@@ -28,12 +28,9 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class SymbolsModelTest {
-
-	@Rule public AllCleanRule clear = new AllCleanRule();
+public class SymbolsModelTest extends AbstractTest {
 
 	@Test
 	public void test() {

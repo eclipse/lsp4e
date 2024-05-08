@@ -15,10 +15,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.lsp4e.test.utils.AllCleanRule;
+import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.SemanticTokens;
@@ -27,19 +26,14 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.tests.harness.util.DisplayHelper;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class SemanticHighlightReconcilerStrategyTest {
-	@Rule
-	public AllCleanRule clear = new AllCleanRule();
+public class SemanticHighlightReconcilerStrategyTest extends AbstractTestWithProject {
 
-	private IProject project;
 	private Shell shell;
 
 	@Before
-	public void setUp() throws CoreException {
-		project = TestUtils.createProject(getClass().getName() + System.currentTimeMillis());
+	public void setUp() {
 		shell = new Shell();
 
 		// Setup Server Capabilities
