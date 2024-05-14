@@ -9,17 +9,20 @@
  * Contributors:
  *   Christoph Kaser (ICONPARC GmbH) - initial implementation
  *******************************************************************************/
-
 package org.eclipse.lsp4e.operations.completion;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.contentassist.CompletionProposal;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.link.LinkedPosition;
 import org.eclipse.jface.text.link.ProposalPosition;
-
-import java.util.*;
-import java.util.function.Function;
 
 
 /**
@@ -329,5 +332,6 @@ class CompletionSnippetParser {
 		return ('0' <= c && c <= '9') || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
 	}
 
-	private static class DollarExpressionParseException extends Exception {	}
+	private static final class DollarExpressionParseException extends Exception {
+		private static final long serialVersionUID = 1L;	}
 }
