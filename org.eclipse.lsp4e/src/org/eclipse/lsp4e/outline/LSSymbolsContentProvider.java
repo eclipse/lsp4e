@@ -30,7 +30,6 @@ import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.DocumentEvent;
@@ -84,7 +83,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		@Nullable
 		private final URI documentURI;
 
-		public OutlineViewerInput(IDocument document, @NonNull LanguageServerWrapper wrapper, @Nullable ITextEditor textEditor) {
+		public OutlineViewerInput(IDocument document, LanguageServerWrapper wrapper, @Nullable ITextEditor textEditor) {
 			this.document = document;
 			IPath path = LSPEclipseUtils.toPath(document);
 			if (path == null) {
@@ -257,7 +256,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		}
 
 		this.viewer = (TreeViewer) viewer;
-		
+
 		// this enables limiting the number of outline entries to mitigate UI freezes
 		WorkbenchViewerSetup.setupViewer(this.viewer);
 
