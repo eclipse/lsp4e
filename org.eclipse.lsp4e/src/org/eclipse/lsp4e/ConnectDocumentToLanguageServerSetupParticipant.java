@@ -12,7 +12,7 @@
 package org.eclipse.lsp4e;
 
 import java.util.Collections;
-import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -33,13 +33,10 @@ import org.eclipse.jface.text.IDocument;
  * be set up when the editor is configured, and all such features will trigger a connect before requesting data from the server.
  * However lightweight LS (i.e. linters and other supplementary servers that only e.g. contribute diagnostic markers) will not
  * support such rich functionality and so need an explicit connect so that they can begin their analysis.
- *
  */
 public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumentSetupParticipant, IDocumentSetupParticipantExtension {
-	private static final Map<CompletableFuture<?>, Void> PENDING_CONNECTIONS = Collections.synchronizedMap(new WeakHashMap<>());
 
-	public ConnectDocumentToLanguageServerSetupParticipant() {
-	}
+	private static final Set<CompletableFuture<?>> PENDING_CONNECTIONS = Collections.synchronizedSet(Collections.newSetFromMap(new WeakHashMap<>()));
 
 	@Override
 	public void setup(IDocument document) {
@@ -57,7 +54,7 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 		}
 		// Force document connect
 		CompletableFuture.runAsync(
-				() -> PENDING_CONNECTIONS.put(LanguageServers.forDocument(document).collectAll(ls -> CompletableFuture.completedFuture(null)), null),
+				() -> PENDING_CONNECTIONS.add(LanguageServers.forDocument(document).collectAll(ls -> CompletableFuture.completedFuture(null))),
 				CompletableFuture.delayedExecutor(1, TimeUnit.SECONDS)); // delay to ensure the document is initialized and can be resolved by LSPEclipseUtils.toUri
 	}
 
@@ -66,7 +63,7 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 	 * jobs trying to attach to them
 	 */
 	public static void waitForAll() {
-		PENDING_CONNECTIONS.forEach((cf, dummy) -> {
+		PENDING_CONNECTIONS.forEach(cf -> {
 			try {
 				cf.get(1000, TimeUnit.MILLISECONDS);
 			} catch (InterruptedException | ExecutionException | TimeoutException e) {
