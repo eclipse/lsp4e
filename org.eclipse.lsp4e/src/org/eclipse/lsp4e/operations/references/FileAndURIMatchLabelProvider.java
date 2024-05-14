@@ -22,8 +22,6 @@ import org.eclipse.ui.PlatformUI;
 
 public class FileAndURIMatchLabelProvider extends DecoratingStyledCellLabelProvider {
 
-	private final DecoratingFileSearchLabelProvider fileMatchLabelProvider;
-	
 	public static class FileAndURIMatchBaseLabelProvider implements IStyledLabelProvider {
 		private IStyledLabelProvider resourceMatchDelegate;
 
@@ -100,7 +98,7 @@ public class FileAndURIMatchLabelProvider extends DecoratingStyledCellLabelProvi
 			}
 			return null;
 		}
-		
+
 		private boolean canDelegate(Object element) {
 			return !(element instanceof URI || element instanceof URIMatch);
 		}
@@ -108,7 +106,6 @@ public class FileAndURIMatchLabelProvider extends DecoratingStyledCellLabelProvi
 
 	public FileAndURIMatchLabelProvider(FileAndURIMatchBaseLabelProvider baseLabelProvider, DecoratingFileSearchLabelProvider fileMatchLabelProvider) {
 		super(baseLabelProvider, fileMatchLabelProvider.getLabelDecorator(), fileMatchLabelProvider.getDecorationContext());
-		this.fileMatchLabelProvider = fileMatchLabelProvider;
 	}
 
 }
