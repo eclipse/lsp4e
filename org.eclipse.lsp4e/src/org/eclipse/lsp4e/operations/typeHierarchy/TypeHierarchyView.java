@@ -163,7 +163,6 @@ public class TypeHierarchyView extends ViewPart {
 	protected TreeViewer treeViewer;
 
 	private HashMap<URI, SymbolsContainer> cachedSymbols = new HashMap<>();
-	private volatile String typeName;
 
 	private final IFileBufferListener fileBufferListener = new FileBufferListenerAdapter() {
 		@Override
