@@ -54,7 +54,7 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 	 */
 	protected static class SelectionRangeHandler {
 
-		public static enum Direction {
+		public enum Direction {
 			UP, DOWN;
 		}
 
