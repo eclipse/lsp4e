@@ -244,4 +244,7 @@ public class CommandExecutor {
 		}
 		return workspaceEdit;
 	}
+
+	private CommandExecutor() {
+	}
 }
