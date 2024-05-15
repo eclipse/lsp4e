@@ -400,12 +400,10 @@ public class LanguageServerWrapper {
 					if (currentInitializeFuture != null) {
 						currentInitializeFuture.join();
 					}
+				} catch (CancellationException e) {
+					return Status.CANCEL_STATUS;
 				} catch (Exception e) {
-					if (e instanceof CancellationException) {
-						return Status.CANCEL_STATUS;
-					} else {
-						return new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, e.getMessage(), e);
-					}
+					return new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, e.getMessage(), e);
 				} finally {
 					initializeFutureMonitor.done();
 					initializeFutureMonitorRef.compareAndSet(initializeFutureMonitor, null);
