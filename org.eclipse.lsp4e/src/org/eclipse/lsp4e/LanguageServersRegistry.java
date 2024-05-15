@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.eclipse.core.expressions.ExpressionConverter;
 import org.eclipse.core.expressions.IEvaluationContext;
@@ -365,7 +364,7 @@ public class LanguageServersRegistry {
 				}
 				// TODO support "priority" attribute, but it's not made public
 				return mapping1.getKey().getId().compareTo(mapping2.getKey().getId());
-			}).collect(Collectors.toList());
+			}).toList();
 	}
 
 	public void registerAssociation(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {
