@@ -128,7 +128,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 	private static Object safeEvaluate(Browser browser, String expression) {
 		try {
 			return browser.evaluate(expression);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 		}
 		return null;
@@ -137,7 +137,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 	private static boolean safeExecute(Browser browser, String expression) {
 		try {
 			return browser.execute(expression);
-		} catch (Throwable ex) {
+		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 		}
 		return false;
