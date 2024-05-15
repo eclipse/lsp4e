@@ -24,7 +24,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.codemining.LineContentCodeMining;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
-import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.command.CommandExecutor;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
@@ -129,7 +129,7 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 					ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
 					String commandId = command.getCommand();
 					if (provider != null && provider.getCommands().contains(commandId)) {
-						LanguageServerDocumentExecutor.forDocument(document).computeAll((w, ls) -> {
+						LanguageServers.forDocument(document).computeAll((w, ls) -> {
 							if (w == this.wrapper) {
 								return ls.getWorkspaceService()
 										.executeCommand(new ExecuteCommandParams(commandId, command.getArguments()));
