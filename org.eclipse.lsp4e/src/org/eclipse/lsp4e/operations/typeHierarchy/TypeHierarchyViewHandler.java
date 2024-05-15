@@ -11,14 +11,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
-import java.util.Optional;
-
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.callhierarchy.CallHierarchyCommandHandler;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -36,14 +35,12 @@ public class TypeHierarchyViewHandler extends CallHierarchyCommandHandler {
 		}
 		if (editor.getSelectionProvider().getSelection() instanceof ITextSelection sel) {
 			int offset = sel.getOffset();
-			Optional.ofNullable(getActivePage()).map(p -> {
-				try {
-					return p.showView(TypeHierarchyView.ID);
-				} catch (PartInitException e) {
-					LanguageServerPlugin.logError("Error while opening the Type Hierarchy view", e); //$NON-NLS-1$
-				}
-				return Optional.empty();
-			}).filter(view -> view instanceof TypeHierarchyView).ifPresent(thv -> ((TypeHierarchyView) thv).initialize(document, offset));
+			try {
+				final TypeHierarchyView view = UI.showView(TypeHierarchyView.ID);
+				view.initialize(document, offset);
+			} catch (PartInitException e) {
+				LanguageServerPlugin.logError("Error while opening the Type Hierarchy view", e); //$NON-NLS-1$
+			}
 		}
 	}
 

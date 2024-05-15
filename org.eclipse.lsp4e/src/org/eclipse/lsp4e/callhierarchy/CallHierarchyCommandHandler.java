@@ -9,7 +9,6 @@
  * Contributors:
  *  Andrew Lamb (Avaloq Group AG) - Initial implementation
  *******************************************************************************/
-
 package org.eclipse.lsp4e.callhierarchy;
 
 import org.eclipse.core.commands.ExecutionEvent;
@@ -18,11 +17,9 @@ import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.internal.LSPDocumentAbstractHandler;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
-import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
@@ -40,7 +37,7 @@ public class CallHierarchyCommandHandler extends LSPDocumentAbstractHandler {
 			int offset = sel.getOffset();
 
 			try {
-				CallHierarchyView theView = (CallHierarchyView) getActivePage().showView(CallHierarchyView.ID);
+				CallHierarchyView theView = UI.showView(CallHierarchyView.ID);
 				theView.initialize(document, offset);
 			} catch (PartInitException e) {
 				LanguageServerPlugin.logError("Error while opening the Call Hierarchy view", e); //$NON-NLS-1$
@@ -51,13 +48,5 @@ public class CallHierarchyCommandHandler extends LSPDocumentAbstractHandler {
 	@Override
 	public void setEnabled(Object evaluationContext) {
 		setEnabled(ServerCapabilities::getCallHierarchyProvider, this::hasSelection);
-	}
-
-	protected static IWorkbenchPage getActivePage() {
-		IWorkbenchWindow activeWindow = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
-		if (activeWindow != null) {
-			return activeWindow.getActivePage();
-		}
-		return null;
 	}
 }

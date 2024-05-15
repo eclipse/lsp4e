@@ -16,9 +16,11 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.MultiPageEditorPart;
 import org.eclipse.ui.texteditor.ITextEditor;
@@ -108,7 +110,14 @@ public final class UI {
 		}
 	}
 
-	private UI() {
+	@SuppressWarnings("unchecked")
+	public static <T extends IViewPart> T showView(final String viewId) throws PartInitException {
+		final var page = UI.getActivePage();
+		if (page == null)
+			throw new PartInitException("IWorkbenchPage instance not available"); //$NON-NLS-1$
+		return (T) page.showView(viewId);
 	}
 
+	private UI() {
+	}
 }
