@@ -273,19 +273,16 @@ public class TypeHierarchyView extends ViewPart {
 	}
 
 	private void onHierarchySelectionChanged(SelectionChangedEvent event) {
-		var selection = event.getSelection();
-		if (selection instanceof TreeSelection && !selection.isEmpty()) {
-			var element = ((TreeSelection) selection).getFirstElement();
-			if (element instanceof TypeHierarchyItem item) {
-				URI uri = null;
-				try {
-					uri = new URI(item.getUri());
-				} catch (URISyntaxException e) {
-					LanguageServerPlugin.logError(e);
-					return;
-				}
-				refreshMemberViewer(getSymbolsContainer(uri), item.getName(), false);
+		if (event.getSelection() instanceof TreeSelection selection
+				&& selection.getFirstElement() instanceof TypeHierarchyItem item) {
+			URI uri = null;
+			try {
+				uri = new URI(item.getUri());
+			} catch (URISyntaxException e) {
+				LanguageServerPlugin.logError(e);
+				return;
 			}
+			refreshMemberViewer(getSymbolsContainer(uri), item.getName(), false);
 		}
 	}
 
