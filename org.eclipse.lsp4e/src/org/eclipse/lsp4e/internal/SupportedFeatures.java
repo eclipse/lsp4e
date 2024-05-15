@@ -60,9 +60,6 @@ import org.eclipse.lsp4j.WorkspaceClientCapabilities;
 import org.eclipse.lsp4j.WorkspaceEditCapabilities;
 import org.eclipse.lsp4j.WorkspaceEditChangeAnnotationSupportCapabilities;
 
-/**
- *
- */
 public class SupportedFeatures {
 
 	public static @NonNull TextDocumentClientCapabilities getTextDocumentClientCapabilities() {
@@ -155,4 +152,6 @@ public class SupportedFeatures {
 		return windowClientCapabilities;
 	}
 
+	private SupportedFeatures() {
+	}
 }
