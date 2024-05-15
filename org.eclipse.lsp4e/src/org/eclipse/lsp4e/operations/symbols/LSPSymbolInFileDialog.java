@@ -32,8 +32,6 @@ import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.MouseAdapter;
@@ -132,13 +130,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 			}
 		});
 
-		this.getShell().addDisposeListener(new DisposeListener() {
-
-			@Override
-			public void widgetDisposed(DisposeEvent e) {
-				viewer = null;
-			}
-		});
+		this.getShell().addDisposeListener(event -> viewer = null);
 
 		viewer.setInput(outlineViewerInput);
 		return filteredTree;

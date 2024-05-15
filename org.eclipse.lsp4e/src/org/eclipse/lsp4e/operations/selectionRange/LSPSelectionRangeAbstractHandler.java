@@ -34,8 +34,6 @@ import org.eclipse.lsp4j.SelectionRange;
 import org.eclipse.lsp4j.SelectionRangeParams;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
-import org.eclipse.swt.custom.CaretEvent;
-import org.eclipse.swt.custom.CaretListener;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.ui.texteditor.ITextEditor;
 
@@ -84,14 +82,10 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 		public SelectionRangeHandler(StyledText styledText) {
 			this.styledText = styledText;
 			styledText.setData(KEY, this);
-			styledText.addCaretListener(new CaretListener() {
-
-				@Override
-				public void caretMoved(CaretEvent arg0) {
-					if (!updating) {
-						// The cursor location changed, reset the cached selection range.
-						root = null;
-					}
+			styledText.addCaretListener(event -> {
+				if (!updating) {
+					// The cursor location changed, reset the cached selection range.
+					root = null;
 				}
 			});
 		}

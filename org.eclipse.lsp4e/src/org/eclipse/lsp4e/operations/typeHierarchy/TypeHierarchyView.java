@@ -35,12 +35,7 @@ import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DecorationContext;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
-import org.eclipse.jface.viewers.IOpenListener;
-import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.TableViewer;
@@ -229,21 +224,13 @@ public class TypeHierarchyView extends ViewPart {
 
 		treeViewer.setUseHashlookup(true);
 		treeViewer.getControl().setEnabled(false);
-		treeViewer.addDoubleClickListener(new IDoubleClickListener() {
-			@Override
-			public void doubleClick(final DoubleClickEvent event) {
-				var selection = ((IStructuredSelection) event.getSelection()).getFirstElement();
-				if (selection instanceof TypeHierarchyItem item) {
-					LSPEclipseUtils.open(item.getUri(), item.getSelectionRange());
-				}
+		treeViewer.addDoubleClickListener(event -> {
+			var selection = ((IStructuredSelection) event.getSelection()).getFirstElement();
+			if (selection instanceof TypeHierarchyItem item) {
+				LSPEclipseUtils.open(item.getUri(), item.getSelectionRange());
 			}
 		});
-		treeViewer.addSelectionChangedListener(new ISelectionChangedListener() {
-			@Override
-			public void selectionChanged(final SelectionChangedEvent event) {
-				onHierarchySelectionChanged(event);
-			}
-		});
+		treeViewer.addSelectionChangedListener(this::onHierarchySelectionChanged);
 
 		memberViewForm = new ViewForm(splitter, SWT.NONE);
 		Control memberControl = createMemberControl(memberViewForm);
@@ -317,14 +304,11 @@ public class TypeHierarchyView extends ViewPart {
 		memberViewer = new TableViewer(parent, SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER);
 		memberViewer.setContentProvider(new TypeMemberContentProvider());
 		memberViewer.setLabelProvider(symbolsLabelProvider);
-		memberViewer.addOpenListener(new IOpenListener() {
-			@Override
-			public void open(OpenEvent event) {
-				DocumentSymbolWithURI container = (DocumentSymbolWithURI)((IStructuredSelection) event.getSelection()).getFirstElement();
-				var symbolsContainer = cachedSymbols.get(container.uri);
-				if (symbolsContainer != null) {
-					LSPEclipseUtils.open(symbolsContainer.uri.toASCIIString(), container.symbol.getRange());
-				}
+		memberViewer.addOpenListener(event -> {
+			DocumentSymbolWithURI container = (DocumentSymbolWithURI)((IStructuredSelection) event.getSelection()).getFirstElement();
+			var symbolsContainer = cachedSymbols.get(container.uri);
+			if (symbolsContainer != null) {
+				LSPEclipseUtils.open(symbolsContainer.uri.toASCIIString(), container.symbol.getRange());
 			}
 		});
 		return memberViewer.getControl();
