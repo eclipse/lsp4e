@@ -188,7 +188,7 @@ public final class LSPEclipseUtils {
 		// this class shouldn't be instantiated
 	}
 
-	public static Position toPosition(int offset, IDocument document) throws BadLocationException {
+	public static @NonNull Position toPosition(int offset, IDocument document) throws BadLocationException {
 		final var res = new Position();
 		res.setLine(document.getLineOfOffset(offset));
 		res.setCharacter(offset - document.getLineInformationOfOffset(offset).getOffset());

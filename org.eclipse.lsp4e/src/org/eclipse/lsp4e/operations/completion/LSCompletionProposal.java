@@ -68,6 +68,7 @@ import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemDefaults;
+import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InsertReplaceEdit;
@@ -152,10 +153,11 @@ public class LSCompletionProposal
 			if (item.getInsertTextMode() == null) {
 				item.setInsertTextMode(defaults.getInsertTextMode());
 			}
-			if (item.getTextEditText() != null && defaults.getEditRange() != null) {
+			String textEditText = item.getTextEditText();
+			if (textEditText != null && defaults.getEditRange() != null) {
 				item.setTextEdit(defaults.getEditRange().map(
-					range -> Either.forLeft(new TextEdit(range, item.getTextEditText())),
-					insertReplaceRange -> Either.forRight(new InsertReplaceEdit(item.getTextEditText(), insertReplaceRange.getInsert(), insertReplaceRange.getReplace()))));
+					range -> Either.forLeft(new TextEdit(range, textEditText)),
+					insertReplaceRange -> Either.forRight(new InsertReplaceEdit(textEditText, insertReplaceRange.getInsert(), insertReplaceRange.getReplace()))));
 			}
 		}
 	}
@@ -172,7 +174,7 @@ public class LSCompletionProposal
 				currentOffset = offset;
 				rankScore = null;
 				rankCategory = null;
-				documentFilterAddition = offset > this.initialOffset ? document.get(initialOffset, offset - initialOffset) : ""; //$NON-NLS-1$
+				documentFilterAddition = offset > initialOffset ? document.get(initialOffset, offset - initialOffset) : ""; //$NON-NLS-1$
 			}
 			return documentFilter + documentFilterAddition;
 		}
@@ -237,15 +239,15 @@ public class LSCompletionProposal
 	}
 
 	public int getBestOffset() {
-		return this.bestOffset;
+		return bestOffset;
 	}
 
 	public void updateOffset(int offset) {
-		this.bestOffset = getPrefixCompletionStart(document, offset);
+		bestOffset = getPrefixCompletionStart(document, offset);
 	}
 
 	public CompletionItem getItem() {
-		return this.item;
+		return item;
 	}
 
 	private boolean isDeprecated() {
@@ -258,7 +260,7 @@ public class LSCompletionProposal
 		StyledString res = isDeprecated()
 				? new StyledString(rawString, StyleUtil.DEPRECATE)
 				: new StyledString(rawString);
-		if (offset > this.bestOffset) {
+		if (offset > bestOffset) {
 			try {
 				String subString = getDocumentFilter(offset).toLowerCase();
 				int lastIndex = 0;
@@ -291,7 +293,7 @@ public class LSCompletionProposal
 
 	@Override
 	public String getDisplayString() {
-		return this.item.getLabel();
+		return item.getLabel();
 	}
 
 	@Override
@@ -324,23 +326,16 @@ public class LSCompletionProposal
 
 	@Override
 	public String getAdditionalProposalInfo(IProgressMonitor monitor) {
-		if (languageServerWrapper.isActive() && languageServerWrapper.getServerCapabilities().getCompletionProvider().getResolveProvider()) {
-			try {
-				languageServerWrapper.execute(ls -> ls.getTextDocumentService().resolveCompletionItem(item).thenAccept(this::updateCompletionItem))
-						.get(RESOLVE_TIMEOUT, TimeUnit.MILLISECONDS);
-			} catch (ExecutionException e) {
-				LanguageServerPlugin.logError(e);
-			} catch (InterruptedException e) {
-				LanguageServerPlugin.logError(e);
-				Thread.currentThread().interrupt();
-			} catch (TimeoutException e) {
-				LanguageServerPlugin.logWarning("Could not resolve completion items due to timeout after " + RESOLVE_TIMEOUT + " milliseconds in `completionItem/resolve`", e);  //$NON-NLS-1$//$NON-NLS-2$
+		if (languageServerWrapper.isActive()) {
+			CompletionOptions completionProvider = languageServerWrapper.getServerCapabilities().getCompletionProvider();
+			if (completionProvider != null && completionProvider.getResolveProvider()) {
+				resolveItem();
 			}
 		}
 
 		final var res = new StringBuilder();
-		if (this.item.getDetail() != null && !this.item.getDetail().isEmpty()) {
-			res.append("<p>" + this.item.getDetail() + "</p>"); //$NON-NLS-1$ //$NON-NLS-2$
+		if (item.getDetail() != null && !item.getDetail().isEmpty()) {
+			res.append("<p>" + item.getDetail() + "</p>"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		if (res.length() > 0) {
 			res.append("<br/>"); //$NON-NLS-1$
@@ -353,6 +348,20 @@ public class LSCompletionProposal
 		}
 
 		return res.toString();
+	}
+
+	private void resolveItem() {
+		try {
+			languageServerWrapper.execute(ls -> ls.getTextDocumentService().resolveCompletionItem(item).thenAccept(this::updateCompletionItem))
+					.get(RESOLVE_TIMEOUT, TimeUnit.MILLISECONDS);
+		} catch (ExecutionException e) {
+			LanguageServerPlugin.logError(e);
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning("Could not resolve completion items due to timeout after " + RESOLVE_TIMEOUT + " milliseconds in `completionItem/resolve`", e);  //$NON-NLS-1$//$NON-NLS-2$
+		}
 	}
 
 	private void updateCompletionItem(CompletionItem resolvedItem) {
@@ -387,12 +396,12 @@ public class LSCompletionProposal
 
 	@Override
 	public CharSequence getPrefixCompletionText(IDocument document, int completionOffset) {
-		return item.getInsertText().substring(completionOffset - this.bestOffset);
+		return item.getInsertText().substring(completionOffset - bestOffset);
 	}
 
 	@Override
 	public int getPrefixCompletionStart(IDocument document, int completionOffset) {
-		Either<TextEdit, InsertReplaceEdit> textEdit = this.item.getTextEdit();
+		Either<TextEdit, InsertReplaceEdit> textEdit = item.getTextEdit();
 		if (textEdit != null) {
 			try {
 				return LSPEclipseUtils.toOffset(getTextEditRange().getStart(), document);
@@ -433,12 +442,12 @@ public class LSCompletionProposal
 		try {
 			if (textEdit == null) {
 				insertText = getInsertText();
-				Position start = LSPEclipseUtils.toPosition(this.bestOffset, document);
+				Position start = LSPEclipseUtils.toPosition(bestOffset, document);
 				Position end = LSPEclipseUtils.toPosition(offset, document); // need 2 distinct objects
 				textEdit = new TextEdit(new Range(start, end), insertText);
-			} else if (offset > this.initialOffset) {
+			} else if (offset > initialOffset) {
 				// characters were added after completion was activated
-				int shift = offset - this.initialOffset;
+				int shift = offset - initialOffset;
 				textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + shift);
 			}
 			{ // workaround https://github.com/Microsoft/vscode/issues/17036
@@ -460,11 +469,11 @@ public class LSCompletionProposal
 
 			if (insertText != null) {
 				// try to reuse existing characters after completion location
-				int shift = offset - this.bestOffset;
+				int shift = offset - bestOffset;
 				int commonSize = 0;
 				while (commonSize < insertText.length() - shift
 					&& document.getLength() > offset + commonSize
-					&& document.getChar(this.bestOffset + shift + commonSize) == insertText.charAt(commonSize + shift)) {
+					&& document.getChar(bestOffset + shift + commonSize) == insertText.charAt(commonSize + shift)) {
 					commonSize++;
 				}
 				textEdit.getRange().getEnd().setCharacter(textEdit.getRange().getEnd().getCharacter() + commonSize);
@@ -492,12 +501,12 @@ public class LSCompletionProposal
 				final var allEdits = new ArrayList<TextEdit>();
 				allEdits.add(textEdit);
 				additionalEdits.stream().forEach(te -> {
-					int shift = offset - this.initialOffset;
+					int shift = offset - initialOffset;
 					if (shift != 0) {
 						try {
 							int start = LSPEclipseUtils.toOffset(te.getRange().getStart(), document);
 							int end = LSPEclipseUtils.toOffset(te.getRange().getEnd(), document);
-							if (start > this.initialOffset && te.getRange().getStart().getLine() == initialPosition.getLine()) {
+							if (start > initialOffset && te.getRange().getStart().getLine() == initialPosition.getLine()) {
 								// We need to shift the Range according to the shift (if on the same line)
 								te.getRange().setStart(LSPEclipseUtils.toPosition(start + shift, document));
 								te.getRange().setEnd(LSPEclipseUtils.toPosition(end + shift, document));
@@ -662,7 +671,7 @@ public class LSCompletionProposal
 		if (textEdit != null) {
 			return textEdit.map(TextEdit::getRange, InsertReplaceEdit::getInsert);
 		} else {
-				Position start = LSPEclipseUtils.toPosition(this.bestOffset, document);
+				Position start = LSPEclipseUtils.toPosition(bestOffset, document);
 				Position end = LSPEclipseUtils.toPosition(initialOffset, document);
 				return new Range(start, end);
 		}
@@ -688,21 +697,21 @@ public class LSCompletionProposal
 	}
 
 	protected String getInsertText() {
-		String insertText = this.item.getInsertText();
-		Either<TextEdit, InsertReplaceEdit> eitherTextEdit = this.item.getTextEdit();
+		String insertText = item.getInsertText();
+		Either<TextEdit, InsertReplaceEdit> eitherTextEdit = item.getTextEdit();
 		if (eitherTextEdit != null) {
 			insertText = eitherTextEdit.map(TextEdit::getNewText, InsertReplaceEdit::getNewText);
 		}
 		if (insertText == null) {
-			insertText = this.item.getLabel();
+			insertText = item.getLabel();
 		}
 		return insertText;
 	}
 
 	@Override
 	public Point getSelection(IDocument document) {
-		if (this.firstPosition != null) {
-			return new Point(this.firstPosition.getOffset(), this.firstPosition.getLength());
+		if (firstPosition != null) {
+			return new Point(firstPosition.getOffset(), firstPosition.getLength());
 		}
 		if (selection == null) {
 			return null;
@@ -712,12 +721,12 @@ public class LSCompletionProposal
 
 	@Override
 	public String getAdditionalProposalInfo() {
-		return this.getAdditionalProposalInfo(new NullProgressMonitor());
+		return getAdditionalProposalInfo(new NullProgressMonitor());
 	}
 
 	@Override
 	public Image getImage() {
-		return LSPImages.imageFromCompletionItem(this.item);
+		return LSPImages.imageFromCompletionItem(item);
 	}
 
 	@Override
@@ -751,7 +760,7 @@ public class LSCompletionProposal
 
 	@Override
 	public boolean isValidFor(IDocument document, int offset) {
-		return (!isIncomplete || offset == this.initialOffset) && validate(document, offset, null);
+		return (!isIncomplete || offset == initialOffset) && validate(document, offset, null);
 	}
 
 	@Override
@@ -768,7 +777,7 @@ public class LSCompletionProposal
 		if (item.getLabel() == null || item.getLabel().isEmpty()) {
 			return false;
 		}
-		if (offset < this.bestOffset) {
+		if (offset < bestOffset) {
 			return false;
 		}
 		try {
@@ -797,12 +806,11 @@ public class LSCompletionProposal
 
 	@Override
 	public void apply(IDocument document) {
-		apply(document, Character.MIN_VALUE, 0, this.bestOffset);
+		apply(document, Character.MIN_VALUE, 0, bestOffset);
 	}
 
 	@Override
 	public char[] getTriggerCharacters() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
