@@ -68,6 +68,7 @@ import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemDefaults;
+import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InsertReplaceEdit;
@@ -75,6 +76,7 @@ import org.eclipse.lsp4j.InsertTextFormat;
 import org.eclipse.lsp4j.InsertTextMode;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.SWT;
@@ -325,11 +327,8 @@ public class LSCompletionProposal
 
 	@Override
 	public String getAdditionalProposalInfo(IProgressMonitor monitor) {
-		if (languageServerWrapper.isActive()) {
-			Boolean hasProvider = languageServerWrapper.getServerCapabilities().getCompletionProvider().getResolveProvider();
-			if (hasProvider != null && hasProvider) {
-				resolveItem();
-			}
+		if (languageServerWrapper.isActive() && resolvesCompletionItem(languageServerWrapper.getServerCapabilities())) {
+			resolveItem();
 		}
 
 		final var res = new StringBuilder();
@@ -347,6 +346,17 @@ public class LSCompletionProposal
 		}
 
 		return res.toString();
+	}
+
+	private boolean resolvesCompletionItem(final ServerCapabilities capabilities) {
+		if (capabilities != null) {
+			CompletionOptions completionProvider = capabilities.getCompletionProvider();
+			if (completionProvider != null) {
+				Boolean hasResolveProvider = completionProvider.getResolveProvider();
+				return hasResolveProvider != null && hasResolveProvider;
+			}
+		}
+		return false;
 	}
 
 	private void resolveItem() {
