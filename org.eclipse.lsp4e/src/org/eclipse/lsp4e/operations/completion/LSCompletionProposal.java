@@ -68,7 +68,6 @@ import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemDefaults;
-import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InsertReplaceEdit;
@@ -327,8 +326,8 @@ public class LSCompletionProposal
 	@Override
 	public String getAdditionalProposalInfo(IProgressMonitor monitor) {
 		if (languageServerWrapper.isActive()) {
-			CompletionOptions completionProvider = languageServerWrapper.getServerCapabilities().getCompletionProvider();
-			if (completionProvider != null && completionProvider.getResolveProvider()) {
+			Boolean hasProvider = languageServerWrapper.getServerCapabilities().getCompletionProvider().getResolveProvider();
+			if (hasProvider != null && hasProvider) {
 				resolveItem();
 			}
 		}
