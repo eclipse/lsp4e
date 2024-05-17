@@ -117,8 +117,8 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	private final CompletableFuture<Void> initialized = new CompletableFuture<>();
 
 	/**
-	 * The debuggees that this target has spawned, for example when handling
-	 * the {@link #startDebugging(StartDebuggingRequestArguments)} notification
+	 * The debuggees that this target has spawned, for example when handling the
+	 * {@link #startDebugging(StartDebuggingRequestArguments)} notification
 	 */
 	private final Set<DSPDebugTarget> debuggees = new HashSet<>();
 
@@ -149,7 +149,8 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	/**
 	 * Kept for backward compatibility
 	 */
-	public DSPDebugTarget(ILaunch launch, Runnable cleanup, InputStream in, OutputStream out, Map<String, Object> dspParameters) {
+	public DSPDebugTarget(ILaunch launch, Runnable cleanup, InputStream in, OutputStream out,
+			Map<String, Object> dspParameters) {
 		this(launch, () -> new DefaultTransportStreams(in, out) {
 			@Override
 			public void close() {
@@ -159,7 +160,8 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		}, dspParameters);
 	}
 
-	public DSPDebugTarget(ILaunch launch, Supplier<TransportStreams> streamsSupplier, Map<String, Object> dspParameters) {
+	public DSPDebugTarget(ILaunch launch, Supplier<TransportStreams> streamsSupplier,
+			Map<String, Object> dspParameters) {
 		super(null);
 		this.transportStreams = streamsSupplier.get();
 		this.streamsSupplier = streamsSupplier;
@@ -225,7 +227,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * interface that extends {@link IDebugProtocolServer}.
 	 *
 	 * For more information on how to <a href=
-	 * "https://github.com/eclipse/lsp4j/tree/master/documentation#extending-the-protocol">extend
+	 * "https://github.com/eclipse-lsp4j/lsp4j/tree/main/documentation#extending-the-protocol">extend
 	 * the protocol</a> using LSP4J
 	 */
 	protected Launcher<? extends IDebugProtocolServer> createLauncher(UnaryOperator<MessageConsumer> wrapper,
@@ -280,9 +282,10 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 					}
 					return q;
 				});
-		CompletableFuture<Void> configurationDoneFuture = CompletableFuture.allOf(initialized, capabilitiesFuture).thenRun(() -> {
-			monitor.worked(10);
-		});
+		CompletableFuture<Void> configurationDoneFuture = CompletableFuture.allOf(initialized, capabilitiesFuture)
+				.thenRun(() -> {
+					monitor.worked(10);
+				});
 		if (ILaunchManager.DEBUG_MODE.equals(launch.getLaunchMode())) {
 			configurationDoneFuture = configurationDoneFuture.thenCompose(v -> {
 				monitor.worked(10);
@@ -293,13 +296,13 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			});
 		}
 		configurationDoneFuture = configurationDoneFuture.thenCompose(v -> {
-				monitor.worked(30);
-				monitor.subTask("Sending configuration done");
-				if (Boolean.TRUE.equals(getCapabilities().getSupportsConfigurationDoneRequest())) {
-					return getDebugProtocolServer().configurationDone(new ConfigurationDoneArguments());
-				}
-				return CompletableFuture.completedFuture(null);
-			});
+			monitor.worked(30);
+			monitor.subTask("Sending configuration done");
+			if (Boolean.TRUE.equals(getCapabilities().getSupportsConfigurationDoneRequest())) {
+				return getDebugProtocolServer().configurationDone(new ConfigurationDoneArguments());
+			}
+			return CompletableFuture.completedFuture(null);
+		});
 		return CompletableFuture.allOf(launchAttachFuture, configurationDoneFuture);
 	}
 
@@ -345,7 +348,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public CompletableFuture<Void> startDebugging(StartDebuggingRequestArguments args) {
-		Map<String, Object> parameters = new HashMap<>(/*dspParameters*/);
+		Map<String, Object> parameters = new HashMap<>(/* dspParameters */);
 		parameters.putAll(args.getConfiguration());
 		try {
 			DSPDebugTarget newTarget = new DSPDebugTarget(launch, streamsSupplier, parameters);

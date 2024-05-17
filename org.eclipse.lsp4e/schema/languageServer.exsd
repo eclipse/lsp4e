@@ -26,21 +26,21 @@
          <attribute name="point" type="string" use="required">
             <annotation>
                <documentation>
-                  
+
                </documentation>
             </annotation>
          </attribute>
          <attribute name="id" type="string">
             <annotation>
                <documentation>
-                  
+
                </documentation>
             </annotation>
          </attribute>
          <attribute name="name" type="string">
             <annotation>
                <documentation>
-                  
+
                </documentation>
                <appinfo>
                   <meta.attribute translatable="true"/>
@@ -62,14 +62,14 @@
          <attribute name="label" type="string" use="required">
             <annotation>
                <documentation>
-                  
+
                </documentation>
             </annotation>
          </attribute>
          <attribute name="class" type="string" use="required">
             <annotation>
                <documentation>
-                  
+
                </documentation>
                <appinfo>
                   <meta.attribute kind="java" basedOn=":org.eclipse.lsp4e.server.StreamConnectionProvider"/>
@@ -79,7 +79,7 @@
          <attribute name="clientImpl" type="string">
             <annotation>
                <documentation>
-                  An optional language client implementation to use as local endpoint. If undefined, the default implementation &lt;code&gt;org.eclipse.lsp4e.LanguageClientImpl&lt;/code&gt; is used. See the &lt;a href=&quot;https://github.com/eclipse/lsp4j/tree/master/documentation&quot;&gt;LSP4J documentation&lt;/a&gt; for more information on how to extend the Language Server Protocol.
+                  An optional language client implementation to use as local endpoint. If undefined, the default implementation &lt;code&gt;org.eclipse.lsp4e.LanguageClientImpl&lt;/code&gt; is used. See the &lt;a href=&quot;https://github.com/eclipse-lsp4j/lsp4j/tree/main/documentation&quot;&gt;LSP4J documentation&lt;/a&gt; for more information on how to extend the Language Server Protocol.
                </documentation>
                <appinfo>
                   <meta.attribute kind="java" basedOn="org.eclipse.lsp4e.LanguageClientImpl:"/>
@@ -89,7 +89,7 @@
          <attribute name="serverInterface" type="string">
             <annotation>
                <documentation>
-                  An optional remote server interface from which to derive the protocol messages. If undefined, the default interface &lt;code&gt;org.eclipse.lsp4j.services.LanguageServer&lt;/code&gt; is used. See the &lt;a href=&quot;https://github.com/eclipse/lsp4j/tree/master/documentation&quot;&gt;LSP4J documentation&lt;/a&gt; for more information on how to extend the Language Server Protocol.
+                  An optional remote server interface from which to derive the protocol messages. If undefined, the default interface &lt;code&gt;org.eclipse.lsp4j.services.LanguageServer&lt;/code&gt; is used. See the &lt;a href=&quot;https://github.com/eclipse-lsp4j/lsp4j/tree/main/documentation&quot;&gt;LSP4J documentation&lt;/a&gt; for more information on how to extend the Language Server Protocol.
                </documentation>
                <appinfo>
                   <meta.attribute kind="java" basedOn="org.eclipse.lsp4j.services.LanguageServer:"/>
@@ -172,7 +172,7 @@ If set to a number bigger than zero, the server will run until the timeout is re
          <attribute name="contentType" type="string">
             <annotation>
                <documentation>
-                  
+
                </documentation>
                <appinfo>
                   <meta.attribute kind="identifier" basedOn="org.eclipse.core.contenttype.contentTypes/content-type/@id"/>
@@ -182,7 +182,7 @@ If set to a number bigger than zero, the server will run until the timeout is re
          <attribute name="languageId" type="string">
             <annotation>
                <documentation>
-                  Defines the language ID that this mapping from a language server to a specific content-type should use when communicating with a language server. The language ID is used as part of the language server protocol, for example as part of the TextDocumentItem (https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md#textdocumentitem) structure. In VSCode the client identifies the language ID that should be used (or the user can override that) and VSCode uses the matching language servers for that language ID. Therefore language servers sometimes use this language ID to check for the exact language type that the user/client selected for the text document and communicates this via the protocol. More details can be found here: https://code.visualstudio.com/docs/languages/identifiers
+                  Defines the language ID that this mapping from a language server to a specific content-type should use when communicating with a language server. The language ID is used as part of the language server protocol, for example as part of the TextDocumentItem (https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocumentItem) structure. In VSCode the client identifies the language ID that should be used (or the user can override that) and VSCode uses the matching language servers for that language ID. Therefore language servers sometimes use this language ID to check for the exact language type that the user/client selected for the text document and communicates this via the protocol. More details can be found here: https://code.visualstudio.com/docs/languages/identifiers
                </documentation>
             </annotation>
          </attribute>
@@ -214,7 +214,7 @@ If set to a number bigger than zero, the server will run until the timeout is re
          <attribute name="description" type="string" use="required">
             <annotation>
                <documentation>
-                  
+
                </documentation>
             </annotation>
          </attribute>
