@@ -31,24 +31,31 @@ import org.junit.Test;
 public class FoldingTest extends AbstractTest {
 
 	private static final String CONTENT = """
-		import
-		import
-		import
-		visible
-		""";
+			import
+			import
+			import
+			visible
+			""";
 
 	@Test
 	public void testImportsFoldedByDefaultEnabled() throws CoreException {
 		collapseImports(true);
 		IEditorPart editor = createEditor();
-		DisplayHelper.waitAndAssertCondition(editor.getSite().getShell().getDisplay(), () -> assertEquals("import\nvisible", ((StyledText)editor.getAdapter(Control.class)).getText().trim()));
+
+		// wait for folding to happen
+		DisplayHelper.waitAndAssertCondition(editor.getSite().getShell().getDisplay(),
+				() -> assertEquals("import\nvisible",
+						((StyledText) editor.getAdapter(Control.class)).getText().trim()));
 	}
 
 	@Test
 	public void testImportsFoldedByDefaultDisabled() throws CoreException {
 		collapseImports(false);
 		IEditorPart editor = createEditor();
-		DisplayHelper.waitAndAssertCondition(editor.getSite().getShell().getDisplay(), () -> assertEquals(CONTENT, ((StyledText)editor.getAdapter(Control.class)).getText()));
+
+		// wait a few seconds before testing to ensure no folding happened
+		DisplayHelper.sleep(3000);
+		assertEquals(CONTENT, ((StyledText) editor.getAdapter(Control.class)).getText());
 	}
 
 	private IEditorPart createEditor() throws CoreException, PartInitException {
@@ -59,10 +66,10 @@ public class FoldingTest extends AbstractTest {
 		IEditorPart editor = TestUtils.openEditor(file);
 		return editor;
 	}
-	
+
 	private void collapseImports(boolean collapseImports) {
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
-		store.setValue("foldingReconcilingStrategy.collapseImports", true); //$NON-NLS-1$
+		store.setValue("foldingReconcilingStrategy.collapseImports", collapseImports); //$NON-NLS-1$
 	}
 
 }
