@@ -1097,7 +1097,7 @@ public final class LSPEclipseUtils {
 		if (documentChanges != null) {
 			// documentChanges are present, the latter are preferred over changes
 			// see specification at
-			// https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md#workspaceedit
+			// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspaceEdit
 			documentChanges.stream().forEach(action -> {
 				if (action.isLeft()) {
 					TextDocumentEdit edit = action.getLeft();

@@ -293,7 +293,7 @@
          </command>
       </menuContribution>
       <menuContribution locationURI="popup:org.eclipse.ui.popup.any?endof=group.generate">
-         <!-- https://github.com/eclipse-mirrors/org.eclipse.ui/blob/master/bundles/org.eclipse.ui.navigator/src/org/eclipse/ui/navigator/ICommonMenuConstants.java -->
+         <!-- https://github.com/eclipse-platform/eclipse.platform.ui/blob/master/bundles/org.eclipse.ui.navigator/src/org/eclipse/ui/navigator/ICommonMenuConstants.java -->
          <!-- "Source/Format" menu entry in navigator popup menu -->
          <menu
                id="org.eclipse.lsp4e.menu.source"
