@@ -78,7 +78,7 @@ public class HighlightTest extends AbstractTestWithProject{
 	@Test
 	public void testCheckIfOtherAnnotationsRemains() throws CoreException {
 		checkGenericEditorVersion();
-		
+
 		MockLanguageServer.INSTANCE.setDocumentHighlights(Map.ofEntries( //
 				Map.entry(new Position(0, 1), List.of( //
 						new DocumentHighlight(new Range(new Position(0, 2), new Position(0, 6)), DocumentHighlightKind.Read)
@@ -107,12 +107,12 @@ public class HighlightTest extends AbstractTestWithProject{
 	}
 
 	@Test
-	public void testHighlightsInMultipleViewersForOneSource() throws CoreException, InterruptedException {
+	public void testHighlightsInMultipleViewersForOneSource() throws CoreException {
 		checkGenericEditorVersion();
 
 		// Create a test file with two sets of highlights
 		final IFile testFile = TestUtils.createUniqueTestFile(project, "ONE\nTWO");
-		
+
 		MockLanguageServer.INSTANCE.setDocumentHighlights(Map.ofEntries( //
 				Map.entry(new Position(0, 1), List.of( //
 						new DocumentHighlight(new Range(new Position(0, 0), new Position(0, 3)), DocumentHighlightKind.Write)
@@ -135,7 +135,7 @@ public class HighlightTest extends AbstractTestWithProject{
 
 		// Split the view in the active editor
 		List<IEditorReference> editorReferences = TestUtils.splitActiveEditor();
-		
+
 		// Keep track of the newly opened editor, so we can close it later
 		ISourceViewer viewer2 = null;
 		IEditorReference editorToClose = null;
@@ -148,7 +148,7 @@ public class HighlightTest extends AbstractTestWithProject{
 			}
 		}
 		Assert.assertNotNull(viewer2);
-		
+
 		final var annotationModel2 = viewer2.getAnnotationModel();
 
 		// Set the caret offset to activate the second set of highlights
@@ -197,7 +197,7 @@ public class HighlightTest extends AbstractTestWithProject{
 					" length=" + posLen + "}. Annotations found: " + annotations);
 		}
 	}
-	
+
 	private void assertAnnotationDoesNotExist(IAnnotationModel annotationModel, String annotationType, int posOffset, int posLen) {
 		final var hasAnnotation = new boolean[] { false };
 		final var annotations = new ArrayList<String>();
