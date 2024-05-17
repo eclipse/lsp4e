@@ -10,7 +10,7 @@
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Max Bureck (Fraunhofer FOKUS) - Added ability to check for executed command
  *******************************************************************************/
-package org.eclipse.lsp4e.tests.mock;
+package org.eclipse.lsp4e.test.utils.mock;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -19,7 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.test.utils.mock.MockLanguageServer;
 import org.eclipse.lsp4j.SemanticTokens;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.widgets.Display;

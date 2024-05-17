@@ -38,7 +38,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServersRegistry;
-import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.test.utils.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;

@@ -13,7 +13,7 @@
  *  Martin Lippert (Pivotal Inc.) - Bug 531030 - fixed crash when initial project gets deleted in multi-root workspaces
  *  Joao Dinis Ferreira (Avaloq Group AG) - Add support for position-dependent mock document highlights
  *******************************************************************************/
-package org.eclipse.lsp4e.tests.mock;
+package org.eclipse.lsp4e.test.utils.mock;
 
 import java.util.ArrayList;
 import java.util.Collections;

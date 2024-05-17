@@ -35,7 +35,6 @@
 		<module>org.eclipse.lsp4e</module>
 		<module>org.eclipse.lsp4e.jdt</module>
 		<module>org.eclipse.lsp4e.debug</module>
-		<module>org.eclipse.lsp4e.tests.mock</module>
 		<module>org.eclipse.lsp4e.test</module>
 		<module>repository</module>
 	</modules>

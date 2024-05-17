@@ -12,12 +12,12 @@
 package org.eclipse.lsp4e.test.utils;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URLClassLoader;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,7 +34,7 @@ import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LaunchConfigurationStreamProvider;
-import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.test.utils.mock.MockLanguageServer;
 import org.eclipse.ui.IStartup;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
@@ -72,7 +72,7 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 				}
 				workingCopy.setAttribute(IExternalToolConstants.ATTR_LOCATION, new File(System.getProperty("java.home"),"bin/java" + exe).getAbsolutePath());
 				workingCopy.setAttribute(IExternalToolConstants.ATTR_TOOL_ARGUMENTS, "-cp " +
-						getClassPath(MockLanguageServer.class) + " " +
+						getClassPath(MockLanguageServer.class, Platform.getBundle("org.eclipse.lsp4e.test")) + " " + 
 						MockLanguageServer.class.getName());
 				mockServerLauch = workingCopy.doSave();
 				registry.registerAssociation(contentTypeManager.getContentType("org.eclipse.lsp4e.test.content-type2"),
@@ -85,12 +85,12 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 
 	}
 
-	private String getClassPath(Class<?> clazz) {
+	private String getClassPath(Class<?> clazz, final Bundle... additionalBundles) {
 		ClassLoader loader = clazz.getClassLoader();
 		if (loader instanceof URLClassLoader urlClassLoader) {
 			return Arrays.asList(urlClassLoader.getURLs()).stream().map(url -> url.getFile()).collect(Collectors.joining(System.getProperty("path.separator")));
 		}
-		LinkedList<Bundle> toProcess = new LinkedList<>();
+		final var toProcess = new ArrayDeque<>(List.of(additionalBundles));
 		Set<Bundle> processed = new HashSet<>();
 		Bundle current = FrameworkUtil.getBundle(clazz);
 		if (current != null) {
@@ -108,17 +108,10 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 		}
 		return processed.stream()
 				.filter(bundle -> bundle.getBundleId() != 0)
-				.map(bundle -> {
-					try {
-						return FileLocator.getBundleFile(bundle);
-					} catch (IOException e) {
-						return null;
-					}
-				}).flatMap(location -> {
-					if (location.isFile()) {
-						return Arrays.stream(new String[] { location.getAbsolutePath() });
-					}
-					return Arrays.stream(new String[] { location.getAbsolutePath(), new File(location, "bin").getAbsolutePath()} );
-				}).collect(Collectors.joining(System.getProperty("path.separator")));
+				.map(bundle -> FileLocator.getBundleFileLocation(bundle).orElse(null))
+				.flatMap(location -> Arrays.stream(location.isFile()
+						? new String[] { location.getAbsolutePath() }
+						: new String[] { location.getAbsolutePath(), new File(location, "bin").getAbsolutePath() }))
+				.collect(Collectors.joining(System.getProperty("path.separator")));
 	}
 }

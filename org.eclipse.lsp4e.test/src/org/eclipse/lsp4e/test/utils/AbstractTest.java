@@ -13,7 +13,7 @@ package org.eclipse.lsp4e.test.utils;
 
 import java.io.PrintStream;
 
-import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.test.utils.mock.MockLanguageServer;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

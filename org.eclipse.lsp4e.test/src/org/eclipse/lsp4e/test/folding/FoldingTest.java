@@ -18,7 +18,7 @@ import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.test.utils.AbstractTest;
 import org.eclipse.lsp4e.test.utils.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.test.utils.mock.MockLanguageServer;
 import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.FoldingRangeKind;
 import org.eclipse.swt.custom.StyledText;

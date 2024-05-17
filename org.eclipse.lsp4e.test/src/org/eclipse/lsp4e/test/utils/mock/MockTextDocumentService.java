@@ -14,7 +14,7 @@
  *  Rubén Porras Campo (Avaloq Evolution AG) - Add support for willSaveWaitUntil.
  *  Joao Dinis Ferreira (Avaloq Group AG) - Add support for position-dependent mock document highlights
  *******************************************************************************/
-package org.eclipse.lsp4e.tests.mock;
+package org.eclipse.lsp4e.test.utils.mock;
 
 import java.io.File;
 import java.net.URI;

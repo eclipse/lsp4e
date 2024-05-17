@@ -27,7 +27,7 @@ import org.eclipse.lsp4e.operations.inlayhint.InlayHintProvider;
 import org.eclipse.lsp4e.operations.inlayhint.LSPLineContentCodeMining;
 import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
-import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
+import org.eclipse.lsp4e.test.utils.mock.MockLanguageServer;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.InlayHint;

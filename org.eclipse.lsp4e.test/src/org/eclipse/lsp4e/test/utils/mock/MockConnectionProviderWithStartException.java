@@ -9,7 +9,7 @@
  * Contributors:
  *  Lucia Jelinkova (Red Hat Inc.)  - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.test.utils;
+package org.eclipse.lsp4e.test.utils.mock;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;

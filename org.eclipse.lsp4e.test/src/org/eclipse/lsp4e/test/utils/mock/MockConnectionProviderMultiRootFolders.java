@@ -10,7 +10,7 @@
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *  Martin Lippert (Pivotal Inc.) - Bug 531030 - fixed crash when initial project gets deleted in multi-root workspaces
  *******************************************************************************/
-package org.eclipse.lsp4e.test.utils;
+package org.eclipse.lsp4e.test.utils.mock;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -24,8 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
-import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
-import org.eclipse.lsp4e.tests.mock.MockLanguageServerMultiRootFolders;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
