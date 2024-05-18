@@ -1,0 +1,3 @@
+# config file for https://github.com/nektos/act
+--matrix os:ubuntu-latest
+-W .github/workflows/build.yml
