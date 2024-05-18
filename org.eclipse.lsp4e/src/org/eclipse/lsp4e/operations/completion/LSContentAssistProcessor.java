@@ -62,8 +62,6 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import com.google.common.base.Strings;
-
 public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	private static final long TRIGGERS_TIMEOUT = 50;
@@ -350,7 +348,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		for (char c : initialArray) {
 			triggers.add(c);
 		}
-		additionalTriggers.stream().filter(s -> !Strings.isNullOrEmpty(s))
+		additionalTriggers.stream().filter(s -> s != null && !s.isEmpty())
 				.map(triggerChar -> triggerChar.charAt(0)).forEach(triggers::add);
 		char[] res = new char[triggers.size()];
 		int i = 0;

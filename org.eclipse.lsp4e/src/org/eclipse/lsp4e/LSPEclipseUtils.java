@@ -164,8 +164,6 @@ import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.eclipse.ui.texteditor.IDocumentProvider;
 import org.eclipse.ui.texteditor.ITextEditor;
 
-import com.google.common.primitives.Chars;
-
 /**
  * Some utility methods to convert between Eclipse and LS-API types
  */
@@ -231,6 +229,14 @@ public final class LSPEclipseUtils {
 		}
 	}
 
+	private static boolean containsChar(final char[] searchIn, final char searchFor) {
+		for (final char ch : searchIn) {
+			if (ch == searchFor)
+				return true;
+		}
+		return false;
+	}
+
 	public static CompletionParams toCompletionParams(URI fileUri, int offset, IDocument document, char[] completionTriggerChars)
 			throws BadLocationException {
 		Position start = toPosition(offset, document);
@@ -239,7 +245,7 @@ public final class LSPEclipseUtils {
 			try {
 				int positionCharacterOffset = offset > 0 ? offset-1 : offset;
 				String positionCharacter = document.get(positionCharacterOffset, 1);
-				if (Chars.contains(completionTriggerChars, positionCharacter.charAt(0))) {
+				if (containsChar(completionTriggerChars, positionCharacter.charAt(0))) {
 					param.setContext(new CompletionContext(CompletionTriggerKind.TriggerCharacter, positionCharacter));
 				} else {
 					// According to LSP 3.17 specification: the triggerCharacter in CompletionContext is undefined if

@@ -36,8 +36,6 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.ui.IEditorPart;
 import org.junit.Test;
 
-import com.google.common.collect.Iterators;
-
 public class DocumentEditAndUndoTest extends AbstractTestWithProject {
 
 	@Test
@@ -65,10 +63,13 @@ public class DocumentEditAndUndoTest extends AbstractTestWithProject {
 
 		// Wait for Linked Editing to be established
 		waitForAndAssertCondition("Linked Editing not established", 3_000, () -> {
-			return Iterators
-					.tryFind(((ISourceViewer) viewer).getAnnotationModel().getAnnotationIterator(),
-							anno -> anno.getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link"))
-					.isPresent();
+			final var it = ((ISourceViewer) viewer).getAnnotationModel().getAnnotationIterator();
+			while (it.hasNext()) {
+				if (it.next().getType().startsWith("org.eclipse.ui.internal.workbench.texteditor.link")) {
+					return true;
+				}
+			}
+			return false;
 		});
 
 		// perform text editing operation

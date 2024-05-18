@@ -35,9 +35,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -109,8 +111,6 @@ import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.widgets.Display;
 
-import com.google.common.base.Functions;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -194,17 +194,31 @@ public class LanguageServerWrapper {
 		this.initialPath = initialPath;
 		this.serverDefinition = serverDefinition;
 		this.connectedDocuments = new HashMap<>();
-		String projectName = (project != null && project.getName() != null && !serverDefinition.isSingleton) ? ("@" + project.getName()) : "";  //$NON-NLS-1$//$NON-NLS-2$
-		String dispatcherThreadNameFormat = "LS-" + serverDefinition.id + projectName + "#dispatcher"; //$NON-NLS-1$ //$NON-NLS-2$
-		this.dispatcher = Executors
-				.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(dispatcherThreadNameFormat).build());
+		final String projectName = (project != null && project.getName() != null && !serverDefinition.isSingleton) ? ("@" + project.getName()) : "";  //$NON-NLS-1$//$NON-NLS-2$
+		final String dispatcherThreadNameFormat = "LS-" + serverDefinition.id + projectName + "#dispatcher"; //$NON-NLS-1$ //$NON-NLS-2$
+		this.dispatcher = Executors.newSingleThreadExecutor(new ThreadFactory() {
+			@Override
+			public Thread newThread(final Runnable r) {
+				final Thread thread = Executors.defaultThreadFactory().newThread(r);
+				thread.setName(dispatcherThreadNameFormat);
+				return thread;
+			}
+		});
 
 		// Executor service passed through to the LSP4j layer when we attempt to start the LS. It will be used
 		// to create a listener that sits on the input stream and processes inbound messages (responses, or server-initiated
 		// requests).
-		String listenerThreadNameFormat = "LS-" + serverDefinition.id + projectName + "#listener-%d"; //$NON-NLS-1$ //$NON-NLS-2$
-		this.listener = Executors
-				.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(listenerThreadNameFormat).build());
+		final String listenerThreadNamePrefix = "LS-" + serverDefinition.id + projectName + "#listener-"; //$NON-NLS-1$ //$NON-NLS-2$
+		this.listener = Executors.newSingleThreadExecutor(new ThreadFactory() {
+			final ThreadFactory threadFactory = Executors.defaultThreadFactory();
+			final AtomicLong threadCount = new AtomicLong();
+			@Override
+			public Thread newThread(final Runnable r) {
+			   final Thread thread = threadFactory.newThread(r);
+				thread.setName(listenerThreadNamePrefix + threadCount.incrementAndGet());
+				return thread;
+			}
+		});
 	}
 
 	void stopDispatcher() {
@@ -707,7 +721,7 @@ public class LanguageServerWrapper {
 					return;
 				}
 				TextDocumentSyncKind syncKind = initializeFuture == null ? null
-						: serverCapabilities.getTextDocumentSync().map(Functions.identity(), TextDocumentSyncOptions::getChange);
+						: serverCapabilities.getTextDocumentSync().map(left -> left, TextDocumentSyncOptions::getChange);
 				final var listener = new DocumentContentSynchronizer(this, languageServer, theDocument, syncKind);
 				theDocument.addPrenotifiedDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
