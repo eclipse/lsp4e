@@ -24,6 +24,6 @@ public class StyleUtil {
 		@Override
 		public void applyStyles(TextStyle textStyle) {
 			textStyle.strikeout = true;
-		};
+		}
 	};
 }
