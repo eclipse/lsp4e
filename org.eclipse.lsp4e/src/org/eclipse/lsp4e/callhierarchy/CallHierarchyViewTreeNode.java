@@ -34,7 +34,7 @@ public class CallHierarchyViewTreeNode {
 	private final @Nullable Range callSite;
 
 	private @Nullable CallHierarchyViewTreeNode parent;
-	private @Nullable CallHierarchyViewTreeNode[] children;
+	private CallHierarchyViewTreeNode @Nullable [] children;
 
 	/**
 	 * Creates a new instance of {@link CallHierarchyViewTreeNode}.
@@ -84,7 +84,7 @@ public class CallHierarchyViewTreeNode {
 	 *
 	 * @return this node's children.
 	 */
-	public @Nullable CallHierarchyViewTreeNode[] getChildren() {
+	public CallHierarchyViewTreeNode @Nullable [] getChildren() {
 		return children;
 	}
 
@@ -95,7 +95,7 @@ public class CallHierarchyViewTreeNode {
 	 *            the new children.
 	 */
 	public void setChildren(final @NonNull List<CallHierarchyViewTreeNode> children) {
-		this.children = children.toArray(new CallHierarchyViewTreeNode[children.size()]);
+		this.children = children.toArray(CallHierarchyViewTreeNode[]::new);
 	}
 
 	/**

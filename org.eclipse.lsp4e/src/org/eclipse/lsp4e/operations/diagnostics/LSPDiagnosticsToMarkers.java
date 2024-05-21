@@ -127,7 +127,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 					LanguageServerPlugin.logError(ex);
 				}
 			});
-			annotationModelExtension.replaceAnnotations(toRemove.toArray(new Annotation[toRemove.size()]), toAdd);
+			annotationModelExtension.replaceAnnotations(toRemove.toArray(Annotation[]::new), toAdd);
 		}
 	}
 

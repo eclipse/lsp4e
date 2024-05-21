@@ -181,7 +181,7 @@ public interface IFormatRegionsProvider {
 					}
 				}
 
-				return regions.toArray(new IRegion[regions.size()]);
+				return regions.toArray(IRegion[]::new);
 			}
 		});
 		return result[0];

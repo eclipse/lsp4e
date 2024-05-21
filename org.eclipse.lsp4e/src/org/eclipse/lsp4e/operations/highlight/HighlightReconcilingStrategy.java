@@ -254,7 +254,7 @@ public class HighlightReconcilingStrategy
 					annotationModel.addAnnotation(mapEntry.getKey(), mapEntry.getValue());
 				}
 			}
-			fOccurrenceAnnotations = annotationMap.keySet().toArray(new Annotation[annotationMap.size()]);
+			fOccurrenceAnnotations = annotationMap.keySet().toArray(Annotation[]::new);
 		}
 	}
 

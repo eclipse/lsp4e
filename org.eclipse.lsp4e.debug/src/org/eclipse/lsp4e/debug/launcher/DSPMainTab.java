@@ -234,7 +234,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 			} else if (args.size() == 1) {
 				debugArgsText.setText(args.get(0));
 			} else {
-				debugArgsText.setText(String.join(" ", args.toArray(new String[args.size()])));
+				debugArgsText.setText(String.join(" ", args.toArray(String[]::new)));
 			}
 			monitorAdapterLauncherProcessCheckbox
 					.setSelection(configuration.getAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, false));

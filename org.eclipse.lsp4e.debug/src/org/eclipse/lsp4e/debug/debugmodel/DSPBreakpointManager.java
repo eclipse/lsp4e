@@ -219,7 +219,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 			Source source = entry.getKey();
 			List<SourceBreakpoint> bps = entry.getValue();
 			int[] lines = bps.stream().mapToInt(SourceBreakpoint::getLine).toArray();
-			SourceBreakpoint[] sourceBps = bps.toArray(new SourceBreakpoint[bps.size()]);
+			SourceBreakpoint[] sourceBps = bps.toArray(SourceBreakpoint[]::new);
 
 			final var arguments = new SetBreakpointsArguments();
 			arguments.setSource(source);
@@ -238,7 +238,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 				iterator.remove();
 			}
 		}
-		return CompletableFuture.allOf(all.toArray(new CompletableFuture[all.size()]));
+		return CompletableFuture.allOf(all.toArray(CompletableFuture[]::new));
 	}
 
 	public void breakpointEvent(BreakpointEventArguments args) {

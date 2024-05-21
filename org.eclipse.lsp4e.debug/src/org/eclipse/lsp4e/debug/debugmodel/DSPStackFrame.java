@@ -143,7 +143,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 						scope.getVariablesReference());
 				vars.add(variable);
 			}
-			cachedVariables = vars.toArray(new IVariable[vars.size()]);
+			cachedVariables = vars.toArray(IVariable[]::new);
 		}
 		return cachedVariables;
 	}

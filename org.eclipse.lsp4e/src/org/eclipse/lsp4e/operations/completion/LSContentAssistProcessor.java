@@ -163,7 +163,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 				completeProposals[i] = completeProposal;
 				i++;
 			} else {
-				return proposals.toArray(new ICompletionProposal[proposals.size()]);
+				return proposals.toArray(ICompletionProposal[]::new);
 			}
 		}
 		Arrays.sort(completeProposals, proposalComparator);
@@ -308,7 +308,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			LanguageServerPlugin.logWarning("Could not compute  context information due to timeout after " + CONTEXT_INFORMATION_TIMEOUT + " milliseconds", e);  //$NON-NLS-1$//$NON-NLS-2$
 			return new IContextInformation[] { /* TODO? show error in context information */ };
 		}
-		return contextInformations.toArray(new IContextInformation[0]);
+		return contextInformations.toArray(IContextInformation[]::new);
 	}
 
 	private static IContextInformation toContextInformation(SignatureInformation information) {

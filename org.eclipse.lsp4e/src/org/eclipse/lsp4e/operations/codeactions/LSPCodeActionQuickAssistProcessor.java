@@ -145,7 +145,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 							.forEach(action -> processNewProposal(invocationContext, new CodeActionCompletionProposal(action, w)))));
 
 			CompletableFuture<?> aggregateFutures = CompletableFuture
-					.allOf(futures.toArray(new CompletableFuture[futures.size()]));
+					.allOf(futures.toArray(CompletableFuture[]::new));
 
 			try {
 					// If the result completes quickly without blocking the UI, then return result directly
@@ -167,7 +167,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 				}
 			}
 		}
-		return proposals.toArray(new ICompletionProposal[proposals.size()]);
+		return proposals.toArray(ICompletionProposal[]::new);
 	}
 
 	private void processNewProposal(IQuickAssistInvocationContext invocationContext, ICompletionProposal p) {

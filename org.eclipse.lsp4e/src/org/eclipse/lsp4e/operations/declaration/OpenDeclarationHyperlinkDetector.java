@@ -81,7 +81,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 		if (allLinks.isEmpty()) {
 			return null;
 		}
-		return allLinks.values().toArray(new IHyperlink[allLinks.size()]);
+		return allLinks.values().toArray(IHyperlink[]::new);
 	}
 
 	/**
