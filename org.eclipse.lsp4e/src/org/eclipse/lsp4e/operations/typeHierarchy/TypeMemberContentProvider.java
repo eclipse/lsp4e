@@ -13,7 +13,6 @@ package org.eclipse.lsp4e.operations.typeHierarchy;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.viewers.IStructuredContentProvider;
@@ -26,8 +25,7 @@ public class TypeMemberContentProvider implements IStructuredContentProvider {
 	@Override
 	public Object[] getElements(Object inputElement) {
 		if (inputElement instanceof DocumentSymbolWithURI symbolContainer) {
-			return Optional.ofNullable(symbolContainer)
-					.map(container -> toContainer(container.symbol.getChildren(), container.uri)).orElse(NO_CHILDREN);
+			return toContainer(symbolContainer.symbol.getChildren(), symbolContainer.uri);
 		}
 		return NO_CHILDREN;
 	}

@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -322,9 +321,10 @@ public class LanguageServersRegistry {
 	}
 
 	private IEvaluationContext evaluationContext() {
-		return Optional.ofNullable(PlatformUI.getWorkbench().getService(IHandlerService.class))//
-				.map(IHandlerService::getCurrentState)//
-				.orElse(null);
+		final var handlerService = PlatformUI.getWorkbench().getService(IHandlerService.class);
+		return handlerService == null
+				? null
+				: handlerService.getCurrentState();
 	}
 
 	private void persistContentTypeToLaunchConfigurationMapping() {

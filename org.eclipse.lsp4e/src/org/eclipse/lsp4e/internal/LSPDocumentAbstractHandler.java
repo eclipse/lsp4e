@@ -13,7 +13,6 @@
 package org.eclipse.lsp4e.internal;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -88,8 +87,10 @@ public abstract class LSPDocumentAbstractHandler extends AbstractHandler {
 
 	@Override
 	public Object execute(ExecutionEvent event) throws ExecutionException {
-		Optional.ofNullable(UI.asTextEditor(HandlerUtil.getActiveEditor(event)))
-				.ifPresent(textEditor -> execute(event, textEditor));
+		final var textEditor = UI.asTextEditor(HandlerUtil.getActiveEditor(event));
+		if (textEditor != null) {
+			execute(event, textEditor);
+		}
 		return null;
 	}
 

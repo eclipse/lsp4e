@@ -297,7 +297,8 @@ public class TypeHierarchyView extends ViewPart {
 	}
 
 	private String getFilePath(URI uri) {
-		return Optional.ofNullable(uri.getPath()).map(path -> " - " + path).orElse(""); //$NON-NLS-1$ //$NON-NLS-2$
+		final String path = uri.getPath();
+		return path == null ? "" : " - " + path; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	private Control createMemberControl(ViewForm parent) {
