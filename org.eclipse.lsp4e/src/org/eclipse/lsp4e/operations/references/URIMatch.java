@@ -9,22 +9,28 @@
 package org.eclipse.lsp4e.operations.references;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.search.ui.text.Match;
 
 public class URIMatch extends Match {
 
-	public final @NonNull Location location;
-
-	public URIMatch(@NonNull Location location) throws BadLocationException {
-		super(URI.create(location.getUri()), //
-			LSPEclipseUtils.toOffset(location.getRange().getStart(), LSPEclipseUtils.getDocument(URI.create(location.getUri()))),
-			LSPEclipseUtils.toOffset(location.getRange().getEnd(),  LSPEclipseUtils.getDocument(URI.create(location.getUri()))) - LSPEclipseUtils.toOffset(location.getRange().getStart(), LSPEclipseUtils.getDocument(URI.create(location.getUri()))));
-		this.location = location;
+	public static URIMatch create(final Location location) throws BadLocationException, URISyntaxException {
+		final URI uri = new URI(location.getUri());
+		final IDocument doc = LSPEclipseUtils.getDocument(uri);
+		final int offset = LSPEclipseUtils.toOffset(location.getRange().getStart(), doc);
+		final int length = LSPEclipseUtils.toOffset(location.getRange().getEnd(), doc) - LSPEclipseUtils.toOffset(location.getRange().getStart(), doc);
+		return new URIMatch(location, uri, offset, length);
 	}
 
+	public final Location location;
+
+	protected URIMatch(final Location location, final URI uri, final int offset, final int length) {
+		super(uri, offset, length);
+		this.location = location;
+	}
 }
