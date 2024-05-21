@@ -33,7 +33,7 @@ public class CancellationSupport implements CancelChecker {
 	private boolean cancelled;
 
 	public CancellationSupport() {
-		this.futuresToCancel = new ArrayList<CompletableFuture<?>>();
+		this.futuresToCancel = new ArrayList<>();
 		this.cancelled = false;
 	}
 
