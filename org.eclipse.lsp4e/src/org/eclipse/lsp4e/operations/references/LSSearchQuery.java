@@ -14,6 +14,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.references;
 
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -148,11 +149,11 @@ public class LSSearchQuery extends FileSearchQuery {
 			return new FileMatch((IFile) resource, 0, 0, lineEntry);
 		}
 		try {
-			return new URIMatch(location);
-		} catch (BadLocationException ex) {
+			return URIMatch.create(location);
+		} catch (BadLocationException | URISyntaxException ex) {
 			LanguageServerPlugin.logError(ex);
 			return null;
-		} 
+		}
 	}
 
 	@Override
