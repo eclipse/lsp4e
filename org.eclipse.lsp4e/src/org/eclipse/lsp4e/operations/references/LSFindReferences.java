@@ -15,7 +15,6 @@ package org.eclipse.lsp4e.operations.references;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.IHandler;
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -42,7 +41,7 @@ public class LSFindReferences extends LSPDocumentAbstractHandler implements IHan
 				try {
 					final var query = new LSSearchQuery(textSelection.getOffset(), document);
 					HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
-				} catch (BadLocationException e) {
+				} catch (Exception e) {
 					LanguageServerPlugin.logError(e);
 				}
 			}
