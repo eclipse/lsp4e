@@ -170,7 +170,7 @@ public class SymbolsModel {
 		Function<DocumentSymbol, Object> mapper = current != null ? symbol -> new DocumentSymbolWithURI(symbol, current)
 				: symbol -> symbol;
 		rootSymbols.stream().map(mapper).forEach(res::add);
-		return res.toArray(new Object[res.size()]);
+		return res.toArray();
 	}
 
 	public Object[] getChildren(Object parentElement) {
@@ -236,7 +236,7 @@ public class SymbolsModel {
 			}
 			res.add(currentSymbol);
 		}
-		return new TreePath(res.toArray(Object[]::new));
+		return new TreePath(res.toArray());
 	}
 
 	private String getName(Object segment) {

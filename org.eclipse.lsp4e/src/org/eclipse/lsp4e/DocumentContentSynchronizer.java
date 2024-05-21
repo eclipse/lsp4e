@@ -115,7 +115,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 		List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(this.document);
 
-		String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(new IContentType[0]));
+		String languageId = languageServerWrapper.getLanguageId(contentTypes.toArray(IContentType[]::new));
 
 		if (languageId == null && this.fileUri.getPath() != null) {
 			IPath path = Path.fromPortableString(this.fileUri.getPath());

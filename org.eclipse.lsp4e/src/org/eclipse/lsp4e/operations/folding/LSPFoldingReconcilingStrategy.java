@@ -176,7 +176,7 @@ public class LSPFoldingReconcilingStrategy
 			}
 			// send the calculated updates to the annotations to the
 			// annotation model
-			theProjectionAnnotationModel.modifyAnnotations(deletions.toArray(new Annotation[1]), additions,
+			theProjectionAnnotationModel.modifyAnnotations(deletions.toArray(Annotation[]::new), additions,
 					new Annotation[0]);
 		}
 	}

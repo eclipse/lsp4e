@@ -54,7 +54,7 @@ public final class DSPValue extends DSPDebugElement implements IValue {
 						variable.getValue(), variable.getVariablesReference()));
 			}
 
-			cachedVariables = variables.toArray(new DSPVariable[variables.size()]);
+			cachedVariables = variables.toArray(DSPVariable[]::new);
 		}
 		return cachedVariables;
 	}

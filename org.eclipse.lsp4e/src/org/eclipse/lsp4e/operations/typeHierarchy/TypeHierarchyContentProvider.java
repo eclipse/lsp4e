@@ -50,7 +50,7 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 					.computeFirst((wrapper, ls) -> ls.getTextDocumentService().prepareTypeHierarchy(prepare).thenApply(items -> new SimpleEntry<>(wrapper, items)))
 					.thenApply(entry -> {
 						wrapper = entry.map(Entry::getKey).orElse(null);
-						return entry.map(Entry::getValue).map(list -> list.toArray(Object[]::new)).orElse(new Object[0]);
+						return entry.map(Entry::getValue).map(list -> list.toArray()).orElse(new Object[0]);
 					}).get(500, TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
 				LanguageServerPlugin.logError(e);
@@ -70,7 +70,7 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 							? textDocumentService.typeHierarchySupertypes(new TypeHierarchySupertypesParams(parentItem))
 							: textDocumentService.typeHierarchySubtypes(new TypeHierarchySubtypesParams(parentItem));
 				})
-					.thenApply(list -> list == null ? new Object[0] : list.toArray(Object[]::new))
+					.thenApply(list -> list == null ? new Object[0] : list.toArray())
 					.get(500, TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
 				LanguageServerPlugin.logError(e);

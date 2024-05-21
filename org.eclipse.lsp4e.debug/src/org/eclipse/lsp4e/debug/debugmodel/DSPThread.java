@@ -228,13 +228,14 @@ public class DSPThread extends DSPDebugElement implements IThread {
 		}
 	}
 
-	@Override public IStackFrame[] getStackFrames() throws DebugException {
+	@Override
+	public IStackFrame[] getStackFrames() throws DebugException {
 		if (!isSuspended()) {
 			return new IStackFrame[0];
 		}
 		if (!refreshFrames.getAndSet(false)) {
 			synchronized (frames) {
-				return frames.toArray(new DSPStackFrame[frames.size()]);
+				return frames.toArray(DSPStackFrame[]::new);
 			}
 		}
 		try {
@@ -255,7 +256,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 								}
 							}
 							frames.subList(backendFrames.length, frames.size()).clear();
-							return frames.toArray(new DSPStackFrame[frames.size()]);
+							return frames.toArray(DSPStackFrame[]::new);
 						}
 					});
 			return future.get();

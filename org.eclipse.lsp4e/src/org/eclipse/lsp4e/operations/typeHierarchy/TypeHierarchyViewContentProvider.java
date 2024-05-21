@@ -66,7 +66,7 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 							? textDocumentService.typeHierarchySupertypes(new TypeHierarchySupertypesParams(parentItem))
 							: textDocumentService.typeHierarchySubtypes(new TypeHierarchySubtypesParams(parentItem));
 				})
-					.thenApply(list -> list == null ? new Object[0] : list.toArray(Object[]::new))
+					.thenApply(list -> list == null ? new Object[0] : list.toArray())
 					.get(500, TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
 				LanguageServerPlugin.logError(e);
