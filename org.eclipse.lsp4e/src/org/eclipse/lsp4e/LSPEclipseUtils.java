@@ -921,7 +921,7 @@ public final class LSPEclipseUtils {
 
 	/**
 	 * Applies a workspace edit. It does simply change the underlying documents if all are currently
-	 * open in an editor, otherwise, it performs a Refactoring that will result on filesystem changes.
+	 * open in an editor, otherwise, it performs a refactoring that will result on filesystem changes.
 	 *
 	 * @param wsEdit
 	 * @param label
@@ -1200,9 +1200,9 @@ public final class LSPEclipseUtils {
 	}
 
 	private static final Range DEFAULT_RANGE = new Range(new Position(0, 0), new Position(0, 0));
-	/*
+
+	/**
 	 * Reports the URI and the start range of the given text edit, if exists.
-	 *
 	 *
 	 * @param textEdits A list of textEdits sorted in reversed order
 	 */

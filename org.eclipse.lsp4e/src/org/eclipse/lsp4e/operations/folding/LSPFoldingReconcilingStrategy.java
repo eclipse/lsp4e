@@ -230,7 +230,7 @@ public class LSPFoldingReconcilingStrategy
 	 * @param existing
 	 *            the existing folding annotations.
 	 * @param additions
-	 *            annoation to add
+	 *            annotation to add
 	 * @param line
 	 *            the line index
 	 * @param endLineNumber

@@ -426,7 +426,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	}
 
 	/**
-	 * Retrieves the intialized servers and apply the given query.
+	 * Retrieves the initialized servers and apply the given query.
 	 * <p>The query must ideally be a direct query to the language server
 	 * (not chained with other futures) so cancelling the futures in
 	 * this stream will send a cancellation event to the LSs.</p>
