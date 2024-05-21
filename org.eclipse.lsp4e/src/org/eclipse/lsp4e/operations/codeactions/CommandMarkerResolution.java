@@ -12,12 +12,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
-import java.io.IOException;
-
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.jdt.annotation.NonNull;
-import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
@@ -59,19 +56,15 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 			return;
 		}
 
-		try {
-			LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
-			if (wrapper != null) {
-				ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
-				if (provider != null && provider.getCommands().contains(command.getCommand())) {
-					wrapper.execute(ls -> ls.getWorkspaceService()
-							.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
-				} else {
-					CommandExecutor.executeCommandClientSide(command, resource);
-				}
+		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
+		if (wrapper != null) {
+			ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
+			if (provider != null && provider.getCommands().contains(command.getCommand())) {
+				wrapper.execute(ls -> ls.getWorkspaceService()
+						.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
+			} else {
+				CommandExecutor.executeCommandClientSide(command, resource);
 			}
-		} catch (IOException ex) {
-			LanguageServerPlugin.logError(ex);
 		}
 	}
 

@@ -100,7 +100,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 					.map(ISourceViewer.class::cast)
 					.forEach(sourceViewer -> updateEditorAnnotations(sourceViewer, diagnostics));
 			}
-		} catch (CoreException ex) {
+		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 		}
 	}
@@ -131,7 +131,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		}
 	}
 
-	private WorkspaceJob updateMarkers(PublishDiagnosticsParams diagnostics, IResource resource) throws CoreException {
+	private WorkspaceJob updateMarkers(PublishDiagnosticsParams diagnostics, IResource resource) {
 		WorkspaceJob job = new WorkspaceJob("Update markers from diagnostics") { //$NON-NLS-1$
 			@Override
 			public boolean belongsTo(Object family) {
@@ -287,7 +287,6 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			attributes.put(IMarker.CHAR_START, start);
 			attributes.put(IMarker.CHAR_END, end);
 		}
-
 
 		markerAttributeComputer
 				.ifPresent(c -> c.addMarkerAttributesForDiagnostic(diagnostic, document, resource, attributes));

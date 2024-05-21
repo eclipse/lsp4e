@@ -12,7 +12,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -108,7 +107,7 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 					}
 				}
 			}
-		} catch (ExecutionException | IOException | TimeoutException | InterruptedException ex) {
+		} catch (ExecutionException | TimeoutException | InterruptedException ex) {
 			LanguageServerPlugin.logError(ex);
 		}
 	}

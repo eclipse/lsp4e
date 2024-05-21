@@ -87,11 +87,7 @@ public class LanguageServerWrapperTest extends AbstractTestWithProject {
 				started.countDown();
 				while (!Thread.interrupted()) {
 					wrapper.stop();
-					try {
-						wrapper.start();
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
+					wrapper.start();
 				}
 			});
 			try {

@@ -347,17 +347,16 @@ public class LanguageServiceAccessor {
 	 * @param project
 	 * @param serverDefinition
 	 * @return a new or existing {@link LanguageServerWrapper} for the given definition.
-	 * @throws IOException
 	 */
 	@NonNull
 	public static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
-			@NonNull LanguageServerDefinition serverDefinition) throws IOException {
+			@NonNull LanguageServerDefinition serverDefinition) {
 		return getLSWrapper(project, serverDefinition, null);
 	}
 
 	@NonNull
 	private static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
-			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) throws IOException {
+			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) {
 
 		final Predicate<LanguageServerWrapper> serverSelector = wrapper -> wrapper.canOperate(project)
 				&& wrapper.serverDefinition.equals(serverDefinition);
@@ -384,7 +383,7 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-	public static @NonNull LanguageServerWrapper startLanguageServer(@NonNull LanguageServerDefinition serverDefinition) throws IOException {
+	public static @NonNull LanguageServerWrapper startLanguageServer(@NonNull LanguageServerDefinition serverDefinition) {
 		synchronized (startedServers) {
 			LanguageServerWrapper wrapper = startedServers.stream().filter(w -> w.serverDefinition == serverDefinition).findFirst().orElseGet(() -> {
 				LanguageServerWrapper w = new LanguageServerWrapper(serverDefinition, null);

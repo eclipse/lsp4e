@@ -66,8 +66,7 @@ public class LSSearchQuery extends FileSearchQuery {
 	 * @param offset
 	 * @param document
 	 */
-	public LSSearchQuery(int offset, @NonNull IDocument document)
-			throws BadLocationException {
+	public LSSearchQuery(int offset, @NonNull IDocument document) {
 		super("", false, false, true, true, null); //$NON-NLS-1$
 		this.document = document;
 		this.offset = offset;

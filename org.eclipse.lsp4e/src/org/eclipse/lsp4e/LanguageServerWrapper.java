@@ -243,10 +243,8 @@ public class LanguageServerWrapper {
 	/**
 	 * Starts a language server and triggers initialization. If language server is
 	 * started and active, does nothing. If language server is inactive, restart it.
-	 *
-	 * @throws IOException
 	 */
-	public synchronized void start() throws IOException {
+	public synchronized void start() {
 		start(false);
 	}
 
@@ -254,10 +252,9 @@ public class LanguageServerWrapper {
 	 * Restarts a language server. If language server is not started, calling this
 	 * method is the same as calling {@link #start()}.
 	 *
-	 * @throws IOException
 	 * @since 0.18
 	 */
-	public synchronized void restart() throws IOException {
+	public synchronized void restart() {
 		start(true);
 	}
 
@@ -268,9 +265,8 @@ public class LanguageServerWrapper {
 	 *
 	 * @param forceRestart
 	 *            whether to restart the language server, even it is not inactive.
-	 * @throws IOException
 	 */
-	private synchronized void start(boolean forceRestart) throws IOException {
+	private synchronized void start(boolean forceRestart) {
 		final var filesToReconnect = new HashMap<URI, IDocument>();
 		if (this.languageServer != null) {
 			if (isActive() && !forceRestart) {
@@ -785,11 +781,7 @@ public class LanguageServerWrapper {
 	 */
 	@NonNull
 	protected CompletableFuture<LanguageServer> getInitializedServer() {
-		try {
-			start();
-		} catch (IOException ex) {
-			LanguageServerPlugin.logError(ex);
-		}
+		start();
 
 		final CompletableFuture<Void> currentInitializeFuture = initializeFuture;
 		if (currentInitializeFuture != null && !currentInitializeFuture.isDone()) {
