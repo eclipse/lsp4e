@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.operations.semanticTokens;
 
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.Versioned;
@@ -35,7 +36,7 @@ public class VersionedSemanticTokens extends Versioned<Pair<SemanticTokens, Sema
 	 * to compute the edits
 	 *
 	 */
-	public void apply(Consumer<Pair<SemanticTokens, SemanticTokensLegend>> first, Consumer<Long> second) {
+	public void apply(Consumer<Pair<SemanticTokens, SemanticTokensLegend>> first, LongConsumer second) {
 		if (sourceDocumentVersion == DocumentUtil.getDocumentModificationStamp(document)) {
 			first.accept(data);
 			second.accept(sourceDocumentVersion);
