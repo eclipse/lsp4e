@@ -17,7 +17,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 /**
- * This converter can be used to serialize/deserailize instances of LSP {@link Command}s.
+ * This converter can be used to serialize/deserialize instances of LSP {@link Command}s.
  */
 public class CommandConverter extends AbstractParameterValueConverter {
 

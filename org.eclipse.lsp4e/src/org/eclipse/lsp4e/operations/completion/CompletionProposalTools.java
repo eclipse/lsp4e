@@ -134,7 +134,7 @@ public final class CompletionProposalTools {
 	 * completionFilter: xaxxbc<br>
 	 * result: 5<br>
 	 * logic:<br>
-	 * There is 1 character before the 'a' and there is 4 charachters before the
+	 * There is 1 character before the 'a' and there is 4 characters before the
 	 * 'b', because the 'c' is directly after the 'b', it's prefix is ignored,<br>
 	 * 1+4=5
 	 *
