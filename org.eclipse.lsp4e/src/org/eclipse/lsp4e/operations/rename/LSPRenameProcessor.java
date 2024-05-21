@@ -116,14 +116,14 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 					.get(1000, TimeUnit.MILLISECONDS);
 
 			Optional<Pair<LanguageServerWrapper, Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior>>> tmp = list
-					.stream().filter(Objects::nonNull).filter(t -> t.getSecond() != null).findFirst();
+					.stream().filter(Objects::nonNull).filter(t -> t.second() != null).findFirst();
 
 			if (tmp.isEmpty()) {
 				status.addFatalError(Messages.rename_invalidated);
 			} else {
 				tmp.ifPresent(p -> {
-					refactoringServer = p.getFirst();
-					prepareRenameResult = p.getSecond();
+					refactoringServer = p.first();
+					prepareRenameResult = p.second();
 				});
 			}
 		} catch (TimeoutException e) {

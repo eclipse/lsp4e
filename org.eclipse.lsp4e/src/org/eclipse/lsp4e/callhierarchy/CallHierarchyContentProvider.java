@@ -111,8 +111,8 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 		CallHierarchyPrepareParams prepareParams = LSPEclipseUtils.toCallHierarchyPrepareParams(offset, document);
 		executor.computeFirst((w, ls) -> ls.getTextDocumentService().prepareCallHierarchy(prepareParams)
 				.thenApply(result -> new Pair<>(w, result))).thenAccept(o -> o.ifPresentOrElse(p -> {
-					languageServerWrapper = p.getFirst();
-					List<CallHierarchyItem> hierarchyItems = p.getSecond();
+					languageServerWrapper = p.first();
+					List<CallHierarchyItem> hierarchyItems = p.second();
 					if (!hierarchyItems.isEmpty()) {
 						rootItems = new ArrayList<>(hierarchyItems.size());
 						for (CallHierarchyItem item : hierarchyItems) {

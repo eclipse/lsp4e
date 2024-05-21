@@ -181,8 +181,8 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void saveStyle(final Pair<SemanticTokens, SemanticTokensLegend> pair) {
-		final SemanticTokens semanticTokens = pair.getFirst();
-		final SemanticTokensLegend semanticTokensLegend = pair.getSecond();
+		final SemanticTokens semanticTokens = pair.first();
+		final SemanticTokensLegend semanticTokensLegend = pair.second();
 
 		// Skip any processing if not installed or at least one of the pair values is null
 		if (!isInstalled || semanticTokens == null || semanticTokensLegend == null) {

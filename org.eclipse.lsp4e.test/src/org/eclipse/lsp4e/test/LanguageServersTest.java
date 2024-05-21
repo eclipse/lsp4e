@@ -13,14 +13,8 @@
 package org.eclipse.lsp4e.test;
 
 import static org.eclipse.lsp4e.LanguageServiceAccessor.hasActiveLanguageServers;
-import static org.eclipse.lsp4e.test.utils.TestUtils.createUniqueTestFile;
-import static org.eclipse.lsp4e.test.utils.TestUtils.openEditor;
-import static org.eclipse.lsp4e.test.utils.TestUtils.waitForCondition;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.eclipse.lsp4e.test.utils.TestUtils.*;
+import static org.junit.Assert.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -685,10 +679,10 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		final AtomicInteger matching = new AtomicInteger();
 
 		assertEquals("Should have had two responses", 2, result.size());
-		assertNotEquals("LS should have been different proxies", result.get(0).getSecond(), result.get(1).getSecond());
+		assertNotEquals("LS should have been different proxies", result.get(0).second(), result.get(1).second());
 		result.forEach(p -> {
-			p.getFirst().execute(ls -> {
-				if (ls == p.getSecond()) {
+			p.first().execute(ls -> {
+				if (ls == p.second()) {
 					matching.incrementAndGet();
 				}
 				return CompletableFuture.completedFuture(null);

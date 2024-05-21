@@ -68,7 +68,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 				.collectAll(ls -> ls.getTextDocumentService().implementation(LSPEclipseUtils.toImplementationParams(params)).thenApply(l -> Pair.of(Messages.implementationHyperlinkLabel, l)));
 			LanguageServers.addAll(LanguageServers.addAll(LanguageServers.addAll(definitions, declarations), typeDefinitions), implementations)
 				.get(800, TimeUnit.MILLISECONDS)
-				.stream().flatMap(locations -> toHyperlinks(document, region, locations.getFirst(), locations.getSecond()).stream())
+				.stream().flatMap(locations -> toHyperlinks(document, region, locations.first(), locations.second()).stream())
 				.forEach(link -> allLinks.putIfAbsent(link.getLocation(), link));
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
