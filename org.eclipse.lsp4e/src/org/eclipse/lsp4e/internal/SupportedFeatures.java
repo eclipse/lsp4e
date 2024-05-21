@@ -41,6 +41,7 @@ import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InlayHintCapabilities;
 import org.eclipse.lsp4j.InsertTextMode;
 import org.eclipse.lsp4j.MarkupKind;
+import org.eclipse.lsp4j.PublishDiagnosticsCapabilities;
 import org.eclipse.lsp4j.RangeFormattingCapabilities;
 import org.eclipse.lsp4j.ReferencesCapabilities;
 import org.eclipse.lsp4j.RenameCapabilities;
@@ -76,6 +77,7 @@ public class SupportedFeatures {
 		textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
 		textDocumentClientCapabilities.setInlayHint(new InlayHintCapabilities());
 		textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
+		textDocumentClientCapabilities.setPublishDiagnostics(new PublishDiagnosticsCapabilities());
 		final var completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);
 		completionItemCapabilities
 				.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
