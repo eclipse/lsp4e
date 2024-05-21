@@ -182,7 +182,7 @@ public class FindReferencesTest extends AbstractTestWithProject {
 			final var searchResult = searchResultListener.getNow(null);
 			assertNotNull("No search query was executed", searchResult);
 
-			if (searchResult.getFirst() instanceof LSSearchResult lsSearchResult) {
+			if (searchResult.first() instanceof LSSearchResult lsSearchResult) {
 				final long now = System.currentTimeMillis();
 				assertEquals(2, lsSearchResult.getMatchCount());
 				final var file = lsSearchResult.getElements()[0];

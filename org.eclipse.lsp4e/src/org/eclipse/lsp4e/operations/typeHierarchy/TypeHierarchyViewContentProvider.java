@@ -118,9 +118,9 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 		TypeHierarchyPrepareParams prepareParams = toTypeHierarchyPrepareParams(offset, document);
 		executor.computeFirst((w, ls) -> ls.getTextDocumentService().prepareTypeHierarchy(prepareParams)
 				.thenApply(result -> new Pair<>(w, result))).thenAccept(o -> o.ifPresentOrElse(p -> {
-					languageServerWrapper = p.getFirst();
-					if (!p.getSecond().isEmpty()) {
-						hierarchyItems = p.getSecond();
+					languageServerWrapper = p.first();
+					if (!p.second().isEmpty()) {
+						hierarchyItems = p.second();
 						treeViewer = viewer;
 						PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
 							if (treeViewer != null) {
