@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -40,9 +41,9 @@ public interface StreamConnectionProvider {
 
 	public void start() throws IOException;
 
-	public InputStream getInputStream();
+	public @Nullable InputStream getInputStream();
 
-	public OutputStream getOutputStream();
+	public @Nullable OutputStream getOutputStream();
 
 	/**
 	 * Returns the {@link InputStream} connected to the error output of the process
@@ -65,7 +66,7 @@ public interface StreamConnectionProvider {
 	 * @return a newly created {@link InputStream} that copies all data to the
 	 *         provided {@link OutputStream}
 	 */
-	public default InputStream forwardCopyTo(InputStream input, OutputStream output) {
+	public default @Nullable InputStream forwardCopyTo(@Nullable InputStream input, @Nullable OutputStream output) {
 		if (input == null)
 			return null;
 		if (output == null)
@@ -80,7 +81,7 @@ public interface StreamConnectionProvider {
 			}
 
 			@Override
-			public int read(byte[] b, int off, int len) throws IOException {
+			public int read(@NonNullByDefault({}) byte[] b, int off, int len) throws IOException {
 				int bytes = super.read(b, off, len);
 				final var payload = new byte[bytes];
 				System.arraycopy(b, off, payload, 0, bytes);
@@ -89,7 +90,7 @@ public interface StreamConnectionProvider {
 			}
 
 			@Override
-			public int read(byte[] b) throws IOException {
+			public int read(@NonNullByDefault({}) byte[] b) throws IOException {
 				int bytes = super.read(b);
 				final var payload = new byte[bytes];
 				System.arraycopy(b, 0, payload, 0, bytes);
@@ -104,7 +105,7 @@ public interface StreamConnectionProvider {
 	/**
 	 * User provided initialization options.
 	 */
-	public default Object getInitializationOptions(@Nullable URI rootUri){
+	public default @Nullable Object getInitializationOptions(@Nullable URI rootUri){
 		return null;
 	}
 
@@ -117,7 +118,7 @@ public interface StreamConnectionProvider {
 	 * @return an object whose fields represent the different experimental features
 	 *         supported by the client.
 	 */
-	public default Object getExperimentalFeaturesPOJO() {
+	public default @Nullable Object getExperimentalFeaturesPOJO() {
 		return null;
 	}
 
