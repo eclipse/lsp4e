@@ -14,7 +14,9 @@ package org.eclipse.lsp4e.internal;
 import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.IFileBufferListener;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 
+@NonNullByDefault({})
 public class FileBufferListenerAdapter implements IFileBufferListener {
 
 	@Override

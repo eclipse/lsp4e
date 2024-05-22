@@ -15,7 +15,6 @@ package org.eclipse.lsp4e.internal;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4j.CodeActionCapabilities;
 import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.CodeActionKindCapabilities;
@@ -41,7 +40,6 @@ import org.eclipse.lsp4j.HoverCapabilities;
 import org.eclipse.lsp4j.InlayHintCapabilities;
 import org.eclipse.lsp4j.InsertTextMode;
 import org.eclipse.lsp4j.MarkupKind;
-import org.eclipse.lsp4j.PublishDiagnosticsCapabilities;
 import org.eclipse.lsp4j.RangeFormattingCapabilities;
 import org.eclipse.lsp4j.ReferencesCapabilities;
 import org.eclipse.lsp4j.RenameCapabilities;
@@ -63,7 +61,7 @@ import org.eclipse.lsp4j.WorkspaceEditChangeAnnotationSupportCapabilities;
 
 public class SupportedFeatures {
 
-	public static @NonNull TextDocumentClientCapabilities getTextDocumentClientCapabilities() {
+	public static TextDocumentClientCapabilities getTextDocumentClientCapabilities() {
 		final var textDocumentClientCapabilities = new TextDocumentClientCapabilities();
 		final var codeAction = new CodeActionCapabilities(new CodeActionLiteralSupportCapabilities(
 				new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix, CodeActionKind.Refactor,
@@ -77,7 +75,6 @@ public class SupportedFeatures {
 		textDocumentClientCapabilities.setCodeLens(new CodeLensCapabilities());
 		textDocumentClientCapabilities.setInlayHint(new InlayHintCapabilities());
 		textDocumentClientCapabilities.setColorProvider(new ColorProviderCapabilities());
-		textDocumentClientCapabilities.setPublishDiagnostics(new PublishDiagnosticsCapabilities());
 		final var completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);
 		completionItemCapabilities
 				.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
@@ -127,7 +124,7 @@ public class SupportedFeatures {
 		return textDocumentClientCapabilities;
 	}
 
-	public static @NonNull WorkspaceClientCapabilities getWorkspaceClientCapabilities() {
+	public static WorkspaceClientCapabilities getWorkspaceClientCapabilities() {
 		final var workspaceClientCapabilities = new WorkspaceClientCapabilities();
 		workspaceClientCapabilities.setApplyEdit(Boolean.TRUE);
 		workspaceClientCapabilities.setConfiguration(Boolean.TRUE);
