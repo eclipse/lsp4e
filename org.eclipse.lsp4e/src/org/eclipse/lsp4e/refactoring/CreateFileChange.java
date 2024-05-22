@@ -33,10 +33,12 @@ import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.content.IContentType;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.ui.Messages;
@@ -51,15 +53,15 @@ public class CreateFileChange extends ResourceChange {
 
 	private final URI uri;
 	private final String fSource;
-	private String fEncoding;
+	private @Nullable String fEncoding;
 	private boolean fExplicitEncoding;
 	private final long fStampToRestore;
 
-	public CreateFileChange(URI uri, String source, String encoding) {
+	public CreateFileChange(URI uri, String source, @Nullable String encoding) {
 		this(uri, source, encoding, IResource.NULL_STAMP);
 	}
 
-	public CreateFileChange(URI uri, String source, String encoding, long stampToRestore) {
+	public CreateFileChange(URI uri, String source, @Nullable String encoding, long stampToRestore) {
 		Assert.isNotNull(uri, "uri"); //$NON-NLS-1$
 		Assert.isNotNull(source, "source"); //$NON-NLS-1$
 		this.uri = uri;
@@ -81,12 +83,12 @@ public class CreateFileChange extends ResourceChange {
 	}
 
 	@Override
-	protected IFile getModifiedResource() {
+	protected @Nullable IFile getModifiedResource() {
 		return LSPEclipseUtils.getFileHandle(this.uri);
 	}
 
 	@Override
-	public RefactoringStatus isValid(IProgressMonitor pm) throws CoreException {
+	public RefactoringStatus isValid(@Nullable IProgressMonitor pm) throws CoreException {
 		final var result= new RefactoringStatus();
 
 		IFileInfo jFile = EFS.getStore(this.uri).fetchInfo();
@@ -98,7 +100,10 @@ public class CreateFileChange extends ResourceChange {
 	}
 
 	@Override
-	public Change perform(IProgressMonitor pm) throws CoreException {
+	public @Nullable Change perform(@Nullable IProgressMonitor pm) throws CoreException {
+		if(pm == null) {
+			pm = new NullProgressMonitor();
+		}
 		pm.beginTask(NLS.bind(Messages.edit_CreateFile, uri), 3);
 
 		initializeEncoding();

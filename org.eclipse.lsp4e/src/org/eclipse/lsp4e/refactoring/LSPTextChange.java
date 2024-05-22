@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.refactoring;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.net.URI;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -26,7 +28,8 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -47,22 +50,22 @@ import org.eclipse.text.edits.UndoEdit;
 @SuppressWarnings("restriction")
 public class LSPTextChange extends TextChange {
 
-	private final @NonNull URI fileUri;
+	private final URI fileUri;
 
-	private Either<IFile, IFileStore> file;
+	private @Nullable Either<IFile, IFileStore> file;
 	private int fAcquireCount;
-	private ITextFileBuffer fBuffer;
-	private @NonNull String newText;
-	private Range range;
+	private @Nullable ITextFileBuffer fBuffer;
+	private String newText;
+	private @Nullable Range range;
 
-	public LSPTextChange(@NonNull String name, @NonNull URI fileUri, @NonNull TextEdit textEdit) {
+	public LSPTextChange(String name, URI fileUri, TextEdit textEdit) {
 		super(name);
 		this.fileUri = fileUri;
 		this.newText = textEdit.getNewText();
 		this.range = textEdit.getRange();
 	}
 
-	public LSPTextChange(@NonNull String name, @NonNull URI fileUri, @NonNull String newText) {
+	public LSPTextChange(String name, URI fileUri, String newText) {
 		super(name);
 		this.fileUri = fileUri;
 		this.newText = newText;
@@ -70,10 +73,10 @@ public class LSPTextChange extends TextChange {
 	}
 
 	@Override
-	protected IDocument acquireDocument(IProgressMonitor pm) throws CoreException {
+	protected IDocument acquireDocument(@Nullable IProgressMonitor pm) throws CoreException {
 		fAcquireCount++;
 		if (fAcquireCount > 1) {
-			return fBuffer.getDocument();
+			return castNonNull(this.fBuffer).getDocument();
 		}
 
 		IFile iFile = LSPEclipseUtils.getFileHandle(this.fileUri);
@@ -82,22 +85,23 @@ public class LSPTextChange extends TextChange {
 		} else {
 			this.file = Either.forRight(EFS.getStore(this.fileUri));
 		}
+		final var file = castNonNull(this.file);
 
 		ITextFileBufferManager manager = FileBuffers.getTextFileBufferManager();
-		if (this.file.isLeft()) {
-			this.fBuffer = manager.getTextFileBuffer(this.file.getLeft().getFullPath(), LocationKind.IFILE);
+		if (file.isLeft()) {
+			this.fBuffer = manager.getTextFileBuffer(file.getLeft().getFullPath(), LocationKind.IFILE);
 		} else {
-			this.fBuffer = manager.getFileStoreTextFileBuffer(this.file.getRight());
+			this.fBuffer = manager.getFileStoreTextFileBuffer(file.getRight());
 		}
 		if (this.fBuffer != null) {
 			fAcquireCount++; // allows to mark open editor dirty instead of saving
 		} else {
-			if (this.file.isLeft()) {
-				manager.connect(this.file.getLeft().getFullPath(), LocationKind.IFILE, pm);
-				this.fBuffer = manager.getTextFileBuffer(this.file.getLeft().getFullPath(), LocationKind.IFILE);
+			if (file.isLeft()) {
+				manager.connect(file.getLeft().getFullPath(), LocationKind.IFILE, pm);
+				this.fBuffer = manager.getTextFileBuffer(file.getLeft().getFullPath(), LocationKind.IFILE);
 			} else {
-				manager.connectFileStore(this.file.getRight(), pm);
-				this.fBuffer = manager.getFileStoreTextFileBuffer(this.file.getRight());
+				manager.connectFileStore(file.getRight(), pm);
+				this.fBuffer = manager.getFileStoreTextFileBuffer(file.getRight());
 			}
 		}
 
@@ -106,9 +110,10 @@ public class LSPTextChange extends TextChange {
 		// because that's used by the preview logic to compute the changed document. We do it here rather than in the constructor
 		// since we need the document to translate line offsets into character offset. Strictly this would not work then
 		// if the platform called getEdit() prior to this method being traversed, but it seems to be OK in practice.
-		final IDocument document  = fBuffer.getDocument();
+		final IDocument document  = castNonNull(this.fBuffer).getDocument();
 		int offset = 0;
 		int length = document.getLength();
+		final var range = this.range;
 		if (range != null) {
 			try {
 				offset = LSPEclipseUtils.toOffset(range.getStart(), document);
@@ -123,42 +128,43 @@ public class LSPTextChange extends TextChange {
 	}
 
 	@Override
-	protected void commit(IDocument document, IProgressMonitor pm) throws CoreException {
-		this.fBuffer.commit(pm, true);
+	protected void commit(@NonNullByDefault({}) IDocument document, @Nullable IProgressMonitor pm) throws CoreException {
+		castNonNull(this.fBuffer).commit(pm, true);
 	}
 
 	@Override
-	protected void releaseDocument(IDocument document, IProgressMonitor pm) throws CoreException {
+	protected void releaseDocument(@NonNullByDefault({}) IDocument document, @Nullable IProgressMonitor pm) throws CoreException {
 		Assert.isTrue(fAcquireCount > 0);
 		if (fAcquireCount == 1) {
 			ITextFileBufferManager manager = FileBuffers.getTextFileBufferManager();
-			this.fBuffer.commit(pm, true);
-			if (this.file.isLeft()) {
-				manager.disconnect(this.file.getLeft().getFullPath(), LocationKind.IFILE, pm);
+			castNonNull(this.fBuffer).commit(pm, true);
+			final var file = castNonNull(this.file);
+			if (file.isLeft()) {
+				manager.disconnect(file.getLeft().getFullPath(), LocationKind.IFILE, pm);
 			} else {
-				manager.disconnectFileStore(this.file.getRight(), pm);
+				manager.disconnectFileStore(file.getRight(), pm);
 			}
 		}
 		fAcquireCount--;
 	}
 
 	@Override
-	protected Change createUndoChange(UndoEdit edit) {
+	protected Change createUndoChange(@NonNullByDefault({}) UndoEdit edit) {
 		throw new UnsupportedOperationException("Should not be called!"); //$NON-NLS-1$
 	}
 
 	@Override
-	public void initializeValidationData(IProgressMonitor pm) {
+	public void initializeValidationData(@Nullable IProgressMonitor pm) {
 		// nothing to do yet, comment requested by sonar
 	}
 
 	@Override
-	public RefactoringStatus isValid(IProgressMonitor pm) throws CoreException {
+	public RefactoringStatus isValid(@Nullable IProgressMonitor pm) throws CoreException {
 		return RefactoringStatus.create(Status.OK_STATUS);
 	}
 
 	@Override
-	public Object getModifiedElement() {
+	public @Nullable Object getModifiedElement() {
 		IFile file = LSPEclipseUtils.getFileHandle(this.fileUri);
 		if (file != null) {
 			return file;
@@ -170,7 +176,10 @@ public class LSPTextChange extends TextChange {
 	}
 
 	@Override
-	public Change perform(IProgressMonitor pm) throws CoreException {
+	public Change perform(@Nullable IProgressMonitor pm) throws CoreException {
+		if(pm == null) {
+			pm = new NullProgressMonitor();
+		}
 		pm.beginTask("", 3); //$NON-NLS-1$
 		IDocument document = null;
 
@@ -179,16 +188,18 @@ public class LSPTextChange extends TextChange {
 
 			int offset = 0;
 			int length = document.getLength();
+			final var range = this.range;
 			if (range != null) {
 				offset = LSPEclipseUtils.toOffset(range.getStart(), document);
 				length = LSPEclipseUtils.toOffset(range.getEnd(), document) - offset;
 			}
 
 			final TextChange delegate;
-			if (this.file.isRight()) {
+			final var file = castNonNull(this.file);
+			if (file.isRight()) {
 				delegate = new DocumentChange("Change in document " + fileUri.getPath(), document); //$NON-NLS-1$
 			} else {
-				delegate = new TextFileChange("Change in file " + this.file.getLeft().getName(), this.file.getLeft()) { //$NON-NLS-1$
+				delegate = new TextFileChange("Change in file " + file.getLeft().getName(), file.getLeft()) { //$NON-NLS-1$
 					@Override
 					protected boolean needsSaving() {
 						return fAcquireCount == 1;
