@@ -13,8 +13,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.osgi.util.NLS;
 
+@NonNullByDefault({})
 public final class Messages extends NLS {
 
 	public static String definitionHyperlinkLabel;

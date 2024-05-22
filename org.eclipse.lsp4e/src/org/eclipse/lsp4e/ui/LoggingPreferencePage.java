@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lazyNonNull;
 import static org.eclipse.swt.events.SelectionListener.widgetSelectedAdapter;
 
 import java.util.ArrayList;
@@ -19,6 +20,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -62,7 +65,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		}
 
 		@Override
-		protected void setValue(Object element, Object value) {
+		protected void setValue(@NonNullByDefault({}) Object element, @NonNullByDefault({}) Object value) {
 			final var server = (ContentTypeToLanguageServerDefinition) element;
 			map.put(server.getValue().id, (Boolean)value);
 			hasLoggingBeenChanged = true;
@@ -70,18 +73,18 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		}
 
 		@Override
-		protected Object getValue(Object element) {
+		protected @Nullable Object getValue(@NonNullByDefault({}) Object element) {
 			final var server = (ContentTypeToLanguageServerDefinition) element;
 			return map.get(server.getValue().id);
 		}
 
 		@Override
-		protected CellEditor getCellEditor(Object element) {
+		protected CellEditor getCellEditor(@NonNullByDefault({}) Object element) {
 			return new CheckboxCellEditor();
 		}
 
 		@Override
-		protected boolean canEdit(Object element) {
+		protected boolean canEdit(@NonNullByDefault({}) Object element) {
 			return true;
 		}
 	}
@@ -95,27 +98,27 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		}
 
 		@Override
-		public String getText(Object element) {
+		public String getText(@NonNullByDefault({}) Object element) {
 			return map.getOrDefault(((ContentTypeToLanguageServerDefinition) element).getValue().id, false)
 							? Messages.PreferencePage_enablementCondition_true
 							: Messages.PreferencePage_enablementCondition_false;
 		}
 	}
 
-	private TableViewer languageServerViewer;
-	private TableViewer launchConfigurationViewer;
+	private TableViewer languageServerViewer = lazyNonNull();
+	private TableViewer launchConfigurationViewer = lazyNonNull();
 	private final Map<String, Boolean> serverEnableLoggingToFile = new HashMap<>();
 	private final Map<String, Boolean> serverEnableLoggingToConsole = new HashMap<>();
 	private final IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
 	private boolean hasLoggingBeenChanged = false;
 
 	@Override
-	public void init(IWorkbench workbench) {
+	public void init(@NonNullByDefault({}) IWorkbench workbench) {
 		//nothing to do
 	}
 
 	@Override
-	protected Control createContents(Composite parent) {
+	protected Control createContents(@NonNullByDefault({}) Composite parent) {
 		final var res = new Composite(parent, SWT.NONE);
 		res.setLayout(new GridLayout(1, false));
 
@@ -136,7 +139,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		launchConfigColumn.getColumn().setWidth(300);
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				return ((ContentTypeToLanguageServerDefinition) element).getValue().label;
 			}
 		});
@@ -156,7 +159,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		launchConfigColumn.getColumn().setWidth(300);
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				return ((ContentTypeToLSPLaunchConfigEntry) element).getLaunchConfiguration().getName();
 			}
 		});
