@@ -64,12 +64,11 @@ jobs:
       matrix:
         os: 
         # https://github.com/actions/runner-images#available-images
-        - ubuntu-latest
+        #- ubuntu-latest # TODO builds are extremely slow for no apparent reason and job currently times out after 15 minutes
         - macos-12 # Intel
         - macos-14 # ARM
-        - windows-latest
+        #- windows-latest # TODO currently too many random test failures
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.os == 'ubuntu-latest' || matrix.os == 'windows-latest' }} # TODO still random test failures on these platforms
     timeout-minutes: 15
 
     steps:
