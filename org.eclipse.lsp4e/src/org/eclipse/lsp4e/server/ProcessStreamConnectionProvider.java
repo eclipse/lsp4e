@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 
 /**
@@ -30,7 +31,7 @@ import org.eclipse.jdt.annotation.Nullable;
 public abstract class ProcessStreamConnectionProvider implements StreamConnectionProvider, IAdaptable {
 
 	private @Nullable Process process;
-	private List<String> commands;
+	private @Nullable List<String> commands;
 	private @Nullable String workingDir;
 
 	protected ProcessStreamConnectionProvider() {
@@ -47,7 +48,8 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 
 	@Override
 	public void start() throws IOException {
-		if (this.commands == null || this.commands.isEmpty() || this.commands.stream().anyMatch(Objects::isNull)) {
+		final var commands = this.commands;
+		if (commands == null || commands.isEmpty() || commands.stream().anyMatch(Objects::isNull)) {
 			throw new IOException("Unable to start language server: " + this); //$NON-NLS-1$
 		}
 
@@ -96,19 +98,19 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T getAdapter(Class<T> adapter) {
+	public <T> T getAdapter(@NonNullByDefault({}) Class<T> adapter) {
 		final var process = this.process;
 		if(adapter == ProcessHandle.class) {
 			try {
-				return process == null ? null : (T) process.toHandle();
+				return (T) (process == null ? null : process.toHandle());
 			} catch(UnsupportedOperationException ex) {
 				// ignore
 			}
 		}
-		return null;
+		return (T) null;
 	}
 
-	protected List<String> getCommands() {
+	protected @Nullable List<String> getCommands() {
 		return commands;
 	}
 
@@ -125,7 +127,7 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (obj == null) {
 			return false;
 		}

@@ -11,9 +11,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lazyNonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.layout.GridDataFactory;
@@ -47,19 +51,19 @@ import org.eclipse.ui.preferences.IWorkbenchPreferenceContainer;
 
 public class LanguageServerPreferencePage extends PreferencePage implements IWorkbenchPreferencePage {
 
-	private LanguageServersRegistry registry;
-	private List<ContentTypeToLSPLaunchConfigEntry> workingCopy;
-	private Button removeButton;
-	private CheckboxTableViewer checkboxViewer;
-	private TableViewer viewer;
+	private final LanguageServersRegistry registry = LanguageServersRegistry.getInstance();
+	private List<ContentTypeToLSPLaunchConfigEntry> workingCopy = lazyNonNull();
+	private Button removeButton = lazyNonNull();
+	private CheckboxTableViewer checkboxViewer = lazyNonNull();
+	private TableViewer viewer = lazyNonNull();
 	private final SelectionAdapter contentTypeLinkListener;
-	private List<ContentTypeToLanguageServerDefinition> changedDefinitions;
+	private final List<ContentTypeToLanguageServerDefinition> changedDefinitions = new ArrayList<>();
 
 	public LanguageServerPreferencePage() {
 
 		contentTypeLinkListener = new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(@NonNullByDefault({}) SelectionEvent e) {
 				if (getContainer() instanceof IWorkbenchPreferenceContainer preferenceContainer) {
 					preferenceContainer.openPage("org.eclipse.ui.preferencePages.ContentTypes", null); //$NON-NLS-1$
 				}
@@ -68,9 +72,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 	}
 
 	@Override
-	public void init(IWorkbench workbench) {
-		this.changedDefinitions = new ArrayList<>();
-		this.registry = LanguageServersRegistry.getInstance();
+	public void init(@NonNullByDefault({}) IWorkbench workbench) {
 	}
 
 	@Override
@@ -82,7 +84,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 	}
 
 	@Override
-	protected Control createContents(Composite parent) {
+	protected Control createContents(@NonNullByDefault({}) Composite parent) {
 		final var res = new Composite(parent, SWT.NONE);
 		res.setLayout(new GridLayout(2, false));
 		final var intro = new Link(res, SWT.WRAP);
@@ -106,7 +108,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		contentTypeColumn.getColumn().setWidth(200);
 		contentTypeColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				return ((ContentTypeToLanguageServerDefinition)element).getKey().getName();
 			}
 		});
@@ -115,7 +117,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		launchConfigColumn.getColumn().setWidth(300);
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				return ((ContentTypeToLSPLaunchConfigEntry)element).getLaunchConfiguration().getName();
 			}
 		});
@@ -124,7 +126,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		launchModeColumn.getColumn().setWidth(100);
 		launchModeColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				final var res = new StringBuilder();
 				for (String s : ((ContentTypeToLSPLaunchConfigEntry)element).getLaunchModes()) {
 					res.append(s);
@@ -145,7 +147,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		addButton.setText(Messages.PreferencesPage_Add);
 		addButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(@NonNullByDefault({}) SelectionEvent e) {
 				NewContentTypeLSPLaunchDialog dialog = new NewContentTypeLSPLaunchDialog(getShell());
 				if (dialog.open() == IDialogConstants.OK_ID) {
 					workingCopy.add(new ContentTypeToLSPLaunchConfigEntry(dialog.getContentType(),
@@ -160,7 +162,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		removeButton.setText(Messages.PreferencesPage_Remove);
 		removeButton.addSelectionListener(new SelectionAdapter() {
 			@Override
-			public void widgetSelected(SelectionEvent e) {
+			public void widgetSelected(@NonNullByDefault({}) SelectionEvent e) {
 				ISelection sel = viewer.getSelection();
 				if (!sel.isEmpty() && sel instanceof IStructuredSelection structuredSel) {
 					structuredSel.forEach(workingCopy::remove);
@@ -188,7 +190,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		enablementColumn.getColumn().setWidth(70);
 		enablementColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
-			public String getText(Object element) {
+			public @Nullable String getText(@NonNullByDefault({}) Object element) {
 				return null;
 			}
 		});
@@ -198,7 +200,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		contentTypeColumn.getColumn().setWidth(200);
 		contentTypeColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				return ((ContentTypeToLanguageServerDefinition)element).getKey().getName();
 			}
 		});
@@ -208,7 +210,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		launchConfigColumn.getColumn().setWidth(300);
 		launchConfigColumn.setLabelProvider(new ColumnLabelProvider() {
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				return ((ContentTypeToLanguageServerDefinition)element).getValue().label;
 			}
 		});
@@ -223,7 +225,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 			conditionColumn.getColumn().setWidth(150);
 			conditionColumn.setLabelProvider(new ColumnLabelProvider() {
 				@Override
-				public String getText(Object element) {
+				public String getText(@NonNullByDefault({}) Object element) {
 					EnablementTester tester = ((ContentTypeToLanguageServerDefinition) element)
 							.getEnablementCondition();
 
@@ -239,7 +241,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 				}
 
 				@Override
-				public Color getBackground(Object element) {
+				public @Nullable Color getBackground(@NonNullByDefault({}) Object element) {
 					EnablementTester tester = ((ContentTypeToLanguageServerDefinition) element)
 							.getEnablementCondition();
 					if (tester == null) {
@@ -280,7 +282,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		return super.performOk();
 	}
 
-	private IEditorReference[] getEditors() {
+	private IEditorReference @Nullable [] getEditors() {
 		var page = UI.getActivePage();
 		if (page != null) {
 			return page.getEditorReferences();

@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,6 +24,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
@@ -50,8 +53,8 @@ public class LanguageServersView extends ViewPart {
 	private static final String EMPTY = ""; //$NON-NLS-1$
 	private static final String NOT_AVAILABLE = "n/a"; //$NON-NLS-1$
 
-	private TableViewer viewer;
-	private Job viewerRefreshJob;
+	private TableViewer viewer = lazyNonNull();
+	private @Nullable Job viewerRefreshJob;
 	private final Map<LanguageServerWrapper, ToolBar> actionButtons = new HashMap<>();
 	private final List<ColumnLabelProvider> columnLabelProviders = new ArrayList<>();
 
@@ -60,14 +63,14 @@ public class LanguageServersView extends ViewPart {
 	private final ViewerComparator tableSorter = new ViewerComparator() {
 
 		private int compare(int columnIndex, @Nullable final Object e1, @Nullable final Object e2) {
-			var labelProvider = columnLabelProviders.get(columnIndex);
+			var labelProvider = castNonNull(columnLabelProviders.get(columnIndex));
 			return getComparator().compare( //
 					Objects.toString(labelProvider.getText(e1), EMPTY),
 					Objects.toString(labelProvider.getText(e2), EMPTY));
 		}
 
 		@Override
-		public int compare(final Viewer viewer, @Nullable final Object e1, @Nullable final Object e2) {
+		public int compare(final @NonNullByDefault({}) Viewer viewer, @Nullable final Object e1, @Nullable final Object e2) {
 			int sortResult = compare(tableSortColumn, e1, e2);
 
 			// use the "Initial Project" column as secondary sort column
@@ -105,7 +108,7 @@ public class LanguageServersView extends ViewPart {
 	}
 
 	@Override
-	public void createPartControl(Composite parent) {
+	public void createPartControl(@NonNullByDefault({}) Composite parent) {
 		viewer = new TableViewer(parent, SWT.H_SCROLL | SWT.V_SCROLL | SWT.FULL_SELECTION | SWT.BORDER);
 		viewer.setComparator(tableSorter);
 
@@ -115,10 +118,10 @@ public class LanguageServersView extends ViewPart {
 
 		createColumn(EMPTY, 26, new ColumnLabelProvider() {
 			@Override
-			public void update(ViewerCell cell) {
+			public void update(@NonNullByDefault({}) ViewerCell cell) {
 				final var lsWrapper = (LanguageServerWrapper) cell.getElement();
 				final var item = (TableItem) cell.getItem();
-				final var buttons = actionButtons.computeIfAbsent(lsWrapper, unused -> {
+				final var buttons = castNonNull(actionButtons.computeIfAbsent(lsWrapper, unused -> {
 					final var toolBar = new ToolBar((Composite) cell.getViewerRow().getControl(), SWT.FLAT);
 					toolBar.setBackground(cell.getBackground());
 					final var terminateButton = new ToolItem(toolBar, SWT.PUSH);
@@ -126,13 +129,13 @@ public class LanguageServersView extends ViewPart {
 					terminateButton.setToolTipText("Terminate this language server"); //$NON-NLS-1$
 					terminateButton.addSelectionListener(new SelectionAdapter() {
 						@Override
-						public void widgetSelected(SelectionEvent ev) {
+						public void widgetSelected(@NonNullByDefault({}) SelectionEvent ev) {
 							lsWrapper.stop();
 							updateViewerInput();
 						}
 					});
 					return toolBar;
-				});
+				}));
 				final var editor = new TableEditor(item.getParent());
 				editor.setEditor(buttons, item, cell.getColumnIndex());
 				editor.grabHorizontal = true;
@@ -143,7 +146,7 @@ public class LanguageServersView extends ViewPart {
 
 		createColumn("Initial Project", 150, new ColumnLabelProvider() { //$NON-NLS-1$
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				final var lsWrapper = (LanguageServerWrapper) element;
 				final var p = lsWrapper.initialProject;
 				return p == null ? NOT_AVAILABLE : p.getName();
@@ -152,7 +155,7 @@ public class LanguageServersView extends ViewPart {
 
 		createColumn("Name", 150, new ColumnLabelProvider() { //$NON-NLS-1$
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				final var lsWrapper = (LanguageServerWrapper) element;
 				return lsWrapper.serverDefinition.label;
 			}
@@ -160,7 +163,7 @@ public class LanguageServersView extends ViewPart {
 
 		createColumn("Executable", 100, new ColumnLabelProvider() { //$NON-NLS-1$
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				final ProcessHandle ph = ((LanguageServerWrapper) element).getProcessHandle();
 				final String exe = ph == null ? null : ph.info().command().orElse(null);
 				if (exe == null)
@@ -174,7 +177,7 @@ public class LanguageServersView extends ViewPart {
 
 		createColumn("PID", 50, new ColumnLabelProvider() { //$NON-NLS-1$
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				final ProcessHandle ph = ((LanguageServerWrapper) element).getProcessHandle();
 				if (ph == null)
 					return NOT_AVAILABLE;
@@ -188,7 +191,7 @@ public class LanguageServersView extends ViewPart {
 
 		createColumn("Command Line", 400, new ColumnLabelProvider() { //$NON-NLS-1$
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				final ProcessHandle ph = ((LanguageServerWrapper) element).getProcessHandle();
 				if (ph == null)
 					return NOT_AVAILABLE;
@@ -199,7 +202,7 @@ public class LanguageServersView extends ViewPart {
 
 		createColumn("ID", 150, new ColumnLabelProvider() { //$NON-NLS-1$
 			@Override
-			public String getText(Object element) {
+			public String getText(@NonNullByDefault({}) Object element) {
 				final var lsWrapper = (LanguageServerWrapper) element;
 				return lsWrapper.serverDefinition.id;
 			}
@@ -222,9 +225,9 @@ public class LanguageServersView extends ViewPart {
 	}
 
 	private void scheduleRefreshJob() {
-		viewerRefreshJob = new Job("Refresh Language Server Processes view") { //$NON-NLS-1$
+		final var viewerRefreshJob = this.viewerRefreshJob = new Job("Refresh Language Server Processes view") { //$NON-NLS-1$
 			@Override
-			protected IStatus run(IProgressMonitor monitor) {
+			protected IStatus run(@Nullable IProgressMonitor monitor) {
 				if (getSite().getPage().isPartVisible(LanguageServersView.this)) {
 					updateViewerInput();
 				}

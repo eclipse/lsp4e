@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.format;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
 import org.osgi.service.component.annotations.Component;
@@ -23,7 +24,7 @@ import org.osgi.service.component.annotations.Component;
 public class DefaultFormatRegionsProvider implements IFormatRegionsProvider {
 
 	@Override
-	public IRegion[] getFormattingRegions(IDocument document) {
+	public IRegion @Nullable [] getFormattingRegions(IDocument document) {
 		// return null until user can disable the format-on-save feature in LSP4E.
 		return null;
 	}

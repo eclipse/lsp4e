@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
@@ -18,6 +20,7 @@ import java.util.Map;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -38,7 +41,7 @@ public final class LSPImages {
 		// this class shouldn't be instantiated
 	}
 
-	private static ImageRegistry imageRegistry;
+	private static @Nullable ImageRegistry imageRegistry;
 	private static final Map<java.awt.Color, Image> colorToImageCache = new HashMap<>();
 	private static final String ICONS_PATH = "$nl$/icons/full/"; //$NON-NLS-1$
 	private static final String OBJECT = ICONS_PATH + "obj16/"; // basic colors - size 16x16 //$NON-NLS-1$
@@ -123,7 +126,7 @@ public final class LSPImages {
 				desc = ImageDescriptor.createFromURL(url);
 			}
 		}
-		imageRegistry.put(key, desc);
+		castNonNull(imageRegistry).put(key, desc);
 	}
 
 	/**
@@ -141,8 +144,9 @@ public final class LSPImages {
 	}
 
 	public static ImageRegistry getImageRegistry() {
+		ImageRegistry imageRegistry = LSPImages.imageRegistry;
 		if (imageRegistry == null) {
-			imageRegistry = LanguageServerPlugin.getDefault().getImageRegistry();
+			imageRegistry = LSPImages.imageRegistry = LanguageServerPlugin.getDefault().getImageRegistry();
 		}
 		return imageRegistry;
 	}
@@ -151,7 +155,7 @@ public final class LSPImages {
 	 * @param imageId See static IMG_* fields of {@link ISharedImages}
 	 * @return the workbench's shared image for the , or null if not found
 	 */
-	public static Image getSharedImage(String imageId) {
+	public static @Nullable Image getSharedImage(@Nullable String imageId) {
 		if(imageId == null) {
 			return null;
 		}
@@ -162,14 +166,14 @@ public final class LSPImages {
 	 * @param imageId See static IMG_* fields of {@link ISharedImages}
 	 * @return the workbench's shared image descriptor for the workbench, or null if not found
 	 */
-	public static ImageDescriptor getSharedImageDescriptor(String imageId) {
+	public static @Nullable ImageDescriptor getSharedImageDescriptor(@Nullable String imageId) {
 		if(imageId == null) {
 			return null;
 		}
 		return PlatformUI.getWorkbench().getSharedImages().getImageDescriptor(imageId);
 	}
 
-	public static Image imageFromSymbolKind(SymbolKind kind) {
+	public static @Nullable Image imageFromSymbolKind(@Nullable SymbolKind kind) {
 		if (kind == null) {
 			return EMPTY_IMAGE;
 		}
@@ -199,7 +203,7 @@ public final class LSPImages {
 		};
 	}
 
-	public static Image imageFromCompletionItem(CompletionItem completionItem) {
+	public static @Nullable Image imageFromCompletionItem(CompletionItem completionItem) {
 		return switch (completionItem.getKind()) {
 		case Text -> getImage(IMG_TEXT);
 		case Method -> getImage(IMG_METHOD);
@@ -226,7 +230,7 @@ public final class LSPImages {
 		};
 	}
 
-	private static Image getImageForColor(CompletionItem completionItem) {
+	private static @Nullable Image getImageForColor(CompletionItem completionItem) {
 		String hexValue = null;
 
 		// TODO most probably can be extended for more cases

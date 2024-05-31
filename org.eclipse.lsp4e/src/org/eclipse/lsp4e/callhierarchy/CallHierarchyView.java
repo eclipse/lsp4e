@@ -12,6 +12,9 @@
 
 package org.eclipse.lsp4e.callhierarchy;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lazyNonNull;
+
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DoubleClickEvent;
@@ -30,12 +33,12 @@ import org.eclipse.ui.part.ViewPart;
 public class CallHierarchyView extends ViewPart {
 	public static final String ID = "org.eclipse.lsp4e.callHierarchy.callHierarchyView"; //$NON-NLS-1$
 
-	protected TreeViewer treeViewer;
+	protected TreeViewer treeViewer = lazyNonNull();
 
 	private final CallHierarchyContentProvider contentProvider = new CallHierarchyContentProvider();
 
 	@Override
-	public void createPartControl(final Composite parent) {
+	public void createPartControl(final @NonNullByDefault({}) Composite parent) {
 		// Create the tree viewer as a child of the composite parent
 		treeViewer = new TreeViewer(parent);
 		treeViewer.setContentProvider(contentProvider);
@@ -48,7 +51,7 @@ public class CallHierarchyView extends ViewPart {
 
 			@SuppressWarnings("unchecked")
 			@Override
-			public void doubleClick(final DoubleClickEvent event) {
+			public void doubleClick(final @NonNullByDefault({}) DoubleClickEvent event) {
 				if (event.getSelection() instanceof IStructuredSelection structuredSelection) {
 					structuredSelection.iterator().forEachRemaining(selectedObject -> {
 						if (selectedObject instanceof CallHierarchyViewTreeNode selectedNode) {

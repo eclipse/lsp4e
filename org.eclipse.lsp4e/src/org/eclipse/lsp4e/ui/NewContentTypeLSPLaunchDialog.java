@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
@@ -27,7 +28,8 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.internal.ui.launchConfigurations.LaunchConfigurationTreeContentProvider;
 import org.eclipse.debug.ui.DebugUITools;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
@@ -59,7 +61,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 
 	private static final class ContentTypesLabelProvider extends LabelProvider {
 		@Override
-		public String getText(Object element) {
+		public String getText(@NonNullByDefault({}) Object element) {
 			final var contentType = (IContentType) element;
 			return contentType.getName();
 		}
@@ -67,10 +69,13 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 
 	private static final class ContentTypesContentProvider implements ITreeContentProvider {
 
-		private IContentTypeManager manager;
+		private @Nullable IContentTypeManager manager;
 
 		@Override
-		public Object[] getChildren(Object parentElement) {
+		public Object[] getChildren(@Nullable Object parentElement) {
+			final var manager = this.manager;
+			if(manager == null)
+				return new Object[0];
 			final var elements = new ArrayList<IContentType>();
 			final var baseType = (IContentType) parentElement;
 			IContentType[] contentTypes = manager.getAllContentTypes();
@@ -84,40 +89,39 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		}
 
 		@Override
-		public Object getParent(Object element) {
+		public @Nullable Object getParent(@Nullable Object element) {
+			if (element == null)
+				return null;
 			final var contentType = (IContentType) element;
 			return contentType.getBaseType();
 		}
 
 		@Override
-		public boolean hasChildren(Object element) {
+		public boolean hasChildren(@Nullable Object element) {
 			return getChildren(element).length > 0;
 		}
 
 		@Override
-		public Object[] getElements(Object inputElement) {
+		public Object[] getElements(@Nullable Object inputElement) {
 			return getChildren(null);
 		}
 
 		@Override
-		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+		public void inputChanged(@NonNullByDefault({}) Viewer viewer, @Nullable Object oldInput, @Nullable Object newInput) {
 			manager = (IContentTypeManager) newInput;
 		}
 	}
 
-	protected IContentType contentType;
-	protected ILaunchConfiguration launchConfig;
-	protected Set<String> launchMode;
+	protected @Nullable IContentType contentType;
+	protected @Nullable ILaunchConfiguration launchConfig;
+	protected Set<String> launchMode = Collections.emptySet();
 
-	//
-	////
-
-	protected NewContentTypeLSPLaunchDialog(Shell parentShell) {
+	protected NewContentTypeLSPLaunchDialog(@NonNullByDefault({}) Shell parentShell) {
 		super(parentShell);
 	}
 
 	@Override
-	protected Control createDialogArea(Composite parent) {
+	protected Control createDialogArea(@NonNullByDefault({}) Composite parent) {
 		final var res = (Composite)super.createDialogArea(parent);
 		res.setLayout(new GridLayout(2, false));
 		new Label(res, SWT.NONE).setText(Messages.NewContentTypeLSPLaunchDialog_associateContentType);
@@ -154,7 +158,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		launchModeViewer.setContentProvider(new ArrayContentProvider());
 		launchModeViewer.setLabelProvider(new LabelProvider() {
 			@Override
-			public String getText(Object o) {
+			public String getText(@NonNullByDefault({}) Object o) {
 				final var res = new StringBuilder();
 				for (String s : (Set<String>)o) {
 					res.append(s);
@@ -180,7 +184,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		launchModeViewer.addSelectionChangedListener(event -> {
 			ISelection sel = event.getSelection();
 			if (sel.isEmpty()) {
-				launchMode = null;
+				launchMode = Collections.emptySet();
 			} else if (sel instanceof IStructuredSelection structuredSel) {
 				launchMode = (Set<String>) structuredSel.getFirstElement();
 			}
@@ -190,25 +194,28 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 	}
 
 	@Override
-	protected Control createContents(Composite parent) {
+	protected Control createContents(@NonNullByDefault({}) Composite parent) {
 		Control res = super.createContents(parent);
 		updateButtons();
 		return res;
 	}
 
 	public IContentType getContentType() {
-		return this.contentType;
+		Assert.isNotNull(contentType);
+		return contentType;
 	}
 
 	public ILaunchConfiguration getLaunchConfiguration() {
-		return this.launchConfig;
+		Assert.isNotNull(launchConfig);
+		return launchConfig;
 	}
 
 	private void updateButtons() {
-		getButton(OK).setEnabled(contentType != null && launchConfig != null && launchMode != null);
+		getButton(OK).setEnabled(contentType != null && launchConfig != null && !launchMode.isEmpty());
 	}
 
 	private void updateLaunchModes(ComboViewer launchModeViewer) {
+		final var launchConfig = this.launchConfig;
 		if (launchConfig == null) {
 			launchModeViewer.setInput(Collections.emptyList());
 		} else {
@@ -232,7 +239,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 			}
 			if (currentMode == null) {
 				for (Set<String> mode : modes) {
-					if (mode.size() == 1 && mode.iterator().next().equals(ILaunchManager.RUN_MODE)) {
+					if (mode.size() == 1 && ILaunchManager.RUN_MODE.equals(mode.iterator().next())) {
 						currentMode = mode;
 						launchModeViewer.setSelection(new StructuredSelection(currentMode));
 					}
@@ -245,7 +252,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		updateButtons();
 	}
 
-	public @NonNull Set<String> getLaunchMode() {
+	public Set<String> getLaunchMode() {
 		return this.launchMode;
 	}
 

@@ -95,9 +95,9 @@ public class LanguageServersRegistry {
 		public final int lastDocumentDisconnectedTimeout;
 		public final @NonNull Map<IContentType, String> languageIdMappings;
 
-		LanguageServerDefinition(@NonNull String id, @NonNull String label, boolean isSingleton, int lastDocumentDisconnectedTimeout) {
+		LanguageServerDefinition(@NonNull String id, @Nullable String label, boolean isSingleton, int lastDocumentDisconnectedTimeout) {
 			this.id = id;
-			this.label = label;
+			this.label = label == null ? id : label;
 			this.isSingleton = isSingleton;
 			this.lastDocumentDisconnectedTimeout = lastDocumentDisconnectedTimeout;
 			this.languageIdMappings = new ConcurrentHashMap<>();
