@@ -113,7 +113,9 @@ public class LSPTextChange extends TextChange {
 			try {
 				offset = LSPEclipseUtils.toOffset(range.getStart(), document);
 				length = LSPEclipseUtils.toOffset(range.getEnd(), document) - offset;
-				this.setEdit(new ReplaceEdit(offset, length, newText));
+				if (getEdit() == null) {
+					this.setEdit(new ReplaceEdit(offset, length, newText));
+				}
 			} catch (BadLocationException e) {
 				// Should not happen
 				LanguageServerPlugin.logError(e);
