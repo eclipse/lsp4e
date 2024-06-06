@@ -109,7 +109,7 @@ public class LSPTextChange extends TextChange {
 		final IDocument document  = fBuffer.getDocument();
 		int offset = 0;
 		int length = document.getLength();
-		if (range != null) {
+		if (range != null && getEdit() == null) {
 			try {
 				offset = LSPEclipseUtils.toOffset(range.getStart(), document);
 				length = LSPEclipseUtils.toOffset(range.getEnd(), document) - offset;
