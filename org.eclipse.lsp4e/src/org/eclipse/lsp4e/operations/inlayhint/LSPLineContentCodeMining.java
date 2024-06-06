@@ -9,6 +9,7 @@
 package org.eclipse.lsp4e.operations.inlayhint;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -48,13 +49,13 @@ import org.eclipse.swt.widgets.Display;
 public class LSPLineContentCodeMining extends LineContentCodeMining {
 
 	private InlayHint inlayHint;
-	private final LanguageServerWrapper wrapper;
-	private IDocument document;
+	private final @NonNull LanguageServerWrapper wrapper;
+	private final @NonNull IDocument document;
 
 	private Point location;
 	private FontData[] fontData;
 
-	public LSPLineContentCodeMining(InlayHint inlayHint, IDocument document, LanguageServerWrapper languageServerWrapper,
+	public LSPLineContentCodeMining(@NonNull InlayHint inlayHint, @NonNull IDocument document, @NonNull LanguageServerWrapper languageServerWrapper,
 			InlayHintProvider provider) throws BadLocationException {
 		super(toPosition(inlayHint.getPosition(), document), provider);
 		this.inlayHint = inlayHint;
@@ -122,15 +123,19 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 
 	@Override
 	public final Consumer<MouseEvent> getAction() {
-		return me -> {
-			String title= getLabel();
-			if (title != null && !title.isEmpty()) {
-				findLabelPart(me).map(InlayHintLabelPart::getCommand).ifPresent(command -> {
+		return inlayHint.getLabel().map(l -> null, r -> labelPartAction(r));
+	}
+
+	private Consumer<MouseEvent> labelPartAction(List<InlayHintLabelPart> labelParts) {
+		String title = getLabel();
+		if (title != null && !title.isEmpty() && labelParts.stream().map(InlayHintLabelPart::getCommand).anyMatch(Objects::nonNull)) {
+			return me -> {
+				findLabelPart(me, labelParts).map(InlayHintLabelPart::getCommand).filter(Objects::nonNull).ifPresent(command -> {
 					ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
 					String commandId = command.getCommand();
 					if (provider != null && provider.getCommands().contains(commandId)) {
 						LanguageServers.forDocument(document).computeAll((w, ls) -> {
-							if (w == this.wrapper) {
+							if (w == wrapper) {
 								return ls.getWorkspaceService()
 										.executeCommand(new ExecuteCommandParams(commandId, command.getArguments()));
 							}
@@ -140,47 +145,45 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 						CommandExecutor.executeCommandClientSide(command, document);
 					}
 				});
-			}
-		};
+			};
+		}
+		return null;
 	}
 
-	private Optional<InlayHintLabelPart> findLabelPart(MouseEvent me) {
-		if (inlayHint.getLabel().isRight()) {
-			List<InlayHintLabelPart> labelParts = inlayHint.getLabel().getRight();
-			if (labelParts.size() == 1) {
-				return Optional.of(labelParts.get(0));
-			}
-			if (location != null && fontData != null) {
-				Point relativeLocation = new Point(me.x - location.x, me.y - location.y);
-				Display display = Display.getCurrent();
-				Image image = null;
-				GC gc = null;
-				Font font = null;
-				try {
-					image = new Image(display, 1, 1);
-					gc = new GC(image);
-					font = new Font(display, fontData);
-					gc.setFont(font);
-					Point origin = new Point(0, 0);
-					for (InlayHintLabelPart labelPart : labelParts) {
-						Point size = gc.stringExtent(labelPart.getValue());
-						Rectangle bounds = new Rectangle(origin.x, origin.y, size.x, size.y);
-						if (bounds.contains(relativeLocation)) {
-							return Optional.of(labelPart);
-						} else {
-							origin.x += size.x;
-						}
+	private Optional<InlayHintLabelPart> findLabelPart(MouseEvent me, List<InlayHintLabelPart> labelParts) {
+		if (labelParts.size() == 1) {
+			return Optional.of(labelParts.get(0));
+		}
+		if (location != null && fontData != null) {
+			Point relativeLocation = new Point(me.x - location.x, me.y - location.y);
+			Display display = Display.getCurrent();
+			Image image = null;
+			GC gc = null;
+			Font font = null;
+			try {
+				image = new Image(display, 1, 1);
+				gc = new GC(image);
+				font = new Font(display, fontData);
+				gc.setFont(font);
+				Point origin = new Point(0, 0);
+				for (InlayHintLabelPart labelPart : labelParts) {
+					Point size = gc.stringExtent(labelPart.getValue());
+					Rectangle bounds = new Rectangle(origin.x, origin.y, size.x, size.y);
+					if (bounds.contains(relativeLocation)) {
+						return Optional.of(labelPart);
+					} else {
+						origin.x += size.x;
 					}
-				} finally {
-					if (font != null && !font.isDisposed()) {
-						font.dispose();
-					}
-					if (gc != null && !gc.isDisposed()) {
-						gc.dispose();
-					}
-					if (image != null && !image.isDisposed()) {
-						image.dispose();
-					}
+				}
+			} finally {
+				if (font != null && !font.isDisposed()) {
+					font.dispose();
+				}
+				if (gc != null && !gc.isDisposed()) {
+					gc.dispose();
+				}
+				if (image != null && !image.isDisposed()) {
+					image.dispose();
 				}
 			}
 		}
