@@ -63,8 +63,8 @@ public class InlayHintProvider extends AbstractCodeMiningProvider {
 		}
 	}
 
-	private LSPLineContentCodeMining toCodeMining(IDocument document, LanguageServerWrapper languageServerWrapper,
-			InlayHint inlayHint) {
+	private LSPLineContentCodeMining toCodeMining(@NonNull IDocument document, @NonNull LanguageServerWrapper languageServerWrapper,
+			@NonNull InlayHint inlayHint) {
 		try {
 			return new LSPLineContentCodeMining(inlayHint, document, languageServerWrapper, InlayHintProvider.this);
 		} catch (BadLocationException e) {
