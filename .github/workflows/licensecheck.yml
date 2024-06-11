@@ -103,9 +103,13 @@ jobs:
         echo "MAVEN_OPTS: $MAVEN_OPTS"
 
         if [[ ${ACT:-} == "true" ]]; then # when running locally using nektos/act
-           maven_args="-Djgit.dirtyWorkingTree=warning"
+          maven_args="-Djgit.dirtyWorkingTree=warning"
         else
-           maven_args="--no-transfer-progress"
+          maven_args="--no-transfer-progress"
+        fi
+
+        if [[ -n $DASH_IPLAB_TOKEN ]]; then
+          dash_iplab_token_arg="-Ddash.iplab.token=$DASH_IPLAB_TOKEN"
         fi
 
         # "excludeArtifactIds" parameter is to prevent builds from failing with:
@@ -115,7 +119,7 @@ jobs:
         # This content is either not correctly mapped by the system, or requires review.
         # Error: Dependency license check failed. Some dependencies need to be vetted. 
 
-        mvn \
+        (set -x; mvn \
           --errors \
           --update-snapshots \
           --batch-mode \
@@ -125,12 +129,12 @@ jobs:
           org.eclipse.dash:license-tool-plugin:license-check \
           -Dtycho.target.eager=true \
           -Ddash.projectId=technology.lsp4e \
-          -Ddash.iplab.token="$DASH_IPLAB_TOKEN" \
+          ${dash_iplab_token_arg:-} \
           -Ddash.fail=true \
           -Ddash.summary=DEPENDENCIES \
           -DexcludeArtifactIds=\
         org.eclipse.rcp_root,\
-        org.eclipse.ui.tests.harness
+        org.eclipse.ui.tests.harness)
 
 
     - name: Dash Summary
