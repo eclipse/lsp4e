@@ -49,7 +49,7 @@ public class SemanticHighlightReconcilerStrategyTest extends AbstractTestWithPro
 
 		MockLanguageServer.INSTANCE.getTextDocumentService().setSemanticTokens(semanticTokens);
 
-		IFile file = TestUtils.createUniqueTestFile(project, "lspt", SemanticTokensTestUtil.keywordText);
+		IFile file = TestUtils.createUniqueTestFile(project, "lsptm", SemanticTokensTestUtil.keywordText);
 		ITextViewer textViewer = TestUtils.openTextViewer(file);
 
 		Display display = shell.getDisplay();
@@ -58,18 +58,30 @@ public class SemanticHighlightReconcilerStrategyTest extends AbstractTestWithPro
 		StyleRange[] styleRanges = textViewer.getTextWidget().getStyleRanges();
 		var backgroundColor = textViewer.getTextWidget().getBackground();
 
-		assertEquals(3, styleRanges.length);
+		assertEquals(6, styleRanges.length);
 		
 		assertEquals(0, styleRanges[0].start);
 		assertEquals(4, styleRanges[0].length);
 		assertNotEquals(styleRanges[0].foreground, backgroundColor);
 		
-		assertEquals(15, styleRanges[1].start);
-		assertEquals(4, styleRanges[1].length);
+		assertEquals(4, styleRanges[1].start);
+		assertEquals(11, styleRanges[1].length);
 		assertNotEquals(styleRanges[1].foreground, backgroundColor);
 		
-		assertEquals(24, styleRanges[2].start);
-		assertEquals(7, styleRanges[2].length);
+		assertEquals(15, styleRanges[2].start);
+		assertEquals(4, styleRanges[2].length);
 		assertNotEquals(styleRanges[2].foreground, backgroundColor);
+		
+		assertEquals(19, styleRanges[3].start);
+		assertEquals(5, styleRanges[3].length);
+		assertNotEquals(styleRanges[3].foreground, backgroundColor);
+		
+		assertEquals(24, styleRanges[4].start);
+		assertEquals(7, styleRanges[4].length);
+		assertNotEquals(styleRanges[4].foreground, backgroundColor);
+		
+		assertEquals(31, styleRanges[5].start);
+		assertEquals(11, styleRanges[5].length);
+		assertNotEquals(styleRanges[5].foreground, backgroundColor);
 	}
 }

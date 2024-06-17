@@ -14,7 +14,6 @@ import java.util.function.Function;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.rules.IToken;
-import org.eclipse.tm4e.ui.TMUIPlugin;
 import org.eclipse.tm4e.ui.text.TMPresentationReconciler;
 import org.eclipse.tm4e.ui.themes.ITokenProvider;
 
@@ -42,6 +41,7 @@ public class TokenTypeMapper implements Function<String, IToken> {
 				return tokenProvider.getToken(tokenType);
 			}
 		}
-		return TMUIPlugin.getThemeManager().getDefaultTheme().getToken(tokenType);
+		// No mapping if no TextMate grammar associated with this content type
+		return null;
 	}
 }

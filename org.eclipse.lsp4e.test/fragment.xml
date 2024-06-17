@@ -44,6 +44,10 @@
             id="org.eclipse.lsp4e.test.server">
       </contentTypeMapping>
       <contentTypeMapping
+            contentType="org.eclipse.lsp4e.test.content-type.tm"
+            id="org.eclipse.lsp4e.test.server">
+      </contentTypeMapping>
+      <contentTypeMapping
             contentType="org.eclipse.lsp4e.test.content-type-multi-ls"
             id="org.eclipse.lsp4e.test.server">
       </contentTypeMapping>
@@ -124,6 +128,13 @@
             file-extensions="lspt"
             id="org.eclipse.lsp4e.test.content-type"
             name="Test Content Type"
+            priority="normal">
+      </content-type>
+            <content-type
+            base-type="org.eclipse.core.runtime.text"
+            file-extensions="lsptm"
+            id="org.eclipse.lsp4e.test.content-type.tm"
+            name="Test Content Type With TM Grammar"
             priority="normal">
       </content-type>
       <content-type
@@ -277,4 +288,23 @@
            class="org.eclipse.lsp4e.test.references.FindReferencesTest$UiFreezeEventLogger">
      </logger>
   </extension>
+  
+   <extension
+         point="org.eclipse.tm4e.registry.grammars">
+      <grammar
+            path="org/eclipse/lsp4e/test/semanticTokens/rust.tmLanguage.json"
+            scopeName="source.lsptm">
+      </grammar>
+      <scopeNameContentTypeBinding
+            contentTypeId="org.eclipse.lsp4e.test.content-type.tm"
+            scopeName="source.lsptm">
+      </scopeNameContentTypeBinding>
+   </extension>
+   <extension
+         point="org.eclipse.ui.genericeditor.presentationReconcilers">
+      <presentationReconciler
+            class="org.eclipse.tm4e.ui.text.TMPresentationReconciler"
+            contentType="org.eclipse.lsp4e.test.content-type.tm">
+      </presentationReconciler>
+   </extension> 
 </fragment>
