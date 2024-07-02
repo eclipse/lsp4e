@@ -56,6 +56,7 @@ Export-Package: org.eclipse.lsp4e;x-internal:=true,
  org.eclipse.lsp4e.operations.completion;x-internal:=true,
  org.eclipse.lsp4e.operations.format;x-internal:=true,
  org.eclipse.lsp4e.operations.hover;x-internal:=true,
+ org.eclipse.lsp4e.operations.rename;x-internal:=true,
  org.eclipse.lsp4e.outline;x-internal:=true,
  org.eclipse.lsp4e.server;version="0.1.0"
 Bundle-Vendor: Eclipse.org
