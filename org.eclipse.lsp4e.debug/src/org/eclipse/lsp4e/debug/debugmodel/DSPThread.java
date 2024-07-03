@@ -195,7 +195,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 
 	@Override
 	public boolean isSuspended() {
-		return isSuspended;
+		return !isTerminated() && isSuspended;
 	}
 
 	@Override
