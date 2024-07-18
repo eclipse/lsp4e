@@ -137,6 +137,9 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 								if (isIncomplete) {
 									anyIncomplete.set(true);
 								}
+							}).exceptionally(t -> {
+								LanguageServerPlugin.logError("'%s' LS failed to compute completion items.".formatted(w.serverDefinition.label), t); //$NON-NLS-1$
+								return null;
 							}));
 			cancellationSupport.execute(completionLanguageServersFuture);
 			this.cancellationSupport = cancellationSupport;
