@@ -148,10 +148,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 			// Wait for the result of all LSP requests 'textDocument/completions', this future will be canceled with the next completion
 			this.completionLanguageServersFuture.get();
-		} catch (ResponseErrorException | ExecutionException | CancellationException e) {
-			if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
-				LanguageServerPlugin.logError(e);
-			}
+		} catch (ExecutionException e) {
+			// Ideally exceptions from each LS are handled above and we shouldn't be getting into this block
 			this.errorMessage = createErrorMessage(offset, e);
 			return createErrorProposal(offset, e);
 		} catch (InterruptedException e) {
