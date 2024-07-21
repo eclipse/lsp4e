@@ -24,6 +24,7 @@ import org.eclipse.core.filebuffers.LocationKind;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -38,13 +39,13 @@ public final class EnablementTester {
 
 	private final Expression expression;
 	private final String description;
-	private final Supplier<IEvaluationContext> parent;
+	private final Supplier<@Nullable IEvaluationContext> parent;
 
 	public EnablementTester(Expression expression, String description) {
 		this(() -> null, expression, description);
 	}
 
-	public EnablementTester(Supplier<IEvaluationContext> parent, Expression expression, String description) {
+	public EnablementTester(Supplier<@Nullable IEvaluationContext> parent, Expression expression, String description) {
 		this.description = description;
 		this.expression = expression;
 		this.parent = parent;
@@ -63,7 +64,7 @@ public final class EnablementTester {
 	 *
 	 * @return true if expression evaluates to true, false otherwise
 	 */
-	public boolean evaluate(URI uri) {
+	public boolean evaluate(@Nullable URI uri) {
 		boolean temporaryLoadDocument = false;
 		IResource resource = null;
 		try {
