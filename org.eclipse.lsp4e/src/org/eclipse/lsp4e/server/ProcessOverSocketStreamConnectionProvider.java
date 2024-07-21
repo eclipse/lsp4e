@@ -21,6 +21,7 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 
 /**
@@ -30,9 +31,9 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessStreamConnectionProvider {
 
 	private final int port;
-	private Socket socket;
-	private InputStream inputStream;
-	private OutputStream outputStream;
+	private @Nullable Socket socket;
+	private @Nullable InputStream inputStream;
+	private @Nullable OutputStream outputStream;
 
 	protected ProcessOverSocketStreamConnectionProvider(List<String> commands, int port) {
 		super(commands);
@@ -49,7 +50,7 @@ public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessS
 		final var serverSocket = new ServerSocket(port);
 		final var socketThread = new Thread(() -> {
 			try {
-				socket = serverSocket.accept();
+				this.socket = serverSocket.accept();
 			} catch (IOException e) {
 				LanguageServerPlugin.logError(e);
 			} finally {
@@ -70,6 +71,7 @@ public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessS
 			Thread.currentThread().interrupt();
 		}
 
+		final var socket = this.socket;
 		if (socket == null) {
 			throw new IOException("Unable to make socket connection: " + this); //$NON-NLS-1$
 		}
@@ -79,12 +81,12 @@ public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessS
 	}
 
 	@Override
-	public InputStream getInputStream() {
+	public @Nullable InputStream getInputStream() {
 		return inputStream;
 	}
 
 	@Override
-	public OutputStream getOutputStream() {
+	public @Nullable OutputStream getOutputStream() {
 		return outputStream;
 	}
 
@@ -107,7 +109,7 @@ public abstract class ProcessOverSocketStreamConnectionProvider extends ProcessS
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (obj == this) {
 			return true;
 		}
