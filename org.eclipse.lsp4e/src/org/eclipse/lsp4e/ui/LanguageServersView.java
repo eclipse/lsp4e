@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -22,6 +24,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
@@ -50,8 +53,8 @@ public class LanguageServersView extends ViewPart {
 	private static final String EMPTY = ""; //$NON-NLS-1$
 	private static final String NOT_AVAILABLE = "n/a"; //$NON-NLS-1$
 
-	private TableViewer viewer;
-	private Job viewerRefreshJob;
+	private TableViewer viewer = lateNonNull();
+	private @Nullable Job viewerRefreshJob;
 	private final Map<LanguageServerWrapper, ToolBar> actionButtons = new HashMap<>();
 	private final List<ColumnLabelProvider> columnLabelProviders = new ArrayList<>();
 
@@ -67,7 +70,7 @@ public class LanguageServersView extends ViewPart {
 		}
 
 		@Override
-		public int compare(final Viewer viewer, @Nullable final Object e1, @Nullable final Object e2) {
+		public int compare(final @Nullable Viewer viewer, @Nullable final Object e1, @Nullable final Object e2) {
 			int sortResult = compare(tableSortColumn, e1, e2);
 
 			// use the "Initial Project" column as secondary sort column
@@ -115,7 +118,7 @@ public class LanguageServersView extends ViewPart {
 
 		createColumn(EMPTY, 26, new ColumnLabelProvider() {
 			@Override
-			public void update(ViewerCell cell) {
+			public void update(@NonNullByDefault({}) ViewerCell cell) {
 				final var lsWrapper = (LanguageServerWrapper) cell.getElement();
 				final var item = (TableItem) cell.getItem();
 				final var buttons = actionButtons.computeIfAbsent(lsWrapper, unused -> {
@@ -222,7 +225,7 @@ public class LanguageServersView extends ViewPart {
 	}
 
 	private void scheduleRefreshJob() {
-		viewerRefreshJob = new Job("Refresh Language Server Processes view") { //$NON-NLS-1$
+		final var viewerRefreshJob = this.viewerRefreshJob = new Job("Refresh Language Server Processes view") { //$NON-NLS-1$
 			@Override
 			protected IStatus run(IProgressMonitor monitor) {
 				if (getSite().getPage().isPartVisible(LanguageServersView.this)) {
