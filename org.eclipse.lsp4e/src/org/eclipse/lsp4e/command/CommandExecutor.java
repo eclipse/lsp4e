@@ -228,13 +228,15 @@ public class CommandExecutor {
 			} else if (arg instanceof JsonObject jsonObject) {
 				final var gson = new Gson(); // TODO? retrieve the GSon used by LS
 				WorkspaceEdit wEdit = gson.fromJson(jsonObject, WorkspaceEdit.class);
-				Map<String, List<TextEdit>> entries = wEdit.getChanges();
-				if (wEdit != null && !entries.isEmpty()) {
-					changes.putAll(entries);
-				} else {
-					TextEdit edit = gson.fromJson(jsonObject, TextEdit.class);
-					if (edit != null && edit.getRange() != null) {
-						currentEntry.value.add(edit);
+				if (wEdit != null) {
+					Map<String, List<TextEdit>> entries = wEdit.getChanges();
+					if (!entries.isEmpty()) {
+						changes.putAll(entries);
+					} else {
+						TextEdit edit = gson.fromJson(jsonObject, TextEdit.class);
+						if (edit != null && edit.getRange() != null) {
+							currentEntry.value.add(edit);
+						}
 					}
 				}
 			}

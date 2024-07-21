@@ -91,7 +91,7 @@ public class LSPProgressManager {
 		Job job = Job.create(jobName, (ICoreRunnable) monitor -> {
 			try {
 				while (true) {
-					if (monitor.isCanceled()) {
+					if (monitor != null && monitor.isCanceled()) {
 						progressMap.remove(jobIdentifier);
 						currentPercentageMap.remove(monitor);
 						if (languageServer != null) {
@@ -117,7 +117,7 @@ public class LSPProgressManager {
 								return;
 							}
 						}
-					} else if (done.remove(jobIdentifier)) {
+					} else if (done.remove(jobIdentifier) && monitor != null) {
 						monitor.done();
 					}
 				}

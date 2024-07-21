@@ -139,7 +139,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 	}
 
 	@Override
-	public IRegion getHoverRegion(ITextViewer textViewer, int offset) {
+	public @Nullable IRegion getHoverRegion(ITextViewer textViewer, int offset) {
 		if (textViewer == null) {
 			return null;
 		}
@@ -149,6 +149,9 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 		}
 		try {
 			final IDocument document = textViewer.getDocument();
+			if (document == null) {
+				return null;
+			}
 			boolean[] oneHoverAtLeast = new boolean[] { false };
 			int[] regionStartOffset = new int[] { 0 };
 			int[] regionEndOffset = new int[] { document.getLength() };

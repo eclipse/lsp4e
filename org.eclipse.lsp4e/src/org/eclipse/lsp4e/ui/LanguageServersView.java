@@ -62,8 +62,8 @@ public class LanguageServersView extends ViewPart {
 		private int compare(int columnIndex, @Nullable final Object e1, @Nullable final Object e2) {
 			var labelProvider = columnLabelProviders.get(columnIndex);
 			return getComparator().compare( //
-					Objects.toString(labelProvider.getText(e1), EMPTY),
-					Objects.toString(labelProvider.getText(e2), EMPTY));
+					Objects.toString(e1 == null ? null : labelProvider.getText(e1), EMPTY),
+					Objects.toString(e2 == null ? null : labelProvider.getText(e2), EMPTY));
 		}
 
 		@Override

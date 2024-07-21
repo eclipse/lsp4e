@@ -40,7 +40,7 @@ public class ServerMessageHandler {
 		private final MessageParams messageParams;
 
 		public LSPNotification(String label, MessageParams messageParams) {
-			super(Display.getCurrent());
+			super(UI.getDisplay());
 			setParentShell(UI.getActiveShell());
 			this.label = label;
 			this.messageParams = messageParams;

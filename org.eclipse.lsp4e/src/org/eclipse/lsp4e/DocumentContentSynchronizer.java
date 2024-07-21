@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.io.File;
 import java.net.URI;
 import java.util.Collections;
@@ -34,6 +36,7 @@ import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DocumentEvent;
@@ -272,8 +275,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (TimeoutException e) {
-			Integer timeoutCount = WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.compute(identifier.getUri(),
-					(k, v) -> v == null ? 1 : Integer.valueOf(v + 1));
+			Integer timeoutCount = castNonNull(WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.compute(identifier.getUri(),
+					(k, v) -> v == null ? 1 : Integer.valueOf(v + 1)));
 			String message = timeoutCount > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD ?
 					Messages.DocumentContentSynchronizer_TimeoutThresholdMessage:
 						Messages.DocumentContentSynchronizer_TimeoutMessage;
@@ -306,30 +309,33 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		}
 	}
 
-	private synchronized IRegion[] getFormatRegions() {
+	private synchronized IRegion @Nullable [] getFormatRegions() {
 		if (formatRegionsProvider != null) {
 			return formatRegionsProvider.getFormattingRegions(document);
 		}
 		var serverId = "(serverDefinitionId=" + languageServerWrapper.serverDefinition.id + ")";  //$NON-NLS-1$ //$NON-NLS-2$
-		var bundleContext = FrameworkUtil.getBundle(this.getClass()).getBundleContext();
-		if (bundleContext != null) {
-			try {
-				ServiceReference<?> reference = null;
-				var serviceReferences = bundleContext.getAllServiceReferences(IFormatRegionsProvider.class.getName(), serverId);
-				if (serviceReferences != null) {
-					reference = serviceReferences[0];
-				} else {
-					//Use LSP4E default implementation:
-					reference = bundleContext.getServiceReference(IFormatRegionsProvider.class.getName());
-				}
-				if (reference != null) {
-					formatRegionsProvider = (IFormatRegionsProvider) bundleContext.getService(reference);
-					if (formatRegionsProvider != null) {
-						return formatRegionsProvider.getFormattingRegions(document);
+		final var bundle = FrameworkUtil.getBundle(this.getClass());
+		if (bundle != null) {
+			var bundleContext = bundle.getBundleContext();
+			if (bundleContext != null) {
+				try {
+					ServiceReference<?> reference = null;
+					var serviceReferences = bundleContext.getAllServiceReferences(IFormatRegionsProvider.class.getName(), serverId);
+					if (serviceReferences != null) {
+						reference = serviceReferences[0];
+					} else {
+						//Use LSP4E default implementation:
+						reference = bundleContext.getServiceReference(IFormatRegionsProvider.class.getName());
 					}
+					if (reference != null) {
+						formatRegionsProvider = (IFormatRegionsProvider) bundleContext.getService(reference);
+						if (formatRegionsProvider != null) {
+							return formatRegionsProvider.getFormattingRegions(document);
+						}
+					}
+				} catch (InvalidSyntaxException e) {
+					LanguageServerPlugin.logError(e);
 				}
-			} catch (InvalidSyntaxException e) {
-				LanguageServerPlugin.logError(e);
 			}
 		}
 		return null;

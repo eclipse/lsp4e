@@ -141,7 +141,10 @@ public class CreateFileChange extends ResourceChange {
 				}
 			} else {
 				final var file = new File(this.uri);
-				Files.createDirectories(file.getParentFile().toPath());
+				final var parentFile = file.getParentFile();
+				if (parentFile != null) {
+					Files.createDirectories(parentFile.toPath());
+				}
 				if (!file.createNewFile()) {
 					throw new IOException(String.format("Failed to create file '%s'",file)); //$NON-NLS-1$
 				}

@@ -103,13 +103,13 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		super.fill(menu, index);
 	}
 
-	private void scheduleMenuUpdate(final Menu menu, final MenuItem placeHolder, final int index, final IDocument document, final LanguageServerWrapper wrapper, final Throwable u, final List<Either<Command, CodeAction>> codeActions) {
+	private void scheduleMenuUpdate(final Menu menu, final MenuItem placeHolder, final int index, final IDocument document, final LanguageServerWrapper wrapper, final Throwable ex, final List<Either<Command, CodeAction>> codeActions) {
 		final var job = new UIJob(menu.getDisplay(), Messages.updateCodeActions_menu) {
 			@Override
 			public IStatus runInUIThread(IProgressMonitor monitor) {
-				if (u != null) {
+				if (ex != null) {
 					final var item = new MenuItem(menu, SWT.NONE, index);
-					item.setText(u.getMessage());
+					item.setText(String.valueOf(ex.getMessage()));
 					item.setImage(LSPImages.getSharedImage(ISharedImages.IMG_DEC_FIELD_ERROR));
 					item.setEnabled(false);
 				} else if (codeActions != null) {

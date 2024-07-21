@@ -72,7 +72,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 
 		@Override
 		public Image getImage() {
-			return JFaceResources.getImage(ProgressInfoItem.class.getPackage().getName() + ".PROGRESS_DEFAULT"); //$NON-NLS-1$
+			return JFaceResources.getImage(ProgressInfoItem.class.getPackageName() + ".PROGRESS_DEFAULT"); //$NON-NLS-1$
 		}
 
 		@Override

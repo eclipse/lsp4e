@@ -104,10 +104,10 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		logToFile = store.getBoolean(lsToFileLoggingId(serverId));
 		logToConsole = store.getBoolean(lsToConsoleLoggingId(serverId));
 		store.addPropertyChangeListener(event -> {
-			if (event.getProperty().equals(FILE_KEY)) {
-				logToFile = (boolean) event.getNewValue();
-			} else if (event.getProperty().equals(STDERR_KEY)) {
-				logToConsole = (boolean) event.getNewValue();
+			if (event.getProperty().equals(FILE_KEY) && event.getNewValue() instanceof Boolean newValue) {
+				logToFile = newValue;
+			} else if (event.getProperty().equals(STDERR_KEY) && event.getNewValue() instanceof Boolean newValue) {
+				logToConsole = newValue;
 			}
 		});
 		this.logFile = getLogFile();

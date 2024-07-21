@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -83,7 +85,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		@Override
 		public Image getImage() {
 			// load class so image is loaded
-			return JFaceResources.getImage(ProgressInfoItem.class.getPackage().getName() + ".PROGRESS_DEFAULT"); //$NON-NLS-1$
+			return JFaceResources.getImage(ProgressInfoItem.class.getPackageName() + ".PROGRESS_DEFAULT"); //$NON-NLS-1$
 		}
 
 		@Override
@@ -174,7 +176,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					final var ca = (ContentAssistant) f.get(quickAssistant);
 					Method m = ContentAssistant.class.getDeclaredMethod("isProposalPopupActive"); //$NON-NLS-1$
 					m.setAccessible(true);
-					boolean isProposalPopupActive = (Boolean) m.invoke(ca);
+					boolean isProposalPopupActive = (Boolean) castNonNull(m.invoke(ca));
 					if (isProposalPopupActive) {
 						quickAssistant.showPossibleQuickAssists();
 					}

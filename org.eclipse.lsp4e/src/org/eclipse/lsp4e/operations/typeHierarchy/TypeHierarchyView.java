@@ -306,10 +306,11 @@ public class TypeHierarchyView extends ViewPart {
 		memberViewer.setContentProvider(new TypeMemberContentProvider());
 		memberViewer.setLabelProvider(symbolsLabelProvider);
 		memberViewer.addOpenListener(event -> {
-			DocumentSymbolWithURI container = (DocumentSymbolWithURI)((IStructuredSelection) event.getSelection()).getFirstElement();
-			var symbolsContainer = cachedSymbols.get(container.uri);
-			if (symbolsContainer != null) {
-				LSPEclipseUtils.open(symbolsContainer.uri.toASCIIString(), container.symbol.getRange());
+			if (((IStructuredSelection) event.getSelection()).getFirstElement() instanceof DocumentSymbolWithURI container) {
+				var symbolsContainer = cachedSymbols.get(container.uri);
+				if (symbolsContainer != null) {
+					LSPEclipseUtils.open(symbolsContainer.uri.toASCIIString(), container.symbol.getRange());
+				}
 			}
 		});
 		return memberViewer.getControl();

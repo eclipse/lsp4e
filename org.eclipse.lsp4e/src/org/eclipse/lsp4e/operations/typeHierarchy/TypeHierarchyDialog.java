@@ -99,8 +99,9 @@ public class TypeHierarchyDialog extends PopupDialog {
 		viewer.setLabelProvider(new TypeHierarchyItemLabelProvider());
 		viewer.setAutoExpandLevel(2);
 		viewer.addDoubleClickListener(event -> {
-			TypeHierarchyItem item = (TypeHierarchyItem)((IStructuredSelection)event.getSelection()).getFirstElement();
-			LSPEclipseUtils.open(item.getUri(), item.getSelectionRange());
+			if(((IStructuredSelection)event.getSelection()).getFirstElement() instanceof final TypeHierarchyItem item) {
+				LSPEclipseUtils.open(item.getUri(), item.getSelectionRange());
+			}
 		});
 
 		final var sorter = new CommonViewerSorter();

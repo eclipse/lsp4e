@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
-import java.io.IOException;
 import java.net.URL;
 
 import org.eclipse.core.runtime.FileLocator;
@@ -170,17 +169,20 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 
 		String hlStyle = null;
 		try {
-			URL urlHJScript = FileLocator.toFileURL(LanguageServerPlugin.getDefault().getClass().getResource("/resources/highlight.min.js/highlight.min.js")); //$NON-NLS-1$
-			URL urlHJCss = FileLocator.toFileURL(LanguageServerPlugin.getDefault().getClass().getResource(isDarkTheme() ? //
+			var pluginClass = LanguageServerPlugin.getDefault().getClass();
+			URL urlHJScript = pluginClass.getResource("/resources/highlight.min.js/highlight.min.js"); //$NON-NLS-1$
+			URL urlHJCss = pluginClass.getResource(isDarkTheme() ? //
 					"/resources/highlight.min.js/styles/dark.min.css" : //$NON-NLS-1$
-					"/resources/highlight.min.js/styles/default.min.css")); //$NON-NLS-1$
-			if (urlHJScript != null && urlHJCss != null) {
-				hlStyle = "<link rel='stylesheet' href='" + urlHJCss + "'>" + //$NON-NLS-1$ //$NON-NLS-2$
-						"<script src='" + urlHJScript + "'></script>" + //$NON-NLS-1$ //$NON-NLS-2$
+					"/resources/highlight.min.js/styles/default.min.css"); //$NON-NLS-1$
+			URL fileUrlHJScript = urlHJScript == null ? null : FileLocator.toFileURL(urlHJScript);
+			URL fileUrlHJCss = urlHJCss == null ? null : FileLocator.toFileURL(urlHJCss);
+			if (fileUrlHJScript != null && fileUrlHJCss != null) {
+				hlStyle = "<link rel='stylesheet' href='" + fileUrlHJCss + "'>" + //$NON-NLS-1$ //$NON-NLS-2$
+						"<script src='" + fileUrlHJScript + "'></script>" + //$NON-NLS-1$ //$NON-NLS-2$
 						"<script>hljs.highlightAll();</script>"; //$NON-NLS-1$
 			}
-		} catch (IOException e) {
-			LanguageServerPlugin.logError(e);
+		} catch (Exception ex) {
+			LanguageServerPlugin.logError(ex);
 		}
 
 		int headIndex = html.indexOf(HEAD);

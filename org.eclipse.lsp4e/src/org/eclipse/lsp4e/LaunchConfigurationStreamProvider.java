@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -86,7 +88,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 					Thread.currentThread().interrupt();
 				}
 			}
-			return queue.poll();
+			return castNonNull(queue.poll());
 		}
 
 		@Override
@@ -164,7 +166,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 					Method systemProcessGetter = RuntimeProcess.class.getDeclaredMethod("getSystemProcess"); //$NON-NLS-1$
 					systemProcessGetter.setAccessible(true);
 					final var systemProcess = (Process) systemProcessGetter.invoke(process);
-					this.outputStream = systemProcess.getOutputStream();
+					this.outputStream = castNonNull(systemProcess).getOutputStream();
 				} catch (ReflectiveOperationException ex) {
 					LanguageServerPlugin.logError(ex);
 				}

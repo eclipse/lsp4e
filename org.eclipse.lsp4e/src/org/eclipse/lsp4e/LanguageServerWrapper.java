@@ -17,6 +17,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -58,6 +60,7 @@ import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProduct;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
@@ -415,7 +418,8 @@ public class LanguageServerWrapper {
 	}
 
 	private CompletableFuture<InitializeResult> initServer(final URI rootURI) {
-		final String name = Platform.getProduct() != null ? Platform.getProduct().getName() : "Eclipse IDE"; //$NON-NLS-1$
+		final IProduct product = Platform.getProduct();
+		final String name = product != null ? product.getName() : "Eclipse IDE"; //$NON-NLS-1$
 
 		final var workspaceClientCapabilities = SupportedFeatures.getWorkspaceClientCapabilities();
 		final var textDocumentClientCapabilities = SupportedFeatures.getTextDocumentClientCapabilities();
@@ -941,8 +945,8 @@ public class LanguageServerWrapper {
 				break;
 			case "workspace/executeCommand": //$NON-NLS-1$
 				final var gson = new Gson(); // TODO? retrieve the GSon used by LS
-				ExecuteCommandOptions executeCommandOptions = gson.fromJson((JsonObject) reg.getRegisterOptions(),
-						ExecuteCommandOptions.class);
+				ExecuteCommandOptions executeCommandOptions = castNonNull(gson.fromJson((JsonObject) reg.getRegisterOptions(),
+						ExecuteCommandOptions.class));
 				List<String> newCommands = executeCommandOptions.getCommands();
 				if (!newCommands.isEmpty()) {
 					addRegistration(reg, () -> unregisterCommands(newCommands));

@@ -28,6 +28,7 @@ import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.internal.ui.launchConfigurations.LaunchConfigurationTreeContentProvider;
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
@@ -70,7 +71,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		private IContentTypeManager manager;
 
 		@Override
-		public Object[] getChildren(Object parentElement) {
+		public Object[] getChildren(@Nullable Object parentElement) {
 			final var elements = new ArrayList<IContentType>();
 			final var baseType = (IContentType) parentElement;
 			IContentType[] contentTypes = manager.getAllContentTypes();

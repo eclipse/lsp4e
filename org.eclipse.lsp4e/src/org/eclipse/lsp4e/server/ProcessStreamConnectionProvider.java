@@ -61,8 +61,9 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 
 	protected ProcessBuilder createProcessBuilder() {
 		final var builder = new ProcessBuilder(getCommands());
-		if (getWorkingDirectory() != null) {
-			builder.directory(new File(getWorkingDirectory()));
+		final var workDir = getWorkingDirectory();
+		if (workDir != null) {
+			builder.directory(new File(workDir));
 		}
 		builder.redirectError(ProcessBuilder.Redirect.INHERIT);
 		return builder;

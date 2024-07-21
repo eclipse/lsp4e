@@ -15,6 +15,7 @@ import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.core.runtime.content.IContentTypeManager;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4j.SymbolInformation;
 
 /**
@@ -59,7 +60,7 @@ public class SymbolInformationPropertyTester extends PropertyTester {
 	public static final String CONTENT_TYPE_ID = "contentTypeId"; //$NON-NLS-1$
 
 	@Override
-	public boolean test(Object receiver, String property, Object[] args, Object expectedValue) {
+	public boolean test(Object receiver, String property, Object[] args, @Nullable Object expectedValue) {
 		if (receiver instanceof SymbolInformation info) {
 			if (info.getLocation() == null || info.getLocation().getUri() == null) {
 				return false;
@@ -70,7 +71,7 @@ public class SymbolInformationPropertyTester extends PropertyTester {
 			case CONTENT_TYPE_ID -> {
 				IContentTypeManager contentTypeManager = Platform.getContentTypeManager();
 				IContentType contentType = contentTypeManager.findContentTypeFor(uri);
-				yield contentType != null && contentType.getId().equals(expectedValue.toString());
+				yield contentType != null && expectedValue != null && contentType.getId().equals(expectedValue.toString());
 			}
 			default -> false;
 			};

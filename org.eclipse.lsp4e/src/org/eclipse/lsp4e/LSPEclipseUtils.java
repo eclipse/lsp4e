@@ -791,9 +791,11 @@ public final class LSPEclipseUtils {
 
 			if (targetDocument != null) {
 				ISelectionProvider selectionProvider = part.getEditorSite().getSelectionProvider();
-				ISelection selection = toSelection(optionalRange, targetDocument);
-				if (selection != null) {
-					selectionProvider.setSelection(selection);
+				if (selectionProvider != null) {
+					ISelection selection = toSelection(optionalRange, targetDocument);
+					if (selection != null) {
+						selectionProvider.setSelection(selection);
+					}
 				}
 			}
 		}
@@ -951,9 +953,10 @@ public final class LSPEclipseUtils {
 
 				// Open the resource in editor if there is the only one URI
 				if (changedURIs.size() == 1) {
-					changedURIs.keySet().stream().findFirst().ifPresent(uri -> {
+					changedURIs.entrySet().stream().findFirst().ifPresent(e -> {
 						// Select the only start position of the range or the document start
-						Range range = changedURIs.get(uri);
+						final var uri = e.getKey();
+						final var range = e.getValue();
 						Position start = range.getStart() != null ? range.getStart() : new Position(0, 0);
 						UI.runOnUIThread(() -> open(uri.toString(), new Range(start, start)));
 					});
@@ -962,7 +965,6 @@ public final class LSPEclipseUtils {
 				LanguageServerPlugin.logError(e);
 			}
 		}
-
 	}
 
 	private static void runRefactorWizardOperation(Change change) {
@@ -1138,15 +1140,18 @@ public final class LSPEclipseUtils {
 						IFile newFile = getFileHandle(newURI);
 
 						// If both files are within Eclipse workspace utilize Eclipse ltk MoveRenameResourceChange and RenameResourceChange
-						if (oldFile != null && oldFile.exists() && oldFile.getParent() != null
-								&& newFile != null && newFile.getParent() != null && newFile.getParent().exists()) {
-							if (!newFile.exists() || rename.getOptions().getOverwrite()) {
-								if (oldFile.getParent().equals(newFile.getParent())) {
-									change.add(new RenameResourceChange(oldFile.getFullPath(), newFile.getName()));
-								} else {
-									change.add(new MoveRenameResourceChange(oldFile, newFile.getParent(), newFile.getName()));
-								}
-								return;
+						if (oldFile != null && oldFile.exists() && newFile != null) {
+							final var oldFileParent = oldFile.getParent();
+							final var newFileParent = newFile.getParent();
+							if (oldFileParent != null && newFileParent != null && newFileParent.exists()) {
+   							if (!newFile.exists() || rename.getOptions().getOverwrite()) {
+   								if (Objects.equals(oldFile.getParent(), newFile.getParent())) {
+   									change.add(new RenameResourceChange(oldFile.getFullPath(), newFile.getName()));
+   								} else {
+   									change.add(new MoveRenameResourceChange(oldFile, newFile.getParent(), newFile.getName()));
+   								}
+   								return;
+   							}
 							}
 						}
 

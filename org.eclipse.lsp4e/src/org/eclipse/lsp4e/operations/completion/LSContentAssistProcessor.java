@@ -101,6 +101,9 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	@Override
 	public ICompletionProposal[] computeCompletionProposals(ITextViewer viewer, int offset) {
 		IDocument document = viewer.getDocument();
+		if (document == null) {
+			return new LSCompletionProposal[0];
+		}
 
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
