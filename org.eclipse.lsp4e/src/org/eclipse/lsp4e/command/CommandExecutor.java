@@ -8,8 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.command;
 
-import static org.eclipse.lsp4e.command.LSPCommandHandler.LSP_COMMAND_PARAMETER_ID;
-import static org.eclipse.lsp4e.command.LSPCommandHandler.LSP_PATH_PARAMETER_ID;
+import static org.eclipse.lsp4e.command.LSPCommandHandler.*;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -30,7 +29,6 @@ import org.eclipse.core.commands.common.NotDefinedException;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -63,7 +61,7 @@ public class CommandExecutor {
 	private static final String LSP_COMMAND_PARAMETER_TYPE_ID = "org.eclipse.lsp4e.commandParameterType"; //$NON-NLS-1$
 	private static final String LSP_PATH_PARAMETER_TYPE_ID = "org.eclipse.lsp4e.pathParameterType"; //$NON-NLS-1$
 
-	public static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @NonNull IDocument document) {
+	public static @Nullable CompletableFuture<Object> executeCommandClientSide(Command command, IDocument document) {
 		IPath path = LSPEclipseUtils.toPath(document);
 		if (path == null) {
 			path = ResourcesPlugin.getWorkspace().getRoot().getLocation();
@@ -80,7 +78,7 @@ public class CommandExecutor {
 		return CompletableFuture.completedFuture(null);
 	}
 
-	public static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @NonNull IResource resource) {
+	public static @Nullable CompletableFuture<Object> executeCommandClientSide(Command command, IResource resource) {
 		CompletableFuture<Object> r = executeCommandClientSide(command, resource.getFullPath());
 		if (r != null) {
 			return r;
@@ -93,20 +91,17 @@ public class CommandExecutor {
 	}
 
 	@SuppressWarnings("unused") // ECJ compiler handlerService cannot be null because getService is declared as
-	// <T> T getService(Class<T> api), it infers the input is Class<@NonNull IHandlerService> and the output
-	// @NonNull IHandlerService, as it takes over the @NonNull annotation when inferring the return type, which
+	// <T> T getService(Class<T> api), it infers the input is Class<IHandlerService> and the output
+	// IHandlerService, as it takes over the annotation when inferring the return type, which
 	// is a bug in its implementation
-	private static CompletableFuture<Object> executeCommandClientSide(@NonNull Command command, @Nullable IPath path) {
+	private static @Nullable CompletableFuture<Object> executeCommandClientSide(Command command, @Nullable IPath path) {
 		IWorkbench workbench = PlatformUI.getWorkbench();
-		if (workbench == null) {
-			return null;
-		}
 
 		ParameterizedCommand parameterizedCommand = createEclipseCoreCommand(command, path, workbench);
 		if (parameterizedCommand == null) {
 			return null;
 		}
-		@Nullable
+
 		IHandlerService handlerService = workbench.getService(IHandlerService.class);
 		if (handlerService == null) {
 			return null;
@@ -124,7 +119,7 @@ public class CommandExecutor {
 	}
 
 	// tentative fallback
-	private static CompletableFuture<Object> executeFallbackClientSide(@NonNull Command command, @NonNull URI initialUri) {
+	private static @Nullable CompletableFuture<Object> executeFallbackClientSide(Command command, URI initialUri) {
 		if (command.getArguments() != null) {
 			WorkspaceEdit edit = createWorkspaceEdit(command.getArguments(), initialUri);
 			LSPEclipseUtils.applyWorkspaceEdit(edit, command.getTitle());
@@ -134,13 +129,13 @@ public class CommandExecutor {
 	}
 
 	@SuppressWarnings("unused") // ECJ compiler thinks commandService cannot be null (see above)
-	private static ParameterizedCommand createEclipseCoreCommand(@NonNull Command command, IPath context,
-			@NonNull IWorkbench workbench) {
+	private static @Nullable ParameterizedCommand createEclipseCoreCommand(Command command, @Nullable IPath context,
+			IWorkbench workbench) {
 		// Usually commands are defined via extension point, but we synthesize one on
 		// the fly for the command ID, since we do not want downstream users
 		// having to define them.
 		String commandId = command.getCommand();
-		@Nullable
+
 		ICommandService commandService = workbench.getService(ICommandService.class);
 		if (commandService == null) {
 			return null;
@@ -156,7 +151,7 @@ public class CommandExecutor {
 			coreCommand.define(commandId, null, category, parameters);
 		}
 
-		final var parameters = new HashMap<Object, Object>();
+		final var parameters = new HashMap<Object, @Nullable Object>();
 		parameters.put(LSP_COMMAND_PARAMETER_ID, command);
 		parameters.put(LSP_PATH_PARAMETER_ID, context);
 		ParameterizedCommand parameterizedCommand = ParameterizedCommand.generateCommand(coreCommand, parameters);
@@ -179,7 +174,7 @@ public class CommandExecutor {
 	 * Very empirical and unsafe heuristic to turn unknown command arguments into a
 	 * workspace edit...
 	 */
-	private static WorkspaceEdit createWorkspaceEdit(List<Object> commandArguments, @NonNull URI initialUri) {
+	private static WorkspaceEdit createWorkspaceEdit(List<Object> commandArguments, URI initialUri) {
 		final var workspaceEdit = new WorkspaceEdit();
 		final var changes = new HashMap<String, List<TextEdit>>();
 		workspaceEdit.setChanges(changes);
@@ -195,8 +190,11 @@ public class CommandExecutor {
 				changes.put(currentEntry.key.toString(), currentEntry.value);
 				IResource res = LSPEclipseUtils.findResourceFor(argString);
 				if (res != null) {
-					currentEntry.key = res.getLocationURI();
-					currentEntry.value = new ArrayList<>();
+					final var uri = res.getLocationURI();
+					if (uri != null) {
+						currentEntry.key = uri;
+						currentEntry.value = new ArrayList<>();
+					}
 				}
 			} else if (arg instanceof WorkspaceEdit wsEdit) {
 				changes.putAll(wsEdit.getChanges());
@@ -213,8 +211,11 @@ public class CommandExecutor {
 					changes.put(currentEntry.key.toString(), currentEntry.value);
 					IResource res = LSPEclipseUtils.findResourceFor(json.getAsString());
 					if (res != null) {
-						currentEntry.key = res.getLocationURI();
-						currentEntry.value = new ArrayList<>();
+						final var uri = res.getLocationURI();
+						if (uri != null) {
+							currentEntry.key = uri;
+							currentEntry.value = new ArrayList<>();
+						}
 					}
 				}
 			} else if (arg instanceof JsonArray jsonArray) {

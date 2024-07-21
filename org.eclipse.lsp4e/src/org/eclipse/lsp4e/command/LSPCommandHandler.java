@@ -16,7 +16,7 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.IHandler;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.ui.handlers.IHandlerService;
 
@@ -50,7 +50,7 @@ public abstract class LSPCommandHandler extends AbstractHandler {
 	public static final String LSP_PATH_PARAMETER_ID = "org.eclipse.lsp4e.path.param"; //$NON-NLS-1$
 
 	@Override
-	public final Object execute(ExecutionEvent event) throws ExecutionException {
+	public final @Nullable Object execute(ExecutionEvent event) throws ExecutionException {
 		final var command = (Command) event.getObjectParameterForExecution(LSP_COMMAND_PARAMETER_ID);
 		if (command == null) {
 			return null;
@@ -78,6 +78,6 @@ public abstract class LSPCommandHandler extends AbstractHandler {
 	 * @throws ExecutionException
 	 *             if an exception occurred during execution.
 	 */
-	public abstract Object execute(ExecutionEvent event, @NonNull Command command, IPath path)
+	public abstract @Nullable Object execute(ExecutionEvent event, Command command, IPath path)
 			throws ExecutionException;
 }
