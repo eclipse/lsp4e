@@ -25,7 +25,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -56,29 +55,28 @@ import org.eclipse.ltk.core.refactoring.participants.SharableParticipants;
 
 /**
  * LTK {@link RefactoringProcessor} implementation to refactoring LSP symbols.
- *
  */
 public class LSPRenameProcessor extends RefactoringProcessor {
 
 	private static final String ID = "org.eclipse.lsp4e.operations.rename"; //$NON-NLS-1$
 
-	private final @NonNull IDocument document;
+	private final IDocument document;
 	private final int offset;
 
-	private LanguageServerWrapper refactoringServer;
+	private @Nullable LanguageServerWrapper refactoringServer;
 
-	private String newName;
+	private @Nullable String newName;
 
-	private WorkspaceEdit rename;
-	private Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior> prepareRenameResult;
+	private @Nullable WorkspaceEdit rename;
+	private @Nullable Either3<Range, PrepareRenameResult, PrepareRenameDefaultBehavior> prepareRenameResult;
 
-	public LSPRenameProcessor(@NonNull IDocument document, int offset) {
+	public LSPRenameProcessor(IDocument document, int offset) {
 		this.document = document;
 		this.offset = offset;
 	}
 
 	@Override
-	public Object[] getElements() {
+	public Object @Nullable [] getElements() {
 		return null;
 	}
 
@@ -127,7 +125,9 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 				});
 			}
 		} catch (TimeoutException e) {
-			LanguageServerPlugin.logWarning("Could not prepare rename due to timeout after 1 seconds in `textDocument/prepareRename`. 'newName' will be used", e); //$NON-NLS-1$
+			LanguageServerPlugin.logWarning(
+					"Could not prepare rename due to timeout after 1 seconds in `textDocument/prepareRename`. 'newName' will be used", //$NON-NLS-1$
+					e);
 		} catch (Exception e) {
 			status.addFatalError(getErrorMessage(e));
 		}
@@ -135,7 +135,8 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	}
 
 	public String getPlaceholder() {
-		@Nullable String placeholder = null;
+		@Nullable
+		String placeholder = null;
 		if (prepareRenameResult != null) {
 			placeholder = prepareRenameResult.map(range -> {
 				try {
@@ -146,13 +147,12 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 					LanguageServerPlugin.logError(e);
 					return null;
 				}
-			}, PrepareRenameResult::getPlaceholder,
-			options -> null);
+			}, PrepareRenameResult::getPlaceholder, options -> null);
 		}
-		return placeholder != null && !placeholder.isBlank() ? placeholder :"newName"; //$NON-NLS-1$
+		return placeholder != null && !placeholder.isBlank() ? placeholder : "newName"; //$NON-NLS-1$
 	}
 
-	public static boolean isPrepareRenameProvider(ServerCapabilities serverCapabilities) {
+	public static boolean isPrepareRenameProvider(@Nullable ServerCapabilities serverCapabilities) {
 		if (serverCapabilities == null) {
 			return false;
 		}
@@ -162,7 +162,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 		}
 
 		if (renameProvider.isRight()) {
-			return renameProvider.getRight() != null && renameProvider.getRight().getPrepareProvider();
+			return renameProvider.getRight().getPrepareProvider();
 		}
 		return false;
 	}
@@ -171,6 +171,10 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	public RefactoringStatus checkFinalConditions(IProgressMonitor pm, CheckConditionsContext context)
 			throws CoreException, OperationCanceledException {
 		final var status = new RefactoringStatus();
+		final var newName = this.newName;
+		if (newName == null) {
+			return status;
+		}
 		try {
 			final var params = new RenameParams();
 			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
@@ -178,19 +182,23 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 			identifier.setUri(LSPEclipseUtils.toUri(document).toString());
 			params.setTextDocument(identifier);
 			params.setNewName(newName);
-			if (params.getNewName() != null && refactoringServer != null) {
-				// TODO: how to manage ltk with CompletableFuture? Is 1000 ms is enough?
-				if (refactoringServer != null) {
-					rename = refactoringServer.execute(ls -> ls.getTextDocumentService().rename(params)).get(1000, TimeUnit.MILLISECONDS);
-				} else {
-					// Prepare timed out so we don't have a preferred server, so just try all the servers again
-					rename = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getRenameProvider)
-							.computeFirst(ls -> ls.getTextDocumentService().rename(params)).get(1000, TimeUnit.MILLISECONDS).orElse(null);
-				}
-				if (!status.hasError() && (rename == null
-						|| (rename.getChanges().isEmpty() && rename.getDocumentChanges().isEmpty()))) {
-					status.addWarning(Messages.rename_empty_message);
-				}
+
+			// TODO: how to manage ltk with CompletableFuture? Is 1000 ms is enough?
+			final var refactoringServer = this.refactoringServer;
+			final WorkspaceEdit rename;
+			if (refactoringServer != null) {
+				rename = this.rename = refactoringServer.execute(ls -> ls.getTextDocumentService().rename(params))
+						.get(1000, TimeUnit.MILLISECONDS);
+			} else {
+				// Prepare timed out so we don't have a preferred server, so just try all the servers again
+				rename = this.rename = LanguageServers.forDocument(document)
+						.withCapability(ServerCapabilities::getRenameProvider)
+						.computeFirst(ls -> ls.getTextDocumentService().rename(params)).get(1000, TimeUnit.MILLISECONDS)
+						.orElse(null);
+			}
+			if (!status.hasError()
+					&& (rename == null || (rename.getChanges().isEmpty() && rename.getDocumentChanges().isEmpty()))) {
+				status.addWarning(Messages.rename_empty_message);
 			}
 		} catch (Exception e) {
 			status.addFatalError(getErrorMessage(e));
@@ -201,10 +209,10 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	private String getErrorMessage(Throwable e) {
 		if (e.getCause() instanceof ResponseErrorException responseErrorException) {
 			ResponseError responseError = responseErrorException.getResponseError();
-			return responseError.getMessage()
-					+ ((responseError.getData() instanceof String data) ? (": " + data) : ""); //$NON-NLS-1$ //$NON-NLS-2$
+			return responseError.getMessage() + ((responseError.getData() instanceof String data) ? (": " + data) : ""); //$NON-NLS-1$ //$NON-NLS-2$
 		} else {
-			return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+			final var msg = e.getMessage();
+			return msg != null ? msg : e.getClass().getSimpleName();
 		}
 	}
 
@@ -218,8 +226,8 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	}
 
 	@Override
-	public RefactoringParticipant[] loadParticipants(RefactoringStatus status, SharableParticipants sharedParticipants)
-			throws CoreException {
+	public RefactoringParticipant @Nullable [] loadParticipants(RefactoringStatus status,
+			SharableParticipants sharedParticipants) throws CoreException {
 		return null;
 	}
 

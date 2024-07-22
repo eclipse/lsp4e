@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.linkedediting;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,7 +21,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -53,14 +55,14 @@ import org.eclipse.ui.texteditor.link.EditorLinkedModeUI;
 
 public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextViewerLifecycle {
-	private ISourceViewer sourceViewer;
-	private IDocument fDocument;
-	private EditorSelectionChangedListener editorSelectionChangedListener;
-	private Job highlightJob;
-	private LinkedModeModel linkedModel;
+	private @Nullable ISourceViewer sourceViewer;
+	private @Nullable IDocument document;
+	private @Nullable EditorSelectionChangedListener editorSelectionChangedListener;
+	private @Nullable Job highlightJob;
+	private @Nullable LinkedModeModel linkedModel;
 
-	class EditorSelectionChangedListener implements ISelectionChangedListener {
-		public void install(ISelectionProvider selectionProvider) {
+	private final class EditorSelectionChangedListener implements ISelectionChangedListener {
+		public void install(@Nullable ISelectionProvider selectionProvider) {
 			if (selectionProvider == null)
 				return;
 
@@ -71,7 +73,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 			}
 		}
 
-		public void uninstall(ISelectionProvider selectionProvider) {
+		public void uninstall(@Nullable ISelectionProvider selectionProvider) {
 			if (selectionProvider == null)
 				return;
 
@@ -94,13 +96,13 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 			super.install();
 			this.sourceViewer = thisViewer;
 			editorSelectionChangedListener = new EditorSelectionChangedListener();
-			editorSelectionChangedListener.install(sourceViewer.getSelectionProvider());
+			editorSelectionChangedListener.install(thisViewer.getSelectionProvider());
 		}
 	}
 
 	@Override
 	public void uninstall() {
-		if (sourceViewer != null) {
+		if (sourceViewer != null && editorSelectionChangedListener != null) {
 			editorSelectionChangedListener.uninstall(sourceViewer.getSelectionProvider());
 		}
 		super.uninstall();
@@ -119,11 +121,12 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 	}
 
 	@Override
-	public void setProgressMonitor(IProgressMonitor monitor) {
+	public void setProgressMonitor(@Nullable IProgressMonitor monitor) {
 	}
 
 	@Override
 	public void initialReconcile() {
+		final var sourceViewer = this.sourceViewer;
 		if (sourceViewer != null) {
 			ISelectionProvider selectionProvider = sourceViewer.getSelectionProvider();
 			final StyledText textWidget = sourceViewer.getTextWidget();
@@ -138,8 +141,8 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 	}
 
 	@Override
-	public void setDocument(IDocument document) {
-		this.fDocument = document;
+	public void setDocument(@Nullable IDocument document) {
+		this.document = document;
 	}
 
 	@Override
@@ -157,13 +160,14 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 	}
 
 	private void updateLinkedEditing(int offset) {
-		if (sourceViewer != null && fDocument != null && fEnabled && linkedModel == null
-				|| !linkedModel.anyPositionContains(offset)) {
+		final var linkedModel = this.linkedModel;
+		if (sourceViewer != null && document != null && fEnabled && (linkedModel == null
+				|| !linkedModel.anyPositionContains(offset))) {
 			if (linkedModel != null) {
 				linkedModel.exit(ILinkedModeListener.EXIT_ALL);
-				linkedModel = null;
+				this.linkedModel = null;
 			}
-			collectLinkedEditingRanges(fDocument, offset).thenAcceptAsync(optional -> {
+			collectLinkedEditingRanges(document, offset).thenAcceptAsync(optional -> {
 				optional.ifPresent(this::applyLinkedEdit);
 			}).exceptionally(e -> {
 				if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
@@ -174,7 +178,7 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 		}
 	}
 
-	private void applyLinkedEdit(LinkedEditingRanges ranges) {
+	private void applyLinkedEdit(@Nullable LinkedEditingRanges ranges) {
 		if (highlightJob != null) {
 			highlightJob.cancel();
 		}
@@ -185,11 +189,12 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 		highlightJob = new UIJob("LSP4E Linked Editing") { //$NON-NLS-1$
 			@Override
 			public IStatus runInUIThread(IProgressMonitor monitor) {
-				linkedModel = new LinkedModeModel();
+				final var linkedModel = LSPLinkedEditingReconcilingStrategy.this.linkedModel = new LinkedModeModel();
 				try {
 					linkedModel.addGroup(toJFaceGroup(ranges));
 					linkedModel.forceInstall();
-					ITextSelection selectionBefore = (ITextSelection)sourceViewer.getSelectionProvider().getSelection();
+					final var sourceViewer = castNonNull(LSPLinkedEditingReconcilingStrategy.this.sourceViewer);
+					ITextSelection selectionBefore = (ITextSelection) sourceViewer.getSelectionProvider().getSelection();
 					LinkedModeUI linkedMode = new EditorLinkedModeUI(linkedModel, sourceViewer);
 					linkedMode.setExitPolicy((model, event, offset, length) -> {
 						if (event.character == 0 || event.character == '\b') {
@@ -220,12 +225,12 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 		highlightJob.schedule();
 	}
 
-	String getValueInRange(IRegion selectedRegion, VerifyEvent event, int offset, int length) {
+	private @Nullable String getValueInRange(IRegion selectedRegion, VerifyEvent event, int offset, int length) {
 		if (offset < selectedRegion.getOffset() || offset > selectedRegion.getOffset() + selectedRegion.getLength()) {
 			return null;
 		}
 		try {
-			final var sb = new StringBuilder(fDocument.get(selectedRegion.getOffset(), selectedRegion.getLength())); 	// The range text before the insertion
+			final var sb = new StringBuilder(castNonNull(document).get(selectedRegion.getOffset(), selectedRegion.getLength())); // The range text before the insertion
 			String newChars = event.character == 0 ? "" : Character.toString(event.character); //$NON-NLS-1$
 			sb.replace(offset - selectedRegion.getOffset(), offset - selectedRegion.getOffset() + selectedRegion.getLength(), newChars);
 			return sb.toString();
@@ -235,12 +240,13 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 		return null;
 	}
 
-	private LinkedPositionGroup toJFaceGroup(@NonNull LinkedEditingRanges ranges) throws BadLocationException {
+	private LinkedPositionGroup toJFaceGroup(LinkedEditingRanges ranges) throws BadLocationException {
+		final var document = castNonNull(this.document);
 		final var res = new LinkedPositionGroup();
 		for (Range range : ranges.getRanges()) {
-			int startOffset = LSPEclipseUtils.toOffset(range.getStart(), fDocument);
-			int length = LSPEclipseUtils.toOffset(range.getEnd(), fDocument) - startOffset;
-			res.addPosition(new LinkedPosition(fDocument, startOffset, length));
+			int startOffset = LSPEclipseUtils.toOffset(range.getStart(), document);
+			int length = LSPEclipseUtils.toOffset(range.getEnd(), document) - startOffset;
+			res.addPosition(new LinkedPosition(document, startOffset, length));
 		}
 		return res;
 	}

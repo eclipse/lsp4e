@@ -29,6 +29,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.AbstractInformationControlManager;
 import org.eclipse.jface.text.ITextHover;
@@ -200,7 +201,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		}
 	}
 
-	static boolean providesCodeActions(final ServerCapabilities capabilities) {
+	static boolean providesCodeActions(final @Nullable ServerCapabilities capabilities) {
 		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getCodeActionProvider());
 	}
 
@@ -219,7 +220,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		return false;
 	}
 
-	static boolean canPerform(Either<Command, CodeAction> command) {
+	static boolean canPerform(@Nullable Either<Command, CodeAction> command) {
 		if (command == null) {
 			return false;
 		}
@@ -241,7 +242,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					TextDocumentEdit textedit = change.getLeft();
 					VersionedTextDocumentIdentifier id = textedit.getTextDocument();
 					URI uri = URI.create(id.getUri());
-					if (uri != null && LSPEclipseUtils.isReadOnly(uri)) {
+					if (LSPEclipseUtils.isReadOnly(uri)) {
 						return false;
 					}
 				}
@@ -251,7 +252,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 			if (changes != null) {
 				for (java.util.Map.Entry<String, List<TextEdit>> textEdit : changes.entrySet()) {
 					URI uri = URI.create(textEdit.getKey());
-					if (uri != null && LSPEclipseUtils.isReadOnly(uri)) {
+					if (LSPEclipseUtils.isReadOnly(uri)) {
 						return false;
 					}
 				}

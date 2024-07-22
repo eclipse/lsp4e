@@ -11,6 +11,8 @@
  */
 package org.eclipse.lsp4e.operations.rename;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.ltk.core.refactoring.Refactoring;
@@ -37,18 +39,19 @@ public class LSPRenameRefactoringWizard extends RefactoringWizard {
 
 	@Override
 	protected void addUserInputPages() {
-		@SuppressWarnings("null")
 		LSPRenameProcessor processor = this.getRefactoring().getAdapter(LSPRenameProcessor.class);
-		this.addPage(new RenameInputWizardPage(processor));
+		if(processor != null) {
+			this.addPage(new RenameInputWizardPage(processor));
+		}
 	}
 
 	/**
 	 * Rename input wizard page.
 	 *
 	 */
-	class RenameInputWizardPage extends UserInputWizardPage {
+	static final class RenameInputWizardPage extends UserInputWizardPage {
 
-		private Text nameText;
+		private Text nameText = lateNonNull();
 
 		private final LSPRenameProcessor processor;
 

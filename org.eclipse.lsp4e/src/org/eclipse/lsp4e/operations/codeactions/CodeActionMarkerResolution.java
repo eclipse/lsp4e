@@ -20,6 +20,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
@@ -53,7 +54,7 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 	}
 
 	@Override
-	public Image getImage() {
+	public @Nullable Image getImage() {
 		return null;
 	}
 
@@ -127,9 +128,6 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 
 	@Override
 	public IMarker[] findOtherMarkers(IMarker[] markers) {
-		if (markers == null) {
-			return new IMarker[0];
-		}
 		return Arrays.stream(markers).filter(marker -> {
 			try {
 				return codeAction.getDiagnostics()

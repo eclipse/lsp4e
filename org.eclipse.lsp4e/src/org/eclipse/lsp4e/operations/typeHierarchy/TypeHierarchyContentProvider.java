@@ -8,10 +8,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
@@ -32,7 +35,7 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 	private final LanguageServerDefinition lsDefinition;
 	private final IDocument document;
 	private boolean showSuperTypes;
-	private LanguageServerWrapper wrapper;
+	private LanguageServerWrapper wrapper = lateNonNull();
 
 	public TypeHierarchyContentProvider(LanguageServerDefinition lsDefinition, IDocument document, boolean showSuperTypes) {
 		this.lsDefinition = lsDefinition;
@@ -41,7 +44,7 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 	}
 
 	@Override
-	public Object[] getElements(Object inputElement) {
+	public Object[] getElements(@Nullable Object inputElement) {
 		if (inputElement instanceof ITextSelection textSelection) {
 			try {
 				Position position = LSPEclipseUtils.toPosition(textSelection.getOffset(), document);
@@ -80,7 +83,7 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 	}
 
 	@Override
-	public Object getParent(Object element) {
+	public @Nullable Object getParent(Object element) {
 		return null;
 	}
 

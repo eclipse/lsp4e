@@ -17,7 +17,6 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -38,7 +37,7 @@ import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 public class LSPFormatter {
-	public CompletableFuture<Optional<VersionedEdits>> requestFormatting(@NonNull IDocument document, @NonNull ITextSelection textSelection) throws BadLocationException {
+	public CompletableFuture<Optional<VersionedEdits>> requestFormatting(IDocument document, ITextSelection textSelection) throws BadLocationException {
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
 			return CompletableFuture.completedFuture(Optional.empty());

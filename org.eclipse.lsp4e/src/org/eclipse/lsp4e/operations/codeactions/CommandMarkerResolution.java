@@ -14,7 +14,7 @@ package org.eclipse.lsp4e.operations.codeactions;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
@@ -30,9 +30,9 @@ import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
 
 public class CommandMarkerResolution extends WorkbenchMarkerResolution implements IMarkerResolution {
 
-	private final @NonNull Command command;
+	private final Command command;
 
-	public CommandMarkerResolution(@NonNull Command command) {
+	public CommandMarkerResolution(Command command) {
 		this.command = command;
 	}
 
@@ -57,14 +57,12 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 		}
 
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
-		if (wrapper != null) {
-			ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
-			if (provider != null && provider.getCommands().contains(command.getCommand())) {
-				wrapper.execute(ls -> ls.getWorkspaceService()
-						.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
-			} else {
-				CommandExecutor.executeCommandClientSide(command, resource);
-			}
+		ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
+		if (provider != null && provider.getCommands().contains(command.getCommand())) {
+			wrapper.execute(ls -> ls.getWorkspaceService()
+					.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
+		} else {
+			CommandExecutor.executeCommandClientSide(command, resource);
 		}
 	}
 
@@ -74,7 +72,7 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 	}
 
 	@Override
-	public Image getImage() {
+	public @Nullable Image getImage() {
 		return null;
 	}
 

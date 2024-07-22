@@ -14,7 +14,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.references;
 
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -29,7 +28,7 @@ import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -54,10 +53,10 @@ import org.eclipse.search.ui.text.Match;
  */
 public class LSSearchQuery extends FileSearchQuery {
 
-	private final @NonNull IDocument document;
+	private final IDocument document;
 	private final int offset;
 
-	private LSSearchResult result;
+	private @Nullable LSSearchResult result;
 
 	/**
 	 * LSP search query to "Find references" from the given offset of the given
@@ -66,14 +65,14 @@ public class LSSearchQuery extends FileSearchQuery {
 	 * @param offset
 	 * @param document
 	 */
-	public LSSearchQuery(int offset, @NonNull IDocument document) {
+	public LSSearchQuery(int offset, IDocument document) {
 		super("", false, false, true, true, null); //$NON-NLS-1$
 		this.document = document;
 		this.offset = offset;
 	}
 
 	@Override
-	public IStatus run(IProgressMonitor monitor) throws OperationCanceledException {
+	public IStatus run(@Nullable IProgressMonitor monitor) throws OperationCanceledException {
 		getSearchResult().removeAll();
 
 		try {
@@ -83,11 +82,12 @@ public class LSSearchQuery extends FileSearchQuery {
 			params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(document));
 			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
 
-			@NonNull List<@NonNull CompletableFuture<List<? extends Location>>> requests = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getReferencesProvider)
+			List<CompletableFuture<@Nullable List<? extends Location>>> requests = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getReferencesProvider)
 				.computeAll(languageServer -> languageServer.getTextDocumentService().references(params));
 			CompletableFuture<?>[] populateUIFutures = requests.stream().map(request ->
 				request.thenAcceptAsync(locations -> {
-						if (locations != null) {
+						final var result = this.result;
+						if (locations != null && result != null) {
 							// Convert each LSP Location to a Match search.
 							locations.stream() //
 								.filter(Objects::nonNull) //
@@ -111,7 +111,7 @@ public class LSSearchQuery extends FileSearchQuery {
 	 *            the LSP location to convert.
 	 * @return the converted Eclipse search {@link Match}.
 	 */
-	private static Match toMatch(@NonNull Location location) {
+	private static @Nullable Match toMatch(Location location) {
 		IResource resource = LSPEclipseUtils.findResourceFor(location.getUri());
 		if (resource != null) {
 			IDocument document = LSPEclipseUtils.getExistingDocument(resource);
@@ -149,7 +149,7 @@ public class LSSearchQuery extends FileSearchQuery {
 		}
 		try {
 			return URIMatch.create(location);
-		} catch (BadLocationException | URISyntaxException ex) {
+		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 			return null;
 		}
@@ -157,8 +157,9 @@ public class LSSearchQuery extends FileSearchQuery {
 
 	@Override
 	public LSSearchResult getSearchResult() {
+		var result = this.result;
 		if (result == null) {
-			result = new LSSearchResult(this);
+			result = this.result = new LSSearchResult(this);
 		}
 		return result;
 	}

@@ -22,6 +22,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -44,7 +46,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector {
 
 	@Override
-	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
+	public IHyperlink @Nullable [] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
 		final IDocument document = textViewer.getDocument();
 		if (document == null) {
 			return null;
@@ -97,7 +99,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 	 *            the LSP locations
 	 */
 	private static Collection<LSBasedHyperlink> toHyperlinks(IDocument document, IRegion region,
-			String locationType, Either<List<? extends Location>, List<? extends LocationLink>> locations) {
+			String locationType, @NonNullByDefault({}) Either<List<? extends Location>, List<? extends LocationLink>> locations) {
 		if (locations == null) {
 			return Collections.emptyList();
 		}

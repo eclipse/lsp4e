@@ -22,7 +22,6 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -46,11 +45,11 @@ public class LSBasedHyperlink implements IHyperlink {
 		this.locationType = locationType;
 	}
 
-	public LSBasedHyperlink(@NonNull Location location, IRegion linkRegion, String locationType) {
+	public LSBasedHyperlink(Location location, IRegion linkRegion, String locationType) {
 		this(Either.forLeft(location), linkRegion, locationType);
 	}
 
-	public LSBasedHyperlink(@NonNull LocationLink locationLink, IRegion linkRegion, String locationType) {
+	public LSBasedHyperlink(LocationLink locationLink, IRegion linkRegion, String locationType) {
 		this(Either.forRight(locationLink), linkRegion, locationType);
 	}
 
@@ -70,8 +69,6 @@ public class LSBasedHyperlink implements IHyperlink {
 	}
 
 	/**
-	 *
-	 * @return
 	 * @noreference test only
 	 */
 	public Either<Location, LocationLink> getLocation() {
@@ -88,17 +85,15 @@ public class LSBasedHyperlink implements IHyperlink {
 	}
 
 	private String getLabel() {
-		if (this.location != null) {
-			String uri = this.location.isLeft() ? this.location.getLeft().getUri() : this.location.getRight().getTargetUri();
-			if (uri != null) {
-				if (uri.startsWith(LSPEclipseUtils.FILE_URI) && uri.length() > LSPEclipseUtils.FILE_URI.length()) {
-					return getFileBasedLabel(uri);
-				}
-				else if (uri.startsWith(LSPEclipseUtils.INTRO_URL)) {
-					return getIntroUrlBasedLabel(uri);
-				}
-				return getGenericUriBasedLabel(uri);
+		String uri = this.location.isLeft() ? this.location.getLeft().getUri() : this.location.getRight().getTargetUri();
+		if (uri != null) {
+			if (uri.startsWith(LSPEclipseUtils.FILE_URI) && uri.length() > LSPEclipseUtils.FILE_URI.length()) {
+				return getFileBasedLabel(uri);
 			}
+			else if (uri.startsWith(LSPEclipseUtils.INTRO_URL)) {
+				return getIntroUrlBasedLabel(uri);
+			}
+			return getGenericUriBasedLabel(uri);
 		}
 
 		return locationType;
@@ -113,8 +108,7 @@ public class LSBasedHyperlink implements IHyperlink {
 					return locationType + DASH_SEPARATOR + label;
 				}
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			LanguageServerPlugin.logError(e.getMessage(), e);
 		}
 
@@ -129,7 +123,7 @@ public class LSBasedHyperlink implements IHyperlink {
 		URI uri = URI.create(uriStr);
 		IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace().getRoot();
 		IFile[] files = workspaceRoot.findFilesForLocationURI(uri);
-		if (files != null && files.length == 1 && files[0].getProject() != null) {
+		if (files.length == 1 && files[0].getProject() != null) {
 			IFile file = files[0];
 			IPath containerPath = file.getParent().getProjectRelativePath();
 			return locationType + DASH_SEPARATOR + file.getName() + DASH_SEPARATOR + file.getProject().getName()

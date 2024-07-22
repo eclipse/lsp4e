@@ -15,7 +15,6 @@ import java.net.URL;
 
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.resource.ColorRegistry;
@@ -70,7 +69,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 		super(parent, JFaceResources.DEFAULT_FONT, EditorsUI.getTooltipAffordanceString());
 	}
 
-	private double adjust(double height, Object margin) {
+	private double adjust(double height, @Nullable Object margin) {
 		if (margin instanceof String marginString && marginString.endsWith("px")) { //$NON-NLS-1$
 			try {
 				height += Integer.parseInt(marginString.substring(0, marginString.length() - 2));
@@ -124,7 +123,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 		b.setJavascriptEnabled(true);
 	}
 
-	private static Object safeEvaluate(Browser browser, String expression) {
+	private static @Nullable Object safeEvaluate(Browser browser, String expression) {
 		try {
 			return browser.evaluate(expression);
 		} catch (Exception ex) {
@@ -143,7 +142,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 	}
 
 	@Override
-	public void setInput(Object input) {
+	public void setInput(@Nullable Object input) {
 		if (input instanceof String html) {
 			input = styleHtml(html);
 		}
@@ -151,7 +150,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 	}
 
 	public String styleHtml(String html) {
-		if (html == null || html.isEmpty()) {
+		if (html.isEmpty()) {
 			return html;
 		}
 
@@ -199,7 +198,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 		return (color.red * 0.299 + color.green * 0.587+ color.blue *0.114) < 128; //turn to grey and check the level
 	}
 
-	private static @NonNull CharSequence toHTMLrgb(RGB rgb) {
+	private static CharSequence toHTMLrgb(RGB rgb) {
 		final var builder = new StringBuilder(7);
 		builder.append('#');
 		appendAsHexString(builder, rgb.red);

@@ -17,7 +17,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -49,13 +48,13 @@ import org.eclipse.swt.widgets.Display;
 public class LSPLineContentCodeMining extends LineContentCodeMining {
 
 	private InlayHint inlayHint;
-	private final @NonNull LanguageServerWrapper wrapper;
-	private final @NonNull IDocument document;
+	private final LanguageServerWrapper wrapper;
+	private final IDocument document;
 
-	private Point location;
-	private FontData[] fontData;
+	private @Nullable Point location;
+	private FontData @Nullable [] fontData;
 
-	public LSPLineContentCodeMining(@NonNull InlayHint inlayHint, @NonNull IDocument document, @NonNull LanguageServerWrapper languageServerWrapper,
+	public LSPLineContentCodeMining(InlayHint inlayHint, IDocument document, LanguageServerWrapper languageServerWrapper,
 			InlayHintProvider provider) throws BadLocationException {
 		super(toPosition(inlayHint.getPosition(), document), provider);
 		this.inlayHint = inlayHint;
@@ -65,15 +64,15 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 	}
 
 	@Override
-	public void setLabel(final String label) {
+	public void setLabel(final @Nullable String label) {
 		if (label == null || label.isEmpty() || Character.isWhitespace(label.charAt(label.length() - 1)))
 			super.setLabel(label);
 		else
 			super.setLabel(label + " "); //$NON-NLS-1$
 	}
 
-	protected static @Nullable String getInlayHintString(@NonNull InlayHint inlayHint) {
-		Either<String, List<InlayHintLabelPart>> label = inlayHint.getLabel();
+	protected static @Nullable String getInlayHintString(InlayHint inlayHint) {
+		Either<String, @Nullable List<InlayHintLabelPart>> label = inlayHint.getLabel();
 		return label.map(Function.identity(), (parts) -> {
 			if (parts == null) {
 				return null;
@@ -122,11 +121,11 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 	}
 
 	@Override
-	public final Consumer<MouseEvent> getAction() {
-		return inlayHint.getLabel().map(l -> null, r -> labelPartAction(r));
+	public final @Nullable Consumer<MouseEvent> getAction() {
+		return inlayHint.getLabel().map(l -> null, this::labelPartAction);
 	}
 
-	private Consumer<MouseEvent> labelPartAction(List<InlayHintLabelPart> labelParts) {
+	private @Nullable Consumer<MouseEvent> labelPartAction(List<InlayHintLabelPart> labelParts) {
 		String title = getLabel();
 		if (title != null && !title.isEmpty() && labelParts.stream().map(InlayHintLabelPart::getCommand).anyMatch(Objects::nonNull)) {
 			return me -> {
@@ -154,6 +153,7 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 		if (labelParts.size() == 1) {
 			return Optional.of(labelParts.get(0));
 		}
+		final var location = this.location;
 		if (location != null && fontData != null) {
 			Point relativeLocation = new Point(me.x - location.x, me.y - location.y);
 			Display display = Display.getCurrent();

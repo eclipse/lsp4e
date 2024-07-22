@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -58,12 +59,9 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 
 		private static final String KEY = SelectionRangeHandler.class.getName();
 
-		private SelectionRange root;
-
-		private SelectionRange previous;
-
+		private @Nullable SelectionRange root;
+		private @Nullable SelectionRange previous;
 		private final StyledText styledText;
-
 		private boolean updating;
 
 		public void setRoot(SelectionRange root) {
@@ -90,10 +88,11 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 			});
 		}
 
-		public SelectionRange getSelectionRange(Direction direction) {
+		public @Nullable SelectionRange getSelectionRange(Direction direction) {
+			var previous = this.previous;
 			if (direction == Direction.UP) {
 				if (previous != null) {
-					previous = previous.getParent();
+					previous = this.previous = previous.getParent();
 					return previous;
 				}
 			} else {
@@ -102,7 +101,7 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 					while (selectionRange != null) {
 						SelectionRange parent = selectionRange.getParent();
 						if (previous.equals(parent)) {
-							previous = selectionRange;
+							previous = this.previous = selectionRange;
 							return previous;
 						}
 						selectionRange = parent;
@@ -203,7 +202,7 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 	 * @return the selection range hierarchy of the given document at the given
 	 *         offset.
 	 */
-	private CompletableFuture<Optional<List<SelectionRange>>> collectSelectionRanges(IDocument document, int offset) {
+	private CompletableFuture<Optional<List<SelectionRange>>> collectSelectionRanges(@Nullable IDocument document, int offset) {
 		if (document == null) {
 			return CompletableFuture.completedFuture(null);
 		}
@@ -222,7 +221,7 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
+	public void setEnabled(@Nullable Object evaluationContext) {
 		setEnabled(ServerCapabilities::getSelectionRangeProvider, x -> true);
 	}
 

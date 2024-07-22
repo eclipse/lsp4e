@@ -11,6 +11,7 @@ package org.eclipse.lsp4e.operations.typeHierarchy;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -31,7 +32,7 @@ public class TypeHierarchyHandler extends LSPDocumentAbstractHandler {
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
+	public void setEnabled(@Nullable Object evaluationContext) {
 		setEnabled(ServerCapabilities::getTypeDefinitionProvider, editor -> true);
 	}
 

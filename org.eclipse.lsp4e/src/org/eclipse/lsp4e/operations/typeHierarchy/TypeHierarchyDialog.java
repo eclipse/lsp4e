@@ -9,7 +9,6 @@
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.PopupDialog;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -42,10 +41,10 @@ public class TypeHierarchyDialog extends PopupDialog {
 	private static boolean showSuperTypes = true;
 
 	private final LanguageServerDefinition lsDefinition;
-	private final @NonNull IDocument document;
+	private final IDocument document;
 	private final ITextSelection textSelection;
 
-	public TypeHierarchyDialog(@NonNull Shell parentShell, ITextSelection textSelection, @NonNull IDocument document, @NonNull LanguageServerDefinition ls) {
+	public TypeHierarchyDialog(Shell parentShell, ITextSelection textSelection, IDocument document, LanguageServerDefinition ls) {
 		super(parentShell, PopupDialog.INFOPOPUPRESIZE_SHELLSTYLE, true, true, true, false, false, null, null);
 		this.lsDefinition = ls;
 		this.document = document;
@@ -124,5 +123,3 @@ public class TypeHierarchyDialog extends PopupDialog {
 		shell.setSize(280, 300);
 	}
 }
-
-

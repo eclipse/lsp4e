@@ -15,6 +15,7 @@ package org.eclipse.lsp4e.operations.references;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.IHandler;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
@@ -49,7 +50,7 @@ public class LSFindReferences extends LSPDocumentAbstractHandler implements IHan
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
+	public void setEnabled(@Nullable Object evaluationContext) {
 		setEnabled(ServerCapabilities::getReferencesProvider, this::hasSelection);
 	}
 

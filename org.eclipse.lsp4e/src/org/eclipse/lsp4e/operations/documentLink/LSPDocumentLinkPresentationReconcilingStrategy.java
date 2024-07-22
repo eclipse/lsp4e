@@ -44,11 +44,11 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextViewerLifecycle {
 
 	/** The target viewer. */
-	private ITextViewer viewer;
+	private @Nullable ITextViewer viewer;
 
-	private CompletableFuture<Void> request;
+	private @Nullable CompletableFuture<Void> request;
 
-	private IDocument document;
+	private @Nullable IDocument document;
 
 	@Override
 	public void install(@Nullable ITextViewer viewer) {
@@ -87,8 +87,9 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 		}
 	}
 
-	private void underline(List<DocumentLink> links) {
-		if (document == null || links == null) {
+	private void underline(@Nullable List<DocumentLink> links) {
+		final var viewer = this.viewer;
+		if (document == null || links == null || viewer == null) {
 			return;
 		}
 		for (DocumentLink link : links) {
@@ -147,12 +148,12 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 	}
 
 	@Override
-	public void setDocument(IDocument document) {
+	public void setDocument(@Nullable IDocument document) {
 		this.document = document;
 	}
 
 	@Override
-	public void setProgressMonitor(IProgressMonitor monitor) {
+	public void setProgressMonitor(@Nullable IProgressMonitor monitor) {
 		// Do nothing
 	}
 

@@ -13,7 +13,6 @@ package org.eclipse.lsp4e.operations.color;
 
 import java.util.function.Consumer;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.Position;
@@ -102,7 +101,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 		}
 	}
 
-	public ColorInformationMining(ColorInformation colorInformation, @NonNull IDocument document,
+	public ColorInformationMining(ColorInformation colorInformation, IDocument document,
 			TextDocumentIdentifier textDocumentIdentifier, LanguageServerWrapper languageServerWrapper,
 			DocumentColorProvider colorProvider) throws BadLocationException {
 		super(toPosition(colorInformation.getRange(), document), colorProvider,

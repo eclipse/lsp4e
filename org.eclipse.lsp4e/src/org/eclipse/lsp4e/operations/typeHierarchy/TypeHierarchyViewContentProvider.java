@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.ITreeContentProvider;
@@ -41,14 +41,14 @@ import org.eclipse.lsp4j.services.TextDocumentService;
 import org.eclipse.ui.PlatformUI;
 
 public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
-	private TreeViewer treeViewer;
-	private LanguageServerWrapper languageServerWrapper;
+	private @Nullable TreeViewer treeViewer;
+	private @Nullable LanguageServerWrapper languageServerWrapper;
 	private List<TypeHierarchyItem> hierarchyItems = Collections.emptyList();
 	public boolean showSuperTypes = true;
-	public IDocument document;
+	public @Nullable IDocument document;
 
 	@Override
-	public Object[] getElements(Object inputElement) {
+	public Object[] getElements(@Nullable Object inputElement) {
 		if (hierarchyItems.isEmpty()) {
 			return new Object[] { Messages.TH_no_type_hierarchy };
 		}
@@ -57,7 +57,7 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 
 	@Override
 	public Object[] getChildren(Object parentElement) {
-		if (parentElement instanceof TypeHierarchyItem parentItem) {
+		if (parentElement instanceof TypeHierarchyItem parentItem && languageServerWrapper != null) {
 			try {
 				return languageServerWrapper.execute(ls -> {
 					TextDocumentService textDocumentService = ls.getTextDocumentService();
@@ -76,7 +76,7 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 	}
 
 	@Override
-	public Object getParent(Object element) {
+	public @Nullable Object getParent(Object element) {
 		return null;
 	}
 
@@ -86,7 +86,7 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 	}
 
 	@Override
-	public void inputChanged(final Viewer viewer, final Object oldInput, final Object newInput) {
+	public void inputChanged(final Viewer viewer, final @Nullable Object oldInput, final @Nullable Object newInput) {
 		ITreeContentProvider.super.inputChanged(viewer, oldInput, newInput);
 
 		if (newInput instanceof HierarchyViewInput viewInput) {
@@ -108,7 +108,7 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 
 	}
 
-	private void initialise(final @NonNull IDocument document, final int offset, TreeViewer viewer) throws BadLocationException {
+	private void initialise(final IDocument document, final int offset, TreeViewer viewer) throws BadLocationException {
 		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document)
 				.withCapability(ServerCapabilities::getTypeHierarchyProvider);
 		if (!executor.anyMatching()) {
@@ -123,6 +123,7 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 						hierarchyItems = p.second();
 						treeViewer = viewer;
 						PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
+							final var treeViewer = this.treeViewer;
 							if (treeViewer != null) {
 								treeViewer.refresh();
 								treeViewer.expandToLevel(2);
@@ -142,7 +143,7 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 
 	}
 
-	private static TypeHierarchyPrepareParams toTypeHierarchyPrepareParams(int offset, final @NonNull IDocument document) throws BadLocationException {
+	private static TypeHierarchyPrepareParams toTypeHierarchyPrepareParams(int offset, final IDocument document) throws BadLocationException {
 		Position position =  LSPEclipseUtils.toPosition(offset, document);
 		TextDocumentIdentifier documentIdentifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
 		return new TypeHierarchyPrepareParams(documentIdentifier, position);

@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -31,6 +33,7 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
@@ -85,18 +88,18 @@ import org.eclipse.ui.progress.PendingUpdateAdapter;
 
 public class TypeHierarchyView extends ViewPart {
 
-	class SymbolsContainer {
+	private static final class SymbolsContainer {
 		private final SymbolsModel symbolsModel;
 		private volatile boolean isDirty = true;
 		private boolean temporaryLoadedDocument = false;
-		private volatile URI uri;
+		private volatile URI uri = lateNonNull();
 
 		SymbolsContainer(URI uri) {
 			this.symbolsModel = new SymbolsModel();
 			setUri(uri);
 		}
 
-		public IDocument getDocument() {
+		public @Nullable IDocument getDocument() {
 			IDocument document = null;
 			var file = LSPEclipseUtils.getFileHandle(uri);
 			if (file == null) {
@@ -144,18 +147,20 @@ public class TypeHierarchyView extends ViewPart {
 	}
 
 	public static final String ID = "org.eclipse.lsp4e.operations.typeHierarchy.TypeHierarchyView"; //$NON-NLS-1$
-	TypeHierarchyViewContentProvider contentProvider = new TypeHierarchyViewContentProvider();
-	DecoratingStyledCellLabelProvider symbolsLabelProvider = new DecoratingStyledCellLabelProvider(new SymbolsLabelProvider(), PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator(), DecorationContext.DEFAULT_CONTEXT);
+
+	private TypeHierarchyViewContentProvider contentProvider = new TypeHierarchyViewContentProvider();
+	private DecoratingStyledCellLabelProvider symbolsLabelProvider = new DecoratingStyledCellLabelProvider(new SymbolsLabelProvider(), PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator(), DecorationContext.DEFAULT_CONTEXT);
+
 	// widgets
-	private PageBook pagebook;
-	private SashForm splitter;
-	private ViewForm memberViewForm;
-	private CLabel memberLabel;
-	private Label infoText;
+	private PageBook pagebook = lateNonNull();
+	private SashForm splitter = lateNonNull();
+	private ViewForm memberViewForm = lateNonNull();
+	private CLabel memberLabel = lateNonNull();
+	private Label infoText = lateNonNull();
 
 	// viewers
-	private TableViewer memberViewer;
-	protected TreeViewer treeViewer;
+	private TableViewer memberViewer = lateNonNull();
+	private TreeViewer treeViewer = lateNonNull();
 
 	private HashMap<URI, SymbolsContainer> cachedSymbols = new HashMap<>();
 
@@ -172,7 +177,7 @@ public class TypeHierarchyView extends ViewPart {
 		}
 
 		@Override
-		public void underlyingFileMoved(IFileBuffer buffer, IPath path) {
+		public void underlyingFileMoved(@Nullable IFileBuffer buffer, IPath path) {
 			var symbolsContainer = getSymbolsContainer(buffer);
 			// check if this file has been cached:
 			if (symbolsContainer != null && buffer != null) {
@@ -186,7 +191,7 @@ public class TypeHierarchyView extends ViewPart {
 			}
 		}
 
-		private SymbolsContainer getSymbolsContainer(IFileBuffer buffer) {
+		private @Nullable SymbolsContainer getSymbolsContainer(@Nullable IFileBuffer buffer) {
 			if (buffer != null) {
 				return cachedSymbols.get(LSPEclipseUtils.toUri(buffer));
 			}
@@ -273,7 +278,7 @@ public class TypeHierarchyView extends ViewPart {
 		}
 	}
 
-	private void refreshMemberViewer(SymbolsContainer symbolsContainer, String typeName, boolean documentModified) {
+	private void refreshMemberViewer(@Nullable SymbolsContainer symbolsContainer, String typeName, boolean documentModified) {
 		memberViewer.setInput(new PendingUpdateAdapter());
 		memberLabel.setImage(JFaceResources.getImage(ProgressManager.WAITING_JOB_KEY));
 		memberLabel.setText(Messages.outline_computingSymbols);
@@ -369,7 +374,7 @@ public class TypeHierarchyView extends ViewPart {
 		return cachedSymbols.computeIfAbsent(uri, entry -> new SymbolsContainer(uri));
 	}
 
-	private synchronized void refreshSymbols(SymbolsContainer symbolsContainer, boolean documentModified) {
+	private synchronized void refreshSymbols(@Nullable SymbolsContainer symbolsContainer, boolean documentModified) {
 		if (symbolsContainer == null || (!symbolsContainer.isDirty && !documentModified)) {
 			return;
 		}
@@ -407,7 +412,7 @@ public class TypeHierarchyView extends ViewPart {
 		}
 	}
 
-	private DocumentSymbolWithURI getDocumentSymbol(SymbolsContainer symbolsContainer, String typeName) {
+	private @Nullable DocumentSymbolWithURI getDocumentSymbol(@Nullable SymbolsContainer symbolsContainer, String typeName) {
 		if (symbolsContainer != null) {
 			var elements = symbolsContainer.symbolsModel.getElements();
 			for (var element : elements) {
@@ -429,7 +434,7 @@ public class TypeHierarchyView extends ViewPart {
 		return SymbolKind.Class.equals(kind) || SymbolKind.Struct.equals(kind)  ;
 	}
 
-	private DocumentSymbol searchInChildren(List<DocumentSymbol> children, String typeName) {
+	private @Nullable DocumentSymbol searchInChildren(@Nullable List<DocumentSymbol> children, String typeName) {
 		if (children == null) {
 			return null;
 		}

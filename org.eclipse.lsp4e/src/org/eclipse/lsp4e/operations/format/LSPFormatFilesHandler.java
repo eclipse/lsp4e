@@ -30,10 +30,11 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.e4.core.commands.ExpressionContext;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
@@ -53,9 +54,12 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 	protected final LSPFormatter formatter = new LSPFormatter();
 
 	@Override
-	public Object execute(final ExecutionEvent event) throws ExecutionException {
+	public @Nullable Object execute(final ExecutionEvent event) throws ExecutionException {
 		if (event.getApplicationContext() instanceof final ExpressionContext ctx) {
 			final var job = Job.create(Messages.LSPFormatFilesHandler_FormattingSelectedFiles, monitor -> {
+				if (monitor == null)
+					monitor = new NullProgressMonitor();
+
 				final var selectedFiles = getSelectedFiles(ctx);
 				final var subMonitor = SubMonitor.convert(monitor, selectedFiles.size());
 				for (final IFile file : selectedFiles) {
@@ -73,7 +77,7 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 		return null;
 	}
 
-	protected void formatFile(final @NonNull IFile file, final IProgressMonitor monitor) {
+	protected void formatFile(final IFile file, final IProgressMonitor monitor) {
 		if (!file.exists() || !LanguageServersRegistry.getInstance().canUseLanguageServer(file))
 			return;
 
@@ -122,12 +126,12 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 		}
 	}
 
-	protected Set<@NonNull IFile> getSelectedFiles(final ExpressionContext ctx) {
+	protected Set<IFile> getSelectedFiles(final ExpressionContext ctx) {
 		final var selection = getSelection(ctx);
 		if (selection.isEmpty())
 			return Collections.emptySet();
 
-		final var files = new HashSet<@NonNull IFile>();
+		final var files = new HashSet<IFile>();
 		for (final var item : selection) {
 			try {
 				if (item instanceof final IResource resource) {
@@ -164,7 +168,7 @@ public class LSPFormatFilesHandler extends AbstractHandler {
 	}
 
 	@Override
-	public void setEnabled(final Object evaluationContext) {
+	public void setEnabled(final @Nullable Object evaluationContext) {
 		if (evaluationContext instanceof ExpressionContext ctx) {
 			final var selection = getSelection(ctx);
 			if (selection.isEmpty()) {
