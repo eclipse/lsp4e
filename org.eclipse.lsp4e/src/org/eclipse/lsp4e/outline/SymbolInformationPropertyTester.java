@@ -60,7 +60,7 @@ public class SymbolInformationPropertyTester extends PropertyTester {
 	public static final String CONTENT_TYPE_ID = "contentTypeId"; //$NON-NLS-1$
 
 	@Override
-	public boolean test(Object receiver, String property, Object[] args, @Nullable Object expectedValue) {
+	public boolean test(@Nullable Object receiver, String property, Object[] args, @Nullable Object expectedValue) {
 		if (receiver instanceof SymbolInformation info) {
 			if (info.getLocation() == null || info.getLocation().getUri() == null) {
 				return false;

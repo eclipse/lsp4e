@@ -824,7 +824,7 @@ public class LanguageServerWrapper {
 	 *
 	 * @return Async result
 	 */
-	public <T> CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
+	public <T> @NonNull CompletableFuture<T> execute(@NonNull Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
 		// Send the request on the dispatch thread
 		CompletableFuture<T> lsRequest = executeImpl(fn);
 		// then additionally make sure the response is delivered on a thread from the default ForkJoinPool.
