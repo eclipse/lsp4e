@@ -377,7 +377,6 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 				(int) targetFile.getLocation().toFile().length());
 				InputStream contentStream = targetFile.getContents();) {
 			contentStream.transferTo(stream);
-			// targetFile.getContents().transferTo(stream);
 			return new String(stream.toByteArray());
 		}
 	}
