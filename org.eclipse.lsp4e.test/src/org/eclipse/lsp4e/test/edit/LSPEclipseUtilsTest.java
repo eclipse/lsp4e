@@ -13,7 +13,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -30,7 +33,6 @@ import java.util.LinkedList;
 import java.util.Random;
 
 import org.eclipse.core.filesystem.EFS;
-import org.eclipse.core.internal.utils.FileUtil;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
@@ -374,8 +376,7 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		try (ByteArrayOutputStream stream = new ByteArrayOutputStream(
 				(int) targetFile.getLocation().toFile().length());
 				InputStream contentStream = targetFile.getContents();) {
-			FileUtil.transferStreams(contentStream, stream, targetFile.getFullPath().toString(),
-					new NullProgressMonitor());
+			contentStream.transferTo(stream);
 			// targetFile.getContents().transferTo(stream);
 			return new String(stream.toByteArray());
 		}
