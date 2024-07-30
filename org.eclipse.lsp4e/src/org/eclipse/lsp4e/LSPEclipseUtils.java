@@ -57,7 +57,6 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileInfo;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.filesystem.IFileSystem;
-import org.eclipse.core.internal.utils.FileUtil;
 import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
@@ -1164,7 +1163,7 @@ public final class LSPEclipseUtils {
 						if (oldFile != null && oldFile.exists()) {
 							try (var stream = new ByteArrayOutputStream((int) oldFile.getLocation().toFile().length());
 									InputStream inputStream = oldFile.getContents();) {
-								FileUtil.transferStreams(inputStream, stream, newURI.toString(), null);
+								inputStream.transferTo(stream);
 								content = new String(stream.toByteArray());
 								encoding = oldFile.getCharset();
 							} catch (IOException | CoreException e) {
