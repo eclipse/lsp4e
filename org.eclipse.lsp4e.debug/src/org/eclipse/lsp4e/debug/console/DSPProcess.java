@@ -107,7 +107,7 @@ public class DSPProcess implements IProcess {
 
 	@Override
 	public int getExitValue() throws DebugException {
-		if (handle.isPresent() && !handle.get().isAlive()) {
+		if (handle.isPresent() && handle.get().isAlive()) {
 			throw new DebugException(Status.error(handle.get().pid() + " is still running"));
 		}
 		return 0;
