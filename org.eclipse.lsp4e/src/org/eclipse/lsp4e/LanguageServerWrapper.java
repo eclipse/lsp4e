@@ -356,7 +356,7 @@ public class LanguageServerWrapper {
 				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
 				advanceInitializeFutureMonitor();
 			}).exceptionally(e -> {
-				stop();
+				stop(false);
 				final Throwable cause = e.getCause();
 				if (cause instanceof CancellationException c) {
 					throw c;
@@ -520,7 +520,11 @@ public class LanguageServerWrapper {
 		return server == this.languageServer;
 	}
 
-	public synchronized void stop() {
+	public void stop() {
+		stop(true);
+	}
+
+	public synchronized void stop(boolean doCancel) {
 		final boolean alreadyStopping = this.stopping.getAndSet(true);
 		if (alreadyStopping) {
 			return;
@@ -532,7 +536,9 @@ public class LanguageServerWrapper {
 		}
 
 		if (this.initializeFuture != null) {
-			this.initializeFuture.cancel(true);
+			if (doCancel) {
+				this.initializeFuture.cancel(true);
+			}
 			this.initializeFuture = null;
 		}
 
