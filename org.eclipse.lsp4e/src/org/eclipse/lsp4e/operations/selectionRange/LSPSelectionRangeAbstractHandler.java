@@ -129,14 +129,16 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 			SelectionRange selectionRange = getSelectionRange(direction);
 			if (selectionRange != null) {
 				ISelection selection = LSPEclipseUtils.toSelection(selectionRange.getRange(), document);
-				styledText.getDisplay().execute(() -> {
-					try {
-						updating = true;
-						provider.setSelection(selection);
-					} finally {
-						updating = false;
-					}
-				});
+				if (selection != null) {
+					styledText.getDisplay().execute(() -> {
+						try {
+							updating = true;
+							provider.setSelection(selection);
+						} finally {
+							updating = false;
+						}
+					});
+				}
 			}
 		}
 
@@ -209,6 +211,9 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 		try {
 			Position position = LSPEclipseUtils.toPosition(offset, document);
 			TextDocumentIdentifier identifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
+			if (identifier == null) {
+				return CompletableFuture.completedFuture(null);
+			}
 			List<Position> positions = Collections.singletonList(position);
 			SelectionRangeParams params = new SelectionRangeParams(identifier, positions);
 			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getSelectionRangeProvider)

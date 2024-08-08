@@ -14,6 +14,7 @@ package org.eclipse.lsp4e;
 
 import org.eclipse.core.expressions.PropertyTester;
 import org.eclipse.core.resources.IFile;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.ui.UI;
@@ -23,7 +24,7 @@ import org.eclipse.ui.IEditorPart;
 public class HasLanguageServerPropertyTester extends PropertyTester {
 
 	@Override
-	public boolean test(Object receiver, String property, Object[] args, Object expectedValue) {
+	public boolean test(@Nullable Object receiver, String property, Object[] args, @Nullable Object expectedValue) {
 		if (receiver instanceof IFile file) {
 			return LanguageServersRegistry.getInstance().canUseLanguageServer(file);
 		} else if (receiver instanceof IEditorInput editorInput) {
@@ -38,7 +39,7 @@ public class HasLanguageServerPropertyTester extends PropertyTester {
 		return false;
 	}
 
-	private boolean test(ITextViewer viewer) {
+	private boolean test(@Nullable ITextViewer viewer) {
 		if (viewer != null) {
 			IDocument document = viewer.getDocument();
 			if (document != null) {

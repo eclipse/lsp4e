@@ -54,8 +54,8 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 	private @Nullable Point location;
 	private FontData @Nullable [] fontData;
 
-	public LSPLineContentCodeMining(InlayHint inlayHint, IDocument document, LanguageServerWrapper languageServerWrapper,
-			InlayHintProvider provider) throws BadLocationException {
+	public LSPLineContentCodeMining(InlayHint inlayHint, IDocument document,
+			LanguageServerWrapper languageServerWrapper, InlayHintProvider provider) throws BadLocationException {
 		super(toPosition(inlayHint.getPosition(), document), provider);
 		this.inlayHint = inlayHint;
 		this.wrapper = languageServerWrapper;
@@ -82,12 +82,12 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 	}
 
 	@Override
-	protected CompletableFuture<Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
+	protected CompletableFuture<@Nullable Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
 		if (wrapper.isActive() && canResolveInlayHint(wrapper.getServerCapabilities())) {
-			return wrapper.execute(ls -> ls.getTextDocumentService().resolveInlayHint(this.inlayHint)
-					.thenAcceptAsync(resolvedInlayHint -> {
-						inlayHint = resolvedInlayHint;
+			return wrapper.execute(
+					ls -> ls.getTextDocumentService().resolveInlayHint(inlayHint).thenAcceptAsync(resolvedInlayHint -> {
 						if (resolvedInlayHint != null) {
+							inlayHint = resolvedInlayHint;
 							setLabel(getInlayHintString(resolvedInlayHint));
 						}
 					}));
@@ -95,7 +95,9 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 		return CompletableFuture.completedFuture(null);
 	}
 
-	private static boolean canResolveInlayHint(ServerCapabilities capabilities) {
+	private static boolean canResolveInlayHint(@Nullable ServerCapabilities capabilities) {
+		if (capabilities == null)
+			return false;
 		Either<Boolean, InlayHintRegistrationOptions> inlayProvider = capabilities.getInlayHintProvider();
 		if (inlayProvider != null && inlayProvider.isRight()) {
 			InlayHintRegistrationOptions options = inlayProvider.getRight();
@@ -127,24 +129,28 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 
 	private @Nullable Consumer<MouseEvent> labelPartAction(List<InlayHintLabelPart> labelParts) {
 		String title = getLabel();
-		if (title != null && !title.isEmpty() && labelParts.stream().map(InlayHintLabelPart::getCommand).anyMatch(Objects::nonNull)) {
-			return me -> {
-				findLabelPart(me, labelParts).map(InlayHintLabelPart::getCommand).filter(Objects::nonNull).ifPresent(command -> {
-					ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
-					String commandId = command.getCommand();
-					if (provider != null && provider.getCommands().contains(commandId)) {
-						LanguageServers.forDocument(document).computeAll((w, ls) -> {
-							if (w == wrapper) {
-								return ls.getWorkspaceService()
-										.executeCommand(new ExecuteCommandParams(commandId, command.getArguments()));
-							}
-							return CompletableFuture.completedFuture(null);
-						});
-					} else  {
-						CommandExecutor.executeCommandClientSide(command, document);
-					}
-				});
-			};
+		if (title != null && !title.isEmpty()
+				&& labelParts.stream().map(InlayHintLabelPart::getCommand).anyMatch(Objects::nonNull)) {
+			return me -> findLabelPart(me, labelParts) //
+					.map(InlayHintLabelPart::getCommand) //
+					.filter(Objects::nonNull) //
+					.ifPresent(command -> {
+						ServerCapabilities serverCapabilities = wrapper.getServerCapabilities();
+						ExecuteCommandOptions provider = serverCapabilities == null ? null
+								: serverCapabilities.getExecuteCommandProvider();
+						String commandId = command.getCommand();
+						if (provider != null && provider.getCommands().contains(commandId)) {
+							LanguageServers.forDocument(document).computeAll((w, ls) -> {
+								if (w == wrapper) {
+									return ls.getWorkspaceService().executeCommand(
+											new ExecuteCommandParams(commandId, command.getArguments()));
+								}
+								return CompletableFuture.completedFuture(null);
+							});
+						} else {
+							CommandExecutor.executeCommandClientSide(command, document);
+						}
+					});
 		}
 		return null;
 	}

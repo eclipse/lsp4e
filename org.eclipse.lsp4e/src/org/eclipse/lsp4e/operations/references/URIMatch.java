@@ -8,6 +8,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.references;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -21,7 +23,7 @@ public class URIMatch extends Match {
 
 	public static URIMatch create(final Location location) throws BadLocationException, URISyntaxException {
 		final URI uri = new URI(location.getUri());
-		final IDocument doc = LSPEclipseUtils.getDocument(uri);
+		final IDocument doc = castNonNull(LSPEclipseUtils.getDocument(uri));
 		final int offset = LSPEclipseUtils.toOffset(location.getRange().getStart(), doc);
 		final int length = LSPEclipseUtils.toOffset(location.getRange().getEnd(), doc) - LSPEclipseUtils.toOffset(location.getRange().getStart(), doc);
 		return new URIMatch(location, uri, offset, length);

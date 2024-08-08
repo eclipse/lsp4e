@@ -83,7 +83,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 						LSPEclipseUtils.toColor(rgb), colorInformation.getRange());
 				this.languageServerWrapper.execute(ls -> ls.getTextDocumentService().colorPresentation(params))
 					.thenAcceptAsync(presentations -> {
-							if (presentations.isEmpty()) {
+							if (presentations == null || presentations.isEmpty()) {
 								return;
 							}
 							// As ColorDialog cannot be customized (to choose the color presentation (rgb,

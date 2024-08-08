@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -23,7 +25,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.source.SourceViewer;
 import org.eclipse.lsp4e.progress.LSPProgressManager;
@@ -51,11 +53,11 @@ import org.eclipse.ui.IWorkbenchPage;
 
 public class LanguageClientImpl implements LanguageClient {
 
-	private Consumer<PublishDiagnosticsParams> diagnosticConsumer;
+	private Consumer<PublishDiagnosticsParams> diagnosticConsumer = lateNonNull();
 	private final LSPProgressManager progressManager = new LSPProgressManager();
 
-	private LanguageServer server;
-	private LanguageServerWrapper wrapper;
+	private LanguageServer server = lateNonNull();
+	private LanguageServerWrapper wrapper = lateNonNull();
 
 	public final void connect(LanguageServer server, LanguageServerWrapper wrapper) {
 		this.server = server;
@@ -63,7 +65,7 @@ public class LanguageClientImpl implements LanguageClient {
 		progressManager.connect(server, wrapper.serverDefinition);
 	}
 
-	protected void setDiagnosticsConsumer(@NonNull Consumer<PublishDiagnosticsParams> diagnosticConsumer) {
+	protected void setDiagnosticsConsumer(Consumer<PublishDiagnosticsParams> diagnosticConsumer) {
 		this.diagnosticConsumer = diagnosticConsumer;
 	}
 
@@ -72,9 +74,9 @@ public class LanguageClientImpl implements LanguageClient {
 	}
 
 	@Override
-	public CompletableFuture<List<Object>> configuration(ConfigurationParams configurationParams) {
+	public CompletableFuture<List<@Nullable Object>> configuration(ConfigurationParams configurationParams) {
 		// override as needed
-		List<Object> list = new ArrayList<>(configurationParams.getItems().size());
+		List<@Nullable Object> list = new ArrayList<>(configurationParams.getItems().size());
 		for (int i = 0; i < configurationParams.getItems().size(); i++) {
 			list.add(null);
 		}
@@ -82,7 +84,7 @@ public class LanguageClientImpl implements LanguageClient {
 	}
 
 	@Override
-	public void telemetryEvent(Object object) {
+	public void telemetryEvent(@Nullable Object object) {
 		// TODO
 	}
 
@@ -106,13 +108,11 @@ public class LanguageClientImpl implements LanguageClient {
 		CompletableFuture.runAsync(() -> ServerMessageHandler.logMessage(wrapper, message));
 	}
 
-	@SuppressWarnings("null")
 	@Override
 	public CompletableFuture<Void> createProgress(final WorkDoneProgressCreateParams params) {
 		return progressManager.createProgress(params);
 	}
 
-	@SuppressWarnings("null")
 	@Override
 	public void notifyProgress(final ProgressParams params) {
 		progressManager.notifyProgress(params);

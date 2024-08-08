@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -192,7 +194,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 	private static CodeActionParams prepareCodeActionParams(final IDocument doc, int offset, int length) {
 		final var context = new CodeActionContext(Collections.emptyList());
 		final var params = new CodeActionParams();
-		params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(doc));
+		params.setTextDocument(castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(doc)));
 		try {
 			params.setRange(new Range(LSPEclipseUtils.toPosition(offset, doc), LSPEclipseUtils
 					.toPosition(offset + (length > 0 ? length : 0), doc)));

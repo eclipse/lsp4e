@@ -12,6 +12,8 @@
 
 package org.eclipse.lsp4e.callhierarchy;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,8 +35,10 @@ import org.eclipse.lsp4j.CallHierarchyIncomingCall;
 import org.eclipse.lsp4j.CallHierarchyIncomingCallsParams;
 import org.eclipse.lsp4j.CallHierarchyItem;
 import org.eclipse.lsp4j.CallHierarchyPrepareParams;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.ui.PlatformUI;
 
 /**
@@ -86,19 +90,14 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 			rootItems = null;
 
 			IDocument document = viewInput.getDocument();
-			if (document != null) {
-				try {
-					initialise(document, viewInput.getOffset());
-				} catch (BadLocationException e) {
-					handleRootError();
-				}
-			} else {
+			try {
+				initialise(document, viewInput.getOffset());
+			} catch (Exception e) {
 				handleRootError();
 			}
 		} else {
 			handleRootError();
 		}
-
 	}
 
 	private void initialise(final IDocument document, final int offset) throws BadLocationException {
@@ -108,7 +107,7 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 			handleRootError();
 			return;
 		}
-		CallHierarchyPrepareParams prepareParams = LSPEclipseUtils.toCallHierarchyPrepareParams(offset, document);
+		CallHierarchyPrepareParams prepareParams = toCallHierarchyPrepareParams(offset, document);
 		executor.computeFirst((w, ls) -> ls.getTextDocumentService().prepareCallHierarchy(prepareParams)
 				.thenApply(result -> new Pair<>(w, result))).thenAccept(o -> o.ifPresentOrElse(p -> {
 					languageServerWrapper = p.first();
@@ -134,6 +133,12 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 					}
 					return result;
 				});
+	}
+
+	private CallHierarchyPrepareParams toCallHierarchyPrepareParams(int offset, final IDocument document) throws BadLocationException {
+		Position position = LSPEclipseUtils.toPosition(offset, document);
+		TextDocumentIdentifier documentIdentifier = castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(document));
+		return new CallHierarchyPrepareParams(documentIdentifier, position);
 
 	}
 
@@ -167,6 +172,8 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 		final var incomingCallParams = new CallHierarchyIncomingCallsParams(callee.getCallContainer());
 		languageServerWrapper.execute(languageServer -> languageServer.getTextDocumentService()
 				.callHierarchyIncomingCalls(incomingCallParams)).thenApply(incomingCalls -> {
+					if (incomingCalls == null)
+						return new ArrayList<CallHierarchyViewTreeNode>(0);
 					List<CallHierarchyViewTreeNode> children = new ArrayList<>(incomingCalls.size());
 					for (CallHierarchyIncomingCall call : incomingCalls) {
 						CallHierarchyItem callContainer = call.getFrom();

@@ -41,6 +41,7 @@ import org.eclipse.debug.core.model.IStreamMonitor;
 import org.eclipse.debug.core.model.RuntimeProcess;
 import org.eclipse.debug.internal.core.IInternalDebugCoreConstants;
 import org.eclipse.debug.internal.core.Preferences;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
 /**
@@ -49,11 +50,11 @@ import org.eclipse.lsp4e.server.StreamConnectionProvider;
  */
 public class LaunchConfigurationStreamProvider implements StreamConnectionProvider, IAdaptable {
 
-	private StreamProxyInputStream inputStream;
-	private StreamProxyInputStream errorStream;
-	private OutputStream outputStream;
-	private ILaunch launch;
-	private IProcess process;
+	private @Nullable StreamProxyInputStream inputStream;
+	private @Nullable StreamProxyInputStream errorStream;
+	private @Nullable OutputStream outputStream;
+	private @Nullable ILaunch launch;
+	private @Nullable IProcess process;
 	private final ILaunchConfiguration launchConfiguration;
 	private Set<String> launchModes;
 
@@ -98,7 +99,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 
 	}
 
-	public LaunchConfigurationStreamProvider(ILaunchConfiguration launchConfig, Set<String> launchModes) {
+	public LaunchConfigurationStreamProvider(ILaunchConfiguration launchConfig, @Nullable Set<String> launchModes) {
 		super();
 		Assert.isNotNull(launchConfig);
 		this.launchConfiguration = launchConfig;
@@ -110,7 +111,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (obj == this) {
 			return true;
 		}
@@ -124,7 +125,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		return this.launchConfiguration.hashCode() ^ this.launchModes.hashCode();
 	}
 
-	public static ILaunchConfiguration findLaunchConfiguration(String typeId, String name) {
+	public static @Nullable ILaunchConfiguration findLaunchConfiguration(String typeId, String name) {
 		ILaunchManager manager = DebugPlugin.getDefault().getLaunchManager();
 		ILaunchConfigurationType type = manager.getLaunchConfigurationType(typeId);
 		ILaunchConfiguration res = null;
@@ -146,10 +147,10 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		// the IDE when Outline is displayed.
 		boolean statusHandlerToUpdate = disableStatusHandler();
 		try {
-			this.launch = this.launchConfiguration.launch(this.launchModes.iterator().next(), new NullProgressMonitor(),
+			final var launch = this.launch = this.launchConfiguration.launch(this.launchModes.iterator().next(), new NullProgressMonitor(),
 					false);
 			long initialTimestamp = System.currentTimeMillis();
-			while (this.launch.getProcesses().length == 0 && System.currentTimeMillis() - initialTimestamp < 5000) {
+			while (launch.getProcesses().length == 0 && System.currentTimeMillis() - initialTimestamp < 5000) {
 				try {
 					Thread.sleep(50);
 				} catch (InterruptedException e) {
@@ -157,10 +158,10 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 					Thread.currentThread().interrupt();
 				}
 			}
-			if (this.launch.getProcesses().length > 0) {
-				this.process = this.launch.getProcesses()[0];
-				this.inputStream = new StreamProxyInputStream(process);
-				process.getStreamsProxy().getOutputStreamMonitor().addListener(this.inputStream);
+			if (launch.getProcesses().length > 0) {
+				final var process = this.process = launch.getProcesses()[0];
+				final var inputStream = this.inputStream = new StreamProxyInputStream(process);
+				process.getStreamsProxy().getOutputStreamMonitor().addListener(inputStream);
 				// TODO: Ugly hack, find something better to retrieve stream!
 				try {
 					Method systemProcessGetter = RuntimeProcess.class.getDeclaredMethod("getSystemProcess"); //$NON-NLS-1$
@@ -170,8 +171,8 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 				} catch (ReflectiveOperationException ex) {
 					LanguageServerPlugin.logError(ex);
 				}
-				this.errorStream = new StreamProxyInputStream(process);
-				process.getStreamsProxy().getErrorStreamMonitor().addListener(this.errorStream);
+				final var errorStream = this.errorStream = new StreamProxyInputStream(process);
+				process.getStreamsProxy().getErrorStreamMonitor().addListener(errorStream);
 			}
 		} catch (Exception e) {
 			LanguageServerPlugin.logError(e);
@@ -210,36 +211,37 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 	}
 
 	@Override
-	public <T> T getAdapter(Class<T> adapter) {
-		if(adapter == ProcessHandle.class) {
+	public <T> @Nullable T getAdapter(@Nullable Class<T> adapter) {
+		if(adapter == ProcessHandle.class && process != null) {
 			return process.getAdapter(adapter);
 		}
 		return null;
 	}
 
 	@Override
-	public InputStream getInputStream() {
+	public @Nullable InputStream getInputStream() {
 		return this.inputStream;
 	}
 
 	@Override
-	public OutputStream getOutputStream() {
+	public @Nullable OutputStream getOutputStream() {
 		return this.outputStream;
 	}
 
 	@Override
-	public InputStream getErrorStream() {
+	public @Nullable InputStream getErrorStream() {
 		return this.errorStream;
 	}
 
 	@Override
 	public void stop() {
-		if (this.launch == null) {
+		final var launch = this.launch;
+		if (launch == null) {
 			return;
 		}
 		try {
-			this.launch.terminate();
-			for (IProcess p : this.launch.getProcesses()) {
+			launch.terminate();
+			for (IProcess p : launch.getProcesses()) {
 				p.terminate();
 			}
 		} catch (DebugException e1) {

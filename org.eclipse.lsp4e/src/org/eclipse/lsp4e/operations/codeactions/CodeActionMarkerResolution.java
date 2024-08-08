@@ -35,6 +35,7 @@ import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.MessageType;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
@@ -93,7 +94,8 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 				}
 				if (codeAction.getCommand() != null) {
 					Command command = codeAction.getCommand();
-					ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
+					ServerCapabilities cap = wrapper.getServerCapabilities();
+					ExecuteCommandOptions provider = cap == null ? null : cap.getExecuteCommandProvider();
 					if (provider != null && provider.getCommands().contains(command.getCommand())) {
 						final LanguageServerDefinition serverDefinition = wrapper.serverDefinition;
 						wrapper.execute(ls -> ls.getWorkspaceService()

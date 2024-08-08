@@ -24,6 +24,7 @@ import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
@@ -57,7 +58,8 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 		}
 
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
-		ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
+		ServerCapabilities cap = wrapper.getServerCapabilities();
+		ExecuteCommandOptions provider = cap == null ? null : cap.getExecuteCommandProvider();
 		if (provider != null && provider.getCommands().contains(command.getCommand())) {
 			wrapper.execute(ls -> ls.getWorkspaceService()
 					.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));

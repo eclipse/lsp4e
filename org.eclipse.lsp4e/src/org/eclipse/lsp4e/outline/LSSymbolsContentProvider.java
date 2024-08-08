@@ -221,7 +221,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	private OutlineViewerInput outlineViewerInput = lateNonNull();
 
 	private final SymbolsModel symbolsModel = new SymbolsModel();
-	private volatile @Nullable CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> symbols;
+	private volatile @Nullable CompletableFuture<@Nullable List<Either<SymbolInformation, DocumentSymbol>>> symbols;
 	private final boolean refreshOnResourceChanged;
 	private boolean isQuickOutline;
 	private @Nullable IOutlineUpdater outlineUpdater;

@@ -119,9 +119,12 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			final var toAdd = new HashMap<Annotation, Position>(diagnostics.getDiagnostics().size(), 1.f);
 			diagnostics.getDiagnostics().forEach(diagnostic -> {
 				try {
-					int startOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), sourceViewer.getDocument());
-					int endOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), sourceViewer.getDocument());
-					toAdd.put(new DiagnosticAnnotation(diagnostic), new Position(startOffset, endOffset - startOffset));
+					final var doc = sourceViewer.getDocument();
+					if (doc != null) {
+						int startOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), doc);
+						int endOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), doc);
+						toAdd.put(new DiagnosticAnnotation(diagnostic), new Position(startOffset, endOffset - startOffset));
+					}
 				} catch (BadLocationException ex) {
 					LanguageServerPlugin.logError(ex);
 				}

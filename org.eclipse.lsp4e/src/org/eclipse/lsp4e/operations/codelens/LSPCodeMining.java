@@ -23,6 +23,7 @@ import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.swt.events.MouseEvent;
 
 public class LSPCodeMining extends LineHeaderCodeMining {
@@ -50,15 +51,19 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 
 	@Override
 	protected CompletableFuture<Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
-		final Boolean resolveProvider = this.languageServerWrapper.getServerCapabilities().getCodeLensProvider().getResolveProvider();
+		final ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
+		if (serverCapabilities == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		final Boolean resolveProvider = serverCapabilities.getCodeLensProvider().getResolveProvider();
 		if (resolveProvider == null || !resolveProvider) {
 			return CompletableFuture.completedFuture(null);
 		}
 
-		return this.languageServerWrapper.execute(languageServer -> languageServer.getTextDocumentService().resolveCodeLens(this.codeLens))
+		return languageServerWrapper.execute(languageServer -> languageServer.getTextDocumentService().resolveCodeLens(this.codeLens))
 				.thenAccept(resolvedCodeLens -> {
-					codeLens = resolvedCodeLens;
 					if (resolvedCodeLens != null) {
+						codeLens = resolvedCodeLens;
 						setLabel(getCodeLensString(resolvedCodeLens));
 					}
 				});
@@ -75,7 +80,8 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 	}
 
 	private void performAction(MouseEvent mouseEvent) {
-		ExecuteCommandOptions provider = languageServerWrapper.getServerCapabilities().getExecuteCommandProvider();
+		final ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
+		ExecuteCommandOptions provider = serverCapabilities == null ? null : serverCapabilities.getExecuteCommandProvider();
 		Command command = codeLens.getCommand();
 		if (provider != null && provider.getCommands().contains(command.getCommand())) {
 			languageServerWrapper.execute(ls -> ls.getWorkspaceService()

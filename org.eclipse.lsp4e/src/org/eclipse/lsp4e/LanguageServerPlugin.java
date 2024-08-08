@@ -11,9 +11,11 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -31,7 +33,7 @@ public class LanguageServerPlugin extends AbstractUIPlugin {
 	public static final boolean DEBUG = Boolean.parseBoolean(Platform.getDebugOption("org.eclipse.lsp4e/debug")); //$NON-NLS-1$
 
 	// The shared instance
-	private static LanguageServerPlugin plugin;
+	private static volatile @Nullable LanguageServerPlugin plugin;
 
 	public LanguageServerPlugin() {
 	}
@@ -55,6 +57,7 @@ public class LanguageServerPlugin extends AbstractUIPlugin {
 	 * @return the shared instance
 	 */
 	public static LanguageServerPlugin getDefault() {
+		Assert.isNotNull(plugin);
 		return plugin;
 	}
 
@@ -70,7 +73,6 @@ public class LanguageServerPlugin extends AbstractUIPlugin {
 	 *            The exception through which we noticed the error
 	 */
 	public static void logError(final Throwable thr) {
-		LanguageServerPlugin plugin = getDefault();
 		if (plugin != null) {
 			plugin.getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, 0, thr.getMessage(), thr));
 		}
@@ -84,8 +86,7 @@ public class LanguageServerPlugin extends AbstractUIPlugin {
 	 * @param thr
 	 *            The exception through which we noticed the error
 	 */
-	public static void logError(final String message, final Throwable thr) {
-		LanguageServerPlugin plugin = getDefault();
+	public static void logError(final @Nullable String message, final @Nullable Throwable thr) {
 		if (plugin != null) {
 			plugin.getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, 0, message, thr));
 		}
@@ -97,7 +98,6 @@ public class LanguageServerPlugin extends AbstractUIPlugin {
 	 * @param message
 	 */
 	public static void logInfo(final String message) {
-		LanguageServerPlugin plugin = getDefault();
 		if (plugin != null) {
 			plugin.getLog().log(new Status(IStatus.INFO, PLUGIN_ID, 0, message, null));
 		}
@@ -111,8 +111,7 @@ public class LanguageServerPlugin extends AbstractUIPlugin {
 	 * @param thr
 	 *            The exception through which we noticed the warning
 	 */
-	public static void logWarning(final String message, final Throwable thr) {
-		LanguageServerPlugin plugin = getDefault();
+	public static void logWarning(final @Nullable String message, final @Nullable Throwable thr) {
 		if (plugin != null) {
 			plugin.getLog().log(new Status(IStatus.WARNING, PLUGIN_ID, 0, message, thr));
 		}

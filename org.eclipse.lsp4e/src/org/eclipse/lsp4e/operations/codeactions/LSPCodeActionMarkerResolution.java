@@ -13,7 +13,6 @@ package org.eclipse.lsp4e.operations.codeactions;
 
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -104,12 +103,12 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				checkMarkerResolution(marker);
 				att = marker.getAttribute(LSP_REMEDIATION);
 			}
-		} catch (IOException | CoreException | ExecutionException e) {
-			LanguageServerPlugin.logError(e);
-			return new IMarkerResolution[0];
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+			return new IMarkerResolution[0];
+		} catch (Exception e) {
+			LanguageServerPlugin.logError(e);
 			return new IMarkerResolution[0];
 		}
 		if (att == COMPUTING) {
@@ -122,7 +121,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				.toArray(IMarkerResolution[]::new);
 	}
 
-	private void checkMarkerResolution(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException {
+	private void checkMarkerResolution(IMarker marker) throws CoreException, InterruptedException, ExecutionException {
 		IResource res = marker.getResource();
 		if (res instanceof IFile file) {
 			Object[] attributes = marker.getAttributes(new String[]{LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC});
@@ -135,7 +134,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				final var context = new CodeActionContext(Collections.singletonList(diagnostic));
 				final var params = new CodeActionParams();
 				params.setContext(context);
-				params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(res));
+				params.setTextDocument(castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(res)));
 				params.setRange(diagnostic.getRange());
 				if (marker.exists()) { // otherwise the marker has been removed by now
 					marker.setAttribute(LSP_REMEDIATION, COMPUTING);

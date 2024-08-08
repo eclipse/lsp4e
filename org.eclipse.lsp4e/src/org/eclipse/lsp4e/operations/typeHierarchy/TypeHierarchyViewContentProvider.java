@@ -116,6 +116,9 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 			return;
 		}
 		TypeHierarchyPrepareParams prepareParams = toTypeHierarchyPrepareParams(offset, document);
+		if (prepareParams == null) {
+			return;
+		}
 		executor.computeFirst((w, ls) -> ls.getTextDocumentService().prepareTypeHierarchy(prepareParams)
 				.thenApply(result -> new Pair<>(w, result))).thenAccept(o -> o.ifPresentOrElse(p -> {
 					languageServerWrapper = p.first();
@@ -140,12 +143,13 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 					}
 					return result;
 				});
-
 	}
 
-	private static TypeHierarchyPrepareParams toTypeHierarchyPrepareParams(int offset, final IDocument document) throws BadLocationException {
+	private static @Nullable TypeHierarchyPrepareParams toTypeHierarchyPrepareParams(int offset, final IDocument document) throws BadLocationException {
 		Position position =  LSPEclipseUtils.toPosition(offset, document);
 		TextDocumentIdentifier documentIdentifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
+		if(documentIdentifier == null)
+			return null;
 		return new TypeHierarchyPrepareParams(documentIdentifier, position);
 	}
 

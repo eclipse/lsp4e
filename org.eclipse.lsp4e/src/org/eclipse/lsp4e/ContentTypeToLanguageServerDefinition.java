@@ -16,7 +16,6 @@ import java.net.URI;
 import java.util.AbstractMap.SimpleEntry;
 
 import org.eclipse.core.runtime.content.IContentType;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.enablement.EnablementTester;
@@ -24,16 +23,15 @@ import org.eclipse.lsp4e.enablement.EnablementTester;
 public class ContentTypeToLanguageServerDefinition extends SimpleEntry<IContentType, LanguageServerDefinition> {
 
 	private static final long serialVersionUID = 6002703726009331762L;
-	private final EnablementTester enablement;
+	private final @Nullable EnablementTester enablement;
 
-	public ContentTypeToLanguageServerDefinition(@NonNull IContentType contentType,
-			@NonNull LanguageServerDefinition provider,
+	public ContentTypeToLanguageServerDefinition(IContentType contentType, LanguageServerDefinition provider,
 			@Nullable EnablementTester enablement) {
 		super(contentType, provider);
 		this.enablement = enablement;
 	}
 
-	public boolean isEnabled(URI uri) {
+	public boolean isEnabled(@Nullable URI uri) {
 		return isUserEnabled() && isExtensionEnabled(uri);
 	}
 
@@ -48,11 +46,11 @@ public class ContentTypeToLanguageServerDefinition extends SimpleEntry<IContentT
 		return true;
 	}
 
-	public boolean isExtensionEnabled(URI uri) {
+	public boolean isExtensionEnabled(@Nullable URI uri) {
 		return enablement != null ? enablement.evaluate(uri) : true;
 	}
 
-	public EnablementTester getEnablementCondition() {
+	public @Nullable EnablementTester getEnablementCondition() {
 		return enablement;
 	}
 

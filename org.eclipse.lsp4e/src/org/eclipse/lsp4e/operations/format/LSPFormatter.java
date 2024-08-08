@@ -57,7 +57,7 @@ public class LSPFormatter {
 		long modificationStamp = DocumentUtil.getDocumentModificationStamp(document);
 		return executor.computeFirst((w, ls) -> {
 			final ServerCapabilities capabilities = w.getServerCapabilities();
-			if (isDocumentRangeFormattingSupported(capabilities)
+			if (capabilities != null && isDocumentRangeFormattingSupported(capabilities)
 					&& !(isDocumentFormattingSupported(capabilities)
 							&& textSelection.getLength() == 0)) {
 				return ls.getTextDocumentService().rangeFormatting(rangeParams).thenApply(edits -> new VersionedEdits(modificationStamp, edits, document));

@@ -31,7 +31,6 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
-import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
 
@@ -64,7 +63,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 
 		@Override
 		public void open() {
-			LSPEclipseUtils.open(uri, UI.getActivePage(), null, true);
+			LSPEclipseUtils.open(uri, null, true);
 		}
 
 	}
