@@ -12,7 +12,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -24,15 +23,16 @@ import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.swt.events.MouseEvent;
 
 public class LSPCodeMining extends LineHeaderCodeMining {
 	private CodeLens codeLens;
 
 	private final LanguageServerWrapper languageServerWrapper;
-	private final @NonNull IDocument document;
+	private final IDocument document;
 
-	public LSPCodeMining(CodeLens codeLens, @NonNull IDocument document, LanguageServerWrapper languageServerWrapper,
+	public LSPCodeMining(CodeLens codeLens, IDocument document, LanguageServerWrapper languageServerWrapper,
 			CodeLensProvider provider) throws BadLocationException {
 		super(codeLens.getRange().getStart().getLine(), document, provider, null);
 		this.codeLens = codeLens;
@@ -41,7 +41,7 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 		setLabel(getCodeLensString(codeLens));
 	}
 
-	protected static @Nullable String getCodeLensString(@NonNull CodeLens codeLens) {
+	protected static @Nullable String getCodeLensString(CodeLens codeLens) {
 		Command command = codeLens.getCommand();
 		if (command == null || command.getTitle().isEmpty()) {
 			return null;
@@ -51,22 +51,26 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 
 	@Override
 	protected CompletableFuture<Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
-		final Boolean resolveProvider = this.languageServerWrapper.getServerCapabilities().getCodeLensProvider().getResolveProvider();
+		final ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
+		if (serverCapabilities == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		final Boolean resolveProvider = serverCapabilities.getCodeLensProvider().getResolveProvider();
 		if (resolveProvider == null || !resolveProvider) {
 			return CompletableFuture.completedFuture(null);
 		}
 
-		return this.languageServerWrapper.execute(languageServer -> languageServer.getTextDocumentService().resolveCodeLens(this.codeLens))
+		return languageServerWrapper.execute(languageServer -> languageServer.getTextDocumentService().resolveCodeLens(this.codeLens))
 				.thenAccept(resolvedCodeLens -> {
-					codeLens = resolvedCodeLens;
 					if (resolvedCodeLens != null) {
+						codeLens = resolvedCodeLens;
 						setLabel(getCodeLensString(resolvedCodeLens));
 					}
 				});
 	}
 
 	@Override
-	public final Consumer<MouseEvent> getAction() {
+	public final @Nullable Consumer<MouseEvent> getAction() {
 		final Command command = codeLens.getCommand();
 		if(command != null && command.getCommand() != null && !command.getCommand().isEmpty()) {
 			return this::performAction;
@@ -76,7 +80,8 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 	}
 
 	private void performAction(MouseEvent mouseEvent) {
-		ExecuteCommandOptions provider = languageServerWrapper.getServerCapabilities().getExecuteCommandProvider();
+		final ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
+		ExecuteCommandOptions provider = serverCapabilities == null ? null : serverCapabilities.getExecuteCommandProvider();
 		Command command = codeLens.getCommand();
 		if (provider != null && provider.getCommands().contains(command.getCommand())) {
 			languageServerWrapper.execute(ls -> ls.getWorkspaceService()
@@ -85,6 +90,5 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 			CommandExecutor.executeCommandClientSide(command, document);
 		}
 	}
-
 
 }

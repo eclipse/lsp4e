@@ -16,6 +16,7 @@ package org.eclipse.lsp4e.operations.format;
 import java.util.ConcurrentModificationException;
 
 import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -66,7 +67,7 @@ public class LSPFormatHandler extends LSPDocumentAbstractHandler {
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
+	public void setEnabled(@Nullable Object evaluationContext) {
 		setEnabled(LSPFormatter::supportsFormatting, this::hasSelection);
 	}
 }

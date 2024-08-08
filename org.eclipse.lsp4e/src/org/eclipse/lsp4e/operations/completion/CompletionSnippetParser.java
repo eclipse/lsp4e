@@ -24,7 +24,6 @@ import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.link.LinkedPosition;
 import org.eclipse.jface.text.link.ProposalPosition;
 
-
 /**
  * A parser for the completion insert text in
  * <a href="https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#snippet_syntax">snippet syntax</a>

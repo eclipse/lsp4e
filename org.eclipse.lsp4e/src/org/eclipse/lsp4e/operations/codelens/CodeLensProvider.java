@@ -14,7 +14,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
@@ -30,24 +30,24 @@ import org.eclipse.lsp4j.CodeLensParams;
 
 public class CodeLensProvider extends AbstractCodeMiningProvider {
 
-	private CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(@NonNull IDocument document) {
+	private @Nullable CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(IDocument document) {
 		URI docURI = LSPEclipseUtils.toUri(document);
 		if (docURI != null) {
 			final var param = new CodeLensParams(LSPEclipseUtils.toTextDocumentIdentifier(docURI));
 			LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document)
 					.withFilter(sc -> sc.getCodeLensProvider() != null);
-			return executor.collectAll((w, ls) -> ls.getTextDocumentService().codeLens(param)
-								.thenApply(codeLenses -> LanguageServers.streamSafely(codeLenses)
-										.map(codeLens -> toCodeMining(document, w, codeLens))
-										.filter(Objects::nonNull)))
-				.thenApply(result -> result.stream().flatMap(s -> s).toList());
-		}
-		else {
+			return executor
+					.collectAll((w, ls) -> ls.getTextDocumentService().codeLens(param)
+							.thenApply(codeLenses -> LanguageServers.streamSafely(codeLenses)
+									.map(codeLens -> toCodeMining(document, w, codeLens)).filter(Objects::nonNull)))
+					.thenApply(result -> result.stream().flatMap(s -> s).toList());
+		} else {
 			return null;
 		}
 	}
 
-	private LSPCodeMining toCodeMining(IDocument document, LanguageServerWrapper languageServerWrapper, CodeLens codeLens) {
+	private @Nullable LSPCodeMining toCodeMining(IDocument document, LanguageServerWrapper languageServerWrapper,
+			@Nullable CodeLens codeLens) {
 		if (codeLens == null) {
 			return null;
 		}
@@ -60,7 +60,7 @@ public class CodeLensProvider extends AbstractCodeMiningProvider {
 	}
 
 	@Override
-	public CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(ITextViewer viewer,
+	public @Nullable CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(ITextViewer viewer,
 			IProgressMonitor monitor) {
 		IDocument document = viewer.getDocument();
 		return document != null ? provideCodeMinings(document) : null;

@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.refactoring;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
+
 import java.net.URI;
 
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -26,7 +28,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -47,22 +49,22 @@ import org.eclipse.text.edits.UndoEdit;
 @SuppressWarnings("restriction")
 public class LSPTextChange extends TextChange {
 
-	private final @NonNull URI fileUri;
+	private final URI fileUri;
 
-	private Either<IFile, IFileStore> file;
+	private Either<IFile, IFileStore> file = lateNonNull();
 	private int fAcquireCount;
-	private ITextFileBuffer fBuffer;
-	private @NonNull String newText;
-	private Range range;
+	private @Nullable ITextFileBuffer fBuffer;
+	private String newText;
+	private @Nullable Range range;
 
-	public LSPTextChange(@NonNull String name, @NonNull URI fileUri, @NonNull TextEdit textEdit) {
+	public LSPTextChange(String name, URI fileUri, TextEdit textEdit) {
 		super(name);
 		this.fileUri = fileUri;
 		this.newText = textEdit.getNewText();
 		this.range = textEdit.getRange();
 	}
 
-	public LSPTextChange(@NonNull String name, @NonNull URI fileUri, @NonNull String newText) {
+	public LSPTextChange(String name, URI fileUri, String newText) {
 		super(name);
 		this.fileUri = fileUri;
 		this.newText = newText;
@@ -73,7 +75,7 @@ public class LSPTextChange extends TextChange {
 	protected IDocument acquireDocument(IProgressMonitor pm) throws CoreException {
 		fAcquireCount++;
 		if (fAcquireCount > 1) {
-			return fBuffer.getDocument();
+			return castNonNull(this.fBuffer).getDocument();
 		}
 
 		IFile iFile = LSPEclipseUtils.getFileHandle(this.fileUri);
@@ -106,9 +108,10 @@ public class LSPTextChange extends TextChange {
 		// because that's used by the preview logic to compute the changed document. We do it here rather than in the constructor
 		// since we need the document to translate line offsets into character offset. Strictly this would not work then
 		// if the platform called getEdit() prior to this method being traversed, but it seems to be OK in practice.
-		final IDocument document  = fBuffer.getDocument();
+		final IDocument document = castNonNull(this.fBuffer).getDocument();
 		int offset = 0;
 		int length = document.getLength();
+		final var range = this.range;
 		if (range != null && getEdit() == null) {
 			try {
 				offset = LSPEclipseUtils.toOffset(range.getStart(), document);
@@ -124,7 +127,7 @@ public class LSPTextChange extends TextChange {
 
 	@Override
 	protected void commit(IDocument document, IProgressMonitor pm) throws CoreException {
-		this.fBuffer.commit(pm, true);
+		castNonNull(this.fBuffer).commit(pm, true);
 	}
 
 	@Override
@@ -132,7 +135,7 @@ public class LSPTextChange extends TextChange {
 		Assert.isTrue(fAcquireCount > 0);
 		if (fAcquireCount == 1) {
 			ITextFileBufferManager manager = FileBuffers.getTextFileBufferManager();
-			this.fBuffer.commit(pm, true);
+			castNonNull(this.fBuffer).commit(pm, true);
 			if (this.file.isLeft()) {
 				manager.disconnect(this.file.getLeft().getFullPath(), LocationKind.IFILE, pm);
 			} else {
@@ -143,7 +146,7 @@ public class LSPTextChange extends TextChange {
 	}
 
 	@Override
-	protected Change createUndoChange(UndoEdit edit) {
+	protected @Nullable Change createUndoChange(UndoEdit edit) {
 		throw new UnsupportedOperationException("Should not be called!"); //$NON-NLS-1$
 	}
 
@@ -158,7 +161,7 @@ public class LSPTextChange extends TextChange {
 	}
 
 	@Override
-	public Object getModifiedElement() {
+	public @Nullable Object getModifiedElement() {
 		IFile file = LSPEclipseUtils.getFileHandle(this.fileUri);
 		if (file != null) {
 			return file;
@@ -170,7 +173,7 @@ public class LSPTextChange extends TextChange {
 	}
 
 	@Override
-	public Change perform(IProgressMonitor pm) throws CoreException {
+	public @Nullable Change perform(IProgressMonitor pm) throws CoreException {
 		pm.beginTask("", 3); //$NON-NLS-1$
 		IDocument document = null;
 
@@ -179,6 +182,7 @@ public class LSPTextChange extends TextChange {
 
 			int offset = 0;
 			int length = document.getLength();
+			final var range = this.range;
 			if (range != null) {
 				offset = LSPEclipseUtils.toOffset(range.getStart(), document);
 				length = LSPEclipseUtils.toOffset(range.getEnd(), document) - offset;

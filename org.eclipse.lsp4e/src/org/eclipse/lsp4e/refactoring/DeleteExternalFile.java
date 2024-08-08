@@ -19,16 +19,16 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.ltk.core.refactoring.Change;
 import org.eclipse.ltk.core.refactoring.RefactoringStatus;
 
 public class DeleteExternalFile extends Change {
 
-	private final @NonNull File file;
+	private final File file;
 
-	public DeleteExternalFile(@NonNull File file) {
+	public DeleteExternalFile(File file) {
 		this.file = file;
 	}
 
@@ -48,7 +48,7 @@ public class DeleteExternalFile extends Change {
 	}
 
 	@Override
-	public Change perform(IProgressMonitor pm) throws CoreException {
+	public @Nullable Change perform(IProgressMonitor pm) throws CoreException {
 		try {
 			Files.delete(this.file.toPath());
 		} catch (IOException e) {

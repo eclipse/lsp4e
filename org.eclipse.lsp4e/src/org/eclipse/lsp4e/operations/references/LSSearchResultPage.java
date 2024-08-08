@@ -12,8 +12,8 @@ import java.net.URI;
 import java.util.Set;
 
 import org.eclipse.core.resources.IContainer;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.OpenEvent;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
@@ -32,20 +32,18 @@ import org.eclipse.search.ui.text.Match;
  */
 public class LSSearchResultPage extends FileSearchPage {
 
-	private ITreeContentProvider contentProvider;
-
 	@Override
 	public void configureTreeViewer(TreeViewer viewer) {
 		super.configureTreeViewer(viewer);
 		FileTreeContentProvider fileMatchContentProvider = (FileTreeContentProvider)viewer.getContentProvider();
-		this.contentProvider = new FileAndURIMatchContentProvider(fileMatchContentProvider);
-		viewer.setContentProvider(this.contentProvider);
+		final var contentProvider = new FileAndURIMatchContentProvider(fileMatchContentProvider);
+		viewer.setContentProvider(contentProvider);
 		DecoratingFileSearchLabelProvider fileMatchDecoratingLabelProvider = (DecoratingFileSearchLabelProvider)viewer.getLabelProvider();
 		FileAndURIMatchBaseLabelProvider baseLabelProvider = new FileAndURIMatchBaseLabelProvider(fileMatchDecoratingLabelProvider.getStyledStringProvider());
 		viewer.setLabelProvider(new FileAndURIMatchLabelProvider(baseLabelProvider, fileMatchDecoratingLabelProvider));
 		viewer.setComparator(new ViewerComparator() {
 			@Override
-			public int category(Object element) {
+			public int category(@Nullable Object element) {
 				if (element instanceof IContainer) {
 					return 1;
 				} else if (element instanceof URI uri) {
@@ -59,7 +57,7 @@ public class LSSearchResultPage extends FileSearchPage {
 			}
 
 			@Override
-			public int compare(Viewer viewer, Object e1, Object e2) {
+			public int compare(@Nullable Viewer viewer, @Nullable Object e1, @Nullable Object e2) {
 				int cat1 = category(e1);
 				int cat2 = category(e2);
 				if (cat1 != cat2) {

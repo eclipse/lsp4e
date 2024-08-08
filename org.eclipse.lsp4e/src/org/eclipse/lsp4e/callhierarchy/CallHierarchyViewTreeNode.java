@@ -14,7 +14,6 @@ package org.eclipse.lsp4e.callhierarchy;
 
 import java.util.List;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4j.CallHierarchyItem;
 import org.eclipse.lsp4j.Range;
@@ -28,7 +27,7 @@ public class CallHierarchyViewTreeNode {
 	 * the {@link CallHierarchyItem} of the callable containing the call site that
 	 * this node represents.
 	 */
-	private final @NonNull CallHierarchyItem callContainer;
+	private final CallHierarchyItem callContainer;
 
 	/** the location of the call site that this node represents. */
 	private final @Nullable Range callSite;
@@ -44,7 +43,7 @@ public class CallHierarchyViewTreeNode {
 	 * @param callSite
 	 *            the range in the callable of the call site.
 	 */
-	public CallHierarchyViewTreeNode(final @NonNull CallHierarchyItem callContainer, final @Nullable Range callSite) {
+	public CallHierarchyViewTreeNode(final CallHierarchyItem callContainer, final @Nullable Range callSite) {
 		this.callContainer = callContainer;
 		this.callSite = callSite;
 	}
@@ -55,7 +54,7 @@ public class CallHierarchyViewTreeNode {
 	 * @param callContainer
 	 *            the {@link CallHierarchyItem} of the callable containing the call.
 	 */
-	public CallHierarchyViewTreeNode(final @NonNull CallHierarchyItem callContainer) {
+	public CallHierarchyViewTreeNode(final CallHierarchyItem callContainer) {
 		this.callContainer = callContainer;
 		this.callSite = null;
 	}
@@ -94,7 +93,7 @@ public class CallHierarchyViewTreeNode {
 	 * @param children
 	 *            the new children.
 	 */
-	public void setChildren(final @NonNull List<CallHierarchyViewTreeNode> children) {
+	public void setChildren(final List<CallHierarchyViewTreeNode> children) {
 		this.children = children.toArray(CallHierarchyViewTreeNode[]::new);
 	}
 
@@ -104,7 +103,7 @@ public class CallHierarchyViewTreeNode {
 	 *
 	 * @return the containing {@link CallHierarchyItem}.
 	 */
-	public @NonNull CallHierarchyItem getCallContainer() {
+	public CallHierarchyItem getCallContainer() {
 		return callContainer;
 	}
 
@@ -122,7 +121,7 @@ public class CallHierarchyViewTreeNode {
 	 *
 	 * @return the selection range of this node.
 	 */
-	public @NonNull Range getSelectionRange() {
+	public Range getSelectionRange() {
 		Range theCallSite = callSite;
 		if (theCallSite != null) {
 			return theCallSite;

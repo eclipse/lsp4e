@@ -12,6 +12,7 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.StyledString;
@@ -53,7 +54,7 @@ public class FileAndURIMatchLabelProvider extends DecoratingStyledCellLabelProvi
 		}
 
 		@Override
-		public StyledString getStyledText(Object element) {
+		public @Nullable StyledString getStyledText(@Nullable Object element) {
 			if (canDelegate(element)) {
 				return resourceMatchDelegate.getStyledText(element);
 			}
@@ -84,7 +85,7 @@ public class FileAndURIMatchLabelProvider extends DecoratingStyledCellLabelProvi
 		}
 
 		@Override
-		public Image getImage(Object element) {
+		public @Nullable Image getImage(@Nullable Object element) {
 			if (canDelegate(element)) {
 				return resourceMatchDelegate.getImage(element);
 			}
@@ -99,7 +100,7 @@ public class FileAndURIMatchLabelProvider extends DecoratingStyledCellLabelProvi
 			return null;
 		}
 
-		private boolean canDelegate(Object element) {
+		private boolean canDelegate(@Nullable Object element) {
 			return !(element instanceof URI || element instanceof URIMatch);
 		}
 	}

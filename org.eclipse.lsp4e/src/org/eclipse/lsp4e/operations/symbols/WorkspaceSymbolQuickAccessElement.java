@@ -17,7 +17,6 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
-import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.WorkspaceSymbol;
@@ -63,7 +62,7 @@ public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
 	public void execute() {
 		String locationUri = symbol.getLocation().map(Location::getUri, WorkspaceSymbolLocation::getUri);
 		@Nullable Range range = symbol.getLocation().map(Location::getRange, s -> null);
-		LSPEclipseUtils.open(locationUri, UI.getActivePage(), range);
+		LSPEclipseUtils.open(locationUri, range);
 	}
 
 }

@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.outline;
 
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -26,7 +27,7 @@ public class OutlineSorter extends ViewerComparator {
 	protected final IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 
 	@Override
-	public int compare(final Viewer viewer, final Object o1, final Object o2) {
+	public int compare(final @Nullable Viewer viewer, final @Nullable Object o1, final @Nullable Object o2) {
 		if (!isSortingEnabled())
 			return 0;
 
@@ -42,7 +43,10 @@ public class OutlineSorter extends ViewerComparator {
 		return name1.compareTo(name2);
 	}
 
-	private String getName(Object element) {
+	private @Nullable String getName(@Nullable Object element) {
+		if (element == null)
+			return null;
+
 		if (element instanceof Either<?, ?> either) {
 			element = either.get();
 		}
@@ -59,7 +63,7 @@ public class OutlineSorter extends ViewerComparator {
 	}
 
 	@Override
-	public boolean isSorterProperty(final Object element, final String property) {
+	public boolean isSorterProperty(final @Nullable Object element, final @Nullable String property) {
 		return "name".equals(property); //$NON-NLS-1$
 	}
 

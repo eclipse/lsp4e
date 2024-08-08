@@ -14,6 +14,7 @@ package org.eclipse.lsp4e.operations.symbols;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -28,7 +29,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -57,7 +58,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	private static final class InternalSymbolsLabelProvider extends SymbolsLabelProvider {
 
-		private String pattern;
+		private @Nullable String pattern;
 		private final BoldStylerProvider stylerProvider;
 
 		public InternalSymbolsLabelProvider(BoldStylerProvider stylerProvider) {
@@ -67,17 +68,21 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		}
 
 		@Override
-		public StyledString getStyledText(Object element) {
+		public StyledString getStyledText(@Nullable Object element) {
 			StyledString styledString = super.getStyledText(element);
-			int index = styledString.getString().toLowerCase().indexOf(pattern);
-			if (index != -1) {
-				styledString.setStyle(index, pattern.length(), stylerProvider.getBoldStyler());
+			final var pattern = this.pattern;
+			if (pattern != null) {
+				int index = styledString.getString().toLowerCase().indexOf(pattern);
+				if (index != -1) {
+					styledString.setStyle(index, pattern.length(), stylerProvider.getBoldStyler());
+				}
 			}
 			return styledString;
 		}
 
 		@Override
-		protected int getMaxSeverity(@NonNull IResource resource, @NonNull IDocument doc, @NonNull Range range) throws CoreException, BadLocationException {
+		protected int getMaxSeverity(IResource resource, IDocument doc, Range range)
+				throws CoreException, BadLocationException {
 			int maxSeverity = -1;
 			for (IMarker marker : resource.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO)) {
 				int offset = marker.getAttribute(IMarker.CHAR_START, -1);
@@ -88,7 +93,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 			return maxSeverity;
 		}
 
-		public void setPattern(String pattern) {
+		public void setPattern(@Nullable String pattern) {
 			this.pattern = pattern;
 		}
 	}
@@ -96,17 +101,17 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 	private final class InternalItemsFilter extends ItemsFilter {
 
 		@Override
-		public boolean matchItem(Object item) {
+		public boolean matchItem(@Nullable Object item) {
 			return true;
 		}
 
 		@Override
-		public boolean isConsistentItem(Object item) {
+		public boolean isConsistentItem(@Nullable Object item) {
 			return true;
 		}
 
 		@Override
-		public boolean isSubFilter(ItemsFilter filter) {
+		public boolean isSubFilter(@Nullable ItemsFilter filter) {
 			return false;
 		}
 	}
@@ -115,7 +120,7 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 
 	private final IProject project;
 
-	private List<CompletableFuture<Either<List<? extends SymbolInformation>, List<? extends WorkspaceSymbol>>>> request;
+	private @Nullable List<CompletableFuture<@Nullable Either<List<? extends SymbolInformation>, List<? extends WorkspaceSymbol>>>> request;
 
 	public LSPSymbolInWorkspaceDialog(Shell shell, IProject project, BoldStylerProvider stylerProvider) {
 		super(shell);
@@ -143,36 +148,36 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 			return;
 		}
 		final var params = new WorkspaceSymbolParams(itemsFilter.getPattern());
-		request = LanguageServers.forProject(project).withCapability(ServerCapabilities::getWorkspaceSymbolProvider)
-			.computeAll((w, ls) -> ls.getWorkspaceService().symbol(params));
-		request.stream().map(s -> s.thenApply(LSPSymbolInWorkspaceDialog::eitherToWorkspaceSymbols))
-			.forEach(cf -> {
-				if (monitor.isCanceled()) {
-					return;
-				}
-				try {
-					final List<? extends WorkspaceSymbol> items = cf.get(1, TimeUnit.SECONDS);
-					if(items != null) {
-						for (Object item : items) {
-							if (item != null) {
-								contentProvider.add(item, itemsFilter);
-							}
-						}
+		request = LanguageServers.forProject(project) //
+				.withCapability(ServerCapabilities::getWorkspaceSymbolProvider) //
+				.computeAll((w, ls) -> ls.getWorkspaceService().symbol(params));
+		request.stream().map((
+				CompletableFuture<@Nullable Either<List<? extends SymbolInformation>, List<@Nullable ? extends WorkspaceSymbol>>> f) -> f
+						.thenApply(LSPSymbolInWorkspaceDialog::eitherToWorkspaceSymbols))
+				.forEach(cf -> {
+					if (monitor.isCanceled()) {
+						return;
 					}
-				} catch (ExecutionException e) {
-					LanguageServerPlugin.logError(e);
-				} catch (InterruptedException e) {
-					LanguageServerPlugin.logError(e);
-					Thread.currentThread().interrupt();
-				} catch (TimeoutException e) {
-					LanguageServerPlugin.logWarning("Could not get workspace symbols due to timeout after 1 seconds in `workspace/symbol`", e); //$NON-NLS-1$
-				}
-			});
+					try {
+						for (Object item : cf.get(1, TimeUnit.SECONDS)) {
+							contentProvider.add(item, itemsFilter);
+						}
+					} catch (ExecutionException e) {
+						LanguageServerPlugin.logError(e);
+					} catch (InterruptedException e) {
+						LanguageServerPlugin.logError(e);
+						Thread.currentThread().interrupt();
+					} catch (TimeoutException e) {
+						LanguageServerPlugin.logWarning(
+								"Could not get workspace symbols due to timeout after 1 seconds in `workspace/symbol`", //$NON-NLS-1$
+								e);
+					}
+				});
 	}
 
 	@Override
 	public String getElementName(Object item) {
-		return ((WorkspaceSymbol)item).getName();
+		return ((WorkspaceSymbol) item).getName();
 	}
 
 	@Override
@@ -195,17 +200,20 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 	}
 
 	@Override
-	protected Control createExtendedContentArea(Composite parent) {
+	protected @Nullable Control createExtendedContentArea(Composite parent) {
 		return null;
 	}
 
-	private static List<WorkspaceSymbol> toWorkspaceSymbols(List<? extends SymbolInformation> source) {
-		return source == null ?
-				List.of() :
-				source.stream().map(LSPSymbolInWorkspaceDialog::toWorkspaceSymbol).toList();
+	private static List<WorkspaceSymbol> toWorkspaceSymbols(@Nullable List<? extends SymbolInformation> source) {
+		return source == null //
+				? List.of()
+				: source.stream() //
+						.map(LSPSymbolInWorkspaceDialog::toWorkspaceSymbol) //
+						.filter(Objects::nonNull) //
+						.toList();
 	}
 
-	private static WorkspaceSymbol toWorkspaceSymbol(SymbolInformation symbolinformation) {
+	private static @Nullable WorkspaceSymbol toWorkspaceSymbol(@Nullable SymbolInformation symbolinformation) {
 		if (symbolinformation == null) {
 			return null;
 		}
@@ -214,7 +222,8 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		res.setLocation(Either.forLeft(symbolinformation.getLocation()));
 		res.setKind(symbolinformation.getKind());
 		res.setContainerName(symbolinformation.getContainerName());
-		List<SymbolTag> tags = symbolinformation.getTags() != null ? new ArrayList<>(symbolinformation.getTags()) : new ArrayList<>(1);
+		List<SymbolTag> tags = symbolinformation.getTags() != null ? new ArrayList<>(symbolinformation.getTags())
+				: new ArrayList<>(1);
 		if (symbolinformation.getDeprecated() != null && symbolinformation.getDeprecated().booleanValue()) {
 			tags.add(SymbolTag.Deprecated);
 		}
@@ -222,7 +231,10 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 		return res;
 	}
 
-	static List<? extends WorkspaceSymbol> eitherToWorkspaceSymbols(Either<List<? extends SymbolInformation>, List<? extends WorkspaceSymbol>> source) {
-		return source.map(LSPSymbolInWorkspaceDialog::toWorkspaceSymbols, Function.identity());
+	static List<? extends WorkspaceSymbol> eitherToWorkspaceSymbols(
+			final @Nullable Either<List<? extends SymbolInformation>, List<@Nullable ? extends WorkspaceSymbol>> source) {
+		return source == null //
+				? List.of()
+				: source.map(LSPSymbolInWorkspaceDialog::toWorkspaceSymbols, Function.identity());
 	}
 }

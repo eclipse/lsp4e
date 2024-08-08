@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.highlight;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -27,7 +29,6 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -73,19 +74,18 @@ public class HighlightReconcilingStrategy
 	public static final String TEXT_ANNOTATION_TYPE = "org.eclipse.lsp4e.text"; //$NON-NLS-1$
 
 	private boolean enabled;
-	private ISourceViewer sourceViewer;
-	private IDocument document;
-
-	private Job highlightJob;
+	private @Nullable ISourceViewer sourceViewer;
+	private @Nullable IDocument document;
+	private @Nullable Job highlightJob;
 
 	/**
 	 * Holds the current occurrence annotations.
 	 */
-	private Annotation[] fOccurrenceAnnotations = null;
+	private Annotation @Nullable [] fOccurrenceAnnotations = null;
 
 	class EditorSelectionChangedListener implements ISelectionChangedListener {
 
-		public void install(ISelectionProvider selectionProvider) {
+		public void install(@Nullable ISelectionProvider selectionProvider) {
 			if (selectionProvider == null)
 				return;
 
@@ -96,7 +96,7 @@ public class HighlightReconcilingStrategy
 			}
 		}
 
-		public void uninstall(ISelectionProvider selectionProvider) {
+		public void uninstall(@Nullable ISelectionProvider selectionProvider) {
 			if (selectionProvider == null)
 				return;
 
@@ -124,9 +124,9 @@ public class HighlightReconcilingStrategy
 		}
 	}
 
-	private EditorSelectionChangedListener editorSelectionChangedListener;
+	private EditorSelectionChangedListener editorSelectionChangedListener = lateNonNull();
 
-	private @NonNull List<@NonNull CompletableFuture<@Nullable List<? extends DocumentHighlight>>> requests = List.of();
+	private List<CompletableFuture<@Nullable List<? extends DocumentHighlight>>> requests = List.of();
 
 	@Override
 	public void install(ITextViewer viewer) {
@@ -136,7 +136,7 @@ public class HighlightReconcilingStrategy
 			this.enabled = preferences.getBoolean(TOGGLE_HIGHLIGHT_PREFERENCE, true);
 			this.sourceViewer = thisSourceViewer;
 			editorSelectionChangedListener = new EditorSelectionChangedListener();
-			editorSelectionChangedListener.install(sourceViewer.getSelectionProvider());
+			editorSelectionChangedListener.install(thisSourceViewer.getSelectionProvider());
 		}
 	}
 
@@ -152,16 +152,16 @@ public class HighlightReconcilingStrategy
 	}
 
 	@Override
-	public void setProgressMonitor(IProgressMonitor monitor) {
-
+	public void setProgressMonitor(@Nullable IProgressMonitor monitor) {
 	}
 
 	@Override
 	public void initialReconcile() {
+		final var sourceViewer = this.sourceViewer;
 		if (sourceViewer != null) {
 			ISelectionProvider selectionProvider = sourceViewer.getSelectionProvider();
 			final StyledText textWidget = sourceViewer.getTextWidget();
-			if (textWidget != null && selectionProvider != null) {
+			if (textWidget != null) {
 				textWidget.getDisplay().asyncExec(() -> {
 					if (!textWidget.isDisposed()) {
 						updateHighlights(selectionProvider.getSelection());
@@ -172,7 +172,7 @@ public class HighlightReconcilingStrategy
 	}
 
 	@Override
-	public void setDocument(IDocument document) {
+	public void setDocument(@Nullable IDocument document) {
 		this.document = document;
 	}
 
@@ -183,8 +183,10 @@ public class HighlightReconcilingStrategy
 	 * @param caretOffset
 	 * @param monitor
 	 */
-	private void collectHighlights(int caretOffset, IProgressMonitor monitor) {
-		if (sourceViewer == null || !enabled || monitor.isCanceled()) {
+	private void collectHighlights(int caretOffset, @Nullable IProgressMonitor monitor) {
+		final var sourceViewer = this.sourceViewer;
+		final var document = this.document;
+		if (sourceViewer == null || document == null || !enabled || monitor != null && monitor.isCanceled()) {
 			return;
 		}
 		cancel();
@@ -196,15 +198,16 @@ public class HighlightReconcilingStrategy
 			return;
 		}
 		URI uri = LSPEclipseUtils.toUri(document);
-		if(uri == null) {
+		if (uri == null) {
 			return;
 		}
 		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(uri);
 		final var params = new DocumentHighlightParams(identifier, position);
-		requests = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDocumentHighlightProvider)
+		requests = LanguageServers.forDocument(document)
+				.withCapability(ServerCapabilities::getDocumentHighlightProvider)
 				.computeAll(languageServer -> languageServer.getTextDocumentService().documentHighlight(params));
 		requests.forEach(request -> request.thenAcceptAsync(highlights -> {
-			if (!monitor.isCanceled()) {
+			if (monitor == null || !monitor.isCanceled()) {
 				updateAnnotations(highlights, sourceViewer.getAnnotationModel());
 			}
 		}));
@@ -226,20 +229,19 @@ public class HighlightReconcilingStrategy
 	 *            annotation model to update.
 	 */
 	private void updateAnnotations(@Nullable List<? extends DocumentHighlight> highlights, IAnnotationModel annotationModel) {
-		if (highlights == null)
+		final var document = this.document;
+		if (highlights == null || document == null)
 			return;
 
 		final var annotationMap = new HashMap<Annotation, org.eclipse.jface.text.Position>(highlights.size());
 		for (DocumentHighlight h : highlights) {
-			if (h != null) {
-				try {
-					int start = LSPEclipseUtils.toOffset(h.getRange().getStart(), document);
-					int end = LSPEclipseUtils.toOffset(h.getRange().getEnd(), document);
-					annotationMap.put(new Annotation(kindToAnnotationType(h.getKind()), false, null),
-							new org.eclipse.jface.text.Position(start, end - start));
-				} catch (BadLocationException e) {
-					LanguageServerPlugin.logError(e);
-				}
+			try {
+				int start = LSPEclipseUtils.toOffset(h.getRange().getStart(), document);
+				int end = LSPEclipseUtils.toOffset(h.getRange().getEnd(), document);
+				annotationMap.put(new Annotation(kindToAnnotationType(h.getKind()), false, null),
+						new org.eclipse.jface.text.Position(start, end - start));
+			} catch (Exception e) {
+				LanguageServerPlugin.logError(e);
 			}
 		}
 
@@ -275,7 +277,12 @@ public class HighlightReconcilingStrategy
 	}
 
 	void removeOccurrenceAnnotations() {
+		final var sourceViewer = this.sourceViewer;
+		if(sourceViewer == null)
+			return;
+
 		IAnnotationModel annotationModel = sourceViewer.getAnnotationModel();
+		final var fOccurrenceAnnotations = this.fOccurrenceAnnotations;
 		if (annotationModel == null || fOccurrenceAnnotations == null)
 			return;
 
@@ -286,7 +293,7 @@ public class HighlightReconcilingStrategy
 				for (Annotation fOccurrenceAnnotation : fOccurrenceAnnotations)
 					annotationModel.removeAnnotation(fOccurrenceAnnotation);
 			}
-			fOccurrenceAnnotations = null;
+			this.fOccurrenceAnnotations = null;
 		}
 	}
 

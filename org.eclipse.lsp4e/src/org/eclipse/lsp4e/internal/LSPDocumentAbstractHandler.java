@@ -23,7 +23,6 @@ import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.HandlerEvent;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -42,7 +41,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 public abstract class LSPDocumentAbstractHandler extends AbstractHandler {
 
 	private static class LanguageServerDocumentHandlerExecutor extends LanguageServerDocumentExecutor {
-		LanguageServerDocumentHandlerExecutor(@NonNull IDocument document) {
+		LanguageServerDocumentHandlerExecutor(IDocument document) {
 			super(document);
 		}
 
@@ -57,15 +56,15 @@ public abstract class LSPDocumentAbstractHandler extends AbstractHandler {
 		 *         capabilities.
 		 */
 		boolean anyMatching(Runnable runner) {
-			return getServers().stream().filter(wF -> matches(wF, runner)).findFirst().isPresent();
+			return getServers().stream().anyMatch(wF -> matches(wF, runner));
 		}
 
 		@Override
-		public @NonNull LanguageServerDocumentHandlerExecutor withFilter(final @NonNull Predicate<ServerCapabilities> filter) {
+		public LanguageServerDocumentHandlerExecutor withFilter(final Predicate<ServerCapabilities> filter) {
 			return (LanguageServerDocumentHandlerExecutor) super.withFilter(filter);
 		}
 
-		Boolean matches(@NonNull CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture, Runnable runner) {
+		private boolean matches(CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture, Runnable runner) {
 			try {
 				return wrapperFuture.thenApply(Objects::nonNull).get(50, TimeUnit.MILLISECONDS);
 			} catch (java.util.concurrent.ExecutionException e) {
@@ -79,14 +78,13 @@ public abstract class LSPDocumentAbstractHandler extends AbstractHandler {
 						runner.run();
 					}
 				});
-				return Boolean.FALSE;
 			}
-			return Boolean.FALSE;
+			return false;
 		}
 	}
 
 	@Override
-	public Object execute(ExecutionEvent event) throws ExecutionException {
+	public @Nullable Object execute(ExecutionEvent event) throws ExecutionException {
 		final var textEditor = UI.asTextEditor(HandlerUtil.getActiveEditor(event));
 		if (textEditor != null) {
 			execute(event, textEditor);
@@ -110,12 +108,12 @@ public abstract class LSPDocumentAbstractHandler extends AbstractHandler {
 		return selection instanceof ITextSelection && !selection.isEmpty();
 	}
 
-	protected void setEnabled(final @NonNull Function<ServerCapabilities, Either<Boolean, ? extends Object>> serverCapabilities, Predicate<ITextEditor> condition) {
+	protected void setEnabled(final Function<ServerCapabilities, Either<Boolean, ?>> serverCapabilities, Predicate<ITextEditor> condition) {
 		Predicate<ServerCapabilities> filter = f -> LSPEclipseUtils.hasCapability(serverCapabilities.apply(f));
 		setEnabled(filter, condition);
 	}
 
-	protected void setEnabled(final @NonNull Predicate<ServerCapabilities> filter, Predicate<ITextEditor> condition) {
+	protected void setEnabled(final Predicate<ServerCapabilities> filter, Predicate<ITextEditor> condition) {
 		ITextEditor textEditor = UI.getActiveTextEditor();
 		if (textEditor != null && condition.test(textEditor)) {
 			IDocument document = LSPEclipseUtils.getDocument(textEditor);

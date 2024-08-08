@@ -37,6 +37,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.core.runtime.content.IContentType;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.ui.Messages;
@@ -51,15 +52,15 @@ public class CreateFileChange extends ResourceChange {
 
 	private final URI uri;
 	private final String fSource;
-	private String fEncoding;
+	private @Nullable String fEncoding;
 	private boolean fExplicitEncoding;
 	private final long fStampToRestore;
 
-	public CreateFileChange(URI uri, String source, String encoding) {
+	public CreateFileChange(URI uri, String source, @Nullable String encoding) {
 		this(uri, source, encoding, IResource.NULL_STAMP);
 	}
 
-	public CreateFileChange(URI uri, String source, String encoding, long stampToRestore) {
+	public CreateFileChange(URI uri, String source, @Nullable String encoding, long stampToRestore) {
 		Assert.isNotNull(uri, "uri"); //$NON-NLS-1$
 		Assert.isNotNull(source, "source"); //$NON-NLS-1$
 		this.uri = uri;
@@ -81,7 +82,7 @@ public class CreateFileChange extends ResourceChange {
 	}
 
 	@Override
-	protected IFile getModifiedResource() {
+	protected @Nullable IFile getModifiedResource() {
 		return LSPEclipseUtils.getFileHandle(this.uri);
 	}
 
@@ -98,10 +99,10 @@ public class CreateFileChange extends ResourceChange {
 	}
 
 	@Override
-	public Change perform(IProgressMonitor pm) throws CoreException {
+	public @Nullable Change perform(IProgressMonitor pm) throws CoreException {
 		pm.beginTask(NLS.bind(Messages.edit_CreateFile, uri), 3);
 
-		initializeEncoding();
+		final var fEncoding = initializeEncoding();
 
 		try (InputStream is= new ByteArrayInputStream(fSource.getBytes(fEncoding))) {
 
@@ -141,7 +142,10 @@ public class CreateFileChange extends ResourceChange {
 				}
 			} else {
 				final var file = new File(this.uri);
-				Files.createDirectories(file.getParentFile().toPath());
+				final var parentFile = file.getParentFile();
+				if (parentFile != null) {
+					Files.createDirectories(parentFile.toPath());
+				}
 				if (!file.createNewFile()) {
 					throw new IOException(String.format("Failed to create file '%s'",file)); //$NON-NLS-1$
 				}
@@ -155,7 +159,7 @@ public class CreateFileChange extends ResourceChange {
 		return null;
 	}
 
-	private void initializeEncoding() {
+	private String initializeEncoding() {
 		if (fEncoding == null) {
 			fExplicitEncoding= false;
 			IFile ifile = getModifiedResource();
@@ -185,5 +189,6 @@ public class CreateFileChange extends ResourceChange {
 			}
 		}
 		Assert.isNotNull(fEncoding);
+		return fEncoding;
 	}
 }

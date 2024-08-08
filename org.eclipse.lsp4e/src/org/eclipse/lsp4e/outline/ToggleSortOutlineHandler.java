@@ -16,13 +16,14 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 public class ToggleSortOutlineHandler extends AbstractHandler {
 
 	@Override
-	public Object execute(final ExecutionEvent event) throws ExecutionException {
+	public @Nullable Object execute(final ExecutionEvent event) throws ExecutionException {
 		final boolean oldValue = HandlerUtil.toggleCommandState(event.getCommand());
 		final IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 		prefs.putBoolean(CNFOutlinePage.SORT_OUTLINE_PREFERENCE, !oldValue);

@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.diagnostics;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.lsp4j.Diagnostic;
 
@@ -33,7 +34,7 @@ public class DiagnosticAnnotation extends Annotation {
 	}
 
 	@Override
-	public void setType(String type) {
+	public void setType(@Nullable String type) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -43,7 +44,7 @@ public class DiagnosticAnnotation extends Annotation {
 	}
 
 	@Override
-	public void setText(String text) {
+	public void setText(@Nullable String text) {
 		throw new UnsupportedOperationException();
 	}
 

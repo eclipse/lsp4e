@@ -34,7 +34,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -57,17 +56,17 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	public static final String LSP_DIAGNOSTIC = "lspDiagnostic"; //$NON-NLS-1$
 	public static final String LANGUAGE_SERVER_ID = "languageServerId"; //$NON-NLS-1$
 	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
-	private final @NonNull String languageServerId;
-	private final @NonNull String markerType;
+	private final String languageServerId;
+	private final String markerType;
 	private final Optional<IMarkerAttributeComputer> markerAttributeComputer;
 
-	public LSPDiagnosticsToMarkers(@NonNull String serverId, @Nullable String markerType, @Nullable IMarkerAttributeComputer markerAttributeComputer) {
+	public LSPDiagnosticsToMarkers(String serverId, @Nullable String markerType, @Nullable IMarkerAttributeComputer markerAttributeComputer) {
 		this.languageServerId = serverId;
 		this.markerType = markerType != null ? markerType : LS_DIAGNOSTIC_MARKER_TYPE;
 		this.markerAttributeComputer = Optional.ofNullable(markerAttributeComputer);
 	}
 
-	public LSPDiagnosticsToMarkers(@NonNull String serverId) {
+	public LSPDiagnosticsToMarkers(String serverId) {
 		this(serverId, null, null);
 	}
 
@@ -79,7 +78,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	 * @deprecated
 	 */
 	@Deprecated
-	public LSPDiagnosticsToMarkers(IProject project, @NonNull String serverId) {
+	public LSPDiagnosticsToMarkers(IProject project, String serverId) {
 		this(serverId);
 	}
 
@@ -105,7 +104,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		}
 	}
 
-	private void updateEditorAnnotations(@NonNull ISourceViewer sourceViewer, PublishDiagnosticsParams diagnostics) {
+	private void updateEditorAnnotations(ISourceViewer sourceViewer, PublishDiagnosticsParams diagnostics) {
 		IAnnotationModel annotationModel = sourceViewer.getAnnotationModel();
 		if (annotationModel == null) {
 			return;
@@ -120,9 +119,12 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			final var toAdd = new HashMap<Annotation, Position>(diagnostics.getDiagnostics().size(), 1.f);
 			diagnostics.getDiagnostics().forEach(diagnostic -> {
 				try {
-					int startOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), sourceViewer.getDocument());
-					int endOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), sourceViewer.getDocument());
-					toAdd.put(new DiagnosticAnnotation(diagnostic), new Position(startOffset, endOffset - startOffset));
+					final var doc = sourceViewer.getDocument();
+					if (doc != null) {
+						int startOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), doc);
+						int endOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), doc);
+						toAdd.put(new DiagnosticAnnotation(diagnostic), new Position(startOffset, endOffset - startOffset));
+					}
 				} catch (BadLocationException ex) {
 					LanguageServerPlugin.logError(ex);
 				}
@@ -134,12 +136,12 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	private WorkspaceJob updateMarkers(PublishDiagnosticsParams diagnostics, IResource resource) {
 		WorkspaceJob job = new WorkspaceJob("Update markers from diagnostics") { //$NON-NLS-1$
 			@Override
-			public boolean belongsTo(Object family) {
+			public boolean belongsTo(@Nullable Object family) {
 				return LanguageServerPlugin.FAMILY_UPDATE_MARKERS == family;
 			}
 
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
+			public IStatus runInWorkspace(@Nullable IProgressMonitor monitor) throws CoreException {
 				if (!resource.exists()) {
 					return Status.OK_STATUS;
 				}
@@ -203,7 +205,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		return job;
 	}
 
-	protected void updateMarker(@NonNull Map<String, Object> targetAttributes, @NonNull IMarker marker) {
+	protected void updateMarker(Map<String, Object> targetAttributes, IMarker marker) {
 		try {
 			if (!targetAttributes.equals(marker.getAttributes())) {
 				marker.setAttributes(targetAttributes);
@@ -213,7 +215,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		}
 	}
 
-	private IMarker getExistingMarkerFor(IDocument document, Diagnostic diagnostic, Set<IMarker> remainingMarkers) {
+	private @Nullable IMarker getExistingMarkerFor(@Nullable IDocument document, Diagnostic diagnostic, Set<IMarker> remainingMarkers) {
 		if (document == null) {
 			return null;
 		}
@@ -236,14 +238,11 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		return null;
 	}
 
-	private @NonNull Map<String, Object> computeMarkerAttributes(@Nullable IDocument document,
-			@NonNull Diagnostic diagnostic, @NonNull IResource resource) {
+	private Map<String, Object> computeMarkerAttributes(@Nullable IDocument document,
+			Diagnostic diagnostic, IResource resource) {
 		Either<String, Integer> code = diagnostic.getCode();
 		if (code != null && code.isLeft()) {
-			String left = code.getLeft();
-			if (left != null) {
-				diagnostic.setCode(Either.forLeft(left.intern()));
-			}
+			diagnostic.setCode(Either.forLeft(code.getLeft().intern()));
 		}
 		String source = diagnostic.getSource();
 		if (source != null) {

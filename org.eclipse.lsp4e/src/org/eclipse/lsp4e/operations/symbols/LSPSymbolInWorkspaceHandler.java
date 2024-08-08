@@ -16,6 +16,7 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
@@ -33,7 +34,7 @@ import org.eclipse.ui.texteditor.ITextEditor;
 public class LSPSymbolInWorkspaceHandler extends LSPDocumentAbstractHandler {
 
 	@Override
-	public Object execute(ExecutionEvent event) throws ExecutionException {
+	public @Nullable Object execute(ExecutionEvent event) throws ExecutionException {
 		IEditorPart part = HandlerUtil.getActiveEditor(event);
 		IResource resource = null;
 		if (part != null && part.getEditorInput() != null) {
@@ -81,7 +82,7 @@ public class LSPSymbolInWorkspaceHandler extends LSPDocumentAbstractHandler {
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
+	public void setEnabled(@Nullable Object evaluationContext) {
 		setEnabled(ServerCapabilities::getWorkspaceSymbolProvider, x -> true);
 	}
 

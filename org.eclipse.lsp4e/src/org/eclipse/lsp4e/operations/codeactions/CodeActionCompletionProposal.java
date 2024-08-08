@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.contentassist.ContextInformation;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
@@ -29,8 +30,8 @@ import org.eclipse.swt.graphics.Point;
 
 public class CodeActionCompletionProposal implements ICompletionProposal {
 
-	private CodeAction fcodeAction;
-	private Command fcommand;
+	private @Nullable CodeAction fcodeAction;
+	private @Nullable Command fcommand;
 	private String fdisplayString;
 	private final LanguageServerWrapper serverWrapper;
 
@@ -39,13 +40,13 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 		if (command.isLeft()) {
 			fcommand = command.getLeft();
 			fdisplayString = fcommand.getTitle();
-		} else if (command.isRight()) {
+		} else {
 			fcodeAction = command.getRight();
 			fdisplayString = fcodeAction.getTitle();
 		}
 	}
 
-	static boolean isCodeActionResolveSupported(ServerCapabilities capabilities) {
+	static boolean isCodeActionResolveSupported(@Nullable ServerCapabilities capabilities) {
 		if (capabilities != null) {
 			Either<Boolean, CodeActionOptions> caProvider = capabilities.getCodeActionProvider();
 			if (caProvider.isLeft()) {
@@ -62,6 +63,7 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 
 	@Override
 	public void apply(IDocument document) {
+		final var fcodeAction = this.fcodeAction;
 		if (fcodeAction != null) {
 			if (isCodeActionResolveSupported(serverWrapper.getServerCapabilities()) && fcodeAction.getEdit() == null) {
 				// Unresolved code action "edit" property. Resolve it.
@@ -76,7 +78,7 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 		}
 	}
 
-	private void apply(CodeAction codeaction) {
+	private void apply(@Nullable CodeAction codeaction) {
 		if (codeaction != null) {
 			if (codeaction.getEdit() != null) {
 				LSPEclipseUtils.applyWorkspaceEdit(codeaction.getEdit(), codeaction.getTitle());
@@ -88,13 +90,13 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 	}
 
 	@Override
-	public Point getSelection(IDocument document) {
+	public @Nullable Point getSelection(IDocument document) {
 		return null;
 	}
 
 	@Override
-	public String getAdditionalProposalInfo() {
-		return ""; //$NON-NLS-1$
+	public @Nullable String getAdditionalProposalInfo() {
+		return null;
 	}
 
 	@Override
@@ -103,12 +105,12 @@ public class CodeActionCompletionProposal implements ICompletionProposal {
 	}
 
 	@Override
-	public Image getImage() {
+	public @Nullable Image getImage() {
 		return null;
 	}
 
 	@Override
-	public IContextInformation getContextInformation() {
+	public @Nullable IContextInformation getContextInformation() {
 		return new ContextInformation("some context display string", "some information display string"); //$NON-NLS-1$//$NON-NLS-2$
 	}
 

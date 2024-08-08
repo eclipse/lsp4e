@@ -12,6 +12,7 @@
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
 import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -45,7 +46,7 @@ public class TypeHierarchyViewHandler extends CallHierarchyCommandHandler {
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
+	public void setEnabled(@Nullable Object evaluationContext) {
 		setEnabled(ServerCapabilities::getTypeHierarchyProvider, this::hasSelection);
 	}
 }

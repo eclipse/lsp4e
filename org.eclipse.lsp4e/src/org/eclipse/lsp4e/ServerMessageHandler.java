@@ -13,6 +13,7 @@ package org.eclipse.lsp4e;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.notifications.AbstractNotificationPopup;
 import org.eclipse.lsp4e.ui.LSPImages;
@@ -40,7 +41,7 @@ public class ServerMessageHandler {
 		private final MessageParams messageParams;
 
 		public LSPNotification(String label, MessageParams messageParams) {
-			super(Display.getCurrent());
+			super(UI.getDisplay());
 			setParentShell(UI.getActiveShell());
 			this.label = label;
 			this.messageParams = messageParams;
@@ -59,7 +60,7 @@ public class ServerMessageHandler {
 		}
 
 		@Override
-		public Image getPopupShellImage(int maximumHeight) {
+		public @Nullable Image getPopupShellImage(int maximumHeight) {
 			return switch (messageParams.getType()) {
 			case Error -> LSPImages.getSharedImage(ISharedImages.IMG_OBJS_ERROR_TSK);
 			case Warning -> LSPImages.getSharedImage(ISharedImages.IMG_OBJS_WARN_TSK);

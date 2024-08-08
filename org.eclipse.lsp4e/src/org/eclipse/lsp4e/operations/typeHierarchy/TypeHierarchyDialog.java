@@ -9,7 +9,6 @@
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.dialogs.PopupDialog;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -42,10 +41,10 @@ public class TypeHierarchyDialog extends PopupDialog {
 	private static boolean showSuperTypes = true;
 
 	private final LanguageServerDefinition lsDefinition;
-	private final @NonNull IDocument document;
+	private final IDocument document;
 	private final ITextSelection textSelection;
 
-	public TypeHierarchyDialog(@NonNull Shell parentShell, ITextSelection textSelection, @NonNull IDocument document, @NonNull LanguageServerDefinition ls) {
+	public TypeHierarchyDialog(Shell parentShell, ITextSelection textSelection, IDocument document, LanguageServerDefinition ls) {
 		super(parentShell, PopupDialog.INFOPOPUPRESIZE_SHELLSTYLE, true, true, true, false, false, null, null);
 		this.lsDefinition = ls;
 		this.document = document;
@@ -99,8 +98,9 @@ public class TypeHierarchyDialog extends PopupDialog {
 		viewer.setLabelProvider(new TypeHierarchyItemLabelProvider());
 		viewer.setAutoExpandLevel(2);
 		viewer.addDoubleClickListener(event -> {
-			TypeHierarchyItem item = (TypeHierarchyItem)((IStructuredSelection)event.getSelection()).getFirstElement();
-			LSPEclipseUtils.open(item.getUri(), item.getSelectionRange());
+			if(((IStructuredSelection)event.getSelection()).getFirstElement() instanceof final TypeHierarchyItem item) {
+				LSPEclipseUtils.open(item.getUri(), item.getSelectionRange());
+			}
 		});
 
 		final var sorter = new CommonViewerSorter();
@@ -123,5 +123,3 @@ public class TypeHierarchyDialog extends PopupDialog {
 		shell.setSize(280, 300);
 	}
 }
-
-
