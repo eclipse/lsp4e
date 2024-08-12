@@ -19,8 +19,11 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IContributionItem;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.actions.CompoundContributionItem;
 
 public class OutlineViewFilterMenuContributor extends CompoundContributionItem {
@@ -57,6 +60,11 @@ public class OutlineViewFilterMenuContributor extends CompoundContributionItem {
 			super(kind.name(), IAction.AS_CHECK_BOX);
 			this.kind = kind;
 			this.setChecked(isHideSymbolKind(kind));
+
+			Image img = LSPImages.imageFromSymbolKind(kind);
+			if (img != null) {
+				this.setImageDescriptor(ImageDescriptor.createFromImage(img));
+			}
 		}
 
 		@Override
