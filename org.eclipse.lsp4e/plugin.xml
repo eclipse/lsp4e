@@ -283,6 +283,27 @@
          </command>
       </menuContribution>
       <menuContribution
+            allPopups="false"
+            locationURI="menu:org.eclipse.ui.views.ContentOutline">
+         <menu
+               id="org.eclipse.lsp4e.outline.hideMenu"
+               label="Hide...">
+            <visibleWhen>
+               <reference
+                     definitionId="org.eclipse.lsp4e.activePartHasCNFOutlinePage">
+               </reference>
+            </visibleWhen>
+         </menu>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="menu:org.eclipse.lsp4e.outline.hideMenu">
+         <dynamic
+               class="org.eclipse.lsp4e.outline.OutlineViewFilterMenuContributor"
+               id="org.eclipse.lsp4e.filters.dynamic">
+         </dynamic>
+      </menuContribution>
+      <menuContribution
             allPopups="true"
             locationURI="popup:org.eclipse.ui.genericeditor.source.menu?after=additions">
          <!-- "Source/Format" menu entry in editor popup menu -->

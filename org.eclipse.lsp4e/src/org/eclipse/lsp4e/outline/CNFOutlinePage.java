@@ -63,6 +63,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	public static final String LINK_WITH_EDITOR_PREFERENCE = ID + ".linkWithEditor"; //$NON-NLS-1$
 	public static final String SHOW_KIND_PREFERENCE = ID + ".showKind"; //$NON-NLS-1$
 	public static final String SORT_OUTLINE_PREFERENCE = ID + ".sortOutline"; //$NON-NLS-1$
+	public static final String HIDE_DOCUMENT_SYMBOL_KIND_PREFERENCE_PREFIX = ID + ".hide"; //$NON-NLS-1$
 
 	private CommonViewer outlineViewer = lateNonNull();
 
