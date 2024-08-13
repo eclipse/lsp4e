@@ -41,7 +41,7 @@ import org.eclipse.ui.console.MessageConsoleStream;
 
 public class LoggingStreamConnectionProviderProxy implements StreamConnectionProvider, IAdaptable {
 
-	public static File getLogDirectory() {
+	public static @Nullable File getLogDirectory() {
 		IPath root = ResourcesPlugin.getWorkspace().getRoot().getLocation();
 		if (root == null) {
 			return null;
@@ -57,11 +57,11 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	private static final String STDERR_KEY = "stderr.logging.enabled"; //$NON-NLS-1$
 
 	private final StreamConnectionProvider provider;
-	private InputStream inputStream;
-	private OutputStream outputStream;
-	private InputStream errorStream;
+	private @Nullable InputStream inputStream;
+	private @Nullable OutputStream outputStream;
+	private @Nullable InputStream errorStream;
 	private final String id;
-	private final File logFile;
+	private final @Nullable File logFile;
 	private boolean logToFile;
 	private boolean logToConsole;
 
@@ -104,10 +104,10 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		logToFile = store.getBoolean(lsToFileLoggingId(serverId));
 		logToConsole = store.getBoolean(lsToConsoleLoggingId(serverId));
 		store.addPropertyChangeListener(event -> {
-			if (event.getProperty().equals(FILE_KEY)) {
-				logToFile = (boolean) event.getNewValue();
-			} else if (event.getProperty().equals(STDERR_KEY)) {
-				logToConsole = (boolean) event.getNewValue();
+			if (event.getProperty().equals(FILE_KEY) && event.getNewValue() instanceof Boolean newValue) {
+				logToFile = newValue;
+			} else if (event.getProperty().equals(STDERR_KEY) && event.getNewValue() instanceof Boolean newValue) {
+				logToConsole = newValue;
 			}
 		});
 		this.logFile = getLogFile();
@@ -134,7 +134,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	}
 
 	@Override
-	public InputStream getInputStream() {
+	public @Nullable InputStream getInputStream() {
 		if (inputStream != null) {
 			return inputStream;
 		}
@@ -162,7 +162,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	}
 
 	@Override
-	public <T> T getAdapter(Class<T> adapter) {
+	public <T> @Nullable T getAdapter(@Nullable Class<T> adapter) {
 		if(adapter == ProcessHandle.class) {
 			return Adapters.adapt(provider, adapter);
 		}
@@ -170,7 +170,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	}
 
 	@Override
-	public InputStream getErrorStream() {
+	public @Nullable InputStream getErrorStream() {
 		if (errorStream != null) {
 			return errorStream;
 		}
@@ -198,7 +198,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	}
 
 	@Override
-	public OutputStream getOutputStream() {
+	public @Nullable OutputStream getOutputStream() {
 		if (outputStream != null) {
 			return outputStream;
 		}
@@ -228,12 +228,12 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	}
 
 	@Override
-	public InputStream forwardCopyTo(InputStream input, OutputStream output) {
+	public @Nullable InputStream forwardCopyTo(@Nullable InputStream input, @Nullable OutputStream output) {
 		return provider.forwardCopyTo(input, output);
 	}
 
 	@Override
-	public Object getInitializationOptions(@Nullable URI rootUri) {
+	public @Nullable Object getInitializationOptions(@Nullable URI rootUri) {
 		return provider.getInitializationOptions(rootUri);
 	}
 
@@ -269,13 +269,14 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	}
 
 	private void logToConsole(String string) {
+		var consoleStream = this.consoleStream;
 		if (consoleStream == null || consoleStream.isClosed()) {
-			consoleStream = findConsole().newMessageStream();
+			consoleStream = this.consoleStream = findConsole().newMessageStream();
 		}
 		consoleStream.println(string);
 	}
 
-	private MessageConsoleStream consoleStream;
+	private @Nullable MessageConsoleStream consoleStream;
 	private MessageConsole findConsole() {
 		ConsolePlugin plugin = ConsolePlugin.getDefault();
 		IConsoleManager conMan = plugin.getConsoleManager();
@@ -290,6 +291,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	}
 
 	private void logToFile(String string) {
+		final var logFile = this.logFile;
 		if (logFile == null) {
 			return;
 		}
@@ -309,7 +311,7 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 		}
 	}
 
-	private File getLogFile() {
+	private @Nullable File getLogFile() {
 		if (logFile != null) {
 			return logFile;
 		}

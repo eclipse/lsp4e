@@ -28,12 +28,12 @@ public class CommandConverter extends AbstractParameterValueConverter {
 	}
 
 	@Override
-	public @Nullable Object convertToObject(String parameterValue) throws ParameterValueConversionException {
+	public @Nullable Object convertToObject(@Nullable String parameterValue) throws ParameterValueConversionException {
 		return gson.fromJson(parameterValue, Command.class);
 	}
 
 	@Override
-	public String convertToString(Object parameterValue) throws ParameterValueConversionException {
+	public String convertToString(@Nullable Object parameterValue) throws ParameterValueConversionException {
 		return gson.toJson(parameterValue);
 	}
 

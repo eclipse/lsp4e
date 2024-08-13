@@ -15,7 +15,6 @@ package org.eclipse.lsp4e.internal;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4j.CodeActionCapabilities;
 import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.CodeActionKindCapabilities;
@@ -63,7 +62,7 @@ import org.eclipse.lsp4j.WorkspaceEditChangeAnnotationSupportCapabilities;
 
 public class SupportedFeatures {
 
-	public static @NonNull TextDocumentClientCapabilities getTextDocumentClientCapabilities() {
+	public static TextDocumentClientCapabilities getTextDocumentClientCapabilities() {
 		final var textDocumentClientCapabilities = new TextDocumentClientCapabilities();
 		final var codeAction = new CodeActionCapabilities(new CodeActionLiteralSupportCapabilities(
 				new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix, CodeActionKind.Refactor,
@@ -127,7 +126,7 @@ public class SupportedFeatures {
 		return textDocumentClientCapabilities;
 	}
 
-	public static @NonNull WorkspaceClientCapabilities getWorkspaceClientCapabilities() {
+	public static WorkspaceClientCapabilities getWorkspaceClientCapabilities() {
 		final var workspaceClientCapabilities = new WorkspaceClientCapabilities();
 		workspaceClientCapabilities.setApplyEdit(Boolean.TRUE);
 		workspaceClientCapabilities.setConfiguration(Boolean.TRUE);

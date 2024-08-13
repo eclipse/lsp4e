@@ -11,7 +11,7 @@ package org.eclipse.lsp4e.operations.semanticTokens;
 
 import java.util.function.Function;
 
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.rules.IToken;
 import org.eclipse.tm4e.ui.text.TMPresentationReconciler;
@@ -20,15 +20,15 @@ import org.eclipse.tm4e.ui.themes.ITokenProvider;
 /**
  * A Class that maps TokenTypes to {@link IToken}.
  */
-public class TokenTypeMapper implements Function<String, IToken> {
-	private @NonNull final ITextViewer viewer;
+public class TokenTypeMapper implements Function<String, @Nullable IToken> {
+	private final ITextViewer viewer;
 
-	public TokenTypeMapper(@NonNull final ITextViewer viewer) {
+	public TokenTypeMapper(final ITextViewer viewer) {
 		this.viewer = viewer;
 	}
 
 	@Override
-	public IToken apply(final String tokenType) {
+	public @Nullable IToken apply(final @Nullable String tokenType) {
 		if (tokenType == null) {
 			return null;
 		}

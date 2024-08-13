@@ -12,7 +12,7 @@
 package org.eclipse.lsp4e.operations.symbols;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.PopupDialog;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -55,10 +55,10 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 
 	private final OutlineViewerInput outlineViewerInput;
 	private final ITextEditor textEditor;
-	private TreeViewer viewer;
+	private @Nullable TreeViewer viewer;
 
-	public LSPSymbolInFileDialog(@NonNull Shell parentShell, @NonNull ITextEditor textEditor,
-			@NonNull IDocument document, @NonNull LanguageServerWrapper wrapper) {
+	public LSPSymbolInFileDialog(Shell parentShell, ITextEditor textEditor,
+			IDocument document, LanguageServerWrapper wrapper) {
 		super(parentShell, PopupDialog.INFOPOPUPRESIZE_SHELLSTYLE, true, true, true, false, false, null, null);
 		outlineViewerInput = new OutlineViewerInput(document, wrapper, textEditor);
 		this.textEditor = textEditor;
@@ -71,7 +71,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		getShell().setText(NLS.bind(Messages.symbolsInFile, documentFile == null ? null : documentFile.getName()));
 
 		final var filteredTree = new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false);
-		viewer = filteredTree.getViewer();
+		final TreeViewer viewer = this.viewer = filteredTree.getViewer();
 		viewer.setData(LSSymbolsContentProvider.VIEWER_PROPERTY_IS_QUICK_OUTLINE, Boolean.TRUE);
 
 		final var contentService = new NavigatorContentService(CNFOutlinePage.ID, viewer);
@@ -130,14 +130,14 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 			}
 		});
 
-		this.getShell().addDisposeListener(event -> viewer = null);
+		getShell().addDisposeListener(event -> this.viewer = null);
 
 		viewer.setInput(outlineViewerInput);
 		return filteredTree;
 	}
 
 	private void gotoSelectedElement() {
-		Object selectedElement= getSelectedElement();
+		Object selectedElement = getSelectedElement();
 
 		if (selectedElement != null) {
 			close();
@@ -163,7 +163,7 @@ public class LSPSymbolInFileDialog extends PopupDialog {
 		}
 	}
 
-	private Object getSelectedElement() {
+	private @Nullable Object getSelectedElement() {
 		TreeViewer treeViewer = this.viewer;
 
 		if (treeViewer == null) {

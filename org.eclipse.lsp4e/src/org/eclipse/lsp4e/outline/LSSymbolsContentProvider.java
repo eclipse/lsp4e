@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -68,20 +70,13 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 	public static final String VIEWER_PROPERTY_IS_QUICK_OUTLINE = "isQuickOutline"; //$NON-NLS-1$
 
-	@NonNullByDefault
 	public static final class OutlineViewerInput {
 
 		public final IDocument document;
 		public final LanguageServerWrapper wrapper;
-
-		@Nullable
-		public final ITextEditor textEditor;
-
-		@Nullable
-		public final IFile documentFile;
-
-		@Nullable
-		private final URI documentURI;
+		public final @Nullable ITextEditor textEditor;
+		public final @Nullable IFile documentFile;
+		private final @Nullable URI documentURI;
 
 		public OutlineViewerInput(IDocument document, LanguageServerWrapper wrapper, @Nullable ITextEditor textEditor) {
 			this.document = document;
@@ -167,17 +162,17 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		}
 
 		@Override
-		protected void process(DirtyRegion dirtyRegion) {
+		protected void process(@NonNullByDefault({}) DirtyRegion dirtyRegion) {
 			refreshTreeContentFromLS();
 		}
 
 		@Override
-		protected void reconcilerDocumentChanged(IDocument newDocument) {
+		protected void reconcilerDocumentChanged(@NonNullByDefault({}) IDocument newDocument) {
 			// Do nothing
 		}
 
 		@Override
-		public IReconcilingStrategy getReconcilingStrategy(String contentType) {
+		public @Nullable IReconcilingStrategy getReconcilingStrategy(@NonNullByDefault({}) String contentType) {
 			return null;
 		}
 	}
@@ -221,15 +216,15 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		}
 	}
 
-	private TreeViewer viewer;
-	private volatile Throwable lastError;
-	private OutlineViewerInput outlineViewerInput;
+	private TreeViewer viewer = lateNonNull();
+	private volatile @Nullable Throwable lastError;
+	private OutlineViewerInput outlineViewerInput = lateNonNull();
 
 	private final SymbolsModel symbolsModel = new SymbolsModel();
-	private volatile CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> symbols;
+	private volatile @Nullable CompletableFuture<@Nullable List<Either<SymbolInformation, DocumentSymbol>>> symbols;
 	private final boolean refreshOnResourceChanged;
 	private boolean isQuickOutline;
-	private IOutlineUpdater outlineUpdater;
+	private @Nullable IOutlineUpdater outlineUpdater;
 
 	public LSSymbolsContentProvider() {
 		this(false);
@@ -240,11 +235,11 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	}
 
 	@Override
-	public void init(ICommonContentExtensionSite aConfig) {
+	public void init(@NonNullByDefault({}) ICommonContentExtensionSite aConfig) {
 	}
 
 	@Override
-	public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+	public void inputChanged(Viewer viewer, @Nullable Object oldInput, @Nullable Object newInput) {
 		if (outlineUpdater != null) {
 			outlineUpdater.uninstall();
 		}
@@ -276,7 +271,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	}
 
 	private IOutlineUpdater createOutlineUpdater() {
-		if (refreshOnResourceChanged) {
+		if (refreshOnResourceChanged && outlineViewerInput.documentFile != null) {
 			return new ResourceChangeOutlineUpdater(outlineViewerInput.documentFile);
 		}
 		final ITextViewer textViewer = LSPEclipseUtils.getTextViewer(outlineViewerInput.textEditor);
@@ -285,7 +280,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	}
 
 	@Override
-	public Object[] getElements(Object inputElement) {
+	public Object[] getElements(@Nullable Object inputElement) {
 		if (this.symbols != null && !this.symbols.isDone()) {
 			return new Object[] { new PendingUpdateAdapter() };
 		}
@@ -301,7 +296,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	}
 
 	@Override
-	public Object getParent(Object element) {
+	public @Nullable Object getParent(Object element) {
 		return symbolsModel.getParent(element);
 	}
 
@@ -325,7 +320,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		}
 
 		final var params = new DocumentSymbolParams(LSPEclipseUtils.toTextDocumentIdentifier(documentURI));
-		symbols = outlineViewerInput.wrapper.execute(ls -> ls.getTextDocumentService().documentSymbol(params));
+		final var symbols = this.symbols = outlineViewerInput.wrapper.execute(ls -> ls.getTextDocumentService().documentSymbol(params));
 		symbols.thenAcceptAsync(response -> {
 			symbolsModel.update(response);
 			lastError = null;
@@ -378,10 +373,10 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	}
 
 	@Override
-	public void restoreState(IMemento aMemento) {
+	public void restoreState(@NonNullByDefault({}) IMemento aMemento) {
 	}
 
 	@Override
-	public void saveState(IMemento aMemento) {
+	public void saveState(@NonNullByDefault({}) IMemento aMemento) {
 	}
 }

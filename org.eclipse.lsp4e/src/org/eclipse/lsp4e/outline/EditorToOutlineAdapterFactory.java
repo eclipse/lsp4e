@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.runtime.IAdapterFactory;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
@@ -45,7 +45,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 	private static final Map<IEditorPart, LanguageServerWrapper> LANG_SERVER_CACHE = Collections.synchronizedMap(new HashMap<>());
 
 	@Override
-	public <T> T getAdapter(Object adaptableObject, Class<T> adapterType) {
+	public <T> @Nullable T getAdapter(@Nullable Object adaptableObject, @Nullable Class<T> adapterType) {
 		if (adapterType == IContentOutlinePage.class && adaptableObject instanceof IEditorPart editorPart) {
 			final IEditorInput editorInput = editorPart.getEditorInput();
 
@@ -86,7 +86,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 		return new Class<?>[] { IContentOutlinePage.class };
 	}
 
-	private static CNFOutlinePage createOutlinePage(IEditorPart editorPart, @NonNull LanguageServerWrapper wrapper) {
+	private static CNFOutlinePage createOutlinePage(IEditorPart editorPart, LanguageServerWrapper wrapper) {
 		return new CNFOutlinePage(wrapper, UI.asTextEditor(editorPart));
 	}
 

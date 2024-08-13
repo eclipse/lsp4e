@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextListener;
 import org.eclipse.jface.text.Region;
@@ -43,7 +42,7 @@ public class StyleRangeHolder implements ITextListener {
 	 *
 	 * @param styleRanges
 	 */
-	public void saveStyles(@NonNull final List<StyleRange> styleRanges) {
+	public void saveStyles(final List<StyleRange> styleRanges) {
 		synchronized (previousRanges) {
 			previousRanges.clear();
 			previousRanges.addAll(styleRanges);
@@ -55,9 +54,8 @@ public class StyleRangeHolder implements ITextListener {
 	 * return a copy of the saved styles that overlap the given region.
 	 *
 	 * @param region
-	 * @return
 	 */
-	public StyleRange[] overlappingRanges(@NonNull final IRegion region) {
+	public StyleRange[] overlappingRanges(final IRegion region) {
 		synchronized (previousRanges) {
 			// we need to create new styles because the text presentation might change a
 			// style when applied to the presentation

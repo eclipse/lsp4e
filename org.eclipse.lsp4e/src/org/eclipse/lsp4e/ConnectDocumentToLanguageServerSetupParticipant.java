@@ -49,9 +49,6 @@ public class ConnectDocumentToLanguageServerSetupParticipant implements IDocumen
 
 	@Override
 	public void setup(final IDocument document, IPath location, LocationKind locationKind) {
-		if (document == null) {
-			return;
-		}
 		// Force document connect
 		CompletableFuture.runAsync(
 				() -> PENDING_CONNECTIONS.add(LanguageServers.forDocument(document).collectAll(ls -> CompletableFuture.completedFuture(null))),

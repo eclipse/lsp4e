@@ -12,6 +12,8 @@
 
 package org.eclipse.lsp4e.callhierarchy;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.DoubleClickEvent;
@@ -30,7 +32,7 @@ import org.eclipse.ui.part.ViewPart;
 public class CallHierarchyView extends ViewPart {
 	public static final String ID = "org.eclipse.lsp4e.callHierarchy.callHierarchyView"; //$NON-NLS-1$
 
-	protected TreeViewer treeViewer;
+	protected TreeViewer treeViewer = lateNonNull();
 
 	private final CallHierarchyContentProvider contentProvider = new CallHierarchyContentProvider();
 

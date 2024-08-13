@@ -12,12 +12,13 @@
 package org.eclipse.lsp4e.outline;
 
 import org.eclipse.core.expressions.PropertyTester;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.ui.views.contentoutline.ContentOutline;
 
 public class HasCNFOutlinePage extends PropertyTester {
 
 	@Override
-	public boolean test(Object receiver, String property, Object[] args, Object expectedValue) {
+	public boolean test(@Nullable Object receiver, String property, Object[] args, @Nullable Object expectedValue) {
 		if (receiver instanceof ContentOutline outline) {
 			return outline.getCurrentPage() instanceof CNFOutlinePage;
 		}

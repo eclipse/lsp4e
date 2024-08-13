@@ -1,7 +1,26 @@
-target/
-bin/
-.settings/de.loskutov.anyedit.AnyEditTools.prefs
+# Local work folder that is not checked in
+_LOCAL/
+
+# Eclipse
+/bin/
+/*/bin/
+**/.settings/*
+!**/.settings/org.eclipse.core.resoures.prefs
+!**/.settings/org.eclipse.jdt.core.prefs
+!**/.settings/org.eclipse.pde.core.prefs
+**/.pydevproject
+
+# Maven
+/target/
+/*/target/
 .polyglot.*
 .META-INF_MANIFEST.MF
 dash-licenses/
 *.log
+
+# OSX
+.DS_Store
+
+# Vim
+*.swo
+*.swp

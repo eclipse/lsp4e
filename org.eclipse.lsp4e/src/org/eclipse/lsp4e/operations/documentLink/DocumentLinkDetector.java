@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -30,7 +31,6 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
-import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
 
@@ -63,13 +63,13 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 
 		@Override
 		public void open() {
-			LSPEclipseUtils.open(uri, UI.getActivePage(), null, true);
+			LSPEclipseUtils.open(uri, null, true);
 		}
 
 	}
 
 	@Override
-	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
+	public IHyperlink @Nullable [] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks) {
 		final IDocument document = textViewer.getDocument();
 		if (document == null) {
 			return null;
@@ -106,7 +106,7 @@ public class DocumentLinkDetector extends AbstractHyperlinkDetector {
 		}
 	}
 
-	private DocumentHyperlink toHyperlink(IRegion region, final IDocument document, DocumentLink link) {
+	private @Nullable DocumentHyperlink toHyperlink(IRegion region, final IDocument document, DocumentLink link) {
 		DocumentHyperlink jfaceLink = null;
 		try {
 			int start = LSPEclipseUtils.toOffset(link.getRange().getStart(), document);

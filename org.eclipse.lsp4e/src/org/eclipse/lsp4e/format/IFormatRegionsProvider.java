@@ -26,6 +26,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -67,7 +68,7 @@ public interface IFormatRegionsProvider {
 	 * @param document
 	 * @return region to be formatted or <code>null</code> if the document should not be formatted on save.
 	 */
-	IRegion[] getFormattingRegions(IDocument document);
+	IRegion @Nullable [] getFormattingRegions(IDocument document);
 
 	/**
 	 * Implementation for 'Format all lines'
@@ -86,14 +87,12 @@ public interface IFormatRegionsProvider {
 	 * If successive lines have changed a region spans over the size of all successive lines.
 	 * The regions include line delimiters.
 	 *
-	 *
-	 * @param buffer the buffer to compare contents from
 	 * @param monitor to report progress to
 	 * @return the regions of the changed lines
 	 *
 	 */
-	public static IRegion[] calculateEditedLineRegions(final IDocument document, final IProgressMonitor monitor) {
-		final IRegion[][] result = new IRegion[1][];
+	public static IRegion @Nullable [] calculateEditedLineRegions(final IDocument document, final IProgressMonitor monitor) {
+		final IRegion[] @Nullable [] result = new IRegion[1][];
 
 		SafeRunner.run(new ISafeRunnable() {
 			@Override

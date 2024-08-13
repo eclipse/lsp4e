@@ -20,20 +20,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
+import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.WorkspaceSymbol;
 import org.eclipse.lsp4j.WorkspaceSymbolParams;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.quickaccess.IQuickAccessComputer;
 import org.eclipse.ui.quickaccess.IQuickAccessComputerExtension;
 import org.eclipse.ui.quickaccess.QuickAccessElement;
 
 public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer, IQuickAccessComputerExtension {
 
-
-	private List<@NonNull LanguageServerWrapper> usedLanguageServerWrappers;
+	private @Nullable List<LanguageServerWrapper> usedLanguageServerWrappers;
 
 	@Override
 	public QuickAccessElement[] computeElements() {
@@ -46,13 +48,15 @@ public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer
 
 	@Override
 	public boolean needsRefresh() {
-		return this.usedLanguageServerWrappers == null
-				|| !this.usedLanguageServerWrappers.equals(LanguageServiceAccessor.getStartedWrappers(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()), true));
+		final var usedLanguageServerWrappers = this.usedLanguageServerWrappers;
+		return usedLanguageServerWrappers == null
+				|| !usedLanguageServerWrappers.equals(LanguageServiceAccessor.getStartedWrappers(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()), true));
 	}
 
 	@Override
 	public QuickAccessElement[] computeElements(String query, IProgressMonitor monitor) {
-		this.usedLanguageServerWrappers = LanguageServiceAccessor.getStartedWrappers(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()), true);
+		final var usedLanguageServerWrappers = this.usedLanguageServerWrappers = LanguageServiceAccessor
+				.getStartedWrappers(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()), true);
 		if (usedLanguageServerWrappers.isEmpty()) {
 			return new QuickAccessElement[0];
 		}
@@ -61,7 +65,7 @@ public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer
 
 		try {
 			CompletableFuture.allOf(usedLanguageServerWrappers.stream()
-					.map(w -> w.execute(ls -> ls.getWorkspaceService().symbol(params).thenAcceptAsync(symbols -> {
+					.map(w -> w.execute(ls -> ls.getWorkspaceService().symbol(params).thenAcceptAsync((@Nullable Either<List<? extends SymbolInformation>, List<@Nullable ? extends WorkspaceSymbol>> symbols) -> {
 						if (symbols != null) {
 							res.addAll(LSPSymbolInWorkspaceDialog.eitherToWorkspaceSymbols(symbols).stream().map(WorkspaceSymbolQuickAccessElement::new)
 									.toList());

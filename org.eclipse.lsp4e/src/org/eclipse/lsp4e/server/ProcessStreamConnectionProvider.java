@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.server;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,7 +32,7 @@ import org.eclipse.jdt.annotation.Nullable;
 public abstract class ProcessStreamConnectionProvider implements StreamConnectionProvider, IAdaptable {
 
 	private @Nullable Process process;
-	private List<String> commands;
+	private @Nullable List<String> commands;
 	private @Nullable String workingDir;
 
 	protected ProcessStreamConnectionProvider() {
@@ -47,7 +49,8 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 
 	@Override
 	public void start() throws IOException {
-		if (this.commands == null || this.commands.isEmpty() || this.commands.stream().anyMatch(Objects::isNull)) {
+		final var commands = this.commands;
+		if (commands == null || commands.isEmpty() || commands.stream().anyMatch(Objects::isNull)) {
 			throw new IOException("Unable to start language server: " + this); //$NON-NLS-1$
 		}
 
@@ -60,9 +63,10 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 	}
 
 	protected ProcessBuilder createProcessBuilder() {
-		final var builder = new ProcessBuilder(getCommands());
-		if (getWorkingDirectory() != null) {
-			builder.directory(new File(getWorkingDirectory()));
+		final var builder = new ProcessBuilder(castNonNull(getCommands()));
+		final var workDir = getWorkingDirectory();
+		if (workDir != null) {
+			builder.directory(new File(workDir));
 		}
 		builder.redirectError(ProcessBuilder.Redirect.INHERIT);
 		return builder;
@@ -96,7 +100,7 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T getAdapter(Class<T> adapter) {
+	public <T> @Nullable T getAdapter(@Nullable Class<T> adapter) {
 		final var process = this.process;
 		if(adapter == ProcessHandle.class) {
 			try {
@@ -108,7 +112,7 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 		return null;
 	}
 
-	protected List<String> getCommands() {
+	protected @Nullable List<String> getCommands() {
 		return commands;
 	}
 
@@ -125,7 +129,7 @@ public abstract class ProcessStreamConnectionProvider implements StreamConnectio
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(final @Nullable Object obj) {
 		if (obj == null) {
 			return false;
 		}

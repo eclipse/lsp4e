@@ -11,7 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
-import java.io.IOException;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URI;
@@ -27,6 +28,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.AbstractInformationControlManager;
 import org.eclipse.jface.text.ITextHover;
@@ -83,7 +85,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		@Override
 		public Image getImage() {
 			// load class so image is loaded
-			return JFaceResources.getImage(ProgressInfoItem.class.getPackage().getName() + ".PROGRESS_DEFAULT"); //$NON-NLS-1$
+			return JFaceResources.getImage(ProgressInfoItem.class.getPackageName() + ".PROGRESS_DEFAULT"); //$NON-NLS-1$
 		}
 
 		@Override
@@ -101,12 +103,12 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				checkMarkerResolution(marker);
 				att = marker.getAttribute(LSP_REMEDIATION);
 			}
-		} catch (IOException | CoreException | ExecutionException e) {
-			LanguageServerPlugin.logError(e);
-			return new IMarkerResolution[0];
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
+			return new IMarkerResolution[0];
+		} catch (Exception e) {
+			LanguageServerPlugin.logError(e);
 			return new IMarkerResolution[0];
 		}
 		if (att == COMPUTING) {
@@ -119,7 +121,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				.toArray(IMarkerResolution[]::new);
 	}
 
-	private void checkMarkerResolution(IMarker marker) throws IOException, CoreException, InterruptedException, ExecutionException {
+	private void checkMarkerResolution(IMarker marker) throws CoreException, InterruptedException, ExecutionException {
 		IResource res = marker.getResource();
 		if (res instanceof IFile file) {
 			Object[] attributes = marker.getAttributes(new String[]{LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, LSPDiagnosticsToMarkers.LSP_DIAGNOSTIC});
@@ -132,7 +134,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 				final var context = new CodeActionContext(Collections.singletonList(diagnostic));
 				final var params = new CodeActionParams();
 				params.setContext(context);
-				params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(res));
+				params.setTextDocument(castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(res)));
 				params.setRange(diagnostic.getRange());
 				if (marker.exists()) { // otherwise the marker has been removed by now
 					marker.setAttribute(LSP_REMEDIATION, COMPUTING);
@@ -174,7 +176,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					final var ca = (ContentAssistant) f.get(quickAssistant);
 					Method m = ContentAssistant.class.getDeclaredMethod("isProposalPopupActive"); //$NON-NLS-1$
 					m.setAccessible(true);
-					boolean isProposalPopupActive = (Boolean) m.invoke(ca);
+					boolean isProposalPopupActive = (Boolean) castNonNull(m.invoke(ca));
 					if (isProposalPopupActive) {
 						quickAssistant.showPossibleQuickAssists();
 					}
@@ -198,7 +200,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		}
 	}
 
-	static boolean providesCodeActions(final ServerCapabilities capabilities) {
+	static boolean providesCodeActions(final @Nullable ServerCapabilities capabilities) {
 		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getCodeActionProvider());
 	}
 
@@ -217,7 +219,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		return false;
 	}
 
-	static boolean canPerform(Either<Command, CodeAction> command) {
+	static boolean canPerform(@Nullable Either<Command, CodeAction> command) {
 		if (command == null) {
 			return false;
 		}
@@ -239,7 +241,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					TextDocumentEdit textedit = change.getLeft();
 					VersionedTextDocumentIdentifier id = textedit.getTextDocument();
 					URI uri = URI.create(id.getUri());
-					if (uri != null && LSPEclipseUtils.isReadOnly(uri)) {
+					if (LSPEclipseUtils.isReadOnly(uri)) {
 						return false;
 					}
 				}
@@ -249,7 +251,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 			if (changes != null) {
 				for (java.util.Map.Entry<String, List<TextEdit>> textEdit : changes.entrySet()) {
 					URI uri = URI.create(textEdit.getKey());
-					if (uri != null && LSPEclipseUtils.isReadOnly(uri)) {
+					if (LSPEclipseUtils.isReadOnly(uri)) {
 						return false;
 					}
 				}

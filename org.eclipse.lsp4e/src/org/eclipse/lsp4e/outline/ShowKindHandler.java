@@ -17,13 +17,14 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 public class ShowKindHandler extends AbstractHandler {
 
 	@Override
-	public Object execute(ExecutionEvent event) throws ExecutionException {
+	public @Nullable Object execute(ExecutionEvent event) throws ExecutionException {
 		Command command = event.getCommand();
 		boolean oldValue = HandlerUtil.toggleCommandState(command);
 

@@ -14,6 +14,7 @@ import org.eclipse.core.commands.AbstractParameterValueConverter;
 import org.eclipse.core.commands.ParameterValueConversionException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.jdt.annotation.Nullable;
 
 /**
  * Serializes {@link IPath} instances and de-serializes them to {@link Path} instances.
@@ -21,12 +22,12 @@ import org.eclipse.core.runtime.Path;
 public class PathConverter extends AbstractParameterValueConverter {
 
 	@Override
-	public Object convertToObject(String parameterValue) throws ParameterValueConversionException {
-		return new Path(parameterValue);
+	public @Nullable Object convertToObject(@Nullable String parameterValue) throws ParameterValueConversionException {
+		return parameterValue == null ? null : new Path(parameterValue);
 	}
 
 	@Override
-	public String convertToString(Object parameterValue) throws ParameterValueConversionException {
+	public String convertToString(@Nullable Object parameterValue) throws ParameterValueConversionException {
 		return Objects.toString(parameterValue);
 	}
 

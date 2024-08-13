@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.core.resources.IFile;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.search.internal.ui.text.FileSearchResult;
 import org.eclipse.search.ui.ISearchResult;
 import org.eclipse.search.ui.text.AbstractTextSearchResult;
@@ -42,7 +43,7 @@ public class LSSearchResult extends FileSearchResult implements IEditorMatchAdap
 	private final Set<Object> nonFileElements = ConcurrentHashMap.newKeySet();
 
 	@Override
-	public IFile getFile(Object element) {
+	public @Nullable IFile getFile(@Nullable Object element) {
 		return element instanceof IFile file ? file : null;
 	}
 
@@ -76,12 +77,12 @@ public class LSSearchResult extends FileSearchResult implements IEditorMatchAdap
 	}
 
 	@Override
-	public IFileMatchAdapter getFileMatchAdapter() {
+	public @Nullable IFileMatchAdapter getFileMatchAdapter() {
 		return this;
 	}
 
 	@Override
-	public IEditorMatchAdapter getEditorMatchAdapter() {
+	public @Nullable IEditorMatchAdapter getEditorMatchAdapter() {
 		return this;
 	}
 

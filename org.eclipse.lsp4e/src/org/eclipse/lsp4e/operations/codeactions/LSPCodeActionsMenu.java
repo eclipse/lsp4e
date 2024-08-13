@@ -12,7 +12,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
-import java.net.URI;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -20,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -52,8 +53,8 @@ import org.eclipse.ui.texteditor.ITextEditor;
 
 public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchContribution {
 
-	private IDocument document;
-	private Range range;
+	private IDocument document = lateNonNull();
+	private Range range = lateNonNull();
 
 	@Override
 	public void initialize(IServiceLocator serviceLocator) {
@@ -81,19 +82,18 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		item.setEnabled(false);
 
 		item.setText(Messages.computing);
-		final @NonNull IDocument document = this.document;
-		final URI fileUri = LSPEclipseUtils.toUri(document);
+		final IDocument document = this.document;
 
 		final var context = new CodeActionContext(Collections.emptyList());
 		final var params = new CodeActionParams();
-		params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(fileUri));
+		params.setTextDocument(castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(document)));
 		params.setRange(this.range);
 		params.setContext(context);
 
-		final @NonNull List<@NonNull CompletableFuture<List<Either<Command, CodeAction>>>> actions
-			= LanguageServers.forDocument(document).withFilter(LSPCodeActionMarkerResolution::providesCodeActions)
-					.computeAll((w, ls) -> ls.getTextDocumentService().codeAction(params)
-					.whenComplete((codeActions, t) -> scheduleMenuUpdate(menu, item, index, document, w, t, codeActions)));
+		final List<CompletableFuture<@Nullable List<Either<Command, CodeAction>>>> actions = LanguageServers.forDocument(document)
+				.withFilter(LSPCodeActionMarkerResolution::providesCodeActions)
+				.computeAll((w, ls) -> ls.getTextDocumentService().codeAction(params).whenComplete(
+						(codeActions, t) -> scheduleMenuUpdate(menu, item, index, document, w, t, codeActions)));
 
 		if (actions.isEmpty()) {
 			item.setText(Messages.notImplemented);
@@ -103,13 +103,15 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		super.fill(menu, index);
 	}
 
-	private void scheduleMenuUpdate(final Menu menu, final MenuItem placeHolder, final int index, final IDocument document, final LanguageServerWrapper wrapper, final Throwable u, final List<Either<Command, CodeAction>> codeActions) {
+	private void scheduleMenuUpdate(final Menu menu, final MenuItem placeHolder, final int index,
+			final IDocument document, final LanguageServerWrapper wrapper, final @Nullable Throwable ex,
+			final @Nullable List<@Nullable Either<Command, CodeAction>> codeActions) {
 		final var job = new UIJob(menu.getDisplay(), Messages.updateCodeActions_menu) {
 			@Override
-			public IStatus runInUIThread(IProgressMonitor monitor) {
-				if (u != null) {
+			public IStatus runInUIThread(@Nullable IProgressMonitor monitor) {
+				if (ex != null) {
 					final var item = new MenuItem(menu, SWT.NONE, index);
-					item.setText(u.getMessage());
+					item.setText(String.valueOf(ex.getMessage()));
 					item.setImage(LSPImages.getSharedImage(ISharedImages.IMG_DEC_FIELD_ERROR));
 					item.setEnabled(false);
 				} else if (codeActions != null) {

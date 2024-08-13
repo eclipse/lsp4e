@@ -15,6 +15,7 @@ package org.eclipse.lsp4e.operations.symbols;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServers;
@@ -51,7 +52,7 @@ public class LSPSymbolInFileHandler extends LSPDocumentAbstractHandler {
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
+	public void setEnabled(@Nullable Object evaluationContext) {
 		setEnabled(ServerCapabilities::getDocumentSymbolProvider, x -> true);
 	}
 }
