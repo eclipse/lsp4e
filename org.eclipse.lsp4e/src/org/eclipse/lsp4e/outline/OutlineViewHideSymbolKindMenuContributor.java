@@ -27,7 +27,7 @@ import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.actions.CompoundContributionItem;
 
-public class OutlineViewFilterMenuContributor extends CompoundContributionItem {
+public class OutlineViewHideSymbolKindMenuContributor extends CompoundContributionItem {
 
 	@Override
 	protected IContributionItem[] getContributionItems() {

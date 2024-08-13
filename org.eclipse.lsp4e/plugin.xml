@@ -299,7 +299,7 @@
             allPopups="false"
             locationURI="menu:org.eclipse.lsp4e.outline.hideMenu">
          <dynamic
-               class="org.eclipse.lsp4e.outline.OutlineViewFilterMenuContributor"
+               class="org.eclipse.lsp4e.outline.OutlineViewHideSymbolKindMenuContributor"
                id="org.eclipse.lsp4e.filters.dynamic">
          </dynamic>
       </menuContribution>

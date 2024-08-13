@@ -363,7 +363,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			kind = ((SymbolInformation) element).getKind();
 		}
 
-		if (OutlineViewFilterMenuContributor.isHideSymbolKind(kind)) {
+		if (OutlineViewHideSymbolKindMenuContributor.isHideSymbolKind(kind)) {
 			return true;
 		}
 
