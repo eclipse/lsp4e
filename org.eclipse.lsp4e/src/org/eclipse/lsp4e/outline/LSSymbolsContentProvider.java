@@ -7,9 +7,10 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *  Mickael Istria (Red Hat Inc.) - initial implementation
- *  Lucas Bullen (Red Hat Inc.) - Bug 508472 - Outline to provide "Link with Editor"
- *                              - Bug 517428 - Requests sent before initialization
+ *  Mickael Istria (Red Hat Inc.)   - initial implementation
+ *  Lucas Bullen (Red Hat Inc.)     - Bug 508472 - Outline to provide "Link with Editor"
+ *                                  - Bug 517428 - Requests sent before initialization
+ *  Dietrich Travkin (Solunar GmbH) - Issue 254  - Add outline view contents filtering
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
@@ -31,6 +32,9 @@ import org.eclipse.core.resources.IResourceChangeListener;
 import org.eclipse.core.resources.IResourceDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
+import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -53,10 +57,12 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.internal.CancellationUtil;
+import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.DocumentSymbolParams;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.IMemento;
@@ -138,6 +144,34 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		@Override
 		public void documentChanged(DocumentEvent event) {
 			refreshTreeContentFromLS();
+		}
+
+	}
+
+	private final class PreferencesChangedOutlineUpdater implements IPreferenceChangeListener, IOutlineUpdater {
+
+		@Override
+		public void install() {
+			IEclipsePreferences preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
+			preferences.addPreferenceChangeListener(this);
+		}
+
+		@Override
+		public void uninstall() {
+			IEclipsePreferences preferences = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
+			preferences.removePreferenceChangeListener(this);
+		}
+
+		@Override
+		public void preferenceChange(PreferenceChangeEvent event) {
+			if (viewer != null
+					&& event.getKey().startsWith(CNFOutlinePage.HIDE_DOCUMENT_SYMBOL_KIND_PREFERENCE_PREFIX)) {
+				viewer.getControl().getDisplay().asyncExec(() -> {
+					if(!viewer.getTree().isDisposed()) {
+						viewer.refresh();
+					}
+				});
+			}
 		}
 	}
 
@@ -225,6 +259,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	private final boolean refreshOnResourceChanged;
 	private boolean isQuickOutline;
 	private @Nullable IOutlineUpdater outlineUpdater;
+	private IOutlineUpdater preferencesDependantOutlineUpdater;
 
 	public LSSymbolsContentProvider() {
 		this(false);
@@ -232,10 +267,12 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 	public LSSymbolsContentProvider(boolean refreshOnResourceChanged) {
 		this.refreshOnResourceChanged = refreshOnResourceChanged;
+		preferencesDependantOutlineUpdater = new PreferencesChangedOutlineUpdater();
 	}
 
 	@Override
 	public void init(@NonNullByDefault({}) ICommonContentExtensionSite aConfig) {
+		preferencesDependantOutlineUpdater.install();
 	}
 
 	@Override
@@ -281,18 +318,39 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 	@Override
 	public Object[] getElements(@Nullable Object inputElement) {
-		if (this.symbols != null && !this.symbols.isDone()) {
+		if (symbols != null && !symbols.isDone()) {
 			return new Object[] { new PendingUpdateAdapter() };
 		}
-		if (this.lastError != null && symbolsModel.getElements().length == 0) {
+		if (lastError != null && symbolsModel.getElements().length == 0) {
 			return new Object[] { "An error occured, see log for details" }; //$NON-NLS-1$
 		}
-		return symbolsModel.getElements();
+		return Arrays.stream(symbolsModel.getElements())
+				.filter(element -> !hideElement(element))
+				.toArray(Object[]::new);
 	}
 
 	@Override
 	public Object[] getChildren(Object parentElement) {
-		return symbolsModel.getChildren(parentElement);
+		return Arrays.stream(symbolsModel.getChildren(parentElement))
+			.filter(element -> !hideElement(element))
+			.toArray(Object[]::new);
+	}
+
+	private boolean hideElement(Object element) {
+		SymbolKind kind = null;
+
+		if (element instanceof DocumentSymbol documentSymbol) {
+			kind = documentSymbol.getKind();
+		} else if (element instanceof DocumentSymbolWithURI documentSymbolWithURI) {
+			kind = documentSymbolWithURI.symbol.getKind();
+		} else if (element instanceof SymbolInformation symbolInformation) {
+			kind = symbolInformation.getKind();
+		}
+
+		if (kind != null) {
+			return OutlineViewHideSymbolKindMenuContributor.isHideSymbolKind(kind);
+		}
+		return false;
 	}
 
 	@Override
@@ -342,10 +400,12 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 					TreePath[] initialSelection = ((ITreeSelection) viewer.getSelection()).getPaths();
 					viewer.refresh();
 					if (expandedElements.length > 0) {
-						viewer.setExpandedTreePaths(Arrays.stream(expandedElements).map(symbolsModel::toUpdatedSymbol)
-							.filter(Objects::nonNull).toArray(TreePath[]::new));
+						viewer.setExpandedTreePaths(Arrays.stream(expandedElements)
+								.map(symbolsModel::toUpdatedSymbol)
+								.filter(Objects::nonNull).toArray(TreePath[]::new));
 						viewer.setSelection(new TreeSelection(Arrays.stream(initialSelection)
-								.map(symbolsModel::toUpdatedSymbol).filter(Objects::nonNull).toArray(TreePath[]::new)));
+								.map(symbolsModel::toUpdatedSymbol)
+								.filter(Objects::nonNull).toArray(TreePath[]::new)));
 					} else {
 						viewer.expandToLevel(EXPAND_ROOT_LEVEL);
 					}
@@ -376,6 +436,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		if (outlineUpdater != null) {
 			outlineUpdater.uninstall();
 		}
+		preferencesDependantOutlineUpdater.uninstall();
 	}
 
 	@Override
