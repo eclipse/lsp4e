@@ -14,7 +14,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
-import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -267,7 +267,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 	public LSSymbolsContentProvider(boolean refreshOnResourceChanged) {
 		this.refreshOnResourceChanged = refreshOnResourceChanged;
-		this.preferencesDependantOutlineUpdater = new PreferencesChangedOutlineUpdater();
+		preferencesDependantOutlineUpdater = new PreferencesChangedOutlineUpdater();
 	}
 
 	@Override
@@ -318,10 +318,10 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 	@Override
 	public Object[] getElements(@Nullable Object inputElement) {
-		if (this.symbols != null && !this.symbols.isDone()) {
+		if (symbols != null && !symbols.isDone()) {
 			return new Object[] { new PendingUpdateAdapter() };
 		}
-		if (this.lastError != null && symbolsModel.getElements().length == 0) {
+		if (lastError != null && symbolsModel.getElements().length == 0) {
 			return new Object[] { "An error occured, see log for details" }; //$NON-NLS-1$
 		}
 		return Arrays.stream(symbolsModel.getElements())

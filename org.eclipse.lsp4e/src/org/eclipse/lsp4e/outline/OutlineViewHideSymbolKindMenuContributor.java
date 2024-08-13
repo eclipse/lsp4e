@@ -68,11 +68,11 @@ public class OutlineViewHideSymbolKindMenuContributor extends CompoundContributi
 		HideSymbolKindAction(SymbolKind kind) {
 			super(kind.name(), IAction.AS_CHECK_BOX);
 			this.kind = kind;
-			this.setChecked(isHideSymbolKind(kind));
+			setChecked(isHideSymbolKind(kind));
 
 			Image img = LSPImages.imageFromSymbolKind(kind);
 			if (img != null) {
-				this.setImageDescriptor(ImageDescriptor.createFromImage(img));
+				setImageDescriptor(ImageDescriptor.createFromImage(img));
 			}
 		}
 
