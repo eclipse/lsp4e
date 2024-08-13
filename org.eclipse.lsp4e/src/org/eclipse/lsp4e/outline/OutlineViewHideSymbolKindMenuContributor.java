@@ -36,7 +36,7 @@ public class OutlineViewHideSymbolKindMenuContributor extends CompoundContributi
 
 				@Override
 				public int compare(SymbolKind sk1, SymbolKind sk2) {
-					return sk1.name().compareToIgnoreCase(sk2.name());
+					return sk1.name().compareTo(sk2.name());
 				}
 
 			})

@@ -164,11 +164,8 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 		@Override
 		public void preferenceChange(PreferenceChangeEvent event) {
-			if (viewer == null || outlineViewerInput == null) {
-				return;
-			}
-
-			if (event.getKey().startsWith(CNFOutlinePage.HIDE_DOCUMENT_SYMBOL_KIND_PREFERENCE_PREFIX)) {
+			if (viewer != null
+					&& event.getKey().startsWith(CNFOutlinePage.HIDE_DOCUMENT_SYMBOL_KIND_PREFERENCE_PREFIX)) {
 				viewer.getControl().getDisplay().asyncExec(() -> {
 					if(viewer.getTree().isDisposed()) {
 						return;
@@ -341,33 +338,18 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			.toArray(Object[]::new);
 	}
 
-	/**
-	 * Decide whether to hide the given element or not.
-	 * Default implementation hides elements depending on a preference
-	 * that determines which {@link SymbolKind}s
-	 * (property in {@link DocumentSymbol}, {@link DocumentSymbolWithURI}s, and {@link SymbolInformation})
-	 * are to be hidden in the outline view.
-	 * Sub-classes may override this method to add language-specific filtering.
-	 *
-	 * @param element an outline view contents element to be checked
-	 * @return <code>true</code> if the given element is not to be shown in the outline view
-	 */
-	protected boolean hideElement(Object element) {
+	private boolean hideElement(Object element) {
 		SymbolKind kind = null;
 
-		if (element instanceof DocumentSymbol) {
-			kind = ((DocumentSymbol) element).getKind();
-		} else if (element instanceof DocumentSymbolWithURI) {
-			kind = ((DocumentSymbolWithURI) element).symbol.getKind();
-		} else if (element instanceof SymbolInformation) {
-			kind = ((SymbolInformation) element).getKind();
+		if (element instanceof DocumentSymbol documentSymbol) {
+			kind = documentSymbol.getKind();
+		} else if (element instanceof DocumentSymbolWithURI documentSymbolWithURI) {
+			kind = documentSymbolWithURI.symbol.getKind();
+		} else if (element instanceof SymbolInformation symbolInformation) {
+			kind = symbolInformation.getKind();
 		}
 
-		if (OutlineViewHideSymbolKindMenuContributor.isHideSymbolKind(kind)) {
-			return true;
-		}
-
-		return false;
+		return OutlineViewHideSymbolKindMenuContributor.isHideSymbolKind(kind);
 	}
 
 	@Override
