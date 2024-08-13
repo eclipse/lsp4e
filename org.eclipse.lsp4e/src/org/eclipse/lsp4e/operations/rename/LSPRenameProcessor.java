@@ -13,6 +13,8 @@
  */
 package org.eclipse.lsp4e.operations.rename;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -101,9 +103,8 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 		final var status = new RefactoringStatus();
 
 		try {
-			final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
 			final var params = new PrepareRenameParams();
-			params.setTextDocument(identifier);
+			params.setTextDocument(castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(document)));
 			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
 
 			@SuppressWarnings("null")
@@ -178,9 +179,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 		try {
 			final var params = new RenameParams();
 			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
-			final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
-			identifier.setUri(LSPEclipseUtils.toUri(document).toString());
-			params.setTextDocument(identifier);
+			params.setTextDocument(castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(document)));
 			params.setNewName(newName);
 
 			// TODO: how to manage ltk with CompletableFuture? Is 1000 ms is enough?
@@ -218,6 +217,7 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 
 	@Override
 	public Change createChange(IProgressMonitor pm) throws CoreException, OperationCanceledException {
+		final var rename = this.rename;
 		if (rename == null) {
 			throw new CoreException(
 					new Status(IStatus.ERROR, LanguageServerPlugin.PLUGIN_ID, Messages.rename_processor_required));

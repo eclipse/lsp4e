@@ -25,10 +25,12 @@ public class TypeHierarchyHandler extends LSPDocumentAbstractHandler {
 	@Override
 	protected void execute(ExecutionEvent event, ITextEditor editor) {
 		IDocument document = LSPEclipseUtils.getDocument(editor);
-		LanguageServers.forDocument(document)
-			.withCapability(ServerCapabilities::getTypeHierarchyProvider)
-			.computeFirst((wrapper, ls) -> CompletableFuture.completedFuture(wrapper.serverDefinition))
-			.thenAcceptAsync(definition -> definition.ifPresent(def -> new TypeHierarchyDialog(editor.getSite().getShell(), (ITextSelection)editor.getSelectionProvider().getSelection(), document, def).open()), editor.getSite().getShell().getDisplay());
+		if (document != null) {
+			LanguageServers.forDocument(document)
+				.withCapability(ServerCapabilities::getTypeHierarchyProvider)
+				.computeFirst((wrapper, ls) -> CompletableFuture.completedFuture(wrapper.serverDefinition))
+				.thenAcceptAsync(definition -> definition.ifPresent(def -> new TypeHierarchyDialog(editor.getSite().getShell(), (ITextSelection)editor.getSelectionProvider().getSelection(), document, def).open()), editor.getSite().getShell().getDisplay());
+		}
 	}
 
 	@Override

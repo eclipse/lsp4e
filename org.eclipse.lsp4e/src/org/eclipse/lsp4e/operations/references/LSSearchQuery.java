@@ -14,6 +14,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.references;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -79,7 +81,7 @@ public class LSSearchQuery extends FileSearchQuery {
 			// Execute LSP "references" service
 			final var params = new ReferenceParams();
 			params.setContext(new ReferenceContext(false));
-			params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(document));
+			params.setTextDocument(castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(document)));
 			params.setPosition(LSPEclipseUtils.toPosition(offset, document));
 
 			List<CompletableFuture<@Nullable List<? extends Location>>> requests = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getReferencesProvider)

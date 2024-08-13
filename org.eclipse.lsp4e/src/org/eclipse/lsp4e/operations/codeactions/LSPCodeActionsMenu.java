@@ -12,9 +12,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
-import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
 
-import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -84,11 +83,10 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 
 		item.setText(Messages.computing);
 		final IDocument document = this.document;
-		final URI fileUri = LSPEclipseUtils.toUri(document);
 
 		final var context = new CodeActionContext(Collections.emptyList());
 		final var params = new CodeActionParams();
-		params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(fileUri));
+		params.setTextDocument(castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(document)));
 		params.setRange(this.range);
 		params.setContext(context);
 

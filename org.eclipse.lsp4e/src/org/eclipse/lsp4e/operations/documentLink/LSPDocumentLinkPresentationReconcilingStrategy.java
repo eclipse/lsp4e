@@ -89,6 +89,7 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 
 	private void underline(@Nullable List<DocumentLink> links) {
 		final var viewer = this.viewer;
+		final var document = this.document;
 		if (document == null || links == null || viewer == null) {
 			return;
 		}

@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.completion;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,7 +81,10 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private char[] contextTriggerChars = new char[0];
 	private final boolean incompleteAsCompletionItem;
 
-	/** The cancellation support used to cancel previous LSP requests 'textDocument/completion' when completion is retriggered */
+	/**
+	 * The cancellation support used to cancel previous LSP requests
+	 * 'textDocument/completion' when completion is retriggered
+	 */
 	private CancellationSupport cancellationSupport;
 
 	public LSContentAssistProcessor() {
@@ -124,15 +129,16 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
 		AtomicBoolean anyIncomplete = new AtomicBoolean(false);
 		try {
-			// Cancel the previous LSP requests 'textDocument/completions' and completionLanguageServersFuture
+			// Cancel the previous LSP requests 'textDocument/completions' and
+			// completionLanguageServersFuture
 			this.cancellationSupport.cancel();
 
 			// Initialize a new cancel support to register:
 			// - LSP requests 'textDocument/completions'
 			// - completionLanguageServersFuture
 			CancellationSupport cancellationSupport = new CancellationSupport();
-			final var completionLanguageServersFuture = this.completionLanguageServersFuture = LanguageServers.forDocument(document)
-					.withFilter(capabilities -> capabilities.getCompletionProvider() != null) //
+			final var completionLanguageServersFuture = this.completionLanguageServersFuture = LanguageServers
+					.forDocument(document).withFilter(capabilities -> capabilities.getCompletionProvider() != null) //
 					.collectAll((w, ls) -> cancellationSupport.execute(ls.getTextDocumentService().completion(param)) //
 							.thenAccept(completion -> {
 								boolean isIncomplete = completion != null && completion.isRight()
@@ -232,8 +238,9 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			this.contextTriggerChars = new char[0];
 
 			this.completionLanguageServersFuture = LanguageServers.forDocument(document)
-					.withFilter(capabilities -> capabilities.getCompletionProvider() != null).collectAll((w, ls) -> {
-						CompletionOptions provider = w.getServerCapabilities().getCompletionProvider();
+					.withFilter(capabilities -> capabilities.getCompletionProvider() != null) //
+					.collectAll((w, ls) -> {
+						CompletionOptions provider = castNonNull(w.getServerCapabilities()).getCompletionProvider();
 						synchronized (completionTriggerCharsSemaphore) {
 							completionTriggerChars = mergeTriggers(completionTriggerChars,
 									provider.getTriggerCharacters());
@@ -241,8 +248,9 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 						return CompletableFuture.completedFuture(null);
 					});
 			this.contextInformationLanguageServersFuture = LanguageServers.forDocument(document)
-					.withFilter(capabilities -> capabilities.getSignatureHelpProvider() != null).collectAll((w, ls) -> {
-						SignatureHelpOptions provider = w.getServerCapabilities().getSignatureHelpProvider();
+					.withFilter(capabilities -> capabilities.getSignatureHelpProvider() != null) //
+					.collectAll((w, ls) -> {
+						SignatureHelpOptions provider = castNonNull(w.getServerCapabilities()).getSignatureHelpProvider();
 						synchronized (contextTriggerCharsSemaphore) {
 							contextTriggerChars = mergeTriggers(contextTriggerChars, provider.getTriggerCharacters());
 						}
@@ -263,8 +271,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	}
 
 	private static List<ICompletionProposal> toProposals(IDocument document, int offset,
-			@Nullable Either<List<CompletionItem>, CompletionList> completionList, LanguageServerWrapper languageServerWrapper,
-			CancelChecker cancelChecker, boolean isIncomplete) {
+			@Nullable Either<List<CompletionItem>, CompletionList> completionList,
+			LanguageServerWrapper languageServerWrapper, CancelChecker cancelChecker, boolean isIncomplete) {
 		if (completionList == null) {
 			return Collections.emptyList();
 		}
@@ -357,7 +365,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 	}
 
-	private static char[] mergeTriggers(char @Nullable [] initialArray, @Nullable Collection<String> additionalTriggers) {
+	private static char[] mergeTriggers(char @Nullable [] initialArray,
+			@Nullable Collection<String> additionalTriggers) {
 		if (initialArray == null) {
 			initialArray = new char[0];
 		}

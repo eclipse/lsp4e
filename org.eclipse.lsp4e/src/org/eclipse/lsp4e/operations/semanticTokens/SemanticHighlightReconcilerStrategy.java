@@ -13,9 +13,7 @@ import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -47,7 +45,6 @@ import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.lsp4j.SemanticTokensParams;
 import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 
@@ -123,7 +120,7 @@ public class SemanticHighlightReconcilerStrategy
 	 */
 	@Override
 	public void install(final ITextViewer textViewer) {
-		if (disabled || viewer == null) {
+		if (disabled || viewer != null) {
 			return;
 		}
 		semanticTokensDataStreamProcessor = new SemanticTokensDataStreamProcessor(new TokenTypeMapper(textViewer),
@@ -169,14 +166,11 @@ public class SemanticHighlightReconcilerStrategy
 		};
 	}
 
-	private @Nullable SemanticTokensParams getSemanticTokensParams() {
-		URI uri = LSPEclipseUtils.toUri(document);
-		if (uri != null) {
-			final var semanticTokensParams = new SemanticTokensParams();
-			semanticTokensParams.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(uri));
-			return semanticTokensParams;
-		}
-		return null;
+	private SemanticTokensParams getSemanticTokensParams() {
+		URI uri = castNonNull(LSPEclipseUtils.toUri(document));
+		final var semanticTokensParams = new SemanticTokensParams();
+		semanticTokensParams.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(uri));
+		return semanticTokensParams;
 	}
 
 	private void saveStyle(final Pair<@Nullable SemanticTokens, @Nullable SemanticTokensLegend> pair) {
@@ -280,7 +274,7 @@ public class SemanticHighlightReconcilerStrategy
 			} catch (InterruptedException e) {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
-			} catch (ResponseErrorException | ExecutionException | CancellationException e) {
+			} catch (Exception e) {
 				if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
 					LanguageServerPlugin.logError(e);
 				}

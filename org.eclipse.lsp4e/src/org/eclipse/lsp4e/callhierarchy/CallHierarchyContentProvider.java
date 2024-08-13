@@ -55,7 +55,7 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 	}
 
 	@Override
-	public Object [] getChildren(final Object parentElement) {
+	public Object[] getChildren(final Object parentElement) {
 		if (parentElement instanceof CallHierarchyViewTreeNode treeNode) {
 			return findCallers(treeNode);
 		} else {
@@ -86,19 +86,14 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 			rootItems = null;
 
 			IDocument document = viewInput.getDocument();
-			if (document != null) {
-				try {
-					initialise(document, viewInput.getOffset());
-				} catch (BadLocationException e) {
-					handleRootError();
-				}
-			} else {
+			try {
+				initialise(document, viewInput.getOffset());
+			} catch (Exception e) {
 				handleRootError();
 			}
 		} else {
 			handleRootError();
 		}
-
 	}
 
 	private void initialise(final IDocument document, final int offset) throws BadLocationException {
@@ -134,7 +129,6 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 					}
 					return result;
 				});
-
 	}
 
 	private void handleRootError() {
@@ -146,7 +140,7 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 		});
 	}
 
-	private Object [] findCallers(final CallHierarchyViewTreeNode callee) {
+	private Object[] findCallers(final CallHierarchyViewTreeNode callee) {
 		final var children = callee.getChildren();
 		if (children == null) {
 			final var treeViewer = this.treeViewer;
@@ -167,6 +161,8 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 		final var incomingCallParams = new CallHierarchyIncomingCallsParams(callee.getCallContainer());
 		languageServerWrapper.execute(languageServer -> languageServer.getTextDocumentService()
 				.callHierarchyIncomingCalls(incomingCallParams)).thenApply(incomingCalls -> {
+					if (incomingCalls == null)
+						return new ArrayList<CallHierarchyViewTreeNode>(0);
 					List<CallHierarchyViewTreeNode> children = new ArrayList<>(incomingCalls.size());
 					for (CallHierarchyIncomingCall call : incomingCalls) {
 						CallHierarchyItem callContainer = call.getFrom();

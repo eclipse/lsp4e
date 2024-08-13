@@ -566,7 +566,8 @@ public class LSCompletionProposal
 
 			if (item.getCommand() != null) {
 				Command command = item.getCommand();
-				ExecuteCommandOptions provider = languageServerWrapper.getServerCapabilities().getExecuteCommandProvider();
+				ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
+				ExecuteCommandOptions provider = serverCapabilities == null ? null : serverCapabilities.getExecuteCommandProvider();
 				if (provider != null && provider.getCommands().contains(command.getCommand())) {
 					languageServerWrapper.execute(ls -> ls.getWorkspaceService()
 							.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
@@ -617,16 +618,23 @@ public class LSCompletionProposal
 	private String getVariableValue(String variableName) {
 		return switch (variableName) {
 		case TM_FILENAME_BASE -> {
-			IPath pathBase = LSPEclipseUtils.toPath(document).removeFileExtension();
-			String fileName = pathBase.lastSegment();
+			IPath path = LSPEclipseUtils.toPath(document);
+			String fileName = path == null ? null : path.removeFileExtension().lastSegment();
 			yield fileName != null ? fileName : ""; //$NON-NLS-1$
 		}
 		case TM_FILENAME -> {
-			String fileName = LSPEclipseUtils.toPath(document).lastSegment();
+			IPath path = LSPEclipseUtils.toPath(document);
+			String fileName = path == null ? null : path.lastSegment();
 			yield fileName != null ? fileName : ""; //$NON-NLS-1$
 		}
-		case TM_FILEPATH -> getAbsoluteLocation(LSPEclipseUtils.toPath(document));
-		case TM_DIRECTORY -> getAbsoluteLocation(LSPEclipseUtils.toPath(document).removeLastSegments(1));
+		case TM_FILEPATH -> {
+			IPath path = LSPEclipseUtils.toPath(document);
+			yield path == null ? "" : getAbsoluteLocation(path); //$NON-NLS-1$
+		}
+		case TM_DIRECTORY -> {
+			IPath path = LSPEclipseUtils.toPath(document);
+			yield path == null ? "" : getAbsoluteLocation(path.removeLastSegments(1)); //$NON-NLS-1$
+		}
 		case TM_LINE_INDEX -> {
 			try {
 				yield Integer.toString(getTextEditRange().getStart().getLine()); // TODO probably wrong, should use viewer state

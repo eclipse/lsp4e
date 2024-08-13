@@ -380,33 +380,37 @@ public class TypeHierarchyView extends ViewPart {
 		}
 		final IDocument document = symbolsContainer.getDocument();
 		try {
-			if (document != null) {
-				CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> symbols;
-				final var params = new DocumentSymbolParams(
-						LSPEclipseUtils.toTextDocumentIdentifier(document));
-				CompletableFuture<Optional<LanguageServerWrapper>> languageServer = LanguageServers
-						.forDocument(document)
-						.withCapability(ServerCapabilities::getDocumentSymbolProvider)
-						.computeFirst((w, ls) -> CompletableFuture.completedFuture(w));
-				try {
-					symbols = languageServer.get(500, TimeUnit.MILLISECONDS).filter(Objects::nonNull)
-							.filter(LanguageServerWrapper::isActive)
-							.map(s -> s.execute(ls -> ls.getTextDocumentService().documentSymbol(params)))
-							.orElse(CompletableFuture.completedFuture(null));
-				} catch (TimeoutException | ExecutionException | InterruptedException e) {
-					LanguageServerPlugin.logError(e);
-					symbols = CompletableFuture.completedFuture(null);
-					if (e instanceof InterruptedException) {
-						Thread.currentThread().interrupt();
-					}
-				}
-				symbols.thenAcceptAsync(response -> {
-					symbolsContainer.symbolsModel.update(response);
-					symbolsContainer.isDirty = false;
-				}).join();
-			} else {
+			if (document == null) {
 				symbolsContainer.symbolsModel.update(null);
+				return;
 			}
+			final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
+			if(identifier == null) {
+				symbolsContainer.symbolsModel.update(null);
+				return;
+			}
+			CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> symbols;
+			final var params = new DocumentSymbolParams(identifier);
+			CompletableFuture<Optional<LanguageServerWrapper>> languageServer = LanguageServers
+					.forDocument(document)
+					.withCapability(ServerCapabilities::getDocumentSymbolProvider)
+					.computeFirst((w, ls) -> CompletableFuture.completedFuture(w));
+			try {
+				symbols = languageServer.get(500, TimeUnit.MILLISECONDS).filter(Objects::nonNull)
+						.filter(LanguageServerWrapper::isActive)
+						.map(s -> s.execute(ls -> ls.getTextDocumentService().documentSymbol(params)))
+						.orElse(CompletableFuture.completedFuture(null));
+			} catch (TimeoutException | ExecutionException | InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+				symbols = CompletableFuture.completedFuture(null);
+				if (e instanceof InterruptedException) {
+					Thread.currentThread().interrupt();
+				}
+			}
+			symbols.thenAcceptAsync(response -> {
+				symbolsContainer.symbolsModel.update(response);
+				symbolsContainer.isDirty = false;
+			}).join();
 		} catch (Exception e) {
 			LanguageServerPlugin.logError(e);
 		}
