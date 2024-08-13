@@ -903,7 +903,7 @@ public final class LSPEclipseUtils {
 		if(editorInput instanceof IFileEditorInput fileEditorInput) {
 			return getDocument(fileEditorInput.getFile());
 		}else if(editorInput instanceof IPathEditorInput pathEditorInput) {
-			return getDocument(ResourcesPlugin.getWorkspace().getRoot().getFile(pathEditorInput.getPath()));
+			return getDocument(getFile(pathEditorInput.getPath()));
 		}else if(editorInput instanceof IURIEditorInput uriEditorInput) {
 			IResource resource = findResourceFor(uriEditorInput.getURI());
 			if (resource != null) {
@@ -1282,7 +1282,7 @@ public final class LSPEclipseUtils {
 
 	public static @Nullable URI toUri(IFileBuffer buffer) {
 		IPath bufferLocation = buffer.getLocation();
-		IFile res = bufferLocation != null && bufferLocation.segmentCount() > 1 ? ResourcesPlugin.getWorkspace().getRoot().getFile(buffer.getLocation()) : null;
+		IFile res = bufferLocation != null && bufferLocation.segmentCount() > 1 ? getFile(buffer.getLocation()) : null;
 		if (res != null) {
 			URI uri = toUri(res);
 			if (uri != null) {
@@ -1310,16 +1310,21 @@ public final class LSPEclipseUtils {
 		return getFile(path);
 	}
 
+	/**
+	 * @return null if no file exists at the given path or the given path points to a file outside the workspace
+	 */
 	public static @Nullable IFile getFile(@Nullable IPath path) {
 		if(path == null) {
 			return null;
 		}
-		IFile res = ResourcesPlugin.getWorkspace().getRoot().getFile(path);
-		if (res.exists()) {
+
+		final IFile res = path.segmentCount() == 1 //
+				? ResourcesPlugin.getWorkspace().getRoot().getFileForLocation(path)
+				: ResourcesPlugin.getWorkspace().getRoot().getFile(path);
+		if (res != null && res.exists()) {
 			return res;
-		} else {
-			return null;
 		}
+		return null;
 	}
 
 	/**

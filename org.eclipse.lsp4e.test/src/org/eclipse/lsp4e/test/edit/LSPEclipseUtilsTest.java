@@ -13,10 +13,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.edit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -25,12 +22,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Random;
+import java.util.UUID;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -38,6 +38,7 @@ import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.text.IDocument;
@@ -414,6 +415,54 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertEquals("abc\ndef", ((StyledText) ((AbstractTextEditor) editor).getAdapter(Control.class)).getText());
 		assertTrue(editor.isDirty());
+	}
+
+	private IPath generateNonExistingIPath(String directory, final String fileExtension) {
+		if (directory.startsWith("/")) {
+			@SuppressWarnings("resource") //
+			final var rootDir = FileSystems.getDefault().getRootDirectories().iterator().next();
+			directory = rootDir + directory.substring(1);
+		}
+		while (true) {
+			final var path = Paths.get(directory, UUID.randomUUID() + "." + fileExtension);
+			if (!path.toFile().exists())
+				return org.eclipse.core.runtime.Path.fromOSString(path.toString());
+		}
+	}
+
+	@Test
+	public void testGetFile() throws Exception {
+		IPath path;
+
+		/*
+		 * test relative path to non-existing file in workspace
+		 */
+		path = org.eclipse.core.runtime.Path.fromPortableString("non-existing-file.txt");
+		assertNull(LSPEclipseUtils.getFile(path));
+
+		path = org.eclipse.core.runtime.Path.fromPortableString("non-existing-folder/non-existing-file.txt");
+		assertNull(LSPEclipseUtils.getFile(path));
+
+		/*
+		 * test relative path to existing file in workspace
+		 */
+		path = TestUtils.createFile(project, "testGetFile", "txt").getFullPath();
+		assertNotNull(LSPEclipseUtils.getFile(path));
+
+		/*
+		 * test absolute path to non-existing files outside of current workspace
+		 */
+		path = generateNonExistingIPath("/", "txt"); // tests with path pointing to file at the FS root, e.g. C:\\test.txt or /text.txt
+		assertNull(LSPEclipseUtils.getFile(path));
+
+		path = generateNonExistingIPath("/folder", "txt"); // tests with path pointing to file in a folder below FS root
+		assertNull(LSPEclipseUtils.getFile(path));
+
+		/*
+		 * test absolute path to existing files outside of current workspace
+		 */
+		path = org.eclipse.core.runtime.Path.fromOSString(TestUtils.createTempFile("testGetFile", ".txt").getAbsolutePath());
+		assertNull(LSPEclipseUtils.getFile(path));
 	}
 
 	@Test
