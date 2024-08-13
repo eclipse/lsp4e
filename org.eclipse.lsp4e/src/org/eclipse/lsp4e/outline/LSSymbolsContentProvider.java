@@ -7,9 +7,10 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *  Mickael Istria (Red Hat Inc.) - initial implementation
- *  Lucas Bullen (Red Hat Inc.) - Bug 508472 - Outline to provide "Link with Editor"
- *                              - Bug 517428 - Requests sent before initialization
+ *  Mickael Istria (Red Hat Inc.)   - initial implementation
+ *  Lucas Bullen (Red Hat Inc.)     - Bug 508472 - Outline to provide "Link with Editor"
+ *                                  - Bug 517428 - Requests sent before initialization
+ *  Dietrich Travkin (Solunar GmbH) - Issue 254  - Add outline view contents filtering
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
@@ -340,7 +341,18 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			.toArray(Object[]::new);
 	}
 
-	private boolean hideElement(Object element) {
+	/**
+	 * Decide whether to hide the given element or not.
+	 * Default implementation hides elements depending on a preference
+	 * that determines which {@link SymbolKind}s
+	 * (property in {@link DocumentSymbol}, {@link DocumentSymbolWithURI}s, and {@link SymbolInformation})
+	 * are to be hidden in the outline view.
+	 * Sub-classes may override this method to add language-specific filtering.
+	 *
+	 * @param element an outline view contents element to be checked
+	 * @return <code>true</code> if the given element is not to be shown in the outline view
+	 */
+	protected boolean hideElement(Object element) {
 		SymbolKind kind = null;
 
 		if (element instanceof DocumentSymbol) {

@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *  Dietrich Travkin (Solunar GmbH) - initial implementation
+ *  Dietrich Travkin (Solunar GmbH) - initial implementation of outline contents filtering (issue #254)
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
