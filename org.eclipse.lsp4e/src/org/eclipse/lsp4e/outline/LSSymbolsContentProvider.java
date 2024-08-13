@@ -333,16 +333,22 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 					return;
 				}
 
+				final int EXPAND_ROOT_LEVEL = 2;  // Expansion level that displays root node and its children
 				if (isQuickOutline) {
 					viewer.refresh();
+					viewer.expandToLevel(EXPAND_ROOT_LEVEL);
 				} else {
 					TreePath[] expandedElements = viewer.getExpandedTreePaths();
 					TreePath[] initialSelection = ((ITreeSelection) viewer.getSelection()).getPaths();
 					viewer.refresh();
-					viewer.setExpandedTreePaths(Arrays.stream(expandedElements).map(symbolsModel::toUpdatedSymbol)
+					if (expandedElements.length > 0) {
+						viewer.setExpandedTreePaths(Arrays.stream(expandedElements).map(symbolsModel::toUpdatedSymbol)
 							.filter(Objects::nonNull).toArray(TreePath[]::new));
-					viewer.setSelection(new TreeSelection(Arrays.stream(initialSelection)
-							.map(symbolsModel::toUpdatedSymbol).filter(Objects::nonNull).toArray(TreePath[]::new)));
+						viewer.setSelection(new TreeSelection(Arrays.stream(initialSelection)
+								.map(symbolsModel::toUpdatedSymbol).filter(Objects::nonNull).toArray(TreePath[]::new)));
+					} else {
+						viewer.expandToLevel(EXPAND_ROOT_LEVEL);
+					}
 				}
 
 				if (linkWithEditor) {
