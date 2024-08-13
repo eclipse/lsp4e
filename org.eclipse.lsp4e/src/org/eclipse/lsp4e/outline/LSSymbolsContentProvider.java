@@ -14,7 +14,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
-import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -167,11 +167,9 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			if (viewer != null
 					&& event.getKey().startsWith(CNFOutlinePage.HIDE_DOCUMENT_SYMBOL_KIND_PREFERENCE_PREFIX)) {
 				viewer.getControl().getDisplay().asyncExec(() -> {
-					if(viewer.getTree().isDisposed()) {
-						return;
+					if(!viewer.getTree().isDisposed()) {
+						viewer.refresh();
 					}
-
-					viewer.refresh();
 				});
 			}
 		}
