@@ -618,26 +618,25 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public void output(OutputEventArguments args) {
-		boolean outputted = false;
-		DSPStreamsProxy dspStreamsProxy;
-		if (process == null) {
-			process(null); // create dummy process to have a console
-		}
-		dspStreamsProxy = process.getStreamsProxy();
 		String output = args.getOutput();
-		if (args.getCategory() == null || OutputEventArgumentsCategory.CONSOLE.equals(args.getCategory())
+		if (args.getCategory() == null //
+				|| OutputEventArgumentsCategory.CONSOLE.equals(args.getCategory()) //
 				|| OutputEventArgumentsCategory.STDOUT.equals(args.getCategory())) {
 			// TODO put this data in a different region with a different colour
-			dspStreamsProxy.getOutputStreamMonitor().append(output);
-			outputted = true;
+			getOrCreateStreamsProxy().getOutputStreamMonitor().append(output);
 		} else if (OutputEventArgumentsCategory.STDERR.equals(args.getCategory())) {
-			dspStreamsProxy.getErrorStreamMonitor().append(output);
-			outputted = true;
-		}
-		if (!outputted && DSPPlugin.DEBUG) {
+			getOrCreateStreamsProxy().getErrorStreamMonitor().append(output);
+		} else if (DSPPlugin.DEBUG) {
 			System.out.println("output: " + args);
 		}
+	}
 
+	private DSPStreamsProxy getOrCreateStreamsProxy() {
+		if (process == null) {
+			// create dummy process to have a console
+			process(null);
+		}
+		return process.getStreamsProxy();
 	}
 
 	@Override
