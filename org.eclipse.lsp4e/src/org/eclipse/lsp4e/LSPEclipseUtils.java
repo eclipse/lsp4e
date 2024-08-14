@@ -1260,7 +1260,7 @@ public final class LSPEclipseUtils {
 				Comparator.comparingInt(Position::getLine).thenComparingInt(Position::getCharacter).reversed()));
 		LSPTextChange[] changes = textEdits.stream().map(te -> new LSPTextChange("Line: %d".formatted(te.getRange().getStart().getLine() + 1), uri, te)) //$NON-NLS-1$
 				.toArray(LSPTextChange[]::new);
-		CompositeChange cc = new CompositeChange(Paths.get(uri).toString(), changes);
+		CompositeChange cc = new CompositeChange(uri.toString(), changes);
 		return cc;
 	}
 
