@@ -9,7 +9,7 @@
  * Contributors:
  *  - Alex Boyko (VMware Inc.) - Initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.jdt;
+package org.eclipse.lsp4e.jdt.internal;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jdt.annotation.NonNullByDefault;

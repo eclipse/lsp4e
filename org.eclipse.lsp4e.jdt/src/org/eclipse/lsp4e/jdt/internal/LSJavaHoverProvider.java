@@ -9,7 +9,7 @@
  * Contributors:
  *  - Martin Lippert (Pivotal Inc.) - Initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.jdt;
+package org.eclipse.lsp4e.jdt.internal;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;

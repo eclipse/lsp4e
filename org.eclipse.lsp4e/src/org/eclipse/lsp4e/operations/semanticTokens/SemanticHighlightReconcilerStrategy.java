@@ -8,7 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.semanticTokens;
 
-import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.net.URI;
 import java.util.List;
@@ -80,6 +80,8 @@ import org.eclipse.swt.custom.StyledText;
 public class SemanticHighlightReconcilerStrategy
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, ITextPresentationListener, ITextViewerLifecycle {
 
+	public static final String SEMANTIC_HIGHLIGHT_RECONCILER_DISABLED = "semanticHighlightReconciler.disabled"; //$NON-NLS-1$
+
 	private final boolean disabled;
 
 	private @Nullable ITextViewer viewer;
@@ -109,7 +111,7 @@ public class SemanticHighlightReconcilerStrategy
 
 	public SemanticHighlightReconcilerStrategy() {
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
-		disabled = store.getBoolean("semanticHighlightReconciler.disabled"); //$NON-NLS-1$
+		disabled = store.getBoolean(SEMANTIC_HIGHLIGHT_RECONCILER_DISABLED);
 		boolean overrideBold = !store.getBoolean("semanticHighlightReconciler.ignoreBoldNormal"); //$NON-NLS-1$
 		boolean overrideItalic = !store.getBoolean("semanticHighlightReconciler.ignoreItalicNormal"); //$NON-NLS-1$
 		merger = new StyleRangeMerger(overrideBold, overrideItalic);
