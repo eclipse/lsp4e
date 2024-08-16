@@ -37,6 +37,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Position;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
@@ -49,6 +50,7 @@ import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.texteditor.MarkerUtilities;
 
 public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParams> {
@@ -90,14 +92,12 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			if (resource != null && resource.isAccessible()) {
 				updateMarkers(diagnostics, resource);
 			} else {
-				LSPEclipseUtils.findOpenEditorsFor(LSPEclipseUtils.toUri(uri)).stream()
-					.map(reference -> reference.getEditor(true))
-					.filter(Objects::nonNull)
-					.map(LSPEclipseUtils::getTextViewer)
-					.filter(Objects::nonNull)
-					.filter(ISourceViewer.class::isInstance)
-					.map(ISourceViewer.class::cast)
-					.forEach(sourceViewer -> updateEditorAnnotations(sourceViewer, diagnostics));
+				for (final IEditorReference editorRef : LSPEclipseUtils.findOpenEditorsFor(LSPEclipseUtils.toUri(uri))) {
+					final ITextViewer textViewer = LSPEclipseUtils.getTextViewer(editorRef.getEditor(true));
+					if (textViewer instanceof ISourceViewer sourceViewer) {
+						updateEditorAnnotations(sourceViewer, diagnostics);
+					}
+				}
 			}
 		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
