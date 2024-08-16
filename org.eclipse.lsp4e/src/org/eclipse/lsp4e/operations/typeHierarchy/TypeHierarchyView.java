@@ -154,9 +154,7 @@ public class TypeHierarchyView extends ViewPart {
 	// widgets
 	private PageBook pagebook = lateNonNull();
 	private SashForm splitter = lateNonNull();
-	private ViewForm memberViewForm = lateNonNull();
 	private CLabel memberLabel = lateNonNull();
-	private Label infoText = lateNonNull();
 
 	// viewers
 	private TableViewer memberViewer = lateNonNull();
@@ -237,7 +235,7 @@ public class TypeHierarchyView extends ViewPart {
 		});
 		treeViewer.addSelectionChangedListener(this::onHierarchySelectionChanged);
 
-		memberViewForm = new ViewForm(splitter, SWT.NONE);
+		final var memberViewForm = new ViewForm(splitter, SWT.NONE);
 		Control memberControl = createMemberControl(memberViewForm);
 		memberControl.setEnabled(false);
 		memberViewForm.setContent(memberControl);
@@ -245,7 +243,7 @@ public class TypeHierarchyView extends ViewPart {
 		memberLabel = new CLabel(memberViewForm, SWT.NONE);
 		memberViewForm.setTopLeft(memberLabel);
 
-		infoText = new Label(pagebook, SWT.TOP | SWT.LEFT | SWT.WRAP);
+		final var infoText = new Label(pagebook, SWT.TOP | SWT.LEFT | SWT.WRAP);
 		infoText.setText(Messages.TH_diplay_hint);
 		pagebook.showPage(infoText);
 
