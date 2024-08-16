@@ -8,7 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.semanticTokens;
 
-import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
 
 import java.net.URI;
 import java.util.List;
@@ -123,7 +123,7 @@ public class SemanticHighlightReconcilerStrategy
 		if (disabled || viewer != null) {
 			return;
 		}
-		semanticTokensDataStreamProcessor = new SemanticTokensDataStreamProcessor(new TokenTypeMapper(textViewer),
+		semanticTokensDataStreamProcessor = new SemanticTokensDataStreamProcessor(TokenTypeMapper.create(textViewer),
 				offsetMapper());
 
 		if (textViewer instanceof final TextViewer textViewerImpl) {
