@@ -21,14 +21,15 @@ import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.model.DebugElement;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4j.debug.services.IDebugProtocolServer;
 
 public abstract class DSPDebugElement extends DebugElement {
 
-	private String errorMessage;
+	private @Nullable String errorMessage;
 
-	public DSPDebugElement(DSPDebugTarget target) {
+	protected DSPDebugElement(@Nullable DSPDebugTarget target) {
 		super(target);
 	}
 
@@ -75,7 +76,8 @@ public abstract class DSPDebugElement extends DebugElement {
 		}
 	}
 
-	protected static <T> T monitorGet(CompletableFuture<T> future, IProgressMonitor monitor) throws DebugException {
+	protected static <T> @Nullable T monitorGet(CompletableFuture<T> future, IProgressMonitor monitor)
+			throws DebugException {
 		try {
 			while (true) {
 				if (monitor.isCanceled()) {
@@ -108,12 +110,12 @@ public abstract class DSPDebugElement extends DebugElement {
 
 	}
 
-	protected static DebugException newTargetRequestFailedException(String message, Throwable e) {
+	protected static DebugException newTargetRequestFailedException(@Nullable String message, @Nullable Throwable e) {
 		return new DebugException(new Status(IStatus.ERROR, DebugPlugin.getUniqueIdentifier(),
 				DebugException.TARGET_REQUEST_FAILED, message, e));
 	}
 
-	protected void setErrorMessage(String message) {
+	protected void setErrorMessage(@Nullable String message) {
 		errorMessage = message;
 	}
 
@@ -123,7 +125,7 @@ public abstract class DSPDebugElement extends DebugElement {
 	 *
 	 * @return error message to display to the user
 	 */
-	public String getErrorMessage() {
+	public @Nullable String getErrorMessage() {
 		// TODO Once set, we never clear an error on an element
 		return errorMessage;
 	}

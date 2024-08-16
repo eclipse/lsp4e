@@ -28,6 +28,7 @@ import org.eclipse.debug.core.IBreakpointManager;
 import org.eclipse.debug.core.IBreakpointManagerListener;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.ILineBreakpoint;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4j.debug.BreakpointEventArguments;
 import org.eclipse.lsp4j.debug.Capabilities;
@@ -52,10 +53,10 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 	private final Map<Source, List<SourceBreakpoint>> targetBreakpoints = new HashMap<>();
 	private final IDebugProtocolServer debugProtocolServer;
 	private final IBreakpointManager platformBreakpointManager;
-	private final Capabilities capabilities;
+	private final @Nullable Capabilities capabilities;
 
 	public DSPBreakpointManager(IBreakpointManager platformBreakpointManager, IDebugProtocolServer debugProtocolServer,
-			Capabilities capabilities) {
+			@Nullable Capabilities capabilities) {
 		this.debugProtocolServer = debugProtocolServer;
 		this.platformBreakpointManager = platformBreakpointManager;
 		this.capabilities = capabilities;
@@ -134,7 +135,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 	}
 
 	@Override
-	public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
+	public void breakpointRemoved(IBreakpoint breakpoint, @Nullable IMarkerDelta delta) {
 		if (supportsBreakpoint(breakpoint)) {
 			deleteBreakpointFromMap(breakpoint);
 			sendBreakpoints();
@@ -142,7 +143,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 	}
 
 	@Override
-	public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
+	public void breakpointChanged(IBreakpoint breakpoint, @Nullable IMarkerDelta delta) {
 		if (supportsBreakpoint(breakpoint)) {
 			try {
 				if (breakpoint.isEnabled() && platformBreakpointManager.isEnabled()) {

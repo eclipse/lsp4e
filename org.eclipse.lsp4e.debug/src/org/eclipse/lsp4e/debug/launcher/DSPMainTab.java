@@ -8,7 +8,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.launcher;
 
-import static org.eclipse.swt.events.SelectionListener.widgetSelectedAdapter;
+import static org.eclipse.lsp4e.debug.internal.NullSafetyHelper.*;
+import static org.eclipse.swt.events.SelectionListener.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,6 +19,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.ui.AbstractLaunchConfigurationTab;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.layout.GridDataFactory;
 import org.eclipse.lsp4e.debug.DSPImages;
 import org.eclipse.lsp4e.debug.DSPPlugin;
@@ -37,23 +39,24 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 
 	private static final int DEFAULT_PORT = 4711;
 	private static final String DEFAULT_SERVER = "127.0.0.1";
-	private Text debugCommandText;
+
+	private Text debugCommandText = lateNonNull();
 	// TODO the arguments in the UI should be some sort of a list to match what is
 	// stored
-	private Text debugArgsText;
-	private Text jsonText;
+	private Text debugArgsText = lateNonNull();
+	private Text jsonText = lateNonNull();
 
-	private Button launchDebugServer;
-	private Button monitorAdapterLauncherProcessCheckbox;
-	private Button connectDebugServer;
-	private Text serverHost;
-	private Text serverPort;
+	private Button launchDebugServer = lateNonNull();
+	private Button monitorAdapterLauncherProcessCheckbox = lateNonNull();
+	private Button connectDebugServer = lateNonNull();
+	private Text serverHost = lateNonNull();
+	private Text serverPort = lateNonNull();
 
 	private final boolean allowCustomSettingsCheckbox;
-	private Button customDebugAdapterCheckbox;
-	private Group debugAdapterSettingsGroup;
-	private Composite launchParametersGroup;
-	private Button customLaunchParametersCheckbox;
+	private Button customDebugAdapterCheckbox = lateNonNull();
+	private Group debugAdapterSettingsGroup = lateNonNull();
+	private Composite launchParametersGroup = lateNonNull();
+	private Button customLaunchParametersCheckbox = lateNonNull();
 
 	public DSPMainTab() {
 		this(false);
@@ -274,10 +277,12 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, getAttributeValueFrom(serverHost));
 		String portString = getAttributeValueFrom(serverPort);
 		int port = DEFAULT_PORT;
-		try {
-			port = Integer.parseInt(portString);
-		} catch (NumberFormatException e) {
-			// handled in error checking already
+		if (portString != null) {
+			try {
+				port = Integer.parseInt(portString);
+			} catch (NumberFormatException e) {
+				// handled in error checking already
+			}
 		}
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_SERVER_PORT, port);
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_PARAM, getAttributeValueFrom(jsonText));
@@ -289,7 +294,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 	 *
 	 * @return text or <code>null</code>
 	 */
-	protected String getAttributeValueFrom(Text text) {
+	protected @Nullable String getAttributeValueFrom(Text text) {
 		String value = text.getText().trim();
 		if (!value.isEmpty()) {
 			return value;
@@ -332,14 +337,17 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 					return false;
 				}
 
-				try {
-					int port = Integer.parseInt(getAttributeValueFrom(serverPort));
-					if (port < 1 || port > 65535) {
-						throw new NumberFormatException();
+				final var serverPortVal = getAttributeValueFrom(serverPort);
+				if (serverPortVal != null) {
+					try {
+						int port = Integer.parseInt(serverPortVal);
+						if (port < 1 || port > 65535) {
+							throw new NumberFormatException();
+						}
+					} catch (NumberFormatException e) {
+						setMessage("Specify a port as an integer in the range 1-65535");
+						return false;
 					}
-				} catch (NumberFormatException e) {
-					setMessage("Specify a port as an integer in the range 1-65535");
-					return false;
 				}
 			}
 		}

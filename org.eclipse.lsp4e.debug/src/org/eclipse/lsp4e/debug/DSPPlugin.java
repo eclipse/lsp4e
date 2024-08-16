@@ -8,9 +8,11 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug;
 
+import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -51,7 +53,7 @@ public class DSPPlugin extends AbstractUIPlugin {
 	public static final String ATTR_CUSTOM_LAUNCH_PARAMS = ID_DSP_DEBUG_MODEL + ".ATTR_CUSTOM_LAUNCH_PARAMS";
 
 	// The shared instance
-	private static DSPPlugin plugin;
+	private static volatile @Nullable DSPPlugin plugin;
 
 	public DSPPlugin() {
 	}
@@ -74,6 +76,7 @@ public class DSPPlugin extends AbstractUIPlugin {
 	 * @return the shared instance
 	 */
 	public static DSPPlugin getDefault() {
+		Assert.isNotNull(plugin);
 		return plugin;
 	}
 
@@ -92,7 +95,7 @@ public class DSPPlugin extends AbstractUIPlugin {
 	 * @param message User comprehensible message
 	 * @param thr     The exception through which we noticed the error
 	 */
-	public static void logError(final String message, final Throwable thr) {
+	public static void logError(final @Nullable String message, final @Nullable Throwable thr) {
 		log(IStatus.ERROR, message, thr);
 	}
 
@@ -111,11 +114,11 @@ public class DSPPlugin extends AbstractUIPlugin {
 	 * @param message User comprehensible message
 	 * @param thr     The exception through which we noticed the warning
 	 */
-	public static void logWarning(final String message, final Throwable thr) {
+	public static void logWarning(final String message, final @Nullable Throwable thr) {
 		log(IStatus.WARNING, message, thr);
 	}
 
-	private static void log(int severity, String message, final Throwable thr) {
+	private static void log(final int severity, @Nullable String message, final @Nullable Throwable thr) {
 		ResponseError error = null;
 		if (thr instanceof ResponseErrorException responseErrorException) {
 			error = responseErrorException.getResponseError();

@@ -24,7 +24,6 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ColumnLabelProvider;
@@ -118,7 +117,7 @@ public class LanguageServersView extends ViewPart {
 
 		createColumn(EMPTY, 26, new ColumnLabelProvider() {
 			@Override
-			public void update(@NonNullByDefault({}) ViewerCell cell) {
+			public void update(final ViewerCell cell) {
 				final var lsWrapper = (LanguageServerWrapper) cell.getElement();
 				final var item = (TableItem) cell.getItem();
 				final var buttons = actionButtons.computeIfAbsent(lsWrapper, unused -> {

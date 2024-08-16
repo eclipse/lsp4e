@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jdt.core.IJavaElement;
 import org.eclipse.jdt.internal.ui.text.java.hover.JavadocBrowserInformationControlInput;
 import org.eclipse.jdt.internal.ui.text.java.hover.JavadocHover;
@@ -34,7 +35,7 @@ import org.eclipse.swt.graphics.RGB;
 @SuppressWarnings("restriction")
 public class LSJavaHoverProvider extends JavadocHover {
 
-	private static String fgStyleSheet;
+	private static @Nullable String fgStyleSheet;
 	private static final String BODY_OPEN = "<body";
 	private static final String BODY_CLOSE = "</body>";
 	private static final String SEPARATOR = "<hr/>";
@@ -42,13 +43,13 @@ public class LSJavaHoverProvider extends JavadocHover {
 	private final LSPTextHover lsBasedHover = new LSPTextHover();
 
 	@Override
-	public Object getHoverInfo2(ITextViewer textViewer, IRegion hoverRegion) {
+	public @Nullable Object getHoverInfo2(@Nullable ITextViewer textViewer, @Nullable IRegion hoverRegion) {
 		if (textViewer == null || hoverRegion == null) {
-			return super.getHoverInfo2(textViewer, hoverRegion);
+			return null;
 		}
-		CompletableFuture<String> lsHoverFuture = this.lsBasedHover.getHoverInfoFuture(textViewer, hoverRegion);
-		final var lsHtmlHoverContent = new AtomicReference<String>();
-		final var jdtHoverControlInput = new AtomicReference<JavadocBrowserInformationControlInput>();
+		CompletableFuture<@Nullable String> lsHoverFuture = this.lsBasedHover.getHoverInfoFuture(textViewer, hoverRegion);
+		final var lsHtmlHoverContent = new AtomicReference<@Nullable String>();
+		final var jdtHoverControlInput = new AtomicReference<@Nullable JavadocBrowserInformationControlInput>();
 
 		JavadocBrowserInformationControlInput input;
 		IJavaElement javaElement = null;
@@ -98,7 +99,7 @@ public class LSJavaHoverProvider extends JavadocHover {
 		return new JavadocBrowserInformationControlInput(previous, javaElement, content, leadingImageWidth);
 	}
 
-	private String formatContent(String lsContent, String jdtContent) {
+	private String formatContent(@Nullable String lsContent, @Nullable String jdtContent) {
 		if (lsContent != null && lsContent.trim().length() > 0 && jdtContent != null
 				&& jdtContent.trim().length() > 0) {
 			return concatenateHtml(lsContent, jdtContent);
@@ -159,7 +160,7 @@ public class LSJavaHoverProvider extends JavadocHover {
 	}
 
 	@Override
-	public IRegion getHoverRegion(ITextViewer textViewer, int offset) {
+	public @Nullable IRegion getHoverRegion(ITextViewer textViewer, int offset) {
 		return this.lsBasedHover.getHoverRegion(textViewer, offset);
 	}
 
@@ -167,14 +168,14 @@ public class LSJavaHoverProvider extends JavadocHover {
 	 * Taken from {@link JavadocHover}. It's <code>private</code>. See {@link JavadocHover#getStyleSheet()}.
 	 * @return CSS as string
 	 */
-	private static String getStyleSheet() {
+	private static @Nullable String getStyleSheet() {
 		if (fgStyleSheet == null) {
 			fgStyleSheet= JavadocHover.loadStyleSheet("/JavadocHoverStyleSheet.css"); //$NON-NLS-1$
 		}
-		String css= fgStyleSheet;
+		String css = fgStyleSheet;
 		if (css != null) {
 			FontData fontData= JFaceResources.getFontRegistry().getFontData(PreferenceConstants.APPEARANCE_JAVADOC_FONT)[0];
-			css= HTMLPrinter.convertTopLevelFont(css, fontData);
+			css = HTMLPrinter.convertTopLevelFont(css, fontData);
 		}
 		return css;
 	}

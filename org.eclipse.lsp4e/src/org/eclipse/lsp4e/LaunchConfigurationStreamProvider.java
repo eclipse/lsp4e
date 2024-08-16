@@ -161,7 +161,13 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 			if (launch.getProcesses().length > 0) {
 				final var process = this.process = launch.getProcesses()[0];
 				final var inputStream = this.inputStream = new StreamProxyInputStream(process);
-				process.getStreamsProxy().getOutputStreamMonitor().addListener(inputStream);
+				final var proxy = process.getStreamsProxy();
+				if(proxy != null) {
+					final var mon = proxy.getOutputStreamMonitor();
+					if (mon != null) {
+						mon.addListener(inputStream);
+					}
+				}
 				// TODO: Ugly hack, find something better to retrieve stream!
 				try {
 					Method systemProcessGetter = RuntimeProcess.class.getDeclaredMethod("getSystemProcess"); //$NON-NLS-1$
@@ -172,7 +178,12 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 					LanguageServerPlugin.logError(ex);
 				}
 				final var errorStream = this.errorStream = new StreamProxyInputStream(process);
-				process.getStreamsProxy().getErrorStreamMonitor().addListener(errorStream);
+				if(proxy != null) {
+					final var mon = proxy.getErrorStreamMonitor();
+					if (mon != null) {
+						mon.addListener(errorStream);
+					}
+				}
 			}
 		} catch (Exception e) {
 			LanguageServerPlugin.logError(e);

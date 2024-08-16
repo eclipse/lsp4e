@@ -13,12 +13,13 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.sourcelookup.ISourceContainer;
 import org.eclipse.debug.core.sourcelookup.ISourcePathComputerDelegate;
+import org.eclipse.jdt.annotation.Nullable;
 
 public class DSPSourcePathComputerDelegate implements ISourcePathComputerDelegate {
 
 	@Override
-	public ISourceContainer[] computeSourceContainers(ILaunchConfiguration configuration, IProgressMonitor monitor)
-			throws CoreException {
+	public ISourceContainer[] computeSourceContainers(ILaunchConfiguration configuration,
+			@Nullable IProgressMonitor monitor) throws CoreException {
 		return new ISourceContainer[] { new AbsolutePathSourceContainer() };
 	}
 

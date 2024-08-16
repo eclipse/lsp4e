@@ -90,10 +90,6 @@ public class CommandExecutor {
 		return CompletableFuture.completedFuture(null);
 	}
 
-	@SuppressWarnings("unused") // ECJ compiler handlerService cannot be null because getService is declared as
-	// <T> T getService(Class<T> api), it infers the input is Class<IHandlerService> and the output
-	// IHandlerService, as it takes over the annotation when inferring the return type, which
-	// is a bug in its implementation
 	private static @Nullable CompletableFuture<Object> executeCommandClientSide(Command command, @Nullable IPath path) {
 		IWorkbench workbench = PlatformUI.getWorkbench();
 
@@ -107,10 +103,7 @@ public class CommandExecutor {
 			return null;
 		}
 		try {
-			CompletableFuture<Object> r = CompletableFuture.completedFuture(handlerService.executeCommand(parameterizedCommand, null));
-			if (r != null) {
-				return r;
-			}
+			return CompletableFuture.completedFuture(handlerService.executeCommand(parameterizedCommand, null));
 		} catch (ExecutionException | NotDefinedException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (NotEnabledException | NotHandledException e2) {
@@ -128,7 +121,6 @@ public class CommandExecutor {
 		return null;
 	}
 
-	@SuppressWarnings("unused") // ECJ compiler thinks commandService cannot be null (see above)
 	private static @Nullable ParameterizedCommand createEclipseCoreCommand(Command command, @Nullable IPath context,
 			IWorkbench workbench) {
 		// Usually commands are defined via extension point, but we synthesize one on

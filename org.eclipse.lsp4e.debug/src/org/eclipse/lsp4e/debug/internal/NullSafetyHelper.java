@@ -10,13 +10,14 @@
  * Contributors:
  * Sebastian Thomschke - initial implementation
  */
-package org.eclipse.lsp4e.internal;
-
-import java.util.function.Supplier;
+package org.eclipse.lsp4e.debug.internal;
 
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 
+/**
+ * Copied from lsp4e.plugin
+ */
 public final class NullSafetyHelper {
 
 	/**
@@ -28,8 +29,7 @@ public final class NullSafetyHelper {
 	 * This method is not meant for non-null input validation.
 	 *
 	 * @return the input value cast to {@link NonNull}
-	 * @throws IllegalStateException
-	 *             if the given value is {@code null}
+	 * @throws IllegalStateException if the given value is {@code null}
 	 */
 	public static <T> @NonNull T castNonNull(final @Nullable T value) {
 		if (value == null)
@@ -48,29 +48,6 @@ public final class NullSafetyHelper {
 	@SuppressWarnings("null")
 	public static <T> @NonNull T castNonNullUnsafe(final T value) {
 		return value;
-	}
-
-	/**
-	 * Casts a non-null value as {@link Nullable}.
-	 *
-	 * @return the input value cast to {@link Nullable}
-	 */
-	public static <T> @Nullable T castNullable(final T value) {
-		return value;
-	}
-
-	public static <T> T defaultIfNull(final @Nullable T object, final T defaultValue) {
-		if (object == null) {
-			return defaultValue;
-		}
-		return object;
-	}
-
-	public static <T> T defaultIfNull(final @Nullable T object, final Supplier<T> defaultValue) {
-		if (object == null) {
-			return defaultValue.get();
-		}
-		return object;
 	}
 
 	/**

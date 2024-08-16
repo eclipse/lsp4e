@@ -12,6 +12,7 @@ import org.eclipse.core.runtime.ListenerList;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.debug.core.IStreamListener;
 import org.eclipse.debug.core.model.IFlushableStreamMonitor;
+import org.eclipse.jdt.annotation.Nullable;
 
 public class DSPStreamMonitor implements IFlushableStreamMonitor {
 
@@ -34,14 +35,14 @@ public class DSPStreamMonitor implements IFlushableStreamMonitor {
 		listeners.remove(listener);
 	}
 
-	public void append(String text) {
+	public void append(@Nullable String text) {
 		if (buffer && text != null) {
 			stream.append(text);
 		}
 		notifyAppend(text);
 	}
 
-	public void notifyAppend(String text) {
+	public void notifyAppend(@Nullable String text) {
 		if (text == null) {
 			return;
 		}

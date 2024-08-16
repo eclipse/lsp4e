@@ -18,6 +18,8 @@ import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IProcess;
+import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
 import org.eclipse.lsp4j.debug.ProcessEventArguments;
 
@@ -29,7 +31,7 @@ public class DSPProcess implements IProcess {
 
 	private final DSPDebugTarget target;
 	private final DSPStreamsProxy proxy;
-	private final ProcessEventArguments processArgs;
+	private final @Nullable ProcessEventArguments processArgs;
 	private final Optional<ProcessHandle> handle;
 	private boolean terminated;
 
@@ -37,7 +39,7 @@ public class DSPProcess implements IProcess {
 		this(target, null);
 	}
 
-	public DSPProcess(DSPDebugTarget dspDebugTarget, ProcessEventArguments args) {
+	public DSPProcess(DSPDebugTarget dspDebugTarget, @Nullable ProcessEventArguments args) {
 		this.target = dspDebugTarget;
 		this.proxy = new DSPStreamsProxy(target.getDebugProtocolServer());
 		this.processArgs = args;
@@ -68,7 +70,7 @@ public class DSPProcess implements IProcess {
 		terminated = true;
 		handle.ifPresent(h -> {
 			h.destroy(); // normal termination
-			CompletableFuture.runAsync(() -> h.destroyForcibly(), CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS)); // forced termination if normal is not sufficient
+			CompletableFuture.runAsync(h::destroyForcibly, CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS)); // forced termination if normal is not sufficient
 		});
 		DebugPlugin.getDefault().fireDebugEventSet(new DebugEvent[] { new DebugEvent(this, DebugEvent.TERMINATE) });
 		target.terminate();
@@ -76,6 +78,7 @@ public class DSPProcess implements IProcess {
 
 	@Override
 	public String getLabel() {
+		final var processArgs = this.processArgs;
 		if (processArgs != null && processArgs.getName() != null) {
 			return processArgs.getName();
 		}
@@ -88,17 +91,17 @@ public class DSPProcess implements IProcess {
 	}
 
 	@Override
-	public DSPStreamsProxy getStreamsProxy() {
+	public @NonNull DSPStreamsProxy getStreamsProxy() {
 		return proxy;
 	}
 
 	@Override
-	public void setAttribute(String key, String value) {
+	public void setAttribute(String key, @Nullable String value) {
 		// TODO
 	}
 
 	@Override
-	public String getAttribute(String key) {
+	public @Nullable String getAttribute(String key) {
 		if (ATTR_PROCESS_ID.equals(key)) {
 			return handle.map(ProcessHandle::pid).map(Object::toString).orElse(null);
 		}

@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.jdt;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
@@ -25,31 +26,31 @@ class LSJavaProposalExtension2 extends LSJavaProposal implements ICompletionProp
 
 	@Override
 	public void apply(ITextViewer viewer, char trigger, int stateMask, int offset) {
-		if (delegate instanceof ICompletionProposalExtension2) {
-			((ICompletionProposalExtension2) delegate).apply(viewer, trigger, stateMask, offset);
+		if (delegate instanceof ICompletionProposalExtension2 proposalExt2) {
+			proposalExt2.apply(viewer, trigger, stateMask, offset);
 		}
 	}
 
 	@Override
 	public void selected(ITextViewer viewer, boolean smartToggle) {
-		if (delegate instanceof ICompletionProposalExtension2) {
-			((ICompletionProposalExtension2) delegate).selected(viewer, smartToggle);
+		if (delegate instanceof ICompletionProposalExtension2 proposalExt2) {
+			proposalExt2.selected(viewer, smartToggle);
 		}
 	}
 
 	@Override
 	public void unselected(ITextViewer viewer) {
-		if (delegate instanceof ICompletionProposalExtension2) {
-			((ICompletionProposalExtension2) delegate).unselected(viewer);
+		if (delegate instanceof ICompletionProposalExtension2 proposalExt2) {
+			proposalExt2.unselected(viewer);
 		}
 	}
 
 	@Override
-	public boolean validate(IDocument document, int offset, DocumentEvent event) {
-		if (delegate instanceof ICompletionProposalExtension2) {
-			return ((ICompletionProposalExtension2) delegate).validate(document, offset, event);
+	public boolean validate(IDocument document, int offset, @Nullable DocumentEvent event) {
+		if (delegate instanceof ICompletionProposalExtension2 proposalExt2) {
+			return proposalExt2.validate(document, offset, event);
 		}
 		return false;
 	}
-	
+
 }

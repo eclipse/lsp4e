@@ -8,6 +8,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.debugmodel;
 
+import static org.eclipse.lsp4e.debug.internal.NullSafetyHelper.*;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,8 +17,8 @@ import java.net.Socket;
 
 public abstract class TransportStreams {
 
-	public InputStream in = null;
-	public OutputStream out = null;
+	public InputStream in = lateNonNull();
+	public OutputStream out = lateNonNull();
 
 	public void close() {
 		try {
@@ -32,7 +34,8 @@ public abstract class TransportStreams {
 	}
 
 	public TransportStreams withTrace() {
-		return new DefaultTransportStreams(new TraceInputStream(in, System.out), new TraceOutputStream(out, System.out)) {
+		return new DefaultTransportStreams(new TraceInputStream(in, System.out),
+				new TraceOutputStream(out, System.out)) {
 			@Override
 			public void close() {
 				TransportStreams.this.close();
@@ -57,7 +60,7 @@ public abstract class TransportStreams {
 				out = socket.getOutputStream();
 			} catch (Exception ex) {
 				throw new RuntimeException(ex);
-			} 
+			}
 		}
 
 		@Override
@@ -67,7 +70,7 @@ public abstract class TransportStreams {
 				socket.close();
 			} catch (IOException e) {
 				throw new RuntimeException(e);
-			} 
+			}
 		}
 	}
 }

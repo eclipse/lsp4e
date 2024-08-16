@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.jdt;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.ICompletionProposalExtension;
@@ -23,31 +24,31 @@ class LSJavaProposalExtension extends LSJavaProposal implements ICompletionPropo
 
 	@Override
 	public void apply(IDocument doc, char trigger, int offset) {
-		if (delegate instanceof ICompletionProposalExtension) {
-			((ICompletionProposalExtension) delegate).apply(doc, trigger, offset);
+		if (delegate instanceof ICompletionProposalExtension proposalExt) {
+			proposalExt.apply(doc, trigger, offset);
 		}
 	}
 
 	@Override
 	public int getContextInformationPosition() {
-		if (delegate instanceof ICompletionProposalExtension) {
-			((ICompletionProposalExtension) delegate).getContextInformationPosition();
+		if (delegate instanceof ICompletionProposalExtension proposalExt) {
+			proposalExt.getContextInformationPosition();
 		}
 		return -1;
 	}
 
 	@Override
-	public char[] getTriggerCharacters() {
-		if (delegate instanceof ICompletionProposalExtension) {
-			((ICompletionProposalExtension) delegate).getTriggerCharacters();
+	public char @Nullable [] getTriggerCharacters() {
+		if (delegate instanceof ICompletionProposalExtension proposalExt) {
+			proposalExt.getTriggerCharacters();
 		}
 		return null;
 	}
 
 	@Override
 	public boolean isValidFor(IDocument doc, int offset) {
-		if (delegate instanceof ICompletionProposalExtension) {
-			((ICompletionProposalExtension) delegate).isValidFor(doc, offset);
+		if (delegate instanceof ICompletionProposalExtension proposalExt) {
+			proposalExt.isValidFor(doc, offset);
 		}
 		return false;
 	}

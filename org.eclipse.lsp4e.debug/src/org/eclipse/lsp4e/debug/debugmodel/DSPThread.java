@@ -23,6 +23,7 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4j.debug.ContinueArguments;
 import org.eclipse.lsp4j.debug.NextArguments;
@@ -39,7 +40,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 	 * The name may not be known, if it is requested we will ask for it from the
 	 * target.
 	 */
-	private String name;
+	private @Nullable String name;
 	private final List<DSPStackFrame> frames = Collections.synchronizedList(new ArrayList<>());
 	private final AtomicBoolean refreshFrames = new AtomicBoolean(true);
 	private boolean stepping;
@@ -87,7 +88,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 		return getDebugTarget().canTerminate();
 	}
 
-	private <T> T handleExceptionalResume(Throwable t) {
+	private <T> @Nullable T handleExceptionalResume(Throwable t) {
 		DSPPlugin.logError("Failed to resume debug adapter", t);
 		setErrorMessage(t.getMessage());
 		stopped();
@@ -219,7 +220,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 	}
 
 	@Override
-	public IStackFrame getTopStackFrame() throws DebugException {
+	public @Nullable IStackFrame getTopStackFrame() throws DebugException {
 		IStackFrame[] stackFrames = getStackFrames();
 		if (stackFrames.length > 0) {
 			return stackFrames[0];
@@ -278,6 +279,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 
 	@Override
 	public String getName() {
+		final var name = this.name;
 		if (name == null) {
 			// Queue up a refresh of the threads to get our name
 			getDebugTarget().getThreads();

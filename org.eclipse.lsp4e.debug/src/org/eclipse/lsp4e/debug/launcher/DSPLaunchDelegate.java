@@ -8,6 +8,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.launcher;
 
+import static org.eclipse.lsp4e.debug.internal.NullSafetyHelper.*;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,6 +36,7 @@ import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.ILaunchConfigurationDelegate;
 import org.eclipse.debug.core.model.IProcess;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
 import org.eclipse.lsp4e.debug.debugmodel.JsonParserWithStringSubstitution;
@@ -52,18 +55,18 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	 * of consumers a little easier to read.
 	 */
 	public static class DSPLaunchDelegateLaunchBuilder {
-		ILaunchConfiguration configuration;
-		String mode;
-		ILaunch launch;
-		IProgressMonitor monitor;
-		boolean launchNotConnect;
-		String debugCmd;
-		List<String> debugCmdArgs;
-		String[] debugCmdEnvVars;
-		boolean monitorDebugAdapter;
-		String server;
-		int port;
-		Map<String, Object> dspParameters;
+		private ILaunchConfiguration configuration;
+		private String mode;
+		private ILaunch launch;
+		private @Nullable IProgressMonitor monitor;
+		private boolean launchNotConnect;
+		private @Nullable String debugCmd;
+		private @Nullable List<String> debugCmdArgs;
+		private String @Nullable [] debugCmdEnvVars;
+		private boolean monitorDebugAdapter;
+		private @Nullable String server;
+		private int port;
+		private Map<String, Object> dspParameters;
 
 		private DSPLaunchDelegateLaunchBuilder(DSPLaunchDelegateLaunchBuilder other) {
 			this.configuration = other.configuration;
@@ -93,7 +96,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		 * @param monitor
 		 */
 		public DSPLaunchDelegateLaunchBuilder(ILaunchConfiguration configuration, String mode, ILaunch launch,
-				IProgressMonitor monitor) {
+				@Nullable IProgressMonitor monitor) {
 			this.configuration = configuration;
 			this.mode = mode;
 			this.launch = launch;
@@ -101,18 +104,19 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 			this.dspParameters = new HashMap<>();
 		}
 
-		public DSPLaunchDelegateLaunchBuilder setLaunchDebugAdapter(String debugCmd, List<String> debugCmdArgs) {
+		public DSPLaunchDelegateLaunchBuilder setLaunchDebugAdapter(String debugCmd,
+				@Nullable List<String> debugCmdArgs) {
 			return setLaunchDebugAdapter(debugCmd, debugCmdArgs, (String[]) null);
 		}
 
-		public DSPLaunchDelegateLaunchBuilder setLaunchDebugAdapter(String debugCmd, List<String> debugCmdArgs,
-				Map<String, String> envVars) {
+		public DSPLaunchDelegateLaunchBuilder setLaunchDebugAdapter(String debugCmd,
+				@Nullable List<String> debugCmdArgs, @Nullable Map<String, String> envVars) {
 			return setLaunchDebugAdapter(debugCmd, debugCmdArgs, envVars == null ? null
 					: envVars.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).toArray(String[]::new));
 		}
 
-		public DSPLaunchDelegateLaunchBuilder setLaunchDebugAdapter(String debugCmd, List<String> debugCmdArgs,
-				String[] envVars) {
+		public DSPLaunchDelegateLaunchBuilder setLaunchDebugAdapter(String debugCmd,
+				@Nullable List<String> debugCmdArgs, String @Nullable [] envVars) {
 			this.launchNotConnect = true;
 			this.debugCmd = debugCmd;
 			this.debugCmdArgs = debugCmdArgs;
@@ -149,7 +153,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 			return launch;
 		}
 
-		public IProgressMonitor getMonitor() {
+		public @Nullable IProgressMonitor getMonitor() {
 			return monitor;
 		}
 
@@ -157,15 +161,15 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 			return launchNotConnect;
 		}
 
-		public String getDebugCmd() {
+		public @Nullable String getDebugCmd() {
 			return debugCmd;
 		}
 
-		public List<String> getDebugCmdArgs() {
+		public @Nullable List<String> getDebugCmdArgs() {
 			return debugCmdArgs;
 		}
 
-		public String[] getDebugCmdEnvVars() {
+		public String @Nullable [] getDebugCmdEnvVars() {
 			return debugCmdEnvVars;
 		}
 
@@ -173,7 +177,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 			return monitorDebugAdapter;
 		}
 
-		public String getServer() {
+		public @Nullable String getServer() {
 			return server;
 		}
 
@@ -196,26 +200,26 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	}
 
 	@Override
-	public void launch(ILaunchConfiguration configuration, String mode, ILaunch launch, IProgressMonitor monitor)
-			throws CoreException {
+	public void launch(ILaunchConfiguration configuration, String mode, ILaunch launch,
+			@Nullable IProgressMonitor monitor) throws CoreException {
 		final var builder = new DSPLaunchDelegateLaunchBuilder(configuration, mode, launch, monitor);
 		builder.launchNotConnect = DSPPlugin.DSP_MODE_LAUNCH
 				.equals(configuration.getAttribute(DSPPlugin.ATTR_DSP_MODE, DSPPlugin.DSP_MODE_LAUNCH));
-		builder.debugCmd = configuration.getAttribute(DSPPlugin.ATTR_DSP_CMD, (String) null);
-		builder.debugCmdArgs = configuration.getAttribute(DSPPlugin.ATTR_DSP_ARGS, (List<String>) null);
+		builder.debugCmd = configuration.getAttribute(DSPPlugin.ATTR_DSP_CMD, "");
+		builder.debugCmdArgs = configuration.getAttribute(DSPPlugin.ATTR_DSP_ARGS, List.of());
 		builder.debugCmdEnvVars = DebugPlugin.getDefault().getLaunchManager().getEnvironment(configuration);
 		builder.monitorDebugAdapter = configuration.getAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER, false);
-		builder.server = configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, (String) null);
+		builder.server = configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, "");
 		builder.port = configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_PORT, 0);
 
-		String dspParametersJson = configuration.getAttribute(DSPPlugin.ATTR_DSP_PARAM, (String) null);
+		String dspParametersJson = configuration.getAttribute(DSPPlugin.ATTR_DSP_PARAM, "{}");
 		try {
 			JsonParserWithStringSubstitution jsonUtils = new JsonParserWithStringSubstitution(
 					VariablesPlugin.getDefault().getStringVariableManager());
-			Map<String, Object> customParams = jsonUtils.parseJsonObject(dspParametersJson);
+			Map<String, Object> customParams = jsonUtils.parseJsonObjectAndRemoveNulls(dspParametersJson);
 			builder.dspParameters.putAll(customParams);
 		} catch (IllegalStateException e) {
-			abort("Json launch parameters were not correctly formatted.", e); //$NON-NLS-1$
+			throw new CoreException(createErrorStatus("Json launch parameters were not correctly formatted.", null));
 		}
 
 		launch(builder);
@@ -233,23 +237,26 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		if (customDebugAdapter) {
 			builder.launchNotConnect = DSPPlugin.DSP_MODE_LAUNCH
 					.equals(builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_MODE, DSPPlugin.DSP_MODE_LAUNCH));
-			builder.debugCmd = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_CMD, (String) null);
-			builder.debugCmdArgs = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_ARGS, (List<String>) null);
+			builder.debugCmd = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_CMD, "");
+			builder.debugCmdArgs = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_ARGS, List.of());
 			builder.debugCmdEnvVars = DebugPlugin.getDefault().getLaunchManager().getEnvironment(builder.configuration);
 			builder.monitorDebugAdapter = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER,
 					false);
-			builder.server = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, (String) null);
+			builder.server = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_HOST, "");
 			builder.port = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_SERVER_PORT, 0);
 		}
 		if (customLaunchParameters) {
-			String dspParametersJson = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_PARAM, (String) null);
-			try {
-				JsonParserWithStringSubstitution jsonUtils = new JsonParserWithStringSubstitution(
-						VariablesPlugin.getDefault().getStringVariableManager());
-				Map<String, Object> customParams = jsonUtils.parseJsonObject(dspParametersJson);
-				builder.dspParameters.putAll(customParams);
-			} catch (IllegalStateException | CoreException e) {
-				abort("Json launch parameters were not correctly formatted.", e); //$NON-NLS-1$
+			String dspParametersJson = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_PARAM, "");
+			if (!dspParametersJson.isBlank()) {
+				try {
+					JsonParserWithStringSubstitution jsonUtils = new JsonParserWithStringSubstitution(
+							VariablesPlugin.getDefault().getStringVariableManager());
+					Map<String, Object> customParams = jsonUtils.parseJsonObjectAndRemoveNulls(dspParametersJson);
+					builder.dspParameters.putAll(customParams);
+				} catch (IllegalStateException | CoreException e) {
+					throw new CoreException(
+							createErrorStatus("Json launch parameters were not correctly formatted.", null));
+				}
 			}
 		}
 
@@ -262,24 +269,26 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 			subMonitor.setTaskName("Starting run session");
 			builder.dspParameters.put("noDebug", true);
 		} else {
-			abort(NLS.bind("Unsupported launch mode '{0}'.", builder.mode), null);
+			throw new CoreException(createErrorStatus(NLS.bind("Unsupported launch mode '{0}'.", builder.mode), null));
 		}
 
-		Supplier<TransportStreams> streamSupplier;
+		final Supplier<TransportStreams> streamSupplier;
 		try {
-
 			if (builder.launchNotConnect) {
 				InputStream inputStream;
 				OutputStream outputStream;
 				Runnable cleanup;
 				final var command = new ArrayList<String>();
 
-				if (builder.debugCmd == null) {
-					abort("Debug command unspecified.", null); //$NON-NLS-1$
+				final var debugCmd = builder.debugCmd;
+				if (debugCmd == null || debugCmd.isBlank()) {
+					throw new CoreException(createErrorStatus("Debug command unspecified.", null));
 				}
-				command.add(builder.debugCmd);
-				if (builder.debugCmdArgs != null && !builder.debugCmdArgs.isEmpty()) {
-					command.addAll(builder.debugCmdArgs);
+				command.add(debugCmd);
+
+				final var debugCmdArgs = builder.debugCmdArgs;
+				if (debugCmdArgs != null && !debugCmdArgs.isEmpty()) {
+					command.addAll(debugCmdArgs);
 				}
 
 				subMonitor
@@ -315,20 +324,22 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 						}
 					};
 					DSPLaunchDelegateLaunchBuilder finalBuilder = builder;
-					debugAdapterIProcess.getStreamsProxy().getOutputStreamMonitor().addListener((text, monitor) -> {
-						try {
-							for (byte b : text
-									.getBytes(finalBuilder.launch.getAttribute(DebugPlugin.ATTR_CONSOLE_ENCODING))) {
-								bytes.add(b);
-							}
-						} catch (IOException e) {
-							DSPPlugin.logError(e);
-						}
-					});
+					castNonNull(castNonNull(debugAdapterIProcess.getStreamsProxy()).getOutputStreamMonitor())
+							.addListener((text, monitor) -> {
+								try {
+									for (byte b : text.getBytes(castNonNull(
+											finalBuilder.launch.getAttribute(DebugPlugin.ATTR_CONSOLE_ENCODING)))) {
+										bytes.add(b);
+									}
+								} catch (IOException e) {
+									DSPPlugin.logError(e);
+								}
+							});
 					outputStream = new OutputStream() {
 						@Override
 						public void write(int b) throws IOException {
-							debugAdapterIProcess.getStreamsProxy().write(new String(new byte[] { (byte) b }));
+							castNonNull(debugAdapterIProcess.getStreamsProxy())
+									.write(new String(new byte[] { (byte) b }));
 						}
 					};
 					cleanup = () -> {
@@ -353,15 +364,17 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 					}
 				};
 			} else {
-				if (builder.server == null) {
-					abort("Debug server host unspecified.", null); //$NON-NLS-1$
+				final var server = builder.server;
+				if (server == null || server.isBlank()) {
+					throw new CoreException(createErrorStatus("Debug server host unspecified.", null));
+				}
+				if (builder.port < 1 || builder.port > 65535) {
+					throw new CoreException(
+							createErrorStatus("Debug server port unspecified or out of range 1-65535.", null));
 				}
 
-				if (builder.port < 1 || builder.port > 65535) {
-					abort("Debug server port unspecified or out of range 1-65535.", null); //$NON-NLS-1$
-				}
 				subMonitor.subTask(NLS.bind("Connecting to debug adapter: {0}:{1}", builder.server, builder.port));
-				streamSupplier = () -> new SocketTransportStreams(builder.server, builder.port);
+				streamSupplier = () -> new SocketTransportStreams(server, builder.port);
 			}
 
 			subMonitor.setWorkRemaining(80);
@@ -371,7 +384,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 			IDebugTarget target = createDebugTarget(subMonitor, streamSupplier, launch, dspParameters);
 			builder.launch.addDebugTarget(target);
 		} catch (OperationCanceledException e1) {
-			abort("Failed to start debugging", e1);
+			throw new CoreException(createErrorStatus("Failed to start debugging", e1));
 		} finally {
 			subMonitor.done();
 		}
@@ -392,14 +405,13 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 	}
 
 	/**
-	 * Throws an exception with a new status containing the given message and
+	 * Creates an IStatus with an IStats.ERROR containing the given message and
 	 * optional exception.
 	 *
 	 * @param message error message
-	 * @param e       underlying exception
-	 * @throws CoreException
+	 * @param cause   underlying exception
 	 */
-	private void abort(String message, Throwable e) throws CoreException {
-		throw new CoreException(new Status(IStatus.ERROR, DSPPlugin.PLUGIN_ID, 0, message, e));
+	private IStatus createErrorStatus(String message, @Nullable Throwable cause) {
+		return new Status(IStatus.ERROR, DSPPlugin.PLUGIN_ID, 0, message, cause);
 	}
 }
