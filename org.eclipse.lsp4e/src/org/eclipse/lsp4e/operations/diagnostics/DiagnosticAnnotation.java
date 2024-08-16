@@ -40,7 +40,7 @@ public class DiagnosticAnnotation extends Annotation {
 
 	@Override
 	public String getText() {
-		return this.diagnostic.getMessage();
+		return LSPDiagnosticsToMarkers.computeMarkerMessage(diagnostic);
 	}
 
 	@Override

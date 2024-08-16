@@ -58,6 +58,14 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	public static final String LSP_DIAGNOSTIC = "lspDiagnostic"; //$NON-NLS-1$
 	public static final String LANGUAGE_SERVER_ID = "languageServerId"; //$NON-NLS-1$
 	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
+
+	static String computeMarkerMessage(final Diagnostic diagnostic) {
+		final Either<String, Integer> code = diagnostic.getCode();
+		return code == null //
+				? diagnostic.getMessage()
+				: diagnostic.getMessage() + " [" + code.get() + "]"; //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
 	private final String languageServerId;
 	private final String markerType;
 	private final Optional<IMarkerAttributeComputer> markerAttributeComputer;
@@ -220,6 +228,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			return null;
 		}
 
+		final var markerMessage = computeMarkerMessage(diagnostic);
 		for (IMarker marker : remainingMarkers) {
 			if (!marker.exists()) {
 				continue;
@@ -227,7 +236,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			try {
 				if (LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), document) == MarkerUtilities.getCharStart(marker)
 						&& (LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document) == MarkerUtilities.getCharEnd(marker) || Objects.equals(diagnostic.getRange().getStart(), diagnostic.getRange().getEnd()))
-						&& Objects.equals(marker.getAttribute(IMarker.MESSAGE), diagnostic.getMessage())
+						&& Objects.equals(marker.getAttribute(IMarker.MESSAGE), markerMessage)
 						&& Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID), this.languageServerId)) {
 					return marker;
 				}
@@ -251,7 +260,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		final var attributes = new HashMap<String, Object>(8);
 		attributes.put(LSP_DIAGNOSTIC, diagnostic);
 		attributes.put(LANGUAGE_SERVER_ID, languageServerId);
-		attributes.put(IMarker.MESSAGE, diagnostic.getMessage());
+		attributes.put(IMarker.MESSAGE, computeMarkerMessage(diagnostic));
 		attributes.put(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
 
 		if (document != null) {
