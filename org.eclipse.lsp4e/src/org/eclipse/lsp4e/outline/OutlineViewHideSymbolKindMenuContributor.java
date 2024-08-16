@@ -40,7 +40,7 @@ public class OutlineViewHideSymbolKindMenuContributor extends CompoundContributi
 				}
 
 			})
-			.map(kind -> createHideSymbolKindContributionItem(kind))
+			.map(this::createHideSymbolKindContributionItem)
 			.toArray(IContributionItem[]::new);
 	}
 
