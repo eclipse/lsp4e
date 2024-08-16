@@ -521,11 +521,7 @@ public class LanguageServiceAccessor {
 						.filter(wrapper -> wrapper.getServerCapabilities() == null
 								|| capabilityRequest.test(castNonNull(wrapper.getServerCapabilities())))
 						.forEach(wrapper -> {
-							try {
-								wrapper.connectDocument(document);
-							} catch (IOException e) {
-								LanguageServerPlugin.logError(e);
-							}
+							wrapper.connectDocument(document);
 							res.add(new LSPDocumentInfo(fileUri, document, wrapper));
 						});
 			} catch (final Exception e) {
