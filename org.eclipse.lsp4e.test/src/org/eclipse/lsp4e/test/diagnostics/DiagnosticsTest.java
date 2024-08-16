@@ -104,7 +104,8 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 			assertEquals(markerCharStart, MarkerUtilities.getCharStart(marker.get()));
 			assertEquals(markerCharEnd, MarkerUtilities.getCharEnd(marker.get()));
 			assertEquals(markerLineIndex + 1, MarkerUtilities.getLineNumber(marker.get()));
-			assertEquals(diagnostic.getMessage(), MarkerUtilities.getMessage(marker.get()));
+			assertEquals(diagnostic.getMessage() + " [" + diagnostic.getCode().get() + "]",
+					MarkerUtilities.getMessage(marker.get()));
 		}
 
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), Collections.emptyList()));
@@ -229,7 +230,8 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 			Diagnostic diagnostic = diagnostics.get(i);
 			IMarker marker = markers[i];
 
-			assertEquals(diagnostic.getMessage(), MarkerUtilities.getMessage(marker));
+			assertEquals(diagnostic.getMessage() + " [" + diagnostic.getCode().get() + "]",
+					MarkerUtilities.getMessage(marker));
 			assertEquals(content.length(), MarkerUtilities.getCharStart(marker));
 			assertEquals(content.length(), MarkerUtilities.getCharEnd(marker));
 			assertEquals(1, MarkerUtilities.getLineNumber(marker));
