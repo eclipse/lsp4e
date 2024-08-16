@@ -11,16 +11,20 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.diagnostics;
 
+import java.util.function.Function;
+
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.lsp4j.Diagnostic;
 
-public class DiagnosticAnnotation extends Annotation {
+class DiagnosticAnnotation extends Annotation {
 
 	private final Diagnostic diagnostic;
+	private final Function<Diagnostic, String> textComputer;
 
-	public DiagnosticAnnotation(Diagnostic diagnostic) {
+	public DiagnosticAnnotation(Diagnostic diagnostic, Function<Diagnostic, String> textComputer) {
 		this.diagnostic = diagnostic;
+		this.textComputer = textComputer;
 	}
 
 	@Override
@@ -29,7 +33,7 @@ public class DiagnosticAnnotation extends Annotation {
 		case Error -> "org.eclipse.ui.workbench.texteditor.error"; //$NON-NLS-1$
 		case Warning -> "org.eclipse.ui.workbench.texteditor.warning"; //$NON-NLS-1$
 		case Information -> "org.eclipse.ui.workbench.texteditor.info"; //$NON-NLS-1$
-		case Hint ->"org.eclipse.ui.workbench.texteditor.info"; //$NON-NLS-1$
+		case Hint -> "org.eclipse.ui.workbench.texteditor.info"; //$NON-NLS-1$
 		};
 	}
 
@@ -40,7 +44,7 @@ public class DiagnosticAnnotation extends Annotation {
 
 	@Override
 	public String getText() {
-		return LSPDiagnosticsToMarkers.computeMarkerMessage(diagnostic);
+		return textComputer.apply(diagnostic);
 	}
 
 	@Override
