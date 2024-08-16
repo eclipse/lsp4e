@@ -17,6 +17,7 @@ import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IRegisterGroup;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IVariable;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4j.debug.EvaluateArguments;
 import org.eclipse.lsp4j.debug.EvaluateArgumentsContext;
 import org.eclipse.lsp4j.debug.EvaluateResponse;
@@ -28,7 +29,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 	private final DSPThread thread;
 	private StackFrame stackFrame;
 	private final int depth;
-	private IVariable[] cachedVariables;
+	private IVariable @Nullable [] cachedVariables;
 
 	public DSPStackFrame(DSPThread thread, StackFrame stackFrame, int depth) {
 		super(thread.getDebugTarget());
@@ -133,6 +134,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	@Override
 	public IVariable[] getVariables() throws DebugException {
+		var cachedVariables = this.cachedVariables;
 		if (cachedVariables == null) {
 			final var arguments = new ScopesArguments();
 			arguments.setFrameId(stackFrame.getId());
@@ -143,7 +145,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 						scope.getVariablesReference());
 				vars.add(variable);
 			}
-			cachedVariables = vars.toArray(IVariable[]::new);
+			cachedVariables = this.cachedVariables = vars.toArray(IVariable[]::new);
 		}
 		return cachedVariables;
 	}
@@ -155,7 +157,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	@Override
 	public IRegisterGroup[] getRegisterGroups() throws DebugException {
-		return null;
+		return new IRegisterGroup[0];
 	}
 
 	@Override

@@ -22,7 +22,6 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -85,7 +84,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	}
 
 	@Override
-	public void createControl(@NonNullByDefault({}) Composite parent) {
+	public void createControl(final Composite parent) {
 		outlineViewer = new CommonViewer(ID, parent, SWT.NONE);
 		if (document != null) {
 			outlineViewer.setInput(new OutlineViewerInput(document, wrapper, textEditor));
@@ -189,7 +188,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 			return;
 		}
 
-		Object @Nullable [] objects = contentProvider.getElements(null);
+		Object[] objects = contentProvider.getElements(null);
 		final var path = new ArrayList<Object>();
 		while (objects != null && objects.length > 0) {
 			boolean found = false;
@@ -220,7 +219,6 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 		}
 	}
 
-	@SuppressWarnings("unused")
 	private static @Nullable Range toRange(Object object) {
 		Range range = null;
 		@Nullable
@@ -268,7 +266,7 @@ public class CNFOutlinePage implements IContentOutlinePage, ILabelProviderListen
 	}
 
 	@Override
-	public void setActionBars(@NonNullByDefault({}) IActionBars actionBars) {
+	public void setActionBars(final IActionBars actionBars) {
 		// nothing to do yet, comment requested by sonar
 	}
 

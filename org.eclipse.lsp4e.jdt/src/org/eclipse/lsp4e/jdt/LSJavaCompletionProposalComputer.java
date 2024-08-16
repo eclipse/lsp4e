@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jdt.ui.text.java.ContentAssistInvocationContext;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposalComputer;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
@@ -36,13 +38,14 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 	private static final long TIMEOUT_LENGTH = 300;
 
 	private final LSContentAssistProcessor lsContentAssistProcessor = new LSContentAssistProcessor(false);
-	private String javaCompletionSpecificErrorMessage;
+	private @Nullable String javaCompletionSpecificErrorMessage;
 
 	@Override
 	public void sessionStarted() {
 	}
 
 	@Override
+	@NonNullByDefault({})
 	public List<ICompletionProposal> computeCompletionProposals(ContentAssistInvocationContext context,
 			IProgressMonitor monitor) {
 		CompletableFuture<ICompletionProposal[]> future = CompletableFuture.supplyAsync(() ->
@@ -99,6 +102,7 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 	}
 
 	@Override
+	@NonNullByDefault({})
 	public List<IContextInformation> computeContextInformation(ContentAssistInvocationContext context,
 			IProgressMonitor monitor) {
 		IContextInformation[] contextInformation = lsContentAssistProcessor.computeContextInformation(context.getViewer(), context.getInvocationOffset());
@@ -106,7 +110,7 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 	}
 
 	@Override
-	public String getErrorMessage() {
+	public @Nullable String getErrorMessage() {
 		return javaCompletionSpecificErrorMessage != null ? javaCompletionSpecificErrorMessage : lsContentAssistProcessor.getErrorMessage();
 	}
 

@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.internal;
 
-import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jface.viewers.StyledString.Styler;
 import org.eclipse.swt.graphics.TextStyle;
 
@@ -23,7 +22,7 @@ public class StyleUtil {
 
 	public static final Styler DEPRECATE = new Styler() {
 		@Override
-		public void applyStyles(@NonNullByDefault({}) TextStyle textStyle) {
+		public void applyStyles(final TextStyle textStyle) {
 			textStyle.strikeout = true;
 		}
 	};

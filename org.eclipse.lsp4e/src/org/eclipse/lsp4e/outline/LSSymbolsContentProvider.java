@@ -36,7 +36,6 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.DocumentEvent;
 import org.eclipse.jface.text.IDocument;
@@ -164,10 +163,12 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 		@Override
 		public void preferenceChange(PreferenceChangeEvent event) {
-			if (viewer != null
-					&& event.getKey().startsWith(CNFOutlinePage.HIDE_DOCUMENT_SYMBOL_KIND_PREFERENCE_PREFIX)) {
+			final var viewer = LSSymbolsContentProvider.this.viewer;
+			if (viewer == null)
+				return;
+			if (event.getKey().startsWith(CNFOutlinePage.HIDE_DOCUMENT_SYMBOL_KIND_PREFERENCE_PREFIX)) {
 				viewer.getControl().getDisplay().asyncExec(() -> {
-					if(!viewer.getTree().isDisposed()) {
+					if (!viewer.getTree().isDisposed()) {
 						viewer.refresh();
 					}
 				});
@@ -196,17 +197,17 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		}
 
 		@Override
-		protected void process(@NonNullByDefault({}) DirtyRegion dirtyRegion) {
+		protected void process(final DirtyRegion dirtyRegion) {
 			refreshTreeContentFromLS();
 		}
 
 		@Override
-		protected void reconcilerDocumentChanged(@NonNullByDefault({}) IDocument newDocument) {
+		protected void reconcilerDocumentChanged(final IDocument newDocument) {
 			// Do nothing
 		}
 
 		@Override
-		public @Nullable IReconcilingStrategy getReconcilingStrategy(@NonNullByDefault({}) String contentType) {
+		public @Nullable IReconcilingStrategy getReconcilingStrategy(final String contentType) {
 			return null;
 		}
 	}
@@ -231,6 +232,10 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 
 		@Override
 		public void resourceChanged(IResourceChangeEvent event) {
+			final var viewer = LSSymbolsContentProvider.this.viewer;
+			if (viewer == null)
+				return;
+
 			if ((event.getDelta().getFlags() ^ IResourceDelta.MARKERS) != 0) {
 				try {
 					event.getDelta().accept(delta -> {
@@ -250,7 +255,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		}
 	}
 
-	private TreeViewer viewer = lateNonNull();
+	private @Nullable TreeViewer viewer;
 	private volatile @Nullable Throwable lastError;
 	private OutlineViewerInput outlineViewerInput = lateNonNull();
 
@@ -271,7 +276,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	}
 
 	@Override
-	public void init(@NonNullByDefault({}) ICommonContentExtensionSite aConfig) {
+	public void init(final ICommonContentExtensionSite aConfig) {
 		preferencesDependantOutlineUpdater.install();
 	}
 
@@ -364,6 +369,9 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	}
 
 	protected void refreshTreeContentFromLS() {
+		final var viewer = this.viewer;
+		if(viewer == null)
+			return;
 		final URI documentURI = outlineViewerInput.documentURI;
 		if (documentURI == null) {
 			IllegalStateException exception = new IllegalStateException("documentURI == null");  //$NON-NLS-1$
@@ -440,10 +448,10 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 	}
 
 	@Override
-	public void restoreState(@NonNullByDefault({}) IMemento aMemento) {
+	public void restoreState(final IMemento aMemento) {
 	}
 
 	@Override
-	public void saveState(@NonNullByDefault({}) IMemento aMemento) {
+	public void saveState(final IMemento aMemento) {
 	}
 }

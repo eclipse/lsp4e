@@ -14,6 +14,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.sourcelookup.ISourceContainer;
 import org.eclipse.debug.core.sourcelookup.ISourceContainerType;
 import org.eclipse.debug.core.sourcelookup.containers.AbstractSourceContainer;
+import org.eclipse.jdt.annotation.Nullable;
 
 public class AbsolutePathSourceContainer extends AbstractSourceContainer implements ISourceContainer {
 
@@ -31,7 +32,7 @@ public class AbsolutePathSourceContainer extends AbstractSourceContainer impleme
 	}
 
 	@Override
-	public ISourceContainerType getType() {
+	public @Nullable ISourceContainerType getType() {
 		return null;
 	}
 

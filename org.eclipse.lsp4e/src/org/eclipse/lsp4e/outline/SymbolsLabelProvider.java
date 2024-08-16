@@ -30,7 +30,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.BadLocationException;
@@ -341,20 +340,20 @@ public class SymbolsLabelProvider extends LabelProvider
 	}
 
 	@Override
-	public void restoreState(@NonNullByDefault({}) IMemento aMemento) {
+	public void restoreState(final IMemento aMemento) {
 	}
 
 	@Override
-	public void saveState(@NonNullByDefault({}) IMemento aMemento) {
+	public void saveState(final IMemento aMemento) {
 	}
 
 	@Override
-	public @Nullable String getDescription(@NonNullByDefault({}) Object anElement) {
+	public @Nullable String getDescription(final Object anElement) {
 		return null;
 	}
 
 	@Override
-	public void init(@NonNullByDefault({}) ICommonContentExtensionSite aConfig) {
+	public void init(final ICommonContentExtensionSite aConfig) {
 	}
 
 	@Override

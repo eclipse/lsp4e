@@ -17,6 +17,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.ImageRegistry;
 import org.eclipse.swt.graphics.Image;
@@ -65,7 +66,7 @@ public final class DSPImages {
 		return imageRegistry.get(key);
 	}
 
-	private static URL makeIconFileURL(String prefix, String name) {
+	private static @Nullable URL makeIconFileURL(String prefix, String name) {
 		final var buffer = new StringBuilder(prefix);
 		buffer.append(name);
 		try {

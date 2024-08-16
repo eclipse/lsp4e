@@ -13,6 +13,7 @@ import java.util.Set;
 
 import org.eclipse.debug.ui.actions.IToggleBreakpointsTarget;
 import org.eclipse.debug.ui.actions.IToggleBreakpointsTargetFactory;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.ui.IWorkbenchPart;
@@ -31,12 +32,12 @@ public class ToggleBreakpointsTargetFactory implements IToggleBreakpointsTargetF
 	}
 
 	@Override
-	public String getDefaultToggleTarget(IWorkbenchPart part, ISelection selection) {
+	public @Nullable String getDefaultToggleTarget(IWorkbenchPart part, ISelection selection) {
 		return null;
 	}
 
 	@Override
-	public IToggleBreakpointsTarget createToggleTarget(String targetID) {
+	public @Nullable IToggleBreakpointsTarget createToggleTarget(String targetID) {
 		if (TOGGLE_BREAKPOINT_TARGET_ID.equals(targetID)) {
 			return DSP_BREAKPOINT_ADAPTER;
 		}
@@ -44,7 +45,7 @@ public class ToggleBreakpointsTargetFactory implements IToggleBreakpointsTargetF
 	}
 
 	@Override
-	public String getToggleTargetName(String targetID) {
+	public @Nullable String getToggleTargetName(String targetID) {
 		if (TOGGLE_BREAKPOINT_TARGET_ID.equals(targetID)) {
 			return "LSP4E Breakpoint";
 		}
@@ -52,7 +53,7 @@ public class ToggleBreakpointsTargetFactory implements IToggleBreakpointsTargetF
 	}
 
 	@Override
-	public String getToggleTargetDescription(String targetID) {
+	public @Nullable String getToggleTargetDescription(String targetID) {
 		if (TOGGLE_BREAKPOINT_TARGET_ID.equals(targetID)) {
 			return "LSP4E Breakpoint for Debug Adapter";
 		}

@@ -25,6 +25,7 @@ import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.core.model.IVariable;
 import org.eclipse.debug.ui.DebugUITools;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
@@ -35,7 +36,7 @@ import org.eclipse.lsp4e.debug.debugmodel.DSPStackFrame;
 public class TextSelectionToIVariable implements IAdapterFactory {
 
 	@Override
-	public <T> T getAdapter(Object adaptableObject, Class<T> adapterType) {
+	public <T> @Nullable T getAdapter(@Nullable Object adaptableObject, Class<T> adapterType) {
 		if (adaptableObject instanceof TextSelection textSelection && IVariable.class.isAssignableFrom(adapterType)) {
 			return adapterType.cast(getVariableFor(textSelection));
 		}
@@ -47,7 +48,7 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 		return new Class<?>[] { IVariable.class };
 	}
 
-	private IVariable getVariableFor(TextSelection selection) {
+	private @Nullable IVariable getVariableFor(TextSelection selection) {
 		if (!hasDAPTarget()) {
 			return null;
 		}
@@ -89,7 +90,8 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 			DSPPlugin.logError(de);
 		}
 
-		if (Boolean.TRUE.equals(frame.getDebugTarget().getCapabilities().getSupportsEvaluateForHovers())) {
+		final var capabilities = frame.getDebugTarget().getCapabilities();
+		if (capabilities != null && Boolean.TRUE.equals(capabilities.getSupportsEvaluateForHovers())) {
 			try {
 				// ok to call get as it should be a different thread.
 				return frame.evaluate(variableName).get();
@@ -114,14 +116,20 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 	}
 
 	private boolean match(IDocument document, DSPStackFrame frame) {
-		Object sourceElement = frame.getLaunch().getSourceLocator().getSourceElement(frame);
-		if (sourceElement instanceof String) {
-			return Objects.equals(DocumentUtils.toUri(document).getPath(), sourceElement);
+		final var sourceLocator = frame.getLaunch().getSourceLocator();
+		if (sourceLocator == null)
+			return false;
+
+		if (sourceLocator.getSourceElement(frame) instanceof String sourceElement) {
+			final var uri = DocumentUtils.toUri(document);
+			if (uri == null)
+				return false;
+			return Objects.equals(uri.getPath(), sourceElement);
 		}
 		return false;
 	}
 
-	private String findVariableName(IDocument document, int offset) {
+	private @Nullable String findVariableName(IDocument document, int offset) {
 		try {
 			if (!Character.isJavaIdentifierPart(document.getChar(offset))) {
 				return null;
@@ -140,7 +148,7 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 		}
 	}
 
-	protected DSPStackFrame getFrame() {
+	protected @Nullable DSPStackFrame getFrame() {
 		IAdaptable adaptable = DebugUITools.getDebugContext();
 		if (adaptable != null) {
 			return Adapters.adapt(adaptable, DSPStackFrame.class);
@@ -148,7 +156,7 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 		return null;
 	}
 
-	private IDocument getDocument(TextSelection sel) {
+	private @Nullable IDocument getDocument(TextSelection sel) {
 		try {
 			Method documentMethod = TextSelection.class.getDeclaredMethod("getDocument"); //$NON-NLS-1$
 			documentMethod.setAccessible(true);

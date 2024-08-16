@@ -8,6 +8,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.presentation;
 
+import static org.eclipse.lsp4e.debug.internal.NullSafetyHelper.*;
+
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IDebugElement;
@@ -15,6 +17,7 @@ import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.core.model.IWatchExpressionDelegate;
 import org.eclipse.debug.core.model.IWatchExpressionListener;
 import org.eclipse.debug.core.model.IWatchExpressionResult;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
 import org.eclipse.lsp4e.debug.debugmodel.DSPStackFrame;
 import org.eclipse.lsp4e.debug.debugmodel.DSPValue;
@@ -28,7 +31,7 @@ public class DAPWatchExpression implements IWatchExpressionDelegate {
 		if (context.getDebugTarget() instanceof DSPDebugTarget dapDebugger) {
 			final var args = new EvaluateArguments();
 			args.setExpression(expression);
-			DSPStackFrame frame = Adapters.adapt(context, DSPStackFrame.class);
+			DSPStackFrame frame = castNonNull(Adapters.adapt(context, DSPStackFrame.class));
 			args.setFrameId(frame.getFrameId());
 			dapDebugger.getDebugProtocolServer().evaluate(args).thenAccept(
 					res -> listener.watchEvaluationFinished(createWatchResult(dapDebugger, expression, res)));
@@ -44,7 +47,7 @@ public class DAPWatchExpression implements IWatchExpressionDelegate {
 			}
 
 			@Override
-			public IValue getValue() {
+			public @Nullable IValue getValue() {
 				return new DSPValue(dapDebugger, res.getVariablesReference(), res.getResult());
 			}
 
@@ -54,13 +57,13 @@ public class DAPWatchExpression implements IWatchExpressionDelegate {
 			}
 
 			@Override
-			public DebugException getException() {
+			public @Nullable DebugException getException() {
 				return null;
 			}
 
 			@Override
 			public String[] getErrorMessages() {
-				return null;
+				return new String[0];
 			}
 		};
 	}

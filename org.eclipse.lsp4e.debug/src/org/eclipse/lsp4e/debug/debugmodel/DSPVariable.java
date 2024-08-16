@@ -58,7 +58,8 @@ public class DSPVariable extends DSPDebugElement implements IVariable {
 
 	@Override
 	public boolean supportsValueModification() {
-		return Boolean.TRUE.equals(getDebugTarget().getCapabilities().getSupportsSetVariable());
+		final var capabilities = getDebugTarget().getCapabilities();
+		return capabilities != null && Boolean.TRUE.equals(capabilities.getSupportsSetVariable());
 	}
 
 	@Override
