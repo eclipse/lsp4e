@@ -110,12 +110,11 @@ public class LSPTextChange extends TextChange {
 		// if the platform called getEdit() prior to this method being traversed, but it seems to be OK in practice.
 		final IDocument document = castNonNull(this.fBuffer).getDocument();
 		int offset = 0;
-		int length = document.getLength();
 		final var range = this.range;
 		if (range != null && getEdit() == null) {
 			try {
 				offset = LSPEclipseUtils.toOffset(range.getStart(), document);
-				length = LSPEclipseUtils.toOffset(range.getEnd(), document) - offset;
+				int length = LSPEclipseUtils.toOffset(range.getEnd(), document) - offset;
 				this.setEdit(new ReplaceEdit(offset, length, newText));
 			} catch (BadLocationException e) {
 				// Should not happen
