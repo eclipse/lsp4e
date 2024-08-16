@@ -16,7 +16,6 @@ package org.eclipse.lsp4e;
 
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -388,15 +387,6 @@ public class LanguageServiceAccessor {
 			}
 			return wrapper;
 		}
-	}
-
-	/**
-	 * Interface to be used for passing lambdas to
-	 * {@link LanguageServiceAccessor#addStartedServerSynchronized(ServerSupplier)}.
-	 */
-	@FunctionalInterface
-	private static interface ServerSupplier {
-		LanguageServerWrapper get() throws IOException;
 	}
 
 	public static List<LanguageServerWrapper> getStartedWrappers(@Nullable Predicate<ServerCapabilities> request,
