@@ -12,7 +12,6 @@
 package org.eclipse.lsp4e.outline;
 
 import java.util.Arrays;
-import java.util.Comparator;
 
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -32,15 +31,8 @@ public class OutlineViewHideSymbolKindMenuContributor extends CompoundContributi
 	@Override
 	protected IContributionItem[] getContributionItems() {
 		return Arrays.stream(SymbolKind.values())
-			.sorted(new Comparator<SymbolKind>() {
-
-				@Override
-				public int compare(SymbolKind sk1, SymbolKind sk2) {
-					return sk1.name().compareTo(sk2.name());
-				}
-
-			})
-			.map(kind -> createHideSymbolKindContributionItem(kind))
+			.sorted((sk1, sk2) -> sk1.name().compareTo(sk2.name()))
+			.map(this::createHideSymbolKindContributionItem)
 			.toArray(IContributionItem[]::new);
 	}
 

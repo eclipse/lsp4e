@@ -198,7 +198,7 @@ public final class LSPEclipseUtils {
 
 	public static int toOffset(Position position, IDocument document) throws BadLocationException {
 		var line = position.getLine();
-		var character = position.getCharacter();
+		final int character;
 
 		/*
 		 * The LSP spec allow for positions to specify the next line if a line should be

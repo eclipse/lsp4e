@@ -16,7 +16,6 @@ package org.eclipse.lsp4e;
 
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -390,15 +389,6 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-	/**
-	 * Interface to be used for passing lambdas to
-	 * {@link LanguageServiceAccessor#addStartedServerSynchronized(ServerSupplier)}.
-	 */
-	@FunctionalInterface
-	private static interface ServerSupplier {
-		LanguageServerWrapper get() throws IOException;
-	}
-
 	public static List<LanguageServerWrapper> getStartedWrappers(@Nullable Predicate<ServerCapabilities> request,
 			boolean onlyActiveLS) {
 		return getStartedWrappers(w -> true, request, onlyActiveLS);
@@ -521,11 +511,7 @@ public class LanguageServiceAccessor {
 						.filter(wrapper -> wrapper.getServerCapabilities() == null
 								|| capabilityRequest.test(castNonNull(wrapper.getServerCapabilities())))
 						.forEach(wrapper -> {
-							try {
-								wrapper.connectDocument(document);
-							} catch (IOException e) {
-								LanguageServerPlugin.logError(e);
-							}
+							wrapper.connectDocument(document);
 							res.add(new LSPDocumentInfo(fileUri, document, wrapper));
 						});
 			} catch (final Exception e) {

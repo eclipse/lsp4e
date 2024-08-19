@@ -582,8 +582,7 @@ public class LanguageServerWrapper {
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
 	}
 
-	public @Nullable CompletableFuture<LanguageServerWrapper> connect(@Nullable IDocument document, IFile file)
-			throws IOException {
+	public @Nullable CompletableFuture<LanguageServerWrapper> connect(@Nullable IDocument document, IFile file) {
 		final URI uri = LSPEclipseUtils.toUri(file);
 		if (uri != null) {
 			return connect(uri, document);
@@ -591,7 +590,7 @@ public class LanguageServerWrapper {
 		return null;
 	}
 
-	public @Nullable CompletableFuture<LanguageServerWrapper> connectDocument(IDocument document) throws IOException {
+	public @Nullable CompletableFuture<LanguageServerWrapper> connectDocument(IDocument document) {
 		IFile file = LSPEclipseUtils.getFile(document);
 
 		if (file != null && file.exists()) {

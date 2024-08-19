@@ -14,7 +14,6 @@ package org.eclipse.lsp4e;
 
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -244,7 +243,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return True if there is a language server for this project/document & server capabilities.
 	 */
 	public boolean anyMatching() {
-		return getServers().stream().filter(this::matches).findFirst().isPresent();
+		return getServers().stream().anyMatch(this::matches);
 	}
 
 	/**
@@ -267,14 +266,10 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		CompletableFuture<@Nullable LanguageServerWrapper> connect(CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture) {
 			return wrapperFuture.thenCompose(wrapper -> {
 				if (wrapper != null) {
-					try {
-						@NonNullByDefault({})
-						CompletableFuture<LanguageServerWrapper> serverFuture = wrapper.connectDocument(document);
-						if (serverFuture != null) {
-							return serverFuture;
-						}
-					} catch (IOException e) {
-						LanguageServerPlugin.logError(e);
+					@NonNullByDefault({})
+					CompletableFuture<LanguageServerWrapper> serverFuture = wrapper.connectDocument(document);
+					if (serverFuture != null) {
+						return serverFuture;
 					}
 				}
 				return CompletableFuture.completedFuture(null);
@@ -302,7 +297,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		@Override
 		public boolean anyMatching() {
 			return LanguageServiceAccessor.getLSWrappers(document).stream()
-					.map(this::filter).filter(this::matches).findFirst().isPresent();
+					.map(this::filter).anyMatch(this::matches);
 		}
 	}
 
