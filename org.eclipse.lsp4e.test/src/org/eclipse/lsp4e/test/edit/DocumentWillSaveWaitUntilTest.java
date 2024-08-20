@@ -14,7 +14,6 @@ package org.eclipse.lsp4e.test.edit;
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertNotNull;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
@@ -39,7 +38,7 @@ public class DocumentWillSaveWaitUntilTest extends AbstractTestWithProject {
 		final var textEdit = new TextEdit();
 		textEdit.setRange(new Range(new Position(0, 0), new Position(0, newText.length())));
 		textEdit.setNewText(newText);
-		return Collections.singletonList(textEdit);
+		return List.of(textEdit);
 	}
 
 	@Test

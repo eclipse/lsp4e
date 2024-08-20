@@ -19,7 +19,6 @@ import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.core.filesystem.EFS;
@@ -187,7 +186,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		item.setLabel("1024M");
 		item.setKind(CompletionItemKind.Value);
 		item.setTextEdit(Either.forLeft(new TextEdit(new Range(new Position(2, 10), new Position(2, 10)), "1024M")));
-		final var completionList = new CompletionList(true, Collections.singletonList(item));
+		final var completionList = new CompletionList(true, List.of(item));
 		MockLanguageServer.INSTANCE.setCompletionList(completionList);
 
 		final var content = "applications:\n" + "- name: hello\n" + "  memory: ";
@@ -350,7 +349,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 
 		item.setAdditionalTextEdits(additionalTextEdits);
 
-		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(item)));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, List.of(item)));
 
 		final var content = "this <> is <> the main <> content of the file";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
@@ -367,8 +366,8 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	@Test
 	public void testApplyCompletionWithPrefix() throws CoreException {
 		final var range = new Range(new Position(0, 0), new Position(0, 5));
-		List<CompletionItem> items = Collections
-				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
+		List<CompletionItem> items = List
+				.of(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		final var content = "First";
@@ -385,8 +384,8 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	@Test
 	public void testApplyCompletionReplace() throws CoreException {
 		final var range = new Range(new Position(0, 0), new Position(0, 20));
-		List<CompletionItem> items = Collections
-				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
+		List<CompletionItem> items = List
+				.of(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		final var content = "FirstNotMatchedLabel";
@@ -402,8 +401,8 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	@Test
 	public void testApplyCompletionReplaceAndTypingWithTextEdit() throws CoreException, BadLocationException {
 		final var range = new Range(new Position(0, 0), new Position(0, 22));
-		List<CompletionItem> items = Collections
-				.singletonList(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
+		List<CompletionItem> items = List
+				.of(createCompletionItem("FirstClass", CompletionItemKind.Class, range));
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		final var content = "FirstNotMatchedLabel";
@@ -428,7 +427,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		item.setKind(CompletionItemKind.Function);
 		item.setInsertText("strncasecmp()");
 
-		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(item)));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, List.of(item)));
 
 		final var content = "str";
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
@@ -451,7 +450,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	public void testCompletionReplace() throws CoreException {
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineInsertHere");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, List.of(
 			createCompletionItem("Inserted", CompletionItemKind.Text, new Range(new Position(1, 4), new Position(1, 4 + "InsertHere".length())))
 		)));
 
@@ -497,7 +496,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 		CompletionItem completionItem = createCompletionItem("$1 and ${2:foo}", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
 		MockLanguageServer.INSTANCE
-				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
+				.setCompletionList(new CompletionList(true, List.of(completionItem)));
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,""));
 		int invokeOffset = 0;
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
@@ -544,7 +543,7 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 				"\n<postfix>postfixText</postfix>"));
 		item.setAdditionalTextEdits(additionalEdits);
 
-		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, Collections.singletonList(item)));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, List.of(item)));
 
 		String text = viewer.getDocument().get();
 		int invokeOffset = text.indexOf("<tag>tag") + "<tag>tag".length();

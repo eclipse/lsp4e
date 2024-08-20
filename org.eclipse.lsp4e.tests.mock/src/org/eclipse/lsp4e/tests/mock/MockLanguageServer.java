@@ -79,13 +79,13 @@ import org.eclipse.lsp4j.services.NotebookDocumentService;
 
 public final class MockLanguageServer implements LanguageServer {
 
-	public static MockLanguageServer INSTANCE = new MockLanguageServer(MockLanguageServer::defaultServerCapabilities);
-
 	/**
 	 * This command will be reported on initialization to be supported for execution
 	 * by the server
 	 */
-	public static String SUPPORTED_COMMAND_ID = "mock.command";
+	public static final String SUPPORTED_COMMAND_ID = "mock.command";
+
+	public static MockLanguageServer INSTANCE = new MockLanguageServer(MockLanguageServer::defaultServerCapabilities);
 
 	private volatile MockTextDocumentService textDocumentService = new MockTextDocumentService(
 			this::buildMaybeDelayedFuture);
@@ -170,7 +170,7 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setSignatureHelpProvider(new SignatureHelpOptions());
 		capabilities.setDocumentHighlightProvider(Boolean.TRUE);
 		capabilities
-				.setExecuteCommandProvider(new ExecuteCommandOptions(Collections.singletonList(SUPPORTED_COMMAND_ID)));
+				.setExecuteCommandProvider(new ExecuteCommandOptions(List.of(SUPPORTED_COMMAND_ID)));
 		final var prepareRenameProvider = new RenameOptions();
 		prepareRenameProvider.setPrepareProvider(true);
 		Either<Boolean, RenameOptions> renameEither = Either.forRight(prepareRenameProvider);
@@ -259,7 +259,7 @@ public final class MockLanguageServer implements LanguageServer {
 	}
 
 	public void setWillSaveWaitUntil(List<TextEdit> edits) {
-	   final var textDocumentSyncOptions = new TextDocumentSyncOptions();
+		final var textDocumentSyncOptions = new TextDocumentSyncOptions();
 		textDocumentSyncOptions.setWillSaveWaitUntil(true);
 		textDocumentSyncOptions.setSave(true);
 		textDocumentSyncOptions.setChange(TextDocumentSyncKind.Full);
@@ -316,7 +316,7 @@ public final class MockLanguageServer implements LanguageServer {
 	}
 
 	public void setDocumentSymbols(DocumentSymbol documentSymbol) {
-		this.textDocumentService.setDocumentSymbols(Collections.singletonList(documentSymbol));
+		this.textDocumentService.setDocumentSymbols(List.of(documentSymbol));
 	}
 
 	public void setDocumentSymbols(DocumentSymbol... documentSymbols) {

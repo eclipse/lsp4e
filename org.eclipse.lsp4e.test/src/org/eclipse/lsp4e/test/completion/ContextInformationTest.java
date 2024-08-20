@@ -15,6 +15,7 @@ import static org.junit.Assert.*;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
@@ -52,7 +53,7 @@ public class ContextInformationTest extends AbstractCompletionTest {
 	public void testContextInformationNoParameters() throws CoreException {
 		final var signatureHelp = new SignatureHelp();
 		final var information = new SignatureInformation("label", "documentation", Collections.emptyList());
-		signatureHelp.setSignatures(Collections.singletonList(information));
+		signatureHelp.setSignatures(List.of(information));
 		MockLanguageServer.INSTANCE.setSignatureHelp(signatureHelp);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "method()");

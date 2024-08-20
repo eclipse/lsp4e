@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
@@ -64,7 +65,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Assert;
@@ -99,12 +99,12 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		Assert.assertEquals("insert", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
 	}
 
-	private AbstractTextEditor applyWorkspaceTextEdit(TextEdit textEdit) throws CoreException, PartInitException {
+	private AbstractTextEditor applyWorkspaceTextEdit(TextEdit textEdit) throws CoreException {
 		IFile f = TestUtils.createFile(project, "dummy" + new Random().nextInt(), "Here");
 		final var editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		final var workspaceEdit = new WorkspaceEdit(Collections.singletonMap(
 			LSPEclipseUtils.toUri(f).toString(),
-			Collections.singletonList(textEdit)));
+			List.of(textEdit)));
 		LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
 		return editor;
 	}
@@ -134,7 +134,7 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		String uri = file.getLocation().toFile().toURI().toString();
 		edits.add(Either.forRight(new CreateFile(uri)));
 		edits.add(Either.forLeft(
-				new TextDocumentEdit(new VersionedTextDocumentIdentifier(uri, null), Collections.singletonList(
+				new TextDocumentEdit(new VersionedTextDocumentIdentifier(uri, null), List.of(
 						new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "abcHere\nabcHere2")))));
 		final var workspaceEdit = new WorkspaceEdit(edits);
 		// they should be applied from bottom to top
@@ -320,15 +320,15 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	public void testResourceOperations() throws Exception {
 		IFile targetFile = project.getFile("some/folder/file.txt");
 		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(
-				Collections.singletonList(Either.forRight(new CreateFile(targetFile.getLocationURI().toString())))));
+				List.of(Either.forRight(new CreateFile(targetFile.getLocationURI().toString())))));
 		assertTrue(targetFile.exists());
-		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(Collections.singletonList(Either.forLeft(
+		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(List.of(Either.forLeft(
 				new TextDocumentEdit(new VersionedTextDocumentIdentifier(targetFile.getLocationURI().toString(), 1),
-						Collections.singletonList(
+						List.of(
 								new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "hello")))))));
 		assertEquals("hello", readContent(targetFile));
 		IFile otherFile = project.getFile("another/folder/file.lol");
-		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(Collections.singletonList(Either.forRight(
+		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(List.of(Either.forRight(
 				new RenameFile(targetFile.getLocationURI().toString(), otherFile.getLocationURI().toString())))));
 		assertFalse(targetFile.exists());
 		assertTrue(otherFile.exists());
@@ -341,7 +341,7 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		file.delete();
 		assertFalse(file.exists());
 		final var we = new WorkspaceEdit(
-				Collections.singletonList(Either.forRight(new CreateFile(file.toURI().toString()))));
+				List.of(Either.forRight(new CreateFile(file.toURI().toString()))));
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertTrue(file.isFile());
 	}
@@ -354,8 +354,8 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		te.setNewText("abc\ndef");
 		final var docEdit = new TextDocumentEdit(
 				new VersionedTextDocumentIdentifier(file.toURI().toString(), null),
-				Collections.singletonList(te));
-		final var we = new WorkspaceEdit(Collections.singletonList(Either.forLeft(docEdit)));
+				List.of(te));
+		final var we = new WorkspaceEdit(List.of(Either.forLeft(docEdit)));
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertTrue(file.isFile());
 		assertEquals("abc\ndef", new String(Files.readAllBytes(file.toPath())));
@@ -366,7 +366,7 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		File oldFile = TestUtils.createTempFile(getClass() + "editExternalFile", ".whatever");
 		File newFile = new File(oldFile.getAbsolutePath() + "_renamed");
 		TestUtils.addManagedTempFile(newFile);
-		final var we = new WorkspaceEdit(Collections.singletonList(
+		final var we = new WorkspaceEdit(List.of(
 				Either.forRight(new RenameFile(oldFile.toURI().toString(), newFile.toURI().toString()))));
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertFalse(oldFile.isFile());
@@ -394,8 +394,8 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		te.setNewText("abc\ndef");
 		final var docEdit = new TextDocumentEdit(
 				new VersionedTextDocumentIdentifier(LSPEclipseUtils.toUri(targetFile).toString(), null),
-				Collections.singletonList(te));
-		final var we = new WorkspaceEdit(Collections.singletonList(Either.forLeft(docEdit)));
+				List.of(te));
+		final var we = new WorkspaceEdit(List.of(Either.forLeft(docEdit)));
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertEquals("abc\ndef", ((StyledText) ((AbstractTextEditor) editor).getAdapter(Control.class)).getText());
 		assertTrue(editor.isDirty());
@@ -410,8 +410,8 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		te.setNewText("abc\ndef");
 		final var docEdit = new TextDocumentEdit(
 				new VersionedTextDocumentIdentifier(file.toURI().toString(), null),
-				Collections.singletonList(te));
-		final var we = new WorkspaceEdit(Collections.singletonList(Either.forLeft(docEdit)));
+				List.of(te));
+		final var we = new WorkspaceEdit(List.of(Either.forLeft(docEdit)));
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertEquals("abc\ndef", ((StyledText) ((AbstractTextEditor) editor).getAdapter(Control.class)).getText());
 		assertTrue(editor.isDirty());

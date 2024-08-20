@@ -15,6 +15,7 @@ _LOCAL/
 /*/target/
 .polyglot.*
 .META-INF_MANIFEST.MF
+**/.tycho-consumer-pom.xml
 dash-licenses/
 *.log
 

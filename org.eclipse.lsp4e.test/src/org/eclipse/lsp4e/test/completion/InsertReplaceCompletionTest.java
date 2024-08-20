@@ -18,7 +18,7 @@ package org.eclipse.lsp4e.test.completion;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Collections;
+import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jface.text.ITextViewer;
@@ -39,7 +39,7 @@ public class InsertReplaceCompletionTest extends AbstractCompletionTest {
 	public void testInsert() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineInsertHere");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, Collections.singletonList(
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, List.of(
 			createCompletionItemWithInsertReplace(
 					"Inserted",
 					CompletionItemKind.Text,

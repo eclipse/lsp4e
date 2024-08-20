@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.filesystem.EFS;
@@ -60,7 +61,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testHoverRegion() throws CoreException {
-		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -81,7 +82,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testHoverInfo() throws CoreException {
-		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -114,7 +115,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testHoverEmptyContentItem() throws CoreException {
-		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(List.of(Either.forLeft("")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -125,7 +126,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testHoverOnExternalFile() throws CoreException, IOException {
-		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("blah")),
+		final var hoverResponse = new Hover(List.of(Either.forLeft("blah")),
 				new Range(new Position(0, 0), new Position(0, 0)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
@@ -137,7 +138,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testMultipleHovers() throws Exception {
-		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFileMultiLS(project, "HoverRange Other Text");
@@ -155,7 +156,7 @@ public class HoverTest extends AbstractTestWithProject {
 	@Test
 	public void testIntroUrlLink() throws Exception {
 		final var hoverResponse = new Hover(
-				Collections.singletonList(Either.forLeft(
+				List.of(Either.forLeft(
 						"[My intro URL link](http://org.eclipse.ui.intro/execute?command=org.eclipse.ui.file.close)")),
 				new Range(new Position(0, 0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);

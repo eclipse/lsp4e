@@ -14,7 +14,7 @@ import static org.junit.Assert.assertFalse;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
@@ -138,7 +138,7 @@ public class OutlineContentTest extends AbstractTestWithProject {
 		MockLanguageServer.INSTANCE.setDocumentSymbols(
 				new DocumentSymbol("a", SymbolKind.Constant, new Range(new Position(0, 0), new Position(0, 6)),
 						new Range(new Position(0, 0), new Position(0, 1)), "",
-						Collections.singletonList(new DocumentSymbol("b", SymbolKind.Constant,
+						List.of(new DocumentSymbol("b", SymbolKind.Constant,
 								new Range(new Position(0, 2), new Position(0, 5)),
 								new Range(new Position(0, 2), new Position(0, 3))))));
 		final var editor = (ITextEditor) TestUtils.openEditor(testFile);
@@ -173,7 +173,7 @@ public class OutlineContentTest extends AbstractTestWithProject {
 		MockLanguageServer.INSTANCE.setDocumentSymbols(
 				new DocumentSymbol("a", SymbolKind.Constant, new Range(new Position(0, 0), new Position(0, 6)),
 						new Range(new Position(0, 0), new Position(0, 1)), "",
-						Collections.singletonList(new DocumentSymbol("b", SymbolKind.Constant,
+						List.of(new DocumentSymbol("b", SymbolKind.Constant,
 								new Range(new Position(0, 2), new Position(0, 5)),
 								new Range(new Position(0, 2), new Position(0, 3))))));
 		final var editor = (ITextEditor) TestUtils.openEditor(testFile);

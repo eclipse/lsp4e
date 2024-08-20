@@ -187,8 +187,8 @@ public class RenameTest extends AbstractTestWithProject {
 		File externalFile = TestUtils.createTempFile("testRenameChangeAlsoExternalFile", ".lspt");
 		Files.write(externalFile.toPath(), "old".getBytes());
 		final var edits = new HashMap<String, List<TextEdit>>(2, 1.f);
-		edits.put(LSPEclipseUtils.toUri(workspaceFile).toString(), Collections.singletonList(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new")));
-		edits.put(LSPEclipseUtils.toUri(externalFile).toString(), Collections.singletonList(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new")));
+		edits.put(LSPEclipseUtils.toUri(workspaceFile).toString(), List.of(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new")));
+		edits.put(LSPEclipseUtils.toUri(externalFile).toString(), List.of(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new")));
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(new WorkspaceEdit(edits));
 		IDocument document = LSPEclipseUtils.getDocument(workspaceFile);
 		assertNotNull(document);
@@ -295,7 +295,7 @@ public class RenameTest extends AbstractTestWithProject {
 		final var res = new WorkspaceEdit();
 		final var f = new File(fileUri);
 		res.setChanges(Collections.singletonMap(LSPEclipseUtils.toUri(f).toString(),
-				Collections.singletonList(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new"))));
+				List.of(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new"))));
 		return res;
 	}
 }
