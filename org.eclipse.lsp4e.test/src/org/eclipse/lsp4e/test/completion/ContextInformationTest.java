@@ -15,7 +15,6 @@ import static org.junit.Assert.*;
 
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
@@ -51,8 +50,8 @@ public class ContextInformationTest extends AbstractCompletionTest {
 
 	@Test
 	public void testContextInformationNoParameters() throws CoreException {
-		SignatureHelp signatureHelp = new SignatureHelp();
-		SignatureInformation information = new SignatureInformation("label", "documentation", Collections.emptyList());
+		final var signatureHelp = new SignatureHelp();
+		final var information = new SignatureInformation("label", "documentation", Collections.emptyList());
 		signatureHelp.setSignatures(Collections.singletonList(information));
 		MockLanguageServer.INSTANCE.setSignatureHelp(signatureHelp);
 
@@ -70,12 +69,12 @@ public class ContextInformationTest extends AbstractCompletionTest {
 
 	@Test
 	public void testTriggerChars() throws CoreException {
-		Set<String> triggers = new HashSet<>();
+		final var triggers = new HashSet<String>();
 		triggers.add("a");
 		triggers.add("b");
 		MockLanguageServer.INSTANCE.setContextInformationTriggerChars(triggers);
 
-		String content = "First";
+		final var content = "First";
 		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
 		assertArrayEquals(new char[] { 'a', 'b' },

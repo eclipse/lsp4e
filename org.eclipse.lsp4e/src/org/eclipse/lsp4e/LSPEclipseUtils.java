@@ -948,7 +948,7 @@ public final class LSPEclipseUtils {
 			}
 
 			// multiple documents or some ResourceChanges => create a refactoring
-			Map<URI, Range> changedURIs = new HashMap<>();
+			final var changedURIs = new HashMap<URI, Range>();
 			CompositeChange change = toCompositeChange(wsEdit, name, changedURIs);
 
 			final var changeOperation = new PerformChangeOperation(change);
@@ -973,7 +973,7 @@ public final class LSPEclipseUtils {
 	}
 
 	private static void runRefactorWizardOperation(Change change) {
-		Refactoring refactoring = new Refactoring() {
+		final var refactoring = new Refactoring() {
 
 			@Override
 			public String getName() {
@@ -998,7 +998,7 @@ public final class LSPEclipseUtils {
 			}
 
 		};
-		RefactoringWizard wizard = new RefactoringWizard(refactoring,
+		final var wizard = new RefactoringWizard(refactoring,
 				RefactoringWizard.DIALOG_BASED_USER_INTERFACE |
 				RefactoringWizard.NO_BACK_BUTTON_ON_STATUS_DIALOG
 		) {
@@ -1023,8 +1023,8 @@ public final class LSPEclipseUtils {
 	 *         <code>false</code> otherwise, thus the wsEdit needs to be performed differently.
 	 */
 	private static boolean applyWorkspaceEditIfSingleOpenFile(WorkspaceEdit wsEdit) {
-		Set<URI> documentUris = new HashSet<>();
-		final List<TextEdit> firstDocumentEdits = new ArrayList<>(); // collect edits
+		final var documentUris = new HashSet<URI>();
+		final var firstDocumentEdits = new ArrayList<TextEdit>(); // collect edits
 		if (wsEdit.getChanges() != null && !wsEdit.getChanges().isEmpty()) {
 			wsEdit.getChanges().entrySet().stream()
 				.map(Entry::getKey)
@@ -1261,8 +1261,7 @@ public final class LSPEclipseUtils {
 				Comparator.comparingInt(Position::getLine).thenComparingInt(Position::getCharacter).reversed()));
 		LSPTextChange[] changes = textEdits.stream().map(te -> new LSPTextChange("Line: %d".formatted(te.getRange().getStart().getLine() + 1), uri, te)) //$NON-NLS-1$
 				.toArray(LSPTextChange[]::new);
-		CompositeChange cc = new CompositeChange(uri.toString(), changes);
-		return cc;
+		return new CompositeChange(uri.toString(), changes);
 	}
 
 	public static URI toUri(IPath absolutePath) {

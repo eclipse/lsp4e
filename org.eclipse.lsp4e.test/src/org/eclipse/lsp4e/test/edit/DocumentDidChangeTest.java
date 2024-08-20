@@ -13,8 +13,7 @@
 package org.eclipse.lsp4e.test.edit;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.List;
@@ -111,7 +110,7 @@ public class DocumentDidChangeTest extends AbstractTestWithProject {
 		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
 				.setTextDocumentSync(TextDocumentSyncKind.Incremental);
 
-		String multiLineText = "line1\nline2\nline3\n";
+		final var multiLineText = "line1\nline2\nline3\n";
 		IFile testFile = TestUtils.createUniqueTestFile(project, multiLineText);
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		LanguageServers.forDocument(viewer.getDocument()).withFilter(new Predicate<ServerCapabilities>() {
@@ -171,7 +170,7 @@ public class DocumentDidChangeTest extends AbstractTestWithProject {
 			}
 		}).anyMatching();
 		// Test initial insert
-		String text = "Hello";
+		final var text = "Hello";
 		viewer.getDocument().replace(0, 0, text);
 		waitForAndAssertCondition(1_000,  numberOfChangesIs(1));
 		DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);
@@ -207,7 +206,7 @@ public class DocumentDidChangeTest extends AbstractTestWithProject {
 			}
 		}).anyMatching();
 		// Test initial insert
-		String text = "Hello";
+		final var text = "Hello";
 		viewer.getDocument().replace(0, 0, text);
 		waitForAndAssertCondition(1_000,  numberOfChangesIs(1));
 		DidChangeTextDocumentParams lastChange = MockLanguageServer.INSTANCE.getDidChangeEvents().get(0);

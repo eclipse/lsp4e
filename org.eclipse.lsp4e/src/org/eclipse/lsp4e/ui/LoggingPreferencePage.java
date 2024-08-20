@@ -197,7 +197,7 @@ public class LoggingPreferencePage extends PreferencePage implements IWorkbenchP
 		logFolderLabel.setText(NLS.bind(Messages.preferencesPage_logging_fileLogsLocation, LoggingStreamConnectionProviderProxy.getLogDirectory()));
 		logFolderLabel.setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, false, false, 3, 1));
 		logFolderLabel.addSelectionListener(widgetSelectedAdapter(e -> {
-			SmartImportWizard importWizard = new SmartImportWizard();
+			final var importWizard = new SmartImportWizard();
 			importWizard.setInitialImportSource(LoggingStreamConnectionProviderProxy.getLogDirectory());
 			WizardDialog dialog = new WizardDialog(logFolderLabel.getShell(), importWizard);
 			dialog.open();

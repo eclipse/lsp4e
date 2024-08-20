@@ -14,10 +14,7 @@
 package org.eclipse.lsp4e.test.rename;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -26,7 +23,6 @@ import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.commands.Command;
@@ -71,7 +67,7 @@ public class RenameTest extends AbstractTestWithProject {
 	@Test
 	public void testRenameHandlerEnablement() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "old");
-		ITextEditor editor = (ITextEditor) TestUtils.openEditor(file);
+		final var editor = (ITextEditor) TestUtils.openEditor(file);
 		editor.selectAndReveal(1, 0);
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
@@ -90,7 +86,7 @@ public class RenameTest extends AbstractTestWithProject {
 
 		try {
 			IFile file = TestUtils.createUniqueTestFile(project, "old");
-			ITextEditor editor = (ITextEditor) TestUtils.openEditor(file);
+			final var editor = (ITextEditor) TestUtils.openEditor(file);
 			editor.selectAndReveal(1, 0);
 
 			ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
@@ -111,10 +107,10 @@ public class RenameTest extends AbstractTestWithProject {
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
+		final var processor = new LSPRenameProcessor(document, 0);
 		processor.setNewName("new");
 		try {
-			ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
+			final var processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
 			processorBasedRefactoring.checkAllConditions(new NullProgressMonitor());
 			processorBasedRefactoring.createChange(new NullProgressMonitor()).perform(new NullProgressMonitor());
 		} catch (CoreException e) {
@@ -129,10 +125,10 @@ public class RenameTest extends AbstractTestWithProject {
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
+		final var processor = new LSPRenameProcessor(document, 0);
 		processor.setNewName("new");
 		try {
-			ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
+			final var processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
 			processorBasedRefactoring.checkAllConditions(new NullProgressMonitor());
 			processorBasedRefactoring.createChange(new NullProgressMonitor()).perform(new NullProgressMonitor());
 		} catch (CoreException e) {
@@ -148,11 +144,11 @@ public class RenameTest extends AbstractTestWithProject {
 		MockLanguageServer.INSTANCE.getTextDocumentService().setPrepareRenameResult(null);
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
+		final var processor = new LSPRenameProcessor(document, 0);
 		processor.setNewName("new");
 
 		try {
-			ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
+			final var processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
 			RefactoringStatus status = processorBasedRefactoring.checkAllConditions(new NullProgressMonitor());
 			assertEquals(RefactoringStatus.FATAL, status.getSeverity());
 		} catch (CoreException e) {
@@ -170,10 +166,10 @@ public class RenameTest extends AbstractTestWithProject {
 			manager.connectFileStore(store, new NullProgressMonitor());
 			IDocument document = ((ITextFileBuffer)manager.getFileStoreFileBuffer(store)).getDocument();
 			document.set("old");
-			LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
+			final var processor = new LSPRenameProcessor(document, 0);
 			processor.setNewName("new");
 			try {
-				ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
+				final var processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
 				processorBasedRefactoring.checkAllConditions(new NullProgressMonitor());
 				processorBasedRefactoring.createChange(new NullProgressMonitor()).perform(new NullProgressMonitor());
 			} catch (CoreException e) {
@@ -190,16 +186,16 @@ public class RenameTest extends AbstractTestWithProject {
 		IFile workspaceFile = TestUtils.createUniqueTestFile(project, "old");
 		File externalFile = TestUtils.createTempFile("testRenameChangeAlsoExternalFile", ".lspt");
 		Files.write(externalFile.toPath(), "old".getBytes());
-		Map<String, List<TextEdit>> edits = new HashMap<>(2, 1.f);
+		final var edits = new HashMap<String, List<TextEdit>>(2, 1.f);
 		edits.put(LSPEclipseUtils.toUri(workspaceFile).toString(), Collections.singletonList(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new")));
 		edits.put(LSPEclipseUtils.toUri(externalFile).toString(), Collections.singletonList(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new")));
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(new WorkspaceEdit(edits));
 		IDocument document = LSPEclipseUtils.getDocument(workspaceFile);
 		assertNotNull(document);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
+		final var processor = new LSPRenameProcessor(document, 0);
 		processor.setNewName("new");
 		try {
-			ProcessorBasedRefactoring processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
+			final var processorBasedRefactoring = new ProcessorBasedRefactoring(processor);
 			processorBasedRefactoring.checkAllConditions(new NullProgressMonitor());
 			processorBasedRefactoring.createChange(new NullProgressMonitor()).perform(new NullProgressMonitor());
 		} catch (CoreException e) {
@@ -213,18 +209,18 @@ public class RenameTest extends AbstractTestWithProject {
 	public void testRenameHandlerExecution() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "old");
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
-		ITextEditor editor = (ITextEditor) TestUtils.openEditor(file);
+		final var editor = (ITextEditor) TestUtils.openEditor(file);
 		editor.selectAndReveal(1, 0);
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		IHandlerService handlerService = PlatformUI.getWorkbench().getService(IHandlerService.class);
 		Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
 		assertTrue(command.isEnabled() && command.isHandled());
-		Event e = new Event();
+		final var e = new Event();
 		e.widget = editor.getAdapter(Control.class);
 		Shell ideShell = editor.getSite().getShell();
 		Display display = ideShell.getDisplay();
 		e.display = display;
-		AtomicBoolean renameDialogOkPressed = new AtomicBoolean();
+		final var renameDialogOkPressed = new AtomicBoolean();
 		Listener pressOKonRenameDialogPaint = event -> {
 			if (renameDialogOkPressed.get()) {
 				return;
@@ -256,7 +252,7 @@ public class RenameTest extends AbstractTestWithProject {
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
+		final var processor = new LSPRenameProcessor(document, 0);
 
 		try {
 			processor.checkInitialConditions(new NullProgressMonitor());
@@ -270,11 +266,11 @@ public class RenameTest extends AbstractTestWithProject {
 	public void testPlaceholderUsingRangeFromPrepareRenameResult() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "old");
 		MockLanguageServer.INSTANCE.getTextDocumentService().setRenameEdit(createSimpleMockRenameEdit(LSPEclipseUtils.toUri(file)));
-		Range range = new Range(new Position(0, 1), new Position(0, 3)); // Two last letters of "old".
+		final var range = new Range(new Position(0, 1), new Position(0, 3)); // Two last letters of "old".
 		MockLanguageServer.INSTANCE.getTextDocumentService().setPrepareRenameResult(Either.forLeft(range));
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
-		LSPRenameProcessor processor = new LSPRenameProcessor(document, 0);
+		final var processor = new LSPRenameProcessor(document, 0);
 
 		try {
 			processor.checkInitialConditions(new NullProgressMonitor());
@@ -286,7 +282,7 @@ public class RenameTest extends AbstractTestWithProject {
 
 	private void pressOk(Shell dialogShell) {
 		try {
-			Dialog dialog = (Dialog)dialogShell.getData();
+			final var dialog = (Dialog)dialogShell.getData();
 			Method okPressedMethod = Dialog.class.getDeclaredMethod("okPressed");
 			okPressedMethod.setAccessible(true);
 			okPressedMethod.invoke(dialog);
@@ -296,8 +292,8 @@ public class RenameTest extends AbstractTestWithProject {
 	}
 
 	private static WorkspaceEdit createSimpleMockRenameEdit(URI fileUri) {
-		WorkspaceEdit res = new WorkspaceEdit();
-		File f = new File(fileUri);
+		final var res = new WorkspaceEdit();
+		final var f = new File(fileUri);
 		res.setChanges(Collections.singletonMap(LSPEclipseUtils.toUri(f).toString(),
 				Collections.singletonList(new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new"))));
 		return res;

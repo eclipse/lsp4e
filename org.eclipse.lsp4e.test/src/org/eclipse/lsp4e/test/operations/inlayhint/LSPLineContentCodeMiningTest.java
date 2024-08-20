@@ -50,7 +50,7 @@ public class LSPLineContentCodeMiningTest extends AbstractTestWithProject {
 	public void singleLabelPartCommand() throws Exception {
 		final InlayHint inlay = createMultiLabelInlayHint(createInlayLabelPart("Label-Text", MockLanguageServer.SUPPORTED_COMMAND_ID));
 		Command command = inlay.getLabel().getRight().get(0).getCommand();
-		JsonObject jsonObject = new JsonObject();
+		final var jsonObject = new JsonObject();
 		jsonObject.addProperty("bar", 42);
 		command.setArguments(Arrays.asList(new JsonPrimitive("Foo"), jsonObject));
 
@@ -60,11 +60,11 @@ public class LSPLineContentCodeMiningTest extends AbstractTestWithProject {
 		IDocument document = textViewer.getDocument();
 
 		MockLanguageServer languageServer = MockLanguageServer.INSTANCE;
-		InlayHintProvider provider = new InlayHintProvider();
+		final var provider = new InlayHintProvider();
 
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(project, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID));
 
-		LSPLineContentCodeMining sut = new LSPLineContentCodeMining(inlay, document, wrapper, provider);
+		final var sut = new LSPLineContentCodeMining(inlay, document, wrapper, provider);
 		MouseEvent mouseEvent = createMouseEvent();
 		sut.getAction().accept(mouseEvent);
 
@@ -77,21 +77,21 @@ public class LSPLineContentCodeMiningTest extends AbstractTestWithProject {
 	}
 
 	private static InlayHintLabelPart createInlayLabelPart(String text, String commandID) {
-		InlayHintLabelPart labelPart = new InlayHintLabelPart(text);
-		Command command = new Command(text, commandID);
+		final var labelPart = new InlayHintLabelPart(text);
+		final var command = new Command(text, commandID);
 		labelPart.setCommand(command);
 		return labelPart;
 	}
 
 	private static InlayHint createMultiLabelInlayHint(InlayHintLabelPart... parts) {
-		InlayHint inlay = new InlayHint();
+		final var inlay = new InlayHint();
 		inlay.setLabel(Arrays.asList(parts));
 		inlay.setPosition(new Position(0, 0));
 		return inlay;
 	}
 
 	private static MouseEvent createMouseEvent() {
-		Event event = new Event();
+		final var event = new Event();
 		event.button = SWT.BUTTON1;
 		Display display = Display.getCurrent();
 		event.widget = display.getSystemTray();

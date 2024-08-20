@@ -12,16 +12,12 @@
 package org.eclipse.lsp4e.test.linkedediting;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
@@ -43,11 +39,11 @@ public class LinkedEditingTest extends AbstractTestWithProject {
 
 	@Test
 	public void testLinkedEditing() throws CoreException {
-		List<Range> ranges = new ArrayList<>();
+		final var ranges = new ArrayList<Range>();
 		ranges.add(new Range(new Position(1, 3), new Position(1, 7)));
 		ranges.add(new Range(new Position(3, 4), new Position(3, 8)));
 
-		LinkedEditingRanges linkkedEditingRanges = new LinkedEditingRanges(ranges);
+		final var linkkedEditingRanges = new LinkedEditingRanges(ranges);
 		MockLanguageServer.INSTANCE.setLinkedEditingRanges(linkkedEditingRanges);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "<html>\n  <body>\n    a body text\n  </body>\n</html>");
@@ -59,11 +55,11 @@ public class LinkedEditingTest extends AbstractTestWithProject {
 			Assert.fail();
 		}
 
-		ISourceViewer sourceViewer = (ISourceViewer) viewer;
+		final var sourceViewer = (ISourceViewer) viewer;
 
 		viewer.getTextWidget().setSelection(11); // 10-14 <body|>
 
-		Map<org.eclipse.jface.text.Position, Annotation> annotations = new HashMap<>();
+		final var annotations = new HashMap<org.eclipse.jface.text.Position, Annotation>();
 
 		waitForAndAssertCondition(3_000, () -> {
 			Iterator<Annotation> iterator = sourceViewer.getAnnotationModel().getAnnotationIterator();
@@ -90,11 +86,11 @@ public class LinkedEditingTest extends AbstractTestWithProject {
 
 	@Test
 	public void testLinkedEditingExitPolicy() throws CoreException {
-		List<Range> ranges = new ArrayList<>();
+		final var ranges = new ArrayList<Range>();
 		ranges.add(new Range(new Position(1, 3), new Position(1, 7)));
 		ranges.add(new Range(new Position(3, 4), new Position(3, 8)));
 
-		LinkedEditingRanges linkkedEditingRanges = new LinkedEditingRanges(ranges, "[:A-Z_a-z]*\\Z");
+		final var linkkedEditingRanges = new LinkedEditingRanges(ranges, "[:A-Z_a-z]*\\Z");
 		MockLanguageServer.INSTANCE.setLinkedEditingRanges(linkkedEditingRanges);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "<html>\n  <body class=\"test\">\n    a body text\n  </body>\n</html>");
@@ -104,7 +100,7 @@ public class LinkedEditingTest extends AbstractTestWithProject {
 			Assert.fail();
 		}
 
-		ISourceViewer sourceViewer = (ISourceViewer) viewer;
+		final var sourceViewer = (ISourceViewer) viewer;
 
 		// Test linked editing annotation in a tag name position
 		viewer.getTextWidget().setCaretOffset(14);
@@ -156,7 +152,7 @@ public class LinkedEditingTest extends AbstractTestWithProject {
 	}
 
 	private List<Annotation> findAnnotations(ISourceViewer sourceViewer, int offset) {
-		List<Annotation> annotations = new ArrayList<>();
+		final var annotations = new ArrayList<Annotation>();
 		IAnnotationModel model = sourceViewer.getAnnotationModel();
 		Iterator<Annotation> iterator = model.getAnnotationIterator();
 		while (iterator.hasNext()) {

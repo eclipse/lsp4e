@@ -30,7 +30,6 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.ITextViewerLifecycle;
 import org.eclipse.jface.text.link.ILinkedModeListener;
 import org.eclipse.jface.text.link.LinkedModeModel;
-import org.eclipse.jface.text.link.LinkedModeUI;
 import org.eclipse.jface.text.link.LinkedModeUI.ExitFlags;
 import org.eclipse.jface.text.link.LinkedPosition;
 import org.eclipse.jface.text.link.LinkedPositionGroup;
@@ -194,8 +193,8 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 					linkedModel.addGroup(toJFaceGroup(ranges));
 					linkedModel.forceInstall();
 					final var sourceViewer = castNonNull(LSPLinkedEditingReconcilingStrategy.this.sourceViewer);
-					ITextSelection selectionBefore = (ITextSelection) sourceViewer.getSelectionProvider().getSelection();
-					LinkedModeUI linkedMode = new EditorLinkedModeUI(linkedModel, sourceViewer);
+					final var selectionBefore = (ITextSelection) sourceViewer.getSelectionProvider().getSelection();
+					final var linkedMode = new EditorLinkedModeUI(linkedModel, sourceViewer);
 					linkedMode.setExitPolicy((model, event, offset, length) -> {
 						if (event.character == 0 || event.character == '\b') {
 							return null;

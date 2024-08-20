@@ -11,8 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.rename;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -28,7 +27,6 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.ltk.core.refactoring.PerformChangeOperation;
-import org.eclipse.ltk.core.refactoring.TextChange;
 import org.junit.Test;
 
 public class LSPTextChangeTest extends AbstractTestWithProject {
@@ -36,8 +34,8 @@ public class LSPTextChangeTest extends AbstractTestWithProject {
 	@Test
 	public void testPerformOperationWorkspaceFile() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "old");
-		TextEdit edit = new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new");
-		PerformChangeOperation operation = new PerformChangeOperation(new LSPTextChange("test", LSPEclipseUtils.toUri(file), edit));
+		final var edit = new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new");
+		final var operation = new PerformChangeOperation(new LSPTextChange("test", LSPEclipseUtils.toUri(file), edit));
 		operation.run(new NullProgressMonitor());
 		IDocument document = LSPEclipseUtils.getDocument(file);
 		assertNotNull(document);
@@ -47,8 +45,8 @@ public class LSPTextChangeTest extends AbstractTestWithProject {
 	@Test
 	public void testRefactoringPreview() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "old");
-		TextEdit edit = new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new");
-		TextChange change = new LSPTextChange("test", LSPEclipseUtils.toUri(file), edit);
+		final var edit = new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new");
+		final var change = new LSPTextChange("test", LSPEclipseUtils.toUri(file), edit);
 		IDocument preview = change.getPreviewDocument(new NullProgressMonitor());
 		assertEquals(preview.get(), "new");
 	}
@@ -57,8 +55,8 @@ public class LSPTextChangeTest extends AbstractTestWithProject {
 	public void testPerformOperationExternalFile() throws Exception {
 		File file = TestUtils.createTempFile("testPerformOperationExternalFile", ".lspt");
 		Files.write(file.toPath(), "old".getBytes());
-		TextEdit edit = new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new");
-		PerformChangeOperation operation = new PerformChangeOperation(new LSPTextChange("test", LSPEclipseUtils.toUri(file), edit));
+		final var edit = new TextEdit(new Range(new Position(0, 0), new Position(0, 3)), "new");
+		final var operation = new PerformChangeOperation(new LSPTextChange("test", LSPEclipseUtils.toUri(file), edit));
 		operation.run(new NullProgressMonitor());
 		assertEquals(edit.getNewText(), new String(Files.readAllBytes(file.toPath())));
 	}

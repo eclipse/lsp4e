@@ -143,9 +143,9 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 			if (document == null) {
 				return null;
 			}
-			boolean[] oneHoverAtLeast = new boolean[] { false };
-			int[] regionStartOffset = new int[] { 0 };
-			int[] regionEndOffset = new int[] { document.getLength() };
+			final var oneHoverAtLeast = new boolean[] { false };
+			final var regionStartOffset = new int[] { 0 };
+			final var regionEndOffset = new int[] { document.getLength() };
 			castNonNull(this.request).get(GET_TIMEOUT_MS, TimeUnit.MILLISECONDS).stream()
 				.filter(Objects::nonNull)
 				.map(Hover::getRange)

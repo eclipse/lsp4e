@@ -63,12 +63,12 @@ public class FileAndURIMatchLabelProvider extends DecoratingStyledCellLabelProvi
 					return new StyledString(uri.getPath());
 				} else {
 					try {
-						URI trimmedURI = new URI(uri.getScheme(),
+						final var trimmedURI = new URI(uri.getScheme(),
 							uri.getAuthority(),
 							uri.getPath(),
 							null, // Ignore the query part of the input url
 							uri.getFragment());
-						StyledString res = new StyledString(trimmedURI.toString());
+						final var res = new StyledString(trimmedURI.toString());
 						if (uri.getQuery() != null) {
 							res.append("?" + uri.getRawQuery(), StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
 						}

@@ -60,7 +60,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testHoverRegion() throws CoreException {
-		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -81,7 +81,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testHoverInfo() throws CoreException {
-		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -93,7 +93,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testHoverInfoEmptyContentList() throws CoreException {
-		Hover hoverResponse = new Hover(Collections.emptyList(), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(Collections.emptyList(), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -114,7 +114,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testHoverEmptyContentItem() throws CoreException {
-		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
@@ -125,7 +125,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testHoverOnExternalFile() throws CoreException, IOException {
-		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("blah")),
+		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("blah")),
 				new Range(new Position(0, 0), new Position(0, 0)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
@@ -137,7 +137,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testMultipleHovers() throws Exception {
-		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFileMultiLS(project, "HoverRange Other Text");
@@ -154,7 +154,7 @@ public class HoverTest extends AbstractTestWithProject {
 
 	@Test
 	public void testIntroUrlLink() throws Exception {
-		Hover hoverResponse = new Hover(
+		final var hoverResponse = new Hover(
 				Collections.singletonList(Either.forLeft(
 						"[My intro URL link](http://org.eclipse.ui.intro/execute?command=org.eclipse.ui.file.close)")),
 				new Range(new Position(0, 0), new Position(0, 10)));
@@ -165,13 +165,13 @@ public class HoverTest extends AbstractTestWithProject {
 
 		String hoverContent = hover.getHoverInfo(viewer, new Region(0, 10));
 
-		LSPTextHover hoverManager = new LSPTextHover();
+		final var hoverManager = new LSPTextHover();
 
 		Display display = PlatformUI.getWorkbench().getDisplay();
-		final Shell shell = new Shell(display);
+		final var shell = new Shell(display);
 		BrowserInformationControl wrapperControl = null, control = null;
 		try {
-			final RowLayout layout = new RowLayout(SWT.VERTICAL);
+			final var layout = new RowLayout(SWT.VERTICAL);
 			layout.fill = true;
 			shell.setLayout(layout);
 			shell.setSize(320, 200);
@@ -184,10 +184,10 @@ public class HoverTest extends AbstractTestWithProject {
 			Field f = BrowserInformationControl.class.getDeclaredField("fBrowser"); //
 			f.setAccessible(true);
 
-			Browser browser = (Browser) f.get(control);
+			final var browser = (Browser) f.get(control);
 			browser.setJavascriptEnabled(true);
 
-			AtomicBoolean completed = new AtomicBoolean(false);
+			final var completed = new AtomicBoolean(false);
 
 			browser.addProgressListener(new ProgressAdapter() {
 				@Override

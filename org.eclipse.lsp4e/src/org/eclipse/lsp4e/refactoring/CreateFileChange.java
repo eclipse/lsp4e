@@ -16,7 +16,6 @@ package org.eclipse.lsp4e.refactoring;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -104,7 +103,7 @@ public class CreateFileChange extends ResourceChange {
 
 		final var fEncoding = initializeEncoding();
 
-		try (InputStream is= new ByteArrayInputStream(fSource.getBytes(fEncoding))) {
+		try (var is = new ByteArrayInputStream(fSource.getBytes(fEncoding))) {
 
 			IFile ifile = LSPEclipseUtils.getFileHandle(this.uri);
 
@@ -132,7 +131,7 @@ public class CreateFileChange extends ResourceChange {
 				if (foldersToCreate.isEmpty()) {
 					return new DeleteResourceChange(ifile.getFullPath(), true);
 				} else {
-					CompositeChange undoChange = new CompositeChange("Undo " + getName()); //$NON-NLS-1$
+					final var undoChange = new CompositeChange("Undo " + getName()); //$NON-NLS-1$
 					undoChange.add(new DeleteResourceChange(ifile.getFullPath(), true));
 					Collections.reverse(foldersToCreate);
 					for (IFolder folder : foldersToCreate) {

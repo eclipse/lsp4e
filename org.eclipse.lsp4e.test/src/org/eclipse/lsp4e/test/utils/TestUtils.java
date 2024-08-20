@@ -45,7 +45,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Widget;
-import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IWorkbenchPage;
@@ -80,7 +79,7 @@ public class TestUtils {
 	public static IEditorPart openEditor(IFile file) throws PartInitException {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
-		IEditorInput input = new FileEditorInput(file);
+		final var input = new FileEditorInput(file);
 
 		IEditorPart part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", false);
 		part.setFocus();
@@ -111,7 +110,7 @@ public class TestUtils {
 	public static IEditorPart getEditor(IFile file) {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
-		IEditorInput input = new FileEditorInput(file);
+		final var input = new FileEditorInput(file);
 
 		return Arrays.asList(page.getEditorReferences()).stream()
 			.filter(r -> {

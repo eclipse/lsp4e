@@ -35,11 +35,11 @@ public class LSSearchResultPage extends FileSearchPage {
 	@Override
 	public void configureTreeViewer(TreeViewer viewer) {
 		super.configureTreeViewer(viewer);
-		FileTreeContentProvider fileMatchContentProvider = (FileTreeContentProvider)viewer.getContentProvider();
+		final var fileMatchContentProvider = (FileTreeContentProvider)viewer.getContentProvider();
 		final var contentProvider = new FileAndURIMatchContentProvider(fileMatchContentProvider);
 		viewer.setContentProvider(contentProvider);
-		DecoratingFileSearchLabelProvider fileMatchDecoratingLabelProvider = (DecoratingFileSearchLabelProvider)viewer.getLabelProvider();
-		FileAndURIMatchBaseLabelProvider baseLabelProvider = new FileAndURIMatchBaseLabelProvider(fileMatchDecoratingLabelProvider.getStyledStringProvider());
+		final var fileMatchDecoratingLabelProvider = (DecoratingFileSearchLabelProvider)viewer.getLabelProvider();
+		final var baseLabelProvider = new FileAndURIMatchBaseLabelProvider(fileMatchDecoratingLabelProvider.getStyledStringProvider());
 		viewer.setLabelProvider(new FileAndURIMatchLabelProvider(baseLabelProvider, fileMatchDecoratingLabelProvider));
 		viewer.setComparator(new ViewerComparator() {
 			@Override

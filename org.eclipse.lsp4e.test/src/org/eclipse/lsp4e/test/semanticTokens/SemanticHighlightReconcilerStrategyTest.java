@@ -8,8 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.semanticTokens;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -44,7 +43,7 @@ public class SemanticHighlightReconcilerStrategyTest extends AbstractTestWithPro
 
 	@Test
 	public void testKeyword() throws CoreException {
-		SemanticTokens semanticTokens = new SemanticTokens();
+		final var semanticTokens = new SemanticTokens();
 		semanticTokens.setData(SemanticTokensTestUtil.keywordSemanticTokens());
 
 		MockLanguageServer.INSTANCE.getTextDocumentService().setSemanticTokens(semanticTokens);
@@ -59,27 +58,27 @@ public class SemanticHighlightReconcilerStrategyTest extends AbstractTestWithPro
 		var backgroundColor = textViewer.getTextWidget().getBackground();
 
 		assertEquals(6, styleRanges.length);
-		
+
 		assertEquals(0, styleRanges[0].start);
 		assertEquals(4, styleRanges[0].length);
 		assertNotEquals(styleRanges[0].foreground, backgroundColor);
-		
+
 		assertEquals(4, styleRanges[1].start);
 		assertEquals(11, styleRanges[1].length);
 		assertNotEquals(styleRanges[1].foreground, backgroundColor);
-		
+
 		assertEquals(15, styleRanges[2].start);
 		assertEquals(4, styleRanges[2].length);
 		assertNotEquals(styleRanges[2].foreground, backgroundColor);
-		
+
 		assertEquals(19, styleRanges[3].start);
 		assertEquals(5, styleRanges[3].length);
 		assertNotEquals(styleRanges[3].foreground, backgroundColor);
-		
+
 		assertEquals(24, styleRanges[4].start);
 		assertEquals(7, styleRanges[4].length);
 		assertNotEquals(styleRanges[4].foreground, backgroundColor);
-		
+
 		assertEquals(31, styleRanges[5].start);
 		assertEquals(11, styleRanges[5].length);
 		assertNotEquals(styleRanges[5].foreground, backgroundColor);

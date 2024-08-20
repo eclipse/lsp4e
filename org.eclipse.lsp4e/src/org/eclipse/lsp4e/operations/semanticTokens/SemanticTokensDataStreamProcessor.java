@@ -154,7 +154,7 @@ public class SemanticTokensDataStreamProcessor {
 		if (attr != null) {
 			final int style = attr.getStyle();
 			final int fontStyle = style & (SWT.ITALIC | SWT.BOLD | SWT.NORMAL);
-			final StyleRange styleRange = new StyleRange(offset, length, attr.getForeground(), attr.getBackground(), fontStyle);
+			final var styleRange = new StyleRange(offset, length, attr.getForeground(), attr.getBackground(), fontStyle);
 			styleRange.strikeout = (style & TextAttribute.STRIKETHROUGH) != 0;
 			styleRange.underline = (style & TextAttribute.UNDERLINE) != 0;
 			styleRange.font = attr.getFont();

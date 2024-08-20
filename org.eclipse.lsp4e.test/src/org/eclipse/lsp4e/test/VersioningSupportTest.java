@@ -17,7 +17,6 @@ import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
-import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jface.text.BadLocationException;
@@ -42,7 +41,7 @@ public class VersioningSupportTest extends AbstractTestWithProject {
 
 	@Test
 	public void testVersionSupportSuccess() throws Exception {
-		List<TextEdit> formattingTextEdits = new ArrayList<>();
+		final var formattingTextEdits = new ArrayList<TextEdit>();
 		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 0), new Position(0, 1)), "MyF"));
 		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 10), new Position(0, 11)), ""));
 		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 21), new Position(0, 21)), " Second"));
@@ -79,7 +78,7 @@ public class VersioningSupportTest extends AbstractTestWithProject {
 
 	@Test(expected=ConcurrentModificationException.class)
 	public void testVersionedEditsFailsOnModification() throws Exception {
-		List<TextEdit> formattingTextEdits = new ArrayList<>();
+		final var formattingTextEdits = new ArrayList<TextEdit>();
 		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 0), new Position(0, 1)), "MyF"));
 		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 10), new Position(0, 11)), ""));
 		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 21), new Position(0, 21)), " Second"));

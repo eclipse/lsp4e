@@ -8,8 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.semanticTokens;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -22,7 +21,6 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.semanticTokens.SemanticHighlightReconcilerStrategy;
 import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
-import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.junit.Test;
 
 public class SemanticTokensLegendProviderTest extends AbstractTestWithProject {
@@ -40,7 +38,7 @@ public class SemanticTokensLegendProviderTest extends AbstractTestWithProject {
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(file, c -> Boolean.TRUE).iterator()
 		.next();
 
-		SemanticTokensLegend semanticTokensLegend = new SemanticHighlightReconcilerStrategy().getSemanticTokensLegend(wrapper);
+		final var semanticTokensLegend = new SemanticHighlightReconcilerStrategy().getSemanticTokensLegend(wrapper);
 		assertNotNull(semanticTokensLegend);
 		assertEquals(tokenTypes, semanticTokensLegend.getTokenTypes());
 		assertEquals(tokenModifiers, semanticTokensLegend.getTokenModifiers());

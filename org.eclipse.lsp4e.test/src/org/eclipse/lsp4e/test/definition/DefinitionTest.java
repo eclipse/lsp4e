@@ -17,7 +17,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -48,7 +47,7 @@ public class DefinitionTest extends AbstractTestWithProject {
 
 	@Test
 	public void testDefinitionOneLocation() throws Exception {
-		Location location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
+		final var location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(location));
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
@@ -61,9 +60,9 @@ public class DefinitionTest extends AbstractTestWithProject {
 
 	@Test
 	public void testDefinitionAndTypeDefinition() throws Exception {
-		Range definitionRange = new Range(new Position(0, 0), new Position(0, 1));
+		final var definitionRange = new Range(new Position(0, 0), new Position(0, 1));
 		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(new Location("file://testDefinition", definitionRange)));
-		Range typeDefinitionRange = new Range(new Position(0, 2), new Position(0, 3));
+		final var typeDefinitionRange = new Range(new Position(0, 2), new Position(0, 3));
 		MockLanguageServer.INSTANCE.setTypeDefinitions(Collections.singletonList(new LocationLink("file://testTypeDefinition", typeDefinitionRange, typeDefinitionRange)));
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
@@ -83,11 +82,11 @@ public class DefinitionTest extends AbstractTestWithProject {
 
 	@Test
 	public void testDefinitionOneLocationExternalFile() throws Exception {
-		Location location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
+		final var location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(location));
 
 		File file = TestUtils.createTempFile("testDocumentLinkExternalFile", ".lspt");
-		ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
+		final var editor = (ITextEditor) IDE.openInternalEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
 		IHyperlink[] hyperlinks = hyperlinkDetector.detectHyperlinks(viewer, new Region(0, 0), true);
@@ -96,7 +95,7 @@ public class DefinitionTest extends AbstractTestWithProject {
 
 	@Test
 	public void testDefinitionManyLocation() throws Exception {
-		List<Location> locations = new ArrayList<>();
+		final var locations = new ArrayList<Location>();
 		locations.add(new Location("file://test0", new Range(new Position(0, 0), new Position(0, 10))));
 		locations.add(new Location("file://test1", new Range(new Position(1, 0), new Position(1, 10))));
 		locations.add(new Location("file://test2", new Range(new Position(2, 0), new Position(2, 10))));
@@ -134,7 +133,7 @@ public class DefinitionTest extends AbstractTestWithProject {
 
 	@Test
 	public void testReturnsPromptly() throws Exception {
-		Location location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
+		final var location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(location));
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");

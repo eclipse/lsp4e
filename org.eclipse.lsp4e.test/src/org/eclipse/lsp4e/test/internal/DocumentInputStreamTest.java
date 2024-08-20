@@ -51,7 +51,7 @@ public class DocumentInputStreamTest extends AbstractTestWithProject {
 		try (var is = new DocumentInputStream(document)) {
 			assertEquals(UTF_8, is.getCharset());
 			assertEquals(TEST_ASCII.length(), is.available());
-			final byte[] buffer = new byte[4];
+			final var buffer = new byte[4];
 			is.read(buffer);
 			assertEquals(TEST_ASCII.length() - 4, is.available());
 			is.readAllBytes();
@@ -88,7 +88,7 @@ public class DocumentInputStreamTest extends AbstractTestWithProject {
 				bytesRead.add((byte) b);
 			}
 
-			final byte[] byteArray = new byte[bytesRead.size()];
+			final var byteArray = new byte[bytesRead.size()];
 			for (int i = 0; i < bytesRead.size(); i++) {
 				byteArray[i] = bytesRead.get(i);
 			}
@@ -98,7 +98,7 @@ public class DocumentInputStreamTest extends AbstractTestWithProject {
 
 	@Test
 	public void testReadIntoByteArray() throws IOException {
-		final byte[] buffer = new byte[1024]; // Buffer to read a portion of the text
+		final var buffer = new byte[1024]; // Buffer to read a portion of the text
 
 		try (var is = new DocumentInputStream(document)) {
 			assertEquals(UTF_8, is.getCharset());
@@ -116,7 +116,7 @@ public class DocumentInputStreamTest extends AbstractTestWithProject {
 			final long skipped = is.skip(EMOJI_BYTES_LEN);
 			assertEquals(EMOJI_BYTES_LEN, skipped);
 
-			final byte[] japanese = new byte[TEST_UNICODE_BYTES_LEN];
+			final var japanese = new byte[TEST_UNICODE_BYTES_LEN];
 			final int bytesRead = is.read(japanese);
 
 			assertEquals(JAPANESE, new String(japanese, 0, bytesRead, UTF_8));
@@ -129,7 +129,7 @@ public class DocumentInputStreamTest extends AbstractTestWithProject {
 		try (var is = new DocumentInputStream(document)) {
 			assertEquals(UTF_8, is.getCharset());
 			final byte[] result = is.readAllBytes();
-			final String output = new String(result, UTF_8);
+			final var output = new String(result, UTF_8);
 
 			// the high surrogate at the end should be replaced by the
 			// Unicode replacement char
@@ -143,7 +143,7 @@ public class DocumentInputStreamTest extends AbstractTestWithProject {
 		try (var is = new DocumentInputStream(document)) {
 			assertEquals(UTF_8, is.getCharset());
 			final byte[] result = is.readAllBytes();
-			final String output = new String(result, UTF_8);
+			final var output = new String(result, UTF_8);
 
 			// the invalid surrogate pair should be replaced by the Unicode replacement char
 			assertEquals(CharsInputStream.UNICODE_REPLACEMENT_CHAR + "A", output);

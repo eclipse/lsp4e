@@ -18,7 +18,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.externaltools.internal.IExternalToolConstants;
@@ -51,7 +50,7 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 		ILaunchConfigurationType externalType = launchManager.getLaunchConfigurationType(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE);
 		LanguageServersRegistry registry = LanguageServersRegistry.getInstance();
 		try {
-			String externalProcessLaunchName = "Mock external LS";
+			final var externalProcessLaunchName = "Mock external LS";
 			ILaunchConfiguration mockServerLauch = null;
 			for (ILaunchConfiguration launch : launchManager.getLaunchConfigurations(externalType)) {
 				if (launch.getName().equals(externalProcessLaunchName)) {
@@ -66,7 +65,7 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 				workingCopy.setAttribute(IExternalToolConstants.ATTR_SHOW_CONSOLE, false);
 				workingCopy.setAttribute(IExternalToolConstants.ATTR_BUILD_SCOPE, "${none}");
 				workingCopy.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, true);
-				String exe = "";
+				var exe = "";
 				if (Platform.OS_WIN32.equals(Platform.getOS())) {
 					exe = ".exe";
 				}
@@ -90,8 +89,8 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 		if (loader instanceof URLClassLoader urlClassLoader) {
 			return Arrays.asList(urlClassLoader.getURLs()).stream().map(url -> url.getFile()).collect(Collectors.joining(System.getProperty("path.separator")));
 		}
-		LinkedList<Bundle> toProcess = new LinkedList<>();
-		Set<Bundle> processed = new HashSet<>();
+		final var toProcess = new LinkedList<Bundle>();
+		final var processed = new HashSet<Bundle>();
 		Bundle current = FrameworkUtil.getBundle(clazz);
 		if (current != null) {
 			toProcess.add(current);

@@ -31,7 +31,6 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.ui.PartInitException;
 import org.junit.Before;
 
 public abstract class AbstractCompletionTest extends AbstractTestWithProject {
@@ -48,7 +47,7 @@ public abstract class AbstractCompletionTest extends AbstractTestWithProject {
 	}
 
 	protected CompletionItem createCompletionItem(String label, CompletionItemKind kind, Range range) {
-		CompletionItem item = new CompletionItem();
+		final var item = new CompletionItem();
 		item.setLabel(label);
 		item.setKind(kind);
 		item.setTextEdit(Either.forLeft(new TextEdit(range, label)));
@@ -56,10 +55,10 @@ public abstract class AbstractCompletionTest extends AbstractTestWithProject {
 	}
 
 	protected CompletionItem createCompletionItemWithInsertReplace(String label, CompletionItemKind kind, Range insertRange, Range replaceRange) {
-		CompletionItem item = new CompletionItem();
+		final var item = new CompletionItem();
 		item.setLabel(label);
 		item.setKind(kind);
-		InsertReplaceEdit insertReplaceEdit = new InsertReplaceEdit();
+		final var insertReplaceEdit = new InsertReplaceEdit();
 		insertReplaceEdit.setNewText(label);
 		insertReplaceEdit.setInsert(insertRange);
 		insertReplaceEdit.setReplace(replaceRange);
@@ -68,9 +67,9 @@ public abstract class AbstractCompletionTest extends AbstractTestWithProject {
 	}
 
 	protected void confirmCompletionResults(String[] completions, String content, Integer cursorIndexInContent,
-			String[] expectedOrder) throws PartInitException, CoreException {
-		Range range = new Range(new Position(0, 0), new Position(0, cursorIndexInContent));
-		List<CompletionItem> items = new ArrayList<>();
+			String[] expectedOrder) throws CoreException {
+		final var range = new Range(new Position(0, 0), new Position(0, cursorIndexInContent));
+		final var items = new ArrayList<CompletionItem>();
 		for (String string : completions) {
 			items.add(createCompletionItem(string, CompletionItemKind.Class, range));
 		}
@@ -78,7 +77,7 @@ public abstract class AbstractCompletionTest extends AbstractTestWithProject {
 	}
 
 	protected void confirmCompletionResults(List<CompletionItem> completions, String content,
-			Integer cursorIndexInContent, String[] expectedOrder) throws PartInitException, CoreException {
+			Integer cursorIndexInContent, String[] expectedOrder) throws CoreException {
 
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, completions));
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));

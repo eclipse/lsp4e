@@ -176,7 +176,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					final var ca = (ContentAssistant) f.get(quickAssistant);
 					Method m = ContentAssistant.class.getDeclaredMethod("isProposalPopupActive"); //$NON-NLS-1$
 					m.setAccessible(true);
-					boolean isProposalPopupActive = (Boolean) castNonNull(m.invoke(ca));
+					final var isProposalPopupActive = (Boolean) castNonNull(m.invoke(ca));
 					if (isProposalPopupActive) {
 						quickAssistant.showPossibleQuickAssists();
 					}

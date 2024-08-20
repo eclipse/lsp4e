@@ -49,7 +49,7 @@ public class InsertReplaceCompletionTest extends AbstractCompletionTest {
 
 		int invokeOffset = viewer.getDocument().getLength() - "InsertHere".length();
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
-		LSCompletionProposal lsCompletionProposal = (LSCompletionProposal)proposals[0];
+		final var lsCompletionProposal = (LSCompletionProposal) proposals[0];
 		lsCompletionProposal.apply(viewer, '\n', 0, invokeOffset);
 		assertEquals("line1\nlineInserted", viewer.getDocument().get());
 		assertEquals(new Point(viewer.getDocument().getLength(), 0), lsCompletionProposal.getSelection(viewer.getDocument()));

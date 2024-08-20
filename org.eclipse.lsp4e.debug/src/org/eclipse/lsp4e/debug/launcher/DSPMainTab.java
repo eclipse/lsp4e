@@ -121,7 +121,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		final var filler = new Composite(debugAdapterSettingsGroup, SWT.NONE);
 		filler.setLayoutData(new GridData(0, 0));
 		monitorAdapterLauncherProcessCheckbox = new Button(debugAdapterSettingsGroup, SWT.CHECK);
-		GridData layoutData = new GridData(SWT.LEFT, SWT.DEFAULT, true, false);
+		final var layoutData = new GridData(SWT.LEFT, SWT.DEFAULT, true, false);
 		monitorAdapterLauncherProcessCheckbox.setLayoutData(layoutData);
 		monitorAdapterLauncherProcessCheckbox
 				.addSelectionListener(widgetSelectedAdapter(e -> updateLaunchConfigurationDialog()));

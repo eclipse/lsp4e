@@ -12,10 +12,8 @@
 package org.eclipse.lsp4e.format;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.compare.internal.DocLineComparator;
-import org.eclipse.compare.rangedifferencer.IRangeComparator;
 import org.eclipse.compare.rangedifferencer.RangeDifference;
 import org.eclipse.compare.rangedifferencer.RangeDifferencer;
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -92,7 +90,7 @@ public interface IFormatRegionsProvider {
 	 *
 	 */
 	public static IRegion @Nullable [] calculateEditedLineRegions(final IDocument document, final IProgressMonitor monitor) {
-		final IRegion[] @Nullable [] result = new IRegion[1][];
+		final var result = new IRegion[1] @Nullable [];
 
 		SafeRunner.run(new ISafeRunnable() {
 			@Override
@@ -139,11 +137,11 @@ public interface IFormatRegionsProvider {
 				 * here in order to prevent loading of the Compare plug-in at load
 				 * time of this class.
 				 */
-				Object leftSide = new DocLineComparator(oldDocument, null, false);
-				Object rightSide = new DocLineComparator(currentDocument, null, false);
+				final var leftSide = new DocLineComparator(oldDocument, null, false);
+				final var rightSide = new DocLineComparator(currentDocument, null, false);
 
-				RangeDifference[] differences = RangeDifferencer.findDifferences((IRangeComparator) leftSide,
-						(IRangeComparator) rightSide);
+				RangeDifference[] differences = RangeDifferencer.findDifferences(leftSide,
+						rightSide);
 
 				// It holds that:
 				// 1. Ranges are sorted:
@@ -151,7 +149,7 @@ public interface IFormatRegionsProvider {
 				// 2. Successive changed lines are merged into on RangeDifference
 				//     forAll r1,r2 element differences: r1.rightStart() < r2.rightStart() -> r1.rightEnd() < r2.rightStart
 
-				List<IRegion> regions = new ArrayList<>();
+				final var regions = new ArrayList<IRegion>();
 				final int numberOfLines = currentDocument.getNumberOfLines();
 				for (RangeDifference curr : differences) {
 					if (curr.kind() == RangeDifference.CHANGE) {

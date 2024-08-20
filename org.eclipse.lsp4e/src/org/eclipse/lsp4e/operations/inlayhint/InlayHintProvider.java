@@ -45,8 +45,8 @@ public class InlayHintProvider extends AbstractCodeMiningProvider {
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logWarning("Unable to compute end of document", e); //$NON-NLS-1$
 			}
-			Range viewPortRange = new Range(new Position(0,0), end);
-			InlayHintParams param = new InlayHintParams(LSPEclipseUtils.toTextDocumentIdentifier(docURI), viewPortRange);
+			final var viewPortRange = new Range(new Position(0,0), end);
+			final var param = new InlayHintParams(LSPEclipseUtils.toTextDocumentIdentifier(docURI), viewPortRange);
 			List<LSPLineContentCodeMining> inlayHintResults = Collections.synchronizedList(new ArrayList<>());
 			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getInlayHintProvider)
 					.collectAll((w, ls) -> ls.getTextDocumentService().inlayHint(param).thenAcceptAsync(inlayHints -> {

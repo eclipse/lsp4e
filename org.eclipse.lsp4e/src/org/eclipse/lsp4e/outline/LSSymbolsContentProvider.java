@@ -374,7 +374,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			return;
 		final URI documentURI = outlineViewerInput.documentURI;
 		if (documentURI == null) {
-			IllegalStateException exception = new IllegalStateException("documentURI == null");  //$NON-NLS-1$
+			final var exception = new IllegalStateException("documentURI == null");  //$NON-NLS-1$
 			lastError = exception;
 			LanguageServerPlugin.logError(exception);
 			viewer.getControl().getDisplay().asyncExec(viewer::refresh);

@@ -163,17 +163,17 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 				.callHierarchyIncomingCalls(incomingCallParams)).thenApply(incomingCalls -> {
 					if (incomingCalls == null)
 						return new ArrayList<CallHierarchyViewTreeNode>(0);
-					List<CallHierarchyViewTreeNode> children = new ArrayList<>(incomingCalls.size());
+					final var children = new ArrayList<CallHierarchyViewTreeNode>(incomingCalls.size());
 					for (CallHierarchyIncomingCall call : incomingCalls) {
 						CallHierarchyItem callContainer = call.getFrom();
 						List<Range> callSites = call.getFromRanges();
 						for (Range callSite : callSites) {
-							CallHierarchyViewTreeNode child = new CallHierarchyViewTreeNode(callContainer, callSite);
+							final var child = new CallHierarchyViewTreeNode(callContainer, callSite);
 							child.setParent(callee);
 							children.add(child);
 						}
 						if (callSites.isEmpty()) {
-							CallHierarchyViewTreeNode child = new CallHierarchyViewTreeNode(callContainer);
+							final var child = new CallHierarchyViewTreeNode(callContainer);
 							child.setParent(callee);
 							children.add(child);
 						}

@@ -342,7 +342,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		long modificationStamp = DocumentUtil.getDocumentModificationStamp(document);
 
 		FormattingOptions formatOptions = LSPFormatter.getFormatOptions();
-		TextDocumentIdentifier docId = new TextDocumentIdentifier(fileUri.toString());
+		final var docId = new TextDocumentIdentifier(fileUri.toString());
 
 		final ServerCapabilities capabilities = languageServerWrapper.getServerCapabilities();
 		if (capabilities != null

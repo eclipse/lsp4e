@@ -141,7 +141,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 			Scope[] scopes = complete(getDebugTarget().getDebugProtocolServer().scopes(arguments)).getScopes();
 			final var vars = new ArrayList<DSPVariable>();
 			for (Scope scope : scopes) {
-				DSPVariable variable = new DSPVariable(getDebugTarget(), -1, scope.getName(), "",
+				final var variable = new DSPVariable(getDebugTarget(), -1, scope.getName(), "",
 						scope.getVariablesReference());
 				vars.add(variable);
 			}

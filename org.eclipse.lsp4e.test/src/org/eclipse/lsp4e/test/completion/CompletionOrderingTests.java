@@ -11,11 +11,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.completion;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jface.text.IDocument;
@@ -45,8 +43,8 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 	@Test
 	public void testOrderByCategory() throws Exception {
 		// Category 1 before Category 2 (testa)
-		String[] completions = new String[] { "testa", "test.a", "a.test.a", "a.testa", "test" };
-		String[] orderedResults = new String[] { "test", "testa", "a.testa", "test.a", "a.test.a" };
+		var completions = new String[] { "testa", "test.a", "a.test.a", "a.testa", "test" };
+		var orderedResults = new String[] { "test", "testa", "a.testa", "test.a", "a.test.a" };
 		confirmCompletionResults(completions, "test", 4, orderedResults);
 
 		// Category 2 before Category 3 (atest)
@@ -68,8 +66,8 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 	@Test
 	public void testOrderByRank() throws Exception {
 		// Category 1
-		String[] completions = new String[] { "prefix.test", "alongprefix.test", "test", "test.test", "pretest.test" };
-		String[] orderedResults = new String[] { "test", "test.test", "pretest.test", "prefix.test",
+		var completions = new String[] { "prefix.test", "alongprefix.test", "test", "test.test", "pretest.test" };
+		var orderedResults = new String[] { "test", "test.test", "pretest.test", "prefix.test",
 				"alongprefix.test" };
 		confirmCompletionResults(completions, "test", 4, orderedResults);
 
@@ -92,8 +90,8 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 	@Test
 	public void testOrderWithCapitalization() throws Exception {
 		// Category 1
-		String[] completions = new String[] { "prefiX.Test", "alongprefix.test", "tEsT", "teSt.teST", "preTEst.test" };
-		String[] orderedResults = new String[] { "tEsT", "teSt.teST", "preTEst.test", "prefiX.Test",
+		var completions = new String[] { "prefiX.Test", "alongprefix.test", "tEsT", "teSt.teST", "preTEst.test" };
+		var orderedResults = new String[] { "tEsT", "teSt.teST", "preTEst.test", "prefiX.Test",
 				"alongprefix.test" };
 		confirmCompletionResults(completions, "test", 4, orderedResults);
 
@@ -115,8 +113,8 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 
 	@Test
 	public void testOrderWithLongInsert() throws Exception {
-		List<CompletionItem> items = new ArrayList<>();
-		CompletionItem item = new CompletionItem("server.address");
+		var items = new ArrayList<CompletionItem>();
+		var item = new CompletionItem("server.address");
 		item.setFilterText("server.address");
 		item.setTextEdit(Either.forLeft(new TextEdit(new Range(new Position(1, 12), new Position(5, 7)),
 						"  address: $1\n" +
@@ -138,7 +136,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 		item.setTextEdit(Either.forLeft(new TextEdit(new Range(new Position(5, 0), new Position(0, 12)),item.getFilterText())));
 		items.add(item);
 
-		String[] orderedResults = new String[] { "server.address", "management.server.address",
+		final var orderedResults = new String[] { "server.address", "management.server.address",
 				"→ spring.jta.atomikos.datasource.xa-data-source-class-name" };
 
 		confirmCompletionResults(items,
@@ -153,7 +151,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 
 	@Test
 	public void testMovingOffset() throws Exception {
-		Range range = new Range(new Position(0, 0), new Position(0, 4));
+		final var range = new Range(new Position(0, 0), new Position(0, 4));
 		IFile testFile = TestUtils.createUniqueTestFile(project, "test");
 		IDocument document = TestUtils.openTextViewer(testFile).getDocument();
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile,
@@ -162,7 +160,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 				.get(0);
 
 		CompletionItem completionItem = createCompletionItem("test", CompletionItemKind.Class, range);
-		LSCompletionProposal completionProposal = new LSCompletionProposal(document, 0,
+		var completionProposal = new LSCompletionProposal(document, 0,
 				completionItem, wrapper);
 		// Blank input ''
 		assertEquals("", completionProposal.getDocumentFilter());
@@ -196,8 +194,8 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 
 	@Test
 	public void testPerformance() throws Exception {
-		final int[] batchSizes = new int[] { 10, 100, 1000, 10000 };
-		int[] resultAverages = new int[batchSizes.length];
+		final var batchSizes = new int[] { 10, 100, 1000, 10000 };
+		final var resultAverages = new int[batchSizes.length];
 		final int repeat = 5;
 		final ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, "abcdefgh"));
 
@@ -233,9 +231,9 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 		return denominator == 0 ? 0 : numerator / denominator;
 	}
 
-	private long timeToDisplayCompletionList(ITextViewer viewer, int size) throws Exception {
-		Range range = new Range(new Position(0, 0), new Position(0, 8));
-		List<CompletionItem> items = new ArrayList<>();
+	private long timeToDisplayCompletionList(ITextViewer viewer, int size) {
+		final var range = new Range(new Position(0, 0), new Position(0, 8));
+		final var items = new ArrayList<CompletionItem>();
 		for (int i = 0; i < size; i++) {
 			items.add(createCompletionItem(randomString(), CompletionItemKind.Class, range));
 		}
@@ -251,7 +249,7 @@ public class CompletionOrderingTests extends AbstractCompletionTest {
 
 	private String randomString() {
 		int count = 50;
-		StringBuilder builder = new StringBuilder();
+		final var builder = new StringBuilder();
 		while (count-- != 0) {
 			int character = (int) (Math.random() * CHARACTERS.length());
 			builder.append(CHARACTERS.charAt(character));

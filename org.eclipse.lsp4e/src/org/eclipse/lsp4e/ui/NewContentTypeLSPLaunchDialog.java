@@ -144,8 +144,8 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		launchConfigViewer.setLabelProvider(new DecoratingLabelProvider(DebugUITools.newDebugModelPresentation(), PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator()));
 		launchConfigViewer.setContentProvider(new LaunchConfigurationTreeContentProvider(null, getShell()));
 		launchConfigViewer.setInput(DebugPlugin.getDefault().getLaunchManager());
-		ComboViewer launchModeViewer = new ComboViewer(res);
-		GridData comboGridData = new GridData(SWT.RIGHT, SWT.DEFAULT, true, false, 2, 1);
+		final var launchModeViewer = new ComboViewer(res);
+		final var comboGridData = new GridData(SWT.RIGHT, SWT.DEFAULT, true, false, 2, 1);
 		comboGridData.widthHint = 100;
 		launchModeViewer.getControl().setLayoutData(comboGridData);
 		launchModeViewer.setContentProvider(new ArrayContentProvider());
