@@ -19,9 +19,9 @@ import java.util.ArrayList;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.lsp4e.DocumentInputStream;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.internal.CharsInputStream;
+import org.eclipse.lsp4e.internal.DocumentInputStream;
 import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.junit.Before;
