@@ -11,7 +11,6 @@ package org.eclipse.lsp4e.test.semanticTokens;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
@@ -28,8 +27,8 @@ public class SemanticTokensLegendProviderTest extends AbstractTestWithProject {
 	@Test
 	public void testSemanticTokensLegendProvider() throws CoreException, IOException {
 		// Setup Server Capabilities
-		List<String> tokenTypes = Arrays.asList("keyword","other");
-		List<String> tokenModifiers = Arrays.asList("obsolete");
+		List<String> tokenTypes = List.of("keyword","other");
+		List<String> tokenModifiers = List.of("obsolete");
 		SemanticTokensTestUtil.setSemanticTokensLegend(tokenTypes, tokenModifiers);
 
 		// Setup test data

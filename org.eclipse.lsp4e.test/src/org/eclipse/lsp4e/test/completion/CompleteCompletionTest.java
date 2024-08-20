@@ -139,10 +139,10 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 	public void testCommandExecution() throws CoreException, InterruptedException, ExecutionException, TimeoutException {
 		CompletionItem completionItem = createCompletionItem("Bla", CompletionItemKind.Class);
 		final var expectedParameter = "command execution parameter";
-		List<Object> commandArguments = Arrays.asList(expectedParameter);
+		List<Object> commandArguments = List.of(expectedParameter);
 		completionItem.setCommand(new Command("TestCommand", MockLanguageServer.SUPPORTED_COMMAND_ID, commandArguments));
 
-		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, Arrays.asList(completionItem)));
+		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, List.of(completionItem)));
 
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, ""));
 
@@ -156,7 +156,7 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		ExecuteCommandParams executedCommand = MockLanguageServer.INSTANCE.getWorkspaceService().getExecutedCommand().get(2, TimeUnit.SECONDS);
 
 		assertEquals(MockLanguageServer.SUPPORTED_COMMAND_ID, executedCommand.getCommand());
-		List<JsonPrimitive> expectedParameterList = Arrays.asList(new JsonPrimitive(expectedParameter));
+		List<JsonPrimitive> expectedParameterList = List.of(new JsonPrimitive(expectedParameter));
 		assertEquals(expectedParameterList, executedCommand.getArguments());
 	}
 
@@ -321,14 +321,13 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 	@Test
 	public void testItemOrdering() throws Exception {
 		final var range = new Range(new Position(0, 0), new Position(0, 1));
-		List<CompletionItem> items = Arrays.asList(new CompletionItem[] {
-			createCompletionItem("AA", CompletionItemKind.Class, range),
-			createCompletionItem("AB", CompletionItemKind.Class, range),
-			createCompletionItem("BA", CompletionItemKind.Class, range),
-			createCompletionItem("BB", CompletionItemKind.Class, range),
-			createCompletionItem("CB", CompletionItemKind.Class, range),
-			createCompletionItem("CC", CompletionItemKind.Class, range),
-		});
+		List<CompletionItem> items = List.of( //
+				createCompletionItem("AA", CompletionItemKind.Class, range),
+				createCompletionItem("AB", CompletionItemKind.Class, range),
+				createCompletionItem("BA", CompletionItemKind.Class, range),
+				createCompletionItem("BB", CompletionItemKind.Class, range),
+				createCompletionItem("CB", CompletionItemKind.Class, range),
+				createCompletionItem("CC", CompletionItemKind.Class, range));
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(false, items));
 
 		final var content = "B";
@@ -369,10 +368,10 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		int invokeOffset = 0;
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
 		assertEquals(1, proposals.length);
-		final var beforeShells = new HashSet<>(Arrays.asList(viewer.getTextWidget().getDisplay().getShells()));
+		final var beforeShells = new HashSet<>(List.of(viewer.getTextWidget().getDisplay().getShells()));
 		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
 		assertEquals("1a2", viewer.getDocument().get());
-		final var newShells = new HashSet<>(Arrays.asList(viewer.getTextWidget().getDisplay().getShells()));
+		final var newShells = new HashSet<>(List.of(viewer.getTextWidget().getDisplay().getShells()));
 		newShells.removeAll(beforeShells);
 		assertNotEquals(Collections.emptySet(), newShells);
 		final var proposalList = (Table) newShells.iterator().next().getChildren()[0];

@@ -98,7 +98,7 @@ public class DynamicRegistrationTest extends AbstractTestWithProject {
 	private void unregister(UUID registration) throws Exception {
 		LanguageClient client = getMockClient();
 		final var unregistration = new Unregistration(registration.toString(), WORKSPACE_EXECUTE_COMMAND);
-		client.unregisterCapability(new UnregistrationParams(Arrays.asList(unregistration)))
+		client.unregisterCapability(new UnregistrationParams(List.of(unregistration)))
 			.get(1, TimeUnit.SECONDS);
 	}
 
@@ -108,7 +108,7 @@ public class DynamicRegistrationTest extends AbstractTestWithProject {
 		final var registration = new Registration();
 		registration.setId(id.toString());
 		registration.setMethod(WORKSPACE_DID_CHANGE_FOLDERS);
-		client.registerCapability(new RegistrationParams(Arrays.asList(registration)))
+		client.registerCapability(new RegistrationParams(List.of(registration)))
 			.get(1, TimeUnit.SECONDS);
 		return id;
 	}
@@ -119,8 +119,8 @@ public class DynamicRegistrationTest extends AbstractTestWithProject {
 		final var registration = new Registration();
 		registration.setId(id.toString());
 		registration.setMethod(WORKSPACE_EXECUTE_COMMAND);
-		registration.setRegisterOptions(new Gson().toJsonTree(new ExecuteCommandOptions(Arrays.asList(command))));
-		client.registerCapability(new RegistrationParams(Arrays.asList(registration))).get(1, TimeUnit.SECONDS);
+		registration.setRegisterOptions(new Gson().toJsonTree(new ExecuteCommandOptions(List.of(command))));
+		client.registerCapability(new RegistrationParams(List.of(registration))).get(1, TimeUnit.SECONDS);
 		return id;
 	}
 

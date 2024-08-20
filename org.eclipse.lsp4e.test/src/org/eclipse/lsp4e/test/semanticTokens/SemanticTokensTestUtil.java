@@ -9,7 +9,6 @@
 package org.eclipse.lsp4e.test.semanticTokens;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
@@ -36,9 +35,9 @@ public class SemanticTokensTestUtil {
 
 	public static List<Integer> keywordSemanticTokens() {
 		final var expectedTokens = new ArrayList<List<Integer>>();
-		expectedTokens.add(Arrays.asList(0,0,4,0,0));
-		expectedTokens.add(Arrays.asList(3,0,4,0,0));
-		expectedTokens.add(Arrays.asList(0,9,7,0,0));
+		expectedTokens.add(List.of(0,0,4,0,0));
+		expectedTokens.add(List.of(3,0,4,0,0));
+		expectedTokens.add(List.of(0,9,7,0,0));
 
 		return expectedTokens.stream().flatMap(List::stream).toList();
 	}
