@@ -17,7 +17,6 @@ import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.io.File;
 import java.net.URI;
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
@@ -179,7 +178,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	private boolean createChangeEvent(DocumentEvent event) {
 		Assert.isTrue(changeParams == null);
 		final var changeParams = this.changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(),
-				Collections.singletonList(new TextDocumentContentChangeEvent()));
+				List.of(new TextDocumentContentChangeEvent()));
 		changeParams.getTextDocument().setUri(fileUri.toASCIIString());
 
 		IDocument document = event.getDocument();

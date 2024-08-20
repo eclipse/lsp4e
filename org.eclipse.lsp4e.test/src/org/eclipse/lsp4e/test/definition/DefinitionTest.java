@@ -17,6 +17,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -48,7 +49,7 @@ public class DefinitionTest extends AbstractTestWithProject {
 	@Test
 	public void testDefinitionOneLocation() throws Exception {
 		final var location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
-		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(location));
+		MockLanguageServer.INSTANCE.setDefinition(List.of(location));
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
@@ -61,9 +62,9 @@ public class DefinitionTest extends AbstractTestWithProject {
 	@Test
 	public void testDefinitionAndTypeDefinition() throws Exception {
 		final var definitionRange = new Range(new Position(0, 0), new Position(0, 1));
-		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(new Location("file://testDefinition", definitionRange)));
+		MockLanguageServer.INSTANCE.setDefinition(List.of(new Location("file://testDefinition", definitionRange)));
 		final var typeDefinitionRange = new Range(new Position(0, 2), new Position(0, 3));
-		MockLanguageServer.INSTANCE.setTypeDefinitions(Collections.singletonList(new LocationLink("file://testTypeDefinition", typeDefinitionRange, typeDefinitionRange)));
+		MockLanguageServer.INSTANCE.setTypeDefinitions(List.of(new LocationLink("file://testTypeDefinition", typeDefinitionRange, typeDefinitionRange)));
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
@@ -83,7 +84,7 @@ public class DefinitionTest extends AbstractTestWithProject {
 	@Test
 	public void testDefinitionOneLocationExternalFile() throws Exception {
 		final var location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
-		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(location));
+		MockLanguageServer.INSTANCE.setDefinition(List.of(location));
 
 		File file = TestUtils.createTempFile("testDocumentLinkExternalFile", ".lspt");
 		final var editor = (ITextEditor) IDE.openInternalEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
@@ -134,7 +135,7 @@ public class DefinitionTest extends AbstractTestWithProject {
 	@Test
 	public void testReturnsPromptly() throws Exception {
 		final var location = new Location("file://test", new Range(new Position(0, 0), new Position(0, 10)));
-		MockLanguageServer.INSTANCE.setDefinition(Collections.singletonList(location));
+		MockLanguageServer.INSTANCE.setDefinition(List.of(location));
 
 		IFile file = TestUtils.createUniqueTestFile(project, "Example Text");
 		ITextViewer viewer = TestUtils.openTextViewer(file);

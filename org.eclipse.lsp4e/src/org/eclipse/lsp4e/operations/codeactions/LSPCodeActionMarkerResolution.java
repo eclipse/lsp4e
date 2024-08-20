@@ -131,7 +131,7 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 					.withPreferredServer(LanguageServersRegistry.getInstance().getDefinition((String) attributes[0]));
 			if (executor.anyMatching()) {
 				final var diagnostic = (Diagnostic) attributes[1];
-				final var context = new CodeActionContext(Collections.singletonList(diagnostic));
+				final var context = new CodeActionContext(List.of(diagnostic));
 				final var params = new CodeActionParams();
 				params.setContext(context);
 				params.setTextDocument(castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(res)));

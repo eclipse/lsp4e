@@ -162,7 +162,7 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 		final var range = new Range(
 				new Position(markerLineIndex, markerCharStart),
 				new Position(markerLineIndex, markerCharEnd));
-		List<Diagnostic> diagnostics = Collections.singletonList(
+		List<Diagnostic> diagnostics = List.of(
 				createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"));
 		final var diagnosticsParamsForFileDeletedInTheMeantime = new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics);
 		final var blockingWorkspaceJob = new BlockingWorkspaceJob("blockingJob");
@@ -213,8 +213,8 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 		IFile file = TestUtils.createUniqueTestFile(project, content);
 
 		final var range = new Range(new Position(1, 0), new Position(1, 5));
-		List<Diagnostic> diagnostics = Collections
-				.singletonList(createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"));
+		List<Diagnostic> diagnostics = List
+				.of(createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"));
 
 		diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics));
 
@@ -244,7 +244,7 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 		final var content = "Diagnostic Other Text";
 		IFile file = TestUtils.createUniqueTestFileMultiLS(project, content);
 		final var range = new Range(new Position(1, 0), new Position(1, 0));
-		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
+		MockLanguageServer.INSTANCE.setDiagnostics(List.of(
 				createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1")));
 		IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO);
 		assertEquals("no marker should be shown at file initialization", 0, markers.length);
@@ -280,7 +280,7 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 
 	@Test
 	public void testDiagnosticsOnExternalFile() throws Exception {
-		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(new Diagnostic(new Range(new Position(0, 0), new Position(0, 1)), "This is a warning", DiagnosticSeverity.Warning, null)));
+		MockLanguageServer.INSTANCE.setDiagnostics(List.of(new Diagnostic(new Range(new Position(0, 0), new Position(0, 1)), "This is a warning", DiagnosticSeverity.Warning, null)));
 		File file = TestUtils.createTempFile("testDiagnosticsOnExternalFile", ".lspt");
 		Font font = null;
 		try {
@@ -335,7 +335,7 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 		workspace.addResourceChangeListener(redrawCountListener);
 		try {
 			diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(),
-					Collections.singletonList(diagnostic)));
+					List.of(diagnostic)));
 			waitForAndAssertCondition(10_000, () -> {
 				IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, false,
 						IResource.DEPTH_INFINITE);

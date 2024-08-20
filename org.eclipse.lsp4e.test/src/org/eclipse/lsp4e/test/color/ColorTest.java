@@ -15,7 +15,7 @@ import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.util.Collections;
+import java.util.List;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.jface.text.ITextViewer;
@@ -45,7 +45,7 @@ public class ColorTest extends AbstractTestWithProject {
 	@Before
 	public void setUp() {
 		color = new RGB(56, 78, 90); // a color that's not likely used anywhere else
-		MockLanguageServer.INSTANCE.getTextDocumentService().setDocumentColors(Collections.singletonList(new ColorInformation(new Range(new Position(0, 0), new Position(0, 1)), new Color(color.red / 255., color.green / 255., color.blue / 255., 255))));
+		MockLanguageServer.INSTANCE.getTextDocumentService().setDocumentColors(List.of(new ColorInformation(new Range(new Position(0, 0), new Position(0, 1)), new Color(color.red / 255., color.green / 255., color.blue / 255., 255))));
 	}
 
 	@Test

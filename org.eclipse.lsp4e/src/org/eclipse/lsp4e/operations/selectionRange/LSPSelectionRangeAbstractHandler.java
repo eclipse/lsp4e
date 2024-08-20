@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.selectionRange;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -214,7 +213,7 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 			if (identifier == null) {
 				return CompletableFuture.completedFuture(null);
 			}
-			List<Position> positions = Collections.singletonList(position);
+			List<Position> positions = List.of(position);
 			final var params = new SelectionRangeParams(identifier, positions);
 			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getSelectionRangeProvider)
 					.computeFirst(languageServer -> languageServer.getTextDocumentService().selectionRange(params))

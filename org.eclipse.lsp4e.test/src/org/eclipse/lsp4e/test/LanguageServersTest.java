@@ -74,7 +74,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				return CompletableFuture.completedFuture(hoverResponse);
 			}
 		});
@@ -110,7 +110,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				return CompletableFuture.completedFuture(hoverCount.get() == 1 ? hoverResponse : null);
 			}
 		});
@@ -146,7 +146,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				final int currentCount = hoverCount.get();
 				return CompletableFuture.completedFuture(hoverResponse).thenApplyAsync(t -> {
 					try {
@@ -197,7 +197,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 	public void testCollectAllUserCannotBlockListener() throws Exception {
 		// This test will only work if a minimum of two tasks can be run in the common pool without blocking!
 		Assume.assumeTrue("Test skipped as common thread pool does not have multiple executors", ForkJoinPool.commonPool().getParallelism() >= 2);
-		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "Here is some content");
@@ -252,7 +252,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				final int currentCount = hoverCount.get();
 				CompletableFuture<Hover> result =  CompletableFuture.completedFuture(hoverResponse).thenApplyAsync(t -> {
 					try {
@@ -302,7 +302,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				if (hoverCount.get() == 1) {
 					return CompletableFuture.completedFuture(null);
 				}
@@ -381,7 +381,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				if (hoverCount.get() == 1) {
 					return CompletableFuture.completedFuture(null);
 				}
@@ -408,7 +408,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 		CompletableFuture<Optional<List<String>>> response =  LanguageServers.forDocument(document)
 				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
-				.computeFirst(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h == null ? Collections.emptyList() : Collections.singletonList(h.getContents().getLeft().get(0).getLeft())));
+				.computeFirst(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h == null ? Collections.emptyList() : List.of(h.getContents().getLeft().get(0).getLeft())));
 
 		Optional<List<String>> result = response.join();
 		assertTrue("Should have returned a result", result.isPresent());
@@ -449,7 +449,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 			}
 		});
 
-		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 		CompletableFuture<?> initial = CompletableFuture.completedFuture(null);
 
@@ -526,7 +526,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 			}
 		});
 
-		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 		CompletableFuture<?> initial = CompletableFuture.completedFuture(null);
 
@@ -587,7 +587,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 	@Test
 	public void testNoMatchingServers() throws Exception {
-		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(List.of(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
@@ -657,7 +657,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 	 */
 	@Test
 	public void testWrapperWrapsSameLS() throws Exception {
-		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(
+				List.of(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");

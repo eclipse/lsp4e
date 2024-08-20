@@ -16,6 +16,7 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -59,17 +60,17 @@ public class CodeActionTests extends AbstractTestWithProject {
 	@Test
 	public void testCodeActionsClientCommandForTextEdit() throws CoreException {
 		IFile f = TestUtils.createUniqueTestFile(project, "error");
-		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forLeft(new Command(
+		MockLanguageServer.INSTANCE.setCodeActions(List.of(Either.forLeft(new Command(
 				"fixme",
 				"edit",
-				Collections.singletonList(
+				List.of(
 					new TextEdit(
 							new Range(new Position(0, 0), new Position(0, 5)),
 							"fixed"))
 				)
 			)
 		));
-		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
+		MockLanguageServer.INSTANCE.setDiagnostics(List.of(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		final var editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		try {
@@ -85,15 +86,15 @@ public class CodeActionTests extends AbstractTestWithProject {
 		IFile f = TestUtils.createUniqueTestFile(project, "error");
 
 		final var tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
-		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
-		MockLanguageServer.INSTANCE.setCodeActions(Collections
-				.singletonList(Either.forLeft(new Command(
+		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), List.of(tEdit)));
+		MockLanguageServer.INSTANCE.setCodeActions(List
+				.of(Either.forLeft(new Command(
 				"fixme",
 				"edit",
-				Collections.singletonList(wEdit))
+				List.of(wEdit))
 			)
 		));
-		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
+		MockLanguageServer.INSTANCE.setDiagnostics(List.of(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		final var editor = (AbstractTextEditor)TestUtils.openEditor(f);
 
@@ -115,12 +116,12 @@ public class CodeActionTests extends AbstractTestWithProject {
 		IFile f = TestUtils.createUniqueTestFile(project, "error");
 
 		final var tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
-		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
-		MockLanguageServer.INSTANCE.setCodeActions(Collections
-				.singletonList(Either.forLeft(new Command(
+		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), List.of(tEdit)));
+		MockLanguageServer.INSTANCE.setCodeActions(List
+				.of(Either.forLeft(new Command(
 				"fixme",
 				"edit",
-				Collections.singletonList(wEdit))
+				List.of(wEdit))
 			)
 		));
 		final var editor = (AbstractTextEditor)TestUtils.openEditor(f);
@@ -140,12 +141,12 @@ public class CodeActionTests extends AbstractTestWithProject {
 		IFile f = TestUtils.createUniqueTestFile(project, "error");
 
 		final var tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
-		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
-		MockLanguageServer.INSTANCE.setCodeActions(Collections
-				.singletonList(Either.forLeft(new Command(
+		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), List.of(tEdit)));
+		MockLanguageServer.INSTANCE.setCodeActions(List
+				.of(Either.forLeft(new Command(
 				"fixme",
 				"edit",
-				Collections.singletonList(wEdit))
+				List.of(wEdit))
 			)
 		));
 		MockLanguageServer.INSTANCE.setTimeToProceedQueries(1000);
@@ -171,11 +172,11 @@ public class CodeActionTests extends AbstractTestWithProject {
 		IFile f = TestUtils.createUniqueTestFile(project, "error");
 
 		final var tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
-		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
+		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), List.of(tEdit)));
 		final var codeAction = new CodeAction("fixme");
 		codeAction.setEdit(wEdit);
-		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
-		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
+		MockLanguageServer.INSTANCE.setCodeActions(List.of(Either.forRight(codeAction)));
+		MockLanguageServer.INSTANCE.setDiagnostics(List.of(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		final var editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		IMarker m = assertDiagnostics(f, "error", "fixme");
@@ -193,11 +194,11 @@ public class CodeActionTests extends AbstractTestWithProject {
 		});
 
 		final var tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
-		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
+		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), List.of(tEdit)));
 		final var codeAction = new CodeAction("fixme");
 		codeAction.setEdit(wEdit);
-		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
-		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
+		MockLanguageServer.INSTANCE.setCodeActions(List.of(Either.forRight(codeAction)));
+		MockLanguageServer.INSTANCE.setDiagnostics(List.of(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		TestUtils.openEditor(f);
 		assertDiagnostics(f, "error", "fixme", false);
@@ -208,11 +209,11 @@ public class CodeActionTests extends AbstractTestWithProject {
 		IFile f = TestUtils.createUniqueTestFile(project, "error");
 
 		final var tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
-		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), Collections.singletonList(tEdit)));
+		final var wEdit = new WorkspaceEdit(Collections.singletonMap(f.getLocationURI().toString(), List.of(tEdit)));
 		final var codeAction = new CodeAction("fixme");
-		codeAction.setCommand(new Command("editCommand", "mockEditCommand", Collections.singletonList(wEdit)));
-		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
-		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
+		codeAction.setCommand(new Command("editCommand", "mockEditCommand", List.of(wEdit)));
+		MockLanguageServer.INSTANCE.setCodeActions(List.of(Either.forRight(codeAction)));
+		MockLanguageServer.INSTANCE.setDiagnostics(List.of(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 		final var editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		IMarker m = assertDiagnostics(f, "error", "fixme");
@@ -227,11 +228,11 @@ public class CodeActionTests extends AbstractTestWithProject {
 		// create a diagnostic on the sourceFile with a code action
 		// that changes the targetFile
 		final var tEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 5)), "fixed");
-		final var wEdit = new WorkspaceEdit(Collections.singletonMap(targetFile.getLocationURI().toString(), Collections.singletonList(tEdit)));
+		final var wEdit = new WorkspaceEdit(Collections.singletonMap(targetFile.getLocationURI().toString(), List.of(tEdit)));
 		final var codeAction = new CodeAction("fixme");
-		codeAction.setCommand(new Command("editCommand", "mockEditCommand", Collections.singletonList(wEdit)));
-		MockLanguageServer.INSTANCE.setCodeActions(Collections.singletonList(Either.forRight(codeAction)));
-		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
+		codeAction.setCommand(new Command("editCommand", "mockEditCommand", List.of(wEdit)));
+		MockLanguageServer.INSTANCE.setCodeActions(List.of(Either.forRight(codeAction)));
+		MockLanguageServer.INSTANCE.setDiagnostics(List.of(
 				new Diagnostic(new Range(new Position(0, 0), new Position(0, 5)), "error", DiagnosticSeverity.Error, null)));
 
 		TestUtils.openEditor(sourceFile);

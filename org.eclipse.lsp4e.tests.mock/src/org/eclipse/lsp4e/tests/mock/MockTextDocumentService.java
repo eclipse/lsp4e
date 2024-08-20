@@ -125,8 +125,8 @@ public class MockTextDocumentService implements TextDocumentService {
 		// Some default values for mocks, can be overriden
 		final var item = new CompletionItem();
 		item.setLabel("Mock completion item");
-		mockCompletionList = new CompletionList(false, Collections.singletonList(item));
-		mockHover = new Hover(Collections.singletonList(Either.forLeft("Mock hover")), null);
+		mockCompletionList = new CompletionList(false, List.of(item));
+		mockHover = new Hover(List.of(Either.forLeft("Mock hover")), null);
 		mockPrepareRenameResult = Either3
 				.forSecond(new PrepareRenameResult(new Range(new Position(0, 0), new Position(0, 0)), "placeholder"));
 		this.documentSymbols = Collections.emptyList();
@@ -208,7 +208,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		}
 		File file = new File(URI.create(params.getTextDocument().getUri()));
 		if (file.exists() && file.length() > 100) {
-			return CompletableFuture.completedFuture(Collections.singletonList(new CodeLens(
+			return CompletableFuture.completedFuture(List.of(new CodeLens(
 					new Range(new Position(1, 0), new Position(1, 1)), new Command("Hi, I'm a CodeLens", null), null)));
 		}
 		return CompletableFuture.completedFuture(Collections.emptyList());
