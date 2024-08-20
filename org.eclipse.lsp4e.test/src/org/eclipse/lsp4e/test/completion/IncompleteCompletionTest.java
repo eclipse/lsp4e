@@ -18,7 +18,6 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.filesystem.EFS;
@@ -466,14 +465,13 @@ public class IncompleteCompletionTest extends AbstractCompletionTest {
 	@Test
 	public void testItemOrdering() throws Exception {
 		final var range = new Range(new Position(0, 0), new Position(0, 1));
-		List<CompletionItem> items = Arrays.asList(new CompletionItem[] {
-			createCompletionItem("AA", CompletionItemKind.Class, range),
-			createCompletionItem("AB", CompletionItemKind.Class, range),
-			createCompletionItem("BA", CompletionItemKind.Class, range),
-			createCompletionItem("BB", CompletionItemKind.Class, range),
-			createCompletionItem("CB", CompletionItemKind.Class, range),
-			createCompletionItem("CC", CompletionItemKind.Class, range),
-		});
+		List<CompletionItem> items = List.of( //
+				createCompletionItem("AA", CompletionItemKind.Class, range),
+				createCompletionItem("AB", CompletionItemKind.Class, range),
+				createCompletionItem("BA", CompletionItemKind.Class, range),
+				createCompletionItem("BB", CompletionItemKind.Class, range),
+				createCompletionItem("CB", CompletionItemKind.Class, range),
+				createCompletionItem("CC", CompletionItemKind.Class, range));
 		MockLanguageServer.INSTANCE.setCompletionList(new CompletionList(true, items));
 
 		final var content = "B";

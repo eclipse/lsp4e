@@ -10,7 +10,6 @@ package org.eclipse.lsp4e.test.semanticTokens;
 
 import static org.junit.Assert.*;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
@@ -36,8 +35,8 @@ public class SemanticHighlightReconcilerStrategyTest extends AbstractTestWithPro
 		shell = new Shell();
 
 		// Setup Server Capabilities
-		List<String> tokenTypes = Arrays.asList("keyword");
-		List<String> tokenModifiers = Arrays.asList("obsolete");
+		List<String> tokenTypes = List.of("keyword");
+		List<String> tokenModifiers = List.of("obsolete");
 		SemanticTokensTestUtil.setSemanticTokensLegend(tokenTypes, tokenModifiers);
 	}
 

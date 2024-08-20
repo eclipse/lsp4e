@@ -15,6 +15,7 @@ package org.eclipse.lsp4e.test.operations.inlayhint;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
@@ -52,7 +53,7 @@ public class LSPLineContentCodeMiningTest extends AbstractTestWithProject {
 		Command command = inlay.getLabel().getRight().get(0).getCommand();
 		final var jsonObject = new JsonObject();
 		jsonObject.addProperty("bar", 42);
-		command.setArguments(Arrays.asList(new JsonPrimitive("Foo"), jsonObject));
+		command.setArguments(List.of(new JsonPrimitive("Foo"), jsonObject));
 
 		// Setup test data
 		IFile file = TestUtils.createUniqueTestFile(project, "lspt", "test content");

@@ -106,7 +106,7 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 	public List<IContextInformation> computeContextInformation(ContentAssistInvocationContext context,
 			IProgressMonitor monitor) {
 		IContextInformation[] contextInformation = lsContentAssistProcessor.computeContextInformation(context.getViewer(), context.getInvocationOffset());
-		return Arrays.asList(contextInformation);
+		return List.of(contextInformation);
 	}
 
 	@Override

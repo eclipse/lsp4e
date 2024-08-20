@@ -12,7 +12,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.internal;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.lsp4j.CodeActionCapabilities;
@@ -65,7 +64,7 @@ public class SupportedFeatures {
 	public static TextDocumentClientCapabilities getTextDocumentClientCapabilities() {
 		final var textDocumentClientCapabilities = new TextDocumentClientCapabilities();
 		final var codeAction = new CodeActionCapabilities(new CodeActionLiteralSupportCapabilities(
-				new CodeActionKindCapabilities(Arrays.asList(CodeActionKind.QuickFix, CodeActionKind.Refactor,
+				new CodeActionKindCapabilities(List.of(CodeActionKind.QuickFix, CodeActionKind.Refactor,
 						CodeActionKind.RefactorExtract, CodeActionKind.RefactorInline,
 						CodeActionKind.RefactorRewrite, CodeActionKind.Source,
 						CodeActionKind.SourceOrganizeImports))),
@@ -79,7 +78,7 @@ public class SupportedFeatures {
 		textDocumentClientCapabilities.setPublishDiagnostics(new PublishDiagnosticsCapabilities());
 		final var completionItemCapabilities = new CompletionItemCapabilities(Boolean.TRUE);
 		completionItemCapabilities
-				.setDocumentationFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
+				.setDocumentationFormat(List.of(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
 		completionItemCapabilities.setInsertTextModeSupport(new CompletionItemInsertTextModeSupportCapabilities(List.of(InsertTextMode.AsIs, InsertTextMode.AdjustIndentation)));
 		completionItemCapabilities.setResolveSupport(new CompletionItemResolveSupportCapabilities(List.of("documentation", "detail", "additionalTextEdits"))); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		final var completionCapabilities = new CompletionCapabilities(completionItemCapabilities);
@@ -99,7 +98,7 @@ public class SupportedFeatures {
 		textDocumentClientCapabilities.setDocumentLink(new DocumentLinkCapabilities());
 		final var documentSymbol = new DocumentSymbolCapabilities();
 		documentSymbol.setHierarchicalDocumentSymbolSupport(true);
-		documentSymbol.setSymbolKind(new SymbolKindCapabilities(Arrays.asList(SymbolKind.Array,
+		documentSymbol.setSymbolKind(new SymbolKindCapabilities(List.of(SymbolKind.Array,
 				SymbolKind.Boolean, SymbolKind.Class, SymbolKind.Constant, SymbolKind.Constructor,
 				SymbolKind.Enum, SymbolKind.EnumMember, SymbolKind.Event, SymbolKind.Field, SymbolKind.File,
 				SymbolKind.Function, SymbolKind.Interface, SymbolKind.Key, SymbolKind.Method, SymbolKind.Module,
@@ -110,7 +109,7 @@ public class SupportedFeatures {
 		textDocumentClientCapabilities.setFoldingRange(new FoldingRangeCapabilities());
 		textDocumentClientCapabilities.setFormatting(new FormattingCapabilities(Boolean.TRUE));
 		final var hoverCapabilities = new HoverCapabilities();
-		hoverCapabilities.setContentFormat(Arrays.asList(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
+		hoverCapabilities.setContentFormat(List.of(MarkupKind.MARKDOWN, MarkupKind.PLAINTEXT));
 		textDocumentClientCapabilities.setHover(hoverCapabilities);
 		textDocumentClientCapabilities.setOnTypeFormatting(null); // TODO
 		textDocumentClientCapabilities.setRangeFormatting(new RangeFormattingCapabilities());
@@ -135,7 +134,7 @@ public class SupportedFeatures {
 		workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);
 		final var editCapabilities = new WorkspaceEditCapabilities();
 		editCapabilities.setDocumentChanges(Boolean.TRUE);
-		editCapabilities.setResourceOperations(Arrays.asList(ResourceOperationKind.Create,
+		editCapabilities.setResourceOperations(List.of(ResourceOperationKind.Create,
 				ResourceOperationKind.Delete, ResourceOperationKind.Rename));
 		editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
 		editCapabilities.setChangeAnnotationSupport(new WorkspaceEditChangeAnnotationSupportCapabilities(true));

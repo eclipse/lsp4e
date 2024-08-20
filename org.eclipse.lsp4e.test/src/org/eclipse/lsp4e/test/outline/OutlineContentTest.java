@@ -72,7 +72,7 @@ public class OutlineContentTest extends AbstractTestWithProject {
 
 		// wait for tree to render
 		waitForAndAssertCondition(5_000, tree.getDisplay(), //
-				() -> Arrays.asList(symbolCow) //
+				() -> List.of(symbolCow) //
 						.equals(Arrays.stream(tree.getItems())
 								.map(e -> ((DocumentSymbolWithURI) e.getData()).symbol)
 								.toList()) //
@@ -112,7 +112,7 @@ public class OutlineContentTest extends AbstractTestWithProject {
 
 		// wait for tree to render
 		waitForAndAssertCondition(5_000, tree.getDisplay(), //
-				() -> Arrays.asList(symbolCow, symbolFox, symbolCat) //
+				() -> List.of(symbolCow, symbolFox, symbolCat) //
 						.equals(Arrays.stream(tree.getItems())
 								.map(e -> ((DocumentSymbolWithURI) e.getData()).symbol)
 								.toList()) //
@@ -123,7 +123,7 @@ public class OutlineContentTest extends AbstractTestWithProject {
 
 		// wait for tree being sorted
 		waitForAndAssertCondition(5_000, tree.getDisplay(), //
-				() -> Arrays.asList(symbolCat, symbolCow, symbolFox) //
+				() -> List.of(symbolCat, symbolCow, symbolFox) //
 						.equals(Arrays.stream(tree.getItems())
 								.map(e -> ((DocumentSymbolWithURI) e.getData()).symbol)
 								.toList()) //

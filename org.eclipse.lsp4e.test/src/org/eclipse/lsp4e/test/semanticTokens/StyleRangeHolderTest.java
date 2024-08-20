@@ -10,7 +10,6 @@ package org.eclipse.lsp4e.test.semanticTokens;
 
 import static org.junit.Assert.*;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jface.text.DocumentEvent;
@@ -25,7 +24,7 @@ import org.junit.Test;
 public class StyleRangeHolderTest extends AbstractTest {
 
 	private static final Color RED = new Color(255, 0, 0);
-	private List<StyleRange> originalStyleRanges = Arrays.asList(new StyleRange(0, 4, RED, null), new StyleRange(15, 4, RED, null), new StyleRange(24, 7, RED, null));
+	private List<StyleRange> originalStyleRanges = List.of(new StyleRange(0, 4, RED, null), new StyleRange(15, 4, RED, null), new StyleRange(24, 7, RED, null));
 
 	@Test
 	public void testAllDocumentRanges() {
