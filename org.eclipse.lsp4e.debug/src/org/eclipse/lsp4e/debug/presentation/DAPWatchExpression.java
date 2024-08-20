@@ -8,7 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.presentation;
 
-import static org.eclipse.lsp4e.debug.internal.NullSafetyHelper.*;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.debug.core.DebugException;
