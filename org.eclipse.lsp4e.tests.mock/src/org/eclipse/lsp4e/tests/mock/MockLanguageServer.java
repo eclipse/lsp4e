@@ -118,7 +118,8 @@ public final class MockLanguageServer implements LanguageServer {
 	 * @throws InterruptedException
 	 */
 	public static void main(String[] args) throws InterruptedException, ExecutionException {
-		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageServer.INSTANCE, System.in, System.out);
+		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageServer.INSTANCE, System.in,
+				System.out);
 		Future<?> f = l.startListening();
 		MockLanguageServer.INSTANCE.addRemoteProxy(l.getRemoteProxy());
 		f.get();
@@ -129,7 +130,13 @@ public final class MockLanguageServer implements LanguageServer {
 			try {
 				future.join();
 			} catch (CancellationException | CompletionException e) {
-				System.err.println("Error waiting for in flight requests prior to teardown: " + e.getMessage());
+				System.err.println("Error waiting for in flight requests prior to teardown: " //
+						+ e.getClass().getSimpleName() + " with message "
+						+ (e.getMessage() == null ? "<null>" : '"' + e.getMessage()) //
+						+ (e.getCause() instanceof Throwable cause //
+								? " caused by " + cause.getClass().getSimpleName() + " with message "
+										+ (cause.getMessage() == null ? "<null>" : '"' + cause.getMessage()) //
+								: ""));
 			}
 		});
 	}
@@ -169,8 +176,7 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setDocumentLinkProvider(new DocumentLinkOptions());
 		capabilities.setSignatureHelpProvider(new SignatureHelpOptions());
 		capabilities.setDocumentHighlightProvider(Boolean.TRUE);
-		capabilities
-				.setExecuteCommandProvider(new ExecuteCommandOptions(List.of(SUPPORTED_COMMAND_ID)));
+		capabilities.setExecuteCommandProvider(new ExecuteCommandOptions(List.of(SUPPORTED_COMMAND_ID)));
 		final var prepareRenameProvider = new RenameOptions();
 		prepareRenameProvider.setPrepareProvider(true);
 		Either<Boolean, RenameOptions> renameEither = Either.forRight(prepareRenameProvider);
@@ -214,7 +220,7 @@ public final class MockLanguageServer implements LanguageServer {
 		this.textDocumentService.setMockCodeLenses(codeLens);
 	}
 
-	public void setDefinition(List<? extends Location> definitionLocations){
+	public void setDefinition(List<? extends Location> definitionLocations) {
 		this.textDocumentService.setMockDefinitionLocations(definitionLocations);
 	}
 
