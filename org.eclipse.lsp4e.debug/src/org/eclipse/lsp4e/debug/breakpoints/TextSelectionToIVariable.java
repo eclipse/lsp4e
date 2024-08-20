@@ -29,6 +29,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.TextSelection;
+import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
 import org.eclipse.lsp4e.debug.debugmodel.DSPStackFrame;
@@ -121,7 +122,7 @@ public class TextSelectionToIVariable implements IAdapterFactory {
 			return false;
 
 		if (sourceLocator.getSourceElement(frame) instanceof String sourceElement) {
-			final var uri = DocumentUtils.toUri(document);
+			final var uri = LSPEclipseUtils.toUri(document);
 			if (uri == null)
 				return false;
 			return Objects.equals(uri.getPath(), sourceElement);

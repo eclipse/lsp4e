@@ -15,7 +15,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.debugmodel;
 
-import static org.eclipse.lsp4e.debug.internal.NullSafetyHelper.*;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
 
 import java.io.File;
 import java.io.IOException;

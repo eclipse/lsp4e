@@ -8,8 +8,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.launcher;
 
-import static org.eclipse.lsp4e.debug.internal.NullSafetyHelper.*;
-import static org.eclipse.swt.events.SelectionListener.*;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+import static org.eclipse.swt.events.SelectionListener.widgetSelectedAdapter;
 
 import java.util.Arrays;
 import java.util.Collections;

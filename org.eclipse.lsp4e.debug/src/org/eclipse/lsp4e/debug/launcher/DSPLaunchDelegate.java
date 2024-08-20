@@ -8,7 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.launcher;
 
-import static org.eclipse.lsp4e.debug.internal.NullSafetyHelper.*;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.io.IOException;
 import java.io.InputStream;
