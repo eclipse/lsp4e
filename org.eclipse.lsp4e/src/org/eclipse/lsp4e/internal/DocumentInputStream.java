@@ -9,11 +9,9 @@
  * Contributors:
  * Sebastian Thomschke - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e;
+package org.eclipse.lsp4e.internal;
 
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.lsp4e.internal.CharsInputStream;
-import org.eclipse.lsp4e.internal.DocumentUtil;
 
 public final class DocumentInputStream extends CharsInputStream {
 
