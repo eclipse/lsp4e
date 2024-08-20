@@ -72,7 +72,7 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 		int markerLineIndex = 0;
 		int markerCharStart = 0;
 		int markerCharEnd = 10;
-		Range range = new Range(
+		final var range = new Range(
 				new Position(markerLineIndex, markerCharStart),
 				new Position(markerLineIndex, markerCharEnd));
 		List<Diagnostic> diagnostics = List.of(
@@ -123,7 +123,7 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 		int markerLineIndex = 0;
 		int markerCharStart = 0;
 		int markerCharEnd = 10;
-		Range range = new Range(
+		final var range = new Range(
 				new Position(markerLineIndex, markerCharStart),
 				new Position(markerLineIndex, markerCharEnd));
 		List<Diagnostic> diagnostics = List.of(
@@ -131,7 +131,7 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 				createDiagnostic("2", "message2", range, DiagnosticSeverity.Warning, "source2"),
 				createDiagnostic("3", "message3", range, DiagnosticSeverity.Information, "source3"),
 				createDiagnostic("4", "message4", range, DiagnosticSeverity.Hint, "source4"));
-		PublishDiagnosticsParams diagnosticsParamsForFileDeletedInTheMeantime = new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics);
+		final var diagnosticsParamsForFileDeletedInTheMeantime = new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics);
 		Job.getJobManager().suspend();
 		diagnosticsToMarkers.accept(diagnosticsParamsForFileDeletedInTheMeantime);
 		waitForAndAssertCondition(1_000, () -> {
@@ -159,13 +159,13 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 		int markerLineIndex = 0;
 		int markerCharStart = 0;
 		int markerCharEnd = 10;
-		Range range = new Range(
+		final var range = new Range(
 				new Position(markerLineIndex, markerCharStart),
 				new Position(markerLineIndex, markerCharEnd));
 		List<Diagnostic> diagnostics = Collections.singletonList(
 				createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"));
-		PublishDiagnosticsParams diagnosticsParamsForFileDeletedInTheMeantime = new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics);
-		BlockingWorkspaceJob blockingWorkspaceJob = new BlockingWorkspaceJob("blockingJob");
+		final var diagnosticsParamsForFileDeletedInTheMeantime = new PublishDiagnosticsParams(file.getLocationURI().toString(), diagnostics);
+		final var blockingWorkspaceJob = new BlockingWorkspaceJob("blockingJob");
 		blockingWorkspaceJob.setRule(file.getWorkspace().getRuleFactory().markerRule(file));
 		blockingWorkspaceJob.schedule();
 		waitForAndAssertCondition(1_000, () -> {
@@ -190,8 +190,8 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 	public void testFileBuffersNotLeaked() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "Diagnostic Other Text");
 
-		Range range = new Range(new Position(0, 0), new Position(0, 10));
-		List<Diagnostic> diagnostics = new ArrayList<>();
+		final var range = new Range(new Position(0, 0), new Position(0, 10));
+		final var diagnostics = new ArrayList<Diagnostic>();
 		diagnostics.add(createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"));
 
 		IDocument existingDocument = LSPEclipseUtils.getExistingDocument(file);
@@ -209,10 +209,10 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 
 	@Test
 	public void testDiagnosticsRangeAfterDocument() throws CoreException {
-		String content = "Diagnostic Other Text";
+		final var content = "Diagnostic Other Text";
 		IFile file = TestUtils.createUniqueTestFile(project, content);
 
-		Range range = new Range(new Position(1, 0), new Position(1, 5));
+		final var range = new Range(new Position(1, 0), new Position(1, 5));
 		List<Diagnostic> diagnostics = Collections
 				.singletonList(createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1"));
 
@@ -241,9 +241,9 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 
 	@Test
 	public void testDiagnosticsFromVariousLS() throws Exception {
-		String content = "Diagnostic Other Text";
+		final var content = "Diagnostic Other Text";
 		IFile file = TestUtils.createUniqueTestFileMultiLS(project, content);
-		Range range = new Range(new Position(1, 0), new Position(1, 0));
+		final var range = new Range(new Position(1, 0), new Position(1, 0));
 		MockLanguageServer.INSTANCE.setDiagnostics(Collections.singletonList(
 				createDiagnostic("1", "message1", range, DiagnosticSeverity.Error, "source1")));
 		IMarker[] markers = file.findMarkers(LSPDiagnosticsToMarkers.LS_DIAGNOSTIC_MARKER_TYPE, true, IResource.DEPTH_ZERO);
@@ -261,8 +261,8 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 	public void testDiagnosticRedrawingCalls() throws CoreException {
 		IFile file = TestUtils.createUniqueTestFile(project, "Diagnostic Other Text\nDiagnostic Other Text");
 
-		final Range range1 = new Range(new Position(0, 0), new Position(0, 10));
-		final Range range2 = new Range(new Position(1, 0), new Position(1, 10));
+		final var range1 = new Range(new Position(0, 0), new Position(0, 10));
+		final var range2 = new Range(new Position(1, 0), new Position(1, 10));
 		final Diagnostic pos1Info1 = createDiagnostic("1", "message1", range1, DiagnosticSeverity.Error, "source1");
 		final Diagnostic pos1Info2 = createDiagnostic("2", "message2", range1, DiagnosticSeverity.Error, "source2");
 		final Diagnostic pos2Info2 = createDiagnostic("2", "message2", range2, DiagnosticSeverity.Error, "source2");
@@ -284,12 +284,12 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 		File file = TestUtils.createTempFile("testDiagnosticsOnExternalFile", ".lspt");
 		Font font = null;
 		try {
-			try (FileOutputStream out = new FileOutputStream(file);) {
+			try (var out = new FileOutputStream(file);) {
 				out.write('a');
 			}
 			ITextViewer viewer = LSPEclipseUtils.getTextViewer(IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI())));
 			StyledText widget = viewer.getTextWidget();
-			FontData biggerFont = new FontData(); // bigger font to keep color intact in some pixel (not altered by anti-aliasing)
+			final var biggerFont = new FontData(); // bigger font to keep color intact in some pixel (not altered by anti-aliasing)
 			biggerFont.setHeight(40);
 			biggerFont.setLocale(widget.getFont().getFontData()[0].getLocale());
 			biggerFont.setName(widget.getFont().getFontData()[0].getName());
@@ -331,7 +331,7 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 
 	private void confirmResourceChanges(IFile file, Diagnostic diagnostic, int expectedChanges) {
 		IWorkspace workspace = ResourcesPlugin.getWorkspace();
-		MarkerRedrawCountListener redrawCountListener = new MarkerRedrawCountListener();
+		final var redrawCountListener = new MarkerRedrawCountListener();
 		workspace.addResourceChangeListener(redrawCountListener);
 		try {
 			diagnosticsToMarkers.accept(new PublishDiagnosticsParams(file.getLocationURI().toString(),
@@ -357,7 +357,7 @@ public class DiagnosticsTest extends AbstractTestWithProject {
 
 	private Diagnostic createDiagnostic(String code, String message, Range range, DiagnosticSeverity severity,
 			String source) {
-		Diagnostic diagnostic = new Diagnostic();
+		final var diagnostic = new Diagnostic();
 		diagnostic.setCode(code);
 		diagnostic.setMessage(message);
 		diagnostic.setRange(range);

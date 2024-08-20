@@ -55,20 +55,20 @@ public class OutlineContentTest extends AbstractTestWithProject {
 			fileWriter.write("content\n does\n not\n matter\n but needs to cover the ranges described below");
 		}
 
-		DocumentSymbol symbolCow = new DocumentSymbol("cow", SymbolKind.Constant,
+		final var symbolCow = new DocumentSymbol("cow", SymbolKind.Constant,
 				new Range(new Position(0, 0), new Position(0, 2)),
 				new Range(new Position(0, 0), new Position(0, 2)));
 
 		MockLanguageServer.INSTANCE.setDocumentSymbols(symbolCow);
 
-		ITextEditor editor = (ITextEditor) TestUtils.openExternalFileInEditor(testFile);
+		final var editor = (ITextEditor) TestUtils.openExternalFileInEditor(testFile);
 
-		CNFOutlinePage outlinePage = (CNFOutlinePage) new EditorToOutlineAdapterFactory().getAdapter(editor, IContentOutlinePage.class);
-		Shell shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
+		final var outlinePage = (CNFOutlinePage) new EditorToOutlineAdapterFactory().getAdapter(editor, IContentOutlinePage.class);
+		final var shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
 		shell.setLayout(new FillLayout());
 		outlinePage.createControl(shell);
 		shell.open();
-		Tree tree = (Tree) outlinePage.getControl();
+		final var tree = (Tree) outlinePage.getControl();
 
 		// wait for tree to render
 		waitForAndAssertCondition(5_000, tree.getDisplay(), //
@@ -82,15 +82,15 @@ public class OutlineContentTest extends AbstractTestWithProject {
 	}
 
 	@Test
-	public void testOutlineSorting() throws CoreException, IOException {
+	public void testOutlineSorting() throws CoreException {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "content\n does\n not\n matter\n but needs to cover the ranges described below");
-		DocumentSymbol symbolCow = new DocumentSymbol("cow", SymbolKind.Constant,
+		final var symbolCow = new DocumentSymbol("cow", SymbolKind.Constant,
 				new Range(new Position(0, 0), new Position(0, 2)),
 				new Range(new Position(0, 0), new Position(0, 2)));
-		DocumentSymbol symbolFox = new DocumentSymbol("fox", SymbolKind.Constant,
+		final var symbolFox = new DocumentSymbol("fox", SymbolKind.Constant,
 				new Range(new Position(1, 0), new Position(1, 2)),
 				new Range(new Position(1, 0), new Position(1, 2)));
-		DocumentSymbol symbolCat = new DocumentSymbol("cat", SymbolKind.Constant,
+		final var symbolCat = new DocumentSymbol("cat", SymbolKind.Constant,
 				new Range(new Position(2, 0), new Position(2, 2)),
 				new Range(new Position(2, 0), new Position(2, 2)));
 
@@ -100,15 +100,15 @@ public class OutlineContentTest extends AbstractTestWithProject {
 		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID);
 		prefs.putBoolean(CNFOutlinePage.SORT_OUTLINE_PREFERENCE, false);
 
-		ITextEditor editor = (ITextEditor) TestUtils.openEditor(testFile);
+		final var editor = (ITextEditor) TestUtils.openEditor(testFile);
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, request -> true).iterator().next();
 
-		CNFOutlinePage outlinePage = new CNFOutlinePage(wrapper, editor);
-		Shell shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
+		final var outlinePage = new CNFOutlinePage(wrapper, editor);
+		final var shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
 		shell.setLayout(new FillLayout());
 		outlinePage.createControl(shell);
 		shell.open();
-		Tree tree = (Tree) outlinePage.getControl();
+		final var tree = (Tree) outlinePage.getControl();
 
 		// wait for tree to render
 		waitForAndAssertCondition(5_000, tree.getDisplay(), //
@@ -133,7 +133,7 @@ public class OutlineContentTest extends AbstractTestWithProject {
 	}
 
 	@Test
-	public void testNodeRemainExpandedUponSelection() throws CoreException, IOException {
+	public void testNodeRemainExpandedUponSelection() throws CoreException {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "a(b())");
 		MockLanguageServer.INSTANCE.setDocumentSymbols(
 				new DocumentSymbol("a", SymbolKind.Constant, new Range(new Position(0, 0), new Position(0, 6)),
@@ -141,11 +141,11 @@ public class OutlineContentTest extends AbstractTestWithProject {
 						Collections.singletonList(new DocumentSymbol("b", SymbolKind.Constant,
 								new Range(new Position(0, 2), new Position(0, 5)),
 								new Range(new Position(0, 2), new Position(0, 3))))));
-		ITextEditor editor = (ITextEditor) TestUtils.openEditor(testFile);
+		final var editor = (ITextEditor) TestUtils.openEditor(testFile);
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, request -> true).iterator().next();
 
-		CNFOutlinePage outlinePage = new CNFOutlinePage(wrapper, editor);
-		Shell shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
+		final var outlinePage = new CNFOutlinePage(wrapper, editor);
+		final var shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
 		shell.setLayout(new FillLayout());
 		outlinePage.createControl(shell);
 		shell.open();
@@ -168,7 +168,7 @@ public class OutlineContentTest extends AbstractTestWithProject {
 	}
 
 	@Test
-	public void testNodeRemainExpandedUponModification() throws CoreException, BadLocationException, IOException {
+	public void testNodeRemainExpandedUponModification() throws CoreException, BadLocationException {
 		IFile testFile = TestUtils.createUniqueTestFile(project, "a(b())");
 		MockLanguageServer.INSTANCE.setDocumentSymbols(
 				new DocumentSymbol("a", SymbolKind.Constant, new Range(new Position(0, 0), new Position(0, 6)),
@@ -176,15 +176,15 @@ public class OutlineContentTest extends AbstractTestWithProject {
 						Collections.singletonList(new DocumentSymbol("b", SymbolKind.Constant,
 								new Range(new Position(0, 2), new Position(0, 5)),
 								new Range(new Position(0, 2), new Position(0, 3))))));
-		ITextEditor editor = (ITextEditor) TestUtils.openEditor(testFile);
+		final var editor = (ITextEditor) TestUtils.openEditor(testFile);
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(testFile, request -> true).iterator().next();
 
-		CNFOutlinePage outlinePage = new CNFOutlinePage(wrapper, editor);
-		Shell shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
+		final var outlinePage = new CNFOutlinePage(wrapper, editor);
+		final var shell = new Shell(editor.getEditorSite().getWorkbenchWindow().getShell());
 		shell.setLayout(new FillLayout());
 		outlinePage.createControl(shell);
 		shell.open();
-		Tree tree = (Tree) outlinePage.getControl();
+		final var tree = (Tree) outlinePage.getControl();
 		DisplayHelper.sleep(tree.getDisplay(), 500);
 
 		editor.getSelectionProvider().setSelection(new TextSelection(4, 0));

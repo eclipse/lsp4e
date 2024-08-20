@@ -240,7 +240,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 			}
 		}
 		try {
-			StackTraceArguments arguments = new StackTraceArguments();
+			final var arguments = new StackTraceArguments();
 			arguments.setThreadId(id);
 			// TODO implement paging to get rest of frames
 			arguments.setStartFrame(0);

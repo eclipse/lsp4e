@@ -502,7 +502,7 @@ public class LSCompletionProposal
 			}
 			insertionOffset = computeNewOffset(item.getAdditionalTextEdits(), insertionOffset, document);
 			if (item.getInsertTextFormat() == InsertTextFormat.Snippet) {
-				var completionSnippetParser = new CompletionSnippetParser(document, insertText, insertionOffset, this::getVariableValue);
+				final var completionSnippetParser = new CompletionSnippetParser(document, insertText, insertionOffset, this::getVariableValue);
 				insertText = completionSnippetParser.parse();
 				regions = completionSnippetParser.getLinkedPositions();
 				if (!regions.isEmpty() && firstPosition == null) {

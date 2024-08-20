@@ -155,9 +155,9 @@ public final class MockLanguageServer implements LanguageServer {
 	}
 
 	public static ServerCapabilities defaultServerCapabilities() {
-		ServerCapabilities capabilities = new ServerCapabilities();
+		final var capabilities = new ServerCapabilities();
 		capabilities.setTextDocumentSync(TextDocumentSyncKind.Full);
-		CompletionOptions completionProvider = new CompletionOptions(false, null);
+		final var completionProvider = new CompletionOptions(false, null);
 		capabilities.setCompletionProvider(completionProvider);
 		capabilities.setHoverProvider(true);
 		capabilities.setDefinitionProvider(true);
@@ -171,7 +171,7 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setDocumentHighlightProvider(Boolean.TRUE);
 		capabilities
 				.setExecuteCommandProvider(new ExecuteCommandOptions(Collections.singletonList(SUPPORTED_COMMAND_ID)));
-		RenameOptions prepareRenameProvider = new RenameOptions();
+		final var prepareRenameProvider = new RenameOptions();
 		prepareRenameProvider.setPrepareProvider(true);
 		Either<Boolean, RenameOptions> renameEither = Either.forRight(prepareRenameProvider);
 		capabilities.setRenameProvider(renameEither);
@@ -259,7 +259,7 @@ public final class MockLanguageServer implements LanguageServer {
 	}
 
 	public void setWillSaveWaitUntil(List<TextEdit> edits) {
-		TextDocumentSyncOptions textDocumentSyncOptions = new TextDocumentSyncOptions();
+	   final var textDocumentSyncOptions = new TextDocumentSyncOptions();
 		textDocumentSyncOptions.setWillSaveWaitUntil(true);
 		textDocumentSyncOptions.setSave(true);
 		textDocumentSyncOptions.setChange(TextDocumentSyncKind.Full);

@@ -122,7 +122,7 @@ public class HighlightTest extends AbstractTestWithProject{
 				))));
 
 		// Open the first viewer
-		final ISourceViewer viewer1 = (ISourceViewer) TestUtils.openTextViewer(testFile);
+		final var viewer1 = (ISourceViewer) TestUtils.openTextViewer(testFile);
 		final var annotationModel1 = viewer1.getAnnotationModel();
 
 		// Set the caret offset to activate the first set of highlights
@@ -140,7 +140,7 @@ public class HighlightTest extends AbstractTestWithProject{
 		ISourceViewer viewer2 = null;
 		IEditorReference editorToClose = null;
 		for (IEditorReference editorReference : editorReferences) {
-			ISourceViewer viewer = (ISourceViewer) LSPEclipseUtils.getTextViewer(editorReference.getEditor(false));
+			final var viewer = (ISourceViewer) LSPEclipseUtils.getTextViewer(editorReference.getEditor(false));
 			if (viewer != viewer1) {
 				editorToClose = editorReference;
 				viewer2 = viewer;

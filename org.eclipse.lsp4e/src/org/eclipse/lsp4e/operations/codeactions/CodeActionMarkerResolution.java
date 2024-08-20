@@ -116,8 +116,8 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 	}
 
 	private ShowMessageRequestParams reportServerError(LanguageServerDefinition serverDefinition, Throwable t) {
-		ShowMessageRequestParams params = new ShowMessageRequestParams();
-		String title = "Error Executing Quick Fix"; //$NON-NLS-1$
+		final var params = new ShowMessageRequestParams();
+		final var title = "Error Executing Quick Fix"; //$NON-NLS-1$
 		params.setType(MessageType.Error);
 		params.setMessage("Failed to fetch quick fix edit for '" //$NON-NLS-1$
 				+ codeAction.getTitle()

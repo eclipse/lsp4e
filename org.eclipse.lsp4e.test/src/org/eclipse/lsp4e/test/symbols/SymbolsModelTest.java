@@ -11,13 +11,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.symbols;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import org.eclipse.lsp4e.outline.SymbolsModel;
 import org.eclipse.lsp4e.test.utils.AbstractTest;
@@ -34,8 +31,8 @@ public class SymbolsModelTest extends AbstractTest {
 
 	@Test
 	public void test() {
-		List<SymbolInformation> items = new ArrayList<>();
-		Range range = new Range(new Position(0, 0), new Position(10, 0));
+		final var items = new ArrayList<SymbolInformation>();
+		var range = new Range(new Position(0, 0), new Position(10, 0));
 		items.add(createSymbolInformation("Namespace", SymbolKind.Namespace, range));
 
 		range = new Range(new Position(1, 0), new Position(9, 0));
@@ -44,8 +41,8 @@ public class SymbolsModelTest extends AbstractTest {
 		range = new Range(new Position(2, 0), new Position(8, 0));
 		items.add(createSymbolInformation("Method", SymbolKind.Method, range));
 
-		SymbolsModel symbolsModel = new SymbolsModel();
-		List<Either<SymbolInformation, DocumentSymbol>> eitherItems = new ArrayList<>(items.size());
+		final var symbolsModel = new SymbolsModel();
+		final var eitherItems = new ArrayList<Either<SymbolInformation, DocumentSymbol>>(items.size());
 		items.forEach(item -> eitherItems.add(Either.forLeft(item)));
 		symbolsModel.update(eitherItems);
 
@@ -70,8 +67,8 @@ public class SymbolsModelTest extends AbstractTest {
 	 */
 	@Test
 	public void testSymbolsMatchingStartingPositions() {
-		List<SymbolInformation> items = new ArrayList<>();
-		Range range = new Range(new Position(0, 0), new Position(10, 0));
+		final var items = new ArrayList<SymbolInformation>();
+		var range = new Range(new Position(0, 0), new Position(10, 0));
 		items.add(createSymbolInformation("Namespace", SymbolKind.Namespace, range));
 
 		range = new Range(new Position(0, 0), new Position(9, 0));
@@ -80,8 +77,8 @@ public class SymbolsModelTest extends AbstractTest {
 		range = new Range(new Position(1, 0), new Position(8, 0));
 		items.add(createSymbolInformation("Method", SymbolKind.Method, range));
 
-		SymbolsModel symbolsModel = new SymbolsModel();
-		List<Either<SymbolInformation, DocumentSymbol>> eitherItems = new ArrayList<>(items.size());
+		final var symbolsModel = new SymbolsModel();
+		final var eitherItems = new ArrayList<Either<SymbolInformation, DocumentSymbol>>(items.size());
 		items.forEach(item -> eitherItems.add(Either.forLeft(item)));
 		symbolsModel.update(eitherItems);
 
@@ -107,13 +104,13 @@ public class SymbolsModelTest extends AbstractTest {
 	 */
 	@Test
 	public void testDuplicateSymbols() {
-		List<SymbolInformation> items = new ArrayList<>();
-		Range range = new Range(new Position(0, 0), new Position(0, 0));
+		final var items = new ArrayList<SymbolInformation>();
+		final var range = new Range(new Position(0, 0), new Position(0, 0));
 		items.add(createSymbolInformation("Duplicate", SymbolKind.Namespace, range));
 		items.add(createSymbolInformation("Duplicate", SymbolKind.Namespace, range));
 
-		SymbolsModel symbolsModel = new SymbolsModel();
-		List<Either<SymbolInformation, DocumentSymbol>> eitherItems = new ArrayList<>(items.size());
+		final var symbolsModel = new SymbolsModel();
+		final var eitherItems = new ArrayList<Either<SymbolInformation, DocumentSymbol>>(items.size());
 		items.forEach(item -> eitherItems.add(Either.forLeft(item)));
 		symbolsModel.update(eitherItems);
 
@@ -126,10 +123,10 @@ public class SymbolsModelTest extends AbstractTest {
 
 	@Test
 	public void testGetElementsEmptyResponse() {
-		List<SymbolInformation> items = new ArrayList<>();
+		final var items = new ArrayList<SymbolInformation>();
 
-		SymbolsModel symbolsModel = new SymbolsModel();
-		List<Either<SymbolInformation, DocumentSymbol>> eitherItems = new ArrayList<>(items.size());
+		final var symbolsModel = new SymbolsModel();
+		final var eitherItems = new ArrayList<Either<SymbolInformation, DocumentSymbol>>(items.size());
 		items.forEach(item -> eitherItems.add(Either.forLeft(item)));
 		symbolsModel.update(eitherItems);
 
@@ -138,7 +135,7 @@ public class SymbolsModelTest extends AbstractTest {
 
 	@Test
 	public void testGetElementsNullResponse() {
-		SymbolsModel symbolsModel = new SymbolsModel();
+		final var symbolsModel = new SymbolsModel();
 		symbolsModel.update(null);
 
 		assertEquals(0, symbolsModel.getElements().length);
@@ -146,7 +143,7 @@ public class SymbolsModelTest extends AbstractTest {
 
 	@Test
 	public void testGetParentEmptyResponse() {
-		SymbolsModel symbolsModel = new SymbolsModel();
+		final var symbolsModel = new SymbolsModel();
 		symbolsModel.update(Collections.emptyList());
 
 		assertEquals(null, symbolsModel.getParent(null));
@@ -154,14 +151,14 @@ public class SymbolsModelTest extends AbstractTest {
 
 	@Test
 	public void testGetParentNullResponse() {
-		SymbolsModel symbolsModel = new SymbolsModel();
+		final var symbolsModel = new SymbolsModel();
 		symbolsModel.update(null);
 
 		assertEquals(null, symbolsModel.getParent(null));
 	}
 
 	private SymbolInformation createSymbolInformation(String name, SymbolKind kind, Range range) {
-		SymbolInformation symbolInformation = new SymbolInformation();
+		final var symbolInformation = new SymbolInformation();
 		symbolInformation.setName(name);
 		symbolInformation.setKind(kind);
 		symbolInformation.setLocation(new Location("file://test", range));

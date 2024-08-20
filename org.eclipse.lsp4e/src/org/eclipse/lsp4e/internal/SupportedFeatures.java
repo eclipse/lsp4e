@@ -121,7 +121,7 @@ public class SupportedFeatures {
 		textDocumentClientCapabilities.setSignatureHelp(new SignatureHelpCapabilities());
 		textDocumentClientCapabilities
 				.setSynchronization(new SynchronizationCapabilities(Boolean.TRUE, Boolean.TRUE, Boolean.TRUE));
-		SelectionRangeCapabilities selectionRange = new SelectionRangeCapabilities();
+		final var selectionRange = new SelectionRangeCapabilities();
 		textDocumentClientCapabilities.setSelectionRange(selectionRange);
 		return textDocumentClientCapabilities;
 	}
@@ -133,14 +133,14 @@ public class SupportedFeatures {
 		workspaceClientCapabilities.setExecuteCommand(new ExecuteCommandCapabilities(Boolean.TRUE));
 		workspaceClientCapabilities.setSymbol(new SymbolCapabilities(Boolean.TRUE));
 		workspaceClientCapabilities.setWorkspaceFolders(Boolean.TRUE);
-		WorkspaceEditCapabilities editCapabilities = new WorkspaceEditCapabilities();
+		final var editCapabilities = new WorkspaceEditCapabilities();
 		editCapabilities.setDocumentChanges(Boolean.TRUE);
 		editCapabilities.setResourceOperations(Arrays.asList(ResourceOperationKind.Create,
 				ResourceOperationKind.Delete, ResourceOperationKind.Rename));
 		editCapabilities.setFailureHandling(FailureHandlingKind.Undo);
 		editCapabilities.setChangeAnnotationSupport(new WorkspaceEditChangeAnnotationSupportCapabilities(true));
 		workspaceClientCapabilities.setWorkspaceEdit(editCapabilities);
-		CodeLensWorkspaceCapabilities codeLensWorkspaceCapabilities = new CodeLensWorkspaceCapabilities(true);
+		final var codeLensWorkspaceCapabilities = new CodeLensWorkspaceCapabilities(true);
 		workspaceClientCapabilities.setCodeLens(codeLensWorkspaceCapabilities);
 		return workspaceClientCapabilities;
 	}

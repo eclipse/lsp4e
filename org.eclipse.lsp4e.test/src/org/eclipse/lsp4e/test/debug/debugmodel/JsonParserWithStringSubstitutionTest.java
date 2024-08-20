@@ -132,8 +132,8 @@ public class JsonParserWithStringSubstitutionTest extends AbstractTest {
 	 */
 	@Test(expected = IllegalStateException.class)
 	public void testThrowsIllegaStateException() throws IllegalStateException, CoreException {
-		String json = "[\"value1\", \"value2\", \"value3\"]";
-		JsonParserWithStringSubstitution jsonParser = new JsonParserWithStringSubstitution(new StringVariableManagerMock());
+		final var json = "[\"value1\", \"value2\", \"value3\"]";
+		final var jsonParser = new JsonParserWithStringSubstitution(new StringVariableManagerMock());
 		jsonParser.parseJsonObject(json);
 	}
 
@@ -146,9 +146,9 @@ public class JsonParserWithStringSubstitutionTest extends AbstractTest {
 	 */
 	@Test(expected = CoreException.class)
 	public void testThrowsCoreException() throws IllegalStateException, CoreException {
-		String json = "{\"key\":\"unknown_variable\"}";
-		StringVariableManagerMock stringVariableManager = new StringVariableManagerMock("Test", "Test");
-		JsonParserWithStringSubstitution jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
+		final var json = "{\"key\":\"unknown_variable\"}";
+		final var stringVariableManager = new StringVariableManagerMock("Test", "Test");
+		final var jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
 		jsonParser.parseJsonObject(json);
 	}
 
@@ -158,18 +158,18 @@ public class JsonParserWithStringSubstitutionTest extends AbstractTest {
 	@Test
 	public void testSubstituteVariableInJsonObject() throws IllegalStateException, CoreException {
 		// # SETUP #
-		String key = "key";
-		String variableReference = "variableReference";
-		String variableReplacement = "variableReplacement";
- 		String json = "{\"" + key + "\":\"" + variableReference + "\"}";
-		StringVariableManagerMock stringVariableManager = new StringVariableManagerMock(variableReference, variableReplacement);
-		JsonParserWithStringSubstitution jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
+		final var key = "key";
+		final var variableReference = "variableReference";
+		final var variableReplacement = "variableReplacement";
+		final var json = "{\"" + key + "\":\"" + variableReference + "\"}";
+		final var stringVariableManager = new StringVariableManagerMock(variableReference, variableReplacement);
+		final var jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
 
 		// # TEST #
 		Map<String, Object> parsedJson = jsonParser.parseJsonObject(json);
 
 		// # ASSERT #
-		String resultValue = (String) parsedJson.get(key);
+		final var resultValue = (String) parsedJson.get(key);
 		assertEquals(variableReplacement, resultValue);
 	}
 
@@ -179,20 +179,20 @@ public class JsonParserWithStringSubstitutionTest extends AbstractTest {
 	@Test
 	public void testSubstituteVariableInJsonObjectWithArray() throws IllegalStateException, CoreException {
 		// # SETUP #
-		String key = "key";
-		String variableReference = "variableReference";
-		String variableReplacement = "variableReplacement";
- 		String json = "{\"" + key + "\":[\"" + variableReference + "\"]}";
-		StringVariableManagerMock stringVariableManager = new StringVariableManagerMock(variableReference, variableReplacement);
-		JsonParserWithStringSubstitution jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
+		final var key = "key";
+		final var variableReference = "variableReference";
+		final var variableReplacement = "variableReplacement";
+		final var json = "{\"" + key + "\":[\"" + variableReference + "\"]}";
+		final var stringVariableManager = new StringVariableManagerMock(variableReference, variableReplacement);
+		final var jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
 
 		// # TEST #
 		Map<String, Object> parsedJson = jsonParser.parseJsonObject(json);
 
 		// # ASSERT #
 		@SuppressWarnings("unchecked")
-		ArrayList<Object> resultArray =  (ArrayList<Object>) parsedJson.get(key);
-		String resultValue = (String) resultArray.get(0);
+		final var resultArray =  (ArrayList<Object>) parsedJson.get(key);
+		final var resultValue = (String) resultArray.get(0);
 		assertEquals(variableReplacement, resultValue);
 	}
 
@@ -202,21 +202,21 @@ public class JsonParserWithStringSubstitutionTest extends AbstractTest {
 	@Test
 	public void testSubstituteVariableInJsonObjectInJsonObject() throws IllegalStateException, CoreException {
 		// # SETUP #
-		String key1 = "key1";
-		String key2 = "key2";
-		String variableReference = "variableReference";
-		String variableReplacement = "variableReplacement";
- 		String json = "{\"" + key1 + "\":{\"" + key2 + "\":\"" + variableReference + "\"}}";
-		StringVariableManagerMock stringVariableManager = new StringVariableManagerMock(variableReference, variableReplacement);
-		JsonParserWithStringSubstitution jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
+		final var key1 = "key1";
+		final var key2 = "key2";
+		final var variableReference = "variableReference";
+		final var variableReplacement = "variableReplacement";
+		final var json = "{\"" + key1 + "\":{\"" + key2 + "\":\"" + variableReference + "\"}}";
+ 		final var stringVariableManager = new StringVariableManagerMock(variableReference, variableReplacement);
+		final var jsonParser = new JsonParserWithStringSubstitution(stringVariableManager);
 
 		// # TEST #
 		Map<String, Object> parsedJson = jsonParser.parseJsonObject(json);
 
 		// # ASSERT #
 		@SuppressWarnings("unchecked")
-		Map<String, Object> secondObject =  (Map<String, Object>) parsedJson.get(key1);
-		String resultValue = (String) secondObject.get(key2);
+		final var secondObject =  (Map<String, Object>) parsedJson.get(key1);
+		final var resultValue = (String) secondObject.get(key2);
 		assertEquals(variableReplacement, resultValue);
 	}
 }

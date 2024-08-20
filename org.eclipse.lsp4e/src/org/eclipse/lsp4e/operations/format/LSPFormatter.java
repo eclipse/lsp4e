@@ -44,7 +44,7 @@ public class LSPFormatter {
 		}
 		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPFormatter::supportsFormatting);
 		FormattingOptions formatOptions = getFormatOptions();
-		TextDocumentIdentifier docId = new TextDocumentIdentifier(uri.toString());
+		final var docId = new TextDocumentIdentifier(uri.toString());
 
 		DocumentRangeFormattingParams rangeParams = getRangeFormattingParams(document, textSelection, formatOptions,
 				docId);
@@ -69,7 +69,7 @@ public class LSPFormatter {
 
 	public static DocumentFormattingParams getFullFormatParams(FormattingOptions formatOptions,
 			TextDocumentIdentifier docId) {
-		DocumentFormattingParams params = new DocumentFormattingParams();
+		final var params = new DocumentFormattingParams();
 		params.setTextDocument(docId);
 		params.setOptions(formatOptions);
 		return params;
@@ -77,7 +77,7 @@ public class LSPFormatter {
 
 	public static DocumentRangeFormattingParams getRangeFormattingParams(IDocument document, ITextSelection textSelection,
 			FormattingOptions formatOptions, TextDocumentIdentifier docId) throws BadLocationException {
-		DocumentRangeFormattingParams rangeParams = new DocumentRangeFormattingParams();
+		final var rangeParams = new DocumentRangeFormattingParams();
 		rangeParams.setTextDocument(docId);
 		rangeParams.setOptions(formatOptions);
 		boolean fullFormat = textSelection.getLength() == 0;

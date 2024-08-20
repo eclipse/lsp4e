@@ -331,8 +331,8 @@ public class TypeHierarchyView extends ViewPart {
 		return new FilteredTree(parent, SWT.BORDER, new PatternFilter(), true, false) {
 			@Override
 			protected Composite createFilterControls(Composite parent) {
-				Composite composite = new Composite(parent, SWT.NONE);
-				GridLayout layout = new GridLayout(2, false);
+				final var composite = new Composite(parent, SWT.NONE);
+				final var layout = new GridLayout(2, false);
 				layout.horizontalSpacing=0;
 				layout.marginWidth=0;
 				layout.marginHeight=0;
@@ -347,8 +347,8 @@ public class TypeHierarchyView extends ViewPart {
 			}
 
 			private void createToolBar(Composite composite) {
-				ToolBar toolbar = new ToolBar(composite, org.eclipse.jface.dialogs.PopupDialog.HOVER_SHELLSTYLE);
-				ToolItem hierchyModeItem = new ToolItem(toolbar, SWT.PUSH);
+				final var toolbar = new ToolBar(composite, org.eclipse.jface.dialogs.PopupDialog.HOVER_SHELLSTYLE);
+				final var hierchyModeItem = new ToolItem(toolbar, SWT.PUSH);
 				updateHierarchyModeItem(hierchyModeItem, contentProvider.showSuperTypes);
 
 				hierchyModeItem.addSelectionListener(new SelectionAdapter() {

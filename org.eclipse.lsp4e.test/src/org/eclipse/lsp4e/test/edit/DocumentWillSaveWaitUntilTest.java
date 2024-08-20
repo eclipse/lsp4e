@@ -36,7 +36,7 @@ import org.junit.Test;
 public class DocumentWillSaveWaitUntilTest extends AbstractTestWithProject {
 
 	private List<TextEdit> createSingleTextEditAtFileStart(String newText) {
-		TextEdit textEdit = new TextEdit();
+		final var textEdit = new TextEdit();
 		textEdit.setRange(new Range(new Position(0, 0), new Position(0, newText.length())));
 		textEdit.setNewText(newText);
 		return Collections.singletonList(textEdit);
@@ -44,8 +44,8 @@ public class DocumentWillSaveWaitUntilTest extends AbstractTestWithProject {
 
 	@Test
 	public void testSave() throws Exception {
-		String oldText = "Hello";
-		String newText = "hello";
+		final var oldText = "Hello";
+		final var newText = "hello";
 
 		MockLanguageServer.INSTANCE.setWillSaveWaitUntil(createSingleTextEditAtFileStart(newText));
 

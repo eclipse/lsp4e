@@ -123,7 +123,7 @@ public class MockTextDocumentService implements TextDocumentService {
 	public <U> MockTextDocumentService(Function<U, CompletableFuture<U>> futureFactory) {
 		this._futureFactory = futureFactory;
 		// Some default values for mocks, can be overriden
-		CompletionItem item = new CompletionItem();
+		final var item = new CompletionItem();
 		item.setLabel("Mock completion item");
 		mockCompletionList = new CompletionList(false, Collections.singletonList(item));
 		mockHover = new Hover(Collections.singletonList(Either.forLeft("Mock hover")), null);

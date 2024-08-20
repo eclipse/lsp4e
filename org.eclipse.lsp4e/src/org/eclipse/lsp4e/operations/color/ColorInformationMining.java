@@ -74,7 +74,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 			Rectangle location = Geometry.toDisplay(styledText, new Rectangle(event.x, event.y, 1, 1));
 			shell.setLocation(location.x, location.y);
 			// Open color dialog
-			ColorDialog dialog = new ColorDialog(shell);
+			final var dialog = new ColorDialog(shell);
 			dialog.setRGB(LSPEclipseUtils.toRGBA(colorInformation.getColor()).rgb);
 			RGB rgb = dialog.open();
 			if (rgb != null) {

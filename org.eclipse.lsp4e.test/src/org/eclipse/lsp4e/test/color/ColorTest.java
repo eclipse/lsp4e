@@ -58,9 +58,7 @@ public class ColorTest extends AbstractTestWithProject {
 	@Test
 	public void testColorProviderExternalFile() throws Exception {
 		File file = TestUtils.createTempFile("testColorProviderExternalFile", ".lspt");
-		try (
-			FileOutputStream out = new FileOutputStream(file);
-		) {
+		try (var out = new FileOutputStream(file)) {
 			out.write("\u2588\u2588\u2588\u2588\u2588".getBytes());
 		}
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI())));
@@ -75,8 +73,8 @@ public class ColorTest extends AbstractTestWithProject {
 		if (widget.getSize().x == 0) {
 			return false;
 		}
-		GC gc = new GC(widget);
-		Image image = new Image(widget.getDisplay(), widget.getSize().x, widget.getSize().y);
+		final var gc = new GC(widget);
+		final var image = new Image(widget.getDisplay(), widget.getSize().x, widget.getSize().y);
 		gc.copyArea(image, 0, 0);
 		gc.dispose();
 		ImageData imageData = image.getImageData();

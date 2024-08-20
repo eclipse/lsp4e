@@ -354,10 +354,10 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public CompletableFuture<Void> startDebugging(StartDebuggingRequestArguments args) {
-		Map<String, Object> parameters = new HashMap<>(/* dspParameters */);
+		final var parameters = new HashMap<String, Object>(/* dspParameters */);
 		parameters.putAll(args.getConfiguration());
 		try {
-			DSPDebugTarget newTarget = new DSPDebugTarget(launch, streamsSupplier, parameters);
+			final var newTarget = new DSPDebugTarget(launch, streamsSupplier, parameters);
 			launch.addDebugTarget(newTarget);
 			newTarget.initialize(new NullProgressMonitor());
 			debuggees.add(newTarget);

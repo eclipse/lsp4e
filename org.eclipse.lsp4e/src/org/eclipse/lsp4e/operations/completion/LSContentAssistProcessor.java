@@ -126,8 +126,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			return createErrorProposal(offset, e);
 		}
 
-		List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
-		AtomicBoolean anyIncomplete = new AtomicBoolean(false);
+		final var proposals = Collections.synchronizedList(new ArrayList<ICompletionProposal>());
+		final var anyIncomplete = new AtomicBoolean(false);
 		try {
 			// Cancel the previous LSP requests 'textDocument/completions' and
 			// completionLanguageServersFuture
@@ -136,7 +136,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			// Initialize a new cancel support to register:
 			// - LSP requests 'textDocument/completions'
 			// - completionLanguageServersFuture
-			CancellationSupport cancellationSupport = new CancellationSupport();
+			final var cancellationSupport = new CancellationSupport();
 			final var completionLanguageServersFuture = this.completionLanguageServersFuture = LanguageServers
 					.forDocument(document).withFilter(capabilities -> capabilities.getCompletionProvider() != null) //
 					.collectAll((w, ls) -> cancellationSupport.execute(ls.getTextDocumentService().completion(param)) //
@@ -379,7 +379,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		}
 		additionalTriggers.stream().filter(s -> !Strings.isNullOrEmpty(s)).map(triggerChar -> triggerChar.charAt(0))
 				.forEach(triggers::add);
-		char[] res = new char[triggers.size()];
+		final var res = new char[triggers.size()];
 		int i = 0;
 		for (Character c : triggers) {
 			res[i] = c;

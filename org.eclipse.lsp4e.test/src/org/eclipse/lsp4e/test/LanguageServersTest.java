@@ -65,7 +65,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 	@Test
 	public void testCollectAll() throws Exception {
-		final AtomicInteger hoverCount = new AtomicInteger();
+		final var hoverCount = new AtomicInteger();
 		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
 			@Override
 			public synchronized void didChange(DidChangeTextDocumentParams params) {
@@ -74,7 +74,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				return CompletableFuture.completedFuture(hoverResponse);
 			}
 		});
@@ -83,8 +83,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
-		final HoverParams params = new HoverParams();
-		final Position position = new Position();
+		final var params = new HoverParams();
+		final var position = new Position();
 		position.setCharacter(10);
 		position.setLine(0);
 		params.setPosition(position);
@@ -101,7 +101,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 	@Test
 	public void testCollectAllExcludesNulls() throws Exception {
-		final AtomicInteger hoverCount = new AtomicInteger();
+		final var hoverCount = new AtomicInteger();
 		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
 			@Override
 			public synchronized void didChange(DidChangeTextDocumentParams params) {
@@ -110,7 +110,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				return CompletableFuture.completedFuture(hoverCount.get() == 1 ? hoverResponse : null);
 			}
 		});
@@ -119,8 +119,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
-		final HoverParams params = new HoverParams();
-		final Position position = new Position();
+		final var params = new HoverParams();
+		final var position = new Position();
 		position.setCharacter(10);
 		position.setLine(0);
 		params.setPosition(position);
@@ -137,7 +137,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 	@Test
 	public void testComputeAll() throws Exception {
-		final AtomicInteger hoverCount = new AtomicInteger();
+		final var hoverCount = new AtomicInteger();
 		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
 			@Override
 			public synchronized void didChange(DidChangeTextDocumentParams params) {
@@ -146,7 +146,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				final int currentCount = hoverCount.get();
 				return CompletableFuture.completedFuture(hoverResponse).thenApplyAsync(t -> {
 					try {
@@ -163,8 +163,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
-		final HoverParams params = new HoverParams();
-		final Position position = new Position();
+		final var params = new HoverParams();
+		final var position = new Position();
 		position.setCharacter(10);
 		position.setLine(0);
 		params.setPosition(position);
@@ -197,15 +197,15 @@ public class LanguageServersTest extends AbstractTestWithProject {
 	public void testCollectAllUserCannotBlockListener() throws Exception {
 		// This test will only work if a minimum of two tasks can be run in the common pool without blocking!
 		Assume.assumeTrue("Test skipped as common thread pool does not have multiple executors", ForkJoinPool.commonPool().getParallelism() >= 2);
-		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "Here is some content");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
-		final HoverParams params = new HoverParams();
-		final Position position = new Position();
+		final var params = new HoverParams();
+		final var position = new Position();
 		position.setCharacter(10);
 		position.setLine(0);
 		params.setPosition(position);
@@ -242,8 +242,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 	@Test
 	public void testComputeFirst() throws Exception {
-		final AtomicInteger hoverCount = new AtomicInteger();
-		Vector<CompletableFuture<?>> internalResults = new Vector<>();
+		final var hoverCount = new AtomicInteger();
+		final var internalResults = new Vector<CompletableFuture<?>>();
 		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
 			@Override
 			public synchronized void didChange(DidChangeTextDocumentParams params) {
@@ -252,7 +252,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				final int currentCount = hoverCount.get();
 				CompletableFuture<Hover> result =  CompletableFuture.completedFuture(hoverResponse).thenApplyAsync(t -> {
 					try {
@@ -271,8 +271,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
-		final HoverParams params = new HoverParams();
-		final Position position = new Position();
+		final var params = new HoverParams();
+		final var position = new Position();
 		position.setCharacter(10);
 		position.setLine(0);
 		params.setPosition(position);
@@ -293,7 +293,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 	@Test
 	public void testComputeFirstSkipsEmptyResults() throws Exception {
-		final AtomicInteger hoverCount = new AtomicInteger();
+		final var hoverCount = new AtomicInteger();
 		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
 			@Override
 			public synchronized void didChange(DidChangeTextDocumentParams params) {
@@ -302,7 +302,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				if (hoverCount.get() == 1) {
 					return CompletableFuture.completedFuture(null);
 				}
@@ -321,8 +321,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
-		final HoverParams params = new HoverParams();
-		final Position position = new Position();
+		final var params = new HoverParams();
+		final var position = new Position();
 		position.setCharacter(10);
 		position.setLine(0);
 		params.setPosition(position);
@@ -356,8 +356,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
-		final HoverParams params = new HoverParams();
-		final Position position = new Position();
+		final var params = new HoverParams();
+		final var position = new Position();
 		position.setCharacter(10);
 		position.setLine(0);
 		params.setPosition(position);
@@ -372,7 +372,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 	@Test
 	public void testComputeFirstTreatsEmptyListAsNull() throws Exception {
-		final AtomicInteger hoverCount = new AtomicInteger();
+		final var hoverCount = new AtomicInteger();
 		MockLanguageServer.INSTANCE.setTextDocumentService(new MockTextDocumentService(MockLanguageServer.INSTANCE::buildMaybeDelayedFuture) {
 			@Override
 			public synchronized void didChange(DidChangeTextDocumentParams params) {
@@ -381,7 +381,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
+				final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent" + hoverCount.incrementAndGet())), new Range(new Position(0,  0), new Position(0, 10)));
 				if (hoverCount.get() == 1) {
 					return CompletableFuture.completedFuture(null);
 				}
@@ -400,8 +400,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
-		final HoverParams params = new HoverParams();
-		final Position position = new Position();
+		final var params = new HoverParams();
+		final var position = new Position();
 		position.setCharacter(10);
 		position.setLine(0);
 		params.setPosition(position);
@@ -449,7 +449,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 			}
 		});
 
-		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 		CompletableFuture<?> initial = CompletableFuture.completedFuture(null);
 
@@ -463,8 +463,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		for (int i = 0; i < 5000; i++) {
 			final int current = i + 1;
 			text.append(i + "\n");
-			final HoverParams params = new HoverParams();
-			final Position position = new Position();
+			final var params = new HoverParams();
+			final var position = new Position();
 
 			// encode the iteration number in a suitable numeric field on the hover request params, so the
 			// mock server can use it to verify the requests are indeed received in the correct order
@@ -479,7 +479,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		}
 
 		initial.join();
-		StringBuilder message = new StringBuilder();
+		final var message = new StringBuilder();
 		message.append("Too Early hover requests: "); message.append(tooEarlyHover.size());
 		message.append(System.lineSeparator());
 		tooEarlyHover.forEach(i -> {
@@ -503,7 +503,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 	 */
 	@Test
 	public void testBlockingServerDoesNotBlockUIThread() throws Exception {
-		final AtomicInteger uiDispatchCount = new AtomicInteger();
+		final var uiDispatchCount = new AtomicInteger();
 
 		MockLanguageServer.INSTANCE.getInitializeResult().getCapabilities()
 		.setTextDocumentSync(TextDocumentSyncKind.Incremental);
@@ -526,7 +526,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 			}
 		});
 
-		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 		CompletableFuture<?> initial = CompletableFuture.completedFuture(null);
 
@@ -538,7 +538,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 		final long startTime = System.currentTimeMillis();
 
-		final StringBuilder bulkyText = new StringBuilder();
+		final var bulkyText = new StringBuilder();
 
 		// Construct a reasonably bulky payload for the document updates: if the
 		// payload is small then buffering will mitigate any back-pressure from the server
@@ -552,8 +552,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		for (int i = 0; i < 10; i++) {
 			final int current = i + 1;
 			text.append(content + "\n");
-			final HoverParams params = new HoverParams();
-			final Position position = new Position();
+			final var params = new HoverParams();
+			final var position = new Position();
 			position.setCharacter(current);
 			position.setLine(0);
 			params.setPosition(position);
@@ -587,7 +587,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 	@Test
 	public void testNoMatchingServers() throws Exception {
-		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "");
@@ -598,8 +598,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 		assertFalse("Should not have been any valid LS", executor.anyMatching());
 
-		final HoverParams params = new HoverParams();
-		final Position position = new Position();
+		final var params = new HoverParams();
+		final var position = new Position();
 		position.setCharacter(10);
 		position.setLine(0);
 		params.setPosition(position);
@@ -627,7 +627,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 			@Override
 			public synchronized CompletableFuture<Hover> hover(HoverParams position) {
-				final CompletableFuture<Hover> result = new CompletableFuture<>();
+				final var result = new CompletableFuture<Hover>();
 				result.completeExceptionally(new IllegalStateException("No hovering here"));
 				return result;
 			}
@@ -637,8 +637,8 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
-		final HoverParams params = new HoverParams();
-		final Position position = new Position();
+		final var params = new HoverParams();
+		final var position = new Position();
 		position.setCharacter(10);
 		position.setLine(0);
 		params.setPosition(position);
@@ -657,15 +657,15 @@ public class LanguageServersTest extends AbstractTestWithProject {
 	 */
 	@Test
 	public void testWrapperWrapsSameLS() throws Exception {
-		Hover hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
+		final var hoverResponse = new Hover(Collections.singletonList(Either.forLeft("HoverContent")), new Range(new Position(0,  0), new Position(0, 10)));
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile testFile = TestUtils.createUniqueTestFileMultiLS(project, "Here is some content");
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		final IDocument document = viewer.getDocument();
 
-		final HoverParams params = new HoverParams();
-		final Position position = new Position();
+		final var params = new HoverParams();
+		final var position = new Position();
 		position.setCharacter(10);
 		position.setLine(0);
 		params.setPosition(position);
@@ -676,7 +676,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 
 		final List<Pair<LanguageServerWrapper, LanguageServer>> result = async.join();
 
-		final AtomicInteger matching = new AtomicInteger();
+		final var matching = new AtomicInteger();
 
 		assertEquals("Should have had two responses", 2, result.size());
 		assertNotEquals("LS should have been different proxies", result.get(0).second(), result.get(1).second());
@@ -708,7 +708,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		var editor1 = openEditor(testFile1);
 		var editor2 = openEditor(testFile2);
 
-		final AtomicInteger serverCounter = new AtomicInteger();
+		final var serverCounter = new AtomicInteger();
 
 		final List<String> serversForProject = LanguageServers.forProject(project).collectAll(ls -> CompletableFuture.completedFuture("Server" + serverCounter.incrementAndGet())).join();
 		assertTrue(serversForProject.contains("Server1"));

@@ -11,7 +11,6 @@ package org.eclipse.lsp4e.operations.references;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.ITreeContentProvider;
@@ -49,7 +48,7 @@ public class FileAndURIMatchContentProvider implements ITreeContentProvider {
 
 	@Override
 	public Object[] getElements(@Nullable Object inputElement) {
-		List<Object> res = new ArrayList<>();
+		final var res = new ArrayList<>();
 		res.addAll(Arrays.asList(delegate.getElements(inputElement == this.searchResult ? this.filteredFileSearchResult : inputElement)));
 		if (inputElement instanceof AbstractTextSearchResult searchResult) {
 			res.addAll(Arrays.stream(searchResult.getElements()).filter(URI.class::isInstance).toList());

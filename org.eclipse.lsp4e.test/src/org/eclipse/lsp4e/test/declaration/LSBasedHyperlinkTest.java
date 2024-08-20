@@ -33,17 +33,17 @@ public class LSBasedHyperlinkTest extends AbstractTestWithProject {
 
 	@Test
 	public void testHyperlinkLabelNoLocation() {
-		Location location = new Location();
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		final var location = new Location();
+		final var hyperlink = new LSBasedHyperlink(location, null, locationType);
 
 		assertEquals(locationType, hyperlink.getHyperlinkText());
 	}
 
 	@Test
 	public void testHyperlinkLabelForFileLocation() throws URISyntaxException {
-		Location location = new Location();
+		final var location = new Location();
 		location.setUri("file:///Users/someuser/testfile");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		final var hyperlink = new LSBasedHyperlink(location, null, locationType);
 
 		assertEquals("Open Declaration - testfile - " + Path.of(new URI(location.getUri())),
 				hyperlink.getHyperlinkText());
@@ -51,45 +51,45 @@ public class LSBasedHyperlinkTest extends AbstractTestWithProject {
 
 	@Test
 	public void testHyperlinkLabelForFileLocationLink() throws URISyntaxException {
-		LocationLink location = new LocationLink();
+		final var location = new LocationLink();
 		location.setTargetUri("file:///Users/someuser/testfile");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		final var hyperlink = new LSBasedHyperlink(location, null, locationType);
 
 		assertEquals("Open Declaration - testfile - " + Path.of(new URI(location.getTargetUri())), hyperlink.getHyperlinkText());
 	}
 
 	@Test
 	public void testHyperlinkLabelForIntroBasedLocationWithoutLabel() {
-		Location location = new Location();
+		final var location = new Location();
 		location.setUri("http://org.eclipse.ui.intro/execute?command=mycommand%28bindingKey%3DLorg%2Ftest%2Fmvctest%2FMyComponent%3B%2CprojectName%3Dmvctest%29");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		final var hyperlink = new LSBasedHyperlink(location, null, locationType);
 
 		assertEquals("Open Declaration", hyperlink.getHyperlinkText());
 	}
 
 	@Test
 	public void testHyperlinkLabelForIntroBasedLocationLinkWithLabel() {
-		LocationLink location = new LocationLink();
+		final var location = new LocationLink();
 		location.setTargetUri("http://org.eclipse.ui.intro/execute?command=org.springframework.tooling.ls.eclipse.commons.commands.OpenJavaElementInEditor%28bindingKey%3DLorg%2Ftest%2Fmvctest%2FMyComponent%3B%2CprojectName%3Dmvctest%29&label=MyComponent+-+org.test.mvctest");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		final var hyperlink = new LSBasedHyperlink(location, null, locationType);
 
 		assertEquals("Open Declaration - MyComponent - org.test.mvctest", hyperlink.getHyperlinkText());
 	}
 
 	@Test
 	public void testHyperlinkLabelForRandomURLLocation() {
-		Location location = new Location();
+		final var location = new Location();
 		location.setUri("http://eclipse.org");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		final var hyperlink = new LSBasedHyperlink(location, null, locationType);
 
 		assertEquals("Open Declaration - http://eclipse.org", hyperlink.getHyperlinkText());
 	}
 
 	@Test
 	public void testHyperlinkLabelForRandomURLLocationLink() {
-		LocationLink location = new LocationLink();
+		final var location = new LocationLink();
 		location.setTargetUri("http://eclipse.org");
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		final var hyperlink = new LSBasedHyperlink(location, null, locationType);
 
 		assertEquals("Open Declaration - http://eclipse.org", hyperlink.getHyperlinkText());
 	}
@@ -97,9 +97,9 @@ public class LSBasedHyperlinkTest extends AbstractTestWithProject {
 	@Test
 	public void testHyperlinkLabelForFileInProject() throws Exception {
 		IFile file = TestUtils.createFile(project, "my-test.txt", "Example Text");
-		LocationLink location = new LocationLink();
+		final var location = new LocationLink();
 		location.setTargetUri(LSPEclipseUtils.toUri(new File(file.getLocation().toOSString())).toASCIIString());
-		LSBasedHyperlink hyperlink = new LSBasedHyperlink(location, null, locationType);
+		final var hyperlink = new LSBasedHyperlink(location, null, locationType);
 
 		assertEquals("Open Declaration - my-test.txt - " + project.getName(), hyperlink.getHyperlinkText());
 	}

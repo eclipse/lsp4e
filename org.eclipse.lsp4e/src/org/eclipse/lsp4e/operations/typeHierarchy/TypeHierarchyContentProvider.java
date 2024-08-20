@@ -52,7 +52,7 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 					return new Object[0];
 				}
 				Position position = LSPEclipseUtils.toPosition(textSelection.getOffset(), document);
-				TypeHierarchyPrepareParams prepare = new TypeHierarchyPrepareParams(identifier, position);
+				final var prepare = new TypeHierarchyPrepareParams(identifier, position);
 				return LanguageServers.forDocument(document).withPreferredServer(lsDefinition)
 					.computeFirst((wrapper, ls) -> ls.getTextDocumentService().prepareTypeHierarchy(prepare).thenApply(items -> new SimpleEntry<>(wrapper, items)))
 					.thenApply(entry -> {

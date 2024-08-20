@@ -77,7 +77,7 @@ public class CallHierarchyView extends ViewPart {
 	 *            the offset into the document of the current selection.
 	 */
 	public void initialize(final IDocument document, final int offset) {
-		HierarchyViewInput viewInput = new HierarchyViewInput(document, offset);
+		final var viewInput = new HierarchyViewInput(document, offset);
 		treeViewer.setInput(viewInput);
 	}
 }

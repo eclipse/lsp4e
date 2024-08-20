@@ -97,9 +97,9 @@ public final class MockLanguageServerMultiRootFolders implements LanguageServer 
 	}
 
 	private void resetInitializeResult() {
-		ServerCapabilities capabilities = new ServerCapabilities();
+		final var capabilities = new ServerCapabilities();
 		capabilities.setTextDocumentSync(TextDocumentSyncKind.Full);
-		CompletionOptions completionProvider = new CompletionOptions(false, null);
+		final var completionProvider = new CompletionOptions(false, null);
 		capabilities.setCompletionProvider(completionProvider);
 		capabilities.setHoverProvider(true);
 		capabilities.setDefinitionProvider(true);
@@ -111,8 +111,8 @@ public final class MockLanguageServerMultiRootFolders implements LanguageServer 
 		capabilities.setSignatureHelpProvider(new SignatureHelpOptions());
 		capabilities.setDocumentHighlightProvider(Boolean.TRUE);
 
-		WorkspaceServerCapabilities workspace = new WorkspaceServerCapabilities();
-		WorkspaceFoldersOptions workspaceFolders = new WorkspaceFoldersOptions();
+		final var workspace = new WorkspaceServerCapabilities();
+		final var workspaceFolders = new WorkspaceFoldersOptions();
 		workspaceFolders.setSupported(Boolean.TRUE);
 
 		workspace.setWorkspaceFolders(workspaceFolders);

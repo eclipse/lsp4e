@@ -53,7 +53,7 @@ public class VariableReplacementTest extends AbstractCompletionTest {
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
 		MockLanguageServer.INSTANCE
 				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
-		String content = "line1\nline2\nline3";
+		final var content = "line1\nline2\nline3";
 		IFile testFile = TestUtils.createUniqueTestFile(project, content);
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		int invokeOffset = 0;
@@ -78,7 +78,7 @@ public class VariableReplacementTest extends AbstractCompletionTest {
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
 		MockLanguageServer.INSTANCE
 				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
-		String content = "line1\nline2\nline3";
+		final var content = "line1\nline2\nline3";
 		IFile testFile = TestUtils.createUniqueTestFile(project, content);
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		int invokeOffset = 0;
@@ -90,7 +90,7 @@ public class VariableReplacementTest extends AbstractCompletionTest {
 		assertEquals(fileNameBase + "ine1\nline2\nline3", viewer.getDocument().get());
 		// TODO check link edit groups
 	}
-	
+
 	@Test
 	public void testVariableNameWithBraces() throws PartInitException, CoreException {
 		CompletionItem completionItem = createCompletionItem(
@@ -99,7 +99,7 @@ public class VariableReplacementTest extends AbstractCompletionTest {
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
 		MockLanguageServer.INSTANCE
 				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
-		String content = "line1\nline2\nline3";
+		final var content = "line1\nline2\nline3";
 		IFile testFile = TestUtils.createUniqueTestFile(project, content);
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		int invokeOffset = 0;

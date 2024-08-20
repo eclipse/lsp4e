@@ -70,7 +70,7 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 		}
 
 		public static SelectionRangeHandler getSelectionRangeHandler(StyledText styledText) {
-			SelectionRangeHandler handler = (SelectionRangeHandler) styledText.getData(KEY);
+			var handler = (SelectionRangeHandler) styledText.getData(KEY);
 			if (handler == null) {
 				handler = new SelectionRangeHandler(styledText);
 			}
@@ -215,7 +215,7 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 				return CompletableFuture.completedFuture(null);
 			}
 			List<Position> positions = Collections.singletonList(position);
-			SelectionRangeParams params = new SelectionRangeParams(identifier, positions);
+			final var params = new SelectionRangeParams(identifier, positions);
 			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getSelectionRangeProvider)
 					.computeFirst(languageServer -> languageServer.getTextDocumentService().selectionRange(params))
 					.thenApply(ranges -> ranges.stream().filter(Objects::nonNull).findFirst());

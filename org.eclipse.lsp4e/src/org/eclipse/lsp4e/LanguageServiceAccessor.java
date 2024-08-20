@@ -378,7 +378,7 @@ public class LanguageServiceAccessor {
 		synchronized (startedServers) {
 			LanguageServerWrapper wrapper = startedServers.stream().filter(w -> w.serverDefinition == serverDefinition)
 					.findFirst().orElseGet(() -> {
-						LanguageServerWrapper w = new LanguageServerWrapper(serverDefinition, null);
+						final var w = new LanguageServerWrapper(serverDefinition, null);
 						startedServers.add(w);
 						return w;
 					});
@@ -406,7 +406,7 @@ public class LanguageServiceAccessor {
 
 	private static List<LanguageServerWrapper> getStartedWrappers(Predicate<LanguageServerWrapper> canOperatePredicate,
 			@Nullable Predicate<ServerCapabilities> capabilitiesPredicate, boolean onlyActiveLS) {
-		List<LanguageServerWrapper> result = new ArrayList<>();
+		final var result = new ArrayList<LanguageServerWrapper>();
 		for (LanguageServerWrapper wrapper : startedServers) {
 			if ((!onlyActiveLS || wrapper.isActive()) && canOperatePredicate.test(wrapper)
 					&& capabilitiesComply(wrapper, capabilitiesPredicate)) {

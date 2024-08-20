@@ -177,7 +177,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 
 			List<SourceBreakpoint> sourceBreakpoints = targetBreakpoints.computeIfAbsent(source,
 					s -> new ArrayList<>());
-			SourceBreakpoint sourceBreakpoint = new SourceBreakpoint();
+			final var sourceBreakpoint = new SourceBreakpoint();
 			sourceBreakpoint.setLine(lineNumber);
 			sourceBreakpoints.add(sourceBreakpoint);
 		}

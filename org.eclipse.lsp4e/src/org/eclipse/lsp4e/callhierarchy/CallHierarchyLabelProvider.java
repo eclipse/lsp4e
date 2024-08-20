@@ -41,7 +41,7 @@ public class CallHierarchyLabelProvider extends LabelProvider implements IStyled
 	public @Nullable StyledString getStyledText(final @Nullable Object element) {
 		if (element instanceof CallHierarchyViewTreeNode treeNode) {
 			CallHierarchyItem callContainer = treeNode.getCallContainer();
-			StyledString styledString = new StyledString();
+			final var styledString = new StyledString();
 			appendName(styledString, callContainer.getName());
 			if (callContainer.getDetail() != null) {
 				appendDetail(styledString, callContainer.getDetail());

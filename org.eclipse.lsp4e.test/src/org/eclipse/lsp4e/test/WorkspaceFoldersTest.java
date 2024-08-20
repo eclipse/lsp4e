@@ -13,8 +13,7 @@
 package org.eclipse.lsp4e.test;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.net.URI;
@@ -109,7 +108,7 @@ public class WorkspaceFoldersTest extends AbstractTestWithProject {
 		LanguageServiceAccessor.getLSWrappers(testFile1, capabilities -> true).iterator().next();
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
-		final JobSynchronizer synchronizer = new JobSynchronizer();
+		final var synchronizer = new JobSynchronizer();
 		project.close(synchronizer);
 		synchronizer.await();
 
@@ -138,8 +137,8 @@ public class WorkspaceFoldersTest extends AbstractTestWithProject {
 		assertTrue(wrapper1.isActive());
 
 		// Grab this before deletion otherwise project.getLocationURI will be null...
-		final File expected = new File(project.getLocationURI());
-		final JobSynchronizer synchronizer = new JobSynchronizer();
+		final var expected = new File(project.getLocationURI());
+		final var synchronizer = new JobSynchronizer();
 		project.delete(true, true, synchronizer);
 		synchronizer.await();
 		final MockWorkspaceService mockWorkspaceService = MockLanguageServer.INSTANCE.getWorkspaceService();
@@ -161,13 +160,13 @@ public class WorkspaceFoldersTest extends AbstractTestWithProject {
 		waitForAndAssertCondition(5_000, () -> MockLanguageServer.INSTANCE.isRunning());
 		ConnectDocumentToLanguageServerSetupParticipant.waitForAll();
 
-		final JobSynchronizer synchronizer = new JobSynchronizer();
+		final var synchronizer = new JobSynchronizer();
 		project.close(synchronizer);
 		synchronizer.await();
 
 		waitForAndAssertCondition(5_000, () -> !project.isOpen());
 
-		final JobSynchronizer synchronizer2 = new JobSynchronizer();
+		final var synchronizer2 = new JobSynchronizer();
 		project.open(synchronizer2);
 		synchronizer2.await();
 
@@ -189,8 +188,8 @@ public class WorkspaceFoldersTest extends AbstractTestWithProject {
 		// Enable workspace folders on the mock server (for this test only)
 		final ServerCapabilities base = MockLanguageServer.defaultServerCapabilities();
 
-		final WorkspaceServerCapabilities wsc = new WorkspaceServerCapabilities();
-		final WorkspaceFoldersOptions wso = new WorkspaceFoldersOptions();
+		final var wsc = new WorkspaceServerCapabilities();
+		final var wso = new WorkspaceFoldersOptions();
 		wso.setSupported(true);
 		wso.setChangeNotifications(true);
 		wsc.setWorkspaceFolders(wso);

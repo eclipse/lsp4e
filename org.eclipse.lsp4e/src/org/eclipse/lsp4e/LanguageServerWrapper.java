@@ -195,14 +195,14 @@ public class LanguageServerWrapper {
 		this.serverDefinition = serverDefinition;
 		this.connectedDocuments = new HashMap<>();
 		String projectName = (project != null && project.getName() != null && !serverDefinition.isSingleton) ? ("@" + project.getName()) : "";  //$NON-NLS-1$//$NON-NLS-2$
-		String dispatcherThreadNameFormat = "LS-" + serverDefinition.id + projectName + "#dispatcher"; //$NON-NLS-1$ //$NON-NLS-2$
+		final var dispatcherThreadNameFormat = "LS-" + serverDefinition.id + projectName + "#dispatcher"; //$NON-NLS-1$ //$NON-NLS-2$
 		this.dispatcher = Executors
 				.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(dispatcherThreadNameFormat).build());
 
 		// Executor service passed through to the LSP4j layer when we attempt to start the LS. It will be used
 		// to create a listener that sits on the input stream and processes inbound messages (responses, or server-initiated
 		// requests).
-		String listenerThreadNameFormat = "LS-" + serverDefinition.id + projectName + "#listener-%d"; //$NON-NLS-1$ //$NON-NLS-2$
+		final var listenerThreadNameFormat = "LS-" + serverDefinition.id + projectName + "#listener-%d"; //$NON-NLS-1$ //$NON-NLS-2$
 		this.listener = Executors
 				.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat(listenerThreadNameFormat).build());
 	}
@@ -609,7 +609,7 @@ public class LanguageServerWrapper {
 		new WorkspaceJob("Setting watch projects on server " + serverDefinition.label) { //$NON-NLS-1$
 			@Override
 			public IStatus runInWorkspace(@Nullable IProgressMonitor monitor) throws CoreException {
-				WorkspaceFoldersChangeEvent wsFolderEvent = new WorkspaceFoldersChangeEvent();
+				final var wsFolderEvent = new WorkspaceFoldersChangeEvent();
 				wsFolderEvent.getAdded().addAll(getRelevantWorkspaceFolders());
 				if (currentLS != null && currentLS == LanguageServerWrapper.this.languageServer) {
 					currentLS.getWorkspaceService()
@@ -860,7 +860,7 @@ public class LanguageServerWrapper {
 		// Note this doesn't get the .thenApplyAsync(Function.identity()) chained on additionally, unlike
 		// the public-facing version of this method, because we trust the LSPExecutor implementations to
 		// make sure the server response thread doesn't get blocked by any further work
-		AtomicReference<@Nullable CompletableFuture<T>> request = new AtomicReference<>();
+		final var request = new AtomicReference<@Nullable CompletableFuture<T>>();
 		Function<LanguageServer, CompletableFuture<T>> cancelWrapper = ls -> {
 			CompletableFuture<T> res = fn.apply(ls);
 			request.set(res);

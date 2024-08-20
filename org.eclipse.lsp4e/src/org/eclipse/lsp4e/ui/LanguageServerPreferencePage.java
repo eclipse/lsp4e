@@ -146,7 +146,7 @@ public class LanguageServerPreferencePage extends PreferencePage implements IWor
 		addButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				NewContentTypeLSPLaunchDialog dialog = new NewContentTypeLSPLaunchDialog(getShell());
+				final var dialog = new NewContentTypeLSPLaunchDialog(getShell());
 				if (dialog.open() == IDialogConstants.OK_ID) {
 					workingCopy.add(new ContentTypeToLSPLaunchConfigEntry(dialog.getContentType(),
 							dialog.getLaunchConfiguration(), dialog.getLaunchMode()));

@@ -158,7 +158,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 		ColorRegistry colorRegistry = JFaceResources.getColorRegistry();
 		Color foreground = colorRegistry.get("org.eclipse.ui.workbench.HOVER_FOREGROUND"); //$NON-NLS-1$
 		Color background = colorRegistry.get("org.eclipse.ui.workbench.HOVER_BACKGROUND"); //$NON-NLS-1$
-		String style = "<style TYPE='text/css'>html { " + //$NON-NLS-1$
+		final var style = "<style TYPE='text/css'>html { " + //$NON-NLS-1$
 				"font-family: " + JFaceResources.getDefaultFontDescriptor().getFontData()[0].getName() + "; " + //$NON-NLS-1$ //$NON-NLS-2$
 				"font-size: " + Integer.toString(JFaceResources.getDefaultFontDescriptor().getFontData()[0].getHeight()) //$NON-NLS-1$
 				+ "pt; " + //$NON-NLS-1$

@@ -76,7 +76,7 @@ public class LanguageClientImpl implements LanguageClient {
 	@Override
 	public CompletableFuture<List<@Nullable Object>> configuration(ConfigurationParams configurationParams) {
 		// override as needed
-		List<@Nullable Object> list = new ArrayList<>(configurationParams.getItems().size());
+		final var list = new ArrayList<@Nullable Object>(configurationParams.getItems().size());
 		for (int i = 0; i < configurationParams.getItems().size(); i++) {
 			list.add(null);
 		}

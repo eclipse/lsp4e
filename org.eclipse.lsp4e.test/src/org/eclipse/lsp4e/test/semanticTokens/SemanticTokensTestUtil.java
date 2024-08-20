@@ -35,7 +35,7 @@ public class SemanticTokensTestUtil {
 			"}\n";
 
 	public static List<Integer> keywordSemanticTokens() {
-		List<List<Integer>> expectedTokens = new ArrayList<>();
+		final var expectedTokens = new ArrayList<List<Integer>>();
 		expectedTokens.add(Arrays.asList(0,0,4,0,0));
 		expectedTokens.add(Arrays.asList(3,0,4,0,0));
 		expectedTokens.add(Arrays.asList(0,9,7,0,0));
@@ -119,8 +119,8 @@ public class SemanticTokensTestUtil {
 		};
 	}
 	public static void setSemanticTokensLegend(final List<String> tokenTypes, List<String> tokenModifiers) {
-		SemanticTokensLegend legend = new SemanticTokensLegend(tokenTypes, tokenModifiers);
-		SemanticTokensWithRegistrationOptions semanticTokensWithRegistrationOptions = new SemanticTokensWithRegistrationOptions(legend);
+		final var legend = new SemanticTokensLegend(tokenTypes, tokenModifiers);
+		final var semanticTokensWithRegistrationOptions = new SemanticTokensWithRegistrationOptions(legend);
 		semanticTokensWithRegistrationOptions.setFull(true);
 		semanticTokensWithRegistrationOptions.setRange(false);
 

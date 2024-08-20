@@ -24,9 +24,9 @@ public class SemanticTokensDataStreamProcessorTest extends AbstractTest {
 
 	@Test
 	public void testKeyword() {
-		Document document = new Document(SemanticTokensTestUtil.keywordText);
+		final var document = new Document(SemanticTokensTestUtil.keywordText);
 
-		SemanticTokensDataStreamProcessor processor = new SemanticTokensDataStreamProcessor(SemanticTokensTestUtil
+		final var processor = new SemanticTokensDataStreamProcessor(SemanticTokensTestUtil
 				.keywordTokenTypeMapper(SemanticTokensTestUtil.RED_TOKEN), SemanticTokensTestUtil.offsetMapper(document));
 
 		List<Integer> expectedStream = SemanticTokensTestUtil.keywordSemanticTokens();
@@ -42,7 +42,7 @@ public class SemanticTokensDataStreamProcessorTest extends AbstractTest {
 	}
 
 	private SemanticTokensLegend getSemanticTokensLegend() {
-		SemanticTokensLegend semanticTokensLegend = new SemanticTokensLegend();
+		final var semanticTokensLegend = new SemanticTokensLegend();
 		semanticTokensLegend.setTokenTypes(Arrays.asList("keyword","other"));
 		semanticTokensLegend.setTokenModifiers(Arrays.asList("obsolete"));
 		return semanticTokensLegend;

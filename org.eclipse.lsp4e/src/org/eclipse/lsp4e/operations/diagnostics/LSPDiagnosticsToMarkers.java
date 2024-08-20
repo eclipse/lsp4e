@@ -142,7 +142,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	}
 
 	private WorkspaceJob updateMarkers(PublishDiagnosticsParams diagnostics, IResource resource) {
-		WorkspaceJob job = new WorkspaceJob("Update markers from diagnostics") { //$NON-NLS-1$
+		final var job = new WorkspaceJob("Update markers from diagnostics") { //$NON-NLS-1$
 			@Override
 			public boolean belongsTo(@Nullable Object family) {
 				return LanguageServerPlugin.FAMILY_UPDATE_MARKERS == family;

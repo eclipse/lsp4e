@@ -160,7 +160,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
 	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> queryLS) {
-		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
+		final var result = new CompletableFuture<Optional<T>>();
 
 		// Dispatch the request to the servers, appending a step to each such that
 		// the first to return a non-null result will be the overall result.
@@ -334,7 +334,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		protected List<CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
 			// Compute list of servers from project & filter
 			Collection<LanguageServerWrapper> startedWrappers = order(LanguageServiceAccessor.getStartedWrappers(project, getFilter(), !restartStopped));
-			List<CompletableFuture<@Nullable LanguageServerWrapper>> wrappers = new ArrayList<>(startedWrappers.size());
+			final var wrappers = new ArrayList<CompletableFuture<@Nullable LanguageServerWrapper>>(startedWrappers.size());
 			for (LanguageServerWrapper wrapper :  startedWrappers) {
 				wrappers.add(wrapper.getInitializedServer().thenApply(ls -> wrapper));
 			}
@@ -348,7 +348,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 
 	protected Collection<LanguageServerWrapper> order(Collection<LanguageServerWrapper> wrappers) {
 		if (serverDefinition != null && wrappers.size() > 1) {
-			List<LanguageServerWrapper> temp = new ArrayList<>(wrappers);
+			final var temp = new ArrayList<LanguageServerWrapper>(wrappers);
 			for (int i = 0; i < temp.size(); i++) {
 				LanguageServerWrapper wrapper = temp.get(i);
 				if (Objects.equals(serverDefinition, wrapper.serverDefinition)) {

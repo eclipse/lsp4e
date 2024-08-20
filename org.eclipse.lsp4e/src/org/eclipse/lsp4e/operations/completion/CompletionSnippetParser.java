@@ -58,7 +58,7 @@ class CompletionSnippetParser {
 	 * @return the text to apply to the editor
 	 */
 	public String parse() {
-		StringBuilder insertTextBuilder = new StringBuilder(snippetText.length());
+		final var insertTextBuilder = new StringBuilder(snippetText.length());
 		while (hasRemaining()) {
 			char current = readChar();
 			switch (current) {
@@ -105,7 +105,7 @@ class CompletionSnippetParser {
 			// A tabstop position like $1
 			String key = readNumberKey();
 			snippetToDocumentOffset += key.length() + 1;
-			LinkedPosition position = new LinkedPosition(document, insertionOffset + snippetOffset - snippetToDocumentOffset, 0);
+			final var position = new LinkedPosition(document, insertionOffset + snippetOffset - snippetToDocumentOffset, 0);
 			addLinkedPosition(key, position);
 			return ""; //$NON-NLS-1$
 		} else if (isCharacterForVariableName(firstChar)) {
@@ -217,8 +217,8 @@ class CompletionSnippetParser {
 	}
 
 	private List<String> readChoiceValues() throws DollarExpressionParseException {
-		List<String> valueList = new ArrayList<>();
-		StringBuilder valueBuilder = new StringBuilder();
+		final var valueList = new ArrayList<String>();
+		final var valueBuilder = new StringBuilder();
 		while (true) {
 			if (!hasRemaining()) {
 				throw new DollarExpressionParseException();
@@ -252,7 +252,7 @@ class CompletionSnippetParser {
 	}
 
 	private String readTextValue() throws DollarExpressionParseException {
-		StringBuilder valueBuilder = new StringBuilder();
+		final var valueBuilder = new StringBuilder();
 		while (true) {
 			if (!hasRemaining()) {
 				throw new DollarExpressionParseException();
@@ -312,7 +312,7 @@ class CompletionSnippetParser {
 	}
 
 	private String readNumberKey() {
-		StringBuilder keyBuilder = new StringBuilder();
+		final var keyBuilder = new StringBuilder();
 		while (hasRemaining() && Character.isDigit(peekChar())) {
 			keyBuilder.append(readChar());
 		}
@@ -320,7 +320,7 @@ class CompletionSnippetParser {
 	}
 
 	private String readVariableKey() {
-		StringBuilder keyBuilder = new StringBuilder();
+		final var keyBuilder = new StringBuilder();
 		while (hasRemaining() && isCharacterForVariableName(peekChar())) {
 			keyBuilder.append(readChar());
 		}

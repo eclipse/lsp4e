@@ -214,7 +214,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 
 		String dspParametersJson = configuration.getAttribute(DSPPlugin.ATTR_DSP_PARAM, "{}");
 		try {
-			JsonParserWithStringSubstitution jsonUtils = new JsonParserWithStringSubstitution(
+			final var jsonUtils = new JsonParserWithStringSubstitution(
 					VariablesPlugin.getDefault().getStringVariableManager());
 			Map<String, Object> customParams = jsonUtils.parseJsonObjectAndRemoveNulls(dspParametersJson);
 			builder.dspParameters.putAll(customParams);
@@ -249,7 +249,7 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 			String dspParametersJson = builder.configuration.getAttribute(DSPPlugin.ATTR_DSP_PARAM, "");
 			if (!dspParametersJson.isBlank()) {
 				try {
-					JsonParserWithStringSubstitution jsonUtils = new JsonParserWithStringSubstitution(
+					final var jsonUtils = new JsonParserWithStringSubstitution(
 							VariablesPlugin.getDefault().getStringVariableManager());
 					Map<String, Object> customParams = jsonUtils.parseJsonObjectAndRemoveNulls(dspParametersJson);
 					builder.dspParameters.putAll(customParams);

@@ -171,10 +171,10 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 				gc = new GC(image);
 				font = new Font(display, fontData);
 				gc.setFont(font);
-				Point origin = new Point(0, 0);
+				final var origin = new Point(0, 0);
 				for (InlayHintLabelPart labelPart : labelParts) {
 					Point size = gc.stringExtent(labelPart.getValue());
-					Rectangle bounds = new Rectangle(origin.x, origin.y, size.x, size.y);
+					final var bounds = new Rectangle(origin.x, origin.y, size.x, size.y);
 					if (bounds.contains(relativeLocation)) {
 						return Optional.of(labelPart);
 					} else {
