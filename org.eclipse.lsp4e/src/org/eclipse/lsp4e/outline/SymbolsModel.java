@@ -101,37 +101,37 @@ public class SymbolsModel {
 			final var newChildrenMap = new HashMap<SymbolInformation, List<SymbolInformation>>();
 			final var newRootSymbols = new ArrayList<DocumentSymbol>();
 
-			Collections.sort(response,
-					Comparator.comparing(
+			final var parentStack = new ArrayDeque<SymbolInformation>();
+			parentStack.push(ROOT_SYMBOL_INFORMATION);
+			final var previousSymbol = new SymbolInformation[1];
+
+			response.stream() //
+					.sorted(Comparator.comparing(
 							either -> either.isLeft() ? either.getLeft().getLocation().getRange().getStart()
 									: either.getRight().getRange().getStart(),
 							// strange need to cast here, could be a JDT compiler issue
 							Comparator.comparingInt(pos -> ((Position) pos).getLine())
-									.thenComparingInt(pos -> ((Position) pos).getCharacter())));
-
-			final var parentStack = new ArrayDeque<SymbolInformation>();
-			parentStack.push(ROOT_SYMBOL_INFORMATION);
-			SymbolInformation previousSymbol = null;
-			for (Either<SymbolInformation, DocumentSymbol> either : response) {
-				if (either.isLeft()) {
-					SymbolInformation symbol = either.getLeft();
-					if (isIncluded(previousSymbol, symbol)) {
-						parentStack.push(castNonNull(previousSymbol));
-						addChild(newChildrenMap, castNonNull(parentStack.peek()), symbol);
-					} else if (isIncluded(parentStack.peek(), symbol)) {
-						addChild(newChildrenMap, castNonNull(parentStack.peek()), symbol);
-					} else {
-						while (!isIncluded(parentStack.peek(), symbol)) {
-							parentStack.pop();
+									.thenComparingInt(pos -> ((Position) pos).getCharacter())))
+					.forEach((Either<SymbolInformation, DocumentSymbol> either) -> {
+						if (either.isLeft()) {
+							SymbolInformation symbol = either.getLeft();
+							if (isIncluded(previousSymbol[0], symbol)) {
+								parentStack.push(castNonNull(previousSymbol[0]));
+								addChild(newChildrenMap, castNonNull(parentStack.peek()), symbol);
+							} else if (isIncluded(parentStack.peek(), symbol)) {
+								addChild(newChildrenMap, castNonNull(parentStack.peek()), symbol);
+							} else {
+								while (!isIncluded(parentStack.peek(), symbol)) {
+									parentStack.pop();
+								}
+								addChild(newChildrenMap, castNonNull(parentStack.peek()), symbol);
+								parentStack.push(symbol);
+							}
+							previousSymbol[0] = symbol;
+						} else if (either.isRight()) {
+							newRootSymbols.add(either.getRight());
 						}
-						addChild(newChildrenMap, castNonNull(parentStack.peek()), symbol);
-						parentStack.push(symbol);
-					}
-					previousSymbol = symbol;
-				} else if (either.isRight()) {
-					newRootSymbols.add(either.getRight());
-				}
-			}
+					});
 
 			childrenMap = newChildrenMap;
 			rootSymbols = newRootSymbols;

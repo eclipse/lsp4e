@@ -1257,9 +1257,10 @@ public final class LSPEclipseUtils {
 	 *            CompositeChange with LSP text edits
 	 */
 	private static Change toChanges(URI uri, List<TextEdit> textEdits) {
-		Collections.sort(textEdits, Comparator.comparing(edit -> edit.getRange().getStart(),
-				Comparator.comparingInt(Position::getLine).thenComparingInt(Position::getCharacter).reversed()));
-		LSPTextChange[] changes = textEdits.stream().map(te -> new LSPTextChange("Line: %d".formatted(te.getRange().getStart().getLine() + 1), uri, te)) //$NON-NLS-1$
+		LSPTextChange[] changes = textEdits.stream()
+				.sorted(Comparator.comparing((TextEdit edit) -> edit.getRange().getStart(),
+						Comparator.comparingInt(Position::getLine).thenComparingInt(Position::getCharacter).reversed()))
+				.map(te -> new LSPTextChange("Line: %d".formatted(te.getRange().getStart().getLine() + 1), uri, te)) //$NON-NLS-1$
 				.toArray(LSPTextChange[]::new);
 		return new CompositeChange(uri.toString(), changes);
 	}

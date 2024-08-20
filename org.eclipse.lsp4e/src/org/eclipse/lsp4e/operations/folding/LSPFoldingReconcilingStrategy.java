@@ -14,7 +14,6 @@ import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -159,16 +158,18 @@ public class LSPFoldingReconcilingStrategy
 		// find and mark all folding annotations with length 0 for deletion
 		markInvalidAnnotationsForDeletion(deletions, existing);
 
-		try {
-			if (ranges != null) {
-				Collections.sort(ranges, Comparator.comparing(FoldingRange::getEndLine));
-				for (FoldingRange foldingRange : ranges) {
-					updateAnnotation(deletions, existing, additions, foldingRange.getStartLine(),
-							foldingRange.getEndLine(), collapseImports && FoldingRangeKind.Imports.equals(foldingRange.getKind()));
-				}
-			}
-		} catch (BadLocationException e) {
-			// should never occur
+		if (ranges != null) {
+			ranges.stream() //
+					.sorted(Comparator.comparing(FoldingRange::getEndLine)) //
+					.forEach(foldingRange -> {
+						try {
+							updateAnnotation(deletions, existing, additions, foldingRange.getStartLine(),
+									foldingRange.getEndLine(),
+									collapseImports && FoldingRangeKind.Imports.equals(foldingRange.getKind()));
+						} catch (BadLocationException e) {
+							// should never occur
+						}
+					});
 		}
 
 		// be sure projection has not been disabled
