@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat Inc. and others.
+ * Copyright (c) 2024 Sebastian Thomschke and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -7,37 +7,17 @@
  * SPDX-License-Identifier: EPL-2.0
  *
  * Contributors:
- *  Mickael Istria (Red Hat Inc.) - initial implementation
+ * Sebastian Thomschke - initial implementation
  *******************************************************************************/
-
 package org.eclipse.lsp4e;
 
-import java.io.IOException;
-import java.io.InputStream;
-
-import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.lsp4e.internal.CharsInputStream;
+import org.eclipse.lsp4e.internal.DocumentUtil;
 
-final class DocumentInputStream extends InputStream {
-	private int index = 0;
-	private final IDocument document;
+public final class DocumentInputStream extends CharsInputStream {
 
-	DocumentInputStream(IDocument document) {
-		this.document = document;
+	public DocumentInputStream(final IDocument doc) {
+		super(doc::getChar, doc::getLength, DocumentUtil.getCharset(doc));
 	}
-
-	@Override
-	public int read() throws IOException {
-		if (index < document.getLength()) {
-			try {
-				char res = document.getChar(index);
-				index++;
-				return res;
-			} catch (BadLocationException e) {
-				throw new IOException(e);
-			}
-		}
-		return -1;
-	}
-
 }
