@@ -14,8 +14,8 @@ package org.eclipse.lsp4e.test.completion;
 import static org.junit.Assert.*;
 
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
@@ -70,9 +70,7 @@ public class ContextInformationTest extends AbstractCompletionTest {
 
 	@Test
 	public void testTriggerChars() throws CoreException {
-		final var triggers = new HashSet<String>();
-		triggers.add("a");
-		triggers.add("b");
+		final Set<String> triggers = Set.of("a", "b");
 		MockLanguageServer.INSTANCE.setContextInformationTriggerChars(triggers);
 
 		final var content = "First";

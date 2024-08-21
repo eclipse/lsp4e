@@ -18,10 +18,9 @@ import static org.junit.Assert.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -200,9 +199,7 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 
 	@Test
 	public void testTriggerCharsWithoutPreliminaryCompletion() throws CoreException { // bug 508463
-		final var triggers = new HashSet<String>();
-		triggers.add("a");
-		triggers.add("b");
+		final Set<String> triggers = Set.of("a", "b");
 		MockLanguageServer.INSTANCE.setCompletionTriggerChars(triggers);
 
 		final var content = "First";
@@ -368,13 +365,13 @@ public class CompleteCompletionTest extends AbstractCompletionTest {
 		int invokeOffset = 0;
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
 		assertEquals(1, proposals.length);
-		final var beforeShells = new HashSet<>(List.of(viewer.getTextWidget().getDisplay().getShells()));
+		final var shellsBefore = Set.of(viewer.getTextWidget().getDisplay().getShells());
 		((LSCompletionProposal) proposals[0]).apply(viewer, '\n', 0, invokeOffset);
 		assertEquals("1a2", viewer.getDocument().get());
-		final var newShells = new HashSet<>(List.of(viewer.getTextWidget().getDisplay().getShells()));
-		newShells.removeAll(beforeShells);
-		assertNotEquals(Collections.emptySet(), newShells);
-		final var proposalList = (Table) newShells.iterator().next().getChildren()[0];
+		final var shellsAfter = Set.of(viewer.getTextWidget().getDisplay().getShells());
+		final var shellsAdded = shellsAfter.stream().filter(shell -> !shellsBefore.contains(shell)).toList();
+		assertFalse(shellsAdded.isEmpty());
+		final var proposalList = (Table) shellsAdded.iterator().next().getChildren()[0];
 		String[] itemLabels = Arrays.stream(proposalList.getItems()).map(TableItem::getText).toArray(String[]::new);
 		assertArrayEquals(new String[] {"a", "b"}, itemLabels);
 	}
