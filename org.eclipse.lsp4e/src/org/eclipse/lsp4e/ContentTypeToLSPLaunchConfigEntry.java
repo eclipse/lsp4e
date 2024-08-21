@@ -11,9 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -75,7 +73,7 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToLanguageServ
 		String launchName = launchParts[1];
 		Set<String> launchModes = Collections.singleton(ILaunchManager.RUN_MODE);
 		if (launchParts.length > 2) {
-			launchModes = new HashSet<>(Arrays.asList(launchParts[2].split("\\+"))); //$NON-NLS-1$
+			launchModes = Set.of(launchParts[2].split("\\+")); //$NON-NLS-1$
 		}
 		IContentType contentType = Platform.getContentTypeManager().getContentType(contentTypeId);
 		if (contentType == null) {
