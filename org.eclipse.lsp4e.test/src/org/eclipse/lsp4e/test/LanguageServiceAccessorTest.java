@@ -90,7 +90,7 @@ public class LanguageServiceAccessorTest extends AbstractTestWithProject {
 		var testFile = createFile(project, "shouldUseExtension.lspt", "");
 		// Force LS to initialize and open file
 		LanguageServers.forDocument(LSPEclipseUtils.getDocument(testFile)).anyMatching();
-		assertTrue(hasActiveLanguageServers(testFile, MATCH_ALL));
+		waitForAndAssertCondition(10_000, () -> hasActiveLanguageServers(testFile, MATCH_ALL));
 	}
 
 	@Test
@@ -98,7 +98,7 @@ public class LanguageServiceAccessorTest extends AbstractTestWithProject {
 		var testFile = createFile(project, "shouldUseRunConfiguration.lspt2", "");
 		// Force LS to initialize and open file
 		LanguageServers.forDocument(LSPEclipseUtils.getDocument(testFile)).anyMatching();
-		assertTrue(hasActiveLanguageServers(testFile, MATCH_ALL));
+		waitForAndAssertCondition(10_000, () -> hasActiveLanguageServers(testFile, MATCH_ALL));
 	}
 
 	@Test

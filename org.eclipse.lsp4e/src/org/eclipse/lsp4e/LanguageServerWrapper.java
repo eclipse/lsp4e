@@ -281,7 +281,6 @@ public class LanguageServerWrapper {
 		if (this.initializeFuture == null) {
 			final URI rootURI = getRootURI();
 			final Job job = createInitializeLanguageServerJob();
-			this.launcherFuture = new CompletableFuture<>();
 			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
 				advanceInitializeFutureMonitor();
 				final StreamConnectionProvider lspStreamProvider;
