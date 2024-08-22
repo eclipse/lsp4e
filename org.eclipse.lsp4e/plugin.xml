@@ -92,6 +92,15 @@
       </command>
       <command
             categoryId="org.eclipse.lsp4e.category"
+            id="org.eclipse.lsp4e.toggleHideFieldsOutline"
+            name="%command.toggle.outline.hideFields.name">
+         <state
+               class="org.eclipse.ui.handlers.RegistryToggleState:false"
+               id="org.eclipse.ui.commands.toggleState">
+         </state>
+      </command>
+      <command
+            categoryId="org.eclipse.lsp4e.category"
             description="%command.open.call.hierarchy.description"
             id="org.eclipse.lsp4e.openCallHierarchy"
             name="%command.open.call.hierarchy.name">
@@ -175,6 +184,12 @@
       </handler>
       <handler commandId="org.eclipse.lsp4e.toggleSortOutline">
          <class class="org.eclipse.lsp4e.outline.ToggleSortOutlineHandler" />
+      </handler>
+      <handler
+            commandId="org.eclipse.lsp4e.toggleHideFieldsOutline">
+         <class
+               class="org.eclipse.lsp4e.outline.ToggleHideFieldsOutlineHandler">
+         </class>
       </handler>
       <handler
             class="org.eclipse.lsp4e.callhierarchy.CallHierarchyCommandHandler"
@@ -336,9 +351,27 @@
          </menu>
       </menuContribution>
       <menuContribution allPopups="false" locationURI="toolbar:org.eclipse.ui.views.ContentOutline?after=additions">
-         <command commandId="org.eclipse.lsp4e.toggleSortOutline" style="toggle" label="%command.toggle.outline.sort.label">
+         <command
+               commandId="org.eclipse.lsp4e.toggleSortOutline"
+               id="org.eclipse.lsp4e.outline.toolbar.sort"
+               label="%command.toggle.outline.sort.label"
+               style="toggle">
             <visibleWhen>
                <reference definitionId="org.eclipse.lsp4e.activeEditorHasCNFOutlinePage" />
+            </visibleWhen>
+         </command>
+      </menuContribution>
+      <menuContribution
+            allPopups="false"
+            locationURI="toolbar:org.eclipse.ui.views.ContentOutline?after=org.eclipse.lsp4e.outline.toolbar.sort">
+         <command
+               commandId="org.eclipse.lsp4e.toggleHideFieldsOutline"
+               label="%command.toggle.outline.hideFields.label"
+               style="toggle">
+            <visibleWhen>
+               <reference
+                     definitionId="org.eclipse.lsp4e.activeEditorHasCNFOutlinePage">
+               </reference>
             </visibleWhen>
          </command>
       </menuContribution>
@@ -598,6 +631,11 @@
             commandId="org.eclipse.lsp4e.togglelinkwitheditor"
             disabledIcon="icons/full/dlcl16/link_to_editor.png"
             icon="icons/full/elcl16/link_to_editor.png">
+      </image>
+      <image
+            commandId="org.eclipse.lsp4e.toggleHideFieldsOutline"
+            disabledIcon="icons/full/dlcl16/fields_co.png"
+            icon="icons/full/elcl16/fields_co.png">
       </image>
       <image
             commandId="org.eclipse.lsp4e.toggleSortOutline"
