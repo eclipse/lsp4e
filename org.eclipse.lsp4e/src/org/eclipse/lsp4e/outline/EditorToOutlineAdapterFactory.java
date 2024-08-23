@@ -15,7 +15,6 @@ package org.eclipse.lsp4e.outline;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -53,19 +52,21 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 			if (editorInput != null && LanguageServersRegistry.getInstance().canUseLanguageServer(editorInput)) {
 
 				// first try to get / remove language server from cache from a previous call
-				LanguageServerWrapper server = LANG_SERVER_CACHE.remove(adaptableObject);
+				LanguageServerWrapper server = LANG_SERVER_CACHE.remove(editorPart);
 				if (server != null && server.isActive()) {
 					return adapterType.cast(createOutlinePage(editorPart, server));
 				}
 
 				IDocument document = LSPEclipseUtils.getDocument(editorInput);
 				if (document != null) {
-					CompletableFuture<Optional<LanguageServerWrapper>> languageServer = LanguageServers.forDocument(document)
-							.withCapability(ServerCapabilities::getDocumentSymbolProvider).computeFirst((w,ls) -> CompletableFuture.completedFuture(w));
+					CompletableFuture<Optional<LanguageServerWrapper>> languageServer = LanguageServers
+							.forDocument(document) //
+							.withCapability(ServerCapabilities::getDocumentSymbolProvider) //
+							.computeFirst((wrapper, ls) -> CompletableFuture.completedFuture(wrapper));
 					try {
-						return languageServer.get(50, TimeUnit.MILLISECONDS).filter(Objects::nonNull)
+						return languageServer.get(50, TimeUnit.MILLISECONDS) //
 								.filter(LanguageServerWrapper::isActive)
-								.map(s -> adapterType.cast(createOutlinePage(editorPart, s)))
+								.map(s -> adapterType.cast(createOutlinePage(editorPart, s))) //
 								.orElse(null);
 					} catch (TimeoutException e) {
 						refreshContentOutlineAsync(languageServer, editorPart);
@@ -90,17 +91,17 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 		return new CNFOutlinePage(wrapper, UI.asTextEditor(editorPart));
 	}
 
-	private static void refreshContentOutlineAsync(CompletableFuture<Optional<LanguageServerWrapper>> wrapper,
+	private static void refreshContentOutlineAsync(CompletableFuture<Optional<LanguageServerWrapper>> wrapperFuture,
 			IEditorPart editorPart) {
 		// try to get language server asynchronously
-		wrapper.thenAcceptAsync(servers -> {
-			if (!servers.isEmpty()) {
+		wrapperFuture.thenAcceptAsync(wrapper -> {
+			if (wrapper.isPresent()) {
 				Display.getDefault().asyncExec(() -> {
 					var page = UI.getActivePage();
-					if(page != null) {
+					if (page != null) {
 						IViewPart viewPart = page.findView(OUTLINE_VIEW_ID);
 						if (viewPart instanceof ContentOutline contentOutline) {
-							LANG_SERVER_CACHE.put(editorPart, servers.get());
+							LANG_SERVER_CACHE.put(editorPart, wrapper.get());
 							contentOutline.partActivated(editorPart);
 						}
 					}
