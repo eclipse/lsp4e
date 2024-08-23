@@ -58,7 +58,7 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 			final var textDocumentIdentifier = LSPEclipseUtils.toTextDocumentIdentifier(docURI);
 			final var param = new DocumentColorParams(textDocumentIdentifier);
 			return LanguageServers.forDocument(document)
-				.withFilter(DocumentColorProvider::isColorProvider)
+				.withCapability(ServerCapabilities::getColorProvider)
 				.collectAll(
 					// Need to do some of the result processing inside the function we supply to collectAll(...)
 					// as need the LSW to construct the ColorInformationMining
@@ -101,9 +101,4 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 	public Color getColor(RGBA rgba, Display display) {
 		return colorTable.computeIfAbsent(rgba, key -> new Color(display, rgba));
 	}
-
-	private static boolean isColorProvider(final @Nullable ServerCapabilities capabilities) {
-		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getColorProvider());
-	}
-
 }

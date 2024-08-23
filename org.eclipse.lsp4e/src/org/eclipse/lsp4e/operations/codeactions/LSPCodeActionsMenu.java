@@ -38,6 +38,7 @@ import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -91,7 +92,7 @@ public class LSPCodeActionsMenu extends ContributionItem implements IWorkbenchCo
 		params.setContext(context);
 
 		final List<CompletableFuture<@Nullable List<Either<Command, CodeAction>>>> actions = LanguageServers.forDocument(document)
-				.withFilter(LSPCodeActionMarkerResolution::providesCodeActions)
+				.withCapability(ServerCapabilities::getCodeActionProvider)
 				.computeAll((w, ls) -> ls.getTextDocumentService().codeAction(params).whenComplete(
 						(codeActions, t) -> scheduleMenuUpdate(menu, item, index, document, w, t, codeActions)));
 

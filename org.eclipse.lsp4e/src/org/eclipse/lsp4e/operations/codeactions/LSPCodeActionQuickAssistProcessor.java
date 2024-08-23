@@ -39,6 +39,7 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.ui.internal.progress.ProgressInfoItem;
@@ -99,7 +100,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		if (document == null) {
 			return false;
 		}
-		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPCodeActionMarkerResolution::providesCodeActions);
+		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getCodeActionProvider);
 		return executor.anyMatching();
 	}
 
@@ -109,7 +110,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		if (document == null) {
 			return null;
 		}
-		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPCodeActionMarkerResolution::providesCodeActions);
+		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getCodeActionProvider);
 		if (!executor.anyMatching()) {
 			return null;
 		}
