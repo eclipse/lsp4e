@@ -200,10 +200,6 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		}
 	}
 
-	static boolean providesCodeActions(final @Nullable ServerCapabilities capabilities) {
-		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getCodeActionProvider());
-	}
-
 	@Override
 	public boolean hasResolutions(IMarker marker) {
 		try {

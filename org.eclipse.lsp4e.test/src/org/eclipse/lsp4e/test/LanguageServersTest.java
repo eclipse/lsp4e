@@ -32,7 +32,6 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
@@ -90,7 +89,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		params.setPosition(position);
 
 		CompletableFuture<List<String>> result =  LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()));
 
 		List<String> hovers = result.join();
@@ -126,7 +125,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		params.setPosition(position);
 
 		CompletableFuture<List<String>> result =  LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.collectAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h == null ? null : h.getContents().getLeft().get(0).getLeft()));
 
 		List<String> hovers = result.join();
@@ -170,7 +169,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		params.setPosition(position);
 
 		List<CompletableFuture<String>> result =  LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.computeAll(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()));
 
 		assertEquals("Should have had two responses", 2, result.size());
@@ -213,7 +212,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		final long startTime = System.currentTimeMillis();
 
 		CompletableFuture<String> resultThreadFuture =  LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.collectAll(ls -> ls.getTextDocumentService().hover(params))
 
 				// Schedule a slow 'computation' on the response, and make a note of the thread it runs in
@@ -227,7 +226,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 				});
 
 		CompletableFuture<?> fastHover = LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.collectAll(ls -> ls.getTextDocumentService().hover(params));
 
 		fastHover.join();
@@ -278,7 +277,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		params.setPosition(position);
 
 		CompletableFuture<Optional<String>> response =  LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.computeFirst(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h.getContents().getLeft().get(0).getLeft()));
 
 		Optional<String> result = response.join();
@@ -328,7 +327,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		params.setPosition(position);
 
 		CompletableFuture<Optional<String>> response =  LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.computeFirst(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h == null ? null : h.getContents().getLeft().get(0).getLeft()));
 
 		Optional<String> result = response.join();
@@ -363,7 +362,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		params.setPosition(position);
 
 		CompletableFuture<Optional<String>> response =  LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.computeFirst(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h == null ? null : h.getContents().getLeft().get(0).getLeft()));
 
 		Optional<String> result = response.join();
@@ -407,7 +406,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		params.setPosition(position);
 
 		CompletableFuture<Optional<List<String>>> response =  LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.computeFirst(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h == null ? Collections.emptyList() : List.of(h.getContents().getLeft().get(0).getLeft())));
 
 		Optional<List<String>> result = response.join();
@@ -473,7 +472,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 			params.setPosition(position);
 
 			CompletableFuture<List<Hover>> result =  LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.collectAll(ls -> ls.getTextDocumentService().hover(params));
 			initial = CompletableFuture.allOf(initial, result);
 		}
@@ -558,7 +557,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 			position.setLine(0);
 			params.setPosition(position);
 			CompletableFuture<?> hoverFuture = LanguageServers.forDocument(document)
-			.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+			.withCapability(ServerCapabilities::getHoverProvider)
 			.collectAll(ls -> {
 				try {
 					// If this is non-null then we're running on a/the SWT event thread
@@ -644,7 +643,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		params.setPosition(position);
 
 		CompletableFuture<Optional<String>> response =  LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.computeFirst(ls -> ls.getTextDocumentService().hover(params).thenApply(h -> h == null ? null : h.getContents().getLeft().get(0).getLeft()));
 
 		response.join();
@@ -672,7 +671,7 @@ public class LanguageServersTest extends AbstractTestWithProject {
 		params.setPosition(position);
 
 		CompletableFuture<List<Pair<LanguageServerWrapper, LanguageServer>>> async = LanguageServers.forDocument(document)
-				.withFilter(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getHoverProvider()))
+				.withCapability(ServerCapabilities::getHoverProvider)
 				.collectAll((w, ls) -> ls.getTextDocumentService().hover(params).thenApply(h -> Pair.of(w, ls)));
 
 		final List<Pair<LanguageServerWrapper, LanguageServer>> result = async.join();

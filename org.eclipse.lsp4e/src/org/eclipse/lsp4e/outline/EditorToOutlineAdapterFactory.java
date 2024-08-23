@@ -31,6 +31,7 @@ import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.ui.UI;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
@@ -60,8 +61,7 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 				IDocument document = LSPEclipseUtils.getDocument(editorInput);
 				if (document != null) {
 					CompletableFuture<Optional<LanguageServerWrapper>> languageServer = LanguageServers.forDocument(document)
-							.withFilter(capabilities -> LSPEclipseUtils
-									.hasCapability(capabilities.getDocumentSymbolProvider())).computeFirst((w,ls) -> CompletableFuture.completedFuture(w));
+							.withCapability(ServerCapabilities::getDocumentSymbolProvider).computeFirst((w,ls) -> CompletableFuture.completedFuture(w));
 					try {
 						return languageServer.get(50, TimeUnit.MILLISECONDS).filter(Objects::nonNull)
 								.filter(LanguageServerWrapper::isActive)
