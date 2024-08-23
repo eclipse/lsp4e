@@ -13,9 +13,9 @@
 package org.eclipse.lsp4e.outline;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.WeakHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +42,8 @@ public class EditorToOutlineAdapterFactory implements IAdapterFactory {
 
 	private static final String OUTLINE_VIEW_ID = "org.eclipse.ui.views.ContentOutline"; //$NON-NLS-1$
 
-	private static final Map<IEditorPart, LanguageServerWrapper> LANG_SERVER_CACHE = Collections.synchronizedMap(new HashMap<>());
+	private static final Map<IEditorPart, LanguageServerWrapper> LANG_SERVER_CACHE = Collections
+			.synchronizedMap(new WeakHashMap<>());
 
 	@Override
 	public <T> @Nullable T getAdapter(@Nullable Object adaptableObject, @Nullable Class<T> adapterType) {
