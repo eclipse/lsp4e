@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
 
 import java.net.URI;
@@ -36,7 +37,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 public class SymbolsModel {
 
 	private static final SymbolInformation ROOT_SYMBOL_INFORMATION = new SymbolInformation();
-	private static final Object[] EMPTY = new Object[0];
 
 	private volatile Map<SymbolInformation, List<SymbolInformation>> childrenMap = Collections.emptyMap();
 	private volatile List<DocumentSymbol> rootSymbols = Collections.emptyList();
@@ -190,7 +190,7 @@ public class SymbolsModel {
 				}
 			}
 		}
-		return EMPTY;
+		return NO_OBJECTS;
 	}
 
 	public boolean hasChildren(@Nullable Object parentElement) {

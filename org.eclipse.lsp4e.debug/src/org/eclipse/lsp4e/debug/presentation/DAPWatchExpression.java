@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.presentation;
 
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_STRINGS;
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import org.eclipse.core.runtime.Adapters;
@@ -21,6 +22,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.debug.debugmodel.DSPDebugTarget;
 import org.eclipse.lsp4e.debug.debugmodel.DSPStackFrame;
 import org.eclipse.lsp4e.debug.debugmodel.DSPValue;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4j.debug.EvaluateArguments;
 import org.eclipse.lsp4j.debug.EvaluateResponse;
 
@@ -63,7 +65,7 @@ public class DAPWatchExpression implements IWatchExpressionDelegate {
 
 			@Override
 			public String[] getErrorMessages() {
-				return new String[0];
+				return NO_STRINGS;
 			}
 		};
 	}

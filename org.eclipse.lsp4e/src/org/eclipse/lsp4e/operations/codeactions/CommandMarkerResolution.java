@@ -31,6 +31,8 @@ import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
 
 public class CommandMarkerResolution extends WorkbenchMarkerResolution implements IMarkerResolution {
 
+	private static final IMarker[] NO_MARKERS = new IMarker[0];
+
 	private final Command command;
 
 	public CommandMarkerResolution(Command command) {
@@ -80,7 +82,7 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 
 	@Override
 	public IMarker[] findOtherMarkers(IMarker[] markers) {
-		return new IMarker[0];
+		return NO_MARKERS;
 	}
 
 }

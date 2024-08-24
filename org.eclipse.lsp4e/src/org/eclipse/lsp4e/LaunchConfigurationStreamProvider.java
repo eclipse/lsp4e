@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_BYTES;
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.io.IOException;
@@ -60,11 +61,10 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 	protected static class StreamProxyInputStream extends InputStream implements IStreamListener {
 
 		private static final int EOF = -1;
-		private static final byte[] NO_DATA = new byte[0];
 
 		private final ConcurrentLinkedQueue<byte[]> queue = new ConcurrentLinkedQueue<>();
 		private final IProcess process;
-		private byte[] currentBuffer = NO_DATA;
+		private byte[] currentBuffer = NO_BYTES;
 		private int currentBufferPos = 0;
 
 		public StreamProxyInputStream(IProcess process) {

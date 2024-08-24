@@ -35,6 +35,10 @@ import org.eclipse.lsp4j.debug.StepOutArguments;
 import org.eclipse.lsp4j.debug.Thread;
 
 public class DSPThread extends DSPDebugElement implements IThread {
+
+	private static final IStackFrame[] NO_STACK_FRAMES = new IStackFrame[0];
+	private static final IBreakpoint[] NO_BREAKPOINTS = new IBreakpoint[0];
+
 	private final Integer id;
 	/**
 	 * The name may not be known, if it is requested we will ask for it from the
@@ -232,7 +236,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 	@Override
 	public IStackFrame[] getStackFrames() throws DebugException {
 		if (!isSuspended()) {
-			return new IStackFrame[0];
+			return NO_STACK_FRAMES;
 		}
 		if (!refreshFrames.getAndSet(false)) {
 			synchronized (frames) {
@@ -263,12 +267,12 @@ public class DSPThread extends DSPDebugElement implements IThread {
 			return future.get();
 		} catch (RuntimeException | ExecutionException e) {
 			if (isTerminated()) {
-				return new DSPStackFrame[0];
+				return NO_STACK_FRAMES;
 			}
 			throw newTargetRequestFailedException(e.getMessage(), e);
 		} catch (InterruptedException e) {
 			java.lang.Thread.currentThread().interrupt();
-			return new DSPStackFrame[0];
+			return NO_STACK_FRAMES;
 		}
 	}
 
@@ -291,7 +295,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 	@Override
 	public IBreakpoint[] getBreakpoints() {
 		// TODO update breakpoints from stopped messages from server
-		return new IBreakpoint[0];
+		return NO_BREAKPOINTS;
 	}
 
 	public Integer getId() {

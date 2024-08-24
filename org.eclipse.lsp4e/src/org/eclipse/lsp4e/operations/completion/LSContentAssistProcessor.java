@@ -13,6 +13,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.completion;
 
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_CHARS;
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.net.URI;
@@ -68,17 +69,19 @@ import com.google.common.base.Strings;
 
 public class LSContentAssistProcessor implements IContentAssistProcessor {
 
+	private static final ICompletionProposal[] NO_COMPLETION_PROPOSALS = new ICompletionProposal[0];
 	private static final long TRIGGERS_TIMEOUT = 50;
 	private static final long CONTEXT_INFORMATION_TIMEOUT = 1000;
+
 	private @Nullable IDocument currentDocument;
 	private @Nullable String errorMessage;
 	private final boolean errorAsCompletionItem;
 	private @Nullable CompletableFuture<List<Void>> completionLanguageServersFuture;
 	private final Object completionTriggerCharsSemaphore = new Object();
-	private char[] completionTriggerChars = new char[0];
+	private char[] completionTriggerChars = NO_CHARS;
 	private @Nullable CompletableFuture<List<Void>> contextInformationLanguageServersFuture;
 	private final Object contextTriggerCharsSemaphore = new Object();
-	private char[] contextTriggerChars = new char[0];
+	private char[] contextTriggerChars = NO_CHARS;
 	private final boolean incompleteAsCompletionItem;
 
 	/**
@@ -107,12 +110,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	public ICompletionProposal @Nullable [] computeCompletionProposals(ITextViewer viewer, int offset) {
 		IDocument document = viewer.getDocument();
 		if (document == null) {
-			return new LSCompletionProposal[0];
+			return NO_COMPLETION_PROPOSALS;
 		}
 
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
-			return new LSCompletionProposal[0];
+			return NO_COMPLETION_PROPOSALS;
 		}
 
 		initiateLanguageServers(document);
@@ -201,7 +204,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			return new ICompletionProposal[] {
 					new CompletionProposal("", offset, 0, 0, null, Messages.completionError, null, ex.getMessage()) }; //$NON-NLS-1$
 		} else {
-			return new ICompletionProposal[0];
+			return NO_COMPLETION_PROPOSALS;
 		}
 	}
 
@@ -214,7 +217,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			return new ICompletionProposal[] { new CompletionProposal("", offset, 0, 0, null, //$NON-NLS-1$
 					Messages.completionIncomplete, null, Messages.continueIncomplete) };
 		}
-		return new ICompletionProposal[0];
+		return NO_COMPLETION_PROPOSALS;
 	}
 
 	private void initiateLanguageServers(IDocument document) {
@@ -234,8 +237,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 					// nothing
 				}
 			}
-			this.completionTriggerChars = new char[0];
-			this.contextTriggerChars = new char[0];
+			this.completionTriggerChars = NO_CHARS;
+			this.contextTriggerChars = NO_CHARS;
 
 			this.completionLanguageServersFuture = LanguageServers.forDocument(document)
 					.withFilter(capabilities -> capabilities.getCompletionProvider() != null) //
@@ -368,7 +371,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private static char[] mergeTriggers(char @Nullable [] initialArray,
 			@Nullable Collection<String> additionalTriggers) {
 		if (initialArray == null) {
-			initialArray = new char[0];
+			initialArray = NO_CHARS;
 		}
 		if (additionalTriggers == null) {
 			additionalTriggers = Collections.emptySet();

@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +29,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.views.HierarchyViewInput;
@@ -66,13 +69,13 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 							? textDocumentService.typeHierarchySupertypes(new TypeHierarchySupertypesParams(parentItem))
 							: textDocumentService.typeHierarchySubtypes(new TypeHierarchySubtypesParams(parentItem));
 				})
-					.thenApply(list -> list == null ? new Object[0] : list.toArray())
+					.thenApply(list -> list == null ? NO_OBJECTS : list.toArray())
 					.get(500, TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
-		return new Object[0];
+		return NO_OBJECTS;
 	}
 
 	@Override
