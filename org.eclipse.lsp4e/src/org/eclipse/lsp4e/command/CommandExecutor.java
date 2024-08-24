@@ -12,7 +12,6 @@ import static org.eclipse.lsp4e.command.LSPCommandHandler.*;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -175,7 +174,7 @@ public class CommandExecutor {
 			if (item instanceof List<?> list) {
 				return list.stream();
 			} else {
-				return Collections.singleton(item).stream();
+				return List.of(item).stream();
 			}
 		}).forEach(arg -> {
 			if (arg instanceof String argString) {
