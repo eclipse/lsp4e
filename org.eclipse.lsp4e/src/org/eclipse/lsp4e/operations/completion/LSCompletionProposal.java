@@ -516,7 +516,7 @@ public class LSCompletionProposal
 
 				final var allEdits = new ArrayList<TextEdit>();
 				allEdits.add(textEdit);
-				additionalEdits.stream().forEach(te -> {
+				additionalEdits.forEach(te -> {
 					int shift = offset - initialOffset;
 					if (shift != 0) {
 						try {
