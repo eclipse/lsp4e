@@ -280,10 +280,10 @@ public class LoggingStreamConnectionProviderProxy implements StreamConnectionPro
 	private MessageConsole findConsole() {
 		ConsolePlugin plugin = ConsolePlugin.getDefault();
 		IConsoleManager conMan = plugin.getConsoleManager();
-		IConsole[] existing = conMan.getConsoles();
-		for (int i = 0; i < existing.length; i++)
-			if (Messages.LSConsoleName.equals(existing[i].getName()))
-				return (MessageConsole) existing[i];
+		for (IConsole existing : conMan.getConsoles()) {
+			if (Messages.LSConsoleName.equals(existing.getName()))
+				return (MessageConsole) existing;
+		}
 		// no console found, so create a new one
 		final var myConsole = new MessageConsole(Messages.LSConsoleName, null);
 		conMan.addConsoles(new IConsole[] { myConsole });

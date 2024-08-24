@@ -98,8 +98,7 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 
 		Font dialogFont = JFaceResources.getDialogFont();
 		FontData[] fontData = dialogFont.getFontData();
-		for (int i = 0; i < fontData.length; i++) {
-			FontData data = fontData[i];
+		for (final FontData data : fontData) {
 			data.setStyle(SWT.ITALIC);
 		}
 		Display display = getDisplay();

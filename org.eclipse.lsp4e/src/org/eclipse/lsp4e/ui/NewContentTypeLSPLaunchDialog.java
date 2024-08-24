@@ -78,9 +78,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 				return NO_OBJECTS;
 			final var elements = new ArrayList<IContentType>();
 			final var baseType = (IContentType) parentElement;
-			IContentType[] contentTypes = manager.getAllContentTypes();
-			for (int i = 0; i < contentTypes.length; i++) {
-				IContentType type = contentTypes[i];
+			for (final IContentType type : manager.getAllContentTypes()) {
 				if (Objects.equals(type.getBaseType(), baseType)) {
 					elements.add(type);
 				}
