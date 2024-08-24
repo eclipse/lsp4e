@@ -15,9 +15,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLClassLoader;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.externaltools.internal.IExternalToolConstants;
@@ -76,7 +76,7 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 				mockServerLauch = workingCopy.doSave();
 				registry.registerAssociation(contentTypeManager.getContentType("org.eclipse.lsp4e.test.content-type2"),
 						LaunchConfigurationStreamProvider.findLaunchConfiguration(IExternalToolConstants.ID_PROGRAM_LAUNCH_CONFIGURATION_TYPE, mockServerLauch.getName()),
-						Collections.singleton(ILaunchManager.RUN_MODE));
+						Set.of(ILaunchManager.RUN_MODE));
 			}
 		} catch (CoreException e) {
 			LanguageServerPlugin.logError(e);

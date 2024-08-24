@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -138,7 +137,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		if (launchModes != null) {
 			this.launchModes = launchModes;
 		} else {
-			this.launchModes = Collections.singleton(ILaunchManager.RUN_MODE);
+			this.launchModes = Set.of(ILaunchManager.RUN_MODE);
 		}
 	}
 

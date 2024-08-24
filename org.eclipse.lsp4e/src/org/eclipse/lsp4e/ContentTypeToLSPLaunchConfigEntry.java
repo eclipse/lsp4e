@@ -71,7 +71,7 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToLanguageServ
 		String[] launchParts = parts[1].split("/"); //$NON-NLS-1$
 		String launchType = launchParts[0];
 		String launchName = launchParts[1];
-		Set<String> launchModes = Collections.singleton(ILaunchManager.RUN_MODE);
+		Set<String> launchModes = Set.of(ILaunchManager.RUN_MODE);
 		if (launchParts.length > 2) {
 			launchModes = Set.of(launchParts[2].split("\\+")); //$NON-NLS-1$
 		}
