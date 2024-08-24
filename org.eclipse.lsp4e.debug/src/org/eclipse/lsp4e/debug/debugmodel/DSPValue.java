@@ -19,6 +19,8 @@ import org.eclipse.lsp4j.debug.VariablesArguments;
 
 public final class DSPValue extends DSPDebugElement implements IValue {
 
+	private static final IVariable[] NO_VARIABLES = new IVariable[0];
+
 	private final @Nullable DSPVariable modelVariable;
 	private final Integer variablesReference;
 	private final String value;
@@ -41,7 +43,7 @@ public final class DSPValue extends DSPDebugElement implements IValue {
 	@Override
 	public IVariable @Nullable [] getVariables() throws DebugException {
 		if (!hasVariables()) {
-			return new IVariable[0];
+			return NO_VARIABLES;
 		}
 		if (cachedVariables == null) {
 			final var arguments = new VariablesArguments();

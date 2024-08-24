@@ -8,6 +8,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.sourcelookup;
 
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
+
 import java.nio.file.Paths;
 
 import org.eclipse.core.runtime.CoreException;
@@ -23,7 +25,7 @@ public class AbsolutePathSourceContainer extends AbstractSourceContainer impleme
 		if (name != null && Paths.get(name).isAbsolute()) {
 			return new Object[] { name };
 		}
-		return new Object[0];
+		return NO_OBJECTS;
 	}
 
 	@Override

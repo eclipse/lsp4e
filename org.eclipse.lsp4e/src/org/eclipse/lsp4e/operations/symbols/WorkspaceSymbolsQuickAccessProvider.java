@@ -35,11 +35,13 @@ import org.eclipse.ui.quickaccess.QuickAccessElement;
 
 public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer, IQuickAccessComputerExtension {
 
+	private static final QuickAccessElement[] NO_QUICK_ACCESS_ELEMENTS = new QuickAccessElement[0];
+
 	private @Nullable List<LanguageServerWrapper> usedLanguageServerWrappers;
 
 	@Override
 	public QuickAccessElement[] computeElements() {
-		return new QuickAccessElement[0];
+		return NO_QUICK_ACCESS_ELEMENTS;
 	}
 
 	@Override
@@ -58,7 +60,7 @@ public class WorkspaceSymbolsQuickAccessProvider implements IQuickAccessComputer
 		final var usedLanguageServerWrappers = this.usedLanguageServerWrappers = LanguageServiceAccessor
 				.getStartedWrappers(capabilities -> LSPEclipseUtils.hasCapability(capabilities.getWorkspaceSymbolProvider()), true);
 		if (usedLanguageServerWrappers.isEmpty()) {
-			return new QuickAccessElement[0];
+			return NO_QUICK_ACCESS_ELEMENTS;
 		}
 		final var params = new WorkspaceSymbolParams(query);
 		final var res = Collections.synchronizedList(new ArrayList<QuickAccessElement>());

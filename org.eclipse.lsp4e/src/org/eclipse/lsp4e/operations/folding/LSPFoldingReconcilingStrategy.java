@@ -59,6 +59,8 @@ import org.eclipse.swt.widgets.Canvas;
 public class LSPFoldingReconcilingStrategy
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, IProjectionListener, ITextViewerLifecycle {
 
+	private static final Annotation[] NO_ANNOTATIONS = new Annotation[0];
+
 	private @Nullable IDocument document;
 	private @Nullable ProjectionAnnotationModel projectionAnnotationModel;
 	private @Nullable ProjectionViewer viewer;
@@ -181,7 +183,7 @@ public class LSPFoldingReconcilingStrategy
 			// send the calculated updates to the annotations to the
 			// annotation model
 			theProjectionAnnotationModel.modifyAnnotations(deletions.toArray(Annotation[]::new), additions,
-					new Annotation[0]);
+					NO_ANNOTATIONS);
 		}
 	}
 

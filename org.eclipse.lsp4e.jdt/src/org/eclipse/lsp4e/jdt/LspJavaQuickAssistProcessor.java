@@ -30,6 +30,7 @@ import org.eclipse.lsp4e.operations.codeactions.LSPCodeActionQuickAssistProcesso
 public class LspJavaQuickAssistProcessor extends LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor {
 
 	private static final int RELEVANCE = 100;
+	private static final IJavaCompletionProposal[] NO_JAVA_COMPLETION_PROPOSALS = new IJavaCompletionProposal[0];
 
 	private IQuickAssistInvocationContext getContext(IInvocationContext context) {
 		return new IQuickAssistInvocationContext() {
@@ -63,7 +64,7 @@ public class LspJavaQuickAssistProcessor extends LSPCodeActionQuickAssistProcess
 
 		ICompletionProposal[] proposals = computeQuickAssistProposals(getContext(context));
 		if (proposals == null)
-			return new IJavaCompletionProposal[0];
+			return NO_JAVA_COMPLETION_PROPOSALS;
 
 		final var javaProposals = new IJavaCompletionProposal[proposals.length];
 		for (int i = 0; i < proposals.length; i++) {

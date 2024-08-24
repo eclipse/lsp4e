@@ -39,7 +39,7 @@ public class LSSearchResult extends FileSearchResult implements IEditorMatchAdap
 		super(query);
 	}
 
-	private static final Match[] EMPTY_ARR= new Match[0];
+	private static final Match[] NO_MATCHES = new Match[0];
 	private final Set<Object> nonFileElements = ConcurrentHashMap.newKeySet();
 
 	@Override
@@ -68,7 +68,7 @@ public class LSSearchResult extends FileSearchResult implements IEditorMatchAdap
 		} else if (ei instanceof IURIEditorInput uriInput) {
 			return getMatches(uriInput.getURI());
 		}
-		return EMPTY_ARR;
+		return NO_MATCHES;
 	}
 
 	@Override

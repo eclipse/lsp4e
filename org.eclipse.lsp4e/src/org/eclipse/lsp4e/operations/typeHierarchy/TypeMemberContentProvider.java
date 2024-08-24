@@ -11,6 +11,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
+
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
+
 import java.net.URI;
 import java.util.List;
 
@@ -20,14 +23,13 @@ import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4j.DocumentSymbol;
 
 public class TypeMemberContentProvider implements IStructuredContentProvider {
-	private static final Object[] NO_CHILDREN = new Object[0];
 
 	@Override
 	public Object[] getElements(@Nullable Object inputElement) {
 		if (inputElement instanceof DocumentSymbolWithURI symbolContainer) {
 			return toContainer(symbolContainer.symbol.getChildren(), symbolContainer.uri);
 		}
-		return NO_CHILDREN;
+		return NO_OBJECTS;
 	}
 
 	private Object[] toContainer(@Nullable List<DocumentSymbol> symbols, URI uri) {
@@ -38,7 +40,7 @@ public class TypeMemberContentProvider implements IStructuredContentProvider {
 			}
 			return container;
 		}
-		return NO_CHILDREN;
+		return NO_OBJECTS;
 	}
 
 }

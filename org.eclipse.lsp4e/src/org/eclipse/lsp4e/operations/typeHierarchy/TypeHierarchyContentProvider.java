@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
 
 import java.util.AbstractMap.SimpleEntry;
@@ -49,7 +50,7 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 			try {
 				final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
 				if (identifier == null) {
-					return new Object[0];
+					return NO_OBJECTS;
 				}
 				Position position = LSPEclipseUtils.toPosition(textSelection.getOffset(), document);
 				final var prepare = new TypeHierarchyPrepareParams(identifier, position);
@@ -57,13 +58,13 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 					.computeFirst((wrapper, ls) -> ls.getTextDocumentService().prepareTypeHierarchy(prepare).thenApply(items -> new SimpleEntry<>(wrapper, items)))
 					.thenApply(entry -> {
 						wrapper = entry.map(Entry::getKey).orElse(null);
-						return entry.map(Entry::getValue).map(list -> list.toArray()).orElse(new Object[0]);
+						return entry.map(Entry::getValue).map(list -> list.toArray()).orElse(NO_OBJECTS);
 					}).get(500, TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
-		return new Object[0];
+		return NO_OBJECTS;
 	}
 
 	@Override
@@ -77,13 +78,13 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 							? textDocumentService.typeHierarchySupertypes(new TypeHierarchySupertypesParams(parentItem))
 							: textDocumentService.typeHierarchySubtypes(new TypeHierarchySubtypesParams(parentItem));
 				})
-					.thenApply(list -> list == null ? new Object[0] : list.toArray())
+					.thenApply(list -> list == null ? NO_OBJECTS : list.toArray())
 					.get(500, TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
-		return new Object[0];
+		return NO_OBJECTS;
 	}
 
 	@Override

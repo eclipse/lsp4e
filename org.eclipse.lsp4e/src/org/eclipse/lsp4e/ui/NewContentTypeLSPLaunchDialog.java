@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
 
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.util.ArrayList;
@@ -74,7 +75,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		public Object[] getChildren(@Nullable Object parentElement) {
 			final var manager = this.manager;
 			if(manager == null)
-				return new Object[0];
+				return NO_OBJECTS;
 			final var elements = new ArrayList<IContentType>();
 			final var baseType = (IContentType) parentElement;
 			IContentType[] contentTypes = manager.getAllContentTypes();

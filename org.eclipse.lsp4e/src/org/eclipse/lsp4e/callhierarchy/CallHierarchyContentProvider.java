@@ -26,6 +26,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.views.HierarchyViewInput;
@@ -59,7 +60,7 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 		if (parentElement instanceof CallHierarchyViewTreeNode treeNode) {
 			return findCallers(treeNode);
 		} else {
-			return new Object[0];
+			return ArrayUtil.NO_OBJECTS;
 		}
 	}
 

@@ -68,6 +68,8 @@ import org.eclipse.ui.internal.progress.ProgressInfoItem;
 
 public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator2 {
 
+	private static final IMarkerResolution[] NO_MARKER_RESOLUTIONS = new IMarkerResolution[0];
+
 	private static final String LSP_REMEDIATION = "lspCodeActions"; //$NON-NLS-1$
 
 	private static final IMarkerResolution2 COMPUTING = new IMarkerResolution2() {
@@ -106,15 +108,15 @@ public class LSPCodeActionMarkerResolution implements IMarkerResolutionGenerator
 		} catch (InterruptedException e) {
 			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
-			return new IMarkerResolution[0];
+			return NO_MARKER_RESOLUTIONS;
 		} catch (Exception e) {
 			LanguageServerPlugin.logError(e);
-			return new IMarkerResolution[0];
+			return NO_MARKER_RESOLUTIONS;
 		}
 		if (att == COMPUTING) {
 			return new IMarkerResolution[] { COMPUTING };
 		} else if (att == null) {
-			return new IMarkerResolution[0];
+			return NO_MARKER_RESOLUTIONS;
 		}
 		return ((List<Either<Command, CodeAction>>) att).stream().filter(LSPCodeActionMarkerResolution::canPerform)
 				.map(command -> command.map(CommandMarkerResolution::new, CodeActionMarkerResolution::new))

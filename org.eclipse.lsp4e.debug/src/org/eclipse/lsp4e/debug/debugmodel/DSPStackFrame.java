@@ -26,6 +26,9 @@ import org.eclipse.lsp4j.debug.ScopesArguments;
 import org.eclipse.lsp4j.debug.StackFrame;
 
 public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
+
+	private static final IRegisterGroup[] NO_REGISTER_GROUPS = new IRegisterGroup[0];
+
 	private final DSPThread thread;
 	private StackFrame stackFrame;
 	private final int depth;
@@ -157,7 +160,7 @@ public class DSPStackFrame extends DSPDebugElement implements IStackFrame {
 
 	@Override
 	public IRegisterGroup[] getRegisterGroups() throws DebugException {
-		return new IRegisterGroup[0];
+		return NO_REGISTER_GROUPS;
 	}
 
 	@Override

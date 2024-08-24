@@ -19,6 +19,7 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4e.operations.references.FileAndURIMatchLabelProvider.FileAndURIMatchBaseLabelProvider;
 import org.eclipse.search.internal.ui.text.DecoratingFileSearchLabelProvider;
 import org.eclipse.search.internal.ui.text.FileMatch;
@@ -81,7 +82,7 @@ public class LSSearchResultPage extends FileSearchPage {
 
 	@Override
 	protected void clear() {
-		getViewer().setInput(new Object[0]);
+		getViewer().setInput(ArrayUtil.NO_OBJECTS);
 	}
 
 	@Override
