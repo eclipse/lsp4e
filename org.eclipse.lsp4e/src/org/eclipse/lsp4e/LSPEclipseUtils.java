@@ -1101,7 +1101,7 @@ public final class LSPEclipseUtils {
 			// documentChanges are present, the latter are preferred over changes
 			// see specification at
 			// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspaceEdit
-			documentChanges.stream().forEach(action -> {
+			documentChanges.forEach(action -> {
 				if (action.isLeft()) {
 					TextDocumentEdit edit = action.getLeft();
 					VersionedTextDocumentIdentifier id = edit.getTextDocument();
