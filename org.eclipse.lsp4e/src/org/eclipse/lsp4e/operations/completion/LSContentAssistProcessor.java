@@ -18,7 +18,6 @@ import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -145,8 +144,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 					.collectAll((w, ls) -> cancellationSupport.execute(ls.getTextDocumentService().completion(param)) //
 							.thenAccept(completion -> {
 								boolean isIncomplete = completion != null && completion.isRight()
-										? completion.getRight().isIncomplete()
-										: false;
+										&& completion.getRight().isIncomplete();
 								proposals.addAll(toProposals(document, offset, completion, w, cancellationSupport,
 										isIncomplete));
 								if (isIncomplete) {
@@ -177,26 +175,22 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 			return createErrorProposal(offset, e);
 		}
 
-		final var completeProposals = new LSCompletionProposal[proposals.size()];
-		int i = 0;
-		for (ICompletionProposal proposal : proposals) {
-			if (proposal instanceof LSCompletionProposal completeProposal) {
-				completeProposals[i] = completeProposal;
-				i++;
-			} else {
+		final var completeProposals = new ArrayList<LSCompletionProposal>();
+		for (final ICompletionProposal proposal : proposals) {
+			if (!(proposal instanceof final LSCompletionProposal completeProposal)) {
 				return proposals.toArray(ICompletionProposal[]::new);
 			}
+			completeProposals.add(completeProposal);
 		}
-		Arrays.sort(completeProposals, proposalComparator);
-		ICompletionProposal[] incompleteProposal = createIncompleProposal(offset, anyIncomplete.get());
-		if (incompleteProposal.length > 0) {
-			ICompletionProposal[] incompleteProposals = Arrays.copyOf(completeProposals,
-					completeProposals.length + incompleteProposal.length, ICompletionProposal[].class);
-			System.arraycopy(incompleteProposal, 0, incompleteProposals, completeProposals.length,
-					incompleteProposal.length);
-			return incompleteProposals;
+		completeProposals.sort(proposalComparator);
+		final ICompletionProposal incompleteProposal = createIncompleteProposal(offset, anyIncomplete.get());
+		if (incompleteProposal != null) {
+			@SuppressWarnings("unchecked")
+			final var incompleteProposals = (List<ICompletionProposal>) (List<?>) completeProposals;
+			incompleteProposals.add(incompleteProposal);
+			return incompleteProposals.toArray(ICompletionProposal[]::new);
 		}
-		return completeProposals;
+		return completeProposals.toArray(ICompletionProposal[]::new);
 	}
 
 	private ICompletionProposal[] createErrorProposal(int offset, Exception ex) {
@@ -212,12 +206,12 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		return Messages.completionError + " : " + ex.getMessage(); //$NON-NLS-1$
 	}
 
-	private ICompletionProposal[] createIncompleProposal(int offset, boolean incomplete) {
+	private @Nullable ICompletionProposal createIncompleteProposal(int offset, boolean incomplete) {
 		if (incompleteAsCompletionItem && incomplete) {
-			return new ICompletionProposal[] { new CompletionProposal("", offset, 0, 0, null, //$NON-NLS-1$
-					Messages.completionIncomplete, null, Messages.continueIncomplete) };
+			return new CompletionProposal("", offset, 0, 0, null, Messages.completionIncomplete, null, //$NON-NLS-1$
+					Messages.continueIncomplete);
 		}
-		return NO_COMPLETION_PROPOSALS;
+		return null;
 	}
 
 	private void initiateLanguageServers(IDocument document) {
