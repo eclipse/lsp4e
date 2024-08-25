@@ -14,7 +14,6 @@ package org.eclipse.lsp4e.test.operations.inlayhint;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -86,7 +85,7 @@ public class LSPLineContentCodeMiningTest extends AbstractTestWithProject {
 
 	private static InlayHint createMultiLabelInlayHint(InlayHintLabelPart... parts) {
 		final var inlay = new InlayHint();
-		inlay.setLabel(Arrays.asList(parts));
+		inlay.setLabel(List.of(parts));
 		inlay.setPosition(new Position(0, 0));
 		return inlay;
 	}

@@ -11,7 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.jdt;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -52,7 +51,7 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 			lsContentAssistProcessor.computeCompletionProposals(context.getViewer(), context.getInvocationOffset()));
 
 		try {
-			return Arrays.asList(asJavaProposals(future));
+			return List.of(asJavaProposals(future));
 		} catch (ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError(e);
 			javaCompletionSpecificErrorMessage = createErrorMessage(e);

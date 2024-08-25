@@ -11,7 +11,6 @@ package org.eclipse.lsp4e.debug.launcher;
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
 import static org.eclipse.swt.events.SelectionListener.widgetSelectedAdapter;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -270,7 +269,7 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 		if (arg == null) {
 			configuration.setAttribute(DSPPlugin.ATTR_DSP_ARGS, (String) null);
 		} else {
-			configuration.setAttribute(DSPPlugin.ATTR_DSP_ARGS, Arrays.asList(arg.split("\\s+"))); //$NON-NLS-1$
+			configuration.setAttribute(DSPPlugin.ATTR_DSP_ARGS, List.of(arg.split("\\s+"))); //$NON-NLS-1$
 		}
 		configuration.setAttribute(DSPPlugin.ATTR_DSP_MONITOR_DEBUG_ADAPTER,
 				monitorAdapterLauncherProcessCheckbox.getSelection());

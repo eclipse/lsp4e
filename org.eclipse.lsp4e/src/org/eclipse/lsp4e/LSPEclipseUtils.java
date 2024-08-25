@@ -1394,8 +1394,7 @@ public final class LSPEclipseUtils {
 		String fileName = getFileName(buffer);
 		if (fileName != null) {
 			try (var contents = new DocumentInputStream(document)) {
-				contentTypes
-						.addAll(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, fileName)));
+				contentTypes.addAll(List.of(Platform.getContentTypeManager().findContentTypesFor(contents, fileName)));
 			} catch (IOException e) {
 				LanguageServerPlugin.logError(e);
 			}

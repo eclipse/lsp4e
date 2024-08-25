@@ -19,7 +19,6 @@ package org.eclipse.lsp4e.tests.mock;
 import java.io.File;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -165,7 +164,7 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
-		return futureFactory(Arrays.asList(this.mockReferences));
+		return futureFactory(List.of(this.mockReferences));
 	}
 
 	@Override

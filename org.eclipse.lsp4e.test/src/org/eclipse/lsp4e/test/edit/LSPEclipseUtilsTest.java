@@ -26,7 +26,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -272,7 +271,7 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 				new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), " throws "),
 				new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "Exception") };
 		IDocument document = viewer.getDocument();
-		LSPEclipseUtils.applyEdits(document, Arrays.asList(edits));
+		LSPEclipseUtils.applyEdits(document, List.of(edits));
 		Assert.assertEquals(" throws Exception", document.get());
 	}
 
@@ -285,7 +284,7 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		IDocument document = viewer.getDocument();
 		int linesBeforeApplyEdits = document.getNumberOfLines();
 		// WHEN the TextEdit gets applied to the document:
-		LSPEclipseUtils.applyEdits(document, Arrays.asList(edits));
+		LSPEclipseUtils.applyEdits(document, List.of(edits));
 		// THEN line1 has been swapped with line 3:
 		Assert.assertEquals("line3\r\nline2\r\nline1\r\n", document.get());
 		// AND the number of lines is still the same, because we have not appended a line:

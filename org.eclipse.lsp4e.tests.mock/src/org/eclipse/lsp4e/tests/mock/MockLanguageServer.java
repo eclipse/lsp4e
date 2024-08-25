@@ -17,7 +17,6 @@
 package org.eclipse.lsp4e.tests.mock;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -326,7 +325,7 @@ public final class MockLanguageServer implements LanguageServer {
 	}
 
 	public void setDocumentSymbols(DocumentSymbol... documentSymbols) {
-		this.textDocumentService.setDocumentSymbols(Arrays.asList(documentSymbols));
+		this.textDocumentService.setDocumentSymbols(List.of(documentSymbols));
 	}
 
 	@Override

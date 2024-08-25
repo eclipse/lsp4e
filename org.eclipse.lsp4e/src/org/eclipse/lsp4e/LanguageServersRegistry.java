@@ -16,7 +16,6 @@ package org.eclipse.lsp4e;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -444,8 +443,8 @@ public class LanguageServersRegistry {
 	}
 
 	public boolean canUseLanguageServer(IEditorInput editorInput) {
-		return !getAvailableLSFor(
-				Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(editorInput.getName())), LSPEclipseUtils.toUri(editorInput)).isEmpty();
+		return !getAvailableLSFor(List.of(Platform.getContentTypeManager().findContentTypesFor(editorInput.getName())),
+				LSPEclipseUtils.toUri(editorInput)).isEmpty();
 	}
 
 	public boolean canUseLanguageServer(IDocument document) {

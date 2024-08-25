@@ -17,6 +17,7 @@ import java.net.URLClassLoader;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -87,7 +88,7 @@ public class CreateAndRegisterContentTypeLSPLaunchConfigMapping implements IStar
 	private String getClassPath(Class<?> clazz) {
 		ClassLoader loader = clazz.getClassLoader();
 		if (loader instanceof URLClassLoader urlClassLoader) {
-			return Arrays.asList(urlClassLoader.getURLs()).stream().map(url -> url.getFile()).collect(Collectors.joining(System.getProperty("path.separator")));
+			return List.of(urlClassLoader.getURLs()).stream().map(url -> url.getFile()).collect(Collectors.joining(System.getProperty("path.separator")));
 		}
 		final var toProcess = new LinkedList<Bundle>();
 		final var processed = new HashSet<Bundle>();
