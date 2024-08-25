@@ -59,7 +59,6 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileInfo;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.filesystem.IFileSystem;
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -90,6 +89,7 @@ import org.eclipse.jface.text.RewriteSessionEditProcessor;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4e.internal.DocumentInputStream;
 import org.eclipse.lsp4e.refactoring.CreateFileChange;
 import org.eclipse.lsp4e.refactoring.DeleteExternalFile;
@@ -425,11 +425,7 @@ public final class LSPEclipseUtils {
 		}
 		if (FILE_SCHEME.equals(uri.getScheme())) {
 			IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
-			IFile[] files = wsRoot.findFilesForLocationURI(uri);
-			if (files.length > 0) {
-				return files[0];
-			}
-			return null;
+			return ArrayUtil.findFirst(wsRoot.findFilesForLocationURI(uri));
 		} else {
 			return Adapters.adapt(uri.toString(), IFile.class, true);
 		}
@@ -476,11 +472,7 @@ public final class LSPEclipseUtils {
 				}
 			}
 
-			final IContainer[] containers = wsRoot.findContainersForLocationURI(uri);
-			if (containers.length > 0) {
-				return containers[0];
-			}
-			return null;
+			return ArrayUtil.findFirst(wsRoot.findContainersForLocationURI(uri));
 		} else {
 			return Adapters.adapt(uri, IResource.class, true);
 		}
@@ -1352,13 +1344,12 @@ public final class LSPEclipseUtils {
 		if (file.exists()) {
 			try (InputStream contents = file.getContents()) {
 				// TODO consider using document as inputstream
-				contentTypes.addAll(
-						Arrays.asList(contentTypeManager.findContentTypesFor(contents, file.getName())));
+				Collections.addAll(contentTypes, contentTypeManager.findContentTypesFor(contents, file.getName()));
 			} catch (CoreException | IOException e) {
 				LanguageServerPlugin.logError(e);
 			}
 		} else {
-			contentTypes.addAll(Arrays.asList(contentTypeManager.findContentTypesFor(file.getName())));
+			Collections.addAll(contentTypes, contentTypeManager.findContentTypesFor(file.getName()));
 		}
 		return contentTypes;
 	}

@@ -38,6 +38,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.swt.widgets.Composite;
@@ -112,7 +113,7 @@ public class TestUtils {
 		IWorkbenchPage page = workbenchWindow.getActivePage();
 		final var input = new FileEditorInput(file);
 
-		return Arrays.asList(page.getEditorReferences()).stream()
+		return List.of(page.getEditorReferences()).stream()
 			.filter(r -> {
 				try {
 					return r.getEditorInput().equals(input);
@@ -205,11 +206,7 @@ public class TestUtils {
 	}
 
 	public static void delete(IProject... projects) throws CoreException {
-		if (projects != null && projects.length > 0) {
-			for (IProject project : projects) {
-				delete(project);
-			}
-		}
+		ArrayUtil.forEach(projects, TestUtils::delete);
 	}
 
 	public static void delete(Path path) throws IOException {
@@ -219,11 +216,7 @@ public class TestUtils {
 	}
 
 	public static void delete(Path... paths) throws IOException {
-		if (paths != null && paths.length > 0) {
-			for (Path path : paths) {
-				delete(path);
-			}
-		}
+		ArrayUtil.forEach(paths, TestUtils::delete);
 	}
 
 	public static File createTempFile(String prefix, String suffix) throws IOException {
@@ -257,10 +250,8 @@ public class TestUtils {
 	}
 
 	public static Shell findNewShell(Set<Shell> beforeShells, Display display) {
-		Shell[] afterShells = Arrays.stream(display.getShells())
-				.filter(Shell::isVisible)
-				.filter(shell -> !beforeShells.contains(shell))
-				.toArray(Shell[]::new);
+		Shell[] afterShells = ArrayUtil.filter(display.getShells(),
+				shell -> shell.isVisible() && !beforeShells.contains(shell));
 		return afterShells.length > 0 ? afterShells[0] : null;
 	}
 

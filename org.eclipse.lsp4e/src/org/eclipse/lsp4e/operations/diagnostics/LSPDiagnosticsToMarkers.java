@@ -13,7 +13,6 @@
 package org.eclipse.lsp4e.operations.diagnostics;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -45,6 +44,7 @@ import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.lsp4e.IMarkerAttributeComputer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
@@ -157,8 +157,8 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 					return Status.OK_STATUS;
 				}
 
-				final var toDeleteMarkers = new HashSet<IMarker>(
-						Arrays.asList(resource.findMarkers(markerType, true, IResource.DEPTH_ZERO)));
+				final var toDeleteMarkers = ArrayUtil
+						.asHashSet(resource.findMarkers(markerType, true, IResource.DEPTH_ZERO));
 				toDeleteMarkers
 						.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
 				final var newDiagnostics = new ArrayList<Diagnostic>();

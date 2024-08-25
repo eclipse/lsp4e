@@ -12,12 +12,11 @@
 package org.eclipse.lsp4e.outline;
 
 import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
-import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -28,6 +27,7 @@ import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.TreePath;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
@@ -167,7 +167,7 @@ public class SymbolsModel {
 	}
 
 	public Object[] getElements() {
-		final var res = new ArrayList<Object>(Arrays.asList(getChildren(ROOT_SYMBOL_INFORMATION)));
+		final var res = ArrayUtil.asArrayList(getChildren(ROOT_SYMBOL_INFORMATION));
 		final URI current = this.uri;
 		Function<DocumentSymbol, Object> mapper = current != null ? symbol -> new DocumentSymbolWithURI(symbol, current)
 				: symbol -> symbol;
@@ -231,8 +231,7 @@ public class SymbolsModel {
 		for (int i = 0; i < initialSymbol.getSegmentCount(); i++) {
 			String name = getName(initialSymbol.getSegment(i));
 			Object[] currentChildren = (currentSymbol == null ? getElements() : getChildren(currentSymbol));
-			currentSymbol = castNullable(Arrays.stream(currentChildren).filter(child -> Objects.equals(getName(child), name))
-					.findAny().orElse(null));
+			currentSymbol = ArrayUtil.findFirstMatching(currentChildren, child -> Objects.equals(getName(child), name));
 			if (currentSymbol == null) {
 				return null;
 			}

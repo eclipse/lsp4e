@@ -71,6 +71,7 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.internal.FileBufferListenerAdapter;
 import org.eclipse.lsp4e.internal.SupportedFeatures;
@@ -733,10 +734,8 @@ public class LanguageServerWrapper {
 	public void disconnectContentType(IContentType contentType) {
 		final var urisToDisconnect = new ArrayList<URI>();
 		for (URI uri : connectedDocuments.keySet()) {
-			IFile[] foundFiles = ResourcesPlugin.getWorkspace().getRoot()
-					.findFilesForLocationURI(uri);
-			if (foundFiles.length != 0
-					&& LSPEclipseUtils.getFileContentTypes(foundFiles[0]).stream().anyMatch(contentType::equals)) {
+			final var file = ArrayUtil.findFirst(ResourcesPlugin.getWorkspace().getRoot().findFilesForLocationURI(uri));
+			if (file != null && LSPEclipseUtils.getFileContentTypes(file).stream().anyMatch(contentType::equals)) {
 				urisToDisconnect.add(uri);
 			}
 		}

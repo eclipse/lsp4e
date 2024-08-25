@@ -55,6 +55,7 @@ import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4e.ui.UI;
@@ -329,16 +330,12 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 		if (lastError != null && symbolsModel.getElements().length == 0) {
 			return new Object[] { "An error occured, see log for details" }; //$NON-NLS-1$
 		}
-		return Arrays.stream(symbolsModel.getElements())
-				.filter(element -> !hideElement(element))
-				.toArray(Object[]::new);
+		return ArrayUtil.filter(symbolsModel.getElements(), element -> !hideElement(element));
 	}
 
 	@Override
 	public Object[] getChildren(Object parentElement) {
-		return Arrays.stream(symbolsModel.getChildren(parentElement))
-			.filter(element -> !hideElement(element))
-			.toArray(Object[]::new);
+		return ArrayUtil.filter(symbolsModel.getChildren(parentElement), element -> !hideElement(element));
 	}
 
 	private boolean hideElement(Object element) {

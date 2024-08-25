@@ -25,6 +25,7 @@ import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.debug.DSPPlugin;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4j.debug.ContinueArguments;
 import org.eclipse.lsp4j.debug.NextArguments;
 import org.eclipse.lsp4j.debug.PauseArguments;
@@ -225,12 +226,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 
 	@Override
 	public @Nullable IStackFrame getTopStackFrame() throws DebugException {
-		IStackFrame[] stackFrames = getStackFrames();
-		if (stackFrames.length > 0) {
-			return stackFrames[0];
-		} else {
-			return null;
-		}
+		return ArrayUtil.findFirst(getStackFrames());
 	}
 
 	@Override

@@ -9,12 +9,12 @@
 package org.eclipse.lsp4e.operations.references;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.search.internal.ui.text.FileMatch;
 import org.eclipse.search.internal.ui.text.FileSearchQuery;
 import org.eclipse.search.internal.ui.text.FileSearchResult;
@@ -48,10 +48,9 @@ public class FileAndURIMatchContentProvider implements ITreeContentProvider {
 
 	@Override
 	public Object[] getElements(@Nullable Object inputElement) {
-		final var res = new ArrayList<>();
-		res.addAll(Arrays.asList(delegate.getElements(inputElement == this.searchResult ? this.filteredFileSearchResult : inputElement)));
+		final var res = ArrayUtil.asArrayList(delegate.getElements(inputElement == this.searchResult ? this.filteredFileSearchResult : inputElement));
 		if (inputElement instanceof AbstractTextSearchResult searchResult) {
-			res.addAll(Arrays.stream(searchResult.getElements()).filter(URI.class::isInstance).toList());
+			Arrays.stream(searchResult.getElements()).filter(URI.class::isInstance).forEach(res::add);
 		}
 		return res.toArray();
 	}
@@ -71,7 +70,7 @@ public class FileAndURIMatchContentProvider implements ITreeContentProvider {
 
 	@Override
 	public boolean hasChildren(Object element) {
-		return delegate.hasChildren(element) || (searchResult != null && Arrays.asList(searchResult.getElements()).contains(element));
+		return delegate.hasChildren(element) || (searchResult != null && ArrayUtil.contains(searchResult.getElements(), element));
 	}
 
 }
