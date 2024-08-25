@@ -14,7 +14,6 @@ package org.eclipse.lsp4e.ui;
 import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -43,6 +42,7 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -74,16 +74,10 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		@Override
 		public Object[] getChildren(@Nullable Object parentElement) {
 			final var manager = this.manager;
-			if(manager == null)
+			if (manager == null)
 				return NO_OBJECTS;
-			final var elements = new ArrayList<IContentType>();
 			final var baseType = (IContentType) parentElement;
-			for (final IContentType type : manager.getAllContentTypes()) {
-				if (Objects.equals(type.getBaseType(), baseType)) {
-					elements.add(type);
-				}
-			}
-			return elements.toArray();
+			return ArrayUtil.filter(manager.getAllContentTypes(), type -> Objects.equals(type.getBaseType(), baseType));
 		}
 
 		@Override

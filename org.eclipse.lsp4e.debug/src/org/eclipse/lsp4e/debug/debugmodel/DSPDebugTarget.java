@@ -62,6 +62,7 @@ import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4e.debug.console.DSPProcess;
 import org.eclipse.lsp4e.debug.console.DSPStreamsProxy;
 import org.eclipse.lsp4e.debug.debugmodel.TransportStreams.DefaultTransportStreams;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4j.debug.BreakpointEventArguments;
 import org.eclipse.lsp4j.debug.Capabilities;
 import org.eclipse.lsp4j.debug.ConfigurationDoneArguments;
@@ -313,13 +314,13 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	private void terminated() {
 		fTerminated = true;
-		Arrays.stream(getThreads()).forEach(t -> {
+		for (final DSPThread t : getThreads()) {
 			try {
 				t.terminate();
 			} catch (DebugException e) {
 				DSPPlugin.logError(e);
 			}
-		});
+		}
 		final var process = this.process;
 		if (process != null && process.canTerminate()) {
 			try {
@@ -452,7 +453,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			DSPDebugElement source = null;
 			source = getThread(body.getThreadId());
 			if (source == null || body.getAllThreadsContinued() == null || body.getAllThreadsContinued()) {
-				Arrays.asList(getThreads()).forEach(DSPThread::continued);
+				ArrayUtil.forEach(getThreads(), DSPThread::continued);
 			}
 			if (source != null) {
 				source.fireResumeEvent(DebugEvent.CLIENT_REQUEST);
@@ -468,10 +469,10 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				source = getThread(body.getThreadId());
 			}
 			if (source == null || body.getAllThreadsStopped() == null || body.getAllThreadsStopped()) {
-				Arrays.asList(getThreads()).forEach(t -> {
+				for (final DSPThread t : getThreads()) {
 					t.stopped();
 					t.fireChangeEvent(DebugEvent.CHANGE);
-				});
+				}
 			}
 
 			if (source != null) {
@@ -506,8 +507,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	@Override
 	public boolean isSuspended() {
 		DSPThread[] dspThreads = getThreads();
-		boolean anyMatch = Arrays.asList(dspThreads).stream().anyMatch(DSPThread::isSuspended);
-		return anyMatch;
+		return ArrayUtil.anyMatch(dspThreads, DSPThread::isSuspended);
 	}
 
 	@Override

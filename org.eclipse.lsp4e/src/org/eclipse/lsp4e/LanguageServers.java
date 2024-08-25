@@ -35,6 +35,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -49,7 +50,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	private static void forwardCancellation(CompletableFuture<?> from, CompletableFuture<?>... to) {
 		from.exceptionally(t -> {
 			if (t instanceof CancellationException) {
-				Stream.of(to).forEach(f -> f.cancel(true));
+				ArrayUtil.forEach(to, f -> f.cancel(true));
 			}
 			return null;
 		});

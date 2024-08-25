@@ -253,7 +253,7 @@ public class TypeHierarchyView extends ViewPart {
 	@Override
 	public void dispose() {
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
-		cachedSymbols.forEach((uri, container) -> {container.dispose();});
+		cachedSymbols.forEach((uri, container) -> container.dispose());
 		super.dispose();
 	}
 
