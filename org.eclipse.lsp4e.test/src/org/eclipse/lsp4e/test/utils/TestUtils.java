@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -97,7 +96,7 @@ public class TestUtils {
 			editorPart.getTags().add(IPresentationEngine.SPLIT_HORIZONTAL);
 		}
 
-		return Arrays.asList(page.getEditorReferences());
+		return List.of(page.getEditorReferences());
 	}
 
 	public static IEditorPart openExternalFileInEditor(File file) throws PartInitException {
