@@ -13,12 +13,12 @@ import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Supplier;
 
 import org.eclipse.core.runtime.CoreException;
@@ -304,13 +304,14 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 							"Debug Adapter");
 					builder.launch.setAttribute(DebugPlugin.ATTR_CAPTURE_OUTPUT, initialCaptureOutput);
 
-					final var bytes = Collections.synchronizedList(new LinkedList<Byte>());
+					final var bytes = new ConcurrentLinkedQueue<Byte>();
 					inputStream = new InputStream() {
 						@Override
 						public int read() throws IOException {
 							while (debugAdapterProcess.isAlive()) {
-								if (!bytes.isEmpty()) {
-									return bytes.remove(0);
+								final Byte b = bytes.poll();
+								if (b != null) {
+									return b;
 								} else {
 									try {
 										Thread.sleep(50);
@@ -323,16 +324,14 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 							return -1;
 						}
 					};
-					DSPLaunchDelegateLaunchBuilder finalBuilder = builder;
+					final var consoleEncoding = builder.launch.getAttribute(DebugPlugin.ATTR_CONSOLE_ENCODING);
+					final var consoleCharset = consoleEncoding == null //
+							? Charset.defaultCharset()
+							: Charset.forName(consoleEncoding);
 					castNonNull(castNonNull(debugAdapterIProcess.getStreamsProxy()).getOutputStreamMonitor())
 							.addListener((text, monitor) -> {
-								try {
-									for (byte b : text.getBytes(castNonNull(
-											finalBuilder.launch.getAttribute(DebugPlugin.ATTR_CONSOLE_ENCODING)))) {
-										bytes.add(b);
-									}
-								} catch (IOException e) {
-									DSPPlugin.logError(e);
+								for (byte b : text.getBytes(consoleCharset)) {
+									bytes.add(b);
 								}
 							});
 					outputStream = new OutputStream() {
