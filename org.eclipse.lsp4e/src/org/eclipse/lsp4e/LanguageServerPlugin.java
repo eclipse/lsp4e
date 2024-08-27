@@ -11,17 +11,33 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.ImageRegistry;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
+import com.google.common.base.Throwables;
+import com.google.common.hash.HashCode;
+import com.google.common.hash.Hashing;
+
 public class LanguageServerPlugin extends AbstractUIPlugin {
+
+	/**
+	 * Used by {@link #logError(String, Throwable)} to prevent logging the same
+	 * exception of certain types repeatedly
+	 */
+	private static final ConcurrentMap<HashCode, Integer> EXCEPTIONS_COUNTER = new ConcurrentHashMap<>();
 
 	/** Job family identifier for the "background update markers from diagnostics" job. */
 	public static final Object FAMILY_UPDATE_MARKERS = new Object();
@@ -73,9 +89,7 @@ public class LanguageServerPlugin extends AbstractUIPlugin {
 	 *            The exception through which we noticed the error
 	 */
 	public static void logError(final Throwable thr) {
-		if (plugin != null) {
-			plugin.getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, 0, thr.getMessage(), thr));
-		}
+		logError(thr.getMessage(), thr);
 	}
 
 	/**
@@ -87,7 +101,14 @@ public class LanguageServerPlugin extends AbstractUIPlugin {
 	 *            The exception through which we noticed the error
 	 */
 	public static void logError(final @Nullable String message, final @Nullable Throwable thr) {
+		final var plugin = LanguageServerPlugin.plugin;
 		if (plugin != null) {
+			if (!DEBUG && thr instanceof BadLocationException) {
+				final HashCode key = Hashing.sha256().hashString(Throwables.getStackTraceAsString(thr), UTF_8);
+				if (EXCEPTIONS_COUNTER.getOrDefault(key, 0) > 2)
+					return;
+				EXCEPTIONS_COUNTER.compute(key, (k, v) -> v == null ? 1 : ++v);
+			}
 			plugin.getLog().log(new Status(IStatus.ERROR, PLUGIN_ID, 0, message, thr));
 		}
 	}
