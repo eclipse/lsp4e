@@ -81,12 +81,10 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 				}
 			}
 			if (wrapper != null) {
-				if (codeAction.getEdit() == null) {
-					if (CodeActionCompletionProposal.isCodeActionResolveSupported(wrapper.getServerCapabilities())) {
-						CodeAction resolvedCodeAction = wrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
-						if (resolvedCodeAction != null) {
-							codeAction = resolvedCodeAction;
-						}
+				if (CodeActionCompletionProposal.isCodeActionResolveSupported(wrapper.getServerCapabilities())) {
+					CodeAction resolvedCodeAction = wrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
+					if (resolvedCodeAction != null) {
+						codeAction = resolvedCodeAction;
 					}
 				}
 				if (codeAction.getEdit() != null) {
