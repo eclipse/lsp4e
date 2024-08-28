@@ -49,6 +49,10 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 		this.codeAction = codeAction;
 	}
 
+	public CodeAction getCodeAction() {
+		return codeAction;
+	}
+
 	@Override
 	public String getDescription() {
 		return codeAction.getTitle();
@@ -70,23 +74,10 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 			LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
 			return;
 		}
-		String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
-		LanguageServerDefinition definition = languageServerId != null ? LanguageServersRegistry.getInstance().getDefinition(languageServerId) : null;
 		try {
-			LanguageServerWrapper wrapper = null;
-			if (definition != null) {
-				IResource resource = marker.getResource();
-				if (resource != null) {
-					wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
-				}
-			}
+			LanguageServerWrapper wrapper = getLanguageServerWrapper(marker);
 			if (wrapper != null) {
-				if (CodeActionCompletionProposal.isCodeActionResolveSupported(wrapper.getServerCapabilities())) {
-					CodeAction resolvedCodeAction = wrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
-					if (resolvedCodeAction != null) {
-						codeAction = resolvedCodeAction;
-					}
-				}
+				resolveCodeAction(wrapper);
 				if (codeAction.getEdit() != null) {
 					LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
 				}
@@ -139,4 +130,45 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 		}).toArray(IMarker[]::new);
 	}
 
+	/**
+	 * Get the language server wrapper to use for resolving the code action, preferably the
+	 * one used to construct the marker.
+	 *
+	 * @param marker
+	 *            the marker to get the language server for.
+	 * @return the language server wrapper to use for resolving the code action.
+	 */
+	public @Nullable LanguageServerWrapper getLanguageServerWrapper(IMarker marker) {
+		String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
+		LanguageServerDefinition definition = languageServerId != null
+				? LanguageServersRegistry.getInstance().getDefinition(languageServerId)
+				: null;
+		LanguageServerWrapper wrapper = null;
+		if (definition != null) {
+			IResource resource = marker.getResource();
+			if (resource != null) {
+				wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
+			}
+		}
+		return wrapper;
+	}
+
+	/**
+	 * Resolve the code action using the given language server wrapper.
+	 *
+	 * @param wrapper
+	 *            the wrapper for the language server to send the resolve request to.
+	 */
+	public void resolveCodeAction(LanguageServerWrapper wrapper)
+			throws InterruptedException, ExecutionException, TimeoutException {
+		if (codeAction.getEdit() != null) {
+			return;
+		}
+		if (CodeActionCompletionProposal.isCodeActionResolveSupported(wrapper.getServerCapabilities())) {
+			CodeAction resolvedCodeAction = wrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
+			if (resolvedCodeAction != null) {
+				codeAction = resolvedCodeAction;
+			}
+		}
+	}
 }
