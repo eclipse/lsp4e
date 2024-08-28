@@ -65,10 +65,19 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 
 	@Override
 	public void setLabel(final @Nullable String label) {
-		if (label == null || label.isEmpty() || Character.isWhitespace(label.charAt(label.length() - 1)))
+		if (label == null) {
 			super.setLabel(label);
-		else
-			super.setLabel(label + " "); //$NON-NLS-1$
+		} else {
+			StringBuilder sb = new StringBuilder();
+			if (inlayHint.getPaddingLeft() != null && inlayHint.getPaddingLeft().booleanValue()) {
+				sb.append(' ');
+			}
+			sb.append(label);
+			if (inlayHint.getPaddingRight() != null && inlayHint.getPaddingRight().booleanValue()) {
+				sb.append(' ');
+			}
+			super.setLabel(sb.toString());
+		}
 	}
 
 	protected static @Nullable String getInlayHintString(InlayHint inlayHint) {
