@@ -9,9 +9,11 @@
  * Contributors:
  *  Ahmed Hussain (Cocotec Ltd) - initial implementation
  *  Sebastian Thomschke (Vegard IT GmbH) - extracted code from LanguageServers class
+ *  Sebastian Thomschke (Vegard IT GmbH) - changed addAll() method to join()
  *******************************************************************************/
 package org.eclipse.lsp4e.internal;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -20,25 +22,20 @@ import java.util.function.Function;
 public class FutureUtil {
 
 	/**
-	 * Combines two async lists of results into a single list by adding all the
-	 * elements of the second list to the first one.
+	 * Combines two async lists of results into a new single list containing all
+	 * elements of the first and the second result.
 	 *
-	 * @param <T>
-	 *            Result type
-	 * @param accumulator
-	 *            One async result
-	 * @param another
-	 *            Another async result
 	 * @return Async combined result
 	 */
-	public static <T> CompletableFuture<List<T>> addAll(CompletableFuture<List<T>> accumulator,
-			CompletableFuture<List<T>> another) {
-		CompletableFuture<List<T>> res = accumulator.thenCombine(another, (a, b) -> {
-			a.addAll(b);
-			return a;
+	public static <T> CompletableFuture<List<T>> join(final CompletableFuture<List<T>> firstResult,
+			final CompletableFuture<List<T>> secondResult) {
+		final CompletableFuture<List<T>> result = firstResult.thenCombine(secondResult, (firstList, secondList) -> {
+			final List<T> combinedList = new ArrayList<>(firstList);
+			combinedList.addAll(secondList);
+			return combinedList;
 		});
-		forwardCancellation(res, accumulator, another);
-		return res;
+		forwardCancellation(result, firstResult, secondResult);
+		return result;
 	}
 
 	@SuppressWarnings("null")
@@ -52,8 +49,27 @@ public class FutureUtil {
 	}
 
 	/**
-	 * creates a future that is running on the common async pool, ensuring it's not
-	 * blocking UI Thread
+	 * Combines two async lists of results into a new single list containing all
+	 * elements of all results.
+	 */
+	@SafeVarargs
+	public static <T> CompletableFuture<List<T>> join(final CompletableFuture<List<T>> firstResult,
+			final CompletableFuture<List<T>>... additionalResults) {
+		CompletableFuture<List<T>> result = firstResult.thenApply(firstList -> new ArrayList<>(firstList));
+		for (final CompletableFuture<List<T>> additionalResult : additionalResults) {
+			result = result.thenCombine(additionalResult, (combinedList, additionalList) -> {
+				combinedList.addAll(additionalList);
+				return combinedList;
+			});
+		}
+		forwardCancellation(result, firstResult);
+		forwardCancellation(result, additionalResults);
+		return result;
+	}
+
+	/**
+	 * Creates a future that is running on the common async pool, ensuring it's not
+	 * blocking UI Thread.
 	 */
 	public static <T> CompletableFuture<T> onCommonPool(CompletableFuture<T> source) {
 		CompletableFuture<T> res = source.thenApplyAsync(Function.identity());

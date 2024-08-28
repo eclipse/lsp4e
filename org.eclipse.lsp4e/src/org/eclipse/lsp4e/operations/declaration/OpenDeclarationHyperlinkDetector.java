@@ -69,7 +69,7 @@ public class OpenDeclarationHyperlinkDetector extends AbstractHyperlinkDetector 
 				.collectAll(ls -> ls.getTextDocumentService().typeDefinition(LSPEclipseUtils.toTypeDefinitionParams(params)).thenApply(l -> Pair.of(Messages.typeDefinitionHyperlinkLabel, l)));
 			var implementations = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getImplementationProvider)
 				.collectAll(ls -> ls.getTextDocumentService().implementation(LSPEclipseUtils.toImplementationParams(params)).thenApply(l -> Pair.of(Messages.implementationHyperlinkLabel, l)));
-			FutureUtil.addAll(FutureUtil.addAll(FutureUtil.addAll(definitions, declarations), typeDefinitions), implementations)
+			FutureUtil.join(definitions, declarations, typeDefinitions, implementations)
 				.get(800, TimeUnit.MILLISECONDS)
 				.stream().flatMap(locations -> toHyperlinks(document, region, locations.first(), locations.second()).stream())
 				.forEach(link -> allLinks.putIfAbsent(link.getLocation(), link));

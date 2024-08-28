@@ -74,7 +74,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	public <T> CompletableFuture<List<T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		final CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
-		return onCommonPool(executeOnServers(fn).reduce(init, LanguageServers::add, FutureUtil::addAll));
+		return onCommonPool(executeOnServers(fn).reduce(init, LanguageServers::add, FutureUtil::join));
 	}
 
 
