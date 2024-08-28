@@ -54,9 +54,7 @@ import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemDefaults;
 import org.eclipse.lsp4j.CompletionList;
-import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.CompletionParams;
-import org.eclipse.lsp4j.SignatureHelpOptions;
 import org.eclipse.lsp4j.SignatureHelpParams;
 import org.eclipse.lsp4j.SignatureInformation;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
@@ -64,6 +62,7 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.ui.texteditor.ITextEditor;
 
+import com.google.common.base.Functions;
 import com.google.common.base.Strings;
 
 public class LSContentAssistProcessor implements IContentAssistProcessor {
@@ -76,18 +75,21 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private @Nullable String errorMessage;
 	private final boolean errorAsCompletionItem;
 	private @Nullable CompletableFuture<List<Void>> completionLanguageServersFuture;
-	private final Object completionTriggerCharsSemaphore = new Object();
-	private char[] completionTriggerChars = NO_CHARS;
+	private volatile char[] completionTriggerChars = NO_CHARS;
 	private @Nullable CompletableFuture<List<Void>> contextInformationLanguageServersFuture;
-	private final Object contextTriggerCharsSemaphore = new Object();
-	private char[] contextTriggerChars = NO_CHARS;
+	private volatile char[] contextTriggerChars = NO_CHARS;
 	private final boolean incompleteAsCompletionItem;
 
 	/**
 	 * The cancellation support used to cancel previous LSP requests
 	 * 'textDocument/completion' when completion is retriggered
 	 */
-	private CancellationSupport cancellationSupport;
+	private CancellationSupport completionCancellationSupport;
+	/**
+	 * The cancellation support used to cancel previous LSP requests
+	 * for fetching the trigger characters
+	 */
+	private CancellationSupport triggerCharsCancellationSupport;
 
 	public LSContentAssistProcessor() {
 		this(true);
@@ -99,7 +101,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	public LSContentAssistProcessor(boolean errorAsCompletionItem, boolean incompleteAsCompletionItem) {
 		this.errorAsCompletionItem = errorAsCompletionItem;
-		this.cancellationSupport = new CancellationSupport();
+		this.completionCancellationSupport = new CancellationSupport();
+		this.triggerCharsCancellationSupport = new CancellationSupport();
 		this.incompleteAsCompletionItem = incompleteAsCompletionItem;
 	}
 
@@ -133,14 +136,14 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		try {
 			// Cancel the previous LSP requests 'textDocument/completions' and
 			// completionLanguageServersFuture
-			this.cancellationSupport.cancel();
+			this.completionCancellationSupport.cancel();
 
 			// Initialize a new cancel support to register:
 			// - LSP requests 'textDocument/completions'
 			// - completionLanguageServersFuture
 			final var cancellationSupport = new CancellationSupport();
-			final var completionLanguageServersFuture = this.completionLanguageServersFuture = LanguageServers
-					.forDocument(document).withFilter(capabilities -> capabilities.getCompletionProvider() != null) //
+			final var completionLanguageServersFuture = this.completionLanguageServersFuture = cancellationSupport.execute(
+					LanguageServers.forDocument(document).withFilter(capabilities -> capabilities.getCompletionProvider() != null) //
 					.collectAll((w, ls) -> cancellationSupport.execute(ls.getTextDocumentService().completion(param)) //
 							.thenAccept(completion -> {
 								boolean isIncomplete = completion != null && completion.isRight()
@@ -156,9 +159,8 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 											.formatted(w.serverDefinition.label), t);
 								}
 								return null;
-							}));
-			cancellationSupport.execute(completionLanguageServersFuture);
-			this.cancellationSupport = cancellationSupport;
+							})));
+			this.completionCancellationSupport = cancellationSupport;
 
 			// Wait for the result of all LSP requests 'textDocument/completions', this
 			// future will be canceled with the next completion
@@ -216,43 +218,28 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 
 	private void initiateLanguageServers(IDocument document) {
 		if (currentDocument != document) {
-			this.currentDocument = document;
-			if (this.completionLanguageServersFuture != null) {
-				try {
-					this.completionLanguageServersFuture.cancel(true);
-				} catch (CancellationException ex) {
-					// nothing
-				}
-			}
-			if (this.contextInformationLanguageServersFuture != null) {
-				try {
-					this.contextInformationLanguageServersFuture.cancel(true);
-				} catch (CancellationException ex) {
-					// nothing
-				}
-			}
-			this.completionTriggerChars = NO_CHARS;
-			this.contextTriggerChars = NO_CHARS;
+			currentDocument = document;
+			triggerCharsCancellationSupport.cancel();
 
-			this.completionLanguageServersFuture = LanguageServers.forDocument(document)
+			completionTriggerChars = NO_CHARS;
+			contextTriggerChars = NO_CHARS;
+
+			completionLanguageServersFuture = triggerCharsCancellationSupport.execute(//
+					LanguageServers.forDocument(document)
 					.withFilter(capabilities -> capabilities.getCompletionProvider() != null) //
 					.collectAll((w, ls) -> {
-						CompletionOptions provider = castNonNull(w.getServerCapabilities()).getCompletionProvider();
-						synchronized (completionTriggerCharsSemaphore) {
-							completionTriggerChars = mergeTriggers(completionTriggerChars,
-									provider.getTriggerCharacters());
-						}
+						List<String> triggerChars = castNonNull(w.getServerCapabilities()).getCompletionProvider().getTriggerCharacters();
+						completionTriggerChars = mergeTriggers(completionTriggerChars,triggerChars);
 						return CompletableFuture.completedFuture(null);
-					});
-			this.contextInformationLanguageServersFuture = LanguageServers.forDocument(document)
+					}));
+			contextInformationLanguageServersFuture = triggerCharsCancellationSupport.execute(//
+					LanguageServers.forDocument(document)
 					.withFilter(capabilities -> capabilities.getSignatureHelpProvider() != null) //
 					.collectAll((w, ls) -> {
-						SignatureHelpOptions provider = castNonNull(w.getServerCapabilities()).getSignatureHelpProvider();
-						synchronized (contextTriggerCharsSemaphore) {
-							contextTriggerChars = mergeTriggers(contextTriggerChars, provider.getTriggerCharacters());
-						}
+						List<String> triggerChars = castNonNull(w.getServerCapabilities()).getSignatureHelpProvider().getTriggerCharacters();
+						contextTriggerChars = mergeTriggers(contextTriggerChars, triggerChars);
 						return CompletableFuture.completedFuture(null);
-					});
+					}));
 		}
 
 	}
@@ -276,16 +263,15 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		// Stop the compute of ICompletionProposal if the completion has been cancelled
 		cancelChecker.checkCanceled();
 		CompletionItemDefaults defaults = completionList.map(o -> null, CompletionList::getItemDefaults);
-		List<CompletionItem> items = completionList.isLeft() ? completionList.getLeft()
-				: completionList.getRight().getItems();
-		return items.stream() //
-				.filter(Objects::nonNull).map(item -> new LSCompletionProposal(document, offset, item, defaults,
-						languageServerWrapper, isIncomplete))
+		return completionList.map( Functions.identity(), CompletionList::getItems).stream() //
+				.filter(Objects::nonNull) //
+				.map(item -> new LSCompletionProposal(document, offset, item, defaults, languageServerWrapper, isIncomplete))
 				.filter(proposal -> {
 					// Stop the compute of ICompletionProposal if the completion has been cancelled
 					cancelChecker.checkCanceled();
 					return true;
-				}).filter(proposal -> proposal.validate(document, offset, null)).map(ICompletionProposal.class::cast)
+				}).filter(proposal -> proposal.validate(document, offset, null)) //
+				.map(ICompletionProposal.class::cast)
 				.toList();
 	}
 
