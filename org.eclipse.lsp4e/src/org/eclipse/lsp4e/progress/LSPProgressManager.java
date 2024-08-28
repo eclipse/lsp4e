@@ -13,11 +13,11 @@ package org.eclipse.lsp4e.progress;
 
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNullable;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -45,8 +45,8 @@ import org.eclipse.lsp4j.WorkDoneProgressReport;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 public class LSPProgressManager {
-	private final Map<String, BlockingQueue<ProgressParams>> progressMap;
-	private final Map<IProgressMonitor, Integer> currentPercentageMap;
+	private final ConcurrentMap<String, BlockingQueue<ProgressParams>> progressMap;
+	private final ConcurrentMap<IProgressMonitor, Integer> percentageMap;
 	private @Nullable LanguageServer languageServer;
 	private @Nullable LanguageServerDefinition languageServerDefinition;
 	private final Set<String> done;
@@ -54,7 +54,7 @@ public class LSPProgressManager {
 
 	public LSPProgressManager() {
 		this.progressMap = new ConcurrentHashMap<>();
-		this.currentPercentageMap = new ConcurrentHashMap<>();
+		this.percentageMap = new ConcurrentHashMap<>();
 		this.done = new ConcurrentSkipListSet<>();
 		this.jobs = new ConcurrentSkipListSet<>();
 	}
@@ -97,7 +97,7 @@ public class LSPProgressManager {
 				while (true) {
 					if (monitor.isCanceled()) {
 						progressMap.remove(jobIdentifier);
-						currentPercentageMap.remove(monitor);
+						percentageMap.remove(monitor);
 						if (languageServer != null) {
 							final var workDoneProgressCancelParams = new WorkDoneProgressCancelParams();
 							workDoneProgressCancelParams.setToken(jobIdentifier);
@@ -117,7 +117,7 @@ public class LSPProgressManager {
 							} else if (kind == WorkDoneProgressKind.end) {
 								end((WorkDoneProgressEnd) progressNotification, monitor);
 								progressMap.remove(jobIdentifier);
-								currentPercentageMap.remove(monitor);
+								percentageMap.remove(monitor);
 								return;
 							}
 						}
@@ -148,7 +148,7 @@ public class LSPProgressManager {
 			} else {
 				monitor.beginTask(begin.getTitle(), percentage);
 			}
-			currentPercentageMap.put(monitor, 0);
+			percentageMap.put(monitor, 0);
 		} else {
 			monitor.beginTask(begin.getTitle(), IProgressMonitor.UNKNOWN);
 		}
@@ -165,18 +165,18 @@ public class LSPProgressManager {
 	}
 
 	private void report(final WorkDoneProgressReport report, final IProgressMonitor monitor) {
-		if (report.getMessage() != null && !report.getMessage().isBlank()) {
-			monitor.subTask(report.getMessage());
+		final var reportMessage = report.getMessage();
+		if (reportMessage != null && !reportMessage.isBlank()) {
+			monitor.subTask(reportMessage);
 		}
 
-		if (report.getPercentage() != null) {
-			if (currentPercentageMap.containsKey(monitor)) {
-				Integer percentage = currentPercentageMap.get(monitor);
-				int worked = percentage != null ? Math.min(percentage, report.getPercentage()) : 0;
-				monitor.worked(report.getPercentage().intValue() - worked);
-			}
-
-			currentPercentageMap.put(monitor, report.getPercentage());
+		final var progressPercentage = report.getPercentage();
+		if (progressPercentage != null) {
+			percentageMap.compute(monitor, (key, existingPercentage) -> {
+				final int worked = (existingPercentage != null) ? Math.min(existingPercentage, progressPercentage) : 0;
+				monitor.worked(progressPercentage - worked);
+				return progressPercentage;
+			});
 		}
 	}
 
@@ -204,7 +204,7 @@ public class LSPProgressManager {
 	 */
 	public void dispose() {
 		jobs.forEach(Job::cancel);
-		currentPercentageMap.clear();
+		percentageMap.clear();
 		progressMap.clear();
 		done.clear();
 	}
