@@ -8,12 +8,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.semanticTokens;
 
-import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -36,6 +34,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.internal.CancellationSupport;
 import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.internal.DocumentUtil;
 import org.eclipse.lsp4e.internal.Pair;
@@ -82,6 +81,8 @@ public class SemanticHighlightReconcilerStrategy
 
 	private final boolean disabled;
 
+	private @Nullable CancellationSupport cancellationSupport;
+
 	private @Nullable ITextViewer viewer;
 
 	private @Nullable IDocument document;
@@ -102,8 +103,6 @@ public class SemanticHighlightReconcilerStrategy
 	private volatile long documentTimestampAtLastAppliedTextPresentation;
 
 	private volatile long timestamp = 0;
-
-	private @Nullable CompletableFuture<Optional<VersionedSemanticTokens>> semanticTokensFullFuture;
 
 	public SemanticHighlightReconcilerStrategy() {
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
@@ -131,6 +130,7 @@ public class SemanticHighlightReconcilerStrategy
 		}
 		styleRangeHolder = new StyleRangeHolder();
 		textViewer.addTextListener(styleRangeHolder);
+		cancellationSupport = new CancellationSupport();
 		viewer = textViewer;
 	}
 
@@ -146,6 +146,7 @@ public class SemanticHighlightReconcilerStrategy
 		}
 		this.viewer = null; // Indicate that we're not installed or in the phase of deinstalling
 		cancelSemanticTokensFull();
+		cancellationSupport = null;
 		semanticTokensDataStreamProcessor = null;
 		if (viewer instanceof final TextViewer textViewerImpl) {
 			textViewerImpl.removeTextPresentationListener(this);
@@ -246,8 +247,8 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void cancelSemanticTokensFull() {
-		if (semanticTokensFullFuture != null) {
-			semanticTokensFullFuture.cancel(true);
+		if (cancellationSupport != null) {
+			cancellationSupport.cancel();
 		}
 	}
 
@@ -263,11 +264,10 @@ public class SemanticHighlightReconcilerStrategy
 			LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document)
 					.withFilter(this::hasSemanticTokensFull);
 			try {
-				final var semanticTokensFullFuture = executor //
+				final var semanticTokensFullFuture = castNonNull(cancellationSupport).execute(executor //
 					.computeFirst((w, ls) -> ls.getTextDocumentService().semanticTokensFull(getSemanticTokensParams()) //
 							.thenApply(semanticTokens -> new VersionedSemanticTokens(modificationStamp,
-									Pair.of(semanticTokens, getSemanticTokensLegend(w)), document)));
-				this.semanticTokensFullFuture = semanticTokensFullFuture;
+									Pair.of(semanticTokens, getSemanticTokensLegend(w)), document))));
 				semanticTokensFullFuture.get() // background thread with cancellation support, no timeout needed
 						.ifPresent(versionedSemanticTokens ->
 								versionedSemanticTokens.apply(this::saveStyle, this::invalidateTextPresentation));
