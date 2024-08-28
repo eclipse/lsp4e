@@ -74,6 +74,7 @@ import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.internal.FileBufferListenerAdapter;
+import org.eclipse.lsp4e.internal.FutureUtil;
 import org.eclipse.lsp4e.internal.SupportedFeatures;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.ui.Messages;
@@ -531,10 +532,8 @@ public class LanguageServerWrapper {
 			this.languageClient.dispose();
 		}
 
-		if (this.initializeFuture != null) {
-			this.initializeFuture.cancel(true);
-			this.initializeFuture = null;
-		}
+		FutureUtil.cancel(this.initializeFuture);
+		this.initializeFuture = null;
 
 		this.serverCapabilities = null;
 		this.dynamicRegistrations.clear();
@@ -556,9 +555,7 @@ public class LanguageServerWrapper {
 				}
 			}
 
-			if (serverFuture != null) {
-				serverFuture.cancel(true);
-			}
+			FutureUtil.cancel(serverFuture);
 
 			if (languageServerInstance != null) {
 				languageServerInstance.exit();
@@ -869,9 +866,7 @@ public class LanguageServerWrapper {
 		res.exceptionally(e -> {
 			if (e instanceof CancellationException) {
 				CompletableFuture<T> stage = request.get();
-				if (stage != null) {
-					stage.cancel(false);
-				}
+				FutureUtil.cancel(stage);
 			}
 			return null;
 		});

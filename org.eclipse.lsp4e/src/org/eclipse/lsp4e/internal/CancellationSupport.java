@@ -47,11 +47,7 @@ public class CancellationSupport implements CancelChecker {
 	 */
 	public void cancel() {
 		this.cancelled = true;
-		for (CompletableFuture<?> futureToCancel : futuresToCancel) {
-			if (!futureToCancel.isDone()) {
-				futureToCancel.cancel(true);
-			}
-		}
+		FutureUtil.cancel(futuresToCancel);
 		futuresToCancel.clear();
 	}
 

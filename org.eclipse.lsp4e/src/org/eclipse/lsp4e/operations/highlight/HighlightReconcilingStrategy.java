@@ -52,6 +52,7 @@ import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.internal.FutureUtil;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentHighlightKind;
 import org.eclipse.lsp4j.DocumentHighlightParams;
@@ -217,7 +218,7 @@ public class HighlightReconcilingStrategy
 	 * Cancel the last call of 'documentHighlight'.
 	 */
 	private void cancel() {
-		requests.forEach(request -> request.cancel(true));
+		FutureUtil.cancel(requests);
 	}
 
 	/**

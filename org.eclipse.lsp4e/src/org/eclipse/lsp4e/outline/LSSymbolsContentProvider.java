@@ -57,6 +57,7 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4e.internal.CancellationUtil;
+import org.eclipse.lsp4e.internal.FutureUtil;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.DocumentSymbol;
@@ -378,9 +379,7 @@ public class LSSymbolsContentProvider implements ICommonContentProvider, ITreeCo
 			return;
 		}
 
-		if (symbols != null) {
-			symbols.cancel(true);
-		}
+		FutureUtil.cancel(symbols);
 
 		final var params = new DocumentSymbolParams(LSPEclipseUtils.toTextDocumentIdentifier(documentURI));
 		final var symbols = this.symbols = outlineViewerInput.wrapper.execute(ls -> ls.getTextDocumentService().documentSymbol(params));

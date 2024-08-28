@@ -17,9 +17,26 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.function.Function;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 public class FutureUtil {
+
+	public static void cancel(final @Nullable Future<?> futureToCancel) {
+		if (futureToCancel != null && !futureToCancel.isDone()) {
+			futureToCancel.cancel(true);
+		}
+	}
+
+	public static void cancel(final @Nullable List<? extends Future<?>> futuresToCancel) {
+		if (futuresToCancel == null)
+			return;
+		for (final Future<?> futureToCancel : futuresToCancel) {
+			cancel(futureToCancel);
+		}
+	}
 
 	/**
 	 * Combines two async lists of results into a new single list containing all

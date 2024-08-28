@@ -42,6 +42,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.internal.DocumentUtil;
+import org.eclipse.lsp4e.internal.FutureUtil;
 import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.FoldingRangeKind;
 import org.eclipse.lsp4j.FoldingRangeRequestParams;
@@ -143,7 +144,7 @@ public class LSPFoldingReconcilingStrategy
 		final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(uri);
 		final var params = new FoldingRangeRequestParams(identifier);
 		// cancel previous requests
-		requests.forEach(request -> request.cancel(true));
+		FutureUtil.cancel(requests);
 		requests = LanguageServers.forDocument(document)
 				.withCapability(ServerCapabilities::getFoldingRangeProvider)
 				.computeAll(server -> server.getTextDocumentService().foldingRange(params));

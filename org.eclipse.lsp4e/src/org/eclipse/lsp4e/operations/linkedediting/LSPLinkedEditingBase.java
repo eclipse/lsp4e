@@ -26,6 +26,7 @@ import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.internal.FutureUtil;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -81,10 +82,8 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 	 * Cancel the last call of 'linkedEditing'.
 	 */
 	private void cancel() {
-		if (request != null) {
-			request.cancel(true);
-			request = null;
-		}
+		FutureUtil.cancel(request);
+		request = null;
 	}
 
 	@Override

@@ -37,6 +37,7 @@ import org.eclipse.jface.text.contentassist.BoldStylerProvider;
 import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.internal.FutureUtil;
 import org.eclipse.lsp4e.outline.CNFOutlinePage;
 import org.eclipse.lsp4e.outline.SymbolsLabelProvider;
 import org.eclipse.lsp4e.ui.Messages;
@@ -141,9 +142,8 @@ public class LSPSymbolInWorkspaceDialog extends FilteredItemsSelectionDialog {
 	@Override
 	protected void fillContentProvider(AbstractContentProvider contentProvider, ItemsFilter itemsFilter,
 			IProgressMonitor monitor) throws CoreException {
-		if (request != null) {
-			request.forEach(f -> f.cancel(true));
-		}
+		FutureUtil.cancel(request);
+
 		if (itemsFilter.getPattern().isEmpty()) {
 			return;
 		}

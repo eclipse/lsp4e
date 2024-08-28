@@ -8,7 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.semanticTokens;
 
-import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.net.URI;
 import java.util.List;
@@ -38,6 +38,7 @@ import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
 import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4e.internal.DocumentUtil;
+import org.eclipse.lsp4e.internal.FutureUtil;
 import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.SemanticTokens;
@@ -246,9 +247,7 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void cancelSemanticTokensFull() {
-		if (semanticTokensFullFuture != null) {
-			semanticTokensFullFuture.cancel(true);
-		}
+		FutureUtil.cancel(semanticTokensFullFuture);
 	}
 
 	private void fullReconcile() {

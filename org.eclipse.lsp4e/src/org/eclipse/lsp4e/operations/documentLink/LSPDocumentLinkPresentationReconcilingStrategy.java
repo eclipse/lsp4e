@@ -27,6 +27,7 @@ import org.eclipse.jface.text.reconciler.IReconcilingStrategyExtension;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.internal.FutureUtil;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
 import org.eclipse.swt.custom.StyleRange;
@@ -142,10 +143,8 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 	 * Cancel the last call of 'documenLink'.
 	 */
 	private void cancel() {
-		if (request != null) {
-			request.cancel(true);
-			request = null;
-		}
+		FutureUtil.cancel(request);
+		request = null;
 	}
 
 	@Override
