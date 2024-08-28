@@ -12,6 +12,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import static org.eclipse.lsp4e.internal.FutureUtil.*;
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.util.ArrayList;
@@ -20,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -35,7 +35,7 @@ import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
-import org.eclipse.lsp4e.internal.ArrayUtil;
+import org.eclipse.lsp4e.internal.FutureUtil;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -45,23 +45,6 @@ import org.eclipse.lsp4j.services.LanguageServer;
  * for manipulating the asynchronous response objects in streams
  */
 public abstract class LanguageServers<E extends LanguageServers<E>> {
-
-	@SuppressWarnings("null")
-	private static void forwardCancellation(CompletableFuture<?> from, CompletableFuture<?>... to) {
-		from.exceptionally(t -> {
-			if (t instanceof CancellationException) {
-				ArrayUtil.forEach(to, f -> f.cancel(true));
-			}
-			return null;
-		});
-	}
-
-	/** creates a future that is running on the common async pool, ensuring it's not blocking UI Thread */
-	private static <T> CompletableFuture<T> onCommonPool(CompletableFuture<T> source) {
-		CompletableFuture<T> res = source.thenApplyAsync(Function.identity());
-		forwardCancellation(res, source);
-		return res;
-	}
 
 	/**
 	 * Runs an operation on all applicable language servers, returning an async result that will consist
@@ -91,7 +74,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 */
 	public <T> CompletableFuture<List<T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		final CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
-		return onCommonPool(executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll));
+		return onCommonPool(executeOnServers(fn).reduce(init, LanguageServers::add, FutureUtil::addAll));
 	}
 
 
@@ -400,21 +383,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return res;
 	}
 
-	/**
-	 * Combines two async lists of results into a single list by adding all the elements of the second list to the first one.
-	 * @param <T> Result type
-	 * @param accumulator One async result
-	 * @param another Another async result
-	 * @return Async combined result
-	 */
-	public static <T> CompletableFuture<List<T>> addAll(CompletableFuture<List<T>> accumulator, CompletableFuture<List<T>> another) {
-		CompletableFuture<List<T>> res = accumulator.thenCombine(another, (a, b) -> {
-			a.addAll(b);
-			return a;
-		});
-		forwardCancellation(res, accumulator, another);
-		return res;
-	}
 
 	/**
 	 * Retrieves the initialized servers and apply the given query.
