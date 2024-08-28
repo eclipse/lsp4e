@@ -483,7 +483,7 @@ public class LanguageServerWrapper {
 	 */
 	public synchronized boolean isActive() {
 		final var launcherFuture = this.launcherFuture;
-		return launcherFuture != null && !launcherFuture.isDone() && !launcherFuture.isCancelled();
+		return launcherFuture != null && !launcherFuture.isDone();
 	}
 
 	private void removeStopTimerTask() {
