@@ -338,7 +338,7 @@
       <menuContribution allPopups="false" locationURI="toolbar:org.eclipse.ui.views.ContentOutline?after=additions">
          <command commandId="org.eclipse.lsp4e.toggleSortOutline" style="toggle" label="%command.toggle.outline.sort.label">
             <visibleWhen>
-               <reference definitionId="org.eclipse.lsp4e.activePartHasCNFOutlinePage" />
+               <reference definitionId="org.eclipse.lsp4e.activeEditorHasCNFOutlinePage" />
             </visibleWhen>
          </command>
       </menuContribution>
@@ -758,6 +758,15 @@
                <instanceof value="org.eclipse.ui.views.contentoutline.ContentOutline" />
                <test property="org.eclipse.lsp4e.hasCNFOutlinePage" />
             </and>
+         </with>
+      </definition>
+      <definition
+            id="org.eclipse.lsp4e.activeEditorHasCNFOutlinePage">
+         <with
+               variable="activeEditor">
+            <test
+                  property="org.eclipse.lsp4e.hasCNFOutlinePage">
+            </test>
          </with>
       </definition>
       <definition id="org.eclipse.lsp4e.editorHasLanguageServer">
