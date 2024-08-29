@@ -73,7 +73,7 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 				sb.append(' ');
 			}
 			sb.append(label);
-			if (inlayHint.getPaddingRight() != null && inlayHint.getPaddingRight().booleanValue()) {
+			if (Boolean.TRUE.equals(inlayHint.getPaddingRight()) {
 				sb.append(' ');
 			}
 			super.setLabel(sb.toString());
