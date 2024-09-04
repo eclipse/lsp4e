@@ -82,7 +82,9 @@ public class TestUtils {
 		final var input = new FileEditorInput(file);
 
 		IEditorPart part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", false);
-		part.setFocus();
+		if (part != null) {
+			part.setFocus();
+		}
 		return part;
 	}
 
