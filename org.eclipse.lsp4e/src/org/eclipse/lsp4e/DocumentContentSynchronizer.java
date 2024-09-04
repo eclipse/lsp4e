@@ -51,6 +51,7 @@ import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.lsp4j.DocumentRangeFormattingParams;
 import org.eclipse.lsp4j.FormattingOptions;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
@@ -337,21 +338,29 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		return null;
 	}
 
-	private CompletableFuture<@Nullable VersionedEdits> requestFormatting(IDocument document, ITextSelection textSelection) throws BadLocationException {
+	private CompletableFuture<@Nullable VersionedEdits> requestFormatting(IDocument document,
+			ITextSelection textSelection) {
 		long modificationStamp = DocumentUtil.getDocumentModificationStamp(document);
 
-		FormattingOptions formatOptions = LSPFormatter.getFormatOptions();
-		final var docId = new TextDocumentIdentifier(fileUri.toString());
-
-		final ServerCapabilities capabilities = languageServerWrapper.getServerCapabilities();
-		if (capabilities != null
-				&& LSPFormatter.isDocumentRangeFormattingSupported(capabilities)
-				&& !(LSPFormatter.isDocumentFormattingSupported(capabilities) && textSelection.getLength() == 0)) {
-			var rangeParams = LSPFormatter.getRangeFormattingParams(document, textSelection, formatOptions, docId);
-			return languageServerWrapper.executeImpl(ls -> ls.getTextDocumentService().rangeFormatting(rangeParams).thenApply(edits -> new VersionedEdits(modificationStamp, edits, document)));
-		}
-		var params = LSPFormatter.getFullFormatParams(formatOptions, docId);
-		return languageServerWrapper.executeImpl(ls -> ls.getTextDocumentService().formatting(params).thenApply(edits -> new VersionedEdits(modificationStamp, edits, document)));
+		return languageServerWrapper.getServerCapabilitiesAsync().thenCompose(capabilities -> {
+			FormattingOptions formatOptions = LSPFormatter.getFormatOptions();
+			final var docId = new TextDocumentIdentifier(fileUri.toString());
+			if (textSelection.getLength() == 0 && LSPFormatter.isDocumentRangeFormattingSupported(capabilities)
+					&& !(LSPFormatter.isDocumentFormattingSupported(capabilities))) {
+				try {
+					DocumentRangeFormattingParams rangeParams = LSPFormatter.getRangeFormattingParams(document,
+							textSelection, formatOptions, docId);
+					return languageServerWrapper
+							.executeImpl(ls -> ls.getTextDocumentService().rangeFormatting(rangeParams)
+									.thenApply(edits -> new VersionedEdits(modificationStamp, edits, document)));
+				} catch (BadLocationException ex) {
+					throw new RuntimeException(ex);
+				}
+			}
+			var params = LSPFormatter.getFullFormatParams(formatOptions, docId);
+			return languageServerWrapper.executeImpl(ls -> ls.getTextDocumentService().formatting(params)
+					.thenApply(edits -> new VersionedEdits(modificationStamp, edits, document)));
+		});
 	}
 
 	public void documentSaved(IFileBuffer buffer) {

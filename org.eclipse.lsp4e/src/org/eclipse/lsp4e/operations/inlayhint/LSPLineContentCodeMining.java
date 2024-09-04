@@ -92,7 +92,13 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 
 	@Override
 	protected CompletableFuture<@Nullable Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
-		if (wrapper.isActive() && canResolveInlayHint(wrapper.getServerCapabilities())) {
+		if (!wrapper.isActive()) // TODO is this check required? if so is it missing in LSPCodeMining.doResolve()?
+			return CompletableFuture.completedFuture(null);
+
+		return wrapper.getServerCapabilitiesAsync().thenCompose(capabilities -> {
+			if (!canResolveInlayHint(capabilities)) {
+				CompletableFuture.completedFuture(null);
+			}
 			return wrapper.execute(
 					ls -> ls.getTextDocumentService().resolveInlayHint(inlayHint).thenAcceptAsync(resolvedInlayHint -> {
 						if (resolvedInlayHint != null) {
@@ -100,8 +106,7 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 							setLabel(getInlayHintString(resolvedInlayHint));
 						}
 					}));
-		}
-		return CompletableFuture.completedFuture(null);
+		});
 	}
 
 	private static boolean canResolveInlayHint(@Nullable ServerCapabilities capabilities) {
