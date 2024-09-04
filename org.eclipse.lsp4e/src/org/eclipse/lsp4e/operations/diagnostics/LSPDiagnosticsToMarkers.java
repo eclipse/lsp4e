@@ -13,13 +13,11 @@
 package org.eclipse.lsp4e.operations.diagnostics;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -34,10 +32,10 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Status;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
+import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.Position;
 import org.eclipse.jface.text.source.Annotation;
 import org.eclipse.jface.text.source.IAnnotationModel;
@@ -46,10 +44,12 @@ import org.eclipse.jface.text.source.ISourceViewer;
 import org.eclipse.lsp4e.IMarkerAttributeComputer;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.texteditor.MarkerUtilities;
 
 public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParams> {
@@ -57,17 +57,28 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	public static final String LSP_DIAGNOSTIC = "lspDiagnostic"; //$NON-NLS-1$
 	public static final String LANGUAGE_SERVER_ID = "languageServerId"; //$NON-NLS-1$
 	public static final String LS_DIAGNOSTIC_MARKER_TYPE = "org.eclipse.lsp4e.diagnostic"; //$NON-NLS-1$
-	private final @NonNull String languageServerId;
-	private final @NonNull String markerType;
-	private final Optional<IMarkerAttributeComputer> markerAttributeComputer;
 
-	public LSPDiagnosticsToMarkers(@NonNull String serverId, @Nullable String markerType, @Nullable IMarkerAttributeComputer markerAttributeComputer) {
+	private static final IMarkerAttributeComputer DEFAULT_MARKER_ATTRIBUTE_COMPUTER = new IMarkerAttributeComputer() {
+
+		@Override
+		public void addMarkerAttributesForDiagnostic(Diagnostic diagnostic, @Nullable IDocument document,
+				IResource resource, Map<String, Object> attributes) {
+			// nothing to do
+		}
+	};
+
+	private final String languageServerId;
+	private final String markerType;
+	private final IMarkerAttributeComputer markerAttributeComputer;
+
+	public LSPDiagnosticsToMarkers(String serverId, @Nullable String markerType, @Nullable IMarkerAttributeComputer markerAttributeComputer) {
 		this.languageServerId = serverId;
 		this.markerType = markerType != null ? markerType : LS_DIAGNOSTIC_MARKER_TYPE;
-		this.markerAttributeComputer = Optional.ofNullable(markerAttributeComputer);
+		this.markerAttributeComputer = markerAttributeComputer == null ? DEFAULT_MARKER_ATTRIBUTE_COMPUTER
+				: markerAttributeComputer;
 	}
 
-	public LSPDiagnosticsToMarkers(@NonNull String serverId) {
+	public LSPDiagnosticsToMarkers(String serverId) {
 		this(serverId, null, null);
 	}
 
@@ -79,7 +90,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	 * @deprecated
 	 */
 	@Deprecated
-	public LSPDiagnosticsToMarkers(IProject project, @NonNull String serverId) {
+	public LSPDiagnosticsToMarkers(IProject project, String serverId) {
 		this(serverId);
 	}
 
@@ -91,21 +102,19 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			if (resource != null && resource.isAccessible()) {
 				updateMarkers(diagnostics, resource);
 			} else {
-				LSPEclipseUtils.findOpenEditorsFor(LSPEclipseUtils.toUri(uri)).stream()
-					.map(reference -> reference.getEditor(true))
-					.filter(Objects::nonNull)
-					.map(LSPEclipseUtils::getTextViewer)
-					.filter(Objects::nonNull)
-					.filter(ISourceViewer.class::isInstance)
-					.map(ISourceViewer.class::cast)
-					.forEach(sourceViewer -> updateEditorAnnotations(sourceViewer, diagnostics));
+				for (final IEditorReference editorRef : LSPEclipseUtils.findOpenEditorsFor(LSPEclipseUtils.toUri(uri))) {
+					final ITextViewer textViewer = LSPEclipseUtils.getTextViewer(editorRef.getEditor(true));
+					if (textViewer instanceof ISourceViewer sourceViewer) {
+						updateEditorAnnotations(sourceViewer, diagnostics);
+					}
+				}
 			}
 		} catch (Exception ex) {
 			LanguageServerPlugin.logError(ex);
 		}
 	}
 
-	private void updateEditorAnnotations(@NonNull ISourceViewer sourceViewer, PublishDiagnosticsParams diagnostics) {
+	private void updateEditorAnnotations(ISourceViewer sourceViewer, PublishDiagnosticsParams diagnostics) {
 		IAnnotationModel annotationModel = sourceViewer.getAnnotationModel();
 		if (annotationModel == null) {
 			return;
@@ -120,9 +129,13 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			final var toAdd = new HashMap<Annotation, Position>(diagnostics.getDiagnostics().size(), 1.f);
 			diagnostics.getDiagnostics().forEach(diagnostic -> {
 				try {
-					int startOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), sourceViewer.getDocument());
-					int endOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), sourceViewer.getDocument());
-					toAdd.put(new DiagnosticAnnotation(diagnostic), new Position(startOffset, endOffset - startOffset));
+					final var doc = sourceViewer.getDocument();
+					if (doc != null) {
+						int startOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), doc);
+						int endOffset = LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), doc);
+						toAdd.put(new DiagnosticAnnotation(diagnostic, markerAttributeComputer::computeMarkerMessage),
+								new Position(startOffset, endOffset - startOffset));
+					}
 				} catch (BadLocationException ex) {
 					LanguageServerPlugin.logError(ex);
 				}
@@ -132,20 +145,20 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 	}
 
 	private WorkspaceJob updateMarkers(PublishDiagnosticsParams diagnostics, IResource resource) {
-		WorkspaceJob job = new WorkspaceJob("Update markers from diagnostics") { //$NON-NLS-1$
+		final var job = new WorkspaceJob("Update markers from diagnostics") { //$NON-NLS-1$
 			@Override
-			public boolean belongsTo(Object family) {
+			public boolean belongsTo(@Nullable Object family) {
 				return LanguageServerPlugin.FAMILY_UPDATE_MARKERS == family;
 			}
 
 			@Override
-			public IStatus runInWorkspace(IProgressMonitor monitor) throws CoreException {
+			public IStatus runInWorkspace(@Nullable IProgressMonitor monitor) throws CoreException {
 				if (!resource.exists()) {
 					return Status.OK_STATUS;
 				}
 
-				final var toDeleteMarkers = new HashSet<IMarker>(
-						Arrays.asList(resource.findMarkers(markerType, true, IResource.DEPTH_ZERO)));
+				final var toDeleteMarkers = ArrayUtil
+						.asHashSet(resource.findMarkers(markerType, true, IResource.DEPTH_ZERO));
 				toDeleteMarkers
 						.removeIf(marker -> !Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID, ""), languageServerId)); //$NON-NLS-1$
 				final var newDiagnostics = new ArrayList<Diagnostic>();
@@ -203,7 +216,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		return job;
 	}
 
-	protected void updateMarker(@NonNull Map<String, Object> targetAttributes, @NonNull IMarker marker) {
+	protected void updateMarker(Map<String, Object> targetAttributes, IMarker marker) {
 		try {
 			if (!targetAttributes.equals(marker.getAttributes())) {
 				marker.setAttributes(targetAttributes);
@@ -213,11 +226,12 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		}
 	}
 
-	private IMarker getExistingMarkerFor(IDocument document, Diagnostic diagnostic, Set<IMarker> remainingMarkers) {
+	private @Nullable IMarker getExistingMarkerFor(@Nullable IDocument document, Diagnostic diagnostic, Set<IMarker> remainingMarkers) {
 		if (document == null) {
 			return null;
 		}
 
+		final var markerMessage = markerAttributeComputer.computeMarkerMessage(diagnostic);
 		for (IMarker marker : remainingMarkers) {
 			if (!marker.exists()) {
 				continue;
@@ -225,7 +239,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			try {
 				if (LSPEclipseUtils.toOffset(diagnostic.getRange().getStart(), document) == MarkerUtilities.getCharStart(marker)
 						&& (LSPEclipseUtils.toOffset(diagnostic.getRange().getEnd(), document) == MarkerUtilities.getCharEnd(marker) || Objects.equals(diagnostic.getRange().getStart(), diagnostic.getRange().getEnd()))
-						&& Objects.equals(marker.getAttribute(IMarker.MESSAGE), diagnostic.getMessage())
+						&& Objects.equals(marker.getAttribute(IMarker.MESSAGE), markerMessage)
 						&& Objects.equals(marker.getAttribute(LANGUAGE_SERVER_ID), this.languageServerId)) {
 					return marker;
 				}
@@ -236,14 +250,11 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		return null;
 	}
 
-	private @NonNull Map<String, Object> computeMarkerAttributes(@Nullable IDocument document,
-			@NonNull Diagnostic diagnostic, @NonNull IResource resource) {
+	private Map<String, Object> computeMarkerAttributes(@Nullable IDocument document,
+			Diagnostic diagnostic, IResource resource) {
 		Either<String, Integer> code = diagnostic.getCode();
 		if (code != null && code.isLeft()) {
-			String left = code.getLeft();
-			if (left != null) {
-				diagnostic.setCode(Either.forLeft(left.intern()));
-			}
+			diagnostic.setCode(Either.forLeft(code.getLeft().intern()));
 		}
 		String source = diagnostic.getSource();
 		if (source != null) {
@@ -252,7 +263,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 		final var attributes = new HashMap<String, Object>(8);
 		attributes.put(LSP_DIAGNOSTIC, diagnostic);
 		attributes.put(LANGUAGE_SERVER_ID, languageServerId);
-		attributes.put(IMarker.MESSAGE, diagnostic.getMessage());
+		attributes.put(IMarker.MESSAGE, markerAttributeComputer.computeMarkerMessage(diagnostic));
 		attributes.put(IMarker.SEVERITY, LSPEclipseUtils.toEclipseMarkerSeverity(diagnostic.getSeverity()));
 
 		if (document != null) {
@@ -288,8 +299,7 @@ public class LSPDiagnosticsToMarkers implements Consumer<PublishDiagnosticsParam
 			attributes.put(IMarker.CHAR_END, end);
 		}
 
-		markerAttributeComputer
-				.ifPresent(c -> c.addMarkerAttributesForDiagnostic(diagnostic, document, resource, attributes));
+		markerAttributeComputer.addMarkerAttributesForDiagnostic(diagnostic, document, resource, attributes);
 
 		return attributes;
 	}

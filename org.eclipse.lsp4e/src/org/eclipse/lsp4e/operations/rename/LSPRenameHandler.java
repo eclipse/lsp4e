@@ -16,6 +16,7 @@
 package org.eclipse.lsp4e.operations.rename;
 
 import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
@@ -66,7 +67,7 @@ public class LSPRenameHandler extends LSPDocumentAbstractHandler {
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
+	public void setEnabled(@Nullable Object evaluationContext) {
 		setEnabled(ServerCapabilities::getRenameProvider, this::hasSelection);
 	}
 }

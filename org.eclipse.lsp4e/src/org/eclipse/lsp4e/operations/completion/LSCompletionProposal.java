@@ -16,10 +16,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.completion;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -29,7 +32,7 @@ import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
 import org.eclipse.jface.text.BadLocationException;
@@ -118,25 +121,25 @@ public class LSCompletionProposal
 	private final int initialOffset;
 	protected int bestOffset = -1;
 	protected int currentOffset = -1;
-	protected ITextViewer viewer;
+	protected @Nullable ITextViewer viewer;
 	private final IDocument document;
 	private final boolean isIncomplete;
-	private IRegion selection;
-	private LinkedPosition firstPosition;
+	private @Nullable IRegion selection;
+	private @Nullable LinkedPosition firstPosition;
 	// private LSPDocumentInfo info;
-	private Integer rankCategory;
-	private Integer rankScore;
-	private String documentFilter;
+	private @Nullable Integer rankCategory;
+	private @Nullable Integer rankScore;
+	private @Nullable String documentFilter;
 	private String documentFilterAddition = ""; //$NON-NLS-1$
 	private final LanguageServerWrapper languageServerWrapper;
 
-	public LSCompletionProposal(@NonNull IDocument document, int offset, @NonNull CompletionItem item,
+	public LSCompletionProposal(IDocument document, int offset, CompletionItem item,
 			LanguageServerWrapper languageServerWrapper) {
 		this(document, offset, item, null, languageServerWrapper, false);
 	}
 
-	public LSCompletionProposal(@NonNull IDocument document, int offset, @NonNull CompletionItem item,
-			CompletionItemDefaults defaults, LanguageServerWrapper languageServerWrapper, boolean isIncomplete) {
+	public LSCompletionProposal(IDocument document, int offset, CompletionItem item,
+			@Nullable CompletionItemDefaults defaults, LanguageServerWrapper languageServerWrapper, boolean isIncomplete) {
 		this.item = item;
 		this.document = document;
 		this.languageServerWrapper = languageServerWrapper;
@@ -193,8 +196,8 @@ public class LSCompletionProposal
 		if (documentFilter != null) {
 			return documentFilter + documentFilterAddition;
 		}
-		documentFilter = CompletionProposalTools.getFilterFromDocument(document, currentOffset,
-				getFilterString(), bestOffset);
+		final var documentFilter = this.documentFilter = CompletionProposalTools.getFilterFromDocument(document,
+				currentOffset, getFilterString(), bestOffset);
 		documentFilterAddition = ""; //$NON-NLS-1$
 		return documentFilter;
 	}
@@ -208,6 +211,7 @@ public class LSCompletionProposal
 	public int getRankScore() {
 		if (rankScore != null)
 			return rankScore;
+		int rankScore;
 		try {
 			rankScore = CompletionProposalTools.getScoreOfFilterMatch(getDocumentFilter(),
 					getFilterString());
@@ -215,6 +219,7 @@ public class LSCompletionProposal
 			LanguageServerPlugin.logError(e);
 			rankScore = -1;
 		}
+		this.rankScore = rankScore;
 		return rankScore;
 	}
 
@@ -229,6 +234,7 @@ public class LSCompletionProposal
 		if (rankCategory != null) {
 			return rankCategory;
 		}
+		int rankCategory;
 		try {
 			rankCategory = CompletionProposalTools.getCategoryOfFilterMatch(getDocumentFilter(),
 					getFilterString());
@@ -236,6 +242,7 @@ public class LSCompletionProposal
 			LanguageServerPlugin.logError(e);
 			rankCategory = 5;
 		}
+		this.rankCategory = rankCategory;
 		return rankCategory;
 	}
 
@@ -312,7 +319,7 @@ public class LSCompletionProposal
 	}
 
 	@Override
-	public IInformationControlCreator getInformationControlCreator() {
+	public @Nullable IInformationControlCreator getInformationControlCreator() {
 		return new AbstractReusableInformationControlCreator() {
 			@Override
 			protected IInformationControl doCreateInformationControl(Shell parent) {
@@ -348,7 +355,7 @@ public class LSCompletionProposal
 		return res.toString();
 	}
 
-	private boolean resolvesCompletionItem(final ServerCapabilities capabilities) {
+	private boolean resolvesCompletionItem(final @Nullable ServerCapabilities capabilities) {
 		if (capabilities != null) {
 			CompletionOptions completionProvider = capabilities.getCompletionProvider();
 			if (completionProvider != null) {
@@ -373,7 +380,7 @@ public class LSCompletionProposal
 		}
 	}
 
-	private void updateCompletionItem(CompletionItem resolvedItem) {
+	private void updateCompletionItem(@Nullable CompletionItem resolvedItem) {
 		if (resolvedItem == null) {
 			return;
 		}
@@ -404,7 +411,7 @@ public class LSCompletionProposal
 	}
 
 	@Override
-	public CharSequence getPrefixCompletionText(IDocument document, int completionOffset) {
+	public @Nullable CharSequence getPrefixCompletionText(IDocument document, int completionOffset) {
 		return item.getInsertText().substring(completionOffset - bestOffset);
 	}
 
@@ -495,7 +502,7 @@ public class LSCompletionProposal
 			}
 			insertionOffset = computeNewOffset(item.getAdditionalTextEdits(), insertionOffset, document);
 			if (item.getInsertTextFormat() == InsertTextFormat.Snippet) {
-				var completionSnippetParser = new CompletionSnippetParser(document, insertText, insertionOffset, this::getVariableValue);
+				final var completionSnippetParser = new CompletionSnippetParser(document, insertText, insertionOffset, this::getVariableValue);
 				insertText = completionSnippetParser.parse();
 				regions = completionSnippetParser.getLinkedPositions();
 				if (!regions.isEmpty() && firstPosition == null) {
@@ -509,7 +516,7 @@ public class LSCompletionProposal
 
 				final var allEdits = new ArrayList<TextEdit>();
 				allEdits.add(textEdit);
-				additionalEdits.stream().forEach(te -> {
+				additionalEdits.forEach(te -> {
 					int shift = offset - initialOffset;
 					if (shift != 0) {
 						try {
@@ -532,6 +539,7 @@ public class LSCompletionProposal
 			}
 
 			boolean onlyPlaceCaret = regions.size() == 1 && regions.values().iterator().next().size() == 1 && regions.values().iterator().next().stream().noneMatch(ProposalPosition.class::isInstance);
+			final var viewer = this.viewer;
 			if (viewer != null && !regions.isEmpty() && !onlyPlaceCaret) {
 				final var model = new LinkedModeModel();
 				for (List<LinkedPosition> positions: regions.values()) {
@@ -558,7 +566,8 @@ public class LSCompletionProposal
 
 			if (item.getCommand() != null) {
 				Command command = item.getCommand();
-				ExecuteCommandOptions provider = languageServerWrapper.getServerCapabilities().getExecuteCommandProvider();
+				ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
+				ExecuteCommandOptions provider = serverCapabilities == null ? null : serverCapabilities.getExecuteCommandProvider();
 				if (provider != null && provider.getCommands().contains(command.getCommand())) {
 					languageServerWrapper.execute(ls -> ls.getWorkspaceService()
 							.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
@@ -583,7 +592,7 @@ public class LSCompletionProposal
 		return insertText.replace("\n", whitespacesBeforeInsertion); //$NON-NLS-1$
 	}
 
-	private int computeNewOffset(List<TextEdit> additionalTextEdits, int insertionOffset, IDocument doc) {
+	private int computeNewOffset(@Nullable List<TextEdit> additionalTextEdits, int insertionOffset, IDocument doc) {
 		if (additionalTextEdits != null && !additionalTextEdits.isEmpty()) {
 			int adjustment = 0;
 			for (TextEdit edit : additionalTextEdits) {
@@ -609,13 +618,23 @@ public class LSCompletionProposal
 	private String getVariableValue(String variableName) {
 		return switch (variableName) {
 		case TM_FILENAME_BASE -> {
-			IPath pathBase = LSPEclipseUtils.toPath(document).removeFileExtension();
-			String fileName = pathBase.lastSegment();
+			IPath path = LSPEclipseUtils.toPath(document);
+			String fileName = path == null ? null : path.removeFileExtension().lastSegment();
 			yield fileName != null ? fileName : ""; //$NON-NLS-1$
 		}
-		case TM_FILENAME -> LSPEclipseUtils.toPath(document).lastSegment();
-		case TM_FILEPATH -> getAbsoluteLocation(LSPEclipseUtils.toPath(document));
-		case TM_DIRECTORY -> getAbsoluteLocation(LSPEclipseUtils.toPath(document).removeLastSegments(1));
+		case TM_FILENAME -> {
+			IPath path = LSPEclipseUtils.toPath(document);
+			String fileName = path == null ? null : path.lastSegment();
+			yield fileName != null ? fileName : ""; //$NON-NLS-1$
+		}
+		case TM_FILEPATH -> {
+			IPath path = LSPEclipseUtils.toPath(document);
+			yield path == null ? "" : getAbsoluteLocation(path); //$NON-NLS-1$
+		}
+		case TM_DIRECTORY -> {
+			IPath path = LSPEclipseUtils.toPath(document);
+			yield path == null ? "" : getAbsoluteLocation(path.removeLastSegments(1)); //$NON-NLS-1$
+		}
 		case TM_LINE_INDEX -> {
 			try {
 				yield Integer.toString(getTextEditRange().getStart().getLine()); // TODO probably wrong, should use viewer state
@@ -645,6 +664,7 @@ public class LSCompletionProposal
 		}
 		case TM_SELECTED_TEXT -> {
 			try {
+				final var viewer = castNonNull(this.viewer);
 				String selectedText = document.get(viewer.getSelectedRange().x, viewer.getSelectedRange().y);
 				yield selectedText;
 			} catch (BadLocationException e) {
@@ -654,6 +674,7 @@ public class LSCompletionProposal
 		}
 		case TM_CURRENT_WORD -> {
 			try {
+				final var viewer = castNonNull(this.viewer);
 				String selectedText = document.get(viewer.getSelectedRange().x, viewer.getSelectedRange().y);
 				int beforeSelection = viewer.getSelectedRange().x - 1;
 				while (beforeSelection >= 0 && Character.isUnicodeIdentifierPart(document.getChar(beforeSelection))) {
@@ -718,10 +739,12 @@ public class LSCompletionProposal
 	}
 
 	@Override
-	public Point getSelection(IDocument document) {
+	public @Nullable Point getSelection(IDocument document) {
+		final var firstPosition = this.firstPosition;
 		if (firstPosition != null) {
 			return new Point(firstPosition.getOffset(), firstPosition.getLength());
 		}
+		final var selection = this.selection;
 		if (selection == null) {
 			return null;
 		}
@@ -729,28 +752,28 @@ public class LSCompletionProposal
 	}
 
 	@Override
-	public String getAdditionalProposalInfo() {
+	public @Nullable String getAdditionalProposalInfo() {
 		return getAdditionalProposalInfo(new NullProgressMonitor());
 	}
 
 	@Override
-	public Image getImage() {
+	public @Nullable Image getImage() {
 		return LSPImages.imageFromCompletionItem(item);
 	}
 
 	@Override
-	public IContextInformation getContextInformation() {
+	public @Nullable IContextInformation getContextInformation() {
 		return this;
 	}
 
 	@Override
 	public String getContextDisplayString() {
-		return getAdditionalProposalInfo();
+		return Objects.toString(getAdditionalProposalInfo());
 	}
 
 	@Override
 	public String getInformationDisplayString() {
-		return getAdditionalProposalInfo();
+		return Objects.toString(getAdditionalProposalInfo());
 	}
 
 	public String getSortText() {
@@ -782,7 +805,7 @@ public class LSCompletionProposal
 	}
 
 	@Override
-	public boolean validate(IDocument document, int offset, DocumentEvent event) {
+	public boolean validate(IDocument document, int offset, @Nullable DocumentEvent event) {
 		if (item.getLabel() == null || item.getLabel().isEmpty()) {
 			return false;
 		}
@@ -805,7 +828,10 @@ public class LSCompletionProposal
 	@Override
 	public void apply(ITextViewer viewer, char trigger, int stateMask, int offset) {
 		this.viewer = viewer;
-		apply(viewer.getDocument(), trigger, stateMask, offset);
+		final var doc = viewer.getDocument();
+		if (doc != null) {
+			apply(doc, trigger, stateMask, offset);
+		}
 	}
 
 	@Override
@@ -819,7 +845,7 @@ public class LSCompletionProposal
 	}
 
 	@Override
-	public char[] getTriggerCharacters() {
+	public char @Nullable [] getTriggerCharacters() {
 		return null;
 	}
 

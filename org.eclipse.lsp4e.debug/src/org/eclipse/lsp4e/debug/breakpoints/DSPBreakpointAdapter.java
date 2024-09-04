@@ -14,6 +14,7 @@ import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.ILineBreakpoint;
 import org.eclipse.debug.ui.actions.IToggleBreakpointsTarget;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.debug.DSPPlugin;
@@ -32,8 +33,7 @@ public class DSPBreakpointAdapter implements IToggleBreakpointsTarget {
 				int lineNumber = textSelection.getStartLine();
 				IBreakpoint[] breakpoints = DebugPlugin.getDefault().getBreakpointManager()
 						.getBreakpoints(DSPPlugin.ID_DSP_DEBUG_MODEL);
-				for (int i = 0; i < breakpoints.length; i++) {
-					IBreakpoint breakpoint = breakpoints[i];
+				for (final IBreakpoint breakpoint : breakpoints) {
 					if (breakpoint instanceof ILineBreakpoint lineBreakpoint
 							&& resource.equals(breakpoint.getMarker().getResource())
 							&& lineBreakpoint.getLineNumber() == (lineNumber + 1)) {
@@ -55,12 +55,12 @@ public class DSPBreakpointAdapter implements IToggleBreakpointsTarget {
 		return true;
 	}
 
-	private ITextEditor getEditor(IWorkbenchPart part) {
+	private @Nullable ITextEditor getEditor(IWorkbenchPart part) {
 		if (part instanceof ITextEditor textEditor) {
 			return textEditor;
 		}
 		if (part instanceof MultiPageEditorPart multiPageEditorPart
-				&& ((MultiPageEditorPart) part).getSelectedPage() instanceof ITextEditor textEditor) {
+				&& multiPageEditorPart.getSelectedPage() instanceof ITextEditor textEditor) {
 			return textEditor;
 		}
 		return null;

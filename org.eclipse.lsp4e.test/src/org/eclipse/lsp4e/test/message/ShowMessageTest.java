@@ -35,8 +35,8 @@ public class ShowMessageTest extends AbstractTestWithProject {
 	public void testShowMessage() throws CoreException {
 		IFile file = TestUtils.createUniqueTestFile(project, "");
 		IDE.openEditor(UI.getActivePage(), file);
-		String messageContent = "test notification " + System.currentTimeMillis();
-		MessageParams message = new MessageParams(MessageType.Error, messageContent);
+		final var messageContent = "test notification " + System.currentTimeMillis();
+		final var message = new MessageParams(MessageType.Error, messageContent);
 		Display display = Display.getDefault();
 		Set<Shell> currentShells = Stream.of(display.getShells()).filter(Shell::isVisible).collect(Collectors.toSet());
 		List<LanguageClient> remoteProxies = MockLanguageServer.INSTANCE.getRemoteProxies();

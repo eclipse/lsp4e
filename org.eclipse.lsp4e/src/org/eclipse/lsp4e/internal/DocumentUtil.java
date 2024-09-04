@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2023 Avaloq Group AG.
+ * Copyright (c) 2023, 2024 Avaloq Group AG and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -8,14 +8,19 @@
  *
  * Contributors:
  *  Rubén Porras Campo (Avaloq Group AG) - Initial Implementation
+ *  Sebastian Thomschke - add getCharset method
  *******************************************************************************/
 package org.eclipse.lsp4e.internal;
 
+import java.nio.charset.Charset;
+
+import org.eclipse.core.filebuffers.ITextFileBuffer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IDocumentExtension4;
 import org.eclipse.lsp4e.LSPEclipseUtils;
+import org.eclipse.lsp4e.LanguageServerPlugin;
 
 public final class DocumentUtil {
 
@@ -45,4 +50,17 @@ public final class DocumentUtil {
 		return IDocumentExtension4.UNKNOWN_MODIFICATION_STAMP;
 	}
 
+	public static Charset getCharset(final IDocument document) {
+		final ITextFileBuffer buffer = LSPEclipseUtils.toBuffer(document);
+		if (buffer == null)
+			return Charset.defaultCharset();
+		try {
+			final String charsetName = buffer.getEncoding();
+			if (charsetName != null)
+				return Charset.forName(charsetName);
+		} catch (final Exception ex) {
+		   LanguageServerPlugin.logError(ex);
+		}
+		return Charset.defaultCharset();
+	}
 }

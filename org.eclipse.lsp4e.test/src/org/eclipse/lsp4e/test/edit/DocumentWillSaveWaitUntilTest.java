@@ -14,7 +14,6 @@ package org.eclipse.lsp4e.test.edit;
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
 import static org.junit.Assert.assertNotNull;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
@@ -36,16 +35,16 @@ import org.junit.Test;
 public class DocumentWillSaveWaitUntilTest extends AbstractTestWithProject {
 
 	private List<TextEdit> createSingleTextEditAtFileStart(String newText) {
-		TextEdit textEdit = new TextEdit();
+		final var textEdit = new TextEdit();
 		textEdit.setRange(new Range(new Position(0, 0), new Position(0, newText.length())));
 		textEdit.setNewText(newText);
-		return Collections.singletonList(textEdit);
+		return List.of(textEdit);
 	}
 
 	@Test
 	public void testSave() throws Exception {
-		String oldText = "Hello";
-		String newText = "hello";
+		final var oldText = "Hello";
+		final var newText = "hello";
 
 		MockLanguageServer.INSTANCE.setWillSaveWaitUntil(createSingleTextEditAtFileStart(newText));
 

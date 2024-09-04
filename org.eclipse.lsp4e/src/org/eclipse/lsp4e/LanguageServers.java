@@ -12,7 +12,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.io.IOException;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -30,10 +31,11 @@ import java.util.stream.Stream;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.services.LanguageServer;
@@ -44,16 +46,17 @@ import org.eclipse.lsp4j.services.LanguageServer;
  */
 public abstract class LanguageServers<E extends LanguageServers<E>> {
 
+	@SuppressWarnings("null")
 	private static void forwardCancellation(CompletableFuture<?> from, CompletableFuture<?>... to) {
 		from.exceptionally(t -> {
 			if (t instanceof CancellationException) {
-				Stream.of(to).forEach(f -> f.cancel(true));
+				ArrayUtil.forEach(to, f -> f.cancel(true));
 			}
 			return null;
 		});
 	}
 
-	/** creates a future that is running on het common async pool, ensuring it's not blocking UI Thread */
+	/** creates a future that is running on the common async pool, ensuring it's not blocking UI Thread */
 	private static <T> CompletableFuture<T> onCommonPool(CompletableFuture<T> source) {
 		CompletableFuture<T> res = source.thenApplyAsync(Function.identity());
 		forwardCancellation(res, source);
@@ -70,8 +73,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 *
 	 * @return Async result
 	 */
-	@NonNull
-	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(Function<LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
+	public <T> CompletableFuture<List<T>> collectAll(Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
 		return collectAll((w, ls) -> fn.apply(ls));
 	}
 
@@ -87,9 +89,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 *
 	 * @return Async result
 	 */
-	@NonNull
-	public <T> CompletableFuture<@NonNull List<@NonNull T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
-		final CompletableFuture<@NonNull List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
+	public <T> CompletableFuture<List<T>> collectAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
+		final CompletableFuture<List<T>> init = CompletableFuture.completedFuture(new ArrayList<T>());
 		return onCommonPool(executeOnServers(fn).reduce(init, LanguageServers::add, LanguageServers::addAll));
 	}
 
@@ -104,8 +105,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 *
 	 * @return A list of pending results (note that these may be null or empty)
 	 */
-	@NonNull
-	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(Function<LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
+	public <T> List<CompletableFuture<@Nullable T>> computeAll(Function<LanguageServer, ? extends CompletableFuture<T>> fn) {
 		return computeAll((w, ls) -> fn.apply(ls));
 	}
 
@@ -122,8 +122,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 *
 	 * @return A list of pending results (note that these may be null or empty)
 	 */
-	@NonNull
-	public <T> List<@NonNull CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> fn) {
+	public <T> List<CompletableFuture<@Nullable T>> computeAll(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		return getServers().stream().map(serverFuture -> {
 					CompletableFuture<CompletableFuture<T>> requestFuture = serverFuture
 						.thenApply(w -> w == null ? CompletableFuture.completedFuture(null) : w.executeImpl(ls -> fn.apply(w, ls)));
@@ -144,7 +143,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return An asynchronous result that will complete with a populated <code>Optional&lt;T&gt;</code> from the first
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
-	public <T> CompletableFuture<Optional<T>> computeFirst(Function<LanguageServer, ? extends @NonNull CompletableFuture<T>> queryLS) {
+	public <T> CompletableFuture<Optional<T>> computeFirst(Function<LanguageServer, ? extends CompletableFuture<T>> queryLS) {
 		return computeFirst((w, ls) -> queryLS.apply(ls));
 	}
 
@@ -161,8 +160,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return An asynchronous result that will complete with a populated <code>Optional&lt;T&gt;</code> from the first
 	 * non-empty response, and with an empty <code>Optional</code> if none of the servers returned a non-empty result.
 	 */
-	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends @NonNull CompletableFuture<T>> queryLS) {
-		final CompletableFuture<Optional<T>> result = new CompletableFuture<>();
+	public <T> CompletableFuture<Optional<T>> computeFirst(BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> queryLS) {
+		final var result = new CompletableFuture<Optional<T>>();
 
 		// Dispatch the request to the servers, appending a step to each such that
 		// the first to return a non-null result will be the overall result.
@@ -172,7 +171,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 				executeOnServers(queryLS)
 				.map(lsRequest -> {
 					CompletableFuture<T> populateFuture = lsRequest.thenApply(t -> {
-						if (!isEmpty(t)) { // some LS methods return null objects when they have nothing to report, and some return an empty List
+						// some LS methods return null objects when they have nothing to report, and some return an empty List
+						if (t != null && !isEmptyCollection(t)) {
 							result.complete(Optional.of(t));
 						}
 						return t;
@@ -185,43 +185,44 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		return onCommonPool(result);
 	}
 
-	public @NonNull E withPreferredServer(final @Nullable LanguageServerDefinition serverDefinition) {
+	@SuppressWarnings("unchecked")
+	public E withPreferredServer(final @Nullable LanguageServerDefinition serverDefinition) {
 		Assert.isLegal(this.serverDefinition == null);
 		this.serverDefinition = serverDefinition;
-		return (E)this;
+		return (E) this;
 	}
 
 	/**
 	 * Specifies the capabilities that a server must have to process this request
 	 * @param filter Server capabilities predicate
-	 * @return
 	 */
-	public @NonNull E withFilter(final @NonNull Predicate<ServerCapabilities> filter) {
+	@SuppressWarnings("unchecked")
+	public E withFilter(final Predicate<ServerCapabilities> filter) {
 		Assert.isLegal(this.filter == NO_FILTER);
 		this.filter = filter;
-		return (E)this;
+		return (E) this;
 	}
 
 	/**
 	 * Specifies the capabilities that a server must have to process this request
 	 * @param serverCapabilities
-	 * @return
 	 */
-	public @NonNull E withCapability(final @NonNull Function<ServerCapabilities, Either<Boolean, ? extends Object>> serverCapabilities) {
+	@SuppressWarnings("unchecked")
+	public E withCapability(final Function<ServerCapabilities, Either<Boolean, ?>> serverCapabilities) {
 		Assert.isLegal(this.filter == NO_FILTER);
 		this.filter = f -> LSPEclipseUtils.hasCapability(serverCapabilities.apply(f));
-		return (E)this;
+		return (E) this;
 	}
 
 	/**
 	 *
 	 * @return Predicate that will be used to determine which servers this executor will use
 	 */
-	public @NonNull Predicate<ServerCapabilities> getFilter() {
+	public Predicate<ServerCapabilities> getFilter() {
 		return this.filter;
 	}
 
-	protected Boolean matches(@NonNull CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture) {
+	protected Boolean matches(CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture) {
 		try {
 			return wrapperFuture.thenApply(Objects::nonNull).get(50, TimeUnit.MILLISECONDS);
 		} catch (java.util.concurrent.ExecutionException e) {
@@ -243,7 +244,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @return True if there is a language server for this project/document & server capabilities.
 	 */
 	public boolean anyMatching() {
-		return getServers().stream().filter(this::matches).findFirst().isPresent();
+		return getServers().stream().anyMatch(this::matches);
 	}
 
 	/**
@@ -253,26 +254,23 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	@SuppressWarnings("null")
 	public static class LanguageServerDocumentExecutor extends LanguageServers<LanguageServerDocumentExecutor> {
 
-		private final @NonNull IDocument document;
+		private final IDocument document;
 
-		protected LanguageServerDocumentExecutor(final @NonNull IDocument document) {
+		protected LanguageServerDocumentExecutor(final IDocument document) {
 			this.document = document;
 		}
 
-		public @NonNull IDocument getDocument() {
+		public IDocument getDocument() {
 			return this.document;
 		}
 
-		@NonNull CompletableFuture<@Nullable LanguageServerWrapper> connect(@NonNull CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture) {
+		CompletableFuture<@Nullable LanguageServerWrapper> connect(CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture) {
 			return wrapperFuture.thenCompose(wrapper -> {
 				if (wrapper != null) {
-					try {
-						CompletableFuture<LanguageServerWrapper> serverFuture = wrapper.connectDocument(document);
-						if (serverFuture != null) {
-							return serverFuture;
-						}
-					} catch (IOException e) {
-						LanguageServerPlugin.logError(e);
+					@NonNullByDefault({})
+					CompletableFuture<LanguageServerWrapper> serverFuture = wrapper.connectDocument(document);
+					if (serverFuture != null) {
+						return serverFuture;
 					}
 				}
 				return CompletableFuture.completedFuture(null);
@@ -283,15 +281,15 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		/**
 		 * Test whether this server supports the requested <code>ServerCapabilities</code>.
 		 */
-		private @NonNull CompletableFuture<@Nullable LanguageServerWrapper> filter(@NonNull LanguageServerWrapper wrapper) {
+		private CompletableFuture<@Nullable LanguageServerWrapper> filter(LanguageServerWrapper wrapper) {
 			return wrapper.getInitializedServer()
 					.thenCompose(server -> CompletableFuture
-							.completedFuture(server != null && getFilter().test(wrapper.getServerCapabilities())))
+							.completedFuture(server != null && getFilter().test(castNonNull(wrapper.getServerCapabilities()))))
 					.thenApply(matches -> matches ? wrapper: null);
 		}
 
 		@Override
-		protected @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
+		protected List<CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
 			// Compute list of servers from document & filter
 			Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(document);
 			return order(wrappers).stream().map(this::filter).map(this::connect).toList();
@@ -300,7 +298,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		@Override
 		public boolean anyMatching() {
 			return LanguageServiceAccessor.getLSWrappers(document).stream()
-					.map(this::filter).filter(this::matches).findFirst().isPresent();
+					.map(this::filter).anyMatch(this::matches);
 		}
 	}
 
@@ -327,18 +325,17 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		/**
 		 * If called, this executor will not attempt to restart any matching servers that previously started
 		 * in this session but have since shut down
-		 * @return
 		 */
-		public @NonNull LanguageServerProjectExecutor excludeInactive() {
+		public LanguageServerProjectExecutor excludeInactive() {
 			this.restartStopped = false;
 			return this;
 		}
 
 		@Override
-		protected @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
+		protected List<CompletableFuture<@Nullable LanguageServerWrapper>> getServers() {
 			// Compute list of servers from project & filter
-			Collection<@NonNull LanguageServerWrapper> startedWrappers = order(LanguageServiceAccessor.getStartedWrappers(project, getFilter(), !restartStopped));
-			List<@NonNull CompletableFuture<LanguageServerWrapper>> wrappers = new ArrayList<>(startedWrappers.size());
+			Collection<LanguageServerWrapper> startedWrappers = order(LanguageServiceAccessor.getStartedWrappers(project, getFilter(), !restartStopped));
+			final var wrappers = new ArrayList<CompletableFuture<@Nullable LanguageServerWrapper>>(startedWrappers.size());
 			for (LanguageServerWrapper wrapper :  startedWrappers) {
 				wrappers.add(wrapper.getInitializedServer().thenApply(ls -> wrapper));
 			}
@@ -346,27 +343,27 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		}
 	}
 
-	private static <T> boolean isEmpty(final T t) {
-		return t == null || (t instanceof Collection<?> c && c.isEmpty());
+	private static boolean isEmptyCollection(final Object obj) {
+		return (obj instanceof Collection<?> c && c.isEmpty());
 	}
 
 	protected Collection<LanguageServerWrapper> order(Collection<LanguageServerWrapper> wrappers) {
 		if (serverDefinition != null && wrappers.size() > 1) {
-			List<LanguageServerWrapper> temp = new ArrayList<>(wrappers);
+			final var temp = new ArrayList<LanguageServerWrapper>(wrappers);
 			for (int i = 0; i < temp.size(); i++) {
 				LanguageServerWrapper wrapper = temp.get(i);
-				if (wrapper != null && wrapper.serverDefinition != null && Objects.equals(serverDefinition, wrapper.serverDefinition)) {
+				if (Objects.equals(serverDefinition, wrapper.serverDefinition)) {
 					Collections.swap(temp, 0, i);
 					return temp;
 				}
-			};
+			}
 		}
 		return wrappers;
 	}
 
 
-	// Pluggable strategy for getting the set of LSWrappers to dispatch operations on
-	protected abstract @NonNull List<@NonNull CompletableFuture<@Nullable LanguageServerWrapper>> getServers();
+	/** Pluggable strategy for getting the set of LSWrappers to dispatch operations on */
+	protected abstract List<CompletableFuture<@Nullable LanguageServerWrapper>> getServers();
 
 	/**
 	 * Hook called when requests are scheduled - for subclasses to implement optimistic locking
@@ -381,7 +378,6 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param col
 	 * @return A stream (empty if col is null)
 	 */
-	@NonNull
 	public static <T> Stream<T> streamSafely(@Nullable Collection<T> col) {
 		return col == null ? Stream.<T>of() : col.stream();
 	}
@@ -392,12 +388,9 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param <T> Result type
 	 * @param accumulator One async result
 	 * @param element Another async result
-	 * @return
 	 */
-	@SuppressWarnings("null")
-	@NonNull
-	private static <T> CompletableFuture<@NonNull List<@NonNull T>> add(@NonNull CompletableFuture<? extends @NonNull List<@NonNull T>> accumulator, @NonNull CompletableFuture<@Nullable T> element) {
-		CompletableFuture<@NonNull List<@NonNull T>> res = accumulator.thenCombine(element, (a, b) -> {
+	private static <T> CompletableFuture<List<T>> add(CompletableFuture<? extends List<T>> accumulator, CompletableFuture<@Nullable T> element) {
+		CompletableFuture<List<T>> res = accumulator.thenCombine(element, (a, b) -> {
 			if (b != null) {
 				a.add(b);
 			}
@@ -414,10 +407,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param another Another async result
 	 * @return Async combined result
 	 */
-	@SuppressWarnings("null")
-	@NonNull
-	public static <T> CompletableFuture<@NonNull List<T>> addAll(@NonNull CompletableFuture<@NonNull List<T>> accumulator, @NonNull CompletableFuture<@NonNull List<T>> another) {
-		CompletableFuture<@NonNull List<T>> res = accumulator.thenCombine(another, (a, b) -> {
+	public static <T> CompletableFuture<List<T>> addAll(CompletableFuture<List<T>> accumulator, CompletableFuture<List<T>> another) {
+		CompletableFuture<List<T>> res = accumulator.thenCombine(another, (a, b) -> {
 			a.addAll(b);
 			return a;
 		});
@@ -431,13 +422,12 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * (not chained with other futures) so cancelling the futures in
 	 * this stream will send a cancellation event to the LSs.</p>
 	 */
-	@NonNull
 	private <T> Stream<CompletableFuture<T>> executeOnServers(
 			BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		return getServers().stream().map(serverFuture -> {
 			// wrap in AtomicReference to allow dereferencing in downstream future
 			CompletableFuture<CompletableFuture<T>> lsRequestFuture = serverFuture.thenApply(w -> w == null
-				? CompletableFuture.completedFuture((T) null)
+				? CompletableFuture.completedFuture(null)
 				: w.executeImpl(ls -> fn.apply(w, ls)));
 			CompletableFuture<T> res = lsRequestFuture.thenCompose(Function.identity());
 			lsRequestFuture.thenAccept(request -> forwardCancellation(res, request));
@@ -450,7 +440,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * then we give up and supply an empty result rather than potentially waiting
 	 * forever...
 	 */
-	private <T> void completeEmptyOrWithException(final CompletableFuture<Optional<T>> completableFuture, final Throwable t) {
+	private <T> void completeEmptyOrWithException(final CompletableFuture<Optional<T>> completableFuture, final @Nullable Throwable t) {
 		if (t != null) {
 			completableFuture.completeExceptionally(t);
 		} else {
@@ -463,7 +453,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param document
 	 * @return Executor that will run requests on servers appropriate to the supplied document
 	 */
-	public static @NonNull LanguageServerDocumentExecutor forDocument(final @NonNull IDocument document) {
+	public static LanguageServerDocumentExecutor forDocument(final IDocument document) {
 		return new LanguageServerDocumentExecutor(document);
 	}
 
@@ -472,12 +462,12 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * @param project
 	 * @return Executor that will run requests on servers appropriate to the supplied project
 	 */
-	public static @NonNull LanguageServerProjectExecutor forProject(final IProject project) {
+	public static LanguageServerProjectExecutor forProject(final IProject project) {
 		return new LanguageServerProjectExecutor(project);
 	}
 
-	private static final @NonNull Predicate<ServerCapabilities> NO_FILTER = s -> true;
-	private @NonNull Predicate<ServerCapabilities> filter = NO_FILTER;
+	private static final Predicate<ServerCapabilities> NO_FILTER = s -> true;
+	private Predicate<ServerCapabilities> filter = NO_FILTER;
 
 	protected @Nullable LanguageServerDefinition serverDefinition;
 }

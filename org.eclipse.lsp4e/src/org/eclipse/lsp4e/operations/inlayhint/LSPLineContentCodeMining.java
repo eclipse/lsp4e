@@ -17,7 +17,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -49,14 +48,14 @@ import org.eclipse.swt.widgets.Display;
 public class LSPLineContentCodeMining extends LineContentCodeMining {
 
 	private InlayHint inlayHint;
-	private final @NonNull LanguageServerWrapper wrapper;
-	private final @NonNull IDocument document;
+	private final LanguageServerWrapper wrapper;
+	private final IDocument document;
 
-	private Point location;
-	private FontData[] fontData;
+	private @Nullable Point location;
+	private FontData @Nullable [] fontData;
 
-	public LSPLineContentCodeMining(@NonNull InlayHint inlayHint, @NonNull IDocument document, @NonNull LanguageServerWrapper languageServerWrapper,
-			InlayHintProvider provider) throws BadLocationException {
+	public LSPLineContentCodeMining(InlayHint inlayHint, IDocument document,
+			LanguageServerWrapper languageServerWrapper, InlayHintProvider provider) throws BadLocationException {
 		super(toPosition(inlayHint.getPosition(), document), provider);
 		this.inlayHint = inlayHint;
 		this.wrapper = languageServerWrapper;
@@ -65,15 +64,24 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 	}
 
 	@Override
-	public void setLabel(final String label) {
-		if (label == null || label.isEmpty() || Character.isWhitespace(label.charAt(label.length() - 1)))
+	public void setLabel(final @Nullable String label) {
+		if (label == null) {
 			super.setLabel(label);
-		else
-			super.setLabel(label + " "); //$NON-NLS-1$
+		} else {
+			StringBuilder sb = new StringBuilder();
+			if (Boolean.TRUE.equals(inlayHint.getPaddingLeft())) {
+				sb.append(' ');
+			}
+			sb.append(label);
+			if (Boolean.TRUE.equals(inlayHint.getPaddingRight())) {
+				sb.append(' ');
+			}
+			super.setLabel(sb.toString());
+		}
 	}
 
-	protected static @Nullable String getInlayHintString(@NonNull InlayHint inlayHint) {
-		Either<String, List<InlayHintLabelPart>> label = inlayHint.getLabel();
+	protected static @Nullable String getInlayHintString(InlayHint inlayHint) {
+		Either<String, @Nullable List<InlayHintLabelPart>> label = inlayHint.getLabel();
 		return label.map(Function.identity(), (parts) -> {
 			if (parts == null) {
 				return null;
@@ -83,12 +91,12 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 	}
 
 	@Override
-	protected CompletableFuture<Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
+	protected CompletableFuture<@Nullable Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
 		if (wrapper.isActive() && canResolveInlayHint(wrapper.getServerCapabilities())) {
-			return wrapper.execute(ls -> ls.getTextDocumentService().resolveInlayHint(this.inlayHint)
-					.thenAcceptAsync(resolvedInlayHint -> {
-						inlayHint = resolvedInlayHint;
+			return wrapper.execute(
+					ls -> ls.getTextDocumentService().resolveInlayHint(inlayHint).thenAcceptAsync(resolvedInlayHint -> {
 						if (resolvedInlayHint != null) {
+							inlayHint = resolvedInlayHint;
 							setLabel(getInlayHintString(resolvedInlayHint));
 						}
 					}));
@@ -96,7 +104,9 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 		return CompletableFuture.completedFuture(null);
 	}
 
-	private static boolean canResolveInlayHint(ServerCapabilities capabilities) {
+	private static boolean canResolveInlayHint(@Nullable ServerCapabilities capabilities) {
+		if (capabilities == null)
+			return false;
 		Either<Boolean, InlayHintRegistrationOptions> inlayProvider = capabilities.getInlayHintProvider();
 		if (inlayProvider != null && inlayProvider.isRight()) {
 			InlayHintRegistrationOptions options = inlayProvider.getRight();
@@ -122,30 +132,34 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 	}
 
 	@Override
-	public final Consumer<MouseEvent> getAction() {
-		return inlayHint.getLabel().map(l -> null, r -> labelPartAction(r));
+	public final @Nullable Consumer<MouseEvent> getAction() {
+		return inlayHint.getLabel().map(l -> null, this::labelPartAction);
 	}
 
-	private Consumer<MouseEvent> labelPartAction(List<InlayHintLabelPart> labelParts) {
+	private @Nullable Consumer<MouseEvent> labelPartAction(List<InlayHintLabelPart> labelParts) {
 		String title = getLabel();
-		if (title != null && !title.isEmpty() && labelParts.stream().map(InlayHintLabelPart::getCommand).anyMatch(Objects::nonNull)) {
-			return me -> {
-				findLabelPart(me, labelParts).map(InlayHintLabelPart::getCommand).filter(Objects::nonNull).ifPresent(command -> {
-					ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
-					String commandId = command.getCommand();
-					if (provider != null && provider.getCommands().contains(commandId)) {
-						LanguageServers.forDocument(document).computeAll((w, ls) -> {
-							if (w == wrapper) {
-								return ls.getWorkspaceService()
-										.executeCommand(new ExecuteCommandParams(commandId, command.getArguments()));
-							}
-							return CompletableFuture.completedFuture(null);
-						});
-					} else  {
-						CommandExecutor.executeCommandClientSide(command, document);
-					}
-				});
-			};
+		if (title != null && !title.isEmpty()
+				&& labelParts.stream().map(InlayHintLabelPart::getCommand).anyMatch(Objects::nonNull)) {
+			return me -> findLabelPart(me, labelParts) //
+					.map(InlayHintLabelPart::getCommand) //
+					.filter(Objects::nonNull) //
+					.ifPresent(command -> {
+						ServerCapabilities serverCapabilities = wrapper.getServerCapabilities();
+						ExecuteCommandOptions provider = serverCapabilities == null ? null
+								: serverCapabilities.getExecuteCommandProvider();
+						String commandId = command.getCommand();
+						if (provider != null && provider.getCommands().contains(commandId)) {
+							LanguageServers.forDocument(document).computeAll((w, ls) -> {
+								if (w == wrapper) {
+									return ls.getWorkspaceService().executeCommand(
+											new ExecuteCommandParams(commandId, command.getArguments()));
+								}
+								return CompletableFuture.completedFuture(null);
+							});
+						} else {
+							CommandExecutor.executeCommandClientSide(command, document);
+						}
+					});
 		}
 		return null;
 	}
@@ -154,6 +168,7 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 		if (labelParts.size() == 1) {
 			return Optional.of(labelParts.get(0));
 		}
+		final var location = this.location;
 		if (location != null && fontData != null) {
 			Point relativeLocation = new Point(me.x - location.x, me.y - location.y);
 			Display display = Display.getCurrent();
@@ -165,10 +180,10 @@ public class LSPLineContentCodeMining extends LineContentCodeMining {
 				gc = new GC(image);
 				font = new Font(display, fontData);
 				gc.setFont(font);
-				Point origin = new Point(0, 0);
+				final var origin = new Point(0, 0);
 				for (InlayHintLabelPart labelPart : labelParts) {
 					Point size = gc.stringExtent(labelPart.getValue());
-					Rectangle bounds = new Rectangle(origin.x, origin.y, size.x, size.y);
+					final var bounds = new Rectangle(origin.x, origin.y, size.x, size.y);
 					if (bounds.contains(relativeLocation)) {
 						return Optional.of(labelPart);
 					} else {

@@ -15,7 +15,6 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.resources.IFile;
@@ -50,7 +49,7 @@ public class DocumentLinkTest extends AbstractTestWithProject {
 
 	@Test
 	public void testDocumentLink() throws Exception {
-		List<DocumentLink> links = new ArrayList<>();
+		final var links = new ArrayList<DocumentLink>();
 		links.add(new DocumentLink(new Range(new Position(0, 9), new Position(0, 15)), "file://test0"));
 		MockLanguageServer.INSTANCE.setDocumentLinks(links);
 
@@ -64,12 +63,12 @@ public class DocumentLinkTest extends AbstractTestWithProject {
 
 	@Test
 	public void testDocumentLinkExternalFile() throws Exception {
-		List<DocumentLink> links = new ArrayList<>();
+		final var links = new ArrayList<DocumentLink>();
 		links.add(new DocumentLink(new Range(new Position(0, 9), new Position(0, 15)), "file://test0"));
 		MockLanguageServer.INSTANCE.setDocumentLinks(links);
 
 		File file = TestUtils.createTempFile("testDocumentLinkExternalFile", ".lspt");
-		ITextEditor editor = (ITextEditor) IDE.openInternalEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
+		final var editor = (ITextEditor) IDE.openInternalEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 		viewer.getDocument().set("Long enough dummy content to match ranges");
 
@@ -80,7 +79,7 @@ public class DocumentLinkTest extends AbstractTestWithProject {
 
 	@Test
 	public void testDocumentLinkWrongRegion() throws Exception {
-		List<DocumentLink> links = new ArrayList<>();
+		final var links = new ArrayList<DocumentLink>();
 		links.add(new DocumentLink(new Range(new Position(0, 9), new Position(0, 15)), "file://test0"));
 		MockLanguageServer.INSTANCE.setDocumentLinks(links);
 

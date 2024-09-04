@@ -14,10 +14,10 @@ package org.eclipse.lsp4e;
 import java.util.Map;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 /**
  * An interface that allows adding custom attributes to a
@@ -40,6 +40,16 @@ public interface IMarkerAttributeComputer {
 	 *            the map with the attributes for the marker, where the
 	 *            implementation can add attributes
 	 */
-	public void addMarkerAttributesForDiagnostic(@NonNull Diagnostic diagnostic, @Nullable IDocument document,
-			@NonNull IResource resource, @NonNull Map<String, Object> attributes);
+	public void addMarkerAttributesForDiagnostic(Diagnostic diagnostic, @Nullable IDocument document,
+			IResource resource, Map<String, Object> attributes);
+
+	/**
+	 * Computes a string to be used as Marker message.
+	 */
+	public default String computeMarkerMessage(Diagnostic diagnostic) {
+		final Either<String, Integer> code = diagnostic.getCode();
+		return code == null //
+				? diagnostic.getMessage()
+				: diagnostic.getMessage() + " [" + code.get() + "]";  //$NON-NLS-1$//$NON-NLS-2$
+	}
 }

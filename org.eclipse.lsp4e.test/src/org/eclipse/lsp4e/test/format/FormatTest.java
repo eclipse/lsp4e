@@ -12,15 +12,11 @@
 package org.eclipse.lsp4e.test.format;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
@@ -49,7 +45,7 @@ public class FormatTest extends AbstractTestWithProject {
 
 	@Test
 	public void testFormattingInvalidDocument() throws Exception {
-		LSPFormatter formatter = new LSPFormatter();
+		final var formatter = new LSPFormatter();
 		ITextSelection selection = TextSelection.emptySelection();
 
 		Optional<VersionedEdits> edits = formatter.requestFormatting(new Document(), selection).get();
@@ -64,7 +60,7 @@ public class FormatTest extends AbstractTestWithProject {
 		IEditorPart editor = TestUtils.openEditor(file);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
-		LSPFormatter formatter = new LSPFormatter();
+		final var formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
 
 		Optional<VersionedEdits> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection).get();
@@ -76,7 +72,7 @@ public class FormatTest extends AbstractTestWithProject {
 				fail(e.getMessage());
 			}
 		});
-		ITextEditor textEditor = (ITextEditor) editor;
+		final var textEditor = (ITextEditor) editor;
 		textEditor.getDocumentProvider().getDocument(textEditor.getEditorInput());
 		assertEquals("Formatting Other Text", viewer.getDocument().get());
 
@@ -86,7 +82,7 @@ public class FormatTest extends AbstractTestWithProject {
 	@Test
 	public void testFormatting()
 			throws Exception {
-		List<TextEdit> formattingTextEdits = new ArrayList<>();
+		final var formattingTextEdits = new ArrayList<TextEdit>();
 		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 0), new Position(0, 1)), "MyF"));
 		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 10), new Position(0, 11)), ""));
 		formattingTextEdits.add(new TextEdit(new Range(new Position(0, 21), new Position(0, 21)), " Second"));
@@ -96,7 +92,7 @@ public class FormatTest extends AbstractTestWithProject {
 		IEditorPart editor = TestUtils.openEditor(file);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
-		LSPFormatter formatter = new LSPFormatter();
+		final var formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
 
 		Optional<VersionedEdits> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection).get();
@@ -109,7 +105,7 @@ public class FormatTest extends AbstractTestWithProject {
 			}
 		});
 
-		ITextEditor textEditor = (ITextEditor) editor;
+		final var textEditor = (ITextEditor) editor;
 		textEditor.getDocumentProvider().getDocument(textEditor.getEditorInput());
 		assertEquals("MyFormattingOther Text Second", viewer.getDocument().get());
 
@@ -125,7 +121,7 @@ public class FormatTest extends AbstractTestWithProject {
 		IEditorPart editor = TestUtils.openEditor(file);
 		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editor);
 
-		LSPFormatter formatter = new LSPFormatter();
+		final var formatter = new LSPFormatter();
 		ISelection selection = viewer.getSelectionProvider().getSelection();
 
 		Optional<VersionedEdits> edits = formatter.requestFormatting(viewer.getDocument(), (ITextSelection) selection).get();

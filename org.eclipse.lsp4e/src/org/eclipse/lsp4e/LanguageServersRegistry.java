@@ -16,7 +16,6 @@ package org.eclipse.lsp4e;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,7 +35,6 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.debug.core.ILaunchConfiguration;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -89,13 +87,13 @@ public class LanguageServersRegistry {
 	private static final String ENABLED_WHEN_DESC = "description"; //$NON-NLS-1$
 
 	public abstract static class LanguageServerDefinition {
-		public final @NonNull String id;
-		public final @NonNull String label;
+		public final String id;
+		public final String label;
 		public final boolean isSingleton;
 		public final int lastDocumentDisconnectedTimeout;
-		public final @NonNull Map<IContentType, String> languageIdMappings;
+		public final Map<IContentType, String> languageIdMappings;
 
-		LanguageServerDefinition(@NonNull String id, @NonNull String label, boolean isSingleton, int lastDocumentDisconnectedTimeout) {
+		LanguageServerDefinition(String id, String label, boolean isSingleton, int lastDocumentDisconnectedTimeout) {
 			this.id = id;
 			this.label = label;
 			this.isSingleton = isSingleton;
@@ -103,7 +101,7 @@ public class LanguageServersRegistry {
 			this.languageIdMappings = new ConcurrentHashMap<>();
 		}
 
-		public void registerAssociation(@NonNull IContentType contentType, @NonNull String languageId) {
+		public void registerAssociation(IContentType contentType, String languageId) {
 			this.languageIdMappings.put(contentType, languageId);
 		}
 
@@ -156,7 +154,7 @@ public class LanguageServersRegistry {
 			return lastDocumentisconnectedTiemoutAttribute == null ? DEFAULT_LAST_DOCUMENTED_DISCONNECTED_TIEMOUT : Integer.parseInt(lastDocumentisconnectedTiemoutAttribute);
 		}
 
-		public ExtensionLanguageServerDefinition(@NonNull IConfigurationElement element) {
+		public ExtensionLanguageServerDefinition(IConfigurationElement element) {
 			super(element.getAttribute(ID_ATTRIBUTE), element.getAttribute(LABEL_ATTRIBUTE), getIsSingleton(element), getLastDocumentDisconnectedTimeout(element));
 			this.extension = element;
 		}
@@ -265,7 +263,7 @@ public class LanguageServersRegistry {
 
 	private void initialize() {
 		String prefs = preferenceStore.getString(CONTENT_TYPE_TO_LSP_LAUNCH_PREF_KEY);
-		if (prefs != null && !prefs.isEmpty()) {
+		if (!prefs.isEmpty()) {
 			String[] entries = prefs.split(","); //$NON-NLS-1$
 			for (String entry : entries) {
 				ContentTypeToLSPLaunchConfigEntry mapping = ContentTypeToLSPLaunchConfigEntry.readFromPreference(entry);
@@ -286,7 +284,7 @@ public class LanguageServersRegistry {
 					IContentType contentType = Platform.getContentTypeManager().getContentType(extension.getAttribute(CONTENT_TYPE_ATTRIBUTE));
 					String languageId = extension.getAttribute(LANGUAGE_ID_ATTRIBUTE);
 					EnablementTester expression = null;
-					if (extension.getChildren(ENABLED_WHEN_ATTRIBUTE) != null) {
+					if (extension.getChildren(ENABLED_WHEN_ATTRIBUTE).length > 0) {
 						IConfigurationElement[] enabledWhenElements = extension.getChildren(ENABLED_WHEN_ATTRIBUTE);
 						if (enabledWhenElements.length == 1) {
 							IConfigurationElement enabledWhen = enabledWhenElements[0];
@@ -320,7 +318,7 @@ public class LanguageServersRegistry {
 		}
 	}
 
-	private IEvaluationContext evaluationContext() {
+	private @Nullable IEvaluationContext evaluationContext() {
 		final var handlerService = PlatformUI.getWorkbench().getService(IHandlerService.class);
 		return handlerService == null
 				? null
@@ -351,7 +349,7 @@ public class LanguageServersRegistry {
 	 * @return the {@link LanguageServerDefinition}s <strong>directly</strong> associated to the given content-type.
 	 * This does <strong>not</strong> include the one that match transitively as per content-type hierarchy
 	 */
-	List<@NonNull ContentTypeToLanguageServerDefinition> findProviderFor(final @NonNull IContentType contentType) {
+	List<ContentTypeToLanguageServerDefinition> findProviderFor(final IContentType contentType) {
 		return connections.stream()
 			.filter(entry -> entry.getKey().equals(contentType))
 			.sorted((mapping1, mapping2) -> {
@@ -367,16 +365,15 @@ public class LanguageServersRegistry {
 			}).toList();
 	}
 
-	public void registerAssociation(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig, @NonNull Set<String> launchMode) {
+	public void registerAssociation(IContentType contentType, ILaunchConfiguration launchConfig, Set<String> launchMode) {
 		final var mapping = new ContentTypeToLSPLaunchConfigEntry(contentType, launchConfig,
 				launchMode);
 		connections.add(mapping);
 		persistContentTypeToLaunchConfigurationMapping();
 	}
 
-	public void registerAssociation(@NonNull IContentType contentType,
-			@NonNull LanguageServerDefinition serverDefinition, @Nullable String languageId,
-			EnablementTester enablement) {
+	public void registerAssociation(IContentType contentType, LanguageServerDefinition serverDefinition,
+			@Nullable String languageId, @Nullable EnablementTester enablement) {
 		if (languageId != null) {
 			serverDefinition.registerAssociation(contentType, languageId);
 		}
@@ -398,7 +395,7 @@ public class LanguageServersRegistry {
 		return this.connections.stream().filter(mapping -> mapping.getValue() instanceof ExtensionLanguageServerDefinition).toList();
 	}
 
-	public @Nullable LanguageServerDefinition getDefinition(@NonNull String languageServerId) {
+	public @Nullable LanguageServerDefinition getDefinition(String languageServerId) {
 		for (ContentTypeToLanguageServerDefinition mapping : this.connections) {
 			if (mapping.getValue().id.equals(languageServerId)) {
 				return mapping.getValue();
@@ -412,13 +409,12 @@ public class LanguageServersRegistry {
 	 */
 	private static final class ContentTypeMapping {
 
-		@NonNull public final String id;
-		@NonNull public final IContentType contentType;
-		@Nullable public final String languageId;
-		@Nullable
-		public final EnablementTester enablement;
+		public final String id;
+		public final IContentType contentType;
+		public final @Nullable String languageId;
+		public final @Nullable EnablementTester enablement;
 
-		public ContentTypeMapping(@NonNull IContentType contentType, @NonNull String id, @Nullable String languageId,
+		public ContentTypeMapping(IContentType contentType, String id, @Nullable String languageId,
 				@Nullable EnablementTester enablement) {
 			this.contentType = contentType;
 			this.id = id;
@@ -433,7 +429,7 @@ public class LanguageServersRegistry {
 	 * @param serverDefinition
 	 * @return whether the given serverDefinition is suitable for the file
 	 */
-	public boolean matches(@NonNull IFile file, @NonNull LanguageServerDefinition serverDefinition) {
+	public boolean matches(IFile file, LanguageServerDefinition serverDefinition) {
 		return getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file), file.getLocationURI()).contains(serverDefinition);
 	}
 
@@ -442,16 +438,16 @@ public class LanguageServersRegistry {
 	 * @param serverDefinition
 	 * @return whether the given serverDefinition is suitable for the file
 	 */
-	public boolean matches(@NonNull IDocument document, @NonNull LanguageServerDefinition serverDefinition) {
+	public boolean matches(IDocument document, LanguageServerDefinition serverDefinition) {
 		return getAvailableLSFor(LSPEclipseUtils.getDocumentContentTypes(document), LSPEclipseUtils.toUri(document)).contains(serverDefinition);
 	}
 
-	public boolean canUseLanguageServer(@NonNull IEditorInput editorInput) {
-		return !getAvailableLSFor(
-				Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(editorInput.getName())), LSPEclipseUtils.toUri(editorInput)).isEmpty();
+	public boolean canUseLanguageServer(IEditorInput editorInput) {
+		return !getAvailableLSFor(List.of(Platform.getContentTypeManager().findContentTypesFor(editorInput.getName())),
+				LSPEclipseUtils.toUri(editorInput)).isEmpty();
 	}
 
-	public boolean canUseLanguageServer(@NonNull IDocument document) {
+	public boolean canUseLanguageServer(IDocument document) {
 		List<IContentType> contentTypes = LSPEclipseUtils.getDocumentContentTypes(document);
 
 		if (contentTypes.isEmpty()) {
@@ -461,7 +457,7 @@ public class LanguageServersRegistry {
 		return !getAvailableLSFor(contentTypes, LSPEclipseUtils.toUri(document)).isEmpty();
 	}
 
-	public boolean canUseLanguageServer(@NonNull IFile file) {
+	public boolean canUseLanguageServer(IFile file) {
 		return !getAvailableLSFor(LSPEclipseUtils.getFileContentTypes(file), file.getLocationURI()).isEmpty();
 	}
 
@@ -470,7 +466,7 @@ public class LanguageServersRegistry {
 	 * @param contentTypes content-types to check against LS registry. Base types are checked too.
 	 * @return definitions that can support the following content-types
 	 */
-	private Set<LanguageServerDefinition> getAvailableLSFor(Collection<IContentType> contentTypes, URI uri) {
+	private Set<LanguageServerDefinition> getAvailableLSFor(Collection<IContentType> contentTypes, @Nullable URI uri) {
 		final var res = new HashSet<LanguageServerDefinition>();
 		contentTypes = expandToSuperTypes(contentTypes);
 		for (ContentTypeToLanguageServerDefinition mapping : this.connections) {

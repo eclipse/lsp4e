@@ -21,6 +21,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -57,8 +59,6 @@ import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileInfo;
 import org.eclipse.core.filesystem.IFileStore;
 import org.eclipse.core.filesystem.IFileSystem;
-import org.eclipse.core.internal.utils.FileUtil;
-import org.eclipse.core.resources.IContainer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IProject;
@@ -89,6 +89,8 @@ import org.eclipse.jface.text.RewriteSessionEditProcessor;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionProvider;
+import org.eclipse.lsp4e.internal.ArrayUtil;
+import org.eclipse.lsp4e.internal.DocumentInputStream;
 import org.eclipse.lsp4e.refactoring.CreateFileChange;
 import org.eclipse.lsp4e.refactoring.DeleteExternalFile;
 import org.eclipse.lsp4e.refactoring.LSPTextChange;
@@ -188,7 +190,7 @@ public final class LSPEclipseUtils {
 		// this class shouldn't be instantiated
 	}
 
-	public static @NonNull Position toPosition(int offset, IDocument document) throws BadLocationException {
+	public static Position toPosition(int offset, IDocument document) throws BadLocationException {
 		final var res = new Position();
 		res.setLine(document.getLineOfOffset(offset));
 		res.setCharacter(offset - document.getLineInformationOfOffset(offset).getOffset());
@@ -197,7 +199,7 @@ public final class LSPEclipseUtils {
 
 	public static int toOffset(Position position, IDocument document) throws BadLocationException {
 		var line = position.getLine();
-		var character = position.getCharacter();
+		final int character;
 
 		/*
 		 * The LSP spec allow for positions to specify the next line if a line should be
@@ -255,7 +257,7 @@ public final class LSPEclipseUtils {
 		return param;
 	}
 
-	public static ISelection toSelection(Range range, IDocument document) {
+	public static @Nullable ISelection toSelection(Range range, IDocument document) {
 		try {
 			int offset = toOffset(range.getStart(), document);
 			int endOffset = toOffset(range.getEnd(), document);
@@ -270,7 +272,6 @@ public final class LSPEclipseUtils {
 	 * @param fileUri
 	 * @param offset
 	 * @param document
-	 * @return
 	 * @throws BadLocationException
 	 * @deprecated Use {@link #toTextDocumentPosistionParams(int, IDocument)}
 	 *             instead
@@ -337,7 +338,7 @@ public final class LSPEclipseUtils {
 	 * only be used for T where T adds no new fields.
 	 */
 	private static <T extends TextDocumentPositionParams> T toTextDocumentPositionParamsCommon(
-			@NonNull T specificParams, TextDocumentPositionParams genericParams) {
+			T specificParams, TextDocumentPositionParams genericParams) {
 		if (genericParams.getPosition() != null) {
 			specificParams.setPosition(genericParams.getPosition());
 		}
@@ -347,36 +348,37 @@ public final class LSPEclipseUtils {
 		return specificParams;
 	}
 
-	@NonNull
-	public static TextDocumentIdentifier toTextDocumentIdentifier(@NonNull final IDocument document) {
-		return toTextDocumentIdentifier(toUri(document));
+	public static @Nullable TextDocumentIdentifier toTextDocumentIdentifier(final IDocument document) {
+		final var uri = toUri(document);
+		return uri == null ? null : toTextDocumentIdentifier(uri);
 	}
 
-	@NonNull
-	public static TextDocumentIdentifier toTextDocumentIdentifier(@NonNull final IResource res) {
-		return toTextDocumentIdentifier(toUri(res));
+	public static @Nullable TextDocumentIdentifier toTextDocumentIdentifier(final IResource res) {
+		final var uri = toUri(res);
+		return uri == null ? null : toTextDocumentIdentifier(uri);
 	}
 
-	@NonNull
 	public static TextDocumentIdentifier toTextDocumentIdentifier(final URI uri) {
 		return new TextDocumentIdentifier(uri.toASCIIString());
 	}
 
-	public static CallHierarchyPrepareParams toCallHierarchyPrepareParams(int offset, final @NonNull IDocument document) throws BadLocationException {
-		Position position =  LSPEclipseUtils.toPosition(offset, document);
-		TextDocumentIdentifier documentIdentifier = toTextDocumentIdentifier(document);
+	public static CallHierarchyPrepareParams toCallHierarchyPrepareParams(int offset, final IDocument document) throws BadLocationException {
+		Position position = LSPEclipseUtils.toPosition(offset, document);
+		TextDocumentIdentifier documentIdentifier = castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(document));
 		return new CallHierarchyPrepareParams(documentIdentifier, position);
-
 	}
 
-	public static ITextFileBuffer toBuffer(IDocument document) {
+	public static @Nullable ITextFileBuffer toBuffer(@Nullable IDocument document) {
+		if(document == null) {
+			return null;
+		}
 		ITextFileBufferManager bufferManager = FileBuffers.getTextFileBufferManager();
 		if (bufferManager == null)
 			return null;
 		return bufferManager.getTextFileBuffer(document);
 	}
 
-	public static URI toUri(@Nullable IDocument document) {
+	public static @Nullable URI toUri(@Nullable IDocument document) {
 		if(document == null) {
 			return null;
 		}
@@ -393,18 +395,18 @@ public final class LSPEclipseUtils {
 		return null;
 	}
 
-	private static IPath toPath(IFileBuffer buffer) {
+	private static @Nullable IPath toPath(@Nullable IFileBuffer buffer) {
 		if (buffer != null) {
 			return buffer.getLocation();
 		}
 		return null;
 	}
 
-	public static IPath toPath(IDocument document) {
+	public static @Nullable IPath toPath(@Nullable IDocument document) {
 		return toPath(toBuffer(document));
 	}
 
-	public static int toEclipseMarkerSeverity(DiagnosticSeverity lspSeverity) {
+	public static int toEclipseMarkerSeverity(@Nullable DiagnosticSeverity lspSeverity) {
 		if (lspSeverity == null) {
 			// if severity is empty it is up to the client to interpret diagnostics
 			return IMarker.SEVERITY_ERROR;
@@ -423,11 +425,7 @@ public final class LSPEclipseUtils {
 		}
 		if (FILE_SCHEME.equals(uri.getScheme())) {
 			IWorkspaceRoot wsRoot = ResourcesPlugin.getWorkspace().getRoot();
-			IFile[] files = wsRoot.findFilesForLocationURI(uri);
-			if (files.length > 0) {
-				return files[0];
-			}
-			return null;
+			return ArrayUtil.findFirst(wsRoot.findFilesForLocationURI(uri));
 		} else {
 			return Adapters.adapt(uri.toString(), IFile.class, true);
 		}
@@ -474,17 +472,13 @@ public final class LSPEclipseUtils {
 				}
 			}
 
-			final IContainer[] containers = wsRoot.findContainersForLocationURI(uri);
-			if (containers.length > 0) {
-				return containers[0];
-			}
-			return null;
+			return ArrayUtil.findFirst(wsRoot.findContainersForLocationURI(uri));
 		} else {
 			return Adapters.adapt(uri, IResource.class, true);
 		}
 	}
 
-	public static IFile findMostNested(IFile[] files) {
+	public static @Nullable IFile findMostNested(IFile[] files) {
 		int shortestLen = Integer.MAX_VALUE;
 		IFile shortest = null;
 		for (IFile file : files) {
@@ -521,7 +515,7 @@ public final class LSPEclipseUtils {
 	 *            list of LSP TextEdits
 	 * @throws BadLocationException
 	 */
-	public static void applyEdits(IDocument document, List<? extends TextEdit> edits) throws BadLocationException {
+	public static void applyEdits(@Nullable IDocument document, @Nullable List<? extends TextEdit> edits) throws BadLocationException {
 		if (document == null || edits == null || edits.isEmpty()) {
 			return;
 		}
@@ -604,8 +598,7 @@ public final class LSPEclipseUtils {
 		return document;
 	}
 
-	@Nullable
-	public static IDocument getExistingDocument(@Nullable IResource resource) {
+	public static @Nullable IDocument getExistingDocument(@Nullable IResource resource) {
 		if (resource == null) {
 			return null;
 		}
@@ -621,8 +614,7 @@ public final class LSPEclipseUtils {
 		}
 	}
 
-	@Nullable
-	public static IDocument getDocument(URI uri) {
+	public static @Nullable IDocument getDocument(@Nullable URI uri) {
 		if (uri == null) {
 			return null;
 		}
@@ -661,7 +653,7 @@ public final class LSPEclipseUtils {
 	}
 
 	public static void openInEditor(Location location) {
-		openInEditor(location, UI.getActivePage());
+		openInEditor(location, castNonNull(UI.getActivePage()));
 	}
 
 	public static void openInEditor(Location location, IWorkbenchPage page) {
@@ -669,22 +661,26 @@ public final class LSPEclipseUtils {
 	}
 
 	public static void openInEditor(LocationLink link) {
-		openInEditor(link, UI.getActivePage());
+		openInEditor(link, castNonNull(UI.getActivePage()));
 	}
 
 	public static void openInEditor(LocationLink link, IWorkbenchPage page) {
 		open(link.getTargetUri(), page, link.getTargetSelectionRange());
 	}
 
-	public static void open(String uri, Range optionalRange) {
-		open(uri, UI.getActivePage(), optionalRange);
+	public static void open(String uri, @Nullable Range optionalRange) {
+		open(uri, castNonNull(UI.getActivePage()), optionalRange);
 	}
 
-	public static void open(String uri, IWorkbenchPage page, Range optionalRange) {
+	public static void open(String uri, IWorkbenchPage page, @Nullable Range optionalRange) {
 		open(uri, page, optionalRange, false);
 	}
 
-	public static void open(String uri, IWorkbenchPage page, Range optionalRange, boolean createFile) {
+	public static void open(String uri, @Nullable Range optionalRange, boolean createFile) {
+		open(uri, castNonNull(UI.getActivePage()), optionalRange, createFile);
+	}
+
+	public static void open(String uri, IWorkbenchPage page, @Nullable Range optionalRange, boolean createFile) {
 		if (uri.startsWith(HTTP)) {
 			if (uri.startsWith(INTRO_URL)) {
 				openIntroURL(uri);
@@ -714,7 +710,7 @@ public final class LSPEclipseUtils {
 	 *            the uri to parse
 	 * @return a range object containing the information
 	 */
-	public static Range parseRange(String location) {
+	public static @Nullable Range parseRange(String location) {
 		try {
 			if (!location.startsWith(LSPEclipseUtils.FILE_URI))
 				return null;
@@ -777,7 +773,7 @@ public final class LSPEclipseUtils {
 		});
 	}
 
-	protected static void openFileLocationInEditor(String uri, IWorkbenchPage page, Range optionalRange,
+	protected static void openFileLocationInEditor(String uri, IWorkbenchPage page, @Nullable Range optionalRange,
 			boolean createFile) {
 		IEditorPart part = openEditor(uri, page, createFile);
 
@@ -792,15 +788,17 @@ public final class LSPEclipseUtils {
 
 			if (targetDocument != null) {
 				ISelectionProvider selectionProvider = part.getEditorSite().getSelectionProvider();
-				ISelection selection = toSelection(optionalRange, targetDocument);
-				if (selection != null) {
-					selectionProvider.setSelection(selection);
+				if (selectionProvider != null) {
+					ISelection selection = toSelection(optionalRange, targetDocument);
+					if (selection != null) {
+						selectionProvider.setSelection(selection);
+					}
 				}
 			}
 		}
 	}
 
-	private static IEditorPart openEditor(String uri, IWorkbenchPage page, boolean createFile) {
+	private static @Nullable IEditorPart openEditor(String uri, @Nullable IWorkbenchPage page, boolean createFile) {
 		if (page == null) {
 			return null;
 		}
@@ -860,7 +858,7 @@ public final class LSPEclipseUtils {
 		return null;
 	}
 
-	public static IDocument getDocument(ITextEditor editor) {
+	public static @Nullable IDocument getDocument(@Nullable ITextEditor editor) {
 		if (editor == null)
 			return null;
 		final IEditorInput editorInput = editor.getEditorInput();
@@ -889,7 +887,7 @@ public final class LSPEclipseUtils {
 		return null;
 	}
 
-	public static IDocument getDocument(IEditorInput editorInput) {
+	public static @Nullable IDocument getDocument(IEditorInput editorInput) {
 		if (!editorInput.exists()) {
 			// Shouldn't happen too often, but happens rather a lot in testing when
 			// teardown runs when there are document setup actions still pending
@@ -898,7 +896,7 @@ public final class LSPEclipseUtils {
 		if(editorInput instanceof IFileEditorInput fileEditorInput) {
 			return getDocument(fileEditorInput.getFile());
 		}else if(editorInput instanceof IPathEditorInput pathEditorInput) {
-			return getDocument(ResourcesPlugin.getWorkspace().getRoot().getFile(pathEditorInput.getPath()));
+			return getDocument(getFile(pathEditorInput.getPath()));
 		}else if(editorInput instanceof IURIEditorInput uriEditorInput) {
 			IResource resource = findResourceFor(uriEditorInput.getURI());
 			if (resource != null) {
@@ -915,7 +913,7 @@ public final class LSPEclipseUtils {
 	 *
 	 * @param wsEdit
 	 */
-	public static void applyWorkspaceEdit(WorkspaceEdit wsEdit) {
+	public static void applyWorkspaceEdit(@Nullable WorkspaceEdit wsEdit) {
 		applyWorkspaceEdit(wsEdit, null);
 	}
 
@@ -926,7 +924,7 @@ public final class LSPEclipseUtils {
 	 * @param wsEdit
 	 * @param label
 	 */
-	public static void applyWorkspaceEdit(WorkspaceEdit wsEdit, String label) {
+	public static void applyWorkspaceEdit(@Nullable WorkspaceEdit wsEdit, @Nullable String label) {
 		if (wsEdit == null) {
 			return;
 		}
@@ -942,7 +940,7 @@ public final class LSPEclipseUtils {
 			}
 
 			// multiple documents or some ResourceChanges => create a refactoring
-			Map<URI, Range> changedURIs = new HashMap<>();
+			final var changedURIs = new HashMap<URI, Range>();
 			CompositeChange change = toCompositeChange(wsEdit, name, changedURIs);
 
 			final var changeOperation = new PerformChangeOperation(change);
@@ -952,9 +950,10 @@ public final class LSPEclipseUtils {
 
 				// Open the resource in editor if there is the only one URI
 				if (changedURIs.size() == 1) {
-					changedURIs.keySet().stream().findFirst().ifPresent(uri -> {
+					changedURIs.entrySet().stream().findFirst().ifPresent(e -> {
 						// Select the only start position of the range or the document start
-						Range range = changedURIs.get(uri);
+						final var uri = e.getKey();
+						final var range = e.getValue();
 						Position start = range.getStart() != null ? range.getStart() : new Position(0, 0);
 						UI.runOnUIThread(() -> open(uri.toString(), new Range(start, start)));
 					});
@@ -963,11 +962,10 @@ public final class LSPEclipseUtils {
 				LanguageServerPlugin.logError(e);
 			}
 		}
-
 	}
 
 	private static void runRefactorWizardOperation(Change change) {
-		Refactoring refactoring = new Refactoring() {
+		final var refactoring = new Refactoring() {
 
 			@Override
 			public String getName() {
@@ -992,17 +990,14 @@ public final class LSPEclipseUtils {
 			}
 
 		};
-		RefactoringWizard wizard = new RefactoringWizard(refactoring,
+		final var wizard = new RefactoringWizard(refactoring,
 				RefactoringWizard.DIALOG_BASED_USER_INTERFACE |
 				RefactoringWizard.NO_BACK_BUTTON_ON_STATUS_DIALOG
 		) {
-
-
 			@Override
 			protected void addUserInputPages() {
 				//no inputs required
 			}
-
 		};
 		UI.runOnUIThread(() -> {
 			try {
@@ -1020,8 +1015,8 @@ public final class LSPEclipseUtils {
 	 *         <code>false</code> otherwise, thus the wsEdit needs to be performed differently.
 	 */
 	private static boolean applyWorkspaceEditIfSingleOpenFile(WorkspaceEdit wsEdit) {
-		Set<URI> documentUris = new HashSet<>();
-		final List<TextEdit> firstDocumentEdits = new ArrayList<>(); // collect edits
+		final var documentUris = new HashSet<URI>();
+		final var firstDocumentEdits = new ArrayList<TextEdit>(); // collect edits
 		if (wsEdit.getChanges() != null && !wsEdit.getChanges().isEmpty()) {
 			wsEdit.getChanges().entrySet().stream()
 				.map(Entry::getKey)
@@ -1046,8 +1041,8 @@ public final class LSPEclipseUtils {
 			return false;
 		}
 		URI singleDocumentUri = documentUris.iterator().next();
-		Set<IEditorReference> editors = LSPEclipseUtils.findOpenEditorsFor(singleDocumentUri);
-		if (editors == null || editors.isEmpty()) {
+		Set<IEditorReference> editors = findOpenEditorsFor(singleDocumentUri);
+		if (editors.isEmpty()) {
 			return false;
 		}
 		Optional<IDocument> doc = editors.stream().map(editor -> {
@@ -1091,14 +1086,14 @@ public final class LSPEclipseUtils {
 	 * @param collector A map of URI to Range entries collected from WorkspaceEdit
 	 * @return a ltk {@link CompositeChange} from a lsp {@link WorkspaceEdit}.
 	 */
-	private static CompositeChange toCompositeChange(WorkspaceEdit wsEdit, String name, Map<URI, Range> collector) {
+	private static CompositeChange toCompositeChange(WorkspaceEdit wsEdit, String name, @Nullable Map<URI, Range> collector) {
 		final var change = new CompositeChange(name);
 		List<Either<TextDocumentEdit, ResourceOperation>> documentChanges = wsEdit.getDocumentChanges();
 		if (documentChanges != null) {
 			// documentChanges are present, the latter are preferred over changes
 			// see specification at
 			// https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#workspaceEdit
-			documentChanges.stream().forEach(action -> {
+			documentChanges.forEach(action -> {
 				if (action.isLeft()) {
 					TextDocumentEdit edit = action.getLeft();
 					VersionedTextDocumentIdentifier id = edit.getTextDocument();
@@ -1139,15 +1134,18 @@ public final class LSPEclipseUtils {
 						IFile newFile = getFileHandle(newURI);
 
 						// If both files are within Eclipse workspace utilize Eclipse ltk MoveRenameResourceChange and RenameResourceChange
-						if (oldFile != null && oldFile.exists() && oldFile.getParent() != null
-								&& newFile != null && newFile.getParent() != null && newFile.getParent().exists()) {
-							if (!newFile.exists() || rename.getOptions().getOverwrite()) {
-								if (oldFile.getParent().equals(newFile.getParent())) {
-									change.add(new RenameResourceChange(oldFile.getFullPath(), newFile.getName()));
-								} else {
-									change.add(new MoveRenameResourceChange(oldFile, newFile.getParent(), newFile.getName()));
-								}
-								return;
+						if (oldFile != null && oldFile.exists() && newFile != null) {
+							final var oldFileParent = oldFile.getParent();
+							final var newFileParent = newFile.getParent();
+							if (oldFileParent != null && newFileParent != null && newFileParent.exists()) {
+   							if (!newFile.exists() || rename.getOptions().getOverwrite()) {
+   								if (Objects.equals(oldFile.getParent(), newFile.getParent())) {
+   									change.add(new RenameResourceChange(oldFile.getFullPath(), newFile.getName()));
+   								} else {
+   									change.add(new MoveRenameResourceChange(oldFile, newFile.getParent(), newFile.getName()));
+   								}
+   								return;
+   							}
 							}
 						}
 
@@ -1164,7 +1162,7 @@ public final class LSPEclipseUtils {
 						if (oldFile != null && oldFile.exists()) {
 							try (var stream = new ByteArrayOutputStream((int) oldFile.getLocation().toFile().length());
 									InputStream inputStream = oldFile.getContents();) {
-								FileUtil.transferStreams(inputStream, stream, newURI.toString(), null);
+								inputStream.transferTo(stream);
 								content = new String(stream.toByteArray());
 								encoding = oldFile.getCharset();
 							} catch (IOException | CoreException e) {
@@ -1206,7 +1204,7 @@ public final class LSPEclipseUtils {
 	 *
 	 * @param textEdits A list of textEdits sorted in reversed order
 	 */
-	private static void collectChangedURI(URI uri, List<TextEdit> textEdits, Map<URI, Range> collector) {
+	private static void collectChangedURI(URI uri, @Nullable List<TextEdit> textEdits, @Nullable Map<URI, Range> collector) {
 		if (collector == null) {
 			return;
 		}
@@ -1222,7 +1220,7 @@ public final class LSPEclipseUtils {
 		}
 	}
 
-	private static boolean rangeStartIsLessThan(Range range, Range toCompare) {
+	private static boolean rangeStartIsLessThan(@Nullable Range range, @Nullable Range toCompare) {
 		if (range == null) {
 			return true;
 		}
@@ -1251,19 +1249,19 @@ public final class LSPEclipseUtils {
 	 *            CompositeChange with LSP text edits
 	 */
 	private static Change toChanges(URI uri, List<TextEdit> textEdits) {
-		Collections.sort(textEdits, Comparator.comparing(edit -> edit.getRange().getStart(),
-				Comparator.comparingInt(Position::getLine).thenComparingInt(Position::getCharacter).reversed()));
-		LSPTextChange[] changes = textEdits.stream().map(te -> new LSPTextChange("Line: %d".formatted(te.getRange().getStart().getLine() + 1), uri, te)) //$NON-NLS-1$
+		LSPTextChange[] changes = textEdits.stream()
+				.sorted(Comparator.comparing((TextEdit edit) -> edit.getRange().getStart(),
+						Comparator.comparingInt(Position::getLine).thenComparingInt(Position::getCharacter).reversed()))
+				.map(te -> new LSPTextChange("Line: %d".formatted(te.getRange().getStart().getLine() + 1), uri, te)) //$NON-NLS-1$
 				.toArray(LSPTextChange[]::new);
-		CompositeChange cc = new CompositeChange(Paths.get(uri).toString(), changes);
-		return cc;
+		return new CompositeChange(uri.toString(), changes);
 	}
 
 	public static URI toUri(IPath absolutePath) {
 		return toUri(absolutePath.toFile());
 	}
 
-	public static URI toUri(@NonNull IResource resource) {
+	public static @Nullable URI toUri(IResource resource) {
 		URI adaptedURI = Adapters.adapt(resource, URI.class, true);
 		if (adaptedURI != null) {
 			return adaptedURI;
@@ -1275,9 +1273,9 @@ public final class LSPEclipseUtils {
 		return resource.getLocationURI();
 	}
 
-	@Nullable public static URI toUri(@NonNull IFileBuffer buffer) {
+	public static @Nullable URI toUri(IFileBuffer buffer) {
 		IPath bufferLocation = buffer.getLocation();
-		IFile res = bufferLocation != null && bufferLocation.segmentCount() > 1 ? ResourcesPlugin.getWorkspace().getRoot().getFile(buffer.getLocation()) : null;
+		IFile res = bufferLocation != null && bufferLocation.segmentCount() > 1 ? getFile(buffer.getLocation()) : null;
 		if (res != null) {
 			URI uri = toUri(res);
 			if (uri != null) {
@@ -1300,36 +1298,39 @@ public final class LSPEclipseUtils {
 		}
 	}
 
-	@Nullable public static IFile getFile(@NonNull IDocument document) {
+	public static @Nullable IFile getFile(@Nullable IDocument document) {
 		IPath path = toPath(document);
 		return getFile(path);
 	}
 
-	@Nullable public static IFile getFile(IPath path) {
+	/**
+	 * @return null if no file exists at the given path or the given path points to a file outside the workspace
+	 */
+	public static @Nullable IFile getFile(@Nullable IPath path) {
 		if(path == null) {
 			return null;
 		}
-		IFile res = ResourcesPlugin.getWorkspace().getRoot().getFile(path);
+
+		final IFile res = path.segmentCount() == 1 //
+				? ResourcesPlugin.getWorkspace().getRoot().getFileForLocation(path)
+				: ResourcesPlugin.getWorkspace().getRoot().getFile(path);
 		if (res != null && res.exists()) {
 			return res;
-		} else {
-			return null;
 		}
+		return null;
 	}
 
 	/**
 	 * @return a list of folder objects for all open projects of the current workspace
 	 */
-	@NonNull
-	public static List<@NonNull WorkspaceFolder> getWorkspaceFolders() {
+	public static List<WorkspaceFolder> getWorkspaceFolders() {
 		return Arrays.stream(ResourcesPlugin.getWorkspace().getRoot().getProjects())
 		.filter(IProject::isAccessible) //
 		.map(LSPEclipseUtils::toWorkspaceFolder) //
 		.toList();
 	}
 
-	@NonNull
-	public static WorkspaceFolder toWorkspaceFolder(@NonNull IProject project) {
+	public static WorkspaceFolder toWorkspaceFolder(IProject project) {
 		final var folder = new WorkspaceFolder();
 		URI folderUri = toUri(project);
 		folder.setUri(folderUri != null ? folderUri.toASCIIString() : ""); //$NON-NLS-1$
@@ -1337,20 +1338,18 @@ public final class LSPEclipseUtils {
 		return folder;
 	}
 
-	@NonNull
-	public static List<IContentType> getFileContentTypes(@NonNull IFile file) {
+	public static List<IContentType> getFileContentTypes(IFile file) {
 		IContentTypeManager contentTypeManager = Platform.getContentTypeManager();
 		final var contentTypes = new ArrayList<IContentType>();
 		if (file.exists()) {
 			try (InputStream contents = file.getContents()) {
 				// TODO consider using document as inputstream
-				contentTypes.addAll(
-						Arrays.asList(contentTypeManager.findContentTypesFor(contents, file.getName())));
+				Collections.addAll(contentTypes, contentTypeManager.findContentTypesFor(contents, file.getName()));
 			} catch (CoreException | IOException e) {
 				LanguageServerPlugin.logError(e);
 			}
 		} else {
-			contentTypes.addAll(Arrays.asList(contentTypeManager.findContentTypesFor(file.getName())));
+			Collections.addAll(contentTypes, contentTypeManager.findContentTypesFor(file.getName()));
 		}
 		return contentTypes;
 	}
@@ -1371,8 +1370,7 @@ public final class LSPEclipseUtils {
 		return null;
 	}
 
-	@NonNull
-	public static List<IContentType> getDocumentContentTypes(@NonNull IDocument document) {
+	public static List<IContentType> getDocumentContentTypes(IDocument document) {
 		final var contentTypes = new ArrayList<IContentType>();
 
 		ITextFileBuffer buffer = toBuffer(document);
@@ -1396,8 +1394,7 @@ public final class LSPEclipseUtils {
 		String fileName = getFileName(buffer);
 		if (fileName != null) {
 			try (var contents = new DocumentInputStream(document)) {
-				contentTypes
-						.addAll(Arrays.asList(Platform.getContentTypeManager().findContentTypesFor(contents, fileName)));
+				contentTypes.addAll(List.of(Platform.getContentTypeManager().findContentTypesFor(contents, fileName)));
 			} catch (IOException e) {
 				LanguageServerPlugin.logError(e);
 			}
@@ -1414,7 +1411,7 @@ public final class LSPEclipseUtils {
 	 * @deprecated
 	 */
 	@Deprecated
-	public static String getDocString(Either<String, MarkupContent> documentation) {
+	public static @Nullable String getDocString(@Nullable Either<String, MarkupContent> documentation) {
 		if (documentation != null) {
 			if (documentation.isLeft()) {
 				return documentation.getLeft();
@@ -1425,7 +1422,7 @@ public final class LSPEclipseUtils {
 		return null;
 	}
 
-	public static String getHtmlDocString(Either<String, MarkupContent> documentation) {
+	public static @Nullable String getHtmlDocString(Either<@Nullable String, MarkupContent> documentation) {
 		return documentation.map(text -> {
 			if (text != null && !text.isEmpty()) {
 				return htmlParagraph(text);
@@ -1452,7 +1449,7 @@ public final class LSPEclipseUtils {
 		});
 	}
 
-	public static ITextViewer getTextViewer(@Nullable final IEditorPart editorPart) {
+	public static @Nullable ITextViewer getTextViewer(@Nullable final IEditorPart editorPart) {
 		final @Nullable ITextViewer textViewer = Adapters.adapt(editorPart, ITextViewer.class);
 		if (textViewer != null) {
 			return textViewer;
@@ -1499,7 +1496,7 @@ public final class LSPEclipseUtils {
 				(int) color.getAlpha());
 	}
 
-	public static Set<IEditorReference> findOpenEditorsFor(URI uri) {
+	public static Set<IEditorReference> findOpenEditorsFor(@Nullable URI uri) {
 		if (uri == null) {
 			return Collections.emptySet();
 		}
@@ -1519,7 +1516,7 @@ public final class LSPEclipseUtils {
 			.collect(Collectors.toSet());
 	}
 
-	public static URI toUri(IEditorInput editorInput) {
+	public static @Nullable URI toUri(IEditorInput editorInput) {
 		if (editorInput instanceof FileEditorInput fileEditorInput) {
 			return toUri(fileEditorInput.getFile());
 		}
@@ -1555,24 +1552,24 @@ public final class LSPEclipseUtils {
 		return Paths.get(uri).toFile();
 	}
 
-	public static boolean hasCapability(final @Nullable Either<Boolean, ? extends Object> eitherCapability) {
+	public static boolean hasCapability(final @Nullable Either<Boolean, ?> eitherCapability) {
 		if(eitherCapability == null) {
 			return false;
 		}
 		return eitherCapability.isRight() || eitherCapability.getLeft();
 	}
 
-	public static boolean isReadOnly(final @NonNull URI uri) {
+	public static boolean isReadOnly(final URI uri) {
 		IResource resource = findResourceFor(uri);
 		return resource != null && isReadOnly(resource);
 	}
 
-	public static boolean isReadOnly(final @NonNull IDocument document) {
+	public static boolean isReadOnly(final IDocument document) {
 		IFile file = getFile(document);
 		return file != null && isReadOnly(file);
 	}
 
-	public static boolean isReadOnly(final @NonNull IResource resource) {
+	public static boolean isReadOnly(final IResource resource) {
 		ResourceAttributes attributes = resource.getResourceAttributes();
 		return attributes != null && attributes.isReadOnly();
 	}

@@ -20,6 +20,7 @@ import java.util.concurrent.TimeoutException;
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
@@ -34,6 +35,7 @@ import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.MessageType;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.ShowMessageRequestParams;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
@@ -47,13 +49,17 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 		this.codeAction = codeAction;
 	}
 
+	public CodeAction getCodeAction() {
+		return codeAction;
+	}
+
 	@Override
 	public String getDescription() {
 		return codeAction.getTitle();
 	}
 
 	@Override
-	public Image getImage() {
+	public @Nullable Image getImage() {
 		return null;
 	}
 
@@ -68,31 +74,17 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 			LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
 			return;
 		}
-		String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
-		LanguageServerDefinition definition = languageServerId != null ? LanguageServersRegistry.getInstance().getDefinition(languageServerId) : null;
 		try {
-			LanguageServerWrapper wrapper = null;
-			if (definition != null) {
-				IResource resource = marker.getResource();
-				if (resource != null) {
-					wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
-				}
-			}
+			LanguageServerWrapper wrapper = getLanguageServerWrapper(marker);
 			if (wrapper != null) {
-				if (codeAction.getEdit() == null) {
-					if (CodeActionCompletionProposal.isCodeActionResolveSupported(wrapper.getServerCapabilities())) {
-						CodeAction resolvedCodeAction = wrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
-						if (resolvedCodeAction != null) {
-							codeAction = resolvedCodeAction;
-						}
-					}
-				}
+				resolveCodeAction(wrapper);
 				if (codeAction.getEdit() != null) {
 					LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
 				}
 				if (codeAction.getCommand() != null) {
 					Command command = codeAction.getCommand();
-					ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
+					ServerCapabilities cap = wrapper.getServerCapabilities();
+					ExecuteCommandOptions provider = cap == null ? null : cap.getExecuteCommandProvider();
 					if (provider != null && provider.getCommands().contains(command.getCommand())) {
 						final LanguageServerDefinition serverDefinition = wrapper.serverDefinition;
 						wrapper.execute(ls -> ls.getWorkspaceService()
@@ -113,8 +105,8 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 	}
 
 	private ShowMessageRequestParams reportServerError(LanguageServerDefinition serverDefinition, Throwable t) {
-		ShowMessageRequestParams params = new ShowMessageRequestParams();
-		String title = "Error Executing Quick Fix"; //$NON-NLS-1$
+		final var params = new ShowMessageRequestParams();
+		final var title = "Error Executing Quick Fix"; //$NON-NLS-1$
 		params.setType(MessageType.Error);
 		params.setMessage("Failed to fetch quick fix edit for '" //$NON-NLS-1$
 				+ codeAction.getTitle()
@@ -127,9 +119,6 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 
 	@Override
 	public IMarker[] findOtherMarkers(IMarker[] markers) {
-		if (markers == null) {
-			return new IMarker[0];
-		}
 		return Arrays.stream(markers).filter(marker -> {
 			try {
 				return codeAction.getDiagnostics()
@@ -141,4 +130,45 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 		}).toArray(IMarker[]::new);
 	}
 
+	/**
+	 * Get the language server wrapper to use for resolving the code action, preferably the
+	 * one used to construct the marker.
+	 *
+	 * @param marker
+	 *            the marker to get the language server for.
+	 * @return the language server wrapper to use for resolving the code action.
+	 */
+	public @Nullable LanguageServerWrapper getLanguageServerWrapper(IMarker marker) {
+		String languageServerId = marker.getAttribute(LSPDiagnosticsToMarkers.LANGUAGE_SERVER_ID, null);
+		LanguageServerDefinition definition = languageServerId != null
+				? LanguageServersRegistry.getInstance().getDefinition(languageServerId)
+				: null;
+		LanguageServerWrapper wrapper = null;
+		if (definition != null) {
+			IResource resource = marker.getResource();
+			if (resource != null) {
+				wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
+			}
+		}
+		return wrapper;
+	}
+
+	/**
+	 * Resolve the code action using the given language server wrapper.
+	 *
+	 * @param wrapper
+	 *            the wrapper for the language server to send the resolve request to.
+	 */
+	public void resolveCodeAction(LanguageServerWrapper wrapper)
+			throws InterruptedException, ExecutionException, TimeoutException {
+		if (codeAction.getEdit() != null) {
+			return;
+		}
+		if (CodeActionCompletionProposal.isCodeActionResolveSupported(wrapper.getServerCapabilities())) {
+			CodeAction resolvedCodeAction = wrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
+			if (resolvedCodeAction != null) {
+				codeAction = resolvedCodeAction;
+			}
+		}
+	}
 }

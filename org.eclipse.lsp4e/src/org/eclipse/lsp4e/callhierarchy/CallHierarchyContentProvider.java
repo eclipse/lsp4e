@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.ITreeContentProvider;
@@ -26,6 +26,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4e.internal.Pair;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4e.ui.views.HierarchyViewInput;
@@ -41,13 +42,13 @@ import org.eclipse.ui.PlatformUI;
  * Content provider for the call hierarchy tree view.
  */
 public class CallHierarchyContentProvider implements ITreeContentProvider {
-	private TreeViewer treeViewer;
-	private LanguageServerWrapper languageServerWrapper;
-	private List<CallHierarchyViewTreeNode> rootItems;
+	private @Nullable TreeViewer treeViewer;
+	private @Nullable LanguageServerWrapper languageServerWrapper;
+	private @Nullable List<CallHierarchyViewTreeNode> rootItems;
 	private String rootMessage = Messages.CH_finding_callers;
 
 	@Override
-	public Object[] getElements(final Object inputElement) {
+	public Object[] getElements(final @Nullable Object inputElement) {
 		if (rootItems != null) {
 			return rootItems.toArray();
 		}
@@ -59,12 +60,12 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 		if (parentElement instanceof CallHierarchyViewTreeNode treeNode) {
 			return findCallers(treeNode);
 		} else {
-			return new Object[0];
+			return ArrayUtil.NO_OBJECTS;
 		}
 	}
 
 	@Override
-	public Object getParent(final Object element) {
+	public @Nullable Object getParent(final Object element) {
 		if (element instanceof CallHierarchyViewTreeNode treeNode) {
 			return treeNode.getParent();
 		}
@@ -77,7 +78,7 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 	}
 
 	@Override
-	public void inputChanged(final Viewer viewer, final Object oldInput, final Object newInput) {
+	public void inputChanged(final Viewer viewer, final @Nullable Object oldInput, final @Nullable Object newInput) {
 		ITreeContentProvider.super.inputChanged(viewer, oldInput, newInput);
 
 		treeViewer = (TreeViewer) viewer;
@@ -86,22 +87,17 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 			rootItems = null;
 
 			IDocument document = viewInput.getDocument();
-			if (document != null) {
-				try {
-					initialise(document, viewInput.getOffset());
-				} catch (BadLocationException e) {
-					handleRootError();
-				}
-			} else {
+			try {
+				initialise(document, viewInput.getOffset());
+			} catch (Exception e) {
 				handleRootError();
 			}
 		} else {
 			handleRootError();
 		}
-
 	}
 
-	private void initialise(final @NonNull IDocument document, final int offset) throws BadLocationException {
+	private void initialise(final IDocument document, final int offset) throws BadLocationException {
 		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document)
 				.withCapability(ServerCapabilities::getCallHierarchyProvider);
 		if (!executor.anyMatching()) {
@@ -114,7 +110,7 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 					languageServerWrapper = p.first();
 					List<CallHierarchyItem> hierarchyItems = p.second();
 					if (!hierarchyItems.isEmpty()) {
-						rootItems = new ArrayList<>(hierarchyItems.size());
+						final var rootItems = this.rootItems = new ArrayList<>(hierarchyItems.size());
 						for (CallHierarchyItem item : hierarchyItems) {
 							rootItems.add(new CallHierarchyViewTreeNode(item));
 						}
@@ -122,6 +118,7 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 						rootMessage = Messages.CH_no_call_hierarchy;
 					}
 					PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
+						final var treeViewer = this.treeViewer;
 						if (treeViewer != null) {
 							treeViewer.refresh();
 							treeViewer.expandToLevel(2);
@@ -133,7 +130,6 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 					}
 					return result;
 				});
-
 	}
 
 	private void handleRootError() {
@@ -146,30 +142,39 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 	}
 
 	private Object[] findCallers(final CallHierarchyViewTreeNode callee) {
-		if (callee.getChildren() == null) {
-			treeViewer.getControl().setEnabled(false);
+		final var children = callee.getChildren();
+		if (children == null) {
+			final var treeViewer = this.treeViewer;
+			if (treeViewer != null) {
+				treeViewer.getControl().setEnabled(false);
+			}
 			updateCallers(callee);
 			return new Object[] { Messages.CH_finding_callers };
 		}
-		return callee.getChildren();
+		return children;
 	}
 
 	private void updateCallers(final CallHierarchyViewTreeNode callee) {
-		CallHierarchyIncomingCallsParams incomingCallParams = new CallHierarchyIncomingCallsParams(
-				callee.getCallContainer());
+		final var languageServerWrapper = this.languageServerWrapper;
+		if(languageServerWrapper == null)
+			return;
+
+		final var incomingCallParams = new CallHierarchyIncomingCallsParams(callee.getCallContainer());
 		languageServerWrapper.execute(languageServer -> languageServer.getTextDocumentService()
 				.callHierarchyIncomingCalls(incomingCallParams)).thenApply(incomingCalls -> {
-					List<CallHierarchyViewTreeNode> children = new ArrayList<>(incomingCalls.size());
+					if (incomingCalls == null)
+						return new ArrayList<CallHierarchyViewTreeNode>(0);
+					final var children = new ArrayList<CallHierarchyViewTreeNode>(incomingCalls.size());
 					for (CallHierarchyIncomingCall call : incomingCalls) {
 						CallHierarchyItem callContainer = call.getFrom();
 						List<Range> callSites = call.getFromRanges();
 						for (Range callSite : callSites) {
-							CallHierarchyViewTreeNode child = new CallHierarchyViewTreeNode(callContainer, callSite);
+							final var child = new CallHierarchyViewTreeNode(callContainer, callSite);
 							child.setParent(callee);
 							children.add(child);
 						}
 						if (callSites.isEmpty()) {
-							CallHierarchyViewTreeNode child = new CallHierarchyViewTreeNode(callContainer);
+							final var child = new CallHierarchyViewTreeNode(callContainer);
 							child.setParent(callee);
 							children.add(child);
 						}
@@ -178,14 +183,15 @@ public class CallHierarchyContentProvider implements ITreeContentProvider {
 				}).handle((result, error) -> updateChildrenInView(callee, result, error));
 	}
 
-	private List<CallHierarchyViewTreeNode> updateChildrenInView(final CallHierarchyViewTreeNode callee,
-			final List<CallHierarchyViewTreeNode> children, final Throwable error) {
+	private @Nullable List<CallHierarchyViewTreeNode> updateChildrenInView(final CallHierarchyViewTreeNode callee,
+			final @Nullable List<CallHierarchyViewTreeNode> children, final @Nullable Throwable error) {
 		if (error != null || children == null) {
 			callee.setChildren(Collections.emptyList());
 		} else {
 			callee.setChildren(children);
 		}
 		PlatformUI.getWorkbench().getDisplay().asyncExec(() -> {
+			final var treeViewer = this.treeViewer;
 			if (treeViewer != null) {
 				treeViewer.refresh();
 				treeViewer.getControl().setEnabled(true);

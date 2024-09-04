@@ -11,10 +11,12 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -23,8 +25,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.TreePath;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.Position;
@@ -34,12 +37,11 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 public class SymbolsModel {
 
 	private static final SymbolInformation ROOT_SYMBOL_INFORMATION = new SymbolInformation();
-	private static final Object[] EMPTY = new Object[0];
 
 	private volatile Map<SymbolInformation, List<SymbolInformation>> childrenMap = Collections.emptyMap();
 	private volatile List<DocumentSymbol> rootSymbols = Collections.emptyList();
 
-	private URI uri;
+	private @Nullable URI uri;
 
 	/**
 	 * @deprecated use {@link DocumentSymbolWithURI}
@@ -47,15 +49,15 @@ public class SymbolsModel {
 	@Deprecated(since = "0.17.0", forRemoval = true)
 	public static class DocumentSymbolWithFile {
 		public final DocumentSymbol symbol;
-		public final @NonNull URI uri;
+		public final URI uri;
 
-		public DocumentSymbolWithFile(DocumentSymbol symbol, @NonNull URI uri) {
+		public DocumentSymbolWithFile(DocumentSymbol symbol, URI uri) {
 			this.symbol = symbol;
 			this.uri = uri;
 		}
 
 		@Override
-		public boolean equals(Object obj) {
+		public boolean equals(@Nullable Object obj) {
 			return obj instanceof DocumentSymbolWithFile other && //
 					Objects.equals(this.symbol, other.symbol) && //
 					Objects.equals(this.uri, other.uri);
@@ -69,16 +71,16 @@ public class SymbolsModel {
 
 	public static class DocumentSymbolWithURI extends DocumentSymbolWithFile {
 		public final DocumentSymbol symbol;
-		public final @NonNull URI uri;
+		public final URI uri;
 
-		public DocumentSymbolWithURI(DocumentSymbol symbol, @NonNull URI uri) {
+		public DocumentSymbolWithURI(DocumentSymbol symbol, URI uri) {
 			super(symbol, uri);
 			this.symbol = symbol;
 			this.uri = uri;
 		}
 
 		@Override
-		public boolean equals(Object obj) {
+		public boolean equals(@Nullable Object obj) {
 			return obj instanceof DocumentSymbolWithURI other && //
 					Objects.equals(this.symbol, other.symbol) && //
 					Objects.equals(this.uri, other.uri);
@@ -90,7 +92,7 @@ public class SymbolsModel {
 		}
 	}
 
-	public synchronized boolean update(List<Either<SymbolInformation, DocumentSymbol>> response) {
+	public synchronized boolean update(@Nullable List<Either<SymbolInformation, DocumentSymbol>> response) {
 		// TODO update model only on real change
 		if (response == null || response.isEmpty()) {
 			childrenMap = Collections.emptyMap();
@@ -99,37 +101,37 @@ public class SymbolsModel {
 			final var newChildrenMap = new HashMap<SymbolInformation, List<SymbolInformation>>();
 			final var newRootSymbols = new ArrayList<DocumentSymbol>();
 
-			Collections.sort(response,
-					Comparator.comparing(
+			final var parentStack = new ArrayDeque<SymbolInformation>();
+			parentStack.push(ROOT_SYMBOL_INFORMATION);
+			final var previousSymbol = new SymbolInformation[1];
+
+			response.stream() //
+					.sorted(Comparator.comparing(
 							either -> either.isLeft() ? either.getLeft().getLocation().getRange().getStart()
 									: either.getRight().getRange().getStart(),
 							// strange need to cast here, could be a JDT compiler issue
 							Comparator.comparingInt(pos -> ((Position) pos).getLine())
-									.thenComparingInt(pos -> ((Position) pos).getCharacter())));
-
-			final var parentStack = new ArrayDeque<SymbolInformation>();
-			parentStack.push(ROOT_SYMBOL_INFORMATION);
-			SymbolInformation previousSymbol = null;
-			for (Either<SymbolInformation, DocumentSymbol> either : response) {
-				if (either.isLeft()) {
-					SymbolInformation symbol = either.getLeft();
-					if (isIncluded(previousSymbol, symbol)) {
-						parentStack.push(previousSymbol);
-						addChild(newChildrenMap, parentStack.peek(), symbol);
-					} else if (isIncluded(parentStack.peek(), symbol)) {
-						addChild(newChildrenMap, parentStack.peek(), symbol);
-					} else {
-						while (!isIncluded(parentStack.peek(), symbol)) {
-							parentStack.pop();
+									.thenComparingInt(pos -> ((Position) pos).getCharacter())))
+					.forEach((Either<SymbolInformation, DocumentSymbol> either) -> {
+						if (either.isLeft()) {
+							SymbolInformation symbol = either.getLeft();
+							if (isIncluded(previousSymbol[0], symbol)) {
+								parentStack.push(castNonNull(previousSymbol[0]));
+								addChild(newChildrenMap, castNonNull(parentStack.peek()), symbol);
+							} else if (isIncluded(parentStack.peek(), symbol)) {
+								addChild(newChildrenMap, castNonNull(parentStack.peek()), symbol);
+							} else {
+								while (!isIncluded(parentStack.peek(), symbol)) {
+									parentStack.pop();
+								}
+								addChild(newChildrenMap, castNonNull(parentStack.peek()), symbol);
+								parentStack.push(symbol);
+							}
+							previousSymbol[0] = symbol;
+						} else if (either.isRight()) {
+							newRootSymbols.add(either.getRight());
 						}
-						addChild(newChildrenMap, parentStack.peek(), symbol);
-						parentStack.push(symbol);
-					}
-					previousSymbol = symbol;
-				} else if (either.isRight()) {
-					newRootSymbols.add(either.getRight());
-				}
-			}
+					});
 
 			childrenMap = newChildrenMap;
 			rootSymbols = newRootSymbols;
@@ -137,7 +139,7 @@ public class SymbolsModel {
 		return true;
 	}
 
-	private boolean isIncluded(SymbolInformation parent, SymbolInformation symbol) {
+	private boolean isIncluded(@Nullable SymbolInformation parent, @Nullable SymbolInformation symbol) {
 		if (parent == null || symbol == null) {
 			return false;
 		}
@@ -165,7 +167,7 @@ public class SymbolsModel {
 	}
 
 	public Object[] getElements() {
-		final var res = new ArrayList<Object>(Arrays.asList(getChildren(ROOT_SYMBOL_INFORMATION)));
+		final var res = ArrayUtil.asArrayList(getChildren(ROOT_SYMBOL_INFORMATION));
 		final URI current = this.uri;
 		Function<DocumentSymbol, Object> mapper = current != null ? symbol -> new DocumentSymbolWithURI(symbol, current)
 				: symbol -> symbol;
@@ -173,7 +175,7 @@ public class SymbolsModel {
 		return res.toArray();
 	}
 
-	public Object[] getChildren(Object parentElement) {
+	public Object[] getChildren(@Nullable Object parentElement) {
 		if (parentElement != null) {
 			if (parentElement instanceof SymbolInformation) {
 				List<SymbolInformation> children = childrenMap.get(parentElement);
@@ -188,10 +190,10 @@ public class SymbolsModel {
 				}
 			}
 		}
-		return EMPTY;
+		return NO_OBJECTS;
 	}
 
-	public boolean hasChildren(Object parentElement) {
+	public boolean hasChildren(@Nullable Object parentElement) {
 		if (parentElement != null) {
 			if (parentElement instanceof SymbolInformation) {
 				List<SymbolInformation> children = childrenMap.get(parentElement);
@@ -208,7 +210,7 @@ public class SymbolsModel {
 		return false;
 	}
 
-	public Object getParent(Object element) {
+	public @Nullable Object getParent(@Nullable Object element) {
 		if (element instanceof SymbolInformation) {
 			for (Map.Entry<SymbolInformation, List<SymbolInformation>> entry : childrenMap.entrySet()) {
 				if (entry.getValue().contains(element)) {
@@ -219,18 +221,17 @@ public class SymbolsModel {
 		return null;
 	}
 
-	public void setUri(URI uri) {
+	public void setUri(@Nullable URI uri) {
 		this.uri = uri;
 	}
 
-	public TreePath toUpdatedSymbol(TreePath initialSymbol) {
+	public @Nullable TreePath toUpdatedSymbol(TreePath initialSymbol) {
 		final var res = new ArrayList<Object>(initialSymbol.getSegmentCount());
 		Object currentSymbol = null;
 		for (int i = 0; i < initialSymbol.getSegmentCount(); i++) {
 			String name = getName(initialSymbol.getSegment(i));
 			Object[] currentChildren = (currentSymbol == null ? getElements() : getChildren(currentSymbol));
-			currentSymbol = Arrays.stream(currentChildren).filter(child -> Objects.equals(getName(child), name))
-					.findAny().orElse(null);
+			currentSymbol = ArrayUtil.findFirstMatching(currentChildren, child -> Objects.equals(getName(child), name));
 			if (currentSymbol == null) {
 				return null;
 			}
@@ -239,7 +240,7 @@ public class SymbolsModel {
 		return new TreePath(res.toArray());
 	}
 
-	private String getName(Object segment) {
+	private @Nullable String getName(Object segment) {
 		if (segment instanceof DocumentSymbolWithURI symbolWithURI) {
 			segment = symbolWithURI.symbol;
 		}

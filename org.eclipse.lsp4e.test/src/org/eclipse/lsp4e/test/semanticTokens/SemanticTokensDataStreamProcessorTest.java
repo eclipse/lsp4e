@@ -10,7 +10,6 @@ package org.eclipse.lsp4e.test.semanticTokens;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jface.text.Document;
@@ -24,13 +23,13 @@ public class SemanticTokensDataStreamProcessorTest extends AbstractTest {
 
 	@Test
 	public void testKeyword() {
-		Document document = new Document(SemanticTokensTestUtil.keywordText);
+		final var document = new Document(SemanticTokensTestUtil.keywordText);
 
-		SemanticTokensDataStreamProcessor processor = new SemanticTokensDataStreamProcessor(SemanticTokensTestUtil
+		final var processor = new SemanticTokensDataStreamProcessor(SemanticTokensTestUtil
 				.keywordTokenTypeMapper(SemanticTokensTestUtil.RED_TOKEN), SemanticTokensTestUtil.offsetMapper(document));
 
 		List<Integer> expectedStream = SemanticTokensTestUtil.keywordSemanticTokens();
-		List<StyleRange> expectedStyleRanges = Arrays.asList(//
+		List<StyleRange> expectedStyleRanges = List.of(//
 				new StyleRange(0, 4, SemanticTokensTestUtil.RED, null), //
 				new StyleRange(15, 4, SemanticTokensTestUtil.RED, null), //
 				new StyleRange(24, 7, SemanticTokensTestUtil.RED, null)//
@@ -42,9 +41,9 @@ public class SemanticTokensDataStreamProcessorTest extends AbstractTest {
 	}
 
 	private SemanticTokensLegend getSemanticTokensLegend() {
-		SemanticTokensLegend semanticTokensLegend = new SemanticTokensLegend();
-		semanticTokensLegend.setTokenTypes(Arrays.asList("keyword","other"));
-		semanticTokensLegend.setTokenModifiers(Arrays.asList("obsolete"));
+		final var semanticTokensLegend = new SemanticTokensLegend();
+		semanticTokensLegend.setTokenTypes(List.of("keyword","other"));
+		semanticTokensLegend.setTokenModifiers(List.of("obsolete"));
 		return semanticTokensLegend;
 	}
 }

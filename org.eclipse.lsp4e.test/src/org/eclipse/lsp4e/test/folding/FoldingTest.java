@@ -60,7 +60,7 @@ public class FoldingTest extends AbstractTest {
 
 	private IEditorPart createEditor() throws CoreException, PartInitException {
 		IFile file = TestUtils.createUniqueTestFile(null, CONTENT);
-		FoldingRange foldingRange = new FoldingRange(0, 2);
+		final var foldingRange = new FoldingRange(0, 2);
 		foldingRange.setKind(FoldingRangeKind.Imports);
 		MockLanguageServer.INSTANCE.setFoldingRanges(List.of(foldingRange));
 		IEditorPart editor = TestUtils.openEditor(file);

@@ -8,12 +8,15 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.sourcelookup;
 
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
+
 import java.nio.file.Paths;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.sourcelookup.ISourceContainer;
 import org.eclipse.debug.core.sourcelookup.ISourceContainerType;
 import org.eclipse.debug.core.sourcelookup.containers.AbstractSourceContainer;
+import org.eclipse.jdt.annotation.Nullable;
 
 public class AbsolutePathSourceContainer extends AbstractSourceContainer implements ISourceContainer {
 
@@ -22,7 +25,7 @@ public class AbsolutePathSourceContainer extends AbstractSourceContainer impleme
 		if (name != null && Paths.get(name).isAbsolute()) {
 			return new Object[] { name };
 		}
-		return new Object[0];
+		return NO_OBJECTS;
 	}
 
 	@Override
@@ -31,7 +34,7 @@ public class AbsolutePathSourceContainer extends AbstractSourceContainer impleme
 	}
 
 	@Override
-	public ISourceContainerType getType() {
+	public @Nullable ISourceContainerType getType() {
 		return null;
 	}
 

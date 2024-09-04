@@ -17,7 +17,6 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -38,14 +37,14 @@ import org.eclipse.ui.editors.text.EditorsUI;
 import org.eclipse.ui.texteditor.AbstractDecoratedTextEditorPreferenceConstants;
 
 public class LSPFormatter {
-	public CompletableFuture<Optional<VersionedEdits>> requestFormatting(@NonNull IDocument document, @NonNull ITextSelection textSelection) throws BadLocationException {
+	public CompletableFuture<Optional<VersionedEdits>> requestFormatting(IDocument document, ITextSelection textSelection) throws BadLocationException {
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
 			return CompletableFuture.completedFuture(Optional.empty());
 		}
 		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPFormatter::supportsFormatting);
 		FormattingOptions formatOptions = getFormatOptions();
-		TextDocumentIdentifier docId = new TextDocumentIdentifier(uri.toString());
+		final var docId = new TextDocumentIdentifier(uri.toString());
 
 		DocumentRangeFormattingParams rangeParams = getRangeFormattingParams(document, textSelection, formatOptions,
 				docId);
@@ -58,7 +57,7 @@ public class LSPFormatter {
 		long modificationStamp = DocumentUtil.getDocumentModificationStamp(document);
 		return executor.computeFirst((w, ls) -> {
 			final ServerCapabilities capabilities = w.getServerCapabilities();
-			if (isDocumentRangeFormattingSupported(capabilities)
+			if (capabilities != null && isDocumentRangeFormattingSupported(capabilities)
 					&& !(isDocumentFormattingSupported(capabilities)
 							&& textSelection.getLength() == 0)) {
 				return ls.getTextDocumentService().rangeFormatting(rangeParams).thenApply(edits -> new VersionedEdits(modificationStamp, edits, document));
@@ -70,7 +69,7 @@ public class LSPFormatter {
 
 	public static DocumentFormattingParams getFullFormatParams(FormattingOptions formatOptions,
 			TextDocumentIdentifier docId) {
-		DocumentFormattingParams params = new DocumentFormattingParams();
+		final var params = new DocumentFormattingParams();
 		params.setTextDocument(docId);
 		params.setOptions(formatOptions);
 		return params;
@@ -78,7 +77,7 @@ public class LSPFormatter {
 
 	public static DocumentRangeFormattingParams getRangeFormattingParams(IDocument document, ITextSelection textSelection,
 			FormattingOptions formatOptions, TextDocumentIdentifier docId) throws BadLocationException {
-		DocumentRangeFormattingParams rangeParams = new DocumentRangeFormattingParams();
+		final var rangeParams = new DocumentRangeFormattingParams();
 		rangeParams.setTextDocument(docId);
 		rangeParams.setOptions(formatOptions);
 		boolean fullFormat = textSelection.getLength() == 0;

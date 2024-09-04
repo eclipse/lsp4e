@@ -17,7 +17,6 @@
 package org.eclipse.lsp4e.tests.mock;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -79,13 +78,13 @@ import org.eclipse.lsp4j.services.NotebookDocumentService;
 
 public final class MockLanguageServer implements LanguageServer {
 
-	public static MockLanguageServer INSTANCE = new MockLanguageServer(MockLanguageServer::defaultServerCapabilities);
-
 	/**
 	 * This command will be reported on initialization to be supported for execution
 	 * by the server
 	 */
-	public static String SUPPORTED_COMMAND_ID = "mock.command";
+	public static final String SUPPORTED_COMMAND_ID = "mock.command";
+
+	public static MockLanguageServer INSTANCE = new MockLanguageServer(MockLanguageServer::defaultServerCapabilities);
 
 	private volatile MockTextDocumentService textDocumentService = new MockTextDocumentService(
 			this::buildMaybeDelayedFuture);
@@ -118,7 +117,8 @@ public final class MockLanguageServer implements LanguageServer {
 	 * @throws InterruptedException
 	 */
 	public static void main(String[] args) throws InterruptedException, ExecutionException {
-		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageServer.INSTANCE, System.in, System.out);
+		Launcher<LanguageClient> l = LSPLauncher.createServerLauncher(MockLanguageServer.INSTANCE, System.in,
+				System.out);
 		Future<?> f = l.startListening();
 		MockLanguageServer.INSTANCE.addRemoteProxy(l.getRemoteProxy());
 		f.get();
@@ -129,7 +129,13 @@ public final class MockLanguageServer implements LanguageServer {
 			try {
 				future.join();
 			} catch (CancellationException | CompletionException e) {
-				System.err.println("Error waiting for in flight requests prior to teardown: " + e.getMessage());
+				System.err.println("Error waiting for in flight requests prior to teardown: " //
+						+ e.getClass().getSimpleName() + " with message "
+						+ (e.getMessage() == null ? "<null>" : '"' + e.getMessage()) //
+						+ (e.getCause() instanceof Throwable cause //
+								? " caused by " + cause.getClass().getSimpleName() + " with message "
+										+ (cause.getMessage() == null ? "<null>" : '"' + cause.getMessage()) //
+								: ""));
 			}
 		});
 	}
@@ -155,9 +161,9 @@ public final class MockLanguageServer implements LanguageServer {
 	}
 
 	public static ServerCapabilities defaultServerCapabilities() {
-		ServerCapabilities capabilities = new ServerCapabilities();
+		final var capabilities = new ServerCapabilities();
 		capabilities.setTextDocumentSync(TextDocumentSyncKind.Full);
-		CompletionOptions completionProvider = new CompletionOptions(false, null);
+		final var completionProvider = new CompletionOptions(false, null);
 		capabilities.setCompletionProvider(completionProvider);
 		capabilities.setHoverProvider(true);
 		capabilities.setDefinitionProvider(true);
@@ -169,9 +175,8 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setDocumentLinkProvider(new DocumentLinkOptions());
 		capabilities.setSignatureHelpProvider(new SignatureHelpOptions());
 		capabilities.setDocumentHighlightProvider(Boolean.TRUE);
-		capabilities
-				.setExecuteCommandProvider(new ExecuteCommandOptions(Collections.singletonList(SUPPORTED_COMMAND_ID)));
-		RenameOptions prepareRenameProvider = new RenameOptions();
+		capabilities.setExecuteCommandProvider(new ExecuteCommandOptions(List.of(SUPPORTED_COMMAND_ID)));
+		final var prepareRenameProvider = new RenameOptions();
 		prepareRenameProvider.setPrepareProvider(true);
 		Either<Boolean, RenameOptions> renameEither = Either.forRight(prepareRenameProvider);
 		capabilities.setRenameProvider(renameEither);
@@ -214,7 +219,7 @@ public final class MockLanguageServer implements LanguageServer {
 		this.textDocumentService.setMockCodeLenses(codeLens);
 	}
 
-	public void setDefinition(List<? extends Location> definitionLocations){
+	public void setDefinition(List<? extends Location> definitionLocations) {
 		this.textDocumentService.setMockDefinitionLocations(definitionLocations);
 	}
 
@@ -259,7 +264,7 @@ public final class MockLanguageServer implements LanguageServer {
 	}
 
 	public void setWillSaveWaitUntil(List<TextEdit> edits) {
-		TextDocumentSyncOptions textDocumentSyncOptions = new TextDocumentSyncOptions();
+		final var textDocumentSyncOptions = new TextDocumentSyncOptions();
 		textDocumentSyncOptions.setWillSaveWaitUntil(true);
 		textDocumentSyncOptions.setSave(true);
 		textDocumentSyncOptions.setChange(TextDocumentSyncKind.Full);
@@ -316,11 +321,11 @@ public final class MockLanguageServer implements LanguageServer {
 	}
 
 	public void setDocumentSymbols(DocumentSymbol documentSymbol) {
-		this.textDocumentService.setDocumentSymbols(Collections.singletonList(documentSymbol));
+		this.textDocumentService.setDocumentSymbols(List.of(documentSymbol));
 	}
 
 	public void setDocumentSymbols(DocumentSymbol... documentSymbols) {
-		this.textDocumentService.setDocumentSymbols(Arrays.asList(documentSymbols));
+		this.textDocumentService.setDocumentSymbols(List.of(documentSymbols));
 	}
 
 	@Override

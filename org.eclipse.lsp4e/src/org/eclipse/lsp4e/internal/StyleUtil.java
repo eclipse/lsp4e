@@ -22,7 +22,7 @@ public class StyleUtil {
 
 	public static final Styler DEPRECATE = new Styler() {
 		@Override
-		public void applyStyles(TextStyle textStyle) {
+		public void applyStyles(final TextStyle textStyle) {
 			textStyle.strikeout = true;
 		}
 	};

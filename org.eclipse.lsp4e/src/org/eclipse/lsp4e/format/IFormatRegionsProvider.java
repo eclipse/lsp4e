@@ -12,10 +12,8 @@
 package org.eclipse.lsp4e.format;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.compare.internal.DocLineComparator;
-import org.eclipse.compare.rangedifferencer.IRangeComparator;
 import org.eclipse.compare.rangedifferencer.RangeDifference;
 import org.eclipse.compare.rangedifferencer.RangeDifferencer;
 import org.eclipse.core.filebuffers.FileBuffers;
@@ -26,6 +24,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.ISafeRunnable;
 import org.eclipse.core.runtime.SafeRunner;
 import org.eclipse.core.runtime.SubMonitor;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
@@ -67,7 +66,7 @@ public interface IFormatRegionsProvider {
 	 * @param document
 	 * @return region to be formatted or <code>null</code> if the document should not be formatted on save.
 	 */
-	IRegion[] getFormattingRegions(IDocument document);
+	IRegion @Nullable [] getFormattingRegions(IDocument document);
 
 	/**
 	 * Implementation for 'Format all lines'
@@ -86,14 +85,12 @@ public interface IFormatRegionsProvider {
 	 * If successive lines have changed a region spans over the size of all successive lines.
 	 * The regions include line delimiters.
 	 *
-	 *
-	 * @param buffer the buffer to compare contents from
 	 * @param monitor to report progress to
 	 * @return the regions of the changed lines
 	 *
 	 */
-	public static IRegion[] calculateEditedLineRegions(final IDocument document, final IProgressMonitor monitor) {
-		final IRegion[][] result = new IRegion[1][];
+	public static IRegion @Nullable [] calculateEditedLineRegions(final IDocument document, final IProgressMonitor monitor) {
+		final var result = new IRegion[1] @Nullable [];
 
 		SafeRunner.run(new ISafeRunnable() {
 			@Override
@@ -140,11 +137,11 @@ public interface IFormatRegionsProvider {
 				 * here in order to prevent loading of the Compare plug-in at load
 				 * time of this class.
 				 */
-				Object leftSide = new DocLineComparator(oldDocument, null, false);
-				Object rightSide = new DocLineComparator(currentDocument, null, false);
+				final var leftSide = new DocLineComparator(oldDocument, null, false);
+				final var rightSide = new DocLineComparator(currentDocument, null, false);
 
-				RangeDifference[] differences = RangeDifferencer.findDifferences((IRangeComparator) leftSide,
-						(IRangeComparator) rightSide);
+				RangeDifference[] differences = RangeDifferencer.findDifferences(leftSide,
+						rightSide);
 
 				// It holds that:
 				// 1. Ranges are sorted:
@@ -152,7 +149,7 @@ public interface IFormatRegionsProvider {
 				// 2. Successive changed lines are merged into on RangeDifference
 				//     forAll r1,r2 element differences: r1.rightStart() < r2.rightStart() -> r1.rightEnd() < r2.rightStart
 
-				List<IRegion> regions = new ArrayList<>();
+				final var regions = new ArrayList<IRegion>();
 				final int numberOfLines = currentDocument.getNumberOfLines();
 				for (RangeDifference curr : differences) {
 					if (curr.kind() == RangeDifference.CHANGE) {

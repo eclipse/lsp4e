@@ -20,7 +20,7 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 /**
  * LSP cancellation support hosts the list of LSP requests to cancel when a
- * process is canceled (ex: when completion is re-triggered, when hover is give
+ * process is cancelled (ex: when completion is re-triggered, when hover is give
  * up, etc)
  *
  * @see <a href=

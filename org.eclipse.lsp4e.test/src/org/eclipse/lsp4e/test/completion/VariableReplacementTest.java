@@ -10,7 +10,7 @@ package org.eclipse.lsp4e.test.completion;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Collections;
+import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.CoreException;
@@ -35,7 +35,7 @@ public class VariableReplacementTest extends AbstractCompletionTest {
 		CompletionItem completionItem = createCompletionItem("${1:foo} and ${1:foo}", CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
 		MockLanguageServer.INSTANCE
-				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
+				.setCompletionList(new CompletionList(true, List.of(completionItem)));
 		ITextViewer viewer = TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project,""));
 		int invokeOffset = 0;
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(viewer, invokeOffset);
@@ -52,8 +52,8 @@ public class VariableReplacementTest extends AbstractCompletionTest {
 				CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
 		MockLanguageServer.INSTANCE
-				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
-		String content = "line1\nline2\nline3";
+				.setCompletionList(new CompletionList(true, List.of(completionItem)));
+		final var content = "line1\nline2\nline3";
 		IFile testFile = TestUtils.createUniqueTestFile(project, content);
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		int invokeOffset = 0;
@@ -77,8 +77,8 @@ public class VariableReplacementTest extends AbstractCompletionTest {
 				CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
 		MockLanguageServer.INSTANCE
-				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
-		String content = "line1\nline2\nline3";
+				.setCompletionList(new CompletionList(true, List.of(completionItem)));
+		final var content = "line1\nline2\nline3";
 		IFile testFile = TestUtils.createUniqueTestFile(project, content);
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		int invokeOffset = 0;
@@ -90,7 +90,7 @@ public class VariableReplacementTest extends AbstractCompletionTest {
 		assertEquals(fileNameBase + "ine1\nline2\nline3", viewer.getDocument().get());
 		// TODO check link edit groups
 	}
-	
+
 	@Test
 	public void testVariableNameWithBraces() throws PartInitException, CoreException {
 		CompletionItem completionItem = createCompletionItem(
@@ -98,8 +98,8 @@ public class VariableReplacementTest extends AbstractCompletionTest {
 				CompletionItemKind.Class, new Range(new Position(0, 0), new Position(0, 1)));
 		completionItem.setInsertTextFormat(InsertTextFormat.Snippet);
 		MockLanguageServer.INSTANCE
-				.setCompletionList(new CompletionList(true, Collections.singletonList(completionItem)));
-		String content = "line1\nline2\nline3";
+				.setCompletionList(new CompletionList(true, List.of(completionItem)));
+		final var content = "line1\nline2\nline3";
 		IFile testFile = TestUtils.createUniqueTestFile(project, content);
 		ITextViewer viewer = TestUtils.openTextViewer(testFile);
 		int invokeOffset = 0;

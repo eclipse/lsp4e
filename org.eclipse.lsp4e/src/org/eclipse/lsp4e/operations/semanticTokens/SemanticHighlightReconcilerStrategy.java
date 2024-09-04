@@ -8,16 +8,15 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.semanticTokens;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
+
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
@@ -46,7 +45,6 @@ import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.lsp4j.SemanticTokensParams;
 import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
-import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 
@@ -84,15 +82,13 @@ public class SemanticHighlightReconcilerStrategy
 
 	private final boolean disabled;
 
-	private ITextViewer viewer;
+	private @Nullable ITextViewer viewer;
 
-	private IDocument document;
+	private @Nullable IDocument document;
 
-	private StyleRangeHolder styleRangeHolder;
+	private @Nullable StyleRangeHolder styleRangeHolder;
 
-	private SemanticTokensDataStreamProcessor semanticTokensDataStreamProcessor;
-
-	private boolean isInstalled;
+	private @Nullable SemanticTokensDataStreamProcessor semanticTokensDataStreamProcessor;
 
 	/**
 	 * Written in {@link this.class#applyTextPresentation(TextPresentation)}
@@ -107,12 +103,11 @@ public class SemanticHighlightReconcilerStrategy
 
 	private volatile long timestamp = 0;
 
-	private CompletableFuture<Optional<VersionedSemanticTokens>> semanticTokensFullFuture;
+	private @Nullable CompletableFuture<Optional<VersionedSemanticTokens>> semanticTokensFullFuture;
 
 	public SemanticHighlightReconcilerStrategy() {
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
 		disabled = store.getBoolean("semanticHighlightReconciler.disabled"); //$NON-NLS-1$
-		isInstalled = false;
 	}
 
 	/**
@@ -125,19 +120,18 @@ public class SemanticHighlightReconcilerStrategy
 	 */
 	@Override
 	public void install(final ITextViewer textViewer) {
-		if (disabled || isInstalled) {
+		if (disabled || viewer != null) {
 			return;
 		}
-		viewer = textViewer;
-		styleRangeHolder = new StyleRangeHolder();
-		semanticTokensDataStreamProcessor = new SemanticTokensDataStreamProcessor(new TokenTypeMapper(textViewer),
+		semanticTokensDataStreamProcessor = new SemanticTokensDataStreamProcessor(TokenTypeMapper.create(textViewer),
 				offsetMapper());
 
-		if (viewer instanceof final TextViewer textViewerImpl) {
+		if (textViewer instanceof final TextViewer textViewerImpl) {
 			textViewerImpl.addTextPresentationListener(this);
 		}
-		viewer.addTextListener(styleRangeHolder);
-		isInstalled = true;
+		styleRangeHolder = new StyleRangeHolder();
+		textViewer.addTextListener(styleRangeHolder);
+		viewer = textViewer;
 	}
 
 	/**
@@ -146,24 +140,26 @@ public class SemanticHighlightReconcilerStrategy
 	 */
 	@Override
 	public void uninstall() {
-		if (disabled || !isInstalled) {
+		final var viewer = this.viewer;
+		if (disabled || viewer == null) {
 			return;
 		}
-		isInstalled = false; // Indicate that we're not installed or in the phase of deinstalling
+		this.viewer = null; // Indicate that we're not installed or in the phase of deinstalling
 		cancelSemanticTokensFull();
 		semanticTokensDataStreamProcessor = null;
 		if (viewer instanceof final TextViewer textViewerImpl) {
 			textViewerImpl.removeTextPresentationListener(this);
 		}
-		viewer.removeTextListener(styleRangeHolder);
-		viewer = null;
-		styleRangeHolder = null;
+		if (styleRangeHolder != null) {
+			viewer.removeTextListener(styleRangeHolder);
+			styleRangeHolder = null;
+		}
 	}
 
-	private @NonNull Function<Position, Integer> offsetMapper() {
+	private Function<Position, Integer> offsetMapper() {
 		return p -> {
 			try {
-				return LSPEclipseUtils.toOffset(p, document);
+				return LSPEclipseUtils.toOffset(p, castNonNull(document));
 			} catch (BadLocationException e) {
 				throw new RuntimeException(e);
 			}
@@ -171,25 +167,24 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private SemanticTokensParams getSemanticTokensParams() {
-		URI uri = LSPEclipseUtils.toUri(document);
-		if (uri != null) {
-			final var semanticTokensParams = new SemanticTokensParams();
-			semanticTokensParams.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(uri));
-			return semanticTokensParams;
-		}
-		return null;
+		URI uri = castNonNull(LSPEclipseUtils.toUri(document));
+		final var semanticTokensParams = new SemanticTokensParams();
+		semanticTokensParams.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(uri));
+		return semanticTokensParams;
 	}
 
-	private void saveStyle(final Pair<SemanticTokens, SemanticTokensLegend> pair) {
+	private void saveStyle(final Pair<@Nullable SemanticTokens, @Nullable SemanticTokensLegend> pair) {
 		final SemanticTokens semanticTokens = pair.first();
 		final SemanticTokensLegend semanticTokensLegend = pair.second();
 
 		// Skip any processing if not installed or at least one of the pair values is null
-		if (!isInstalled || semanticTokens == null || semanticTokensLegend == null) {
+		if (viewer == null || semanticTokens == null || semanticTokensLegend == null) {
 			return;
 		}
 		List<Integer> dataStream = semanticTokens.getData();
-		if (!dataStream.isEmpty()) {
+		final var semanticTokensDataStreamProcessor = this.semanticTokensDataStreamProcessor;
+		final var styleRangeHolder = this.styleRangeHolder;
+		if (!dataStream.isEmpty() && semanticTokensDataStreamProcessor != null && styleRangeHolder != null) {
 			List<StyleRange> styleRanges = semanticTokensDataStreamProcessor.getStyleRanges(dataStream,
 					semanticTokensLegend);
 			styleRangeHolder.saveStyles(styleRanges);
@@ -197,11 +192,11 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	@Override
-	public void setProgressMonitor(final IProgressMonitor monitor) {
+	public void setProgressMonitor(final @Nullable IProgressMonitor monitor) {
 	}
 
 	@Override
-	public void setDocument(final IDocument document) {
+	public void setDocument(final @Nullable IDocument document) {
 		this.document = document;
 	}
 
@@ -235,16 +230,17 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void invalidateTextPresentation(final Long documentTimestamp) {
-		if (!isInstalled) { // Skip any processing
+		final var viewer = this.viewer;
+		if (viewer == null) { // Skip any processing
 			return;
 		}
 		StyledText textWidget = viewer.getTextWidget();
 		textWidget.getDisplay().asyncExec(() -> {
 			if (!textWidget.isDisposed() && outdatedTextPresentation(documentTimestamp)) {
-				ITextViewer theViewer = viewer;
+				ITextViewer theViewer = this.viewer;
 				if (theViewer != null) {
 					theViewer.invalidateTextPresentation();
-			        }
+				}
 			}
 		});
 	}
@@ -256,29 +252,29 @@ public class SemanticHighlightReconcilerStrategy
 	}
 
 	private void fullReconcile() {
-		if (disabled || !isInstalled) { // Skip any processing
+		final var viewer = this.viewer;
+		if (disabled || viewer == null) { // Skip any processing
 			return;
 		}
-		IDocument theDocument = document;
+		final var document = this.document;
 		cancelSemanticTokensFull();
-		if (theDocument != null) {
-			long modificationStamp = DocumentUtil.getDocumentModificationStamp(theDocument);
-			LanguageServerDocumentExecutor executor = LanguageServers.forDocument(theDocument)
+		if (document != null) {
+			long modificationStamp = DocumentUtil.getDocumentModificationStamp(document);
+			LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document)
 					.withFilter(this::hasSemanticTokensFull);
 			try {
-				semanticTokensFullFuture = executor//
-					.computeFirst((w, ls) -> ls.getTextDocumentService().semanticTokensFull(getSemanticTokensParams())//
+				final var semanticTokensFullFuture = executor //
+					.computeFirst((w, ls) -> ls.getTextDocumentService().semanticTokensFull(getSemanticTokensParams()) //
 							.thenApply(semanticTokens -> new VersionedSemanticTokens(modificationStamp,
-									Pair.of(semanticTokens, getSemanticTokensLegend(w)), theDocument)));
-
+									Pair.of(semanticTokens, getSemanticTokensLegend(w)), document)));
+				this.semanticTokensFullFuture = semanticTokensFullFuture;
 				semanticTokensFullFuture.get() // background thread with cancellation support, no timeout needed
-						.ifPresent(versionedSemanticTokens -> {
-							versionedSemanticTokens.apply(this::saveStyle, this::invalidateTextPresentation);
-						});
+						.ifPresent(versionedSemanticTokens ->
+								versionedSemanticTokens.apply(this::saveStyle, this::invalidateTextPresentation));
 			} catch (InterruptedException e) {
 				LanguageServerPlugin.logError(e);
 				Thread.currentThread().interrupt();
-			} catch (ResponseErrorException | ExecutionException | CancellationException e) {
+			} catch (Exception e) {
 				if (!CancellationUtil.isRequestCancelledException(e)) { // do not report error if the server has cancelled the request
 					LanguageServerPlugin.logError(e);
 				}
@@ -317,7 +313,7 @@ public class SemanticHighlightReconcilerStrategy
 	public void applyTextPresentation(final TextPresentation textPresentation) {
 		documentTimestampAtLastAppliedTextPresentation = DocumentUtil.getDocumentModificationStamp(document);
 		IRegion extent = textPresentation.getExtent();
-		if (extent != null) {
+		if (extent != null && styleRangeHolder != null) {
 			textPresentation.replaceStyleRanges(styleRangeHolder.overlappingRanges(extent));
 		}
 	}

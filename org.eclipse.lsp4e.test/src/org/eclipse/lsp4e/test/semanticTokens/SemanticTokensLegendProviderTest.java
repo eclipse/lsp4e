@@ -8,11 +8,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.semanticTokens;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
@@ -22,7 +20,6 @@ import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.operations.semanticTokens.SemanticHighlightReconcilerStrategy;
 import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
 import org.eclipse.lsp4e.test.utils.TestUtils;
-import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.junit.Test;
 
 public class SemanticTokensLegendProviderTest extends AbstractTestWithProject {
@@ -30,8 +27,8 @@ public class SemanticTokensLegendProviderTest extends AbstractTestWithProject {
 	@Test
 	public void testSemanticTokensLegendProvider() throws CoreException, IOException {
 		// Setup Server Capabilities
-		List<String> tokenTypes = Arrays.asList("keyword","other");
-		List<String> tokenModifiers = Arrays.asList("obsolete");
+		List<String> tokenTypes = List.of("keyword","other");
+		List<String> tokenModifiers = List.of("obsolete");
 		SemanticTokensTestUtil.setSemanticTokensLegend(tokenTypes, tokenModifiers);
 
 		// Setup test data
@@ -40,7 +37,7 @@ public class SemanticTokensLegendProviderTest extends AbstractTestWithProject {
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrappers(file, c -> Boolean.TRUE).iterator()
 		.next();
 
-		SemanticTokensLegend semanticTokensLegend = new SemanticHighlightReconcilerStrategy().getSemanticTokensLegend(wrapper);
+		final var semanticTokensLegend = new SemanticHighlightReconcilerStrategy().getSemanticTokensLegend(wrapper);
 		assertNotNull(semanticTokensLegend);
 		assertEquals(tokenTypes, semanticTokensLegend.getTokenTypes());
 		assertEquals(tokenModifiers, semanticTokensLegend.getTokenModifiers());

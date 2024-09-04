@@ -42,7 +42,7 @@ public class OtherFileStore  extends FileStore {
 
 	@Override
 	public IFileInfo fetchInfo(int options, IProgressMonitor monitor) throws CoreException {
-		FileInfo result = new FileInfo();
+		final var result = new FileInfo();
 		result.setDirectory(false);
 		result.setExists(true);
 		result.setLastModified(1);//last modified of zero indicates non-existence

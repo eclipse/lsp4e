@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
@@ -34,7 +34,7 @@ import org.eclipse.lsp4j.ServerCapabilities;
 
 public class InlayHintProvider extends AbstractCodeMiningProvider {
 
-	private CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(@NonNull IDocument document) {
+	private @Nullable CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(IDocument document) {
 		URI docURI = LSPEclipseUtils.toUri(document);
 		if (docURI != null) {
 			// Eclipse seems to request minings only when the document is loaded (or changed), rather than
@@ -45,8 +45,8 @@ public class InlayHintProvider extends AbstractCodeMiningProvider {
 			} catch (BadLocationException e) {
 				LanguageServerPlugin.logWarning("Unable to compute end of document", e); //$NON-NLS-1$
 			}
-			Range viewPortRange = new Range(new Position(0,0), end);
-			InlayHintParams param = new InlayHintParams(LSPEclipseUtils.toTextDocumentIdentifier(docURI), viewPortRange);
+			final var viewPortRange = new Range(new Position(0,0), end);
+			final var param = new InlayHintParams(LSPEclipseUtils.toTextDocumentIdentifier(docURI), viewPortRange);
 			List<LSPLineContentCodeMining> inlayHintResults = Collections.synchronizedList(new ArrayList<>());
 			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getInlayHintProvider)
 					.collectAll((w, ls) -> ls.getTextDocumentService().inlayHint(param).thenAcceptAsync(inlayHints -> {
@@ -63,8 +63,8 @@ public class InlayHintProvider extends AbstractCodeMiningProvider {
 		}
 	}
 
-	private LSPLineContentCodeMining toCodeMining(@NonNull IDocument document, @NonNull LanguageServerWrapper languageServerWrapper,
-			@NonNull InlayHint inlayHint) {
+	private @Nullable LSPLineContentCodeMining toCodeMining(IDocument document, LanguageServerWrapper languageServerWrapper,
+			InlayHint inlayHint) {
 		try {
 			return new LSPLineContentCodeMining(inlayHint, document, languageServerWrapper, InlayHintProvider.this);
 		} catch (BadLocationException e) {
@@ -74,7 +74,7 @@ public class InlayHintProvider extends AbstractCodeMiningProvider {
 	}
 
 	@Override
-	public CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(ITextViewer viewer,
+	public @Nullable CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(ITextViewer viewer,
 			IProgressMonitor monitor) {
 		IDocument document = viewer.getDocument();
 		return document != null ? provideCodeMinings(document) : null;

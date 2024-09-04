@@ -17,6 +17,7 @@ import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.debug.core.model.IStreamsProxy2;
 import org.eclipse.debug.ui.DebugUITools;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.debug.debugmodel.DSPStackFrame;
 import org.eclipse.lsp4j.debug.EvaluateArguments;
 import org.eclipse.lsp4j.debug.EvaluateArgumentsContext;
@@ -38,12 +39,12 @@ public class DSPStreamsProxy implements IStreamsProxy2 {
 	}
 
 	@Override
-	public DSPStreamMonitor getErrorStreamMonitor() {
+	public @NonNull DSPStreamMonitor getErrorStreamMonitor() {
 		return errorStream;
 	}
 
 	@Override
-	public DSPStreamMonitor getOutputStreamMonitor() {
+	public @NonNull DSPStreamMonitor getOutputStreamMonitor() {
 		return outputStream;
 	}
 

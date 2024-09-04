@@ -15,6 +15,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
@@ -25,7 +26,7 @@ public final class CancellationUtil {
 		// this class shouldn't be instantiated
 	}
 
-	public static boolean isRequestCancelledException(Throwable throwable) {
+	public static boolean isRequestCancelledException(@Nullable Throwable throwable) {
 		if (throwable instanceof CompletionException || throwable instanceof ExecutionException) {
 			throwable = throwable.getCause();
 		}

@@ -26,6 +26,7 @@ import org.eclipse.debug.internal.ui.DebugUIPlugin;
 import org.eclipse.debug.ui.IDebugModelPresentation;
 import org.eclipse.debug.ui.ISourcePresentation;
 import org.eclipse.debug.ui.IValueDetailListener;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.viewers.IFontProvider;
 import org.eclipse.jface.viewers.LabelProvider;
@@ -48,7 +49,7 @@ import org.eclipse.ui.part.FileEditorInput;
 
 public class DSPDebugModelPresentation extends LabelProvider implements IDebugModelPresentation, IFontProvider {
 
-	private Font italic;
+	private @Nullable Font italic;
 
 	@Override
 	public String getText(Object element) {
@@ -81,7 +82,7 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 	}
 
 	@Override
-	public Font getFont(Object element) {
+	public @Nullable Font getFont(Object element) {
 		if (element instanceof DSPDebugElement debugElement) {
 			if (debugElement.getErrorMessage() != null) {
 				return italic();
@@ -91,17 +92,18 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 	}
 
 	private Font italic() {
-		if (italic == null) {
-			Font dialogFont = JFaceResources.getDialogFont();
-			FontData[] fontData = dialogFont.getFontData();
-			for (int i = 0; i < fontData.length; i++) {
-				FontData data = fontData[i];
-				data.setStyle(SWT.ITALIC);
-			}
-			Display display = getDisplay();
-			italic = new Font(display, fontData);
+		if (this.italic != null) {
+			return this.italic;
 		}
-		return italic;
+
+		Font dialogFont = JFaceResources.getDialogFont();
+		FontData[] fontData = dialogFont.getFontData();
+		for (final FontData data : fontData) {
+			data.setStyle(SWT.ITALIC);
+		}
+		Display display = getDisplay();
+		this.italic = new Font(display, fontData);
+		return this.italic;
 	}
 
 	@Override
@@ -113,7 +115,7 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 	}
 
 	@Override
-	public IEditorInput getEditorInput(Object element) {
+	public @Nullable IEditorInput getEditorInput(Object element) {
 		if (element instanceof ILineBreakpoint lineBreakpoint) {
 			return new FileEditorInput((IFile) lineBreakpoint.getMarker().getResource());
 		}
@@ -135,7 +137,7 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 	}
 
 	@Override
-	public String getEditorId(IEditorInput input, Object element) {
+	public @Nullable String getEditorId(IEditorInput input, Object element) {
 		String id = null;
 		if (input != null) {
 			IEditorDescriptor descriptor = null;
@@ -180,7 +182,7 @@ public class DSPDebugModelPresentation extends LabelProvider implements IDebugMo
 	}
 
 	@Override
-	public void setAttribute(String attribute, Object value) {
+	public void setAttribute(String attribute, @Nullable Object value) {
 	}
 
 	@Override

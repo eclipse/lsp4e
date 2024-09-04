@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,6 +37,7 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.lsp4e.ContentTypeToLanguageServerDefinition;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServersRegistry;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.swt.widgets.Composite;
@@ -45,7 +45,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Table;
 import org.eclipse.swt.widgets.Widget;
-import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IWorkbenchPage;
@@ -80,10 +79,12 @@ public class TestUtils {
 	public static IEditorPart openEditor(IFile file) throws PartInitException {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
-		IEditorInput input = new FileEditorInput(file);
+		final var input = new FileEditorInput(file);
 
 		IEditorPart part = page.openEditor(input, "org.eclipse.ui.genericeditor.GenericEditor", false);
-		part.setFocus();
+		if (part != null) {
+			part.setFocus();
+		}
 		return part;
 	}
 
@@ -97,7 +98,7 @@ public class TestUtils {
 			editorPart.getTags().add(IPresentationEngine.SPLIT_HORIZONTAL);
 		}
 
-		return Arrays.asList(page.getEditorReferences());
+		return List.of(page.getEditorReferences());
 	}
 
 	public static IEditorPart openExternalFileInEditor(File file) throws PartInitException {
@@ -111,9 +112,9 @@ public class TestUtils {
 	public static IEditorPart getEditor(IFile file) {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
-		IEditorInput input = new FileEditorInput(file);
+		final var input = new FileEditorInput(file);
 
-		return Arrays.asList(page.getEditorReferences()).stream()
+		return List.of(page.getEditorReferences()).stream()
 			.filter(r -> {
 				try {
 					return r.getEditorInput().equals(input);
@@ -206,11 +207,7 @@ public class TestUtils {
 	}
 
 	public static void delete(IProject... projects) throws CoreException {
-		if (projects != null && projects.length > 0) {
-			for (IProject project : projects) {
-				delete(project);
-			}
-		}
+		ArrayUtil.forEach(projects, TestUtils::delete);
 	}
 
 	public static void delete(Path path) throws IOException {
@@ -220,11 +217,7 @@ public class TestUtils {
 	}
 
 	public static void delete(Path... paths) throws IOException {
-		if (paths != null && paths.length > 0) {
-			for (Path path : paths) {
-				delete(path);
-			}
-		}
+		ArrayUtil.forEach(paths, TestUtils::delete);
 	}
 
 	public static File createTempFile(String prefix, String suffix) throws IOException {
@@ -258,10 +251,8 @@ public class TestUtils {
 	}
 
 	public static Shell findNewShell(Set<Shell> beforeShells, Display display) {
-		Shell[] afterShells = Arrays.stream(display.getShells())
-				.filter(Shell::isVisible)
-				.filter(shell -> !beforeShells.contains(shell))
-				.toArray(Shell[]::new);
+		Shell[] afterShells = ArrayUtil.filter(display.getShells(),
+				shell -> shell.isVisible() && !beforeShells.contains(shell));
 		return afterShells.length > 0 ? afterShells[0] : null;
 	}
 

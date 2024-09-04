@@ -11,11 +11,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.progress;
 
-import java.util.Map;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNullable;
+
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -23,11 +25,12 @@ import java.util.function.Function;
 
 import org.eclipse.core.runtime.ICoreRunnable;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 import org.eclipse.core.runtime.jobs.IJobChangeEvent;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.jobs.JobChangeAdapter;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
 import org.eclipse.lsp4e.ui.Messages;
@@ -42,16 +45,16 @@ import org.eclipse.lsp4j.WorkDoneProgressReport;
 import org.eclipse.lsp4j.services.LanguageServer;
 
 public class LSPProgressManager {
-	private final Map<String, BlockingQueue<ProgressParams>> progressMap;
-	private final Map<IProgressMonitor, Integer> currentPercentageMap;
-	private LanguageServer languageServer;
-	private LanguageServerDefinition languageServerDefinition;
+	private final ConcurrentMap<String, BlockingQueue<ProgressParams>> progressMap;
+	private final ConcurrentMap<IProgressMonitor, Integer> percentageMap;
+	private @Nullable LanguageServer languageServer;
+	private @Nullable LanguageServerDefinition languageServerDefinition;
 	private final Set<String> done;
 	private final Set<Job> jobs;
 
 	public LSPProgressManager() {
 		this.progressMap = new ConcurrentHashMap<>();
-		this.currentPercentageMap = new ConcurrentHashMap<>();
+		this.percentageMap = new ConcurrentHashMap<>();
 		this.done = new ConcurrentSkipListSet<>();
 		this.jobs = new ConcurrentSkipListSet<>();
 	}
@@ -67,7 +70,7 @@ public class LSPProgressManager {
 	 *            the {@link WorkDoneProgressCreateParams} to be used to create the progress
 	 * @return the completable future
 	 */
-	public @NonNull CompletableFuture<Void> createProgress(final @NonNull WorkDoneProgressCreateParams params) {
+	public CompletableFuture<Void> createProgress(final WorkDoneProgressCreateParams params) {
 		final var queue = new LinkedBlockingDeque<ProgressParams>();
 
 		String jobIdentifier = params.getToken().map(Function.identity(), Object::toString);
@@ -88,12 +91,13 @@ public class LSPProgressManager {
 				|| languageServerDefinition.label == null || languageServerDefinition.label.isBlank() //
 				? Messages.LSPProgressManager_BackgroundJobName
 				: languageServerDefinition.label;
-		Job job = Job.create(jobName, (ICoreRunnable) monitor -> {
+		Job job = Job.create(jobName, (ICoreRunnable) mon -> {
+			final var monitor = mon == null ? new NullProgressMonitor() : mon;
 			try {
 				while (true) {
 					if (monitor.isCanceled()) {
 						progressMap.remove(jobIdentifier);
-						currentPercentageMap.remove(monitor);
+						percentageMap.remove(monitor);
 						if (languageServer != null) {
 							final var workDoneProgressCancelParams = new WorkDoneProgressCancelParams();
 							workDoneProgressCancelParams.setToken(jobIdentifier);
@@ -101,7 +105,7 @@ public class LSPProgressManager {
 						}
 						throw new OperationCanceledException();
 					}
-					ProgressParams nextProgressNotification = queue.pollFirst(1, TimeUnit.SECONDS);
+					ProgressParams nextProgressNotification = castNullable(queue.pollFirst(1, TimeUnit.SECONDS));
 					if (nextProgressNotification != null ) {
 						WorkDoneProgressNotification progressNotification = nextProgressNotification.getValue().getLeft();
 						if (progressNotification != null) {
@@ -113,7 +117,7 @@ public class LSPProgressManager {
 							} else if (kind == WorkDoneProgressKind.end) {
 								end((WorkDoneProgressEnd) progressNotification, monitor);
 								progressMap.remove(jobIdentifier);
-								currentPercentageMap.remove(monitor);
+								percentageMap.remove(monitor);
 								return;
 							}
 						}
@@ -144,7 +148,7 @@ public class LSPProgressManager {
 			} else {
 				monitor.beginTask(begin.getTitle(), percentage);
 			}
-			currentPercentageMap.put(monitor, 0);
+			percentageMap.put(monitor, 0);
 		} else {
 			monitor.beginTask(begin.getTitle(), IProgressMonitor.UNKNOWN);
 		}
@@ -161,18 +165,18 @@ public class LSPProgressManager {
 	}
 
 	private void report(final WorkDoneProgressReport report, final IProgressMonitor monitor) {
-		if (report.getMessage() != null && !report.getMessage().isBlank()) {
-			monitor.subTask(report.getMessage());
+		final var reportMessage = report.getMessage();
+		if (reportMessage != null && !reportMessage.isBlank()) {
+			monitor.subTask(reportMessage);
 		}
 
-		if (report.getPercentage() != null) {
-			if (currentPercentageMap.containsKey(monitor)) {
-				Integer percentage = currentPercentageMap.get(monitor);
-				int worked = percentage != null ? Math.min(percentage, report.getPercentage()) : 0;
-				monitor.worked(report.getPercentage().intValue() - worked);
-			}
-
-			currentPercentageMap.put(monitor, report.getPercentage());
+		final var progressPercentage = report.getPercentage();
+		if (progressPercentage != null) {
+			percentageMap.compute(monitor, (key, existingPercentage) -> {
+				final int worked = (existingPercentage != null) ? Math.min(existingPercentage, progressPercentage) : 0;
+				monitor.worked(progressPercentage - worked);
+				return progressPercentage;
+			});
 		}
 	}
 
@@ -182,7 +186,7 @@ public class LSPProgressManager {
 	 * @param params
 	 *            the {@link ProgressParams} used for the progress notification
 	 */
-	public void notifyProgress(final @NonNull ProgressParams params) {
+	public void notifyProgress(final ProgressParams params) {
 		String jobIdentifier = params.getToken().map(Function.identity(), Object::toString);
 		BlockingQueue<ProgressParams> progress = progressMap.get(jobIdentifier);
 		if (progress != null) { // may happen if the server does not wait on the return value of the future of createProgress
@@ -200,7 +204,7 @@ public class LSPProgressManager {
 	 */
 	public void dispose() {
 		jobs.forEach(Job::cancel);
-		currentPercentageMap.clear();
+		percentageMap.clear();
 		progressMap.clear();
 		done.clear();
 	}

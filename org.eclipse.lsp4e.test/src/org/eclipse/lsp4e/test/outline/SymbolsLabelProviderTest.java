@@ -31,43 +31,43 @@ public class SymbolsLabelProviderTest extends AbstractTest {
 
 	@Test
 	public void testShowKind() {
-		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, true);
-		SymbolInformation info = new SymbolInformation("Foo", SymbolKind.Class, LOCATION);
+		final var labelProvider = new SymbolsLabelProvider(false, true);
+		final var info = new SymbolInformation("Foo", SymbolKind.Class, LOCATION);
 		assertEquals("Foo :Class", labelProvider.getText(info));
 	}
 
 	@Test
 	public void testShowKindLocation() {
-		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(true, true);
-		SymbolInformation info = new SymbolInformation("Foo", SymbolKind.Class, LOCATION);
+		final var labelProvider = new SymbolsLabelProvider(true, true);
+		final var info = new SymbolInformation("Foo", SymbolKind.Class, LOCATION);
 		assertEquals("Foo :Class path/to/foo", labelProvider.getText(info));
 	}
 
 	@Test
 	public void testShowLocation() {
-		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(true, false);
-		SymbolInformation info = new SymbolInformation("Foo", SymbolKind.Class, LOCATION);
+		final var labelProvider = new SymbolsLabelProvider(true, false);
+		final var info = new SymbolInformation("Foo", SymbolKind.Class, LOCATION);
 		assertEquals("Foo path/to/foo", labelProvider.getText(info));
 	}
 
 	@Test
 	public void testShowNeither() {
-		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, false);
-		SymbolInformation info = new SymbolInformation("Foo", SymbolKind.Class, LOCATION);
+		final var labelProvider = new SymbolsLabelProvider(false, false);
+		final var info = new SymbolInformation("Foo", SymbolKind.Class, LOCATION);
 		assertEquals("Foo", labelProvider.getText(info));
 	}
 
 	@Test
 	public void testGetStyledTextInalidLocationURI() {
-		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, false);
-		SymbolInformation info = new SymbolInformation("Foo", SymbolKind.Class, INVALID_LOCATION);
+		final var labelProvider = new SymbolsLabelProvider(false, false);
+		final var info = new SymbolInformation("Foo", SymbolKind.Class, INVALID_LOCATION);
 		assertEquals("Foo", labelProvider.getStyledText(info).getString());
 	}
 
 	@Test
 	public void testDocumentSymbolDetail () {
-		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, false);
-		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
+		final var labelProvider = new SymbolsLabelProvider(false, false);
+		final var info = new DocumentSymbol("Foo", SymbolKind.Class,
 				new Range(new Position(1, 0), new Position(1, 2)),
 				new Range(new Position(1, 0), new Position(1, 2)),
 				": additional detail");
@@ -76,8 +76,8 @@ public class SymbolsLabelProviderTest extends AbstractTest {
 
 	@Test
 	public void testDocumentSymbolDetailWithKind () {
-		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, true);
-		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
+		final var labelProvider = new SymbolsLabelProvider(false, true);
+		final var info = new DocumentSymbol("Foo", SymbolKind.Class,
 				new Range(new Position(1, 0), new Position(1, 2)),
 				new Range(new Position(1, 0), new Position(1, 2)),
 				": additional detail");
@@ -86,8 +86,8 @@ public class SymbolsLabelProviderTest extends AbstractTest {
 
 	@Test
 	public void testDocumentSymbolWithUriDetail () {
-		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, false);
-		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
+		final var labelProvider = new SymbolsLabelProvider(false, false);
+		final var info = new DocumentSymbol("Foo", SymbolKind.Class,
 				new Range(new Position(1, 0), new Position(1, 2)),
 				new Range(new Position(1, 0), new Position(1, 2)),
 				": additional detail");
@@ -97,8 +97,8 @@ public class SymbolsLabelProviderTest extends AbstractTest {
 
 	@Test
 	public void testDocumentSymbolDetailWithFileWithKind () {
-		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, true);
-		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
+		final var labelProvider = new SymbolsLabelProvider(false, true);
+		final var info = new DocumentSymbol("Foo", SymbolKind.Class,
 				new Range(new Position(1, 0), new Position(1, 2)),
 				new Range(new Position(1, 0), new Position(1, 2)),
 				": additional detail");
@@ -108,8 +108,8 @@ public class SymbolsLabelProviderTest extends AbstractTest {
 
 	@Test
 	public void testDocumentSymbolDetailWithFileWithKindDeprecated () {
-		SymbolsLabelProvider labelProvider = new SymbolsLabelProvider(false, true);
-		DocumentSymbol info = new DocumentSymbol("Foo", SymbolKind.Class,
+		final var labelProvider = new SymbolsLabelProvider(false, true);
+		final var info = new DocumentSymbol("Foo", SymbolKind.Class,
 				new Range(new Position(1, 0), new Position(1, 2)),
 				new Range(new Position(1, 0), new Position(1, 2)),
 				": additional detail");

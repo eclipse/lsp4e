@@ -12,6 +12,7 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.DecoratingStyledCellLabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.StyledString;
@@ -53,7 +54,7 @@ public class FileAndURIMatchLabelProvider extends DecoratingStyledCellLabelProvi
 		}
 
 		@Override
-		public StyledString getStyledText(Object element) {
+		public @Nullable StyledString getStyledText(@Nullable Object element) {
 			if (canDelegate(element)) {
 				return resourceMatchDelegate.getStyledText(element);
 			}
@@ -62,12 +63,12 @@ public class FileAndURIMatchLabelProvider extends DecoratingStyledCellLabelProvi
 					return new StyledString(uri.getPath());
 				} else {
 					try {
-						URI trimmedURI = new URI(uri.getScheme(),
+						final var trimmedURI = new URI(uri.getScheme(),
 							uri.getAuthority(),
 							uri.getPath(),
 							null, // Ignore the query part of the input url
 							uri.getFragment());
-						StyledString res = new StyledString(trimmedURI.toString());
+						final var res = new StyledString(trimmedURI.toString());
 						if (uri.getQuery() != null) {
 							res.append("?" + uri.getRawQuery(), StyledString.QUALIFIER_STYLER); //$NON-NLS-1$
 						}
@@ -84,7 +85,7 @@ public class FileAndURIMatchLabelProvider extends DecoratingStyledCellLabelProvi
 		}
 
 		@Override
-		public Image getImage(Object element) {
+		public @Nullable Image getImage(@Nullable Object element) {
 			if (canDelegate(element)) {
 				return resourceMatchDelegate.getImage(element);
 			}
@@ -99,7 +100,7 @@ public class FileAndURIMatchLabelProvider extends DecoratingStyledCellLabelProvi
 			return null;
 		}
 
-		private boolean canDelegate(Object element) {
+		private boolean canDelegate(@Nullable Object element) {
 			return !(element instanceof URI || element instanceof URIMatch);
 		}
 	}

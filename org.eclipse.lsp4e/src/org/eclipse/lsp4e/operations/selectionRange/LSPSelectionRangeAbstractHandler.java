@@ -11,13 +11,13 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.selectionRange;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
@@ -58,12 +58,9 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 
 		private static final String KEY = SelectionRangeHandler.class.getName();
 
-		private SelectionRange root;
-
-		private SelectionRange previous;
-
+		private @Nullable SelectionRange root;
+		private @Nullable SelectionRange previous;
 		private final StyledText styledText;
-
 		private boolean updating;
 
 		public void setRoot(SelectionRange root) {
@@ -72,7 +69,7 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 		}
 
 		public static SelectionRangeHandler getSelectionRangeHandler(StyledText styledText) {
-			SelectionRangeHandler handler = (SelectionRangeHandler) styledText.getData(KEY);
+			var handler = (SelectionRangeHandler) styledText.getData(KEY);
 			if (handler == null) {
 				handler = new SelectionRangeHandler(styledText);
 			}
@@ -90,10 +87,11 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 			});
 		}
 
-		public SelectionRange getSelectionRange(Direction direction) {
+		public @Nullable SelectionRange getSelectionRange(Direction direction) {
+			var previous = this.previous;
 			if (direction == Direction.UP) {
 				if (previous != null) {
-					previous = previous.getParent();
+					previous = this.previous = previous.getParent();
 					return previous;
 				}
 			} else {
@@ -102,7 +100,7 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 					while (selectionRange != null) {
 						SelectionRange parent = selectionRange.getParent();
 						if (previous.equals(parent)) {
-							previous = selectionRange;
+							previous = this.previous = selectionRange;
 							return previous;
 						}
 						selectionRange = parent;
@@ -130,14 +128,16 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 			SelectionRange selectionRange = getSelectionRange(direction);
 			if (selectionRange != null) {
 				ISelection selection = LSPEclipseUtils.toSelection(selectionRange.getRange(), document);
-				styledText.getDisplay().execute(() -> {
-					try {
-						updating = true;
-						provider.setSelection(selection);
-					} finally {
-						updating = false;
-					}
-				});
+				if (selection != null) {
+					styledText.getDisplay().execute(() -> {
+						try {
+							updating = true;
+							provider.setSelection(selection);
+						} finally {
+							updating = false;
+						}
+					});
+				}
 			}
 		}
 
@@ -203,15 +203,18 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 	 * @return the selection range hierarchy of the given document at the given
 	 *         offset.
 	 */
-	private CompletableFuture<Optional<List<SelectionRange>>> collectSelectionRanges(IDocument document, int offset) {
+	private CompletableFuture<Optional<List<SelectionRange>>> collectSelectionRanges(@Nullable IDocument document, int offset) {
 		if (document == null) {
 			return CompletableFuture.completedFuture(null);
 		}
 		try {
 			Position position = LSPEclipseUtils.toPosition(offset, document);
 			TextDocumentIdentifier identifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
-			List<Position> positions = Collections.singletonList(position);
-			SelectionRangeParams params = new SelectionRangeParams(identifier, positions);
+			if (identifier == null) {
+				return CompletableFuture.completedFuture(null);
+			}
+			List<Position> positions = List.of(position);
+			final var params = new SelectionRangeParams(identifier, positions);
 			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getSelectionRangeProvider)
 					.computeFirst(languageServer -> languageServer.getTextDocumentService().selectionRange(params))
 					.thenApply(ranges -> ranges.stream().filter(Objects::nonNull).findFirst());
@@ -222,7 +225,7 @@ public abstract class LSPSelectionRangeAbstractHandler extends LSPDocumentAbstra
 	}
 
 	@Override
-	public void setEnabled(Object evaluationContext) {
+	public void setEnabled(@Nullable Object evaluationContext) {
 		setEnabled(ServerCapabilities::getSelectionRangeProvider, x -> true);
 	}
 

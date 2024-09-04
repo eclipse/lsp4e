@@ -11,9 +11,11 @@ package org.eclipse.lsp4e.debug.debugmodel;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.variables.IStringVariableManager;
+import org.eclipse.jdt.annotation.Nullable;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -23,7 +25,7 @@ import com.google.gson.JsonPrimitive;
 
 public class JsonParserWithStringSubstitution {
 
-	IStringVariableManager stringVariableManager;
+	private final IStringVariableManager stringVariableManager;
 
 	/**
 	 * @param stringVariableManager that should be used to substitute variables in
@@ -44,14 +46,23 @@ public class JsonParserWithStringSubstitution {
 	 * @throws CoreException         is thrown if undefined variable was referenced
 	 *                               in json.
 	 */
-	public Map<String, Object> parseJsonObject(String json) throws IllegalStateException, CoreException {
+	public Map<String, @Nullable Object> parseJsonObject(final String json)
+			throws IllegalStateException, CoreException {
 		JsonElement jsonElement = JsonParser.parseString(json);
 		JsonObject jsonObject = jsonElement.getAsJsonObject();
 		return processJsonObject(jsonObject);
 	}
 
-	private Map<String, Object> processJsonObject(JsonObject jsonObject) throws CoreException {
-		Map<String, Object> resultMap = new LinkedHashMap<>();
+	@SuppressWarnings("unchecked")
+	public Map<String, Object> parseJsonObjectAndRemoveNulls(final String json)
+			throws IllegalStateException, CoreException {
+		Map<String, @Nullable Object> map = parseJsonObject(json);
+		map.values().removeIf(Objects::isNull);
+		return (Map<String, Object>) (Map<String, ?>) map;
+	}
+
+	private Map<String, @Nullable Object> processJsonObject(JsonObject jsonObject) throws CoreException {
+		final var resultMap = new LinkedHashMap<String, @Nullable Object>();
 		for (Map.Entry<String, JsonElement> entry : jsonObject.entrySet()) {
 			String key = entry.getKey();
 			JsonElement value = entry.getValue();
@@ -60,7 +71,7 @@ public class JsonParserWithStringSubstitution {
 		return resultMap;
 	}
 
-	private Object handleJsonElement(JsonElement value) throws CoreException {
+	private @Nullable Object handleJsonElement(JsonElement value) throws CoreException {
 		if (value.isJsonObject()) {
 			return processJsonObject(value.getAsJsonObject());
 		}
@@ -85,7 +96,7 @@ public class JsonParserWithStringSubstitution {
 	}
 
 	private Object processJsonArray(JsonArray array) throws CoreException {
-		ArrayList<Object> resultArray = new ArrayList<Object>();
+		final var resultArray = new ArrayList<@Nullable Object>();
 		for (JsonElement element : array) {
 			resultArray.add(handleJsonElement(element));
 		}

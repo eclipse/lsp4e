@@ -154,6 +154,21 @@
 			<plugins>
 				<plugin>
 					<groupId>org.eclipse.tycho</groupId>
+					<artifactId>tycho-compiler-plugin</artifactId>
+					<version>${tycho-version}</version>
+					<configuration>
+						<optimize>true</optimize>
+						<compilerArgs>
+							<arg>-annotationpath</arg>
+							<arg>CLASSPATH</arg> <!-- read Eclipse External null Annotations from JARs on the classpath -->
+						</compilerArgs>
+
+						<!-- respect settings in .settings/org.eclipse.jdt.core.prefs -->
+						<useProjectSettings>true</useProjectSettings>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.tycho</groupId>
 					<artifactId>tycho-packaging-plugin</artifactId>
 					<version>${tycho-version}</version>
 					<dependencies>
@@ -205,7 +220,7 @@
 					<plugin>
 						<groupId>org.eclipse.cbi.maven.plugins</groupId>
 						<artifactId>eclipse-jarsigner-plugin</artifactId>
-						<version>1.4.3</version>
+						<version>1.5.0</version>
 						<executions>
 							<execution>
 								<id>sign-jars</id>
@@ -276,11 +291,11 @@
 			<releases><enabled>false</enabled></releases>
 		</pluginRepository>
 		<pluginRepository>
-		  	<id>dash-licenses-snapshots</id>
-		  	<url>https://repo.eclipse.org/content/repositories/dash-licenses-snapshots/</url>
+			<id>dash-licenses-snapshots</id>
+			<url>https://repo.eclipse.org/content/repositories/dash-licenses-snapshots/</url>
 			<snapshots><enabled>true</enabled></snapshots>
 			<releases><enabled>false</enabled></releases>
-  		</pluginRepository>
+		</pluginRepository>
 	</pluginRepositories>
 
 </project>

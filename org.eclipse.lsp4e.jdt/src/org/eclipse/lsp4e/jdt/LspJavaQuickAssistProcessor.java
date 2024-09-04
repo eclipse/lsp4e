@@ -12,6 +12,8 @@
 package org.eclipse.lsp4e.jdt;
 
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jdt.annotation.NonNullByDefault;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jdt.ui.text.java.IInvocationContext;
 import org.eclipse.jdt.ui.text.java.IJavaCompletionProposal;
 import org.eclipse.jdt.ui.text.java.IProblemLocation;
@@ -28,6 +30,7 @@ import org.eclipse.lsp4e.operations.codeactions.LSPCodeActionQuickAssistProcesso
 public class LspJavaQuickAssistProcessor extends LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor {
 
 	private static final int RELEVANCE = 100;
+	private static final IJavaCompletionProposal[] NO_JAVA_COMPLETION_PROPOSALS = new IJavaCompletionProposal[0];
 
 	private IQuickAssistInvocationContext getContext(IInvocationContext context) {
 		return new IQuickAssistInvocationContext() {
@@ -51,19 +54,22 @@ public class LspJavaQuickAssistProcessor extends LSPCodeActionQuickAssistProcess
 	}
 
 	@Override
-	public boolean hasAssists(IInvocationContext context) throws CoreException {
+	public boolean hasAssists(@NonNullByDefault({}) IInvocationContext context) throws CoreException {
 		return this.canAssist(getContext(context));
 	}
 
 	@Override
-	public IJavaCompletionProposal[] getAssists(IInvocationContext context, IProblemLocation[] locations)
-			throws CoreException {
+	public IJavaCompletionProposal @Nullable [] getAssists(@NonNullByDefault({}) IInvocationContext context,
+			@NonNullByDefault({}) IProblemLocation[] locations) throws CoreException {
 
 		ICompletionProposal[] proposals = computeQuickAssistProposals(getContext(context));
+		if (proposals == null)
+			return NO_JAVA_COMPLETION_PROPOSALS;
+
 		final var javaProposals = new IJavaCompletionProposal[proposals.length];
 		for (int i = 0; i < proposals.length; i++) {
 			/*
-			 * Different completion extension applied differently, hence each requires a wrapper implementing 
+			 * Different completion extension applied differently, hence each requires a wrapper implementing
 			 * proper completion proposal extension
 			 */
 			if (proposals[i] instanceof ICompletionProposalExtension2) {

@@ -11,9 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
@@ -21,7 +19,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.content.IContentType;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LanguageServersRegistry.LaunchConfigurationLanguageServerDefinition;
 
 public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToLanguageServerDefinition {
@@ -31,8 +29,8 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToLanguageServ
 	private final ILaunchConfiguration launchConfiguration;
 	private final Set<String> launchModes;
 
-	public ContentTypeToLSPLaunchConfigEntry(@NonNull IContentType contentType, @NonNull ILaunchConfiguration launchConfig,
-			@NonNull Set<String> launchModes) {
+	public ContentTypeToLSPLaunchConfigEntry(IContentType contentType, ILaunchConfiguration launchConfig,
+			Set<String> launchModes) {
 		super(contentType, new LaunchConfigurationLanguageServerDefinition(launchConfig, launchModes), null);
 		this.launchConfiguration = launchConfig;
 		this.launchModes = Collections.unmodifiableSet(launchModes);
@@ -64,7 +62,7 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToLanguageServ
 		return launchModes;
 	}
 
-	static ContentTypeToLSPLaunchConfigEntry readFromPreference(String preferenceEntry) {
+	static @Nullable ContentTypeToLSPLaunchConfigEntry readFromPreference(String preferenceEntry) {
 		String[] parts = preferenceEntry.split(":"); //$NON-NLS-1$
 		if (parts.length != 2) {
 			return null;
@@ -73,9 +71,9 @@ public class ContentTypeToLSPLaunchConfigEntry extends ContentTypeToLanguageServ
 		String[] launchParts = parts[1].split("/"); //$NON-NLS-1$
 		String launchType = launchParts[0];
 		String launchName = launchParts[1];
-		Set<String> launchModes = Collections.singleton(ILaunchManager.RUN_MODE);
+		Set<String> launchModes = Set.of(ILaunchManager.RUN_MODE);
 		if (launchParts.length > 2) {
-			launchModes = new HashSet<>(Arrays.asList(launchParts[2].split("\\+"))); //$NON-NLS-1$
+			launchModes = Set.of(launchParts[2].split("\\+")); //$NON-NLS-1$
 		}
 		IContentType contentType = Platform.getContentTypeManager().getContentType(contentTypeId);
 		if (contentType == null) {

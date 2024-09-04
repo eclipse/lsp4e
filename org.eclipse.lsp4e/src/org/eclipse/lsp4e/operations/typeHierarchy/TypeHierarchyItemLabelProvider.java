@@ -8,6 +8,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
@@ -26,15 +27,15 @@ public class TypeHierarchyItemLabelProvider extends LabelProvider implements ISt
 	}
 
 	@Override
-	public Image getImage(Object element) {
+	public @Nullable Image getImage(@Nullable Object element) {
 		if (element instanceof TypeHierarchyItem item) {
 			return LSPImages.imageFromSymbolKind(item.getKind());
 		}
-		return super.getImage(element);
+		return element == null ? null : super.getImage(element);
 	}
 
 	@Override
-	public StyledString getStyledText(Object element) {
+	public StyledString getStyledText(@Nullable Object element) {
 		if (element instanceof TypeHierarchyItem item) {
 			return new StyledString(item.getName());
 		} else if (element instanceof String s) {

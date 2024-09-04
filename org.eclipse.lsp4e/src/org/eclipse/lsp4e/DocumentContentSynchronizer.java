@@ -13,9 +13,10 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.io.File;
 import java.net.URI;
-import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.content.IContentType;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.DocumentEvent;
@@ -73,20 +74,19 @@ import org.osgi.framework.ServiceReference;
 
 final class DocumentContentSynchronizer implements IDocumentListener {
 
-	private final @NonNull LanguageServerWrapper languageServerWrapper;
-	private final @NonNull IDocument document;
-	private final @NonNull URI fileUri;
+	private final LanguageServerWrapper languageServerWrapper;
+	private final IDocument document;
+	private final URI fileUri;
 	private final TextDocumentSyncKind syncKind;
 
 	private int version = 0;
-	private DidChangeTextDocumentParams changeParams;
+	private @Nullable DidChangeTextDocumentParams changeParams;
 	private long openSaveStamp;
 	private IPreferenceStore store;
-	private IFormatRegionsProvider formatRegionsProvider;
+	private @Nullable IFormatRegionsProvider formatRegionsProvider;
 
-	public DocumentContentSynchronizer(@NonNull LanguageServerWrapper languageServerWrapper,
-			@NonNull LanguageServer languageServer,
-			@NonNull IDocument document, TextDocumentSyncKind syncKind) {
+	public DocumentContentSynchronizer(LanguageServerWrapper languageServerWrapper, LanguageServer languageServer,
+			IDocument document, @Nullable TextDocumentSyncKind syncKind) {
 		this.languageServerWrapper = languageServerWrapper;
 		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
@@ -124,7 +124,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 				languageId = path.lastSegment();
 			}
 		}
-		if (languageId == null && this.fileUri.getSchemeSpecificPart() != null) {
+		if (languageId == null && !this.fileUri.getSchemeSpecificPart().isEmpty()) {
 			String part = this.fileUri.getSchemeSpecificPart();
 			int lastSeparatorIndex = Math.max(part.lastIndexOf('.'), part.lastIndexOf('/'));
 			languageId = part.substring(lastSeparatorIndex + 1);
@@ -177,8 +177,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	 */
 	private boolean createChangeEvent(DocumentEvent event) {
 		Assert.isTrue(changeParams == null);
-		changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(),
-				Collections.singletonList(new TextDocumentContentChangeEvent()));
+		final var changeParams = this.changeParams = new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(),
+				List.of(new TextDocumentContentChangeEvent()));
 		changeParams.getTextDocument().setUri(fileUri.toASCIIString());
 
 		IDocument document = event.getDocument();
@@ -217,8 +217,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		if(serverCapabilities != null ) {
 			Either<TextDocumentSyncKind, TextDocumentSyncOptions> textDocumentSync = serverCapabilities.getTextDocumentSync();
 			if(textDocumentSync.isRight()) {
-				TextDocumentSyncOptions saveOptions = textDocumentSync.getRight();
-				return saveOptions != null && Boolean.TRUE.equals(saveOptions.getWillSaveWaitUntil());
+				return Boolean.TRUE.equals(textDocumentSync.getRight().getWillSaveWaitUntil());
 			}
 		}
 		return false;
@@ -235,7 +234,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 	 *
 	 * @return language server's preference ID to define a timeout for willSaveWaitUntil
 	 */
-	private static @NonNull String lsToWillSaveWaitUntilTimeoutKey(String serverId) {
+	private static String lsToWillSaveWaitUntilTimeoutKey(String serverId) {
 		return serverId + '.' + WILL_SAVE_WAIT_UNTIL_TIMEOUT__KEY;
 	}
 
@@ -260,7 +259,6 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		// Use @link{TextDocumentSaveReason.Manual} as the platform does not give enough information to be accurate
 		final var params = new WillSaveTextDocumentParams(identifier, TextDocumentSaveReason.Manual);
 
-
 		try {
 			List<TextEdit> edits = languageServerWrapper.executeImpl(ls -> ls.getTextDocumentService().willSaveWaitUntil(params))
 				.get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS);
@@ -272,8 +270,8 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (TimeoutException e) {
-			Integer timeoutCount = WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.compute(identifier.getUri(),
-					(k, v) -> v == null ? 1 : Integer.valueOf(v + 1));
+			Integer timeoutCount = castNonNull(WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.compute(identifier.getUri(),
+					(k, v) -> v == null ? 1 : Integer.valueOf(v + 1)));
 			String message = timeoutCount > WILL_SAVE_WAIT_UNTIL_COUNT_THRESHOLD ?
 					Messages.DocumentContentSynchronizer_TimeoutThresholdMessage:
 						Messages.DocumentContentSynchronizer_TimeoutMessage;
@@ -287,7 +285,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 	private void formatDocument() {
 		var regions = getFormatRegions();
-		if (regions != null && document != null) {
+		if (regions != null) {
 			try {
 				var textSelection = new MultiTextSelection(document, regions);
 				var edits = requestFormatting(document, textSelection).get(lsToWillSaveWaitUntilTimeout(), TimeUnit.SECONDS);
@@ -296,53 +294,58 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 						edits.apply();
 					} catch (final ConcurrentModificationException ex) {
 						ServerMessageHandler.showMessage(Messages.LSPFormatHandler_DiscardedFormat, new MessageParams(MessageType.Error, Messages.LSPFormatHandler_DiscardedFormatResponse));
-					} catch (BadLocationException e) {
-						LanguageServerPlugin.logError(e);
 					}
-				};
-			} catch (BadLocationException | InterruptedException | ExecutionException | TimeoutException e) {
+				}
+			} catch (InterruptedException e) {
+				LanguageServerPlugin.logError(e);
+				Thread.currentThread().interrupt();
+			} catch (Exception e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
 	}
 
-	private synchronized IRegion[] getFormatRegions() {
+	private synchronized IRegion @Nullable [] getFormatRegions() {
 		if (formatRegionsProvider != null) {
 			return formatRegionsProvider.getFormattingRegions(document);
 		}
 		var serverId = "(serverDefinitionId=" + languageServerWrapper.serverDefinition.id + ")";  //$NON-NLS-1$ //$NON-NLS-2$
-		var bundleContext = FrameworkUtil.getBundle(this.getClass()).getBundleContext();
-		if (bundleContext != null) {
-			try {
-				ServiceReference<?> reference = null;
-				var serviceReferences = bundleContext.getAllServiceReferences(IFormatRegionsProvider.class.getName(), serverId);
-				if (serviceReferences != null) {
-					reference = serviceReferences[0];
-				} else {
-					//Use LSP4E default implementation:
-					reference = bundleContext.getServiceReference(IFormatRegionsProvider.class.getName());
-				}
-				if (reference != null) {
-					formatRegionsProvider = (IFormatRegionsProvider) bundleContext.getService(reference);
-					if (formatRegionsProvider != null) {
-						return formatRegionsProvider.getFormattingRegions(document);
+		final var bundle = FrameworkUtil.getBundle(this.getClass());
+		if (bundle != null) {
+			var bundleContext = bundle.getBundleContext();
+			if (bundleContext != null) {
+				try {
+					ServiceReference<?> reference = null;
+					var serviceReferences = bundleContext.getAllServiceReferences(IFormatRegionsProvider.class.getName(), serverId);
+					if (serviceReferences != null) {
+						reference = serviceReferences[0];
+					} else {
+						//Use LSP4E default implementation:
+						reference = bundleContext.getServiceReference(IFormatRegionsProvider.class.getName());
 					}
+					if (reference != null) {
+						formatRegionsProvider = (IFormatRegionsProvider) bundleContext.getService(reference);
+						if (formatRegionsProvider != null) {
+							return formatRegionsProvider.getFormattingRegions(document);
+						}
+					}
+				} catch (InvalidSyntaxException e) {
+					LanguageServerPlugin.logError(e);
 				}
-			} catch (InvalidSyntaxException e) {
-				LanguageServerPlugin.logError(e);
 			}
 		}
 		return null;
 	}
 
-	private CompletableFuture<VersionedEdits> requestFormatting(@NonNull IDocument document, @NonNull ITextSelection textSelection) throws BadLocationException {
+	private CompletableFuture<@Nullable VersionedEdits> requestFormatting(IDocument document, ITextSelection textSelection) throws BadLocationException {
 		long modificationStamp = DocumentUtil.getDocumentModificationStamp(document);
 
 		FormattingOptions formatOptions = LSPFormatter.getFormatOptions();
-		TextDocumentIdentifier docId = new TextDocumentIdentifier(fileUri.toString());
+		final var docId = new TextDocumentIdentifier(fileUri.toString());
 
 		final ServerCapabilities capabilities = languageServerWrapper.getServerCapabilities();
-		if (LSPFormatter.isDocumentRangeFormattingSupported(capabilities)
+		if (capabilities != null
+				&& LSPFormatter.isDocumentRangeFormattingSupported(capabilities)
 				&& !(LSPFormatter.isDocumentFormattingSupported(capabilities) && textSelection.getLength() == 0)) {
 			var rangeParams = LSPFormatter.getRangeFormattingParams(document, textSelection, formatOptions, docId);
 			return languageServerWrapper.executeImpl(ls -> ls.getTextDocumentService().rangeFormatting(rangeParams).thenApply(edits -> new VersionedEdits(modificationStamp, edits, document)));

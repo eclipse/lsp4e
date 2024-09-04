@@ -14,7 +14,7 @@ package org.eclipse.lsp4e.operations.codeactions;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServersRegistry;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
@@ -24,15 +24,18 @@ import org.eclipse.lsp4e.operations.diagnostics.LSPDiagnosticsToMarkers;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.ExecuteCommandOptions;
 import org.eclipse.lsp4j.ExecuteCommandParams;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.IMarkerResolution;
 import org.eclipse.ui.views.markers.WorkbenchMarkerResolution;
 
 public class CommandMarkerResolution extends WorkbenchMarkerResolution implements IMarkerResolution {
 
-	private final @NonNull Command command;
+	private static final IMarker[] NO_MARKERS = new IMarker[0];
 
-	public CommandMarkerResolution(@NonNull Command command) {
+	private final Command command;
+
+	public CommandMarkerResolution(Command command) {
 		this.command = command;
 	}
 
@@ -57,14 +60,13 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 		}
 
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(resource.getProject(), definition);
-		if (wrapper != null) {
-			ExecuteCommandOptions provider = wrapper.getServerCapabilities().getExecuteCommandProvider();
-			if (provider != null && provider.getCommands().contains(command.getCommand())) {
-				wrapper.execute(ls -> ls.getWorkspaceService()
-						.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
-			} else {
-				CommandExecutor.executeCommandClientSide(command, resource);
-			}
+		ServerCapabilities cap = wrapper.getServerCapabilities();
+		ExecuteCommandOptions provider = cap == null ? null : cap.getExecuteCommandProvider();
+		if (provider != null && provider.getCommands().contains(command.getCommand())) {
+			wrapper.execute(ls -> ls.getWorkspaceService()
+					.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments())));
+		} else {
+			CommandExecutor.executeCommandClientSide(command, resource);
 		}
 	}
 
@@ -74,13 +76,13 @@ public class CommandMarkerResolution extends WorkbenchMarkerResolution implement
 	}
 
 	@Override
-	public Image getImage() {
+	public @Nullable Image getImage() {
 		return null;
 	}
 
 	@Override
 	public IMarker[] findOtherMarkers(IMarker[] markers) {
-		return new IMarker[0];
+		return NO_MARKERS;
 	}
 
 }

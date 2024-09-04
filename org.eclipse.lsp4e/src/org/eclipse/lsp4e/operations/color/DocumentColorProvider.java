@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
@@ -51,14 +51,14 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 		colorTable = new HashMap<>();
 	}
 
-	private CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(@NonNull IDocument document) {
+	private @Nullable CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(IDocument document) {
 		URI docURI = LSPEclipseUtils.toUri(document);
 
 		if (docURI != null) {
 			final var textDocumentIdentifier = LSPEclipseUtils.toTextDocumentIdentifier(docURI);
 			final var param = new DocumentColorParams(textDocumentIdentifier);
 			return LanguageServers.forDocument(document)
-				.withFilter(DocumentColorProvider::isColorProvider)
+				.withCapability(ServerCapabilities::getColorProvider)
 				.collectAll(
 					// Need to do some of the result processing inside the function we supply to collectAll(...)
 					// as need the LSW to construct the ColorInformationMining
@@ -71,7 +71,7 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 		}
 	}
 
-	private ColorInformationMining toMining(ColorInformation color, @NonNull IDocument document, TextDocumentIdentifier textDocumentIdentifier, LanguageServerWrapper wrapper) {
+	private @Nullable ColorInformationMining toMining(ColorInformation color, IDocument document, TextDocumentIdentifier textDocumentIdentifier, LanguageServerWrapper wrapper) {
 		try {
 			return new ColorInformationMining(color, document,
 					textDocumentIdentifier, wrapper,
@@ -83,7 +83,7 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 	}
 
 	@Override
-	public CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(ITextViewer viewer,
+	public @Nullable CompletableFuture<List<? extends ICodeMining>> provideCodeMinings(ITextViewer viewer,
 			IProgressMonitor monitor) {
 		IDocument document = viewer.getDocument();
 		return document != null ? provideCodeMinings(document) : null;
@@ -101,9 +101,4 @@ public class DocumentColorProvider extends AbstractCodeMiningProvider {
 	public Color getColor(RGBA rgba, Display display) {
 		return colorTable.computeIfAbsent(rgba, key -> new Color(display, rgba));
 	}
-
-	private static boolean isColorProvider(final ServerCapabilities capabilities) {
-		return capabilities != null && LSPEclipseUtils.hasCapability(capabilities.getColorProvider());
-	}
-
 }

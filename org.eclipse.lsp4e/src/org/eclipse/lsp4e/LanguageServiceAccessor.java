@@ -14,7 +14,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import java.io.IOException;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -51,8 +52,8 @@ import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.part.FileEditorInput;
 
 /**
- * The entry-point to retrieve a Language Server Wrapper for a given resource/project.
- * Deals with instantiations and caching of underlying
+ * The entry-point to retrieve a Language Server Wrapper for a given
+ * resource/project. Deals with instantiations and caching of underlying
  * {@link LanguageServerWrapper}.
  *
  */
@@ -62,7 +63,7 @@ public class LanguageServiceAccessor {
 		// this class shouldn't be instantiated
 	}
 
-	private static final Set<@NonNull LanguageServerWrapper> startedServers = new CopyOnWriteArraySet<>();
+	private static final Set<LanguageServerWrapper> startedServers = new CopyOnWriteArraySet<>();
 	private static final Map<StreamConnectionProvider, LanguageServerDefinition> providersToLSDefinitions = new HashMap<>();
 
 	/**
@@ -79,23 +80,23 @@ public class LanguageServiceAccessor {
 
 	/**
 	 * A bean storing association of a Document/File with a language server wrapper.
+	 *
 	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
 	 */
 	@Deprecated(forRemoval = true)
 	public static class LSPDocumentInfo {
 
-		private final @NonNull URI fileUri;
-		private final @NonNull IDocument document;
-		private final @NonNull LanguageServerWrapper wrapper;
+		private final URI fileUri;
+		private final IDocument document;
+		private final LanguageServerWrapper wrapper;
 
-		private LSPDocumentInfo(@NonNull URI fileUri, @NonNull IDocument document,
-				@NonNull LanguageServerWrapper wrapper) {
+		private LSPDocumentInfo(URI fileUri, IDocument document, LanguageServerWrapper wrapper) {
 			this.fileUri = fileUri;
 			this.document = document;
 			this.wrapper = wrapper;
 		}
 
-		public @NonNull IDocument getDocument() {
+		public IDocument getDocument() {
 			return this.document;
 		}
 
@@ -104,7 +105,7 @@ public class LanguageServiceAccessor {
 		 *
 		 * @return the file URI
 		 */
-		public @NonNull URI getFileUri() {
+		public URI getFileUri() {
 			return this.fileUri;
 		}
 
@@ -126,35 +127,28 @@ public class LanguageServiceAccessor {
 	}
 
 	public static void disableLanguageServerContentType(
-			@NonNull ContentTypeToLanguageServerDefinition contentTypeToLSDefinition) {
+			ContentTypeToLanguageServerDefinition contentTypeToLSDefinition) {
 		Optional<LanguageServerWrapper> result = startedServers.stream()
 				.filter(server -> server.serverDefinition.equals(contentTypeToLSDefinition.getValue())).findFirst();
 		if (result.isPresent()) {
 			IContentType contentType = contentTypeToLSDefinition.getKey();
-			if (contentType != null) {
-				result.get().disconnectContentType(contentType);
-			}
+			result.get().disconnectContentType(contentType);
 		}
 	}
 
 	public static void enableLanguageServerContentType(
-			@NonNull final ContentTypeToLanguageServerDefinition contentTypeToLSDefinition,
-			@NonNull final IEditorReference[] editors) {
+			final ContentTypeToLanguageServerDefinition contentTypeToLSDefinition, final IEditorReference[] editors) {
 		final IContentType contentType = contentTypeToLSDefinition.getKey();
-		if(contentType == null)
-			return;
 		final LanguageServerDefinition lsDefinition = contentTypeToLSDefinition.getValue();
-		if(lsDefinition == null)
-			return;
-
 		for (final IEditorReference editor : editors) {
 			try {
 				if (editor.getEditorInput() instanceof FileEditorInput editorInput) {
 					final IFile editorFile = editorInput.getFile();
 					final IContentDescription contentDesc = editorFile.getContentDescription();
-					if(contentDesc == null)
+					if (contentDesc == null)
 						continue;
-					if (contentType.equals(contentDesc.getContentType()) && contentTypeToLSDefinition.isEnabled(editorFile.getLocationURI())) {
+					if (contentType.equals(contentDesc.getContentType())
+							&& contentTypeToLSDefinition.isEnabled(editorFile.getLocationURI())) {
 						getInitializedLanguageServer(editorFile, lsDefinition, capabilities -> true);
 					}
 				}
@@ -164,25 +158,27 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-
 	/**
-	 * Get the requested language server instance for the given file. Starts the language server if not already started.
+	 * Get the requested language server instance for the given file. Starts the
+	 * language server if not already started.
+	 *
 	 * @param resource
 	 * @param lsDefinition
-	 * @param capabilitiesPredicate a predicate to check capabilities
-	 * @return a LanguageServer for the given file, which is defined with provided server ID and conforms to specified request.
-	 *  If {@code capabilitesPredicate} does not test positive for the server's capabilities, {@code null} is returned.
+	 * @param capabilitiesPredicate
+	 *            a predicate to check capabilities
+	 * @return a LanguageServer for the given file, which is defined with provided
+	 *         server ID and conforms to specified request. If
+	 *         {@code capabilitesPredicate} does not test positive for the server's
+	 *         capabilities, {@code null} is returned.
 	 */
-	private static CompletableFuture<LanguageServer> getInitializedLanguageServer(@NonNull IResource resource,
-			@NonNull LanguageServerDefinition lsDefinition, Predicate<ServerCapabilities> capabilitiesPredicate)
-			throws IOException {
+	private static @Nullable CompletableFuture<LanguageServer> getInitializedLanguageServer(IResource resource,
+			LanguageServerDefinition lsDefinition, @Nullable Predicate<ServerCapabilities> capabilitiesPredicate) {
 		LanguageServerWrapper wrapper = getLSWrapper(resource.getProject(), lsDefinition, resource.getFullPath());
 		if (capabilitiesComply(wrapper, capabilitiesPredicate)) {
 			return wrapper.getInitializedServer();
 		}
 		return null;
 	}
-
 
 	/**
 	 * Checks if the given {@code wrapper}'s capabilities comply with the given
@@ -199,11 +195,13 @@ public class LanguageServiceAccessor {
 	 *         {@code wrapper.getServerCapabilities() == null}
 	 */
 	private static boolean capabilitiesComply(LanguageServerWrapper wrapper,
-			Predicate<ServerCapabilities> capabilitiesPredicate) {
+			@Nullable Predicate<ServerCapabilities> capabilitiesPredicate) {
 		return capabilitiesPredicate == null
-				/* next null check is workaround for https://github.com/TypeFox/ls-api/issues/47 */
+				/*
+				 * next null check is workaround for https://github.com/TypeFox/ls-api/issues/47
+				 */
 				|| wrapper.getServerCapabilities() == null
-				|| capabilitiesPredicate.test(wrapper.getServerCapabilities());
+				|| capabilitiesPredicate.test(castNonNull(wrapper.getServerCapabilities()));
 	}
 
 	/**
@@ -212,13 +210,11 @@ public class LanguageServiceAccessor {
 	 * @param file
 	 * @param request
 	 * @return the matching LS wrappers
-	 * @throws IOException
 	 * @noreference This method is currently internal and should only be referenced
 	 *              for testing
 	 */
-	@NonNull
-	public static List<LanguageServerWrapper> getLSWrappers(@NonNull final IFile file,
-			@Nullable final Predicate<ServerCapabilities> request) throws IOException {
+	public static List<LanguageServerWrapper> getLSWrappers(final IFile file,
+			final @Nullable Predicate<ServerCapabilities> request) {
 		final var project = file.getProject();
 		if (project == null) {
 			return Collections.emptyList();
@@ -226,9 +222,13 @@ public class LanguageServiceAccessor {
 
 		final var lsRegistry = LanguageServersRegistry.getInstance();
 		final var fileURI = file.getLocationURI();
+		if (fileURI == null) {
+			return Collections.emptyList();
+		}
 
-		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(file.getProject(), request, true);
-		wrappers.removeIf(wrapper -> !wrapper.isConnectedTo(fileURI) || !lsRegistry.matches(file, wrapper.serverDefinition));
+		List<LanguageServerWrapper> wrappers = getStartedWrappers(file.getProject(), request, true);
+		wrappers.removeIf(
+				wrapper -> !wrapper.isConnectedTo(fileURI) || !lsRegistry.matches(file, wrapper.serverDefinition));
 
 		// look for running language servers via content-type
 		final var directContentTypes = LSPEclipseUtils.getFileContentTypes(file);
@@ -246,10 +246,6 @@ public class LanguageServiceAccessor {
 					continue;
 				}
 				final LanguageServerDefinition serverDefinition = mapping.getValue();
-				if (serverDefinition == null) {
-					continue;
-				}
-
 				final var wrapper = getLSWrapper(project, serverDefinition, file.getFullPath());
 				if (!wrappers.contains(wrapper) && capabilitiesComply(wrapper, request)) {
 					wrappers.add(wrapper);
@@ -264,8 +260,7 @@ public class LanguageServiceAccessor {
 		return wrappers;
 	}
 
-	@NonNull
-	protected static Collection<LanguageServerWrapper> getLSWrappers(@NonNull final IDocument document) {
+	protected static Collection<LanguageServerWrapper> getLSWrappers(final IDocument document) {
 		final URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
 			return Collections.emptyList();
@@ -304,11 +299,8 @@ public class LanguageServiceAccessor {
 					continue;
 				}
 				final LanguageServerDefinition serverDefinition = mapping.getValue();
-				if (serverDefinition == null) {
-					continue;
-				}
-				final Predicate<LanguageServerWrapper> selectServersWithEqualDefinition = wrapper ->
-						wrapper.serverDefinition .equals(serverDefinition);
+				final Predicate<LanguageServerWrapper> selectServersWithEqualDefinition = wrapper -> wrapper.serverDefinition
+						.equals(serverDefinition);
 				if (res.stream().anyMatch(selectServersWithEqualDefinition)) {
 					// we already found a compatible LS with this definition
 					continue;
@@ -346,17 +338,16 @@ public class LanguageServiceAccessor {
 	 *
 	 * @param project
 	 * @param serverDefinition
-	 * @return a new or existing {@link LanguageServerWrapper} for the given definition.
+	 * @return a new or existing {@link LanguageServerWrapper} for the given
+	 *         definition.
 	 */
-	@NonNull
 	public static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
-			@NonNull LanguageServerDefinition serverDefinition) {
+			LanguageServerDefinition serverDefinition) {
 		return getLSWrapper(project, serverDefinition, null);
 	}
 
-	@NonNull
 	private static LanguageServerWrapper getLSWrapper(@Nullable IProject project,
-			@NonNull LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) {
+			LanguageServerDefinition serverDefinition, @Nullable IPath initialPath) {
 
 		final Predicate<LanguageServerWrapper> serverSelector = wrapper -> wrapper.canOperate(project)
 				&& wrapper.serverDefinition.equals(serverDefinition);
@@ -383,13 +374,14 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-	public static @NonNull LanguageServerWrapper startLanguageServer(@NonNull LanguageServerDefinition serverDefinition) {
+	public static LanguageServerWrapper startLanguageServer(LanguageServerDefinition serverDefinition) {
 		synchronized (startedServers) {
-			LanguageServerWrapper wrapper = startedServers.stream().filter(w -> w.serverDefinition == serverDefinition).findFirst().orElseGet(() -> {
-				LanguageServerWrapper w = new LanguageServerWrapper(serverDefinition, null);
-				startedServers.add(w);
-				return w;
-			});
+			LanguageServerWrapper wrapper = startedServers.stream().filter(w -> w.serverDefinition == serverDefinition)
+					.findFirst().orElseGet(() -> {
+						final var w = new LanguageServerWrapper(serverDefinition, null);
+						startedServers.add(w);
+						return w;
+					});
 			if (!wrapper.isActive()) {
 				wrapper.start();
 			}
@@ -397,58 +389,51 @@ public class LanguageServiceAccessor {
 		}
 	}
 
-	/**
-	 * Interface to be used for passing lambdas to
-	 * {@link LanguageServiceAccessor#addStartedServerSynchronized(ServerSupplier)}.
-	 */
-	@FunctionalInterface
-	private static interface ServerSupplier {
-		LanguageServerWrapper get() throws IOException;
-	}
-
-	@NonNull
-	public static List<@NonNull LanguageServerWrapper> getStartedWrappers(Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
+	public static List<LanguageServerWrapper> getStartedWrappers(@Nullable Predicate<ServerCapabilities> request,
+			boolean onlyActiveLS) {
 		return getStartedWrappers(w -> true, request, onlyActiveLS);
 	}
 
-	@NonNull
-	public static List<@NonNull LanguageServerWrapper> getStartedWrappers(@Nullable IProject project, Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
+	public static List<LanguageServerWrapper> getStartedWrappers(@Nullable IProject project,
+			@Nullable Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
 		return getStartedWrappers(w -> w.canOperate(project), request, onlyActiveLS);
 	}
 
-	@NonNull
-	public static List<@NonNull LanguageServerWrapper> getStartedWrappers(@NonNull IDocument document, Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
+	public static List<LanguageServerWrapper> getStartedWrappers(IDocument document,
+			Predicate<ServerCapabilities> request, boolean onlyActiveLS) {
 		return getStartedWrappers(w -> w.canOperate(document), request, onlyActiveLS);
 	}
 
-	@NonNull
-	private static List<@NonNull LanguageServerWrapper> getStartedWrappers(Predicate<LanguageServerWrapper> canOperatePredicate, Predicate<ServerCapabilities> capabilitiesPredicate, boolean onlyActiveLS) {
-		List<@NonNull LanguageServerWrapper> result = new ArrayList<>();
+	private static List<LanguageServerWrapper> getStartedWrappers(Predicate<LanguageServerWrapper> canOperatePredicate,
+			@Nullable Predicate<ServerCapabilities> capabilitiesPredicate, boolean onlyActiveLS) {
+		final var result = new ArrayList<LanguageServerWrapper>();
 		for (LanguageServerWrapper wrapper : startedServers) {
-			if ((!onlyActiveLS || wrapper.isActive()) && canOperatePredicate.test(wrapper) && capabilitiesComply(wrapper, capabilitiesPredicate)) {
-					result.add(wrapper);
+			if ((!onlyActiveLS || wrapper.isActive()) && canOperatePredicate.test(wrapper)
+					&& capabilitiesComply(wrapper, capabilitiesPredicate)) {
+				result.add(wrapper);
 			}
 		}
 		return result;
 	}
 
 	/**
-	 * Returns {@code true} if there are running language servers satisfying a capability predicate.
-	 * This does not start any matching language servers.
+	 * Returns {@code true} if there are running language servers satisfying a
+	 * capability predicate. This does not start any matching language servers.
 	 *
 	 * @param request
-	 * @return {@code true} if there are running language servers satisfying a capability predicate
+	 * @return {@code true} if there are running language servers satisfying a
+	 *         capability predicate
 	 */
-	public static boolean hasActiveLanguageServers(@NonNull Predicate<ServerCapabilities> request) {
+	public static boolean hasActiveLanguageServers(Predicate<ServerCapabilities> request) {
 		return !getLanguageServers(request).isEmpty();
 	}
 
-	public static boolean hasActiveLanguageServers(@Nullable IFile file, @NonNull Predicate<ServerCapabilities> request) {
+	public static boolean hasActiveLanguageServers(@Nullable IFile file, Predicate<ServerCapabilities> request) {
 		final IProject project = file != null ? file.getProject() : null;
 		return !getLanguageServers(project, request).isEmpty();
 	}
 
-	public static boolean hasActiveLanguageServers(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> request) {
+	public static boolean hasActiveLanguageServers(IDocument document, Predicate<ServerCapabilities> request) {
 		return !getLanguageServers(document, request).isEmpty();
 	}
 
@@ -456,14 +441,13 @@ public class LanguageServiceAccessor {
 	 * Gets list of LS initialized for any project
 	 *
 	 * @param onlyActiveLS
-	 *			true if this method should return only the already running
-	 *			language servers, otherwise previously started language servers
-	 *			will be re-activated
+	 *            true if this method should return only the already running
+	 *            language servers, otherwise previously started language servers
+	 *            will be re-activated
 	 * @return list of Language Servers
 	 */
-	@NonNull
-	private static List<@NonNull LanguageServer> getLanguageServers(Predicate<ServerCapabilities> capabilitiesPredicate) {
-		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(capabilitiesPredicate, true);
+	private static List<LanguageServer> getLanguageServers(Predicate<ServerCapabilities> capabilitiesPredicate) {
+		List<LanguageServerWrapper> wrappers = getStartedWrappers(capabilitiesPredicate, true);
 		return getLanguageServersFromWrappers(wrappers);
 	}
 
@@ -471,14 +455,14 @@ public class LanguageServiceAccessor {
 	 * Gets list of LS initialized for given project
 	 *
 	 * @param onlyActiveLS
-	 *			true if this method should return only the already running
-	 *			language servers, otherwise previously started language servers
-	 *			will be re-activated
+	 *            true if this method should return only the already running
+	 *            language servers, otherwise previously started language servers
+	 *            will be re-activated
 	 * @return list of Language Servers
 	 */
-	@NonNull
-	private static List<@NonNull LanguageServer> getLanguageServers(@Nullable IProject project, Predicate<ServerCapabilities> capabilitiesPredicate) {
-		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(project, capabilitiesPredicate, true);
+	private static List<LanguageServer> getLanguageServers(@Nullable IProject project,
+			Predicate<ServerCapabilities> capabilitiesPredicate) {
+		List<LanguageServerWrapper> wrappers = getStartedWrappers(project, capabilitiesPredicate, true);
 		return getLanguageServersFromWrappers(wrappers);
 	}
 
@@ -491,14 +475,14 @@ public class LanguageServiceAccessor {
 	 *            will be re-activated
 	 * @return list of Language Servers
 	 */
-	@NonNull
-	private static List<@NonNull LanguageServer> getLanguageServers(@NonNull IDocument document, Predicate<ServerCapabilities> capabilitiesPredicate) {
-		List<@NonNull LanguageServerWrapper> wrappers = getStartedWrappers(document, capabilitiesPredicate, true);
+	private static List<LanguageServer> getLanguageServers(IDocument document,
+			Predicate<ServerCapabilities> capabilitiesPredicate) {
+		List<LanguageServerWrapper> wrappers = getStartedWrappers(document, capabilitiesPredicate, true);
 		return getLanguageServersFromWrappers(wrappers);
 	}
 
-	private static List<@NonNull LanguageServer> getLanguageServersFromWrappers(List<@NonNull LanguageServerWrapper> wrappers) {
-		final var servers = new ArrayList<@NonNull LanguageServer>(wrappers.size());
+	private static List<LanguageServer> getLanguageServersFromWrappers(List<LanguageServerWrapper> wrappers) {
+		final var servers = new ArrayList<LanguageServer>(wrappers.size());
 		for (LanguageServerWrapper wrapper : wrappers) {
 			@Nullable
 			LanguageServer server = wrapper.getServer();
@@ -509,7 +493,7 @@ public class LanguageServiceAccessor {
 		return servers;
 	}
 
-	protected static LanguageServerDefinition getLSDefinition(@NonNull StreamConnectionProvider provider) {
+	protected static @Nullable LanguageServerDefinition getLSDefinition(StreamConnectionProvider provider) {
 		return providersToLSDefinitions.get(provider);
 	}
 
@@ -517,21 +501,22 @@ public class LanguageServiceAccessor {
 	 * @deprecated use {@link LanguageServers#forDocument(IDocument)} instead.
 	 */
 	@Deprecated(forRemoval = true)
-	@NonNull public static List<@NonNull LSPDocumentInfo> getLSPDocumentInfosFor(@NonNull IDocument document, @NonNull Predicate<ServerCapabilities> capabilityRequest) {
+	public static List<LSPDocumentInfo> getLSPDocumentInfosFor(IDocument document,
+			Predicate<ServerCapabilities> capabilityRequest) {
 		URI fileUri = LSPEclipseUtils.toUri(document);
 		final var res = new ArrayList<LSPDocumentInfo>();
-		try {
-			getLSWrappers(document).stream().filter(wrapper -> wrapper.getServerCapabilities() == null
-					|| capabilityRequest.test(wrapper.getServerCapabilities())).forEach(wrapper -> {
-						try {
+		if (fileUri != null) {
+			try {
+				getLSWrappers(document).stream() //
+						.filter(wrapper -> wrapper.getServerCapabilities() == null
+								|| capabilityRequest.test(castNonNull(wrapper.getServerCapabilities())))
+						.forEach(wrapper -> {
 							wrapper.connectDocument(document);
-						} catch (IOException e) {
-							LanguageServerPlugin.logError(e);
-						}
-						res.add(new LSPDocumentInfo(fileUri, document, wrapper));
-					});
-		} catch (final Exception e) {
-			LanguageServerPlugin.logError(e);
+							res.add(new LSPDocumentInfo(fileUri, document, wrapper));
+						});
+			} catch (final Exception e) {
+				LanguageServerPlugin.logError(e);
+			}
 		}
 		return res;
 	}
@@ -540,4 +525,3 @@ public class LanguageServiceAccessor {
 		startedServers.forEach(LanguageServerWrapper::stopDispatcher);
 	}
 }
-

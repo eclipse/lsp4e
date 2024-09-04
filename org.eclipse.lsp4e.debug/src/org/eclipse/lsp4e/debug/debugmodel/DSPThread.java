@@ -23,7 +23,9 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IStackFrame;
 import org.eclipse.debug.core.model.IThread;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.debug.DSPPlugin;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4j.debug.ContinueArguments;
 import org.eclipse.lsp4j.debug.NextArguments;
 import org.eclipse.lsp4j.debug.PauseArguments;
@@ -34,12 +36,16 @@ import org.eclipse.lsp4j.debug.StepOutArguments;
 import org.eclipse.lsp4j.debug.Thread;
 
 public class DSPThread extends DSPDebugElement implements IThread {
+
+	private static final IStackFrame[] NO_STACK_FRAMES = new IStackFrame[0];
+	private static final IBreakpoint[] NO_BREAKPOINTS = new IBreakpoint[0];
+
 	private final Integer id;
 	/**
 	 * The name may not be known, if it is requested we will ask for it from the
 	 * target.
 	 */
-	private String name;
+	private @Nullable String name;
 	private final List<DSPStackFrame> frames = Collections.synchronizedList(new ArrayList<>());
 	private final AtomicBoolean refreshFrames = new AtomicBoolean(true);
 	private boolean stepping;
@@ -87,7 +93,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 		return getDebugTarget().canTerminate();
 	}
 
-	private <T> T handleExceptionalResume(Throwable t) {
+	private <T> @Nullable T handleExceptionalResume(Throwable t) {
 		DSPPlugin.logError("Failed to resume debug adapter", t);
 		setErrorMessage(t.getMessage());
 		stopped();
@@ -219,19 +225,14 @@ public class DSPThread extends DSPDebugElement implements IThread {
 	}
 
 	@Override
-	public IStackFrame getTopStackFrame() throws DebugException {
-		IStackFrame[] stackFrames = getStackFrames();
-		if (stackFrames.length > 0) {
-			return stackFrames[0];
-		} else {
-			return null;
-		}
+	public @Nullable IStackFrame getTopStackFrame() throws DebugException {
+		return ArrayUtil.findFirst(getStackFrames());
 	}
 
 	@Override
 	public IStackFrame[] getStackFrames() throws DebugException {
 		if (!isSuspended()) {
-			return new IStackFrame[0];
+			return NO_STACK_FRAMES;
 		}
 		if (!refreshFrames.getAndSet(false)) {
 			synchronized (frames) {
@@ -239,7 +240,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 			}
 		}
 		try {
-			StackTraceArguments arguments = new StackTraceArguments();
+			final var arguments = new StackTraceArguments();
 			arguments.setThreadId(id);
 			// TODO implement paging to get rest of frames
 			arguments.setStartFrame(0);
@@ -262,12 +263,12 @@ public class DSPThread extends DSPDebugElement implements IThread {
 			return future.get();
 		} catch (RuntimeException | ExecutionException e) {
 			if (isTerminated()) {
-				return new DSPStackFrame[0];
+				return NO_STACK_FRAMES;
 			}
 			throw newTargetRequestFailedException(e.getMessage(), e);
 		} catch (InterruptedException e) {
 			java.lang.Thread.currentThread().interrupt();
-			return new DSPStackFrame[0];
+			return NO_STACK_FRAMES;
 		}
 	}
 
@@ -278,6 +279,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 
 	@Override
 	public String getName() {
+		final var name = this.name;
 		if (name == null) {
 			// Queue up a refresh of the threads to get our name
 			getDebugTarget().getThreads();
@@ -289,7 +291,7 @@ public class DSPThread extends DSPDebugElement implements IThread {
 	@Override
 	public IBreakpoint[] getBreakpoints() {
 		// TODO update breakpoints from stopped messages from server
-		return new IBreakpoint[0];
+		return NO_BREAKPOINTS;
 	}
 
 	public Integer getId() {

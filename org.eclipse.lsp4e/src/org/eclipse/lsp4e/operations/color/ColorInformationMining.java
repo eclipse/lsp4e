@@ -13,7 +13,6 @@ package org.eclipse.lsp4e.operations.color;
 
 import java.util.function.Consumer;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.Position;
@@ -75,7 +74,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 			Rectangle location = Geometry.toDisplay(styledText, new Rectangle(event.x, event.y, 1, 1));
 			shell.setLocation(location.x, location.y);
 			// Open color dialog
-			ColorDialog dialog = new ColorDialog(shell);
+			final var dialog = new ColorDialog(shell);
 			dialog.setRGB(LSPEclipseUtils.toRGBA(colorInformation.getColor()).rgb);
 			RGB rgb = dialog.open();
 			if (rgb != null) {
@@ -84,7 +83,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 						LSPEclipseUtils.toColor(rgb), colorInformation.getRange());
 				this.languageServerWrapper.execute(ls -> ls.getTextDocumentService().colorPresentation(params))
 					.thenAcceptAsync(presentations -> {
-							if (presentations.isEmpty()) {
+							if (presentations == null || presentations.isEmpty()) {
 								return;
 							}
 							// As ColorDialog cannot be customized (to choose the color presentation (rgb,
@@ -102,7 +101,7 @@ public class ColorInformationMining extends LineContentCodeMining {
 		}
 	}
 
-	public ColorInformationMining(ColorInformation colorInformation, @NonNull IDocument document,
+	public ColorInformationMining(ColorInformation colorInformation, IDocument document,
 			TextDocumentIdentifier textDocumentIdentifier, LanguageServerWrapper languageServerWrapper,
 			DocumentColorProvider colorProvider) throws BadLocationException {
 		super(toPosition(colorInformation.getRange(), document), colorProvider,

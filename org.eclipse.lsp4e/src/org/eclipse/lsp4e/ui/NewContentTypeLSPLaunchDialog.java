@@ -11,7 +11,9 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.ui;
 
-import java.util.ArrayList;
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
@@ -27,12 +29,11 @@ import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.internal.ui.launchConfigurations.LaunchConfigurationTreeContentProvider;
 import org.eclipse.debug.ui.DebugUITools;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.dialogs.Dialog;
 import org.eclipse.jface.viewers.ArrayContentProvider;
 import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.DecoratingLabelProvider;
-import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.LabelProvider;
@@ -41,6 +42,7 @@ import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.jface.viewers.ViewerComparator;
 import org.eclipse.lsp4e.LanguageServerPlugin;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -67,24 +69,19 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 
 	private static final class ContentTypesContentProvider implements ITreeContentProvider {
 
-		private IContentTypeManager manager;
+		private @Nullable IContentTypeManager manager;
 
 		@Override
-		public Object[] getChildren(Object parentElement) {
-			final var elements = new ArrayList<IContentType>();
+		public Object[] getChildren(@Nullable Object parentElement) {
+			final var manager = this.manager;
+			if (manager == null)
+				return NO_OBJECTS;
 			final var baseType = (IContentType) parentElement;
-			IContentType[] contentTypes = manager.getAllContentTypes();
-			for (int i = 0; i < contentTypes.length; i++) {
-				IContentType type = contentTypes[i];
-				if (Objects.equals(type.getBaseType(), baseType)) {
-					elements.add(type);
-				}
-			}
-			return elements.toArray();
+			return ArrayUtil.filter(manager.getAllContentTypes(), type -> Objects.equals(type.getBaseType(), baseType));
 		}
 
 		@Override
-		public Object getParent(Object element) {
+		public @Nullable Object getParent(Object element) {
 			final var contentType = (IContentType) element;
 			return contentType.getBaseType();
 		}
@@ -95,22 +92,19 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		}
 
 		@Override
-		public Object[] getElements(Object inputElement) {
+		public Object[] getElements(@Nullable Object inputElement) {
 			return getChildren(null);
 		}
 
 		@Override
-		public void inputChanged(Viewer viewer, Object oldInput, Object newInput) {
+		public void inputChanged(Viewer viewer, @Nullable Object oldInput, @Nullable Object newInput) {
 			manager = (IContentTypeManager) newInput;
 		}
 	}
 
-	protected IContentType contentType;
-	protected ILaunchConfiguration launchConfig;
-	protected Set<String> launchMode;
-
-	//
-	////
+	protected @Nullable IContentType contentType;
+	protected @Nullable ILaunchConfiguration launchConfig;
+	protected Set<String> launchMode = Collections.emptySet();
 
 	protected NewContentTypeLSPLaunchDialog(Shell parentShell) {
 		super(parentShell);
@@ -131,13 +125,9 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		contentTypesViewer.setComparator(new ViewerComparator());
 		contentTypesViewer.setInput(Platform.getContentTypeManager());
 		contentTypesViewer.addSelectionChangedListener(event -> {
-			IContentType newContentType = null;
-			if (event.getSelection() instanceof IStructuredSelection sel) {
-				if (sel.size() == 1 && sel.getFirstElement() instanceof IContentType contentType) {
-					newContentType = contentType;
-				}
+			if (event.getSelection() instanceof IStructuredSelection sel && sel.getFirstElement() instanceof IContentType newContentType) {
+				contentType = newContentType;
 			}
-			contentType = newContentType;
 			updateButtons();
 		});
 		// copied from LaunchConfigurationDialog : todo use LaunchConfigurationFilteredTree
@@ -147,8 +137,8 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		launchConfigViewer.setLabelProvider(new DecoratingLabelProvider(DebugUITools.newDebugModelPresentation(), PlatformUI.getWorkbench().getDecoratorManager().getLabelDecorator()));
 		launchConfigViewer.setContentProvider(new LaunchConfigurationTreeContentProvider(null, getShell()));
 		launchConfigViewer.setInput(DebugPlugin.getDefault().getLaunchManager());
-		ComboViewer launchModeViewer = new ComboViewer(res);
-		GridData comboGridData = new GridData(SWT.RIGHT, SWT.DEFAULT, true, false, 2, 1);
+		final var launchModeViewer = new ComboViewer(res);
+		final var comboGridData = new GridData(SWT.RIGHT, SWT.DEFAULT, true, false, 2, 1);
 		comboGridData.widthHint = 100;
 		launchModeViewer.getControl().setLayoutData(comboGridData);
 		launchModeViewer.setContentProvider(new ArrayContentProvider());
@@ -178,11 +168,10 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 			updateButtons();
 		});
 		launchModeViewer.addSelectionChangedListener(event -> {
-			ISelection sel = event.getSelection();
-			if (sel.isEmpty()) {
-				launchMode = null;
-			} else if (sel instanceof IStructuredSelection structuredSel) {
-				launchMode = (Set<String>) structuredSel.getFirstElement();
+			if (event.getSelection() instanceof IStructuredSelection sel && sel.getFirstElement() instanceof Set mode) {
+				launchMode = (Set<String>) mode;
+			} else {
+				launchMode = Collections.emptySet();
 			}
 			updateButtons();
 		});
@@ -197,18 +186,19 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 	}
 
 	public IContentType getContentType() {
-		return this.contentType;
+		return castNonNull(this.contentType);
 	}
 
 	public ILaunchConfiguration getLaunchConfiguration() {
-		return this.launchConfig;
+		return castNonNull(this.launchConfig);
 	}
 
 	private void updateButtons() {
-		getButton(OK).setEnabled(contentType != null && launchConfig != null && launchMode != null);
+		getButton(OK).setEnabled(contentType != null && launchConfig != null && !launchMode.isEmpty());
 	}
 
 	private void updateLaunchModes(ComboViewer launchModeViewer) {
+		final var launchConfig = this.launchConfig;
 		if (launchConfig == null) {
 			launchModeViewer.setInput(Collections.emptyList());
 		} else {
@@ -219,7 +209,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 				LanguageServerPlugin.getDefault().getLog().log(new Status(IStatus.ERROR, LanguageServerPlugin.getDefault().getBundle().getSymbolicName(), e.getMessage(), e));
 			}
 			if (modes == null) {
-				modes = Collections.singleton(Collections.singleton(ILaunchManager.RUN_MODE));
+				modes = Set.of(Set.of(ILaunchManager.RUN_MODE));
 			}
 			launchModeViewer.setInput(modes);
 			Object currentMode = null;
@@ -232,7 +222,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 			}
 			if (currentMode == null) {
 				for (Set<String> mode : modes) {
-					if (mode.size() == 1 && mode.iterator().next().equals(ILaunchManager.RUN_MODE)) {
+					if (mode.size() == 1 && ILaunchManager.RUN_MODE.equals(mode.iterator().next())) {
 						currentMode = mode;
 						launchModeViewer.setSelection(new StructuredSelection(currentMode));
 					}
@@ -245,7 +235,7 @@ public class NewContentTypeLSPLaunchDialog extends Dialog {
 		updateButtons();
 	}
 
-	public @NonNull Set<String> getLaunchMode() {
+	public Set<String> getLaunchMode() {
 		return this.launchMode;
 	}
 

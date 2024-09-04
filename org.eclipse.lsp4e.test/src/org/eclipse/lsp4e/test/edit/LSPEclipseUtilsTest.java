@@ -22,20 +22,23 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 import org.eclipse.core.filesystem.EFS;
-import org.eclipse.core.internal.utils.FileUtil;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.text.IDocument;
@@ -61,7 +64,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 import org.junit.Assert;
@@ -76,13 +78,13 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	@Test
 	public void testOpenInEditorExternalFile() throws Exception {
 		File externalFile = TestUtils.createTempFile("externalFile", ".txt");
-		Location location = new Location(LSPEclipseUtils.toUri(externalFile).toString(), new Range(new Position(0, 0), new Position(0, 0)));
+		final var location = new Location(LSPEclipseUtils.toUri(externalFile).toString(), new Range(new Position(0, 0), new Position(0, 0)));
 		LSPEclipseUtils.openInEditor(location, UI.getActivePage());
 	}
 
 	@Test
 	public void testWorkspaceEdit_insertText() throws Exception {
-		TextEdit textEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "insert");
+		final var textEdit = new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "insert");
 		AbstractTextEditor editor = applyWorkspaceTextEdit(textEdit);
 		Assert.assertEquals("insertHere", ((StyledText)editor.getAdapter(Control.class)).getText());
 		Assert.assertEquals("insertHere", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
@@ -90,18 +92,18 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 
 	@Test
 	public void testWorkspaceEdit_WithExaggeratedRange() throws Exception {
-		TextEdit textEdit = new TextEdit(new Range(new Position(0, 0), new Position(Integer.MAX_VALUE, Integer.MAX_VALUE)), "insert");
+		final var textEdit = new TextEdit(new Range(new Position(0, 0), new Position(Integer.MAX_VALUE, Integer.MAX_VALUE)), "insert");
 		AbstractTextEditor editor = applyWorkspaceTextEdit(textEdit);
 		Assert.assertEquals("insert", ((StyledText)editor.getAdapter(Control.class)).getText());
 		Assert.assertEquals("insert", editor.getDocumentProvider().getDocument(editor.getEditorInput()).get());
 	}
 
-	private AbstractTextEditor applyWorkspaceTextEdit(TextEdit textEdit) throws CoreException, PartInitException {
+	private AbstractTextEditor applyWorkspaceTextEdit(TextEdit textEdit) throws CoreException {
 		IFile f = TestUtils.createFile(project, "dummy" + new Random().nextInt(), "Here");
-		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
-		WorkspaceEdit workspaceEdit = new WorkspaceEdit(Collections.singletonMap(
+		final var editor = (AbstractTextEditor)TestUtils.openEditor(f);
+		final var workspaceEdit = new WorkspaceEdit(Collections.singletonMap(
 			LSPEclipseUtils.toUri(f).toString(),
-			Collections.singletonList(textEdit)));
+			List.of(textEdit)));
 		LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
 		return editor;
 	}
@@ -109,12 +111,12 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	@Test
 	public void testWorkspaceEditMultipleChanges() throws Exception {
 		IFile f = TestUtils.createFile(project, "dummy", "Here\nHere2");
-		AbstractTextEditor editor = (AbstractTextEditor)TestUtils.openEditor(f);
+		final var editor = (AbstractTextEditor)TestUtils.openEditor(f);
 		final var edits = new LinkedList<TextEdit>();
 		// order the TextEdits from the top of the document to the bottom
 		edits.add(new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "abc"));
 		edits.add(new TextEdit(new Range(new Position(1, 0), new Position(1, 0)), "abc"));
-		WorkspaceEdit workspaceEdit = new WorkspaceEdit(Collections.singletonMap(
+		final var workspaceEdit = new WorkspaceEdit(Collections.singletonMap(
 			LSPEclipseUtils.toUri(f).toString(), edits));
 		// they should be applied from bottom to top
 		LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
@@ -126,14 +128,14 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	@Test
 	public void testWorkspaceEdit_CreateAndPopulateFile() throws Exception {
 		IFile file = project.getFile("test-file.test");
-		LinkedList<Either<TextDocumentEdit, ResourceOperation>> edits = new LinkedList<>();
+		final var edits = new LinkedList<Either<TextDocumentEdit, ResourceOperation>>();
 		// order the TextEdits from the top of the document to the bottom
 		String uri = file.getLocation().toFile().toURI().toString();
 		edits.add(Either.forRight(new CreateFile(uri)));
 		edits.add(Either.forLeft(
-				new TextDocumentEdit(new VersionedTextDocumentIdentifier(uri, null), Collections.singletonList(
+				new TextDocumentEdit(new VersionedTextDocumentIdentifier(uri, null), List.of(
 						new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "abcHere\nabcHere2")))));
-		WorkspaceEdit workspaceEdit = new WorkspaceEdit(edits);
+		final var workspaceEdit = new WorkspaceEdit(edits);
 		// they should be applied from bottom to top
 		LSPEclipseUtils.applyWorkspaceEdit(workspaceEdit);
 		assertTrue(file.exists());
@@ -245,7 +247,7 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	public void testApplyTextEditLongerThanOrigin() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineInsertHere");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-		TextEdit textEdit = new TextEdit(new Range(new Position(1, 4), new Position(1, 4 + "InsertHere".length())), "Inserted");
+		final var textEdit = new TextEdit(new Range(new Position(1, 4), new Position(1, 4 + "InsertHere".length())), "Inserted");
 		IDocument document = viewer.getDocument();
 		LSPEclipseUtils.applyEdit(textEdit, document);
 		Assert.assertEquals("line1\nlineInserted", document.get());
@@ -255,7 +257,7 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	public void testApplyTextEditShorterThanOrigin() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\nlineHERE");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-		TextEdit textEdit = new TextEdit(new Range(new Position(1, 4), new Position(1, 4 + "HERE".length())), "Inserted");
+		final var textEdit = new TextEdit(new Range(new Position(1, 4), new Position(1, 4 + "HERE".length())), "Inserted");
 		IDocument document = viewer.getDocument();
 		LSPEclipseUtils.applyEdit(textEdit, document);
 		Assert.assertEquals("line1\nlineInserted", document.get());
@@ -265,11 +267,11 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	public void testTextEditInsertSameOffset() throws Exception {
 		IFile file = TestUtils.createUniqueTestFile(project, "");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
-		TextEdit[] edits = new TextEdit[] {
+		final var edits = new TextEdit[] {
 				new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), " throws "),
 				new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "Exception") };
 		IDocument document = viewer.getDocument();
-		LSPEclipseUtils.applyEdits(document, Arrays.asList(edits));
+		LSPEclipseUtils.applyEdits(document, List.of(edits));
 		Assert.assertEquals(" throws Exception", document.get());
 	}
 
@@ -278,11 +280,11 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		IFile file = TestUtils.createUniqueTestFile(project, "line1\r\nline2\r\nline3\r\n");
 		ITextViewer viewer = TestUtils.openTextViewer(file);
 		// GIVEN a TextEdit which splits the '\r\n' line ending in the third line:
-		TextEdit[] edits = new TextEdit[] { new TextEdit(new Range(new Position(0, 0), new Position(2, 6)), "line3\r\nline2\r\nline1\r") };
+		final var edits = new TextEdit[] { new TextEdit(new Range(new Position(0, 0), new Position(2, 6)), "line3\r\nline2\r\nline1\r") };
 		IDocument document = viewer.getDocument();
 		int linesBeforeApplyEdits = document.getNumberOfLines();
 		// WHEN the TextEdit gets applied to the document:
-		LSPEclipseUtils.applyEdits(document, Arrays.asList(edits));
+		LSPEclipseUtils.applyEdits(document, List.of(edits));
 		// THEN line1 has been swapped with line 3:
 		Assert.assertEquals("line3\r\nline2\r\nline1\r\n", document.get());
 		// AND the number of lines is still the same, because we have not appended a line:
@@ -307,7 +309,7 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	}
 
 	@Test
-	public void testToWorkspaceFolder() throws Exception {
+	public void testToWorkspaceFolder() {
 		WorkspaceFolder folder = LSPEclipseUtils.toWorkspaceFolder(project);
 		Assert.assertEquals(project.getName(), folder.getName());
 		Assert.assertEquals("file://", folder.getUri().substring(0, "file://".length()));
@@ -317,15 +319,15 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	public void testResourceOperations() throws Exception {
 		IFile targetFile = project.getFile("some/folder/file.txt");
 		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(
-				Collections.singletonList(Either.forRight(new CreateFile(targetFile.getLocationURI().toString())))));
+				List.of(Either.forRight(new CreateFile(targetFile.getLocationURI().toString())))));
 		assertTrue(targetFile.exists());
-		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(Collections.singletonList(Either.forLeft(
+		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(List.of(Either.forLeft(
 				new TextDocumentEdit(new VersionedTextDocumentIdentifier(targetFile.getLocationURI().toString(), 1),
-						Collections.singletonList(
+						List.of(
 								new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), "hello")))))));
 		assertEquals("hello", readContent(targetFile));
 		IFile otherFile = project.getFile("another/folder/file.lol");
-		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(Collections.singletonList(Either.forRight(
+		LSPEclipseUtils.applyWorkspaceEdit(new WorkspaceEdit(List.of(Either.forRight(
 				new RenameFile(targetFile.getLocationURI().toString(), otherFile.getLocationURI().toString())))));
 		assertFalse(targetFile.exists());
 		assertTrue(otherFile.exists());
@@ -337,8 +339,8 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		File file = TestUtils.createTempFile(getClass() + "editExternalFile", ".whatever");
 		file.delete();
 		assertFalse(file.exists());
-		WorkspaceEdit we = new WorkspaceEdit(
-				Collections.singletonList(Either.forRight(new CreateFile(file.toURI().toString()))));
+		final var we = new WorkspaceEdit(
+				List.of(Either.forRight(new CreateFile(file.toURI().toString()))));
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertTrue(file.isFile());
 	}
@@ -346,13 +348,13 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	@Test
 	public void editExternalFile() throws Exception {
 		File file = TestUtils.createTempFile(getClass() + "editExternalFile", ".whatever");
-		TextEdit te = new TextEdit();
+		final var te = new TextEdit();
 		te.setRange(new Range(new Position(0, 0), new Position(0, 0)));
 		te.setNewText("abc\ndef");
-		TextDocumentEdit docEdit = new TextDocumentEdit(
+		final var docEdit = new TextDocumentEdit(
 				new VersionedTextDocumentIdentifier(file.toURI().toString(), null),
-				Collections.singletonList(te));
-		WorkspaceEdit we = new WorkspaceEdit(Collections.singletonList(Either.forLeft(docEdit)));
+				List.of(te));
+		final var we = new WorkspaceEdit(List.of(Either.forLeft(docEdit)));
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertTrue(file.isFile());
 		assertEquals("abc\ndef", new String(Files.readAllBytes(file.toPath())));
@@ -363,7 +365,7 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		File oldFile = TestUtils.createTempFile(getClass() + "editExternalFile", ".whatever");
 		File newFile = new File(oldFile.getAbsolutePath() + "_renamed");
 		TestUtils.addManagedTempFile(newFile);
-		WorkspaceEdit we = new WorkspaceEdit(Collections.singletonList(
+		final var we = new WorkspaceEdit(List.of(
 				Either.forRight(new RenameFile(oldFile.toURI().toString(), newFile.toURI().toString()))));
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertFalse(oldFile.isFile());
@@ -371,12 +373,10 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	}
 
 	private String readContent(IFile targetFile) throws IOException, CoreException {
-		try (ByteArrayOutputStream stream = new ByteArrayOutputStream(
+		try (var stream = new ByteArrayOutputStream(
 				(int) targetFile.getLocation().toFile().length());
 				InputStream contentStream = targetFile.getContents();) {
-			FileUtil.transferStreams(contentStream, stream, targetFile.getFullPath().toString(),
-					new NullProgressMonitor());
-			// targetFile.getContents().transferTo(stream);
+			contentStream.transferTo(stream);
 			return new String(stream.toByteArray());
 		}
 	}
@@ -388,13 +388,13 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 		IEditorPart editor = IDE.openEditor(UI.getActivePage(),
 				targetFile,
 				"org.eclipse.ui.genericeditor.GenericEditor");
-		TextEdit te = new TextEdit();
+		final var te = new TextEdit();
 		te.setRange(new Range(new Position(0, 0), new Position(0, 0)));
 		te.setNewText("abc\ndef");
-		TextDocumentEdit docEdit = new TextDocumentEdit(
+		final var docEdit = new TextDocumentEdit(
 				new VersionedTextDocumentIdentifier(LSPEclipseUtils.toUri(targetFile).toString(), null),
-				Collections.singletonList(te));
-		WorkspaceEdit we = new WorkspaceEdit(Collections.singletonList(Either.forLeft(docEdit)));
+				List.of(te));
+		final var we = new WorkspaceEdit(List.of(Either.forLeft(docEdit)));
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertEquals("abc\ndef", ((StyledText) ((AbstractTextEditor) editor).getAdapter(Control.class)).getText());
 		assertTrue(editor.isDirty());
@@ -404,22 +404,70 @@ public class LSPEclipseUtilsTest extends AbstractTestWithProject {
 	public void testTextEditDoesntAutomaticallySaveOpenExternalFiles() throws Exception {
 		File file = TestUtils.createTempFile("testTextEditDoesntAutomaticallySaveOpenExternalFiles", ".whatever");
 		IEditorPart editor = IDE.openInternalEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));
-		TextEdit te = new TextEdit();
+		final var te = new TextEdit();
 		te.setRange(new Range(new Position(0, 0), new Position(0, 0)));
 		te.setNewText("abc\ndef");
-		TextDocumentEdit docEdit = new TextDocumentEdit(
+		final var docEdit = new TextDocumentEdit(
 				new VersionedTextDocumentIdentifier(file.toURI().toString(), null),
-				Collections.singletonList(te));
-		WorkspaceEdit we = new WorkspaceEdit(Collections.singletonList(Either.forLeft(docEdit)));
+				List.of(te));
+		final var we = new WorkspaceEdit(List.of(Either.forLeft(docEdit)));
 		LSPEclipseUtils.applyWorkspaceEdit(we);
 		assertEquals("abc\ndef", ((StyledText) ((AbstractTextEditor) editor).getAdapter(Control.class)).getText());
 		assertTrue(editor.isDirty());
 	}
 
+	private IPath generateNonExistingIPath(String directory, final String fileExtension) {
+		if (directory.startsWith("/")) {
+			@SuppressWarnings("resource") //
+			final var rootDir = FileSystems.getDefault().getRootDirectories().iterator().next();
+			directory = rootDir + directory.substring(1);
+		}
+		while (true) {
+			final var path = Paths.get(directory, UUID.randomUUID() + "." + fileExtension);
+			if (!path.toFile().exists())
+				return org.eclipse.core.runtime.Path.fromOSString(path.toString());
+		}
+	}
+
+	@Test
+	public void testGetFile() throws Exception {
+		IPath path;
+
+		/*
+		 * test relative path to non-existing file in workspace
+		 */
+		path = org.eclipse.core.runtime.Path.fromPortableString("non-existing-file.txt");
+		assertNull(LSPEclipseUtils.getFile(path));
+
+		path = org.eclipse.core.runtime.Path.fromPortableString("non-existing-folder/non-existing-file.txt");
+		assertNull(LSPEclipseUtils.getFile(path));
+
+		/*
+		 * test relative path to existing file in workspace
+		 */
+		path = TestUtils.createFile(project, "testGetFile", "txt").getFullPath();
+		assertNotNull(LSPEclipseUtils.getFile(path));
+
+		/*
+		 * test absolute path to non-existing files outside of current workspace
+		 */
+		path = generateNonExistingIPath("/", "txt"); // tests with path pointing to file at the FS root, e.g. C:\\test.txt or /text.txt
+		assertNull(LSPEclipseUtils.getFile(path));
+
+		path = generateNonExistingIPath("/folder", "txt"); // tests with path pointing to file in a folder below FS root
+		assertNull(LSPEclipseUtils.getFile(path));
+
+		/*
+		 * test absolute path to existing files outside of current workspace
+		 */
+		path = org.eclipse.core.runtime.Path.fromOSString(TestUtils.createTempFile("testGetFile", ".txt").getAbsolutePath());
+		assertNull(LSPEclipseUtils.getFile(path));
+	}
+
 	@Test
 	public void testGetOpenEditorExternalFile() throws Exception {
 		File file = TestUtils.createTempFile("testDiagnosticsOnExternalFile", ".lspt");
-		try (FileOutputStream out = new FileOutputStream(file)) {
+		try (var out = new FileOutputStream(file)) {
 			out.write('a');
 		}
 		IDE.openEditorOnFileStore(UI.getActivePage(), EFS.getStore(file.toURI()));

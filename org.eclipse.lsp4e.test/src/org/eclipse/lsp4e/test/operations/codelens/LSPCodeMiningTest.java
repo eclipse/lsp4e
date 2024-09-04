@@ -13,13 +13,12 @@ package org.eclipse.lsp4e.test.operations.codelens;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.commands.IHandler;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.jface.text.IDocument;
@@ -58,14 +57,14 @@ public class LSPCodeMiningTest extends AbstractTestWithProject {
 
 	@Test
 	public void testLSPCodeMiningActionClientSideHandling() throws Exception {
-		String commandID = "test.command";
+		final var commandID = "test.command";
 		final CodeLens lens = createCodeLens(commandID);
 
-		final AtomicReference<Command> actualCommand = new AtomicReference<>(null);
-		final AtomicReference<IPath> actualPath = new AtomicReference<>(null);
+		final var actualCommand = new AtomicReference<Command>(null);
+		final var actualPath = new AtomicReference<IPath>(null);
 
 		// Create and register handler
-		IHandler handler = new LSPCommandHandler() {
+		final var handler = new LSPCommandHandler() {
 			@Override
 			public Object execute(ExecutionEvent event, Command command, IPath context) throws ExecutionException {
 				actualCommand.set(command);
@@ -80,10 +79,10 @@ public class LSPCodeMiningTest extends AbstractTestWithProject {
 		IFile file = TestUtils.createUniqueTestFile(project, "lspt", "test content");
 		IDocument document = TestUtils.openTextViewer(file).getDocument();
 
-		CodeLensProvider provider = new CodeLensProvider();
+		final var provider = new CodeLensProvider();
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(project, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID));
 
-		LSPCodeMining sut = new LSPCodeMining(lens, document, wrapper, provider);
+		final var sut = new LSPCodeMining(lens, document, wrapper, provider);
 		MouseEvent mouseEvent = createMouseEvent();
 		sut.getAction().accept(mouseEvent);
 
@@ -96,20 +95,20 @@ public class LSPCodeMiningTest extends AbstractTestWithProject {
 			throws Exception {
 		final CodeLens lens = createCodeLens(MockLanguageServer.SUPPORTED_COMMAND_ID);
 		Command command = lens.getCommand();
-		JsonObject jsonObject = new JsonObject();
+		final var jsonObject = new JsonObject();
 		jsonObject.addProperty("bar", 42);
-		command.setArguments(Arrays.asList(new JsonPrimitive("Foo"), jsonObject));
+		command.setArguments(List.of(new JsonPrimitive("Foo"), jsonObject));
 
 		// Setup test data
 		IFile file = TestUtils.createUniqueTestFile(project, "lspt", "test content");
 		IDocument document = TestUtils.openTextViewer(file).getDocument();
 
 		MockLanguageServer languageServer = MockLanguageServer.INSTANCE;
-		CodeLensProvider provider = new CodeLensProvider();
+		final var provider = new CodeLensProvider();
 
 		LanguageServerWrapper wrapper = LanguageServiceAccessor.getLSWrapper(project, LanguageServersRegistry.getInstance().getDefinition(MOCK_SERVER_ID));
 
-		LSPCodeMining sut = new LSPCodeMining(lens, document, wrapper, provider);		MouseEvent mouseEvent = createMouseEvent();
+		final var sut = new LSPCodeMining(lens, document, wrapper, provider);		MouseEvent mouseEvent = createMouseEvent();
 		sut.getAction().accept(mouseEvent);
 
 		// We expect that the language server will be called to execute the command
@@ -121,7 +120,7 @@ public class LSPCodeMiningTest extends AbstractTestWithProject {
 	}
 
 	private static MouseEvent createMouseEvent() {
-		Event event = new Event();
+		final var event = new Event();
 		event.button = SWT.BUTTON1;
 		Display display = Display.getCurrent();
 		event.widget = display.getSystemTray();
@@ -129,10 +128,10 @@ public class LSPCodeMiningTest extends AbstractTestWithProject {
 	}
 
 	private static CodeLens createCodeLens(String commandID) {
-		CodeLens lens = new CodeLens();
-		Position zero = new Position(0, 0);
+		final var lens = new CodeLens();
+		final var zero = new Position(0, 0);
 		lens.setRange(new Range(zero, zero));
-		Command command = new Command("TestCommand", commandID);
+		final var command = new Command("TestCommand", commandID);
 		lens.setCommand(command);
 		return lens;
 	}

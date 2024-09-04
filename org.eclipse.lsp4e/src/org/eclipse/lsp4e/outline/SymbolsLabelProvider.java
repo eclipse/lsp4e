@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNullable;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -28,7 +30,7 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -116,7 +118,7 @@ public class SymbolsLabelProvider extends LabelProvider
 	}
 
 	@Override
-	public Image getImage(Object element) {
+	public @Nullable Image getImage(@Nullable Object element) {
 		if (element == null){
 			return null;
 		}
@@ -150,7 +152,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		/*
 		 * Implementation node: for problem decoration,m aybe consider using a ILabelDecorator/IDelayedLabelDecorator?
 		 */
-		if (file != null) {
+		if (file != null && res != null) {
 			Range range = null;
 			if (element instanceof SymbolInformation symbol) {
 				range = symbol.getLocation().getRange();
@@ -182,7 +184,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		return res;
 	}
 
-	protected int getMaxSeverity(@NonNull IResource resource, @NonNull IDocument doc, @NonNull Range range)
+	protected int getMaxSeverity(IResource resource, IDocument doc, Range range)
 			throws CoreException, BadLocationException {
 		if (!severities.containsKey(resource)) {
 			refreshMarkersByLine(resource);
@@ -230,8 +232,8 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (maxSeverity != 1 && maxSeverity != 2) {
 			throw new IllegalArgumentException("Severity " + maxSeverity + " not supported."); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		Image[] currentOverlays = this.overlays.computeIfAbsent(res, key -> new Image[2]);
-		if (currentOverlays[maxSeverity - 1] == null) {
+		Image[] currentOverlays = this.overlays.computeIfAbsent(res, key -> new Image [2]);
+		if (castNullable(currentOverlays[maxSeverity - 1]) == null) {
 			String overlayId = null;
 			if (maxSeverity == IMarker.SEVERITY_ERROR) {
 				overlayId = ISharedImages.IMG_DEC_FIELD_ERROR;
@@ -250,7 +252,7 @@ public class SymbolsLabelProvider extends LabelProvider
 	}
 
 	@Override
-	public StyledString getStyledText(Object element) {
+	public StyledString getStyledText(@Nullable Object element) {
 
 		if (element instanceof PendingUpdateAdapter) {
 			return new StyledString(Messages.outline_computingSymbols);
@@ -330,7 +332,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		return res;
 	}
 
-	private boolean isDeprecated(List<SymbolTag> tags) {
+	private boolean isDeprecated(@Nullable List<SymbolTag> tags) {
 		if(tags != null){
 			return tags.contains(SymbolTag.Deprecated);
 		}
@@ -338,20 +340,20 @@ public class SymbolsLabelProvider extends LabelProvider
 	}
 
 	@Override
-	public void restoreState(IMemento aMemento) {
+	public void restoreState(final IMemento aMemento) {
 	}
 
 	@Override
-	public void saveState(IMemento aMemento) {
+	public void saveState(final IMemento aMemento) {
 	}
 
 	@Override
-	public String getDescription(Object anElement) {
+	public @Nullable String getDescription(final Object anElement) {
 		return null;
 	}
 
 	@Override
-	public void init(ICommonContentExtensionSite aConfig) {
+	public void init(final ICommonContentExtensionSite aConfig) {
 	}
 
 	@Override

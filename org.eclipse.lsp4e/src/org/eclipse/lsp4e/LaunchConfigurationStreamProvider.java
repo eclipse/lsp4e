@@ -8,17 +8,18 @@
  *
  * Contributors:
  *   Mickael Istria (Red Hat Inc.) - initial implementation
+ *   Sebastian Thomschke - re-implement StreamProxyInputStream for better performance
  *******************************************************************************/
 package org.eclipse.lsp4e;
+
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_BYTES;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -39,82 +40,115 @@ import org.eclipse.debug.core.model.IStreamMonitor;
 import org.eclipse.debug.core.model.RuntimeProcess;
 import org.eclipse.debug.internal.core.IInternalDebugCoreConstants;
 import org.eclipse.debug.internal.core.Preferences;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 
 /**
- * Access and control IO streams from a Launch Configuration to connect
- * them to language server protocol client.
+ * Access and control IO streams from a Launch Configuration to connect them to
+ * language server protocol client.
  */
 public class LaunchConfigurationStreamProvider implements StreamConnectionProvider, IAdaptable {
 
-	private StreamProxyInputStream inputStream;
-	private StreamProxyInputStream errorStream;
-	private OutputStream outputStream;
-	private ILaunch launch;
-	private IProcess process;
+	private @Nullable StreamProxyInputStream inputStream;
+	private @Nullable StreamProxyInputStream errorStream;
+	private @Nullable OutputStream outputStream;
+	private @Nullable ILaunch launch;
+	private @Nullable IProcess process;
 	private final ILaunchConfiguration launchConfiguration;
 	private Set<String> launchModes;
 
 	protected static class StreamProxyInputStream extends InputStream implements IStreamListener {
 
-		private final ConcurrentLinkedQueue<Byte> queue = new ConcurrentLinkedQueue<>();
+		private static final int EOF = -1;
+
+		private final ConcurrentLinkedQueue<byte[]> queue = new ConcurrentLinkedQueue<>();
 		private final IProcess process;
+		private byte[] currentBuffer = NO_BYTES;
+		private int currentBufferPos = 0;
 
 		public StreamProxyInputStream(IProcess process) {
 			this.process = process;
 		}
 
 		@Override
-		public void streamAppended(String text, IStreamMonitor monitor) {
-			byte[] bytes = text.getBytes(Charset.defaultCharset());
-			List<Byte> bytesAsList = new ArrayList<>(bytes.length);
-			for (byte b : bytes) {
-				bytesAsList.add(b);
+		public void streamAppended(final String text, final IStreamMonitor monitor) {
+			final byte[] bytes = text.getBytes();
+			if (bytes.length > 0) {
+				queue.offer(bytes);
 			}
-			queue.addAll(bytesAsList);
 		}
 
 		@Override
 		public int read() throws IOException {
-			while (queue.isEmpty()) {
-				if (this.process.isTerminated()) {
-					return -1;
-				}
-				try {
-					Thread.sleep(5, 0);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
+			if (currentBufferPos >= currentBuffer.length && !fillCurrentBuffer()) {
+				return EOF;
 			}
-			return queue.poll();
+			return currentBuffer[currentBufferPos++] & 0xFF;
+		}
+
+		@Override
+		public int read(final byte[] buf, final int off, final int len) throws IOException {
+			Objects.checkFromIndexSize(off, len, buf.length);
+			if (len == 0) {
+				return 0;
+			}
+
+			int totalBytesRead = 0;
+			while (totalBytesRead < len) {
+				if (currentBufferPos >= currentBuffer.length && !fillCurrentBuffer()) {
+					return totalBytesRead == 0 ? EOF : totalBytesRead;
+				}
+
+				final int bytesToRead = Math.min(len - totalBytesRead, currentBuffer.length - currentBufferPos);
+				System.arraycopy(currentBuffer, currentBufferPos, buf, off + totalBytesRead, bytesToRead);
+				currentBufferPos += bytesToRead;
+				totalBytesRead += bytesToRead;
+			}
+			return totalBytesRead;
 		}
 
 		@Override
 		public int available() throws IOException {
-			return queue.size();
+			return (currentBuffer.length - currentBufferPos) + queue.stream().mapToInt(arr -> arr.length).sum();
 		}
 
+		private boolean fillCurrentBuffer() throws IOException {
+			try {
+				while (queue.isEmpty()) {
+					if (process.isTerminated()) {
+						return false;
+					}
+					Thread.sleep(5);
+				}
+				currentBuffer = queue.remove();
+				currentBufferPos = 0;
+				return currentBuffer.length > 0;
+			} catch (final InterruptedException ex) {
+				Thread.currentThread().interrupt();
+				throw new IOException("Thread interrupted while reading.", ex); //$NON-NLS-1$
+			}
+		}
 	}
 
-	public LaunchConfigurationStreamProvider(ILaunchConfiguration launchConfig, Set<String> launchModes) {
+	public LaunchConfigurationStreamProvider(ILaunchConfiguration launchConfig, @Nullable Set<String> launchModes) {
 		super();
 		Assert.isNotNull(launchConfig);
 		this.launchConfiguration = launchConfig;
 		if (launchModes != null) {
 			this.launchModes = launchModes;
 		} else {
-			this.launchModes = Collections.singleton(ILaunchManager.RUN_MODE);
+			this.launchModes = Set.of(ILaunchManager.RUN_MODE);
 		}
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (obj == this) {
 			return true;
 		}
 		return obj instanceof LaunchConfigurationStreamProvider other && //
-			this.launchConfiguration.equals(other.launchConfiguration) && //
-			this.launchModes.equals(other.launchModes);
+				this.launchConfiguration.equals(other.launchConfiguration) && //
+				this.launchModes.equals(other.launchModes);
 	}
 
 	@Override
@@ -122,7 +156,7 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		return this.launchConfiguration.hashCode() ^ this.launchModes.hashCode();
 	}
 
-	public static ILaunchConfiguration findLaunchConfiguration(String typeId, String name) {
+	public static @Nullable ILaunchConfiguration findLaunchConfiguration(String typeId, String name) {
 		ILaunchManager manager = DebugPlugin.getDefault().getLaunchManager();
 		ILaunchConfigurationType type = manager.getLaunchConfigurationType(typeId);
 		ILaunchConfiguration res = null;
@@ -144,10 +178,10 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 		// the IDE when Outline is displayed.
 		boolean statusHandlerToUpdate = disableStatusHandler();
 		try {
-			this.launch = this.launchConfiguration.launch(this.launchModes.iterator().next(), new NullProgressMonitor(),
-					false);
+			final var launch = this.launch = this.launchConfiguration.launch(this.launchModes.iterator().next(),
+					new NullProgressMonitor(), false);
 			long initialTimestamp = System.currentTimeMillis();
-			while (this.launch.getProcesses().length == 0 && System.currentTimeMillis() - initialTimestamp < 5000) {
+			while (launch.getProcesses().length == 0 && System.currentTimeMillis() - initialTimestamp < 5000) {
 				try {
 					Thread.sleep(50);
 				} catch (InterruptedException e) {
@@ -155,26 +189,36 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 					Thread.currentThread().interrupt();
 				}
 			}
-			if (this.launch.getProcesses().length > 0) {
-				this.process = this.launch.getProcesses()[0];
-				this.inputStream = new StreamProxyInputStream(process);
-				process.getStreamsProxy().getOutputStreamMonitor().addListener(this.inputStream);
+			if (launch.getProcesses().length > 0) {
+				final var process = this.process = launch.getProcesses()[0];
+				final var inputStream = this.inputStream = new StreamProxyInputStream(process);
+				final var proxy = process.getStreamsProxy();
+				if (proxy != null) {
+					final var mon = proxy.getOutputStreamMonitor();
+					if (mon != null) {
+						mon.addListener(inputStream);
+					}
+				}
 				// TODO: Ugly hack, find something better to retrieve stream!
 				try {
 					Method systemProcessGetter = RuntimeProcess.class.getDeclaredMethod("getSystemProcess"); //$NON-NLS-1$
 					systemProcessGetter.setAccessible(true);
 					final var systemProcess = (Process) systemProcessGetter.invoke(process);
-					this.outputStream = systemProcess.getOutputStream();
+					this.outputStream = castNonNull(systemProcess).getOutputStream();
 				} catch (ReflectiveOperationException ex) {
 					LanguageServerPlugin.logError(ex);
 				}
-				this.errorStream = new StreamProxyInputStream(process);
-				process.getStreamsProxy().getErrorStreamMonitor().addListener(this.errorStream);
+				final var errorStream = this.errorStream = new StreamProxyInputStream(process);
+				if (proxy != null) {
+					final var mon = proxy.getErrorStreamMonitor();
+					if (mon != null) {
+						mon.addListener(errorStream);
+					}
+				}
 			}
 		} catch (Exception e) {
 			LanguageServerPlugin.logError(e);
-		}
-		finally {
+		} finally {
 			if (statusHandlerToUpdate) {
 				setStatusHandler(true);
 			}
@@ -208,36 +252,37 @@ public class LaunchConfigurationStreamProvider implements StreamConnectionProvid
 	}
 
 	@Override
-	public <T> T getAdapter(Class<T> adapter) {
-		if(adapter == ProcessHandle.class) {
+	public <T> @Nullable T getAdapter(@Nullable Class<T> adapter) {
+		if (adapter == ProcessHandle.class && process != null) {
 			return process.getAdapter(adapter);
 		}
 		return null;
 	}
 
 	@Override
-	public InputStream getInputStream() {
+	public @Nullable InputStream getInputStream() {
 		return this.inputStream;
 	}
 
 	@Override
-	public OutputStream getOutputStream() {
+	public @Nullable OutputStream getOutputStream() {
 		return this.outputStream;
 	}
 
 	@Override
-	public InputStream getErrorStream() {
+	public @Nullable InputStream getErrorStream() {
 		return this.errorStream;
 	}
 
 	@Override
 	public void stop() {
-		if (this.launch == null) {
+		final var launch = this.launch;
+		if (launch == null) {
 			return;
 		}
 		try {
-			this.launch.terminate();
-			for (IProcess p : this.launch.getProcesses()) {
+			launch.terminate();
+			for (IProcess p : launch.getProcesses()) {
 				p.terminate();
 			}
 		} catch (DebugException e1) {

@@ -8,10 +8,14 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.typeHierarchy;
 
+import static org.eclipse.lsp4e.internal.ArrayUtil.NO_OBJECTS;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
+
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
@@ -32,7 +36,7 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 	private final LanguageServerDefinition lsDefinition;
 	private final IDocument document;
 	private boolean showSuperTypes;
-	private LanguageServerWrapper wrapper;
+	private LanguageServerWrapper wrapper = lateNonNull();
 
 	public TypeHierarchyContentProvider(LanguageServerDefinition lsDefinition, IDocument document, boolean showSuperTypes) {
 		this.lsDefinition = lsDefinition;
@@ -41,22 +45,26 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 	}
 
 	@Override
-	public Object[] getElements(Object inputElement) {
+	public Object[] getElements(@Nullable Object inputElement) {
 		if (inputElement instanceof ITextSelection textSelection) {
 			try {
+				final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(document);
+				if (identifier == null) {
+					return NO_OBJECTS;
+				}
 				Position position = LSPEclipseUtils.toPosition(textSelection.getOffset(), document);
-				TypeHierarchyPrepareParams prepare = new TypeHierarchyPrepareParams(LSPEclipseUtils.toTextDocumentIdentifier(document), position);
+				final var prepare = new TypeHierarchyPrepareParams(identifier, position);
 				return LanguageServers.forDocument(document).withPreferredServer(lsDefinition)
 					.computeFirst((wrapper, ls) -> ls.getTextDocumentService().prepareTypeHierarchy(prepare).thenApply(items -> new SimpleEntry<>(wrapper, items)))
 					.thenApply(entry -> {
 						wrapper = entry.map(Entry::getKey).orElse(null);
-						return entry.map(Entry::getValue).map(list -> list.toArray()).orElse(new Object[0]);
+						return entry.map(Entry::getValue).map(list -> list.toArray()).orElse(NO_OBJECTS);
 					}).get(500, TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
-		return new Object[0];
+		return NO_OBJECTS;
 	}
 
 	@Override
@@ -70,17 +78,17 @@ public class TypeHierarchyContentProvider implements ITreeContentProvider {
 							? textDocumentService.typeHierarchySupertypes(new TypeHierarchySupertypesParams(parentItem))
 							: textDocumentService.typeHierarchySubtypes(new TypeHierarchySubtypesParams(parentItem));
 				})
-					.thenApply(list -> list == null ? new Object[0] : list.toArray())
+					.thenApply(list -> list == null ? NO_OBJECTS : list.toArray())
 					.get(500, TimeUnit.MILLISECONDS);
 			} catch (Exception e) {
 				LanguageServerPlugin.logError(e);
 			}
 		}
-		return new Object[0];
+		return NO_OBJECTS;
 	}
 
 	@Override
-	public Object getParent(Object element) {
+	public @Nullable Object getParent(Object element) {
 		return null;
 	}
 

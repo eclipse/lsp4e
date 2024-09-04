@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.TextAttribute;
 import org.eclipse.jface.text.rules.IToken;
@@ -33,7 +32,7 @@ import org.eclipse.swt.custom.StyleRange;
 public class SemanticTokensDataStreamProcessor {
 
 	private final Function<Position, Integer> offsetMapper;
-	private final Function<String, IToken> tokenTypeMapper;
+	private final Function<String, @Nullable IToken> tokenTypeMapper;
 
 	/**
 	 * Creates a new instance of {@link SemanticTokensDataStreamProcessor}.
@@ -41,8 +40,8 @@ public class SemanticTokensDataStreamProcessor {
 	 * @param tokenTypeMapper
 	 * @param offsetMapper
 	 */
-	public SemanticTokensDataStreamProcessor(@NonNull final Function<String, IToken> tokenTypeMapper,
-			@NonNull final Function<Position, Integer> offsetMapper) {
+	public SemanticTokensDataStreamProcessor(final Function<String, @Nullable IToken> tokenTypeMapper,
+			final Function<Position, Integer> offsetMapper) {
 		this.tokenTypeMapper = tokenTypeMapper;
 		this.offsetMapper = offsetMapper;
 	}
@@ -52,10 +51,9 @@ public class SemanticTokensDataStreamProcessor {
 	 *
 	 * @param dataStream
 	 * @param semanticTokensLegend
-	 * @return
 	 */
-	public @NonNull List<StyleRange> getStyleRanges(@NonNull final List<Integer> dataStream,
-			@NonNull final SemanticTokensLegend semanticTokensLegend) {
+	public List<StyleRange> getStyleRanges(final List<Integer> dataStream,
+			final SemanticTokensLegend semanticTokensLegend) {
 		final var styleRanges = new ArrayList<StyleRange>(dataStream.size() / 5);
 
 		int idx = 0;
@@ -104,7 +102,7 @@ public class SemanticTokensDataStreamProcessor {
 		return styleRanges;
 	}
 
-	private String tokenType(final Integer data, final List<String> legend) {
+	private @Nullable String tokenType(final Integer data, final List<String> legend) {
 		try {
 			return legend.get(data);
 		} catch (IndexOutOfBoundsException e) {
@@ -129,7 +127,7 @@ public class SemanticTokensDataStreamProcessor {
 		return tokenModifiers;
 	}
 
-	private TextAttribute textAttribute(final String tokenType) {
+	private @Nullable TextAttribute textAttribute(final @Nullable String tokenType) {
 		if (tokenType != null) {
 			IToken token = tokenTypeMapper.apply(tokenType);
 			if (token != null) {
@@ -152,11 +150,11 @@ public class SemanticTokensDataStreamProcessor {
 	 * @param attr
 	 *            the attribute describing the style of the range to be styled
 	 */
-	private @Nullable StyleRange getStyleRange(final int offset, final int length, final TextAttribute attr) {
+	private @Nullable StyleRange getStyleRange(final int offset, final int length, final @Nullable TextAttribute attr) {
 		if (attr != null) {
 			final int style = attr.getStyle();
 			final int fontStyle = style & (SWT.ITALIC | SWT.BOLD | SWT.NORMAL);
-			final StyleRange styleRange = new StyleRange(offset, length, attr.getForeground(), attr.getBackground(), fontStyle);
+			final var styleRange = new StyleRange(offset, length, attr.getForeground(), attr.getBackground(), fontStyle);
 			styleRange.strikeout = (style & TextAttribute.STRIKETHROUGH) != 0;
 			styleRange.underline = (style & TextAttribute.UNDERLINE) != 0;
 			styleRange.font = attr.getFont();

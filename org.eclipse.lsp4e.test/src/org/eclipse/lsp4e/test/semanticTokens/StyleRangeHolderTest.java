@@ -8,10 +8,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.semanticTokens;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.jface.text.DocumentEvent;
@@ -26,11 +24,11 @@ import org.junit.Test;
 public class StyleRangeHolderTest extends AbstractTest {
 
 	private static final Color RED = new Color(255, 0, 0);
-	private List<StyleRange> originalStyleRanges = Arrays.asList(new StyleRange(0, 4, RED, null), new StyleRange(15, 4, RED, null), new StyleRange(24, 7, RED, null));
+	private List<StyleRange> originalStyleRanges = List.of(new StyleRange(0, 4, RED, null), new StyleRange(15, 4, RED, null), new StyleRange(24, 7, RED, null));
 
 	@Test
 	public void testAllDocumentRanges() {
-		StyleRangeHolder holder = new StyleRangeHolder();
+		final var holder = new StyleRangeHolder();
 		holder.saveStyles(originalStyleRanges);
 
 		StyleRange[] allDocumentRanges = holder.overlappingRanges(new Region(0, 50));
@@ -41,7 +39,7 @@ public class StyleRangeHolderTest extends AbstractTest {
 
 	@Test
 	public void testPartialDocumentRanges() {
-		StyleRangeHolder holder = new StyleRangeHolder();
+		final var holder = new StyleRangeHolder();
 		holder.saveStyles(originalStyleRanges);
 
 		StyleRange[] allDocumentRanges = holder.overlappingRanges(new Region(0, 20)); // only two ranges overlap this region
@@ -51,10 +49,10 @@ public class StyleRangeHolderTest extends AbstractTest {
 
 	@Test
 	public void testDocumentChange() {
-		StyleRangeHolder holder = new StyleRangeHolder();
+		final var holder = new StyleRangeHolder();
 		holder.saveStyles(originalStyleRanges);
 
-		TextEvent textEvent = new TextEvent(0, 1, " ", null, new DocumentEvent(), false) {};
+		final var textEvent = new TextEvent(0, 1, " ", null, new DocumentEvent(), false) {};
 
 		// this will remove the first style and shift the last two
 		holder.textChanged(textEvent);

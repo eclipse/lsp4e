@@ -20,7 +20,7 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LSPEclipseUtils;
@@ -34,7 +34,7 @@ import org.eclipse.lsp4j.TextDocumentPositionParams;
 public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 	public static final String LINKED_EDITING_PREFERENCE = "org.eclipse.ui.genericeditor.linkedediting"; //$NON-NLS-1$
 
-	private CompletableFuture<List<LinkedEditingRanges>> request;
+	private @Nullable CompletableFuture<List<LinkedEditingRanges>> request;
 	protected boolean fEnabled;
 
 	protected void install() {
@@ -49,7 +49,7 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 		cancel();
 	}
 
-	protected CompletableFuture<Optional<LinkedEditingRanges>> collectLinkedEditingRanges(IDocument document, int offset) {
+	protected CompletableFuture<Optional<LinkedEditingRanges>> collectLinkedEditingRanges(@Nullable IDocument document, int offset) {
 		cancel();
 
 		if (document == null) {
@@ -68,7 +68,7 @@ public class LSPLinkedEditingBase implements IPreferenceChangeListener {
 		}
 	}
 
-	private boolean rangesContainOffset(@NonNull LinkedEditingRanges ranges, int offset, IDocument document) {
+	private boolean rangesContainOffset(LinkedEditingRanges ranges, int offset, IDocument document) {
 		for (Range range : ranges.getRanges()) {
 			if (LSPEclipseUtils.isOffsetInRange(offset, range, document)) {
 				return true;

@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.debugmodel;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,8 +43,10 @@ import java.util.stream.Collectors;
 import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.SubMonitor;
 import org.eclipse.debug.core.DebugEvent;
 import org.eclipse.debug.core.DebugException;
@@ -53,10 +57,12 @@ import org.eclipse.debug.core.model.IBreakpoint;
 import org.eclipse.debug.core.model.IDebugTarget;
 import org.eclipse.debug.core.model.IMemoryBlock;
 import org.eclipse.debug.core.model.IProcess;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.debug.DSPPlugin;
 import org.eclipse.lsp4e.debug.console.DSPProcess;
 import org.eclipse.lsp4e.debug.console.DSPStreamsProxy;
 import org.eclipse.lsp4e.debug.debugmodel.TransportStreams.DefaultTransportStreams;
+import org.eclipse.lsp4e.internal.ArrayUtil;
 import org.eclipse.lsp4j.debug.BreakpointEventArguments;
 import org.eclipse.lsp4j.debug.Capabilities;
 import org.eclipse.lsp4j.debug.ConfigurationDoneArguments;
@@ -100,8 +106,8 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	private final ExecutorService threadPool = Executors.newCachedThreadPool();
 
 	private final ILaunch launch;
-	private Future<?> debugProtocolFuture;
-	private IDebugProtocolServer debugProtocolServer;
+	private Future<?> debugProtocolFuture = lateNonNull();
+	private IDebugProtocolServer debugProtocolServer = lateNonNull();
 	/**
 	 * Debug adapters are not supposed to send initialized event until after
 	 * replying to initializeRequest with Capabilities. However some debug adapters
@@ -110,11 +116,11 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * arrives before the capabilities are stored. Therefore use a future to guard
 	 * reading the capabilities before they are ready.
 	 */
-	private final CompletableFuture<Capabilities> capabilitiesFuture = new CompletableFuture<>();
+	private final CompletableFuture<@Nullable Capabilities> capabilitiesFuture = new CompletableFuture<>();
 	/**
 	 * Once we have received initialized event, this member will be "done" as a flag
 	 */
-	private final CompletableFuture<Void> initialized = new CompletableFuture<>();
+	private final CompletableFuture<@Nullable Void> initialized = new CompletableFuture<>();
 
 	/**
 	 * The debuggees that this target has spawned, for example when handling the
@@ -131,17 +137,17 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	private boolean fTerminated = false;
 	private boolean fSentTerminateRequest = false;
-	private String targetName = null;
+	private String targetName = lateNonNull();
 
-	private DSPBreakpointManager breakpointManager;
-	private DSPProcess process;
+	private @Nullable DSPBreakpointManager breakpointManager;
+	private @Nullable DSPProcess process;
 	private TransportStreams transportStreams;
 	// the suppliers can be used to reconnect to running adapter, or for
 	// startDebuggin
 	private final Supplier<TransportStreams> streamsSupplier;
 
 	/**
-	 * User supplied debug paramters for {@link IDebugProtocolServer#launch(Map)}
+	 * User supplied debug parameters for {@link IDebugProtocolServer#launch(Map)}
 	 * and {@link IDebugProtocolServer#attach(Map)}
 	 */
 	private final Map<String, Object> dspParameters;
@@ -298,7 +304,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 		configurationDoneFuture = configurationDoneFuture.thenCompose(v -> {
 			monitor.worked(30);
 			monitor.subTask("Sending configuration done");
-			if (Boolean.TRUE.equals(getCapabilities().getSupportsConfigurationDoneRequest())) {
+			if (Boolean.TRUE.equals(castNonNull(getCapabilities()).getSupportsConfigurationDoneRequest())) {
 				return getDebugProtocolServer().configurationDone(new ConfigurationDoneArguments());
 			}
 			return CompletableFuture.completedFuture(null);
@@ -308,13 +314,14 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	private void terminated() {
 		fTerminated = true;
-		Arrays.stream(getThreads()).forEach(t -> {
+		for (final DSPThread t : getThreads()) {
 			try {
 				t.terminate();
 			} catch (DebugException e) {
 				DSPPlugin.logError(e);
 			}
-		});
+		}
+		final var process = this.process;
 		if (process != null && process.canTerminate()) {
 			try {
 				process.terminate();
@@ -348,10 +355,10 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public CompletableFuture<Void> startDebugging(StartDebuggingRequestArguments args) {
-		Map<String, Object> parameters = new HashMap<>(/* dspParameters */);
+		final var parameters = new HashMap<String, Object>(/* dspParameters */);
 		parameters.putAll(args.getConfiguration());
 		try {
-			DSPDebugTarget newTarget = new DSPDebugTarget(launch, streamsSupplier, parameters);
+			final var newTarget = new DSPDebugTarget(launch, streamsSupplier, parameters);
 			launch.addDebugTarget(newTarget);
 			newTarget.initialize(new NullProgressMonitor());
 			debuggees.add(newTarget);
@@ -370,7 +377,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * @throws DebugException if a problem is encountered
 	 */
 	@Override
-	protected void requestFailed(String message, Throwable e) throws DebugException {
+	protected void requestFailed(String message, @Nullable Throwable e) throws DebugException {
 		throw newTargetRequestFailedException(message, e);
 	}
 
@@ -385,7 +392,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	}
 
 	@Override
-	public <T> T getAdapter(Class<T> adapter) {
+	public <T> @Nullable T getAdapter(Class<T> adapter) {
 		return null;
 	}
 
@@ -428,7 +435,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	@Override
 	public void terminate() throws DebugException {
 		boolean shouldSendTerminateRequest = !fSentTerminateRequest
-				&& Boolean.TRUE.equals(getCapabilities().getSupportsTerminateRequest())
+				&& Boolean.TRUE.equals(castNonNull(getCapabilities()).getSupportsTerminateRequest())
 				&& "launch".equals(dspParameters.getOrDefault("request", "launch"));
 		if (shouldSendTerminateRequest) {
 			fSentTerminateRequest = true;
@@ -446,7 +453,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			DSPDebugElement source = null;
 			source = getThread(body.getThreadId());
 			if (source == null || body.getAllThreadsContinued() == null || body.getAllThreadsContinued()) {
-				Arrays.asList(getThreads()).forEach(DSPThread::continued);
+				ArrayUtil.forEach(getThreads(), DSPThread::continued);
 			}
 			if (source != null) {
 				source.fireResumeEvent(DebugEvent.CLIENT_REQUEST);
@@ -462,10 +469,10 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 				source = getThread(body.getThreadId());
 			}
 			if (source == null || body.getAllThreadsStopped() == null || body.getAllThreadsStopped()) {
-				Arrays.asList(getThreads()).forEach(t -> {
+				for (final DSPThread t : getThreads()) {
 					t.stopped();
 					t.fireChangeEvent(DebugEvent.CHANGE);
-				});
+				}
 			}
 
 			if (source != null) {
@@ -500,8 +507,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	@Override
 	public boolean isSuspended() {
 		DSPThread[] dspThreads = getThreads();
-		boolean anyMatch = Arrays.asList(dspThreads).stream().anyMatch(DSPThread::isSuspended);
-		return anyMatch;
+		return ArrayUtil.anyMatch(dspThreads, DSPThread::isSuspended);
 	}
 
 	@Override
@@ -544,11 +550,12 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public IMemoryBlock getMemoryBlock(long startAddress, long length) throws DebugException {
-		return null;
+		throw new DebugException(new Status(IStatus.OK, DSPPlugin.PLUGIN_ID, DebugException.TARGET_REQUEST_FAILED,
+				"not implemented", null));
 	}
 
 	@Override
-	public IProcess getProcess() {
+	public @Nullable IProcess getProcess() {
 		return process;
 	}
 
@@ -581,7 +588,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public boolean supportsBreakpoint(IBreakpoint breakpoint) {
-		return !isTerminated() && breakpointManager.supportsBreakpoint(breakpoint);
+		return !isTerminated() && breakpointManager != null && breakpointManager.supportsBreakpoint(breakpoint);
 	}
 
 	@Override
@@ -618,42 +625,41 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public void output(OutputEventArguments args) {
-		boolean outputted = false;
-		DSPStreamsProxy dspStreamsProxy;
-		if (process == null) {
-			process(null); // create dummy process to have a console
-		}
-		dspStreamsProxy = process.getStreamsProxy();
 		String output = args.getOutput();
-		if (args.getCategory() == null || OutputEventArgumentsCategory.CONSOLE.equals(args.getCategory())
+		if (args.getCategory() == null //
+				|| OutputEventArgumentsCategory.CONSOLE.equals(args.getCategory()) //
 				|| OutputEventArgumentsCategory.STDOUT.equals(args.getCategory())) {
 			// TODO put this data in a different region with a different colour
-			dspStreamsProxy.getOutputStreamMonitor().append(output);
-			outputted = true;
+			getOrCreateStreamsProxy().getOutputStreamMonitor().append(output);
 		} else if (OutputEventArgumentsCategory.STDERR.equals(args.getCategory())) {
-			dspStreamsProxy.getErrorStreamMonitor().append(output);
-			outputted = true;
-		}
-		if (!outputted && DSPPlugin.DEBUG) {
+			getOrCreateStreamsProxy().getErrorStreamMonitor().append(output);
+		} else if (DSPPlugin.DEBUG) {
 			System.out.println("output: " + args);
 		}
+	}
 
+	private DSPStreamsProxy getOrCreateStreamsProxy() {
+		var process = this.process;
+		if (process == null) {
+			// create dummy process to have a console
+			process(null);
+			process = castNonNull(this.process);
+		}
+		return process.getStreamsProxy();
 	}
 
 	@Override
 	public void module(ModuleEventArguments args) {
 		// TODO
-
 	}
 
 	@Override
 	public void loadedSource(LoadedSourceEventArguments args) {
 		// TODO
-
 	}
 
 	@Override
-	public void process(ProcessEventArguments args) {
+	public void process(@Nullable ProcessEventArguments args) {
 		process = new DSPProcess(this, args);
 		launch.addProcess(process);
 	}
@@ -690,8 +696,8 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 			processBuilder.directory(new File(args.getCwd()));
 		}
 		if (args.getEnv() != null) {
-			Set<Entry<String, String>> entrySet = args.getEnv().entrySet();
-			for (Entry<String, String> entry : entrySet) {
+			Set<Entry<String, @Nullable String>> entrySet = args.getEnv().entrySet();
+			for (Entry<String, @Nullable String> entry : entrySet) {
 				String name = entry.getKey();
 				String value = entry.getValue();
 				if (value == null) {
@@ -729,22 +735,29 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 
 	@Override
 	public void breakpoint(BreakpointEventArguments args) {
-		breakpointManager.breakpointEvent(args);
+		if (breakpointManager != null)
+			breakpointManager.breakpointEvent(args);
 	}
 
 	@Override
 	public void breakpointAdded(IBreakpoint breakpoint) {
-		breakpointManager.breakpointAdded(breakpoint);
+		if (breakpointManager != null) {
+			breakpointManager.breakpointAdded(breakpoint);
+		}
 	}
 
 	@Override
-	public void breakpointRemoved(IBreakpoint breakpoint, IMarkerDelta delta) {
-		breakpointManager.breakpointRemoved(breakpoint, delta);
+	public void breakpointRemoved(IBreakpoint breakpoint, @Nullable IMarkerDelta delta) {
+		if (breakpointManager != null) {
+			breakpointManager.breakpointRemoved(breakpoint, delta);
+		}
 	}
 
 	@Override
-	public void breakpointChanged(IBreakpoint breakpoint, IMarkerDelta delta) {
-		breakpointManager.breakpointChanged(breakpoint, delta);
+	public void breakpointChanged(IBreakpoint breakpoint, @Nullable IMarkerDelta delta) {
+		if (breakpointManager != null) {
+			breakpointManager.breakpointChanged(breakpoint, delta);
+		}
 	}
 
 	@Override
@@ -761,8 +774,7 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 	 * @return the current capabilities if they have been retrieved, or else
 	 *         return @{code null}
 	 */
-	public Capabilities getCapabilities() {
+	public @Nullable Capabilities getCapabilities() {
 		return capabilitiesFuture.getNow(null);
 	}
-
 }

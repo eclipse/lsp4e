@@ -14,7 +14,7 @@ package org.eclipse.lsp4e.test.completion;
 import static org.junit.Assert.*;
 
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.eclipse.core.resources.IFile;
@@ -51,9 +51,9 @@ public class ContextInformationTest extends AbstractCompletionTest {
 
 	@Test
 	public void testContextInformationNoParameters() throws CoreException {
-		SignatureHelp signatureHelp = new SignatureHelp();
-		SignatureInformation information = new SignatureInformation("label", "documentation", Collections.emptyList());
-		signatureHelp.setSignatures(Collections.singletonList(information));
+		final var signatureHelp = new SignatureHelp();
+		final var information = new SignatureInformation("label", "documentation", Collections.emptyList());
+		signatureHelp.setSignatures(List.of(information));
 		MockLanguageServer.INSTANCE.setSignatureHelp(signatureHelp);
 
 		IFile testFile = TestUtils.createUniqueTestFile(project, "method()");
@@ -70,12 +70,10 @@ public class ContextInformationTest extends AbstractCompletionTest {
 
 	@Test
 	public void testTriggerChars() throws CoreException {
-		Set<String> triggers = new HashSet<>();
-		triggers.add("a");
-		triggers.add("b");
+		final Set<String> triggers = Set.of("a", "b");
 		MockLanguageServer.INSTANCE.setContextInformationTriggerChars(triggers);
 
-		String content = "First";
+		final var content = "First";
 		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
 		assertArrayEquals(new char[] { 'a', 'b' },

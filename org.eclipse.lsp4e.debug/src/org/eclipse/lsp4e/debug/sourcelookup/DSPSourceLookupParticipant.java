@@ -10,12 +10,13 @@ package org.eclipse.lsp4e.debug.sourcelookup;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.debug.core.sourcelookup.AbstractSourceLookupParticipant;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.debug.debugmodel.DSPStackFrame;
 
 public class DSPSourceLookupParticipant extends AbstractSourceLookupParticipant {
 
 	@Override
-	public String getSourceName(Object object) throws CoreException {
+	public @Nullable String getSourceName(Object object) throws CoreException {
 		if (object instanceof String string) {
 			return string;
 		}

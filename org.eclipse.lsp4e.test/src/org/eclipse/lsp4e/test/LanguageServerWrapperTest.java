@@ -17,7 +17,6 @@ import static org.hamcrest.Matchers.matchesPattern;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -74,13 +73,13 @@ public class LanguageServerWrapperTest extends AbstractTestWithProject {
 	 * @see https://github.com/eclipse/lsp4e/pull/688
 	 */
 	@Test
-	public void testStopAndActive() throws CoreException, IOException, AssertionError, InterruptedException, ExecutionException {
+	public void testStopAndActive() throws CoreException, AssertionError, InterruptedException, ExecutionException {
 		IFile testFile1 = TestUtils.createFile(project, "shouldUseExtension.lsptWithMultiRoot", "");
 		IEditorPart editor1 = TestUtils.openEditor(testFile1);
 		@NonNull Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1, request -> true);
 		assertEquals(1, wrappers.size());
 		LanguageServerWrapper wrapper = wrappers.iterator().next();
-		CountDownLatch started = new CountDownLatch(1);
+		final var started = new CountDownLatch(1);
 		try {
 			var startStopJob = ForkJoinPool.commonPool().submit(() -> {
 				started.countDown();

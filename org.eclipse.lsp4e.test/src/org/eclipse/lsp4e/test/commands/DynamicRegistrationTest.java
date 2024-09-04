@@ -12,10 +12,7 @@
 package org.eclipse.lsp4e.test.commands;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForCondition;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -100,18 +97,18 @@ public class DynamicRegistrationTest extends AbstractTestWithProject {
 
 	private void unregister(UUID registration) throws Exception {
 		LanguageClient client = getMockClient();
-		Unregistration unregistration = new Unregistration(registration.toString(), WORKSPACE_EXECUTE_COMMAND);
-		client.unregisterCapability(new UnregistrationParams(Arrays.asList(unregistration)))
+		final var unregistration = new Unregistration(registration.toString(), WORKSPACE_EXECUTE_COMMAND);
+		client.unregisterCapability(new UnregistrationParams(List.of(unregistration)))
 			.get(1, TimeUnit.SECONDS);
 	}
 
 	private UUID registerWorkspaceFolders() throws Exception {
 		UUID id = UUID.randomUUID();
 		LanguageClient client = getMockClient();
-		Registration registration = new Registration();
+		final var registration = new Registration();
 		registration.setId(id.toString());
 		registration.setMethod(WORKSPACE_DID_CHANGE_FOLDERS);
-		client.registerCapability(new RegistrationParams(Arrays.asList(registration)))
+		client.registerCapability(new RegistrationParams(List.of(registration)))
 			.get(1, TimeUnit.SECONDS);
 		return id;
 	}
@@ -119,11 +116,11 @@ public class DynamicRegistrationTest extends AbstractTestWithProject {
 	private UUID registerCommands(String... command) throws Exception {
 		UUID id = UUID.randomUUID();
 		LanguageClient client = getMockClient();
-		Registration registration = new Registration();
+		final var registration = new Registration();
 		registration.setId(id.toString());
 		registration.setMethod(WORKSPACE_EXECUTE_COMMAND);
-		registration.setRegisterOptions(new Gson().toJsonTree(new ExecuteCommandOptions(Arrays.asList(command))));
-		client.registerCapability(new RegistrationParams(Arrays.asList(registration))).get(1, TimeUnit.SECONDS);
+		registration.setRegisterOptions(new Gson().toJsonTree(new ExecuteCommandOptions(List.of(command))));
+		client.registerCapability(new RegistrationParams(List.of(registration))).get(1, TimeUnit.SECONDS);
 		return id;
 	}
 

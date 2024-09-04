@@ -150,7 +150,7 @@ public final class CompletionProposalTools {
 	}
 
 	private static int getScoreOfFilterMatchHelper(int prefixLength, String documentFilter, String completionFilter) {
-		if (documentFilter == null || documentFilter.isEmpty()) {
+		if (documentFilter.isEmpty()) {
 			return 0;
 		}
 		char searchChar = documentFilter.charAt(0);

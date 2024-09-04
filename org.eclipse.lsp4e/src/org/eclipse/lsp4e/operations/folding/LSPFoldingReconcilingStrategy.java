@@ -10,9 +10,10 @@
  */
 package org.eclipse.lsp4e.operations.folding;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -21,7 +22,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -58,10 +59,12 @@ import org.eclipse.swt.widgets.Canvas;
 public class LSPFoldingReconcilingStrategy
 		implements IReconcilingStrategy, IReconcilingStrategyExtension, IProjectionListener, ITextViewerLifecycle {
 
-	private IDocument document;
-	private ProjectionAnnotationModel projectionAnnotationModel;
-	private ProjectionViewer viewer;
-	private @NonNull List<CompletableFuture<List<FoldingRange>>> requests = List.of();
+	private static final Annotation[] NO_ANNOTATIONS = new Annotation[0];
+
+	private @Nullable IDocument document;
+	private @Nullable ProjectionAnnotationModel projectionAnnotationModel;
+	private @Nullable ProjectionViewer viewer;
+	private List<CompletableFuture<@Nullable List<FoldingRange>>> requests = List.of();
 	private volatile long timestamp = 0;
 	private final boolean collapseImports;
 
@@ -127,13 +130,13 @@ public class LSPFoldingReconcilingStrategy
 	}
 
 	@Override
-	public void reconcile(IRegion subRegion) {
-		IDocument theDocument = document;
-		if (projectionAnnotationModel == null || theDocument == null) {
+	public void reconcile(@Nullable IRegion subRegion) {
+		final var document = this.document;
+		if (projectionAnnotationModel == null || document == null) {
 			return;
 		}
 
-		URI uri = LSPEclipseUtils.toUri(theDocument);
+		URI uri = LSPEclipseUtils.toUri(document);
 		if (uri == null) {
 			return;
 		}
@@ -141,12 +144,13 @@ public class LSPFoldingReconcilingStrategy
 		final var params = new FoldingRangeRequestParams(identifier);
 		// cancel previous requests
 		requests.forEach(request -> request.cancel(true));
-		requests = LanguageServers.forDocument(theDocument).withCapability(ServerCapabilities::getFoldingRangeProvider)
+		requests = LanguageServers.forDocument(document)
+				.withCapability(ServerCapabilities::getFoldingRangeProvider)
 				.computeAll(server -> server.getTextDocumentService().foldingRange(params));
 		requests.forEach(ranges -> ranges.thenAccept(this::applyFolding));
 	}
 
-	private void applyFolding(List<FoldingRange> ranges) {
+	private void applyFolding(@Nullable List<FoldingRange> ranges) {
 		// these are what are passed off to the annotation model to
 		// actually create and maintain the annotations
 		final var deletions = new ArrayList<FoldingAnnotation>();
@@ -156,16 +160,18 @@ public class LSPFoldingReconcilingStrategy
 		// find and mark all folding annotations with length 0 for deletion
 		markInvalidAnnotationsForDeletion(deletions, existing);
 
-		try {
-			if (ranges != null) {
-				Collections.sort(ranges, Comparator.comparing(FoldingRange::getEndLine));
-				for (FoldingRange foldingRange : ranges) {
-					updateAnnotation(deletions, existing, additions, foldingRange.getStartLine(),
-							foldingRange.getEndLine(), collapseImports && FoldingRangeKind.Imports.equals(foldingRange.getKind()));
-				}
-			}
-		} catch (BadLocationException e) {
-			// should never occur
+		if (ranges != null) {
+			ranges.stream() //
+					.sorted(Comparator.comparing(FoldingRange::getEndLine)) //
+					.forEach(foldingRange -> {
+						try {
+							updateAnnotation(deletions, existing, additions, foldingRange.getStartLine(),
+									foldingRange.getEndLine(),
+									collapseImports && FoldingRangeKind.Imports.equals(foldingRange.getKind()));
+						} catch (BadLocationException e) {
+							// should never occur
+						}
+					});
 		}
 
 		// be sure projection has not been disabled
@@ -177,7 +183,7 @@ public class LSPFoldingReconcilingStrategy
 			// send the calculated updates to the annotations to the
 			// annotation model
 			theProjectionAnnotationModel.modifyAnnotations(deletions.toArray(Annotation[]::new), additions,
-					new Annotation[0]);
+					NO_ANNOTATIONS);
 		}
 	}
 
@@ -188,8 +194,8 @@ public class LSPFoldingReconcilingStrategy
 		}
 		if (viewer instanceof ProjectionViewer projViewer) {
 			this.viewer = projViewer;
-			this.viewer.addProjectionListener(this);
-			this.projectionAnnotationModel = this.viewer.getProjectionAnnotationModel();
+			projViewer.addProjectionListener(this);
+			this.projectionAnnotationModel = projViewer.getProjectionAnnotationModel();
 		}
 	}
 
@@ -204,7 +210,7 @@ public class LSPFoldingReconcilingStrategy
 	}
 
 	@Override
-	public void setDocument(IDocument document) {
+	public void setDocument(@Nullable IDocument document) {
 		this.document = document;
 	}
 
@@ -237,9 +243,10 @@ public class LSPFoldingReconcilingStrategy
 	 *            the end line number
 	 * @throws BadLocationException
 	 */
-	private void updateAnnotation(List<FoldingAnnotation> deletions,
-			List<FoldingAnnotation> existing, Map<Annotation, Position> additions, int line, Integer endLineNumber, boolean collapsedByDefault)
+	private void updateAnnotation(List<FoldingAnnotation> deletions, List<FoldingAnnotation> existing,
+			Map<Annotation, Position> additions, int line, Integer endLineNumber, boolean collapsedByDefault)
 			throws BadLocationException {
+		final var document = castNonNull(this.document);
 		int startOffset = document.getLineOffset(line);
 		int endOffset = document.getLineOffset(endLineNumber) + document.getLineLength(endLineNumber);
 		final var newPos = new Position(startOffset, endOffset - startOffset);
@@ -263,7 +270,7 @@ public class LSPFoldingReconcilingStrategy
 	 * @param deletions
 	 *            the list of annotations to be deleted
 	 */
-	protected void updateAnnotations(Annotation existingAnnotation, Position newPos, List<FoldingAnnotation> deletions) {
+	protected void updateAnnotations(Annotation existingAnnotation, @Nullable Position newPos, List<FoldingAnnotation> deletions) {
 		if (existingAnnotation instanceof FoldingAnnotation foldingAnnotation) {
 			// if a new position can be calculated then update the position of
 			// the annotation,
@@ -296,16 +303,18 @@ public class LSPFoldingReconcilingStrategy
 	 */
 	protected void markInvalidAnnotationsForDeletion(List<FoldingAnnotation> deletions,
 			List<FoldingAnnotation> existing) {
+		final var projectionAnnotationModel = this.projectionAnnotationModel;
+		if (projectionAnnotationModel == null)
+			return;
 		Iterator<Annotation> iter = projectionAnnotationModel.getAnnotationIterator();
 		if (iter != null) {
 			while (iter.hasNext()) {
-				Annotation anno = iter.next();
-				if (anno instanceof FoldingAnnotation folding) {
-					Position pos = projectionAnnotationModel.getPosition(anno);
+				if (iter.next() instanceof FoldingAnnotation foldingAnno) {
+					Position pos = projectionAnnotationModel.getPosition(foldingAnno);
 					if (pos.length == 0) {
-						deletions.add(folding);
+						deletions.add(foldingAnno);
 					} else {
-						existing.add(folding);
+						existing.add(foldingAnno);
 					}
 				}
 			}
@@ -324,7 +333,7 @@ public class LSPFoldingReconcilingStrategy
 	}
 
 	@Override
-	public void setProgressMonitor(IProgressMonitor monitor) {
+	public void setProgressMonitor(@Nullable IProgressMonitor monitor) {
 		// Do nothing
 	}
 

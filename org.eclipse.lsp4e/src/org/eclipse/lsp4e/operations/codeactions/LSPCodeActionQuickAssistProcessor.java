@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -19,10 +21,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
-import org.eclipse.jface.text.contentassist.CompletionProposal;
 import org.eclipse.jface.text.contentassist.ICompletionProposal;
 import org.eclipse.jface.text.contentassist.IContextInformation;
 import org.eclipse.jface.text.quickassist.IQuickAssistInvocationContext;
@@ -37,6 +39,7 @@ import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.lsp4j.CodeActionContext;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.ui.internal.progress.ProgressInfoItem;
@@ -44,8 +47,8 @@ import org.eclipse.ui.internal.progress.ProgressInfoItem;
 public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor {
 
 	// Data necessary for caching proposals
-	private Object lock = new Object();
-	private IQuickAssistInvocationContext cachedContext;
+	private final Object lock = new Object();
+	private @Nullable IQuickAssistInvocationContext cachedContext;
 	private List<ICompletionProposal> proposals = Collections.synchronizedList(new ArrayList<>());
 
 	private static final ICompletionProposal COMPUTING = new ICompletionProposal() {
@@ -56,12 +59,12 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		}
 
 		@Override
-		public Point getSelection(IDocument document) {
+		public @Nullable Point getSelection(IDocument document) {
 			return null;
 		}
 
 		@Override
-		public String getAdditionalProposalInfo() {
+		public @Nullable String getAdditionalProposalInfo() {
 			return null;
 		}
 
@@ -71,18 +74,15 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		}
 
 		@Override
-		public Image getImage() {
-			return JFaceResources.getImage(ProgressInfoItem.class.getPackage().getName() + ".PROGRESS_DEFAULT"); //$NON-NLS-1$
+		public @Nullable Image getImage() {
+			return JFaceResources.getImage(ProgressInfoItem.class.getPackageName() + ".PROGRESS_DEFAULT"); //$NON-NLS-1$
 		}
 
 		@Override
-		public IContextInformation getContextInformation() {
+		public @Nullable IContextInformation getContextInformation() {
 			return null;
 		}
-
 	};
-
-	CompletionProposal[] NO_PROPOSALS = {};
 
 	@Override
 	public String getErrorMessage() {
@@ -100,19 +100,19 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		if (document == null) {
 			return false;
 		}
-		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPCodeActionMarkerResolution::providesCodeActions);
+		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getCodeActionProvider);
 		return executor.anyMatching();
 	}
 
 	@Override
-	public ICompletionProposal[] computeQuickAssistProposals(IQuickAssistInvocationContext invocationContext) {
+	public ICompletionProposal @Nullable [] computeQuickAssistProposals(IQuickAssistInvocationContext invocationContext) {
 		IDocument document = invocationContext.getSourceViewer().getDocument();
 		if (document == null) {
-			return NO_PROPOSALS;
+			return null;
 		}
-		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withFilter(LSPCodeActionMarkerResolution::providesCodeActions);
+		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getCodeActionProvider);
 		if (!executor.anyMatching()) {
-			return NO_PROPOSALS;
+			return null;
 		}
 
 		// If context has changed, i.e. new quick assist invocation rather than old
@@ -120,14 +120,15 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 		// the UI
 		boolean needNewQuery = true;
 		synchronized (lock) {
-			needNewQuery = cachedContext == null || invocationContext == null ||
+			final var cachedContext = this.cachedContext;
+			needNewQuery = cachedContext == null ||
 				cachedContext.getClass() != invocationContext.getClass() ||
 				cachedContext.getSourceViewer() != invocationContext.getSourceViewer() ||
 				cachedContext.getOffset() != invocationContext.getOffset() ||
 				cachedContext.getLength() != invocationContext.getLength();
 				// should also check whether (same) document content changed
 			if (needNewQuery) {
-				cachedContext = invocationContext;
+				this.cachedContext = invocationContext;
 			}
 		}
 
@@ -138,7 +139,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 			proposals.clear();
 			// Start all the servers computing actions - each server will append any code actions to the ongoing list of proposals
 			// as a side effect of this request
-			List<CompletableFuture<Void>> futures = executor.computeAll((w, ls) -> ls.getTextDocumentService()
+			List<CompletableFuture<@Nullable Void>> futures = executor.computeAll((w, ls) -> ls.getTextDocumentService()
 					.codeAction(params)
 					.thenAccept(actions -> LanguageServers.streamSafely(actions)
 							.filter(LSPCodeActionMarkerResolution::canPerform)
@@ -156,7 +157,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 				// Server calls didn't complete in time;  those that did will have added their results to <code>this.proposals</code> and can be returned
 				// as an intermediate result; as we're returning control to the UI, we need any stragglers to trigger a refresh when they arrive later on
 				proposals.add(COMPUTING);
-				for (CompletableFuture<Void> future : futures) {
+				for (CompletableFuture<@Nullable Void> future : futures) {
 					// Refresh will effectively re-enter this method with the same invocationContext and already computed proposals simply to show the proposals in the UI
 					future.whenComplete((r, t) -> {
 						if (futures.stream().allMatch(CompletableFuture::isDone)) {
@@ -194,7 +195,7 @@ public class LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor 
 	private static CodeActionParams prepareCodeActionParams(final IDocument doc, int offset, int length) {
 		final var context = new CodeActionContext(Collections.emptyList());
 		final var params = new CodeActionParams();
-		params.setTextDocument(LSPEclipseUtils.toTextDocumentIdentifier(doc));
+		params.setTextDocument(castNonNull(LSPEclipseUtils.toTextDocumentIdentifier(doc)));
 		try {
 			params.setRange(new Range(LSPEclipseUtils.toPosition(offset, doc), LSPEclipseUtils
 					.toPosition(offset + (length > 0 ? length : 0), doc)));

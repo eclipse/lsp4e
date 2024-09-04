@@ -15,6 +15,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.hover;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -24,7 +26,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
@@ -61,39 +62,31 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage(true));
 	private static final int GET_TIMEOUT_MS = 1000;
 
-	private IRegion lastRegion;
-	private ITextViewer lastViewer;
-	private CompletableFuture<@NonNull List<@NonNull Hover>> request;
+	private @Nullable IRegion lastRegion;
+	private @Nullable ITextViewer lastViewer;
+	private @Nullable CompletableFuture<List<Hover>> request;
 
 	@Override
-	public String getHoverInfo(ITextViewer textViewer, IRegion hoverRegion) {
-		if (textViewer == null || hoverRegion == null) {
-			return null;
-		}
-		CompletableFuture<String> hoverInfoFuture = getHoverInfoFuture(textViewer, hoverRegion);
-		if (hoverInfoFuture != null) {
-			try {
-				String result = hoverInfoFuture.get(GET_TIMEOUT_MS, TimeUnit.MILLISECONDS);
-				if (result != null) {
-					return result;
-				}
-			} catch (ExecutionException e) {
-				LanguageServerPlugin.logError(e);
-			} catch (InterruptedException e) {
-				LanguageServerPlugin.logError(e);
-				Thread.currentThread().interrupt();
-			} catch (TimeoutException e) {
-				LanguageServerPlugin.logWarning("Could not get hover information due to timeout after " + GET_TIMEOUT_MS + " milliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
-			}
+	public @Nullable String getHoverInfo(ITextViewer textViewer, IRegion hoverRegion) {
+		CompletableFuture<@Nullable String> hoverInfoFuture = getHoverInfoFuture(textViewer, hoverRegion);
+		try {
+			return hoverInfoFuture.get(GET_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+		} catch (ExecutionException e) {
+			LanguageServerPlugin.logError(e);
+		} catch (InterruptedException e) {
+			LanguageServerPlugin.logError(e);
+			Thread.currentThread().interrupt();
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning("Could not get hover information due to timeout after " + GET_TIMEOUT_MS + " milliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return null;
 	}
 
-	public CompletableFuture<String> getHoverInfoFuture(@NonNull ITextViewer textViewer, @NonNull IRegion hoverRegion) {
+	public CompletableFuture<@Nullable String> getHoverInfoFuture(ITextViewer textViewer, IRegion hoverRegion) {
 		if (this.request == null || !textViewer.equals(this.lastViewer) || !hoverRegion.equals(this.lastRegion)) {
 			initiateHoverRequest(textViewer, hoverRegion.getOffset());
 		}
-		return request.thenApply(hoversList -> {
+		return castNonNull(request).thenApply(hoversList -> {
 			String result = hoversList.stream()
 				.filter(Objects::nonNull)
 				.map(LSPTextHover::getHoverString)
@@ -108,11 +101,11 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 		});
 	}
 
-	protected static @Nullable String getHoverString(@NonNull Hover hover) {
+	protected static @Nullable String getHoverString(Hover hover) {
 		Either<List<Either<String, MarkedString>>, MarkupContent> hoverContent = hover.getContents();
 		if (hoverContent.isLeft()) {
 			List<Either<String, MarkedString>> contents = hoverContent.getLeft();
-			if (contents == null || contents.isEmpty()) {
+			if (contents.isEmpty()) {
 				return null;
 			}
 			return contents.stream().map(content -> {
@@ -139,20 +132,21 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 	}
 
 	@Override
-	public IRegion getHoverRegion(ITextViewer textViewer, int offset) {
-		if (textViewer == null) {
-			return null;
-		}
-		if (this.request == null || this.lastRegion == null || !textViewer.equals(this.lastViewer)
-				|| offset < this.lastRegion.getOffset() || offset > lastRegion.getOffset() + lastRegion.getLength()) {
+	public @Nullable IRegion getHoverRegion(ITextViewer textViewer, int offset) {
+		final var lastRegion = this.lastRegion;
+		if (this.request == null || lastRegion == null || !textViewer.equals(this.lastViewer)
+				|| offset < lastRegion.getOffset() || offset > lastRegion.getOffset() + lastRegion.getLength()) {
 			initiateHoverRequest(textViewer, offset);
 		}
 		try {
 			final IDocument document = textViewer.getDocument();
-			boolean[] oneHoverAtLeast = new boolean[] { false };
-			int[] regionStartOffset = new int[] { 0 };
-			int[] regionEndOffset = new int[] { document.getLength() };
-			this.request.get(GET_TIMEOUT_MS, TimeUnit.MILLISECONDS).stream()
+			if (document == null) {
+				return null;
+			}
+			final var oneHoverAtLeast = new boolean[] { false };
+			final var regionStartOffset = new int[] { 0 };
+			final var regionEndOffset = new int[] { document.getLength() };
+			castNonNull(this.request).get(GET_TIMEOUT_MS, TimeUnit.MILLISECONDS).stream()
 				.filter(Objects::nonNull)
 				.map(Hover::getRange)
 				.filter(Objects::nonNull)
@@ -192,7 +186,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 	 * @param offset
 	 *            the hovered offset.
 	 */
-	private void initiateHoverRequest(@NonNull ITextViewer viewer, int offset) {
+	private void initiateHoverRequest(ITextViewer viewer, int offset) {
 		final IDocument document = viewer.getDocument();
 		if (document == null) {
 			return;
@@ -210,7 +204,7 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 	}
 
 	@Override
-	public IInformationControlCreator getHoverControlCreator() {
+	public @Nullable IInformationControlCreator getHoverControlCreator() {
 		return new AbstractReusableInformationControlCreator() {
 			@Override
 			protected IInformationControl doCreateInformationControl(Shell parent) {

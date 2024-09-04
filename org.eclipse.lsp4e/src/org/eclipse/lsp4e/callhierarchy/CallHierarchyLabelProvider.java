@@ -12,6 +12,7 @@
 
 package org.eclipse.lsp4e.callhierarchy;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.StyledString;
@@ -25,7 +26,7 @@ import org.eclipse.swt.graphics.Image;
 public class CallHierarchyLabelProvider extends LabelProvider implements IStyledLabelProvider {
 
 	@Override
-	public Image getImage(final Object element) {
+	public @Nullable Image getImage(final @Nullable Object element) {
 		if (element instanceof CallHierarchyViewTreeNode treeNode) {
 			CallHierarchyItem callContainer = treeNode.getCallContainer();
 			Image res = LSPImages.imageFromSymbolKind(callContainer.getKind());
@@ -33,14 +34,14 @@ public class CallHierarchyLabelProvider extends LabelProvider implements IStyled
 				return res;
 			}
 		}
-		return super.getImage(element);
+		return element == null ? null : super.getImage(element);
 	}
 
 	@Override
-	public StyledString getStyledText(final Object element) {
+	public @Nullable StyledString getStyledText(final @Nullable Object element) {
 		if (element instanceof CallHierarchyViewTreeNode treeNode) {
 			CallHierarchyItem callContainer = treeNode.getCallContainer();
-			StyledString styledString = new StyledString();
+			final var styledString = new StyledString();
 			appendName(styledString, callContainer.getName());
 			if (callContainer.getDetail() != null) {
 				appendDetail(styledString, callContainer.getDetail());

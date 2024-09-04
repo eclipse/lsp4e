@@ -11,13 +11,15 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.jdt;
 
+import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.osgi.util.NLS;
 
+@NonNullByDefault({})
 public class Messages extends NLS {
 
-	public static String javaSpecificCompletionError;
+   public static String javaSpecificCompletionError;
 
-	static {
-		NLS.initializeMessages("org.eclipse.lsp4e.jdt.messages", Messages.class); //$NON-NLS-1$
-	}
+   static {
+      NLS.initializeMessages("org.eclipse.lsp4e.jdt.messages", Messages.class); //$NON-NLS-1$
+   }
 }

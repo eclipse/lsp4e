@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Language Server Protocol client for Eclipse IDE (Incubation)
 Bundle-SymbolicName: org.eclipse.lsp4e;singleton:=true
-Bundle-Version: 0.18.12.qualifier
+Bundle-Version: 0.18.13.qualifier
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.eclipse.core.runtime;bundle-version="3.12.0",
  org.eclipse.equinox.common;bundle-version="3.8.0",
@@ -25,9 +25,7 @@ Require-Bundle: org.eclipse.core.runtime;bundle-version="3.12.0",
  org.eclipse.core.externaltools;bundle-version="1.0.400",
  org.eclipse.debug.ui;bundle-version="3.11.200",
  org.eclipse.swt;bundle-version="3.122.0",
- org.eclipse.jdt.annotation;bundle-version="2.1.0";resolution:=optional,
- org.eclipse.tm4e.languageconfiguration,
- org.eclipse.tm4e.ui,
+ org.eclipse.tm4e.ui;resolution:=optional,
  org.eclipse.ui.editors,
  org.eclipse.ui.navigator;bundle-version="3.6.100",
  org.eclipse.lsp4j;bundle-version="[0.23.0,0.24.0)",
@@ -49,9 +47,10 @@ Bundle-ClassPath: .
 Bundle-Localization: plugin
 Bundle-ActivationPolicy: lazy
 Bundle-Activator: org.eclipse.lsp4e.LanguageServerPlugin
-Export-Package: org.eclipse.lsp4e;x-internal:=true,
+Export-Package: org.eclipse.lsp4e;x-friends:="org.eclipse.lsp4e.debug,org.eclipse.lsp4e.jdt",
  org.eclipse.lsp4e.command;x-internal:=true,
  org.eclipse.lsp4e.format;x-internal:=true,
+ org.eclipse.lsp4e.internal;x-friends:="org.eclipse.lsp4e.debug,org.eclipse.lsp4e.jdt",
  org.eclipse.lsp4e.operations.codeactions;x-internal:=true,
  org.eclipse.lsp4e.operations.completion;x-internal:=true,
  org.eclipse.lsp4e.operations.format;x-internal:=true,

@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: JDT Integration for LSP4E
 Bundle-SymbolicName: org.eclipse.lsp4e.jdt;singleton:=true
-Bundle-Version: 0.13.0.qualifier
+Bundle-Version: 0.13.1.qualifier
 Automatic-Module-Name: org.eclipse.lsp4e.jdt
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ClassPath: .
@@ -11,7 +11,7 @@ Bundle-Vendor: Eclipse.org
 Require-Bundle: org.eclipse.core.runtime;bundle-version="3.12.0",
  org.eclipse.jface.text;bundle-version="3.13.0",
  org.eclipse.ui;bundle-version="3.108.0",
- org.eclipse.lsp4e;bundle-version="0.16.0",
+ org.eclipse.lsp4e;bundle-version="0.18.13",
  org.eclipse.jdt.core;bundle-version="3.20.0",
  org.eclipse.jdt.ui;bundle-version="3.20.0",
  org.eclipse.swt

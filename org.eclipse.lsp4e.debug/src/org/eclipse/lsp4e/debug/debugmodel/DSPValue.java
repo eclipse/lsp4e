@@ -13,15 +13,18 @@ import java.util.ArrayList;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.model.IValue;
 import org.eclipse.debug.core.model.IVariable;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4j.debug.Variable;
 import org.eclipse.lsp4j.debug.VariablesArguments;
 
 public final class DSPValue extends DSPDebugElement implements IValue {
 
-	private final DSPVariable modelVariable;
+	private static final IVariable[] NO_VARIABLES = new IVariable[0];
+
+	private final @Nullable DSPVariable modelVariable;
 	private final Integer variablesReference;
 	private final String value;
-	private IVariable[] cachedVariables;
+	private IVariable @Nullable [] cachedVariables;
 
 	public DSPValue(DSPVariable variable, Integer variablesReference, String value) {
 		super(variable.getDebugTarget());
@@ -38,9 +41,9 @@ public final class DSPValue extends DSPDebugElement implements IValue {
 	}
 
 	@Override
-	public IVariable[] getVariables() throws DebugException {
+	public IVariable @Nullable [] getVariables() throws DebugException {
 		if (!hasVariables()) {
-			return new IVariable[0];
+			return NO_VARIABLES;
 		}
 		if (cachedVariables == null) {
 			final var arguments = new VariablesArguments();
@@ -60,7 +63,7 @@ public final class DSPValue extends DSPDebugElement implements IValue {
 	}
 
 	@Override
-	public String getReferenceTypeName() throws DebugException {
+	public @Nullable String getReferenceTypeName() throws DebugException {
 		if (modelVariable != null) {
 			return modelVariable.getName();
 		}
