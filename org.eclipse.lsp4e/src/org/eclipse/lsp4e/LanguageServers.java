@@ -12,8 +12,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
-import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -280,10 +278,8 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		 * Test whether this server supports the requested <code>ServerCapabilities</code>.
 		 */
 		private CompletableFuture<@Nullable LanguageServerWrapper> filter(LanguageServerWrapper wrapper) {
-			return wrapper.getInitializedServer()
-					.thenCompose(server -> CompletableFuture
-							.completedFuture(server != null && getFilter().test(castNonNull(wrapper.getServerCapabilities()))))
-					.thenApply(matches -> matches ? wrapper: null);
+			return wrapper.getServerCapabilitiesAsync() //
+					.thenApply(sc -> getFilter().test(sc) ? wrapper : null);
 		}
 
 		@Override

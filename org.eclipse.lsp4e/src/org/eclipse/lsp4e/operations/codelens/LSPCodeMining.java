@@ -51,22 +51,20 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 
 	@Override
 	protected CompletableFuture<@Nullable Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
-		final ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
-		if (serverCapabilities == null) {
-			return CompletableFuture.completedFuture(null);
-		}
-		final Boolean resolveProvider = serverCapabilities.getCodeLensProvider().getResolveProvider();
-		if (resolveProvider == null || !resolveProvider) {
-			return CompletableFuture.completedFuture(null);
-		}
+		return languageServerWrapper.getServerCapabilitiesAsync().thenCompose(capabilities -> {
+			final Boolean resolveProvider = capabilities.getCodeLensProvider().getResolveProvider();
+			if (resolveProvider == null || !resolveProvider) {
+				return CompletableFuture.completedFuture(null);
+			}
 
-		return languageServerWrapper.execute(languageServer -> languageServer.getTextDocumentService().resolveCodeLens(this.codeLens))
-				.thenAccept(resolvedCodeLens -> {
-					if (resolvedCodeLens != null) {
-						codeLens = resolvedCodeLens;
-						setLabel(getCodeLensString(resolvedCodeLens));
-					}
-				});
+			return languageServerWrapper.execute(languageServer -> languageServer.getTextDocumentService().resolveCodeLens(this.codeLens))
+					.thenAccept(resolvedCodeLens -> {
+						if (resolvedCodeLens != null) {
+							codeLens = resolvedCodeLens;
+							setLabel(getCodeLensString(resolvedCodeLens));
+						}
+					});
+		});
 	}
 
 	@Override

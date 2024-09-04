@@ -901,6 +901,10 @@ public class LanguageServerWrapper {
 		return this.serverCapabilities;
 	}
 
+	public CompletableFuture<ServerCapabilities> getServerCapabilitiesAsync() {
+		return getInitializedServer().thenApply(ls -> castNonNull(this.serverCapabilities));
+	}
+
 	/**
 	 * @return The language ID that this wrapper is dealing with if defined in the
 	 *         content type mapping for the language server
