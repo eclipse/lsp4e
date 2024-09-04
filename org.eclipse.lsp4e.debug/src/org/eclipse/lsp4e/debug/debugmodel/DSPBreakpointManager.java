@@ -68,7 +68,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 	 *
 	 * @return the completeable future to signify when the breakpoints are all sent.
 	 */
-	public CompletableFuture<Void> initialize() {
+	public CompletableFuture<@Nullable Void> initialize() {
 		platformBreakpointManager.addBreakpointListener(this);
 		platformBreakpointManager.addBreakpointManagerListener(this);
 		return resendAllTargetBreakpoints(platformBreakpointManager.isEnabled());
@@ -101,7 +101,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 		resendAllTargetBreakpoints(enabled);
 	}
 
-	private CompletableFuture<Void> resendAllTargetBreakpoints(boolean enabled) {
+	private CompletableFuture<@Nullable Void> resendAllTargetBreakpoints(boolean enabled) {
 		IBreakpoint[] breakpoints = platformBreakpointManager.getBreakpoints();
 		for (IBreakpoint breakpoint : breakpoints) {
 			if (supportsBreakpoint(breakpoint)) {
@@ -211,7 +211,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 		}
 	}
 
-	private CompletableFuture<Void> sendBreakpoints() {
+	private CompletableFuture<@Nullable Void> sendBreakpoints() {
 		final var all = new ArrayList<CompletableFuture<Void>>();
 		for (Iterator<Entry<Source, List<SourceBreakpoint>>> iterator = targetBreakpoints.entrySet()
 				.iterator(); iterator.hasNext();) {
@@ -228,7 +228,7 @@ public class DSPBreakpointManager implements IBreakpointManagerListener, IBreakp
 			arguments.setBreakpoints(sourceBps);
 			arguments.setSourceModified(false);
 			CompletableFuture<SetBreakpointsResponse> future = debugProtocolServer.setBreakpoints(arguments);
-			CompletableFuture<Void> future2 = future.thenAccept((SetBreakpointsResponse bpResponse) -> {
+			CompletableFuture<@Nullable Void> future2 = future.thenAccept((SetBreakpointsResponse bpResponse) -> {
 				// TODO update platform breakpoint with new info
 			});
 			all.add(future2);

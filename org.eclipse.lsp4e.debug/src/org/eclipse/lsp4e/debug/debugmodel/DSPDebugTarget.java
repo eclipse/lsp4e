@@ -288,10 +288,8 @@ public class DSPDebugTarget extends DSPDebugElement implements IDebugTarget, IDe
 					}
 					return q;
 				});
-		CompletableFuture<Void> configurationDoneFuture = CompletableFuture.allOf(initialized, capabilitiesFuture)
-				.thenRun(() -> {
-					monitor.worked(10);
-				});
+		CompletableFuture<@Nullable Void> configurationDoneFuture = CompletableFuture
+				.allOf(initialized, capabilitiesFuture).thenRun(() -> monitor.worked(10));
 		if (ILaunchManager.DEBUG_MODE.equals(launch.getLaunchMode())) {
 			configurationDoneFuture = configurationDoneFuture.thenCompose(v -> {
 				monitor.worked(10);

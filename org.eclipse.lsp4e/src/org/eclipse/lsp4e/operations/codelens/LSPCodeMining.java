@@ -50,7 +50,7 @@ public class LSPCodeMining extends LineHeaderCodeMining {
 	}
 
 	@Override
-	protected CompletableFuture<Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
+	protected CompletableFuture<@Nullable Void> doResolve(ITextViewer viewer, IProgressMonitor monitor) {
 		final ServerCapabilities serverCapabilities = languageServerWrapper.getServerCapabilities();
 		if (serverCapabilities == null) {
 			return CompletableFuture.completedFuture(null);

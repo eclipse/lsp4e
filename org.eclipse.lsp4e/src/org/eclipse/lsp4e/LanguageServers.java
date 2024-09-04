@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.Assert;
-import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4e.LanguageServersRegistry.LanguageServerDefinition;
@@ -267,10 +266,9 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 		CompletableFuture<@Nullable LanguageServerWrapper> connect(CompletableFuture<@Nullable LanguageServerWrapper> wrapperFuture) {
 			return wrapperFuture.thenCompose(wrapper -> {
 				if (wrapper != null) {
-					@NonNullByDefault({})
 					CompletableFuture<LanguageServerWrapper> serverFuture = wrapper.connectDocument(document);
 					if (serverFuture != null) {
-						return serverFuture;
+						return (CompletableFuture<@Nullable LanguageServerWrapper>) serverFuture;
 					}
 				}
 				return CompletableFuture.completedFuture(null);
@@ -422,7 +420,7 @@ public abstract class LanguageServers<E extends LanguageServers<E>> {
 	 * (not chained with other futures) so cancelling the futures in
 	 * this stream will send a cancellation event to the LSs.</p>
 	 */
-	private <T> Stream<CompletableFuture<T>> executeOnServers(
+	private <@Nullable T> Stream<CompletableFuture<T>> executeOnServers(
 			BiFunction<? super LanguageServerWrapper, LanguageServer, ? extends CompletableFuture<T>> fn) {
 		return getServers().stream().map(serverFuture -> {
 			// wrap in AtomicReference to allow dereferencing in downstream future
