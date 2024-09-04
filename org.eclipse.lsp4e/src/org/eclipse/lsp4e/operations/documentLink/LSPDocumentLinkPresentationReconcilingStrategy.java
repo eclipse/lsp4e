@@ -46,7 +46,7 @@ public class LSPDocumentLinkPresentationReconcilingStrategy
 	/** The target viewer. */
 	private @Nullable ITextViewer viewer;
 
-	private @Nullable CompletableFuture<Void> request;
+	private @Nullable CompletableFuture<@Nullable Void> request;
 
 	private @Nullable IDocument document;
 

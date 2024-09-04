@@ -374,7 +374,7 @@ final class DocumentContentSynchronizer implements IDocumentListener {
 
 	}
 
-	public CompletableFuture<Void> documentClosed() {
+	public CompletableFuture<@Nullable Void> documentClosed() {
 	   final var identifier = LSPEclipseUtils.toTextDocumentIdentifier(fileUri);
 		WILL_SAVE_WAIT_UNTIL_TIMEOUT_MAP.remove(identifier.getUri());
 		// When LS is shut down all documents are being disconnected. No need to send

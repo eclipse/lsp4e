@@ -74,9 +74,9 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 	private @Nullable IDocument currentDocument;
 	private @Nullable String errorMessage;
 	private final boolean errorAsCompletionItem;
-	private @Nullable CompletableFuture<List<Void>> completionLanguageServersFuture;
+	private @Nullable CompletableFuture<List<@Nullable Void>> completionLanguageServersFuture;
 	private volatile char[] completionTriggerChars = NO_CHARS;
-	private @Nullable CompletableFuture<List<Void>> contextInformationLanguageServersFuture;
+	private @Nullable CompletableFuture<List<@Nullable Void>> contextInformationLanguageServersFuture;
 	private volatile char[] contextTriggerChars = NO_CHARS;
 	private final boolean incompleteAsCompletionItem;
 
@@ -327,7 +327,7 @@ public class LSContentAssistProcessor implements IContentAssistProcessor {
 		return new ContextInformation(information.getLabel(), signature.toString());
 	}
 
-	private void getFuture(@Nullable CompletableFuture<List<Void>> future) {
+	private void getFuture(@Nullable CompletableFuture<?> future) {
 		if (future == null) {
 			return;
 		}

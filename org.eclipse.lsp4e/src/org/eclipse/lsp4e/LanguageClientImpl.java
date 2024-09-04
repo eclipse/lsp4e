@@ -141,12 +141,12 @@ public class LanguageClientImpl implements LanguageClient {
 	}
 
 	@Override
-	public CompletableFuture<Void> registerCapability(RegistrationParams params) {
+	public CompletableFuture<@Nullable Void> registerCapability(RegistrationParams params) {
 		return CompletableFuture.runAsync(() -> wrapper.registerCapability(params));
 	}
 
 	@Override
-	public CompletableFuture<Void> unregisterCapability(UnregistrationParams params) {
+	public CompletableFuture<@Nullable Void> unregisterCapability(UnregistrationParams params) {
 		return CompletableFuture.runAsync(() -> wrapper.unregisterCapability(params));
 	}
 
@@ -182,12 +182,12 @@ public class LanguageClientImpl implements LanguageClient {
 	}
 
 	@Override
-	public CompletableFuture<Void> refreshCodeLenses() {
+	public CompletableFuture<@Nullable Void> refreshCodeLenses() {
 		return CompletableFuture.runAsync(() -> UI.getDisplay().syncExec(this::updateCodeMinings));
 	}
 
 	@Override
-	public CompletableFuture<Void> refreshInlayHints() {
+	public CompletableFuture<@Nullable Void> refreshInlayHints() {
 		return CompletableFuture.runAsync(() -> UI.getDisplay().syncExec(this::updateCodeMinings));
 	}
 

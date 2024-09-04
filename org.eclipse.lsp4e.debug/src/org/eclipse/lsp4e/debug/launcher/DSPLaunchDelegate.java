@@ -193,7 +193,8 @@ public class DSPLaunchDelegate implements ILaunchConfigurationDelegate {
 		public String toString() {
 			return "DSPLaunchDelegateLaunchBuilder [configuration=" + configuration + ", mode=" + mode + ", launch="
 					+ launch + ", monitor=" + monitor + ", launchNotConnect=" + launchNotConnect + ", debugCmd="
-					+ debugCmd + ", debugCmdArgs=" + debugCmdArgs + ", debugCmdEnvVars=" + List.of(debugCmdEnvVars)
+			      + debugCmd + ", debugCmdArgs=" + debugCmdArgs //
+			      + ", debugCmdEnvVars=" + (debugCmdEnvVars == null ? null : List.of(debugCmdEnvVars))
 					+ ", monitorDebugAdapter=" + monitorDebugAdapter + ", server=" + server + ", port=" + port
 					+ ", dspParameters=" + dspParameters + "]";
 		}

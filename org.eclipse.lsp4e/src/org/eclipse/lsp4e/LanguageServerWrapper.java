@@ -159,7 +159,7 @@ public class LanguageServerWrapper {
 
 	protected @Nullable StreamConnectionProvider lspStreamProvider;
 	private @Nullable Future<?> launcherFuture;
-	private @Nullable CompletableFuture<Void> initializeFuture;
+	private @Nullable CompletableFuture<@Nullable Void> initializeFuture;
 	private final AtomicReference<@Nullable IProgressMonitor> initializeFutureMonitorRef = new AtomicReference<>();
 	private final int initializeFutureNumberOfStages = 7;
 	private @Nullable LanguageServer languageServer;
@@ -389,7 +389,7 @@ public class LanguageServerWrapper {
 			protected IStatus run(IProgressMonitor monitor) {
 				final var initializeFutureMonitor = SubMonitor.convert(monitor, initializeFutureNumberOfStages);
 				initializeFutureMonitorRef.set(initializeFutureMonitor);
-				CompletableFuture<Void> currentInitializeFuture = initializeFuture;
+				CompletableFuture<@Nullable Void> currentInitializeFuture = initializeFuture;
 				try {
 					if (currentInitializeFuture != null) {
 						currentInitializeFuture.join();
@@ -714,9 +714,9 @@ public class LanguageServerWrapper {
 	 * @param uri
 	 * @return null if not disconnection has happened, a future tracking the disconnection state otherwise
 	 */
-	public @Nullable CompletableFuture<Void> disconnect(URI uri) {
+	public @Nullable CompletableFuture<@Nullable Void> disconnect(URI uri) {
 		DocumentContentSynchronizer documentListener = this.connectedDocuments.remove(uri);
-		CompletableFuture<Void> documentClosedFuture = null;
+		CompletableFuture<@Nullable Void> documentClosedFuture = null;
 		if (documentListener != null) {
 			documentListener.getDocument().removePrenotifiedDocumentListener(documentListener);
 			documentClosedFuture = documentListener.documentClosed();
@@ -778,7 +778,7 @@ public class LanguageServerWrapper {
 	protected CompletableFuture<LanguageServer> getInitializedServer() {
 		start();
 
-		final CompletableFuture<Void> currentInitializeFuture = initializeFuture;
+		final CompletableFuture<@Nullable Void> currentInitializeFuture = initializeFuture;
 		if (currentInitializeFuture != null && !currentInitializeFuture.isDone()) {
 			return currentInitializeFuture.thenApply(r -> castNonNull(this.languageServer));
 		}
