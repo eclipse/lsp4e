@@ -242,8 +242,11 @@ public class LanguageServerWrapper {
 	}
 
 	/**
-	 * Starts a language server and triggers initialization. If language server is
-	 * started and active, does nothing. If language server is inactive, restart it.
+	 * Starts a language server and triggers initialization. If language server has been started
+	 * before, does nothing.
+	 * If the initialization throws an exception (e.g. because the binary for the LS could not be found),
+	 * call {@link #restart()} to force another startup attempt (e.g. because the exception could be handled programmatically).
+	 * Use {@link #startupFailed()} to check if an exception has occurred.
 	 */
 	public synchronized void start() {
 		start(false);
@@ -279,7 +282,7 @@ public class LanguageServerWrapper {
 				stop();
 			}
 		}
-		if (this.initializeFuture == null) {
+		if (this.initializeFuture == null || forceRestart) {
 			final URI rootURI = getRootURI();
 			final Job job = createInitializeLanguageServerJob();
 			this.launcherFuture = new CompletableFuture<>();
@@ -354,7 +357,7 @@ public class LanguageServerWrapper {
 				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
 				advanceInitializeFutureMonitor();
 			}).exceptionally(e -> {
-				stop();
+				shutdown();
 				final Throwable cause = e.getCause();
 				if (cause instanceof CancellationException c) {
 					throw c;
@@ -486,6 +489,13 @@ public class LanguageServerWrapper {
 		return launcherFuture != null && !launcherFuture.isDone();
 	}
 
+	/**
+	 * @return whether the last startup attempt has failed
+	 */
+	public synchronized boolean startupFailed() {
+		return this.initializeFuture != null && this.initializeFuture.isCompletedExceptionally();
+	}
+
 	private void removeStopTimerTask() {
 		synchronized (timer) {
 			if (stopTimerTask != null) {
@@ -521,6 +531,14 @@ public class LanguageServerWrapper {
 	}
 
 	public synchronized void stop() {
+		if (this.initializeFuture != null) {
+			initializeFuture.cancel(true);
+			this.initializeFuture= null;
+		}
+		shutdown();
+	}
+
+	private void shutdown() {
 		final boolean alreadyStopping = this.stopping.getAndSet(true);
 		if (alreadyStopping) {
 			return;
@@ -529,11 +547,6 @@ public class LanguageServerWrapper {
 
 		if (this.languageClient != null) {
 			this.languageClient.dispose();
-		}
-
-		if (this.initializeFuture != null) {
-			this.initializeFuture.cancel(true);
-			this.initializeFuture = null;
 		}
 
 		this.serverCapabilities = null;
