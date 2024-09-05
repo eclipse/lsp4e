@@ -99,8 +99,14 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 					}
 				}
 			}
-		} catch (ExecutionException | TimeoutException | InterruptedException ex) {
-			LanguageServerPlugin.logError(ex);
+		} catch (TimeoutException e) {
+			LanguageServerPlugin.logWarning(
+					"Could resolve code actions due to timeout after 2 seconds in `textDocument/resolveCodeAction`", e); //$NON-NLS-1$
+		} catch (ExecutionException e) {
+			LanguageServerPlugin.logError(e);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			LanguageServerPlugin.logError(e);
 		}
 	}
 
