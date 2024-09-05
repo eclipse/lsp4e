@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2018, 2022 Red Hat Inc. and others.
+ * Copyright (c) 2018, 2024 Red Hat Inc. and others.
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
  * which is available at https://www.eclipse.org/legal/epl-2.0/
@@ -8,7 +8,9 @@
  *
  * Contributors:
  *  Mickael Istria (Red Hat Inc.) - initial implementation
- *  Max Bureck (Fraunhofer FOKUS) - integeration with CommandExecutor
+ *  Max Bureck (Fraunhofer FOKUS) - integration with CommandExecutor
+ *  Andrew Lamb (Avaloq Group AG) - refactor to add new public methods
+ *  Rubén Porras Campo (Avaloq Group AG) - small fixes
  *******************************************************************************/
 package org.eclipse.lsp4e.operations.codeactions;
 
