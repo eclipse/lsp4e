@@ -74,33 +74,29 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 			LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
 			return;
 		}
-		try {
-			LanguageServerWrapper wrapper = getLanguageServerWrapper(marker);
-			if (wrapper != null) {
-				resolveCodeAction(wrapper);
-				if (codeAction.getEdit() != null) {
-					LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
-				}
-				if (codeAction.getCommand() != null) {
-					Command command = codeAction.getCommand();
-					ServerCapabilities cap = wrapper.getServerCapabilities();
-					ExecuteCommandOptions provider = cap == null ? null : cap.getExecuteCommandProvider();
-					if (provider != null && provider.getCommands().contains(command.getCommand())) {
-						final LanguageServerDefinition serverDefinition = wrapper.serverDefinition;
-						wrapper.execute(ls -> ls.getWorkspaceService()
-								.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments()))
-								.exceptionally(t -> reportServerError(serverDefinition, t))
-						);
-					} else  {
-						IResource resource = marker.getResource();
-						if (resource != null) {
-							CommandExecutor.executeCommandClientSide(command, resource);
-						}
+		LanguageServerWrapper wrapper = getLanguageServerWrapper(marker);
+		if (wrapper != null) {
+			resolveCodeAction(wrapper);
+			if (codeAction.getEdit() != null) {
+				LSPEclipseUtils.applyWorkspaceEdit(codeAction.getEdit(), codeAction.getTitle());
+			}
+			if (codeAction.getCommand() != null) {
+				Command command = codeAction.getCommand();
+				ServerCapabilities cap = wrapper.getServerCapabilities();
+				ExecuteCommandOptions provider = cap == null ? null : cap.getExecuteCommandProvider();
+				if (provider != null && provider.getCommands().contains(command.getCommand())) {
+					final LanguageServerDefinition serverDefinition = wrapper.serverDefinition;
+					wrapper.execute(ls -> ls.getWorkspaceService()
+							.executeCommand(new ExecuteCommandParams(command.getCommand(), command.getArguments()))
+							.exceptionally(t -> reportServerError(serverDefinition, t))
+					);
+				} else  {
+					IResource resource = marker.getResource();
+					if (resource != null) {
+						CommandExecutor.executeCommandClientSide(command, resource);
 					}
 				}
 			}
-		} catch (ExecutionException | TimeoutException | InterruptedException ex) {
-			LanguageServerPlugin.logError(ex);
 		}
 	}
 
@@ -159,15 +155,24 @@ public class CodeActionMarkerResolution extends WorkbenchMarkerResolution implem
 	 * @param wrapper
 	 *            the wrapper for the language server to send the resolve request to.
 	 */
-	public void resolveCodeAction(LanguageServerWrapper wrapper)
-			throws InterruptedException, ExecutionException, TimeoutException {
+	public void resolveCodeAction(LanguageServerWrapper wrapper) {
 		if (codeAction.getEdit() != null) {
 			return;
 		}
 		if (CodeActionCompletionProposal.isCodeActionResolveSupported(wrapper.getServerCapabilities())) {
-			CodeAction resolvedCodeAction = wrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
-			if (resolvedCodeAction != null) {
-				codeAction = resolvedCodeAction;
+			try {
+				CodeAction resolvedCodeAction = wrapper.execute(ls -> ls.getTextDocumentService().resolveCodeAction(codeAction)).get(2, TimeUnit.SECONDS);
+				if (resolvedCodeAction != null) {
+					codeAction = resolvedCodeAction;
+				}
+			} catch (TimeoutException e) {
+				LanguageServerPlugin.logWarning(
+						"Could resolve code actions due to timeout after 2 seconds in `textDocument/resolveCodeAction`", e); //$NON-NLS-1$
+			} catch (ExecutionException e) {
+				LanguageServerPlugin.logError(e);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				LanguageServerPlugin.logError(e);
 			}
 		}
 	}
