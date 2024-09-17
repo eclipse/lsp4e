@@ -28,6 +28,7 @@ import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
+import org.eclipse.core.resources.IWorkspace;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
@@ -139,32 +140,45 @@ public class TestUtils {
 	}
 
 	public static IProject createProject(String projectName) throws CoreException {
-		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
-		if (project.exists()) {
+		IWorkspace ws = ResourcesPlugin.getWorkspace();
+		IProject project = ws.getRoot().getProject(projectName);
+		if (project.exists() && project.isOpen()) {
 			return project;
 		}
-		project.create(null);
-		project.open(null);
-		// configure nature
+
+		// avoids java.lang.IllegalArgumentException: Attempted to beginRule:
+		// P/WorkspaceFoldersTest_testPojectCreate_1726575959224, does not match outer scope rule: P/
+		ws.run(monitor -> {
+			if (!project.exists()) {
+				project.create(null);
+			}
+			project.open(null);
+		}, ws.getRoot(), IWorkspace.AVOID_UPDATE, null); // Ensure proper scheduling
+
 		return project;
 	}
 
 	public static IProject createNestedProject(IProject parent, String projectName) throws CoreException {
-
 		IFolder nestedFolder = parent.getFolder(projectName);
-		nestedFolder.create(true, true, new NullProgressMonitor());
+		nestedFolder.create(true, true, null);
 
-		IProject project = ResourcesPlugin.getWorkspace().getRoot().getProject(projectName);
-		if (project.exists()) {
+		IWorkspace ws = ResourcesPlugin.getWorkspace();
+		IProject project = ws.getRoot().getProject(projectName);
+		if (project.exists() && project.isOpen()) {
 			return project;
 		}
 
-		IProjectDescription desc = ResourcesPlugin.getWorkspace().newProjectDescription(projectName);
-		desc.setLocation(nestedFolder.getLocation());
+		// avoids java.lang.IllegalArgumentException: Attempted to beginRule:
+		// P/WorkspaceFoldersTest_testPojectCreate_1726575959224, does not match outer scope rule: P/
+		ws.run(monitor -> {
+			if (!project.exists()) {
+				IProjectDescription desc = ws.newProjectDescription(projectName);
+				desc.setLocation(nestedFolder.getLocation());
+				project.create(desc, null);
+			}
+			project.open(null);
+		}, ws.getRoot(), IWorkspace.AVOID_UPDATE, null); // Ensure proper scheduling
 
-		project.create(desc, null);
-		project.open(null);
-		// configure nature
 		return project;
 	}
 
@@ -202,7 +216,7 @@ public class TestUtils {
 
 	public static void delete(IProject project) throws CoreException {
 		if (project != null) {
-			project.delete(true, new NullProgressMonitor());
+			project.delete(true, null);
 		}
 	}
 

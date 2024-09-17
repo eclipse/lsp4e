@@ -30,6 +30,8 @@ public abstract class AbstractTestWithProject extends AbstractTest {
 
 	@After
 	public void tearDownProject() throws Exception {
-		project.delete(IResource.FORCE, null);
+		if (project != null) {
+			project.delete(IResource.FORCE, null);
+		}
 	}
 }
