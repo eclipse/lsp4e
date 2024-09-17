@@ -74,6 +74,10 @@ public class LanguageServerWrapperTest extends AbstractTestWithProject {
 	 */
 	@Test
 	public void testStopAndActive() throws CoreException, AssertionError, InterruptedException, ExecutionException {
+		if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+			// FIXME temporarily disabling test on Windows because of https://github.com/eclipse/lsp4e/issues/1103
+			return;
+		}
 		IFile testFile1 = TestUtils.createFile(project, "shouldUseExtension.lsptWithMultiRoot", "");
 		IEditorPart editor1 = TestUtils.openEditor(testFile1);
 		@NonNull Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1, request -> true);
