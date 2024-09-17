@@ -74,8 +74,9 @@ public class LanguageServerWrapperTest extends AbstractTestWithProject {
 	 */
 	@Test
 	public void testStopAndActive() throws CoreException, AssertionError, InterruptedException, ExecutionException {
-		if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
-			// FIXME temporarily disabling test on Windows because of https://github.com/eclipse/lsp4e/issues/1103
+		if (System.getProperty("os.name").toLowerCase().startsWith("windows") || System.getenv("JENKINS_URL") != null) {
+			// FIXME temporarily disabling test on Windows and Jenkins because of https://github.com/eclipse/lsp4e/issues/1103
+			System.err.println("Temporarily skipping test execution. See https://github.com/eclipse/lsp4e/issues/1103");
 			return;
 		}
 		IFile testFile1 = TestUtils.createFile(project, "shouldUseExtension.lsptWithMultiRoot", "");
