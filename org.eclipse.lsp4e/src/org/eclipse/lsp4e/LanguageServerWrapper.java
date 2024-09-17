@@ -59,6 +59,7 @@ import org.eclipse.core.resources.WorkspaceJob;
 import org.eclipse.core.runtime.Adapters;
 import org.eclipse.core.runtime.Assert;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProduct;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -1017,8 +1018,11 @@ public class LanguageServerWrapper {
 	private void addRegistration(Registration reg, Runnable unregistrationHandler) {
 		String regId = reg.getId();
 		synchronized (dynamicRegistrations) {
-			Assert.isLegal(!dynamicRegistrations.containsKey(regId), "Registration id is not unique"); //$NON-NLS-1$
-			dynamicRegistrations.put(regId, unregistrationHandler);
+			if (dynamicRegistrations.containsKey(regId)) {
+				ILog.get().warn("A registration with id " + regId + " already exists. Unregistering may not fully work in this case.\n"); //$NON-NLS-1$ //$NON-NLS-2$
+			} else {
+				dynamicRegistrations.put(regId, unregistrationHandler);
+			}
 		}
 	}
 
