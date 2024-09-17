@@ -106,7 +106,9 @@ public class TestUtils {
 		IWorkbenchWindow workbenchWindow = UI.getActiveWindow();
 		IWorkbenchPage page = workbenchWindow.getActivePage();
 		IEditorPart part = IDE.openEditor(page, file.toURI(), "org.eclipse.ui.genericeditor.GenericEditor", false);
-		part.setFocus();
+		if (part != null) {
+			part.setFocus();
+		}
 		return part;
 	}
 
