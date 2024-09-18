@@ -14,6 +14,7 @@ package org.eclipse.lsp4e.test.completion;
 import static org.junit.Assert.*;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -29,6 +30,8 @@ import org.eclipse.lsp4j.SignatureHelp;
 import org.eclipse.lsp4j.SignatureInformation;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.primitives.Chars;
 
 public class ContextInformationTest extends AbstractCompletionTest {
 
@@ -76,8 +79,8 @@ public class ContextInformationTest extends AbstractCompletionTest {
 		final var content = "First";
 		TestUtils.openTextViewer(TestUtils.createUniqueTestFile(project, content));
 
-		assertArrayEquals(new char[] { 'a', 'b' },
-				contentAssistProcessor.getContextInformationAutoActivationCharacters());
+		assertEquals(Set.of('a', 'b'),
+				new HashSet<>(Chars.asList(contentAssistProcessor.getContextInformationAutoActivationCharacters())));
 	}
 
 	@Test

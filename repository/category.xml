@@ -33,7 +33,7 @@
    <bundle id="org.eclipse.lsp4e.tests.mock.source">
       <category name="Sources and Tests"/>
    </bundle>
-   
+
    <category-def name="deps" label="Dependencies"/>
    <bundle id="org.eclipse.lsp4j">
      <category name="deps"/>
@@ -48,6 +48,9 @@
      <category name="deps"/>
    </bundle>
    <bundle id="com.google.gson">
+     <category name="deps"/>
+   </bundle>
+   <bundle id="io.github.futures4j">
      <category name="deps"/>
    </bundle>
 </site>

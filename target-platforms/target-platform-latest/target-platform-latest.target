@@ -30,6 +30,22 @@
 			<unit id="com.google.guava.failureaccess" version="1.0.2"/>
 			<repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2024-09"/>
 		</location>
+		<location includeDependencyDepth="infinite" includeDependencyScopes="compile" includeSource="true" missingManifest="generate" type="Maven">
+			<repositories>
+				<repository>
+					<id>futures4j-snapshot</id>
+					<url>https://raw.githubusercontent.com/futures4j/futures4j/mvn-snapshot-repo</url>
+				</repository>
+			</repositories>
+		<dependencies>
+			<dependency>
+				<groupId>io.github.futures4j</groupId>
+				<artifactId>futures4j</artifactId>
+				<version>1.0.0-20240917.100018-3</version>
+				<type>jar</type>
+			</dependency>
+		</dependencies>
+		</location>
 		<location includeDependencyDepth="none" includeSource="false" missingManifest="error" type="Maven">
 			<dependencies>
 				<dependency>
