@@ -50,6 +50,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.commonmark.node.Node;
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
 import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
@@ -138,8 +141,6 @@ import org.eclipse.ltk.core.refactoring.resource.MoveRenameResourceChange;
 import org.eclipse.ltk.core.refactoring.resource.RenameResourceChange;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizard;
 import org.eclipse.ltk.ui.refactoring.RefactoringWizardOpenOperation;
-import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
-import org.eclipse.mylyn.wikitext.parser.MarkupParser;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.text.edits.MalformedTreeException;
@@ -184,7 +185,6 @@ public final class LSPEclipseUtils {
 	private static final String MARKDOWN = "markdown"; //$NON-NLS-1$
 	private static final String MD = "md"; //$NON-NLS-1$
 	private static final int MAX_BROWSER_NAME_LENGTH = 30;
-	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage());
 
 	private LSPEclipseUtils() {
 		// this class shouldn't be instantiated
@@ -1434,7 +1434,10 @@ public final class LSPEclipseUtils {
 				String kind = markupContent.getKind();
 				if (MARKDOWN.equalsIgnoreCase(kind) || MD.equalsIgnoreCase(kind)) {
 					try {
-						return MARKDOWN_PARSER.parseToHtml(text);
+						Parser parser = Parser.builder().build();
+						Node document = parser.parse(text);
+						HtmlRenderer renderer = HtmlRenderer.builder().build();
+						return renderer.render(document);
 					} catch (Exception e) {
 						LanguageServerPlugin.logError(e);
 						return htmlParagraph(text);

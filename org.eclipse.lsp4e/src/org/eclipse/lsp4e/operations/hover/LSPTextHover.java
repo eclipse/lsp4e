@@ -26,6 +26,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.commonmark.node.Node;
+import org.commonmark.parser.Parser;
+import org.commonmark.renderer.html.HtmlRenderer;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.internal.text.html.BrowserInformationControl;
 import org.eclipse.jface.text.AbstractReusableInformationControlCreator;
@@ -48,8 +51,6 @@ import org.eclipse.lsp4j.MarkedString;
 import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.mylyn.wikitext.markdown.MarkdownLanguage;
-import org.eclipse.mylyn.wikitext.parser.MarkupParser;
 import org.eclipse.swt.widgets.Shell;
 
 /**
@@ -59,7 +60,6 @@ import org.eclipse.swt.widgets.Shell;
 @SuppressWarnings("restriction")
 public class LSPTextHover implements ITextHover, ITextHoverExtension {
 
-	private static final MarkupParser MARKDOWN_PARSER = new MarkupParser(new MarkdownLanguage(true));
 	private static final int GET_TIMEOUT_MS = 1000;
 
 	private @Nullable IRegion lastRegion;
@@ -94,7 +94,10 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 				.collect(Collectors.joining("\n\n")) //$NON-NLS-1$
 				.trim();
 			if (!result.isEmpty()) {
-				return MARKDOWN_PARSER.parseToHtml(result);
+				Parser parser = Parser.builder().build();
+				Node document = parser.parse(result);
+				HtmlRenderer renderer = HtmlRenderer.builder().build();
+				return renderer.render(document);
 			} else {
 				return null;
 			}
