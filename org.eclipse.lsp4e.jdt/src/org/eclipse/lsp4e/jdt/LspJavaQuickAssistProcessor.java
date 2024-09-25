@@ -29,7 +29,6 @@ import org.eclipse.lsp4e.operations.codeactions.LSPCodeActionQuickAssistProcesso
 @SuppressWarnings("restriction")
 public class LspJavaQuickAssistProcessor extends LSPCodeActionQuickAssistProcessor implements IQuickAssistProcessor {
 
-	private static final int RELEVANCE = 100;
 	private static final IJavaCompletionProposal[] NO_JAVA_COMPLETION_PROPOSALS = new IJavaCompletionProposal[0];
 
 	private IQuickAssistInvocationContext getContext(IInvocationContext context) {
@@ -73,11 +72,11 @@ public class LspJavaQuickAssistProcessor extends LSPCodeActionQuickAssistProcess
 			 * proper completion proposal extension
 			 */
 			if (proposals[i] instanceof ICompletionProposalExtension2) {
-				javaProposals[i] = new LSJavaProposalExtension2(proposals[i], RELEVANCE);
+				javaProposals[i] = new LSJavaProposalExtension2(proposals[i]);
 			} else if (proposals[i] instanceof ICompletionProposalExtension) {
-				javaProposals[i] = new LSJavaProposalExtension(proposals[i], RELEVANCE);
+				javaProposals[i] = new LSJavaProposalExtension(proposals[i]);
 			} else {
-				javaProposals[i] = new LSJavaProposal(proposals[i], RELEVANCE);
+				javaProposals[i] = new LSJavaProposal(proposals[i]);
 			}
 		}
 		return javaProposals;

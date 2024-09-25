@@ -20,8 +20,8 @@ import org.eclipse.jface.text.contentassist.ICompletionProposalExtension2;
 
 class LSJavaProposalExtension2 extends LSJavaProposal implements ICompletionProposalExtension2 {
 
-	public LSJavaProposalExtension2(ICompletionProposal delegate, int relevance) {
-		super(delegate, relevance);
+	public LSJavaProposalExtension2(ICompletionProposal delegate) {
+		super(delegate);
 	}
 
 	@Override
