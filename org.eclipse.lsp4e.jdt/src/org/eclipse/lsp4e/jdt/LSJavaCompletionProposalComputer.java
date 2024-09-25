@@ -84,19 +84,18 @@ public class LSJavaCompletionProposalComputer implements IJavaCompletionProposal
 		// We assume that the original proposals are in the correct order, so we set relevance
 		// based on this existing order. Note that based on IJavaCompletionProposal javadoc,
 		// relevance values are [0,1000] so we start at 1000
-		int relevance = 1000;
 		final var javaProposals = new ICompletionProposal[originalProposals.length];
 
 		for (int i = 0; i < originalProposals.length; i++) {
 			if (originalProposals[i] instanceof ICompletionProposalExtension2) {
-				javaProposals[i] = new LSJavaProposalExtension2(originalProposals[i], relevance--);
+				javaProposals[i] = new LSJavaProposalExtension2(originalProposals[i]);
 			} else if (originalProposals[i] instanceof ICompletionProposalExtension) {
-				javaProposals[i] = new LSJavaProposalExtension(originalProposals[i], relevance--);
+				javaProposals[i] = new LSJavaProposalExtension(originalProposals[i]);
 			} else {
-				javaProposals[i] = new LSJavaProposal(originalProposals[i], relevance--);
+				javaProposals[i] = new LSJavaProposal(originalProposals[i]);
 			}
 		}
-
+		
 		return javaProposals;
 	}
 

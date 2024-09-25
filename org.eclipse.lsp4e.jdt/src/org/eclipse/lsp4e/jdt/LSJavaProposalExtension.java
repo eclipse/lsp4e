@@ -18,8 +18,8 @@ import org.eclipse.jface.text.contentassist.ICompletionProposalExtension;
 
 class LSJavaProposalExtension extends LSJavaProposal implements ICompletionProposalExtension {
 
-	public LSJavaProposalExtension(ICompletionProposal delegate, int relevance) {
-		super(delegate, relevance);
+	public LSJavaProposalExtension(ICompletionProposal delegate) {
+		super(delegate);
 	}
 
 	@Override
@@ -32,7 +32,7 @@ class LSJavaProposalExtension extends LSJavaProposal implements ICompletionPropo
 	@Override
 	public int getContextInformationPosition() {
 		if (delegate instanceof ICompletionProposalExtension proposalExt) {
-			proposalExt.getContextInformationPosition();
+			return proposalExt.getContextInformationPosition();
 		}
 		return -1;
 	}
@@ -40,7 +40,7 @@ class LSJavaProposalExtension extends LSJavaProposal implements ICompletionPropo
 	@Override
 	public char @Nullable [] getTriggerCharacters() {
 		if (delegate instanceof ICompletionProposalExtension proposalExt) {
-			proposalExt.getTriggerCharacters();
+			return proposalExt.getTriggerCharacters();
 		}
 		return null;
 	}
@@ -48,7 +48,7 @@ class LSJavaProposalExtension extends LSJavaProposal implements ICompletionPropo
 	@Override
 	public boolean isValidFor(IDocument doc, int offset) {
 		if (delegate instanceof ICompletionProposalExtension proposalExt) {
-			proposalExt.isValidFor(doc, offset);
+			return proposalExt.isValidFor(doc, offset);
 		}
 		return false;
 	}
