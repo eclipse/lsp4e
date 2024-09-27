@@ -18,9 +18,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
@@ -29,6 +30,7 @@ import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServiceAccessor;
 import org.eclipse.lsp4e.test.utils.AbstractTestWithProject;
+import org.eclipse.lsp4e.test.utils.MockConnectionProviderMultiRootFolders;
 import org.eclipse.lsp4e.test.utils.TestUtils;
 import org.eclipse.ui.IEditorPart;
 import org.junit.Before;
@@ -73,43 +75,69 @@ public class LanguageServerWrapperTest extends AbstractTestWithProject {
 	 * @see https://github.com/eclipse/lsp4e/pull/688
 	 */
 	@Test
-	public void testStopAndActive() throws CoreException, AssertionError, InterruptedException, ExecutionException {
-		if (System.getProperty("os.name").toLowerCase().startsWith("windows") || System.getenv("JENKINS_URL") != null) {
-			// FIXME temporarily disabling test on Windows and Jenkins because of https://github.com/eclipse/lsp4e/issues/1103
-			System.err.println("Temporarily skipping test execution. See https://github.com/eclipse/lsp4e/issues/1103");
-			return;
-		}
+	public void testStartStopAndActive() throws CoreException, AssertionError, InterruptedException, ExecutionException {
+		final int testCount= 100;
+		
+		MockConnectionProviderMultiRootFolders.resetCounts();
+		
 		IFile testFile1 = TestUtils.createFile(project, "shouldUseExtension.lsptWithMultiRoot", "");
 		IEditorPart editor1 = TestUtils.openEditor(testFile1);
 		@NonNull Collection<LanguageServerWrapper> wrappers = LanguageServiceAccessor.getLSWrappers(testFile1, request -> true);
 		assertEquals(1, wrappers.size());
 		LanguageServerWrapper wrapper = wrappers.iterator().next();
-		final var started = new CountDownLatch(1);
-		try {
-			var startStopJob = ForkJoinPool.commonPool().submit(() -> {
-				started.countDown();
-				while (!Thread.interrupted()) {
-					wrapper.stop();
-					wrapper.start();
-				}
-			});
-			try {
-				started.await();
-				for (int i = 0; i < 10000000; i++) {
-					// Should not throw
-					wrapper.isActive();
-					if (startStopJob.isDone()) {
-						throw new AssertionError("Job should run indefinitely");
-					}
-				}
-			} finally {
-				startStopJob.cancel(true);
-				if (!startStopJob.isCancelled()) {
-					startStopJob.get();
-				}
+		
+		final int startingActiveThreads= ForkJoinPool.commonPool().getActiveThreadCount();
+		
+		CompletableFuture<Void> startStop= CompletableFuture.runAsync(() -> {
+			for (int i= 0; i < testCount - 1; i++) {
+				wrapper.stop();
+				wrapper.start();
 			}
+			wrapper.stop();
+		});
+		
+		CompletableFuture<Void> testActive= CompletableFuture.runAsync(() -> {
+			while (!startStop.isDone()) {
+				wrapper.isActive();
+			}
+		});
+		
+		try {
+			startStop.get(30, TimeUnit.SECONDS);
+			
+			try {
+				testActive.get(1, TimeUnit.SECONDS);
+			} catch (Exception e) {
+				throw new AssertionError("testActive terminated with exception");
+			}
+			
+		} catch (Exception e) {
+			throw new AssertionError("test job terminated with exception");
+			//TODO improve diagnostics: check for timeout
+		
 		} finally {
 			TestUtils.closeEditor(editor1, false);
+		}
+		
+		// Give the various futures created time to execute. ForkJoinPool.commonPool.awaitQuiescence does not
+		// work here - other tests may not have cleaned up correctly.
+		long timeOut= System.currentTimeMillis() + 60_000;
+		do {
+			try {
+				Thread.sleep(1_000);
+			} catch (InterruptedException e) {
+				//ignore
+			}
+		} while (ForkJoinPool.commonPool().getActiveThreadCount() > startingActiveThreads && System.currentTimeMillis() < timeOut);
+		
+		if (ForkJoinPool.commonPool().getActiveThreadCount() > startingActiveThreads) {
+			throw new AssertionError("timeout waiting for ForkJoinPool.commonPool to go quiet");
+		} else {
+			
+			Integer cpStartCount= MockConnectionProviderMultiRootFolders.getStartCount();
+			Integer cpStopCount= MockConnectionProviderMultiRootFolders.getStopCount();
+			
+			assertEquals("startCount == stopCount", cpStartCount, cpStopCount);
 		}
 	}
 
