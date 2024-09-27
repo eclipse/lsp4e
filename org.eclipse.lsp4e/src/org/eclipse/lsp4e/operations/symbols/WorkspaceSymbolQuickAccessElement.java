@@ -47,6 +47,11 @@ public class WorkspaceSymbolQuickAccessElement extends QuickAccessElement {
 	}
 
 	@Override
+	public String getSortLabel() {
+		return getLabel() + " - " + this.idExtension; //$NON-NLS-1$
+	}
+
+	@Override
 	public ImageDescriptor getImageDescriptor() {
 		return ImageDescriptor.createFromImage(LABEL_PROVIDER.getImage(symbol));
 	}
