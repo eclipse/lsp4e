@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionParams;
@@ -225,7 +226,27 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<? extends TextEdit>> rangeFormatting(DocumentRangeFormattingParams params) {
-		return CompletableFuture.completedFuture(null);
+		Range range = params.getRange();
+		List<? extends TextEdit> rangeEdits = mockFormattingTextEdits.stream()
+				.filter(edit -> inRange(range, edit.getRange())).collect(Collectors.toList());
+
+		return CompletableFuture.completedFuture(rangeEdits);
+	}
+
+	private boolean inRange(Range containingRange, Range includedRange) {
+		if (containingRange == null || includedRange == null) {
+			throw new IllegalArgumentException();
+		}
+
+		if (containingRange.getStart().getLine() <= includedRange.getStart().getLine()
+				&& containingRange.getEnd().getLine() >= includedRange.getEnd().getLine()) {
+			return (containingRange.getStart().getLine() != includedRange.getStart().getLine()
+					|| containingRange.getStart().getCharacter() <= includedRange.getStart().getCharacter())
+					&& (containingRange.getEnd().getLine() != includedRange.getEnd().getLine()
+							|| containingRange.getEnd().getCharacter() >= includedRange.getEnd().getCharacter());
+		}
+
+		return false;
 	}
 
 	@Override

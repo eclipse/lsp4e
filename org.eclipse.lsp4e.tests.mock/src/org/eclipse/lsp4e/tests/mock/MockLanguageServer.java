@@ -170,6 +170,7 @@ public final class MockLanguageServer implements LanguageServer {
 		capabilities.setTypeDefinitionProvider(Boolean.TRUE);
 		capabilities.setReferencesProvider(true);
 		capabilities.setDocumentFormattingProvider(true);
+		capabilities.setDocumentRangeFormattingProvider(true);
 		capabilities.setCodeActionProvider(Boolean.TRUE);
 		capabilities.setCodeLensProvider(new CodeLensOptions(true));
 		capabilities.setDocumentLinkProvider(new DocumentLinkOptions());
