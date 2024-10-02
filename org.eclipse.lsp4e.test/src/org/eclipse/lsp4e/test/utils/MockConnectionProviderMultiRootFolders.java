@@ -22,6 +22,14 @@ import java.nio.channels.Pipe;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
 import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
@@ -30,32 +38,65 @@ import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.launch.LSPLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 
-public class MockConnectionProviderMultiRootFolders implements StreamConnectionProvider {
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-	private InputStream clientInputStream  ;
+public class MockConnectionProviderMultiRootFolders implements StreamConnectionProvider {
+	private static final Logger LOG = Logger.getLogger(MockConnectionProviderMultiRootFolders.class.getName());
+	
+	static ExecutorService sharedExecutor = new ThreadPoolExecutor(0, Runtime.getRuntime().availableProcessors(), 0,
+			TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),
+			new ThreadFactoryBuilder().setNameFormat("mock-connection-provider-%d").build());
+
+	static private AtomicInteger startCount = new AtomicInteger(0);
+	static private AtomicInteger stopCount = new AtomicInteger(0);
+
+	static public void resetCounts() {
+		startCount.set(0);
+		stopCount.set(0);
+	}
+
+	static public int getStartCount() {
+		return startCount.get();
+	}
+
+	static public int getStopCount() {
+		return stopCount.get();
+	}
+
+	private InputStream clientInputStream;
 	private OutputStream clientOutputStream;
 	private InputStream errorStream;
 	private Collection<Closeable> streams = new ArrayList<>(4);
+	private Future<Void> launcherFuture;
 
 	@Override
 	public void start() throws IOException {
-		Pipe serverOutputToClientInput = Pipe.open();
-		Pipe clientOutputToServerInput = Pipe.open();
-		errorStream = new ByteArrayInputStream("Error output on console".getBytes(StandardCharsets.UTF_8));
-
-		InputStream serverInputStream = Channels.newInputStream(clientOutputToServerInput.source());
-		OutputStream serverOutputStream = Channels.newOutputStream(serverOutputToClientInput.sink());
-		Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(MockLanguageServerMultiRootFolders.INSTANCE, serverInputStream,
-				serverOutputStream);
-		clientInputStream = Channels.newInputStream(serverOutputToClientInput.source());
-		clientOutputStream = Channels.newOutputStream(clientOutputToServerInput.sink());
-		launcher.startListening();
-		MockLanguageServer.INSTANCE.addRemoteProxy(launcher.getRemoteProxy());
-		streams.add(clientInputStream);
-		streams.add(clientOutputStream);
-		streams.add(serverInputStream);
-		streams.add(serverOutputStream);
-		streams.add(errorStream);
+		try {
+			Pipe serverOutputToClientInput = Pipe.open();
+			Pipe clientOutputToServerInput = Pipe.open();
+			errorStream = new ByteArrayInputStream("Error output on console".getBytes(StandardCharsets.UTF_8));
+	
+			InputStream serverInputStream = Channels.newInputStream(clientOutputToServerInput.source());
+			OutputStream serverOutputStream = Channels.newOutputStream(serverOutputToClientInput.sink());
+	
+			Launcher<LanguageClient> launcher = LSPLauncher.createServerLauncher(
+					MockLanguageServerMultiRootFolders.INSTANCE, serverInputStream, serverOutputStream, sharedExecutor,
+					(c) -> c);
+	
+			clientInputStream = Channels.newInputStream(serverOutputToClientInput.source());
+			clientOutputStream = Channels.newOutputStream(clientOutputToServerInput.sink());
+			launcherFuture = launcher.startListening();
+			MockLanguageServer.INSTANCE.addRemoteProxy(launcher.getRemoteProxy());
+			streams.add(clientInputStream);
+			streams.add(clientOutputStream);
+			streams.add(serverInputStream);
+			streams.add(serverOutputStream);
+			streams.add(errorStream);
+	
+			startCount.incrementAndGet();
+		} catch (Exception x) {
+			LOG.log(Level.SEVERE, "MockConnectionProvider#start", x);
+		}
 	}
 
 	@Override
@@ -75,5 +116,9 @@ public class MockConnectionProviderMultiRootFolders implements StreamConnectionP
 
 	@Override
 	public void stop() {
+		stopCount.incrementAndGet();
+		if (launcherFuture != null) {
+			launcherFuture.cancel(true);
+		}
 	}
 }

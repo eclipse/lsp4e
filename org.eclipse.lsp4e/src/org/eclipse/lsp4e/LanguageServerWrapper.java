@@ -39,7 +39,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -152,26 +151,59 @@ public class LanguageServerWrapper {
 
 	};
 
+	private static class LanguageServerContext {
+		boolean cancelled = false;
+
+		@Nullable Future<?> launcherFuture;
+		@Nullable StreamConnectionProvider lspStreamProvider;
+		@Nullable LanguageServer languageServer;
+
+		synchronized void close() {
+			if (languageServer != null) {
+				CompletableFuture<Object> shutdown = languageServer.shutdown();
+				try {
+					shutdown.get(5, TimeUnit.SECONDS);
+				} catch (InterruptedException ex) {
+					Thread.currentThread().interrupt();
+				} catch (Exception ex) {
+					LanguageServerPlugin.logError(ex.getClass().getSimpleName() + " occurred during shutdown of " //$NON-NLS-1$
+							+ languageServer, ex);
+				}
+			}
+
+			if (launcherFuture != null) {
+				launcherFuture.cancel(true);
+			}
+
+			if (languageServer != null) {
+				languageServer.exit();
+			}
+
+			if (lspStreamProvider != null) {
+				lspStreamProvider.stop();
+			}
+
+		}
+	}
+
 	public final LanguageServerDefinition serverDefinition;
 	public final @Nullable IProject initialProject;
 	protected Map<URI, DocumentContentSynchronizer> connectedDocuments;
 	protected final @Nullable IPath initialPath;
 	protected final InitializeParams initParams = new InitializeParams();
 
-	protected @Nullable StreamConnectionProvider lspStreamProvider;
-	private @Nullable Future<?> launcherFuture;
 	private @Nullable CompletableFuture<@Nullable Void> initializeFuture;
 	private final AtomicReference<@Nullable IProgressMonitor> initializeFutureMonitorRef = new AtomicReference<>();
 	private final int initializeFutureNumberOfStages = 7;
-	private @Nullable LanguageServer languageServer;
 	private @Nullable LanguageClientImpl languageClient;
 	private @Nullable ServerCapabilities serverCapabilities;
 	private final Timer timer = new Timer("Stop Language Server Task Processor"); //$NON-NLS-1$
 	private @Nullable TimerTask stopTimerTask;
-	private AtomicBoolean stopping = new AtomicBoolean(false);
 
 	private final ExecutorService dispatcher;
 	private final ExecutorService listener;
+
+	private LanguageServerContext context = new LanguageServerContext();
 
 	/**
 	 * Map containing unregistration handlers for dynamic capability registrations.
@@ -273,7 +305,7 @@ public class LanguageServerWrapper {
 	 */
 	private synchronized void start(boolean forceRestart) {
 		final var filesToReconnect = new HashMap<URI, IDocument>();
-		if (this.languageServer != null) {
+		if (this.context.languageServer != null) {
 			if (isActive() && !forceRestart) {
 				return;
 			} else {
@@ -286,79 +318,90 @@ public class LanguageServerWrapper {
 		if (this.initializeFuture == null || forceRestart) {
 			final URI rootURI = getRootURI();
 			final Job job = createInitializeLanguageServerJob();
-			this.launcherFuture = new CompletableFuture<>();
+			final LanguageServerContext workingContext = context;
+
 			this.initializeFuture = CompletableFuture.supplyAsync(() -> {
-				advanceInitializeFutureMonitor();
-				final StreamConnectionProvider lspStreamProvider;
-				if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
-					lspStreamProvider = this.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
-							serverDefinition.createConnectionProvider(), serverDefinition.id);
-				} else {
-					lspStreamProvider = this.lspStreamProvider = serverDefinition.createConnectionProvider();
-				}
-				initParams.setInitializationOptions(lspStreamProvider.getInitializationOptions(rootURI));
-				try {
-					lspStreamProvider.start();
-				} catch (IOException e) {
-					throw new UncheckedIOException(e);
+				synchronized (workingContext) {
+					markInitializationProgress(workingContext);
+					final StreamConnectionProvider lspStreamProvider;
+					if (LoggingStreamConnectionProviderProxy.shouldLog(serverDefinition.id)) {
+						lspStreamProvider = workingContext.lspStreamProvider = new LoggingStreamConnectionProviderProxy(
+								serverDefinition.createConnectionProvider(), serverDefinition.id);
+					} else {
+						lspStreamProvider = workingContext.lspStreamProvider = serverDefinition
+								.createConnectionProvider();
+					}
+					initParams.setInitializationOptions(lspStreamProvider.getInitializationOptions(rootURI));
+					try {
+						lspStreamProvider.start();
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
 				}
 				return null;
 			}).thenRun(() -> {
-				advanceInitializeFutureMonitor();
-				final var languageClient = this.languageClient = serverDefinition.createLanguageClient();
+				synchronized (workingContext) {
+					markInitializationProgress(workingContext);
+					final var languageClient = this.languageClient = serverDefinition.createLanguageClient();
 
-				initParams.setProcessId((int) ProcessHandle.current().pid());
+					initParams.setProcessId((int) ProcessHandle.current().pid());
 
-				if (rootURI != null) {
-					initParams.setRootUri(rootURI.toString());
-					initParams.setRootPath(rootURI.getPath());
+					if (rootURI != null) {
+						initParams.setRootUri(rootURI.toString());
+						initParams.setRootPath(rootURI.getPath());
+					}
+
+					UnaryOperator<MessageConsumer> wrapper = consumer -> message -> {
+						logMessage(message);
+						consumer.consume(message);
+						final var lspStreamProvider = workingContext.lspStreamProvider;
+						final var languageServer = workingContext.languageServer;
+						if (lspStreamProvider != null && isActive() &&  languageServer != null) {
+							lspStreamProvider.handleMessage(message, languageServer, rootURI);
+						}
+					};
+					initParams.setWorkspaceFolders(getRelevantWorkspaceFolders());
+					final var lspStreamProvider= castNonNull(workingContext.lspStreamProvider);
+					Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder() //
+							.setLocalService(languageClient)//
+							.setRemoteInterface(serverDefinition.getServerInterface())//
+							.setInput(lspStreamProvider.getInputStream())//
+							.setOutput(lspStreamProvider.getOutputStream())//
+							.setExecutorService(listener)//
+							.wrapMessages(wrapper)//
+							.create();
+					final var languageServer = workingContext.languageServer = launcher.getRemoteProxy();
+					languageClient.connect(languageServer, this);
+					workingContext.launcherFuture = launcher.startListening();
 				}
-
-				UnaryOperator<MessageConsumer> wrapper = consumer -> (message -> {
-					logMessage(message);
-					consumer.consume(message);
-					final var lspStreamProvider = this.lspStreamProvider;
-					if (lspStreamProvider != null && isActive() && languageServer != null) {
-						lspStreamProvider.handleMessage(message, languageServer, rootURI);
-					}
-				});
-				initParams.setWorkspaceFolders(getRelevantWorkspaceFolders());
-				Launcher<LanguageServer> launcher = serverDefinition.createLauncherBuilder() //
-						.setLocalService(languageClient)//
-						.setRemoteInterface(serverDefinition.getServerInterface())//
-						.setInput(castNonNull(lspStreamProvider).getInputStream())//
-						.setOutput(castNonNull(lspStreamProvider).getOutputStream())//
-						.setExecutorService(listener)//
-						.wrapMessages(wrapper)//
-						.create();
-				final var languageServer = this.languageServer = launcher.getRemoteProxy();
-				languageClient.connect(languageServer, this);
-				this.launcherFuture = launcher.startListening();
-			})
-			.thenCompose(unused -> {
-				advanceInitializeFutureMonitor();
-				return initServer(rootURI);
-			})
-			.thenAccept(res -> {
-				advanceInitializeFutureMonitor();
-				serverCapabilities = res.getCapabilities();
-				this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
+			}).thenCompose(unused -> {
+					markInitializationProgress(workingContext);
+					return initServer(rootURI);
+			}).thenAccept(res -> {
+				synchronized (workingContext) {
+					markInitializationProgress(workingContext);
+					serverCapabilities = res.getCapabilities();
+					this.initiallySupportsWorkspaceFolders = supportsWorkspaceFolders(serverCapabilities);
+				}
 			}).thenRun(() -> {
-				advanceInitializeFutureMonitor();
-				castNonNull(languageServer).initialized(new InitializedParams());
+				synchronized (workingContext) {
+					markInitializationProgress(workingContext);
+					castNonNull(workingContext.languageServer).initialized(new InitializedParams());
+				}
 			}).thenRun(() -> {
-				advanceInitializeFutureMonitor();
-				final Map<URI, IDocument> toReconnect = filesToReconnect;
-				castNonNull(initializeFuture).thenRunAsync(() -> {
-					watchProjects();
-					for (Entry<URI, IDocument> fileToReconnect : toReconnect.entrySet()) {
-						connect(fileToReconnect.getKey(), fileToReconnect.getValue());
-					}
-				});
-				FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
-				advanceInitializeFutureMonitor();
+				synchronized (workingContext) {
+					markInitializationProgress(workingContext);
+					final Map<URI, IDocument> toReconnect = filesToReconnect;
+					castNonNull(initializeFuture).thenRunAsync(() -> {
+						watchProjects();
+						for (Entry<URI, IDocument> fileToReconnect : toReconnect.entrySet()) {
+							connect(fileToReconnect.getKey(), fileToReconnect.getValue());
+						}
+					});
+					FileBuffers.getTextFileBufferManager().addFileBufferListener(fileBufferListener);
+				}
 			}).exceptionally(e -> {
-				shutdown();
+				shutdown(workingContext);
 				final Throwable cause = e.getCause();
 				if (cause instanceof CancellationException c) {
 					throw c;
@@ -368,13 +411,17 @@ public class LanguageServerWrapper {
 				}
 			});
 
-			if (this.initializeFuture.isCompletedExceptionally()) {
-				// This might happen if an exception occurred and stop() was called before this.initializeFuture was assigned
-				this.initializeFuture = null;
-			} else {
+			if (!this.initializeFuture.isCompletedExceptionally()) {
 				job.schedule();
 			}
 		}
+	}
+
+	private void markInitializationProgress(LanguageServerContext context) {
+		if (context.cancelled) {
+			throw new CancellationException();
+		}
+		advanceInitializeFutureMonitor();
 	}
 
 	private void advanceInitializeFutureMonitor() {
@@ -428,17 +475,18 @@ public class LanguageServerWrapper {
 				workspaceClientCapabilities,
 				textDocumentClientCapabilities,
 				windowClientCapabilities,
-				castNonNull(lspStreamProvider).getExperimentalFeaturesPOJO()));
+				castNonNull(context.lspStreamProvider).getExperimentalFeaturesPOJO()));
 		initParams.setClientInfo(getClientInfo(name));
-		initParams.setTrace(castNonNull(lspStreamProvider).getTrace(rootURI));
+		initParams.setTrace(castNonNull(context.lspStreamProvider).getTrace(rootURI));
 
 		// no then...Async future here as we want this chain of operation to be sequential and "atomic"-ish
-		return castNonNull(languageServer).initialize(initParams);
+		return castNonNull(context.languageServer).initialize(initParams);
+		//FIXME race: this.context may not be what it is expected to be, should be parameter
 	}
 
 	@Nullable
 	public ProcessHandle getProcessHandle() {
-		return Adapters.adapt(lspStreamProvider, ProcessHandle.class);
+		return Adapters.adapt(context.lspStreamProvider, ProcessHandle.class);
 	}
 
 	private ClientInfo getClientInfo(String name) {
@@ -486,7 +534,7 @@ public class LanguageServerWrapper {
 	 * @return whether the underlying connection to language server is still active
 	 */
 	public synchronized boolean isActive() {
-		final var launcherFuture = this.launcherFuture;
+		final var launcherFuture = context.launcherFuture;
 		return launcherFuture != null && !launcherFuture.isDone();
 	}
 
@@ -528,22 +576,25 @@ public class LanguageServerWrapper {
 	 * @return True if this is the wrapper for the given server
 	 */
 	boolean isWrapperFor(LanguageServer server) {
-		return server == this.languageServer;
+		return server == context.languageServer;
 	}
 
 	public synchronized void stop() {
-		if (this.initializeFuture != null) {
+		if (initializeFuture != null) {
 			initializeFuture.cancel(true);
-			this.initializeFuture= null;
+			initializeFuture= null;
 		}
-		shutdown();
+
+		LanguageServerContext contextToStop = context;
+		context = new LanguageServerContext();
+		synchronized(contextToStop) {
+			contextToStop.cancelled = true;
+		}
+
+		shutdown(contextToStop);
 	}
 
-	private void shutdown() {
-		final boolean alreadyStopping = this.stopping.getAndSet(true);
-		if (alreadyStopping) {
-			return;
-		}
+	private void shutdown(LanguageServerContext workingContext) {
 		removeStopTimerTask();
 
 		if (this.languageClient != null) {
@@ -553,46 +604,15 @@ public class LanguageServerWrapper {
 		this.serverCapabilities = null;
 		this.dynamicRegistrations.clear();
 
-		final Future<?> serverFuture = this.launcherFuture;
-		final StreamConnectionProvider provider = this.lspStreamProvider;
-		final LanguageServer languageServerInstance = this.languageServer;
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(workspaceFolderUpdater);
 
-		Runnable shutdownKillAndStopFutureAndProvider = () -> {
-			if (languageServerInstance != null) {
-				CompletableFuture<Object> shutdown = languageServerInstance.shutdown();
-				try {
-					shutdown.get(5, TimeUnit.SECONDS);
-				} catch (InterruptedException ex) {
-					Thread.currentThread().interrupt();
-				} catch (Exception ex) {
-					LanguageServerPlugin.logError(ex.getClass().getSimpleName() + " occurred during shutdown of " + languageServerInstance, ex); //$NON-NLS-1$
-				}
-			}
-
-			if (serverFuture != null) {
-				serverFuture.cancel(true);
-			}
-
-			if (languageServerInstance != null) {
-				languageServerInstance.exit();
-			}
-
-			if (provider != null) {
-				provider.stop();
-			}
-			this.stopping.set(false);
-		};
-
-		CompletableFuture.runAsync(shutdownKillAndStopFutureAndProvider);
-
-		this.launcherFuture = null;
-		this.lspStreamProvider = null;
+		CompletableFuture.runAsync(() -> {
+			workingContext.close();
+		});
 
 		while (!this.connectedDocuments.isEmpty()) {
 			disconnect(this.connectedDocuments.keySet().iterator().next());
 		}
-		this.languageServer = null;
 
 		FileBuffers.getTextFileBufferManager().removeFileBufferListener(fileBufferListener);
 	}
@@ -620,13 +640,13 @@ public class LanguageServerWrapper {
 		if (!supportsWorkspaceFolderCapability()) {
 			return;
 		}
-		final LanguageServer currentLS = this.languageServer;
+		final LanguageServer currentLS = context.languageServer;
 		new WorkspaceJob("Setting watch projects on server " + serverDefinition.label) { //$NON-NLS-1$
 			@Override
 			public IStatus runInWorkspace(@Nullable IProgressMonitor monitor) throws CoreException {
 				final var wsFolderEvent = new WorkspaceFoldersChangeEvent();
 				wsFolderEvent.getAdded().addAll(getRelevantWorkspaceFolders());
-				if (currentLS != null && currentLS == LanguageServerWrapper.this.languageServer) {
+				if (currentLS != null && currentLS == context.languageServer) {
 					currentLS.getWorkspaceService()
 							.didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(wsFolderEvent));
 				}
@@ -717,7 +737,7 @@ public class LanguageServerWrapper {
 				}
 				TextDocumentSyncKind syncKind = initializeFuture == null ? null
 						: castNonNull(serverCapabilities).getTextDocumentSync().map(Functions.identity(), TextDocumentSyncOptions::getChange);
-				final var listener = new DocumentContentSynchronizer(this, castNonNull(languageServer), theDocument, syncKind);
+				final var listener = new DocumentContentSynchronizer(this, castNonNull(context.languageServer), theDocument, syncKind);
 				theDocument.addPrenotifiedDocumentListener(listener);
 				LanguageServerWrapper.this.connectedDocuments.put(uri, listener);
 			}
@@ -776,7 +796,7 @@ public class LanguageServerWrapper {
 	protected LanguageServer getServer() {
 		CompletableFuture<LanguageServer> languagServerFuture = getInitializedServer();
 		if (Display.getCurrent() != null) { // UI Thread
-			return this.languageServer;
+			return context.languageServer;
 		} else {
 			return languagServerFuture.join();
 		}
@@ -794,15 +814,16 @@ public class LanguageServerWrapper {
 
 		final CompletableFuture<@Nullable Void> currentInitializeFuture = initializeFuture;
 		if (currentInitializeFuture != null && !currentInitializeFuture.isDone()) {
-			return currentInitializeFuture.thenApply(r -> castNonNull(this.languageServer));
+			return currentInitializeFuture.thenApply(r -> castNonNull(context.languageServer));
 		}
-		return CompletableFuture.completedFuture(this.languageServer);
+		return CompletableFuture.completedFuture(context.languageServer);
 	}
 
 	/**
 	 * Sends a notification to the wrapped language server
 	 *
-	 * @param fn LS notification to send
+	 * @param fn
+	 *            LS notification to send
 	 */
 	public void sendNotification(Consumer<LanguageServer> fn) {
 		// Enqueues a notification on the dispatch thread associated with the wrapped language server. This
@@ -1129,7 +1150,7 @@ public class LanguageServerWrapper {
 				return;
 			}
 			// If shutting down, language server will be set to null, so ignore the event
-			final LanguageServer currentServer = LanguageServerWrapper.this.languageServer;
+			final LanguageServer currentServer = context.languageServer;
 			if (currentServer != null) {
 				currentServer.getWorkspaceService()
 						.didChangeWorkspaceFolders(new DidChangeWorkspaceFoldersParams(workspaceFolderEvent));
