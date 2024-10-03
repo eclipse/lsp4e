@@ -133,6 +133,7 @@ public class MockTextDocumentService implements TextDocumentService {
 		this.codeActionRequests = 0;
 	}
 
+	@SuppressWarnings("unchecked")
 	private <U> CompletableFuture<U> futureFactory(U value) {
 		return ((Function<U, CompletableFuture<U>>) this._futureFactory).apply(value);
 	}
@@ -183,11 +184,10 @@ public class MockTextDocumentService implements TextDocumentService {
 	@Override
 	public CompletableFuture<List<Either<SymbolInformation, DocumentSymbol>>> documentSymbol(
 			DocumentSymbolParams params) {
-		return CompletableFuture.completedFuture(documentSymbols.stream()
-				.map(symbol -> {
-					Either<SymbolInformation, DocumentSymbol> res = Either.forRight(symbol);
-					return res;
-				}).toList());
+		return CompletableFuture.completedFuture(documentSymbols.stream().map(symbol -> {
+			Either<SymbolInformation, DocumentSymbol> res = Either.forRight(symbol);
+			return res;
+		}).toList());
 	}
 
 	@Override
@@ -208,8 +208,9 @@ public class MockTextDocumentService implements TextDocumentService {
 		}
 		File file = new File(URI.create(params.getTextDocument().getUri()));
 		if (file.exists() && file.length() > 100) {
-			return CompletableFuture.completedFuture(List.of(new CodeLens(
-					new Range(new Position(1, 0), new Position(1, 1)), new Command("Hi, I'm a CodeLens", null), null)));
+			return CompletableFuture
+					.completedFuture(List.of(new CodeLens(new Range(new Position(1, 0), new Position(1, 1)),
+							new Command("Hi, I'm a CodeLens", null), null)));
 		}
 		return CompletableFuture.completedFuture(Collections.emptyList());
 	}
@@ -459,23 +460,26 @@ public class MockTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<TypeHierarchyItem>> prepareTypeHierarchy(TypeHierarchyPrepareParams params) {
-		return CompletableFuture.completedFuture(List.of(new TypeHierarchyItem("a", SymbolKind.Class, params.getTextDocument().getUri(), DUMMY_RANGE, DUMMY_RANGE, null)));
+		return CompletableFuture.completedFuture(List.of(new TypeHierarchyItem("a", SymbolKind.Class,
+				params.getTextDocument().getUri(), DUMMY_RANGE, DUMMY_RANGE, null)));
 	}
 
 	@Override
 	public CompletableFuture<List<TypeHierarchyItem>> typeHierarchySubtypes(TypeHierarchySubtypesParams params) {
 		return CompletableFuture.completedFuture(List.of(
-			new TypeHierarchyItem(params.getItem().getName() + "a", SymbolKind.Class, params.getItem().getUri() + "/a", DUMMY_RANGE, DUMMY_RANGE, null),
-			new TypeHierarchyItem(params.getItem().getName() + "b", SymbolKind.Class, params.getItem().getUri() + "/b", DUMMY_RANGE, DUMMY_RANGE, null)
-		));
+				new TypeHierarchyItem(params.getItem().getName() + "a", SymbolKind.Class,
+						params.getItem().getUri() + "/a", DUMMY_RANGE, DUMMY_RANGE, null),
+				new TypeHierarchyItem(params.getItem().getName() + "b", SymbolKind.Class,
+						params.getItem().getUri() + "/b", DUMMY_RANGE, DUMMY_RANGE, null)));
 	}
 
 	@Override
 	public CompletableFuture<List<TypeHierarchyItem>> typeHierarchySupertypes(TypeHierarchySupertypesParams params) {
 		return CompletableFuture.completedFuture(List.of(
-			new TypeHierarchyItem("X" + params.getItem().getName(), SymbolKind.Class, params.getItem().getUri() + "/X", DUMMY_RANGE, DUMMY_RANGE, null),
-			new TypeHierarchyItem("Y" + params.getItem().getName(), SymbolKind.Class, params.getItem().getUri() + "/Y", DUMMY_RANGE, DUMMY_RANGE, null)
-		));
+				new TypeHierarchyItem("X" + params.getItem().getName(), SymbolKind.Class,
+						params.getItem().getUri() + "/X", DUMMY_RANGE, DUMMY_RANGE, null),
+				new TypeHierarchyItem("Y" + params.getItem().getName(), SymbolKind.Class,
+						params.getItem().getUri() + "/Y", DUMMY_RANGE, DUMMY_RANGE, null)));
 	}
 
 	public void setFoldingRanges(List<FoldingRange> foldingRanges) {
