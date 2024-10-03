@@ -76,7 +76,7 @@ import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 import org.eclipse.lsp4j.services.NotebookDocumentService;
 
-public final class MockLanguageServer implements LanguageServer {
+public class MockLanguageServer implements LanguageServer {
 
 	/**
 	 * This command will be reported on initialization to be supported for execution
