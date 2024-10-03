@@ -56,14 +56,14 @@ public class LSPFormatter {
 		// range formatting, falling back to a full format if unavailable
 		long modificationStamp = DocumentUtil.getDocumentModificationStamp(document);
 		return executor.computeFirst((w, ls) -> w.getServerCapabilitiesAsync().thenCompose(capabilities -> {
-			if (textSelection.getLength() == 0 && isDocumentRangeFormattingSupported(capabilities)
-					&& !(isDocumentFormattingSupported(capabilities))) {
+			if (textSelection.getLength() != 0 && isDocumentRangeFormattingSupported(capabilities)) {
 				return ls.getTextDocumentService().rangeFormatting(rangeParams)
 						.thenApply(edits -> new VersionedEdits(modificationStamp, edits, document));
-			} else {
+			} else if (isDocumentFormattingSupported(capabilities)) {
 				return ls.getTextDocumentService().formatting(params)
 						.thenApply(edits -> new VersionedEdits(modificationStamp, edits, document));
 			}
+			return CompletableFuture.<VersionedEdits>completedFuture(null);
 		}));
 	}
 
