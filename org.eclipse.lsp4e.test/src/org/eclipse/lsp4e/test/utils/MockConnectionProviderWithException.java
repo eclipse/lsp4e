@@ -11,6 +11,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.test.utils;
 
+import org.eclipse.lsp4e.tests.mock.MockConnectionProvider;
+
 public class MockConnectionProviderWithException extends MockConnectionProvider {
 
 	public MockConnectionProviderWithException() {
