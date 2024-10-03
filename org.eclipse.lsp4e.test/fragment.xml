@@ -4,13 +4,13 @@
    <extension
          point="org.eclipse.lsp4e.languageServer">
       <server
-            class="org.eclipse.lsp4e.test.utils.MockConnectionProvider"
+            class="org.eclipse.lsp4e.tests.mock.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server"
             lastDocumentDisconnectedTimeout="0"
             label="Test LS">
       </server>
       <server
-            class="org.eclipse.lsp4e.test.utils.MockConnectionProvider"
+            class="org.eclipse.lsp4e.tests.mock.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server2"
             lastDocumentDisconnectedTimeout="0"
             label="Test LS 2">
@@ -22,19 +22,19 @@
             label="Test LS With Exception">
       </server>
        <server
-            class="org.eclipse.lsp4e.test.utils.MockConnectionProviderMultiRootFolders"
+            class="org.eclipse.lsp4e.tests.mock.MockConnectionProviderMultiRootFolders"
             id="org.eclipse.lsp4e.test.server-with-multi-root-support"
             lastDocumentDisconnectedTimeout="0"
             label="Test LS With Multi-Root Support">
       </server>
       <server
-            class="org.eclipse.lsp4e.test.utils.MockConnectionProvider"
+            class="org.eclipse.lsp4e.tests.mock.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server.disable"
             lastDocumentDisconnectedTimeout="0"
             label="Test LS Enablement">
       </server>
       <server
-            class="org.eclipse.lsp4e.test.utils.MockConnectionProvider"
+            class="org.eclipse.lsp4e.tests.mock.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.server-with-last-document-disconnected-timeout"
             lastDocumentDisconnectedTimeout="2"
             label="Test LS with LastDocumentDisconnectedTimeout set to two seconds">
@@ -99,7 +99,7 @@
             </enabledWhen>
       </contentTypeMapping>
       <server
-            class="org.eclipse.lsp4e.test.utils.MockConnectionProvider"
+            class="org.eclipse.lsp4e.tests.mock.MockConnectionProvider"
             id="org.eclipse.lsp4e.test.singletonLS"
             label="Singleton LS"
             lastDocumentDisconnectedTimeout="0"

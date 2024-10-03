@@ -6,6 +6,9 @@ Bundle-Version: 0.16.12.qualifier
 Bundle-Vendor: Eclipse LSP4E
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.eclipse.lsp4j;bundle-version="[0.23.0,0.24.0)",
- org.eclipse.lsp4j.jsonrpc;bundle-version="[0.23.0,0.24.0)"
+ org.eclipse.lsp4j.jsonrpc;bundle-version="[0.23.0,0.24.0)",
+ org.eclipse.lsp4e,
+ org.eclipse.jdt.annotation,
+ com.google.guava
 Export-Package: org.eclipse.lsp4e.tests.mock
 Automatic-Module-Name: org.eclipse.lsp4e.tests.mock

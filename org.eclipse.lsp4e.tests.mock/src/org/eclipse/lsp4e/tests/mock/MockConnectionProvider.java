@@ -9,7 +9,7 @@
  * Contributors:
  *  Michał Niewrzał (Rogue Wave Software Inc.) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.test.utils;
+package org.eclipse.lsp4e.tests.mock;
 
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
@@ -29,7 +29,6 @@ import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.lsp4e.server.StreamConnectionProvider;
-import org.eclipse.lsp4e.tests.mock.MockLanguageServer;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.messages.Message;
 import org.eclipse.lsp4j.launch.LSPLauncher;
