@@ -106,7 +106,7 @@ public class MockLanguageServer implements LanguageServer {
 		INSTANCE = new MockLanguageServer(serverConfigurer);
 	}
 
-	private MockLanguageServer(final Supplier<ServerCapabilities> serverConfigurer) {
+	protected MockLanguageServer(final Supplier<ServerCapabilities> serverConfigurer) {
 		resetInitializeResult(serverConfigurer);
 	}
 
