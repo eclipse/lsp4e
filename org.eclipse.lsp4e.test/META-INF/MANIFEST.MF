@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Tests for language server bundle (Incubation)
 Bundle-SymbolicName: org.eclipse.lsp4e.test;singleton:=true
-Bundle-Version: 0.15.19.qualifier
+Bundle-Version: 0.15.20.qualifier
 Fragment-Host: org.eclipse.lsp4e
-Bundle-Vendor: Eclipse.org
+Bundle-Vendor: Eclipse LSP4E
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.core.resources,
