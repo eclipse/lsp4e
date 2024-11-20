@@ -44,6 +44,7 @@ public final class LSPImages {
 	private static final String ICONS_PATH = "$nl$/icons/full/"; //$NON-NLS-1$
 	private static final String OBJECT = ICONS_PATH + "obj16/"; // basic colors - size 16x16 //$NON-NLS-1$
 	private static final String ACTION = ICONS_PATH + "elcl16/"; // basic colors - size 16x16 //$NON-NLS-1$
+	private static final String OVERLAY = ICONS_PATH + "ovr16/"; // basic colors - size 16x16 //$NON-NLS-1$
 	private static final Image EMPTY_IMAGE = new Image(UI.getDisplay(), 16, 16);
 
 	public static final String IMG_MODULE = "IMG_MODULE"; //$NON-NLS-1$
@@ -77,6 +78,14 @@ public final class LSPImages {
 
 	public static final String IMG_SUPERTYPE = "IMG_SUPERTYPE"; //$NON-NLS-1$
 	public static final String IMG_SUBTYPE = "IMG_SUBTYPE"; //$NON-NLS-1$
+
+	public static final String IMG_OVR_ABSTRACT = "IMG_OVR_ABSTRACT"; //$NON-NLS-1$
+	public static final String IMG_OVR_FINAL = "IMG_OVR_FINAL"; //$NON-NLS-1$
+	public static final String IMG_OVR_SEALED = "IMG_OVR_SEALED"; //$NON-NLS-1$
+	public static final String IMG_OVR_STATIC = "IMG_OVR_STATIC"; //$NON-NLS-1$
+	public static final String IMG_OVR_SYNC = "IMG_OVR_SYNC"; //$NON-NLS-1$
+	public static final String IMG_OVR_TRANSIENT = "IMG_OVR_TRANSIENT"; //$NON-NLS-1$
+	public static final String IMG_OVR_VOLATILE = "IMG_OVR_VOLATILE"; //$NON-NLS-1$
 
 	public static void initalize(ImageRegistry registry) {
 		imageRegistry = registry;
@@ -112,6 +121,14 @@ public final class LSPImages {
 		declareRegistryImage(IMG_SUPERTYPE, ACTION + "super_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_SUBTYPE, ACTION + "sub_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_TERMINATE_CO, OBJECT + "terminate_co.png"); //$NON-NLS-1$
+
+		declareRegistryImage(IMG_OVR_ABSTRACT, OVERLAY + "abstract_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_FINAL, OVERLAY + "final_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_SEALED, OVERLAY + "sealed_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_STATIC, OVERLAY + "static_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_SYNC, OVERLAY + "synch_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_TRANSIENT, OVERLAY + "transient_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_VOLATILE, OVERLAY + "volatile_co.png"); //$NON-NLS-1$
 	}
 
 	private static final void declareRegistryImage(String key, String path) {
