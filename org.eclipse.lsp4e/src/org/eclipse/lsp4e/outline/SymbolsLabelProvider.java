@@ -11,7 +11,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
-import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNullable;
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -44,6 +44,7 @@ import org.eclipse.jface.viewers.StyledString;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.internal.StyleUtil;
+import org.eclipse.lsp4e.operations.symbols.SymbolsUtil;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4e.ui.LSPImages;
 import org.eclipse.lsp4e.ui.Messages;
@@ -275,11 +276,13 @@ public class SymbolsLabelProvider extends LabelProvider
 		SymbolKind kind = null;
 		String detail = null;
 		URI location = null;
+		List<SymbolTag> symbolTags;
 		boolean deprecated = false;
 		if (element instanceof SymbolInformation symbolInformation) {
 			name = symbolInformation.getName();
 			kind = symbolInformation.getKind();
-			deprecated = isDeprecated(symbolInformation.getTags()) || symbolInformation.getDeprecated() == null ? false: symbolInformation.getDeprecated();
+			symbolTags = SymbolsUtil.getSymbolTags(symbolInformation);
+			deprecated = SymbolsUtil.isDeprecated(symbolTags) || symbolInformation.getDeprecated() == null ? false: symbolInformation.getDeprecated();
 			try {
 				location = URI.create(symbolInformation.getLocation().getUri());
 			} catch (IllegalArgumentException e) {
@@ -288,8 +291,9 @@ public class SymbolsLabelProvider extends LabelProvider
 		} else if (element instanceof WorkspaceSymbol workspaceSymbol) {
 			name = workspaceSymbol.getName();
 			kind = workspaceSymbol.getKind();
+			symbolTags = SymbolsUtil.getSymbolTags(workspaceSymbol);
 			String rawUri = getUri(workspaceSymbol);
-			deprecated = isDeprecated(workspaceSymbol.getTags());
+			deprecated = SymbolsUtil.isDeprecated(symbolTags);
 			try {
 				location = URI.create(rawUri);
 			} catch (IllegalArgumentException e) {
@@ -298,14 +302,16 @@ public class SymbolsLabelProvider extends LabelProvider
 		} else if (element instanceof DocumentSymbol documentSymbol) {
 			name = documentSymbol.getName();
 			kind = documentSymbol.getKind();
+			symbolTags = SymbolsUtil.getSymbolTags(documentSymbol);
 			detail = documentSymbol.getDetail();
-			deprecated = isDeprecated(documentSymbol.getTags()) || documentSymbol.getDeprecated() == null ? false: documentSymbol.getDeprecated();
+			deprecated = SymbolsUtil.isDeprecated(symbolTags) || documentSymbol.getDeprecated() == null ? false: documentSymbol.getDeprecated();
 		} else if (element instanceof DocumentSymbolWithURI symbolWithURI) {
 			name = symbolWithURI.symbol.getName();
 			kind = symbolWithURI.symbol.getKind();
+			symbolTags = SymbolsUtil.getSymbolTags(symbolWithURI);
 			detail = symbolWithURI.symbol.getDetail();
 			location = symbolWithURI.uri;
-			deprecated = isDeprecated(symbolWithURI.symbol.getTags()) || symbolWithURI.symbol.getDeprecated() == null ? false: symbolWithURI.symbol.getDeprecated();
+			deprecated = SymbolsUtil.isDeprecated(symbolTags) || symbolWithURI.symbol.getDeprecated() == null ? false: symbolWithURI.symbol.getDeprecated();
 		}
 		if (name != null) {
 			if (deprecated) {
@@ -330,13 +336,6 @@ public class SymbolsLabelProvider extends LabelProvider
 			res.append(location.getPath(), StyledString.QUALIFIER_STYLER);
 		}
 		return res;
-	}
-
-	private boolean isDeprecated(@Nullable List<SymbolTag> tags) {
-		if(tags != null){
-			return tags.contains(SymbolTag.Deprecated);
-		}
-		return false;
 	}
 
 	@Override
