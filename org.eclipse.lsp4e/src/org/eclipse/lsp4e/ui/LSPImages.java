@@ -25,6 +25,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.SymbolTag;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
@@ -79,6 +80,10 @@ public final class LSPImages {
 	public static final String IMG_SUPERTYPE = "IMG_SUPERTYPE"; //$NON-NLS-1$
 	public static final String IMG_SUBTYPE = "IMG_SUBTYPE"; //$NON-NLS-1$
 
+	public static final String IMG_OVR_PRIVATE = "IMG_OVR_PRIVATE"; //$NON-NLS-1$
+	public static final String IMG_OVR_PACKAGE = "IMG_OVR_PACKAGE"; //$NON-NLS-1$
+	public static final String IMG_OVR_PROTECTED = "IMG_OVR_PROTECTED"; //$NON-NLS-1$
+	public static final String IMG_OVR_PUBLIC = "IMG_OVR_PUBLIC"; //$NON-NLS-1$
 	public static final String IMG_OVR_ABSTRACT = "IMG_OVR_ABSTRACT"; //$NON-NLS-1$
 	public static final String IMG_OVR_FINAL = "IMG_OVR_FINAL"; //$NON-NLS-1$
 	public static final String IMG_OVR_SEALED = "IMG_OVR_SEALED"; //$NON-NLS-1$
@@ -86,6 +91,11 @@ public final class LSPImages {
 	public static final String IMG_OVR_SYNC = "IMG_OVR_SYNC"; //$NON-NLS-1$
 	public static final String IMG_OVR_TRANSIENT = "IMG_OVR_TRANSIENT"; //$NON-NLS-1$
 	public static final String IMG_OVR_VOLATILE = "IMG_OVR_VOLATILE"; //$NON-NLS-1$
+	public static final String IMG_OVR_NULLABLE = "IMG_OVR_NULLABLE"; //$NON-NLS-1$
+	public static final String IMG_OVR_DECLARATION = "IMG_OVR_DECLARATION"; //$NON-NLS-1$
+	public static final String IMG_OVR_DEFINITION = "IMG_OVR_DEFINITION"; //$NON-NLS-1$
+	public static final String IMG_OVR_READ_ONLY = "IMG_OVR_READ_ONLY"; //$NON-NLS-1$
+
 
 	public static void initalize(ImageRegistry registry) {
 		imageRegistry = registry;
@@ -122,6 +132,10 @@ public final class LSPImages {
 		declareRegistryImage(IMG_SUBTYPE, ACTION + "sub_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_TERMINATE_CO, OBJECT + "terminate_co.png"); //$NON-NLS-1$
 
+		declareRegistryImage(IMG_OVR_PRIVATE, OVERLAY + "private_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_PACKAGE, OVERLAY + "package_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_PROTECTED, OVERLAY + "protected_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_PUBLIC, OVERLAY + "publict_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_ABSTRACT, OVERLAY + "abstract_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_FINAL, OVERLAY + "final_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_SEALED, OVERLAY + "sealed_co.png"); //$NON-NLS-1$
@@ -129,6 +143,10 @@ public final class LSPImages {
 		declareRegistryImage(IMG_OVR_SYNC, OVERLAY + "synch_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_TRANSIENT, OVERLAY + "transient_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_VOLATILE, OVERLAY + "volatile_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_NULLABLE, OVERLAY + "nullable_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_DECLARATION, OVERLAY + "declaration_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_DEFINITION, OVERLAY + "definition_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_READ_ONLY, OVERLAY + "read_only_co.png"); //$NON-NLS-1$
 	}
 
 	private static final void declareRegistryImage(String key, String path) {
@@ -241,6 +259,36 @@ public final class LSPImages {
 		case File -> getSharedImage(ISharedImages.IMG_OBJ_FILE);
 		case Folder -> getSharedImage(ISharedImages.IMG_OBJ_FOLDER);
 		case Reference -> getImage(IMG_REFERENCE);
+		default -> null;
+		};
+	}
+
+	public static @Nullable Image imageOverlayFromSymbolTag(SymbolTag symbolTag) {
+		if (symbolTag == null) {
+			return null;
+		}
+
+		return switch (symbolTag) {
+		//case Deprecated -> getImage(IMG_OVR_DEPRECATED);
+		case Private -> getImage(IMG_OVR_PRIVATE);
+		case Package -> getImage(IMG_OVR_PACKAGE);
+		case Protected -> getImage(IMG_OVR_PROTECTED);
+		case Public -> getImage(IMG_OVR_PUBLIC);
+		//case Internal -> getImage(IMG_OVR_INTERNAL);
+		//case File -> getImage(IMG_OVR_FILE);
+		case Static -> getImage(IMG_OVR_STATIC);
+		case Abstract -> getImage(IMG_OVR_ABSTRACT);
+		case Final -> getImage(IMG_OVR_FINAL);
+		case Sealed -> getImage(IMG_OVR_SEALED);
+		case Transient -> getImage(IMG_OVR_TRANSIENT);
+		case Volatile -> getImage(IMG_OVR_VOLATILE);
+		case Synchronized -> getImage(IMG_OVR_SYNC);
+		//case Virtual -> getImage(IMG_OVR_VIRTUAL);
+		case Nullable -> getImage(IMG_OVR_NULLABLE);
+		//case NonNull -> getImage(IMG_OVR_NON_NULL);
+		case Declaration -> getImage(IMG_OVR_DECLARATION);
+		case Definition -> getImage(IMG_OVR_DEFINITION);
+		case ReadOnly -> getImage(IMG_OVR_READ_ONLY);
 		default -> null;
 		};
 	}
