@@ -314,7 +314,7 @@ public class SemanticHighlightReconcilerStrategy
 		documentTimestampAtLastAppliedTextPresentation = DocumentUtil.getDocumentModificationStamp(document);
 		IRegion extent = textPresentation.getExtent();
 		if (extent != null && styleRangeHolder != null) {
-			textPresentation.replaceStyleRanges(styleRangeHolder.overlappingRanges(extent));
+			textPresentation.mergeStyleRanges(styleRangeHolder.overlappingRanges(extent));
 		}
 	}
 }
