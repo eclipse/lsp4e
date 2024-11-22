@@ -91,7 +91,7 @@ public class SymbolsLabelProvider extends LabelProvider
 	 * key: initial object image
 	 * value: array of images decorated with marker for severity (index + 1)
 	 */
-	private final Map<Image, Image[]> overlays = new HashMap<>();
+	private final Map<Image, Image[]> imagesWithSeverityMarkerOverlays = new HashMap<>();
 
 	private final boolean showLocation;
 
@@ -113,8 +113,8 @@ public class SymbolsLabelProvider extends LabelProvider
 	public void dispose() {
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(listener);
 		InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID).removePreferenceChangeListener(this);
-		overlays.values().stream().flatMap(Arrays::stream).filter(Objects::nonNull).forEach(Image::dispose);
-		overlays.clear();
+		imagesWithSeverityMarkerOverlays.values().stream().flatMap(Arrays::stream).filter(Objects::nonNull).forEach(Image::dispose);
+		imagesWithSeverityMarkerOverlays.clear();
 		super.dispose();
 	}
 
@@ -174,7 +174,7 @@ public class SymbolsLabelProvider extends LabelProvider
 					if (doc != null) {
 						int maxSeverity = getMaxSeverity(file, doc, range);
 						if (maxSeverity > IMarker.SEVERITY_INFO) {
-							return getOverlay(res, maxSeverity);
+							return getMarkerSeverityOverlayImage(res, maxSeverity);
 						}
 					}
 				} catch (CoreException | BadLocationException e) {
@@ -229,11 +229,11 @@ public class SymbolsLabelProvider extends LabelProvider
 		severities.put(resource, rangeMap);
 	}
 
-	private Image getOverlay(Image res, int maxSeverity) {
+	private Image getMarkerSeverityOverlayImage(Image res, int maxSeverity) {
 		if (maxSeverity != 1 && maxSeverity != 2) {
 			throw new IllegalArgumentException("Severity " + maxSeverity + " not supported."); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		Image[] currentOverlays = this.overlays.computeIfAbsent(res, key -> new Image [2]);
+		Image[] currentOverlays = this.imagesWithSeverityMarkerOverlays.computeIfAbsent(res, key -> new Image [2]);
 		if (castNullable(currentOverlays[maxSeverity - 1]) == null) {
 			String overlayId = null;
 			if (maxSeverity == IMarker.SEVERITY_ERROR) {
