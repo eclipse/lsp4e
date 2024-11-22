@@ -132,16 +132,33 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element instanceof Either<?, ?> either) {
 			element = either.get();
 		}
-		Image res = null;
+		SymbolKind symbolKind = null;
+		Image baseImage = null;
 		if (element instanceof SymbolInformation info) {
-			res = LSPImages.imageFromSymbolKind(info.getKind());
+			symbolKind = SymbolsUtil.getKind(info);
 		} else if (element instanceof WorkspaceSymbol symbol) {
-			res = LSPImages.imageFromSymbolKind(symbol.getKind());
+			symbolKind = SymbolsUtil.getKind(symbol);
 		} else if (element instanceof DocumentSymbol symbol) {
-			res = LSPImages.imageFromSymbolKind(symbol.getKind());
+			symbolKind = SymbolsUtil.getKind(symbol);
 		} else if (element instanceof DocumentSymbolWithURI symbolWithURI) {
-			res = LSPImages.imageFromSymbolKind(symbolWithURI.symbol.getKind());
+			symbolKind = SymbolsUtil.getKind(symbolWithURI);
 		}
+		if (symbolKind != null) {
+			baseImage = LSPImages.imageFromSymbolKind(symbolKind);
+		}
+
+		if (element != null && baseImage != null) {
+			int maxSeverity = getMaxSeverity(element);
+
+			if (maxSeverity > IMarker.SEVERITY_INFO) {
+				return getMarkerSeverityOverlayImage(baseImage, maxSeverity);
+			}
+		}
+
+		return baseImage;
+	}
+
+	private int getMaxSeverity(Object element) {
 		IResource file = null;
 		if (element instanceof SymbolInformation symbol) {
 			file = LSPEclipseUtils.findResourceFor(symbol.getLocation().getUri());
@@ -150,10 +167,11 @@ public class SymbolsLabelProvider extends LabelProvider
 		} else if (element instanceof DocumentSymbolWithURI symbolWithURI) {
 			file = LSPEclipseUtils.findResourceFor(symbolWithURI.uri);
 		}
+
 		/*
-		 * Implementation node: for problem decoration,m aybe consider using a ILabelDecorator/IDelayedLabelDecorator?
+		 * Implementation node: for problem decoration, maybe consider using a ILabelDecorator/IDelayedLabelDecorator?
 		 */
-		if (file != null && res != null) {
+		if (file != null) {
 			Range range = null;
 			if (element instanceof SymbolInformation symbol) {
 				range = symbol.getLocation().getRange();
@@ -164,6 +182,7 @@ public class SymbolsLabelProvider extends LabelProvider
 			} else if (element instanceof DocumentSymbolWithURI symbolWithURI) {
 				range = symbolWithURI.symbol.getRange();
 			}
+
 			if (range != null) {
 				try {
 					// use existing documents only to calculate the severity
@@ -172,17 +191,15 @@ public class SymbolsLabelProvider extends LabelProvider
 					IDocument doc = LSPEclipseUtils.getExistingDocument(file);
 
 					if (doc != null) {
-						int maxSeverity = getMaxSeverity(file, doc, range);
-						if (maxSeverity > IMarker.SEVERITY_INFO) {
-							return getMarkerSeverityOverlayImage(res, maxSeverity);
-						}
+						return getMaxSeverity(file, doc, range);
 					}
 				} catch (CoreException | BadLocationException e) {
 					LanguageServerPlugin.logError(e);
 				}
 			}
 		}
-		return res;
+
+		return -1;
 	}
 
 	protected int getMaxSeverity(IResource resource, IDocument doc, Range range)

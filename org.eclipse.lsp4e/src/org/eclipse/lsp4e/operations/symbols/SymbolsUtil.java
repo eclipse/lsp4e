@@ -17,10 +17,27 @@ import java.util.List;
 import org.eclipse.lsp4e.outline.SymbolsModel.DocumentSymbolWithURI;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.SymbolInformation;
+import org.eclipse.lsp4j.SymbolKind;
 import org.eclipse.lsp4j.SymbolTag;
 import org.eclipse.lsp4j.WorkspaceSymbol;
 
 public class SymbolsUtil {
+
+	public static SymbolKind getKind(SymbolInformation symbolInformation) {
+		return symbolInformation.getKind();
+	}
+
+	public static SymbolKind getKind(WorkspaceSymbol workspaceSymbol) {
+		return workspaceSymbol.getKind();
+	}
+
+	public static SymbolKind getKind(DocumentSymbol documentSymbol) {
+		return documentSymbol.getKind();
+	}
+
+	public static SymbolKind getKind(DocumentSymbolWithURI documentSymbolWithUri) {
+		return getKind(documentSymbolWithUri.symbol);
+	}
 
 	public static List<SymbolTag> getSymbolTags(SymbolInformation symbolInformation) {
 		if (symbolInformation.getTags() != null) {
