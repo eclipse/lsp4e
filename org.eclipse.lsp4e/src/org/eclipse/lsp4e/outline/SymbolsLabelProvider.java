@@ -31,6 +31,7 @@ import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChang
 import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jdt.annotation.Nullable;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.resource.JFaceResources;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
@@ -246,20 +247,29 @@ public class SymbolsLabelProvider extends LabelProvider
 		severities.put(resource, rangeMap);
 	}
 
+	private @Nullable ImageDescriptor getOverlayForMarkerSeverity(int severity) {
+		String overlayId = null;
+		if (severity == IMarker.SEVERITY_ERROR) {
+			overlayId = ISharedImages.IMG_DEC_FIELD_ERROR;
+		} else if (severity == IMarker.SEVERITY_WARNING) {
+			overlayId = ISharedImages.IMG_DEC_FIELD_WARNING;
+		}
+
+		if (overlayId != null) {
+			return LSPImages.getSharedImageDescriptor(overlayId);
+		}
+		return null;
+	}
+
 	private Image getMarkerSeverityOverlayImage(Image res, int maxSeverity) {
 		if (maxSeverity != 1 && maxSeverity != 2) {
 			throw new IllegalArgumentException("Severity " + maxSeverity + " not supported."); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		Image[] currentOverlays = this.imagesWithSeverityMarkerOverlays.computeIfAbsent(res, key -> new Image [2]);
 		if (castNullable(currentOverlays[maxSeverity - 1]) == null) {
-			String overlayId = null;
-			if (maxSeverity == IMarker.SEVERITY_ERROR) {
-				overlayId = ISharedImages.IMG_DEC_FIELD_ERROR;
-			} else if (maxSeverity == IMarker.SEVERITY_WARNING) {
-				overlayId = ISharedImages.IMG_DEC_FIELD_WARNING;
-			}
+			ImageDescriptor overlayImageDescriptor = getOverlayForMarkerSeverity(maxSeverity);
 			currentOverlays[maxSeverity - 1] = new DecorationOverlayIcon(res,
-					LSPImages.getSharedImageDescriptor(overlayId), IDecoration.BOTTOM_LEFT).createImage();
+					overlayImageDescriptor, IDecoration.BOTTOM_LEFT).createImage();
 		}
 		return currentOverlays[maxSeverity - 1];
 	}
