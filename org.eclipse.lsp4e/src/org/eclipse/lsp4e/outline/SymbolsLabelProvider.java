@@ -262,7 +262,7 @@ public class SymbolsLabelProvider extends LabelProvider
 	}
 
 	private Image getMarkerSeverityOverlayImage(Image res, int maxSeverity) {
-		if (maxSeverity != 1 && maxSeverity != 2) {
+		if (maxSeverity != IMarker.SEVERITY_WARNING && maxSeverity != IMarker.SEVERITY_ERROR) {
 			throw new IllegalArgumentException("Severity " + maxSeverity + " not supported."); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		Image[] currentOverlays = this.imagesWithSeverityMarkerOverlays.computeIfAbsent(res, key -> new Image [2]);
