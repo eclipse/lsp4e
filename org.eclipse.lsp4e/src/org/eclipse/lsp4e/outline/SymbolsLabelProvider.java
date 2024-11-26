@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.eclipse.core.resources.IMarker;
 import org.eclipse.core.resources.IResource;
@@ -134,26 +135,41 @@ public class SymbolsLabelProvider extends LabelProvider
 			element = either.get();
 		}
 		SymbolKind symbolKind = null;
+		List<SymbolTag> symbolTags = null;
 		Image baseImage = null;
 		if (element instanceof SymbolInformation info) {
 			symbolKind = SymbolsUtil.getKind(info);
+			symbolTags = SymbolsUtil.getSymbolTags(info);
 		} else if (element instanceof WorkspaceSymbol symbol) {
 			symbolKind = SymbolsUtil.getKind(symbol);
+			symbolTags = SymbolsUtil.getSymbolTags(symbol);
 		} else if (element instanceof DocumentSymbol symbol) {
 			symbolKind = SymbolsUtil.getKind(symbol);
+			symbolTags = SymbolsUtil.getSymbolTags(symbol);
 		} else if (element instanceof DocumentSymbolWithURI symbolWithURI) {
 			symbolKind = SymbolsUtil.getKind(symbolWithURI);
+			symbolTags = SymbolsUtil.getSymbolTags(symbolWithURI);
 		}
 		if (symbolKind != null) {
 			baseImage = LSPImages.imageFromSymbolKind(symbolKind);
 		}
 
-		if (element != null && baseImage != null) {
-			int maxSeverity = getMaxSeverity(element);
+		if (element != null && baseImage != null && symbolTags != null) {
+			ImageDescriptor severityImageDescriptor = getOverlayForMarkerSeverity(getMaxSeverity(element));
+			ImageDescriptor visibilityImageDescriptor = getOverlayForVisibility(symbolTags);
 
-			if (maxSeverity > IMarker.SEVERITY_INFO) {
-				return getMarkerSeverityOverlayImage(baseImage, maxSeverity);
+			// array index: 0 = top left, 1 = top right, 2 = bottom left, 3 = bottom right,
+			// see IDecoration.TOP_LEFT ... IDecoration.BOTTOM_RIGHT
+			@Nullable ImageDescriptor[] overlays = { visibilityImageDescriptor, null, severityImageDescriptor, null };
+
+				//return getMarkerSeverityOverlayImage(baseImage, maxSeverity);
+			long numOverlays = Arrays.stream(overlays).filter(e -> e != null).count();
+
+			if (numOverlays == 0) {
+				return baseImage;
 			}
+
+			return new DecorationOverlayIcon(baseImage, overlays).createImage();
 		}
 
 		return baseImage;
@@ -247,7 +263,39 @@ public class SymbolsLabelProvider extends LabelProvider
 		severities.put(resource, rangeMap);
 	}
 
+	private @Nullable ImageDescriptor getOverlayForVisibility(List<SymbolTag> symbolTags) {
+		List<SymbolTag> visibilityTags = symbolTags.stream()
+			.filter(tag -> visibilityPrecedence.contains(tag))
+			.sorted(new VisibilitySymbolTagComparator())
+			.collect(Collectors.toList());
+
+		if (visibilityTags.isEmpty()) {
+			return null;
+		}
+
+		SymbolTag highestPrioVisTag = visibilityTags.get(0);
+
+		return LSPImages.imageDescriptorOverlayFromSymbolTag(highestPrioVisTag);
+	}
+
+	private static final List<SymbolTag> visibilityPrecedence = Arrays.asList(new SymbolTag[] {
+			SymbolTag.Public, SymbolTag.Protected, SymbolTag.Package, SymbolTag.Private,
+			SymbolTag.Internal, SymbolTag.File });
+
+	private static class VisibilitySymbolTagComparator implements Comparator<SymbolTag> {
+
+		@Override
+		public int compare(SymbolTag tag1, SymbolTag tag2) {
+			return visibilityPrecedence.indexOf(tag1) - visibilityPrecedence.indexOf(tag2);
+		}
+
+	}
+
 	private @Nullable ImageDescriptor getOverlayForMarkerSeverity(int severity) {
+		if (severity != IMarker.SEVERITY_WARNING && severity != IMarker.SEVERITY_ERROR) {
+			return null;
+		}
+
 		String overlayId = null;
 		if (severity == IMarker.SEVERITY_ERROR) {
 			overlayId = ISharedImages.IMG_DEC_FIELD_ERROR;
@@ -262,9 +310,6 @@ public class SymbolsLabelProvider extends LabelProvider
 	}
 
 	private Image getMarkerSeverityOverlayImage(Image res, int maxSeverity) {
-		if (maxSeverity != IMarker.SEVERITY_WARNING && maxSeverity != IMarker.SEVERITY_ERROR) {
-			throw new IllegalArgumentException("Severity " + maxSeverity + " not supported."); //$NON-NLS-1$ //$NON-NLS-2$
-		}
 		Image[] currentOverlays = this.imagesWithSeverityMarkerOverlays.computeIfAbsent(res, key -> new Image [2]);
 		if (castNullable(currentOverlays[maxSeverity - 1]) == null) {
 			ImageDescriptor overlayImageDescriptor = getOverlayForMarkerSeverity(maxSeverity);

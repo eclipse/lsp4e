@@ -138,7 +138,7 @@ public final class LSPImages {
 		declareRegistryImage(IMG_OVR_PRIVATE, OVERLAY + "private_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_PACKAGE, OVERLAY + "package_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_PROTECTED, OVERLAY + "protected_co.png"); //$NON-NLS-1$
-		declareRegistryImage(IMG_OVR_PUBLIC, OVERLAY + "publict_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_PUBLIC, OVERLAY + "public_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_INTERNAL, OVERLAY + "internal_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_FILE_VIS, OVERLAY + "file_visable_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_ABSTRACT, OVERLAY + "abstract_co.png"); //$NON-NLS-1$
@@ -291,6 +291,32 @@ public final class LSPImages {
 		case Declaration -> getImage(IMG_OVR_DECLARATION);
 		case Definition -> getImage(IMG_OVR_DEFINITION);
 		case ReadOnly -> getImage(IMG_OVR_READ_ONLY);
+		default -> null;
+		};
+	}
+
+	public static @Nullable ImageDescriptor imageDescriptorOverlayFromSymbolTag(SymbolTag symbolTag) {
+		return switch (symbolTag) {
+		//case Deprecated -> getImageDescriptor(IMG_OVR_DEPRECATED);
+		case Private -> getImageDescriptor(IMG_OVR_PRIVATE);
+		case Package -> getImageDescriptor(IMG_OVR_PACKAGE);
+		case Protected -> getImageDescriptor(IMG_OVR_PROTECTED);
+		case Public -> getImageDescriptor(IMG_OVR_PUBLIC);
+		case Internal -> getImageDescriptor(IMG_OVR_INTERNAL);
+		case File -> getImageDescriptor(IMG_OVR_FILE_VIS);
+		case Static -> getImageDescriptor(IMG_OVR_STATIC);
+		case Abstract -> getImageDescriptor(IMG_OVR_ABSTRACT);
+		case Final -> getImageDescriptor(IMG_OVR_FINAL);
+		case Sealed -> getImageDescriptor(IMG_OVR_SEALED);
+		case Transient -> getImageDescriptor(IMG_OVR_TRANSIENT);
+		case Volatile -> getImageDescriptor(IMG_OVR_VOLATILE);
+		case Synchronized -> getImageDescriptor(IMG_OVR_SYNC);
+		//case Virtual -> getImageDescriptor(IMG_OVR_VIRTUAL);
+		case Nullable -> getImageDescriptor(IMG_OVR_NULLABLE);
+		case NonNull -> getImageDescriptor(IMG_OVR_NON_NULL);
+		case Declaration -> getImageDescriptor(IMG_OVR_DECLARATION);
+		case Definition -> getImageDescriptor(IMG_OVR_DEFINITION);
+		case ReadOnly -> getImageDescriptor(IMG_OVR_READ_ONLY);
 		default -> null;
 		};
 	}
