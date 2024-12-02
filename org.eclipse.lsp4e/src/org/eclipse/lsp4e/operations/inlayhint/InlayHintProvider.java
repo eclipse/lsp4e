@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -26,6 +27,7 @@ import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
+import org.eclipse.lsp4e.internal.CancellationUtil;
 import org.eclipse.lsp4j.InlayHint;
 import org.eclipse.lsp4j.InlayHintParams;
 import org.eclipse.lsp4j.Position;
@@ -49,7 +51,14 @@ public class InlayHintProvider extends AbstractCodeMiningProvider {
 			final var param = new InlayHintParams(LSPEclipseUtils.toTextDocumentIdentifier(docURI), viewPortRange);
 			List<LSPLineContentCodeMining> inlayHintResults = Collections.synchronizedList(new ArrayList<>());
 			return LanguageServers.forDocument(document).withCapability(ServerCapabilities::getInlayHintProvider)
-					.collectAll((w, ls) -> ls.getTextDocumentService().inlayHint(param).thenAcceptAsync(inlayHints -> {
+					.collectAll((w, ls) -> ls.getTextDocumentService() //
+					.inlayHint(param).exceptionally((ex -> {
+						if (!(ex instanceof CancellationException || CancellationUtil.isRequestCancelledException(ex))) {
+							LanguageServerPlugin.logError(ex);
+						}
+						return Collections.emptyList();
+					})) //
+					.thenAcceptAsync(inlayHints -> {
 						// textDocument/inlayHint may return null
 						if (inlayHints != null) {
 							inlayHints.stream().filter(Objects::nonNull)
