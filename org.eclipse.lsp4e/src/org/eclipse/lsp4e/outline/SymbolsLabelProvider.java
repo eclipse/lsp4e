@@ -157,10 +157,26 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element != null && baseImage != null && symbolTags != null) {
 			ImageDescriptor severityImageDescriptor = getOverlayForMarkerSeverity(getMaxSeverity(element));
 			ImageDescriptor visibilityImageDescriptor = getOverlayForVisibility(symbolTags);
+			List<SymbolTag> additionalTags = getAdditionalSymbolTagsSorted(symbolTags);
+			ImageDescriptor topRightOverlayDescriptor = null;
+			ImageDescriptor bottomRightOverlayDescriptor = null;
+
+			if (!additionalTags.isEmpty()) {
+				topRightOverlayDescriptor = LSPImages.imageDescriptorOverlayFromSymbolTag(additionalTags.get(0));
+
+				if (additionalTags.size() > 1) {
+					bottomRightOverlayDescriptor = LSPImages.imageDescriptorOverlayFromSymbolTag(additionalTags.get(1));
+				}
+			}
+
+			// TODO add some kind of caching?
+			// TODO add deprecated underlay?
 
 			// array index: 0 = top left, 1 = top right, 2 = bottom left, 3 = bottom right,
 			// see IDecoration.TOP_LEFT ... IDecoration.BOTTOM_RIGHT
-			@Nullable ImageDescriptor[] overlays = { visibilityImageDescriptor, null, severityImageDescriptor, null };
+			@Nullable ImageDescriptor[] overlays = {
+					visibilityImageDescriptor, topRightOverlayDescriptor,
+					severityImageDescriptor, bottomRightOverlayDescriptor };
 
 				//return getMarkerSeverityOverlayImage(baseImage, maxSeverity);
 			long numOverlays = Arrays.stream(overlays).filter(e -> e != null).count();
@@ -287,6 +303,28 @@ public class SymbolsLabelProvider extends LabelProvider
 		@Override
 		public int compare(SymbolTag tag1, SymbolTag tag2) {
 			return visibilityPrecedence.indexOf(tag1) - visibilityPrecedence.indexOf(tag2);
+		}
+
+	}
+
+	private List<SymbolTag> getAdditionalSymbolTagsSorted(List<SymbolTag> symbolTags) {
+		return symbolTags.stream()
+				.filter(tag -> additionalTagsPrecedence.contains(tag))
+				.sorted(new AdditionalSymbolTagComparator())
+				.collect(Collectors.toList());
+	}
+
+	private static final List<SymbolTag> additionalTagsPrecedence = Arrays.asList(new SymbolTag[] {
+			SymbolTag.Static, SymbolTag.Abstract, SymbolTag.Virtual, SymbolTag.Final, SymbolTag.Sealed,
+			SymbolTag.Synchronized, SymbolTag.Transient, SymbolTag.Volatile,
+			SymbolTag.Nullable, SymbolTag.NonNull, SymbolTag.ReadOnly,
+			SymbolTag.Declaration, SymbolTag.Definition });
+
+	private static class AdditionalSymbolTagComparator implements Comparator<SymbolTag> {
+
+		@Override
+		public int compare(SymbolTag tag1, SymbolTag tag2) {
+			return additionalTagsPrecedence.indexOf(tag1) - additionalTagsPrecedence.indexOf(tag2);
 		}
 
 	}
