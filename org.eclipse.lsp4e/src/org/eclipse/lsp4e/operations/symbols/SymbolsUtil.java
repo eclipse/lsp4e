@@ -87,6 +87,24 @@ public class SymbolsUtil {
 		return getSymbolTags(documentSymbolWithUri).contains(tag);
 	}
 
+	public static boolean isDeprecated(SymbolInformation symbolInformation) {
+		boolean deprecated = isDeprecated(getSymbolTags(symbolInformation));
+		return deprecated || (symbolInformation.getDeprecated() == null ? false: symbolInformation.getDeprecated());
+	}
+
+	public static boolean isDeprecated(WorkspaceSymbol workspaceSymbol) {
+		return isDeprecated(getSymbolTags(workspaceSymbol));
+	}
+
+	public static boolean isDeprecated(DocumentSymbol documentSymbol) {
+		boolean deprecated = isDeprecated(getSymbolTags(documentSymbol));
+		return deprecated || (documentSymbol.getDeprecated() == null ? false: documentSymbol.getDeprecated());
+	}
+
+	public static boolean isDeprecated(DocumentSymbolWithURI documentSymbolWithUri) {
+		return isDeprecated(documentSymbolWithUri.symbol);
+	}
+
 	public static boolean isDeprecated(List<SymbolTag> tags) {
 		return SymbolsUtil.hasSymbolTag(tags, SymbolTag.Deprecated);
 	}

@@ -80,6 +80,7 @@ public final class LSPImages {
 	public static final String IMG_SUPERTYPE = "IMG_SUPERTYPE"; //$NON-NLS-1$
 	public static final String IMG_SUBTYPE = "IMG_SUBTYPE"; //$NON-NLS-1$
 
+	public static final String IMG_OVR_DEPRECATED = "IMG_OVR_DEPRECATED"; //$NON-NLS-1$
 	public static final String IMG_OVR_PRIVATE = "IMG_OVR_PRIVATE"; //$NON-NLS-1$
 	public static final String IMG_OVR_PACKAGE = "IMG_OVR_PACKAGE"; //$NON-NLS-1$
 	public static final String IMG_OVR_PROTECTED = "IMG_OVR_PROTECTED"; //$NON-NLS-1$
@@ -135,6 +136,7 @@ public final class LSPImages {
 		declareRegistryImage(IMG_SUBTYPE, ACTION + "sub_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_TERMINATE_CO, OBJECT + "terminate_co.png"); //$NON-NLS-1$
 
+		declareRegistryImage(IMG_OVR_DEPRECATED, OVERLAY + "deprecated.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_PRIVATE, OVERLAY + "private_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_PACKAGE, OVERLAY + "package_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_PROTECTED, OVERLAY + "protected_co.png"); //$NON-NLS-1$
@@ -271,7 +273,7 @@ public final class LSPImages {
 
 	public static @Nullable Image imageOverlayFromSymbolTag(SymbolTag symbolTag) {
 		return switch (symbolTag) {
-		//case Deprecated -> getImage(IMG_OVR_DEPRECATED);
+		case Deprecated -> getImage(IMG_OVR_DEPRECATED);
 		case Private -> getImage(IMG_OVR_PRIVATE);
 		case Package -> getImage(IMG_OVR_PACKAGE);
 		case Protected -> getImage(IMG_OVR_PROTECTED);
@@ -297,7 +299,7 @@ public final class LSPImages {
 
 	public static @Nullable ImageDescriptor imageDescriptorOverlayFromSymbolTag(SymbolTag symbolTag) {
 		return switch (symbolTag) {
-		//case Deprecated -> getImageDescriptor(IMG_OVR_DEPRECATED);
+		case Deprecated -> getImageDescriptor(IMG_OVR_DEPRECATED);
 		case Private -> getImageDescriptor(IMG_OVR_PRIVATE);
 		case Package -> getImageDescriptor(IMG_OVR_PACKAGE);
 		case Protected -> getImageDescriptor(IMG_OVR_PROTECTED);

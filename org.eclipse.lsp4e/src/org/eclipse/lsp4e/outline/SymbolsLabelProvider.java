@@ -137,18 +137,23 @@ public class SymbolsLabelProvider extends LabelProvider
 		SymbolKind symbolKind = null;
 		List<SymbolTag> symbolTags = null;
 		Image baseImage = null;
+		boolean deprecated = false;
 		if (element instanceof SymbolInformation info) {
 			symbolKind = SymbolsUtil.getKind(info);
 			symbolTags = SymbolsUtil.getSymbolTags(info);
+			deprecated = SymbolsUtil.isDeprecated(info);
 		} else if (element instanceof WorkspaceSymbol symbol) {
 			symbolKind = SymbolsUtil.getKind(symbol);
 			symbolTags = SymbolsUtil.getSymbolTags(symbol);
+			deprecated = SymbolsUtil.isDeprecated(symbol);
 		} else if (element instanceof DocumentSymbol symbol) {
 			symbolKind = SymbolsUtil.getKind(symbol);
 			symbolTags = SymbolsUtil.getSymbolTags(symbol);
+			deprecated = SymbolsUtil.isDeprecated(symbol);
 		} else if (element instanceof DocumentSymbolWithURI symbolWithURI) {
 			symbolKind = SymbolsUtil.getKind(symbolWithURI);
 			symbolTags = SymbolsUtil.getSymbolTags(symbolWithURI);
+			deprecated = SymbolsUtil.isDeprecated(symbolWithURI);
 		}
 		if (symbolKind != null) {
 			baseImage = LSPImages.imageFromSymbolKind(symbolKind);
@@ -157,6 +162,7 @@ public class SymbolsLabelProvider extends LabelProvider
 		if (element != null && baseImage != null && symbolTags != null) {
 			ImageDescriptor severityImageDescriptor = getOverlayForMarkerSeverity(getMaxSeverity(element));
 			ImageDescriptor visibilityImageDescriptor = getOverlayForVisibility(symbolTags);
+			ImageDescriptor deprecatedImageDescriptor = getUnderlayForDeprecation(deprecated);
 			List<SymbolTag> additionalTags = getAdditionalSymbolTagsSorted(symbolTags);
 			ImageDescriptor topRightOverlayDescriptor = null;
 			ImageDescriptor bottomRightOverlayDescriptor = null;
@@ -170,13 +176,13 @@ public class SymbolsLabelProvider extends LabelProvider
 			}
 
 			// TODO add some kind of caching?
-			// TODO add deprecated underlay?
 
 			// array index: 0 = top left, 1 = top right, 2 = bottom left, 3 = bottom right,
 			// see IDecoration.TOP_LEFT ... IDecoration.BOTTOM_RIGHT
 			@Nullable ImageDescriptor[] overlays = {
 					visibilityImageDescriptor, topRightOverlayDescriptor,
-					severityImageDescriptor, bottomRightOverlayDescriptor };
+					severityImageDescriptor, bottomRightOverlayDescriptor,
+					deprecatedImageDescriptor};
 
 				//return getMarkerSeverityOverlayImage(baseImage, maxSeverity);
 			long numOverlays = Arrays.stream(overlays).filter(e -> e != null).count();
@@ -277,6 +283,13 @@ public class SymbolsLabelProvider extends LabelProvider
 				}
 			});
 		severities.put(resource, rangeMap);
+	}
+
+	private @Nullable ImageDescriptor getUnderlayForDeprecation(boolean deprecated) {
+		if (!deprecated) {
+			return null;
+		}
+		return LSPImages.imageDescriptorOverlayFromSymbolTag(SymbolTag.Deprecated);
 	}
 
 	private @Nullable ImageDescriptor getOverlayForVisibility(List<SymbolTag> symbolTags) {
@@ -386,13 +399,11 @@ public class SymbolsLabelProvider extends LabelProvider
 		SymbolKind kind = null;
 		String detail = null;
 		URI location = null;
-		List<SymbolTag> symbolTags;
 		boolean deprecated = false;
 		if (element instanceof SymbolInformation symbolInformation) {
 			name = symbolInformation.getName();
 			kind = symbolInformation.getKind();
-			symbolTags = SymbolsUtil.getSymbolTags(symbolInformation);
-			deprecated = SymbolsUtil.isDeprecated(symbolTags) || symbolInformation.getDeprecated() == null ? false: symbolInformation.getDeprecated();
+			deprecated = SymbolsUtil.isDeprecated(symbolInformation);
 			try {
 				location = URI.create(symbolInformation.getLocation().getUri());
 			} catch (IllegalArgumentException e) {
@@ -401,9 +412,8 @@ public class SymbolsLabelProvider extends LabelProvider
 		} else if (element instanceof WorkspaceSymbol workspaceSymbol) {
 			name = workspaceSymbol.getName();
 			kind = workspaceSymbol.getKind();
-			symbolTags = SymbolsUtil.getSymbolTags(workspaceSymbol);
 			String rawUri = getUri(workspaceSymbol);
-			deprecated = SymbolsUtil.isDeprecated(symbolTags);
+			deprecated = SymbolsUtil.isDeprecated(workspaceSymbol);
 			try {
 				location = URI.create(rawUri);
 			} catch (IllegalArgumentException e) {
@@ -412,16 +422,14 @@ public class SymbolsLabelProvider extends LabelProvider
 		} else if (element instanceof DocumentSymbol documentSymbol) {
 			name = documentSymbol.getName();
 			kind = documentSymbol.getKind();
-			symbolTags = SymbolsUtil.getSymbolTags(documentSymbol);
 			detail = documentSymbol.getDetail();
-			deprecated = SymbolsUtil.isDeprecated(symbolTags) || documentSymbol.getDeprecated() == null ? false: documentSymbol.getDeprecated();
+			deprecated = SymbolsUtil.isDeprecated(documentSymbol);
 		} else if (element instanceof DocumentSymbolWithURI symbolWithURI) {
 			name = symbolWithURI.symbol.getName();
 			kind = symbolWithURI.symbol.getKind();
-			symbolTags = SymbolsUtil.getSymbolTags(symbolWithURI);
 			detail = symbolWithURI.symbol.getDetail();
 			location = symbolWithURI.uri;
-			deprecated = SymbolsUtil.isDeprecated(symbolTags) || symbolWithURI.symbol.getDeprecated() == null ? false: symbolWithURI.symbol.getDeprecated();
+			deprecated = SymbolsUtil.isDeprecated(symbolWithURI);
 		}
 		if (name != null) {
 			if (deprecated) {
