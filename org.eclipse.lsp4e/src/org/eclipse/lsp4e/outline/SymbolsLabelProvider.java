@@ -170,7 +170,11 @@ public class SymbolsLabelProvider extends LabelProvider
 			if (!additionalTags.isEmpty()) {
 				topRightOverlayDescriptor = LSPImages.imageDescriptorOverlayFromSymbolTag(additionalTags.get(0));
 
-				if (additionalTags.size() > 1) {
+				if (SymbolKind.Constructor.equals(symbolKind)) {
+					// constructor base image has a built-in overlay in the top right corner, use bottom right instead
+					bottomRightOverlayDescriptor = topRightOverlayDescriptor;
+					topRightOverlayDescriptor = null;
+				} else if (additionalTags.size() > 1) {
 					bottomRightOverlayDescriptor = LSPImages.imageDescriptorOverlayFromSymbolTag(additionalTags.get(1));
 				}
 			}
