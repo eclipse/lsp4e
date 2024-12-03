@@ -88,6 +88,7 @@ public final class LSPImages {
 	public static final String IMG_OVR_INTERNAL = "IMG_OVR_INTERNAL"; //$NON-NLS-1$
 	public static final String IMG_OVR_FILE_VIS = "IMG_OVR_FILE_VIS"; //$NON-NLS-1$
 	public static final String IMG_OVR_ABSTRACT = "IMG_OVR_ABSTRACT"; //$NON-NLS-1$
+	public static final String IMG_OVR_VIRTUAL = "IMG_OVR_VIRTUAL"; //$NON-NLS-1$
 	public static final String IMG_OVR_FINAL = "IMG_OVR_FINAL"; //$NON-NLS-1$
 	public static final String IMG_OVR_SEALED = "IMG_OVR_SEALED"; //$NON-NLS-1$
 	public static final String IMG_OVR_STATIC = "IMG_OVR_STATIC"; //$NON-NLS-1$
@@ -144,6 +145,7 @@ public final class LSPImages {
 		declareRegistryImage(IMG_OVR_INTERNAL, OVERLAY + "internal_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_FILE_VIS, OVERLAY + "file_visable_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_ABSTRACT, OVERLAY + "abstract_co.png"); //$NON-NLS-1$
+		declareRegistryImage(IMG_OVR_VIRTUAL, OVERLAY + "virtual_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_FINAL, OVERLAY + "final_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_SEALED, OVERLAY + "sealed_co.png"); //$NON-NLS-1$
 		declareRegistryImage(IMG_OVR_STATIC, OVERLAY + "static_co.png"); //$NON-NLS-1$
@@ -287,7 +289,7 @@ public final class LSPImages {
 		case Transient -> getImage(IMG_OVR_TRANSIENT);
 		case Volatile -> getImage(IMG_OVR_VOLATILE);
 		case Synchronized -> getImage(IMG_OVR_SYNC);
-		//case Virtual -> getImage(IMG_OVR_VIRTUAL);
+		case Virtual -> getImage(IMG_OVR_VIRTUAL);
 		case Nullable -> getImage(IMG_OVR_NULLABLE);
 		case NonNull -> getImage(IMG_OVR_NON_NULL);
 		case Declaration -> getImage(IMG_OVR_DECLARATION);
@@ -313,7 +315,7 @@ public final class LSPImages {
 		case Transient -> getImageDescriptor(IMG_OVR_TRANSIENT);
 		case Volatile -> getImageDescriptor(IMG_OVR_VOLATILE);
 		case Synchronized -> getImageDescriptor(IMG_OVR_SYNC);
-		//case Virtual -> getImageDescriptor(IMG_OVR_VIRTUAL);
+		case Virtual -> getImageDescriptor(IMG_OVR_VIRTUAL);
 		case Nullable -> getImageDescriptor(IMG_OVR_NULLABLE);
 		case NonNull -> getImageDescriptor(IMG_OVR_NON_NULL);
 		case Declaration -> getImageDescriptor(IMG_OVR_DECLARATION);
