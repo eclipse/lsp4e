@@ -105,9 +105,14 @@ public class SemanticHighlightReconcilerStrategy
 
 	private @Nullable CompletableFuture<Optional<VersionedSemanticTokens>> semanticTokensFullFuture;
 
+	private StyleRangeMerger merger;
+
 	public SemanticHighlightReconcilerStrategy() {
 		IPreferenceStore store = LanguageServerPlugin.getDefault().getPreferenceStore();
 		disabled = store.getBoolean("semanticHighlightReconciler.disabled"); //$NON-NLS-1$
+		boolean overrideBold = !store.getBoolean("semanticHighlightReconciler.ignoreBoldNormal"); //$NON-NLS-1$
+		boolean overrideItalic = !store.getBoolean("semanticHighlightReconciler.ignoreItalicNormal"); //$NON-NLS-1$
+		merger = new StyleRangeMerger(overrideBold, overrideItalic);
 	}
 
 	/**
@@ -312,9 +317,6 @@ public class SemanticHighlightReconcilerStrategy
 	@Override
 	public void applyTextPresentation(final TextPresentation textPresentation) {
 		documentTimestampAtLastAppliedTextPresentation = DocumentUtil.getDocumentModificationStamp(document);
-		IRegion extent = textPresentation.getExtent();
-		if (extent != null && styleRangeHolder != null) {
-			textPresentation.mergeStyleRanges(styleRangeHolder.overlappingRanges(extent));
-		}
+		merger.mergeStyleRanges(textPresentation, styleRangeHolder);
 	}
 }
