@@ -87,11 +87,12 @@ public class RenameTest extends AbstractTestWithProject {
 		try {
 			IFile file = TestUtils.createUniqueTestFile(project, "old");
 			final var editor = (ITextEditor) TestUtils.openEditor(file);
-			editor.selectAndReveal(1, 0);
 
 			ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 			Command command = commandService.getCommand(IWorkbenchCommandConstants.FILE_RENAME);
 			assertFalse(command.isEnabled());
+			
+			editor.selectAndReveal(1, 0);
 
 			waitForAndAssertCondition(3 * delay, () -> command.isEnabled());
 			assertTrue(command.isHandled());
