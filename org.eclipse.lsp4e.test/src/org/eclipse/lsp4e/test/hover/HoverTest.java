@@ -48,6 +48,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressWarnings("restriction")
@@ -153,6 +154,7 @@ public class HoverTest extends AbstractTestWithProject {
 		assertNotEquals("Hover content found only once", -1, index);
 	}
 
+	@Ignore("The test does not work from Eclipse 2024-12 onwards because the command org.eclipse.ui.file.close is not enabled")
 	@Test
 	public void testIntroUrlLink() throws Exception {
 		final var hoverResponse = new Hover(
