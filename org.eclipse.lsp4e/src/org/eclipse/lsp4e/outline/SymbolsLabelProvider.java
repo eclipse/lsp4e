@@ -11,8 +11,6 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.outline;
 
-import static org.eclipse.lsp4e.internal.NullSafetyHelper.*;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -38,7 +36,6 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.DecorationOverlayIcon;
 import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
-import org.eclipse.jface.viewers.IDecoration;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.LabelProvider;
 import org.eclipse.jface.viewers.LabelProviderChangedEvent;
@@ -89,11 +86,16 @@ public class SymbolsLabelProvider extends LabelProvider
 			LanguageServerPlugin.logError(ex);
 		}
 	};
-	/*
-	 * key: initial object image
-	 * value: array of images decorated with marker for severity (index + 1)
+
+	/**
+	 * Cache for overlay images.
+	 *
+	 * First key: the element's kind (e.g. class or method);
+	 * Second key: hash value calculated for a set of overlay image descriptors,
+	 *             see {@link #getOrCreateImageWithOverlays(SymbolKind, Image, ImageDescriptor[])};
+	 * Value: the base image with overlays and an optional underlay combined in one image.
 	 */
-	private final Map<Image, Image[]> imagesWithSeverityMarkerOverlays = new HashMap<>();
+	private final Map<SymbolKind, Map<Integer, Image>> overlayImages = new HashMap<>();
 
 	private final boolean showLocation;
 
@@ -109,14 +111,21 @@ public class SymbolsLabelProvider extends LabelProvider
 		this.showKind = showKind;
 		InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID).addPreferenceChangeListener(this);
 		ResourcesPlugin.getWorkspace().addResourceChangeListener(listener);
+
+		for (SymbolKind kind : SymbolKind.values()) {
+			overlayImages.put(kind, new HashMap<>());
+		}
 	}
 
 	@Override
 	public void dispose() {
 		ResourcesPlugin.getWorkspace().removeResourceChangeListener(listener);
 		InstanceScope.INSTANCE.getNode(LanguageServerPlugin.PLUGIN_ID).removePreferenceChangeListener(this);
-		imagesWithSeverityMarkerOverlays.values().stream().flatMap(Arrays::stream).filter(Objects::nonNull).forEach(Image::dispose);
-		imagesWithSeverityMarkerOverlays.clear();
+
+		overlayImages.values().stream().flatMap(map -> map.values().stream()).filter(Objects::nonNull).forEach(Image::dispose);
+		overlayImages.values().stream().forEach(Map::clear);
+		overlayImages.clear();
+
 		super.dispose();
 	}
 
@@ -159,7 +168,7 @@ public class SymbolsLabelProvider extends LabelProvider
 			baseImage = LSPImages.imageFromSymbolKind(symbolKind);
 		}
 
-		if (element != null && baseImage != null && symbolTags != null) {
+		if (element != null && baseImage != null && symbolTags != null && symbolKind != null) {
 			ImageDescriptor severityImageDescriptor = getOverlayForMarkerSeverity(getMaxSeverity(element));
 			ImageDescriptor visibilityImageDescriptor = getOverlayForVisibility(symbolTags);
 			ImageDescriptor deprecatedImageDescriptor = getUnderlayForDeprecation(deprecated);
@@ -179,25 +188,41 @@ public class SymbolsLabelProvider extends LabelProvider
 				}
 			}
 
-			// TODO add some kind of caching?
-
-			// array index: 0 = top left, 1 = top right, 2 = bottom left, 3 = bottom right,
-			// see IDecoration.TOP_LEFT ... IDecoration.BOTTOM_RIGHT
+			// array index: 0 = top left, 1 = top right, 2 = bottom left, 3 = bottom right, 4 = underlay
+			// see IDecoration.TOP_LEFT ... IDecoration.BOTTOM_RIGHT, IDecoration.UNDERLAY
 			@Nullable ImageDescriptor[] overlays = {
 					visibilityImageDescriptor, topRightOverlayDescriptor,
 					severityImageDescriptor, bottomRightOverlayDescriptor,
 					deprecatedImageDescriptor};
 
-				//return getMarkerSeverityOverlayImage(baseImage, maxSeverity);
 			long numOverlays = Arrays.stream(overlays).filter(e -> e != null).count();
 
 			if (numOverlays == 0) {
 				return baseImage;
 			}
 
-			return new DecorationOverlayIcon(baseImage, overlays).createImage();
+			return getOrCreateImageWithOverlays(symbolKind, baseImage, overlays);
 		}
 
+		return baseImage;
+	}
+
+	private @Nullable Image getOrCreateImageWithOverlays(SymbolKind symbolKind, Image baseImage, @Nullable ImageDescriptor[] overlays) {
+		int hashCode = Arrays.hashCode(overlays);
+
+		Map<Integer, Image> overlayImagesForSymbolKind = overlayImages.get(symbolKind);
+		if (overlayImagesForSymbolKind != null) {
+			Image chachedImage = overlayImagesForSymbolKind.get(hashCode);
+			if (chachedImage != null) {
+				return chachedImage;
+			} else {
+				Image imageWithOverlays = new DecorationOverlayIcon(baseImage, overlays).createImage();
+				if (imageWithOverlays != null) {
+					overlayImagesForSymbolKind.put(hashCode, imageWithOverlays);
+				}
+				return imageWithOverlays;
+			}
+		}
 		return baseImage;
 	}
 
@@ -362,16 +387,6 @@ public class SymbolsLabelProvider extends LabelProvider
 			return LSPImages.getSharedImageDescriptor(overlayId);
 		}
 		return null;
-	}
-
-	private Image getMarkerSeverityOverlayImage(Image res, int maxSeverity) {
-		Image[] currentOverlays = this.imagesWithSeverityMarkerOverlays.computeIfAbsent(res, key -> new Image [2]);
-		if (castNullable(currentOverlays[maxSeverity - 1]) == null) {
-			ImageDescriptor overlayImageDescriptor = getOverlayForMarkerSeverity(maxSeverity);
-			currentOverlays[maxSeverity - 1] = new DecorationOverlayIcon(res,
-					overlayImageDescriptor, IDecoration.BOTTOM_LEFT).createImage();
-		}
-		return currentOverlays[maxSeverity - 1];
 	}
 
 	@Override
