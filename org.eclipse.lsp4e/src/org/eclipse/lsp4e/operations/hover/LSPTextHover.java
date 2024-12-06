@@ -74,7 +74,6 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (InterruptedException e) {
-			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
 		} catch (TimeoutException e) {
 			LanguageServerPlugin.logWarning("Could not get hover information due to timeout after " + GET_TIMEOUT_MS + " milliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
@@ -171,7 +170,6 @@ public class LSPTextHover implements ITextHover, ITextHoverExtension {
 		} catch (ExecutionException e) {
 			LanguageServerPlugin.logError(e);
 		} catch (InterruptedException e) {
-			LanguageServerPlugin.logError(e);
 			Thread.currentThread().interrupt();
 		} catch (TimeoutException e) {
 			LanguageServerPlugin.logWarning("Could not get hover region due to timeout after " + GET_TIMEOUT_MS + " milliseconds", e); //$NON-NLS-1$ //$NON-NLS-2$
