@@ -12,7 +12,10 @@
 package org.eclipse.lsp4e.test.hover;
 
 import static org.eclipse.lsp4e.test.utils.TestUtils.waitForAndAssertCondition;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,11 +47,11 @@ import org.eclipse.swt.browser.ProgressEvent;
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.ide.IDE;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 @SuppressWarnings("restriction")
@@ -154,7 +157,6 @@ public class HoverTest extends AbstractTestWithProject {
 		assertNotEquals("Hover content found only once", -1, index);
 	}
 
-	@Ignore("The test does not work from Eclipse 2024-12 onwards because the command org.eclipse.ui.file.close is not enabled")
 	@Test
 	public void testIntroUrlLink() throws Exception {
 		final var hoverResponse = new Hover(
@@ -164,7 +166,11 @@ public class HoverTest extends AbstractTestWithProject {
 		MockLanguageServer.INSTANCE.setHover(hoverResponse);
 
 		IFile file = TestUtils.createUniqueTestFile(project, "HoverRange Other Text");
-		ITextViewer viewer = TestUtils.openTextViewer(file);
+		IEditorPart editorPart = TestUtils.openEditor(file);
+		
+		waitForAndAssertCondition(5_000, () -> LSPEclipseUtils.getTextViewer(editorPart) != null);
+		ITextViewer viewer = LSPEclipseUtils.getTextViewer(editorPart);
+		assertEquals(UI.getActivePart(), editorPart);
 
 		String hoverContent = hover.getHoverInfo(viewer, new Region(0, 10));
 
@@ -196,13 +202,15 @@ public class HoverTest extends AbstractTestWithProject {
 				@Override
 				public void completed(ProgressEvent event) {
 					browser.removeProgressListener(this);
+					assertEquals(UI.getActivePart(), editorPart);
 					browser.execute("document.getElementsByTagName('a')[0].click()");
 					completed.set(true);
 				}
 			});
 
 			assertNotNull("Editor should be opened", viewer.getTextWidget());
-
+			
+			UI.getActivePage().activate(editorPart);
 			browser.setText(hoverContent);
 
 			waitForAndAssertCondition("action didn't close editor", 10_000, browser.getDisplay(),
