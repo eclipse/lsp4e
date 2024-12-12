@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.eclipse.jdt.annotation.NonNull;
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jdt.ui.text.java.ISemanticTokensProvider;
 import org.eclipse.lsp4e.operations.semanticTokens.SemanticTokensDataStreamProcessor;
 import org.eclipse.lsp4j.Position;
@@ -77,7 +78,9 @@ class JavaSemanticTokensProcessor {
 				break;
 			case 4: // token modifier
 				prevLine = line;
-				tokens.add(new ISemanticTokensProvider.SemanticToken(offset, length, tokenTypeMapper.apply(tokenType)));
+				if (tokenType != null) {
+					tokens.add(new ISemanticTokensProvider.SemanticToken(offset, length, tokenTypeMapper.apply(tokenType)));
+				}
 				break;
 			}
 			idx++;
@@ -85,7 +88,7 @@ class JavaSemanticTokensProcessor {
 		return tokens;
 	}
 
-	private String tokenType(final Integer data, final List<String> legend) {
+	private @Nullable String tokenType(final Integer data, final List<String> legend) {
 		try {
 			return legend.get(data);
 		} catch (IndexOutOfBoundsException e) {
