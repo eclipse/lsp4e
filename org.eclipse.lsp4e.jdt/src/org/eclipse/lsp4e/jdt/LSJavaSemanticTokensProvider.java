@@ -9,7 +9,7 @@
  * Contributors:
  *  - Alex Boyko (Broadcom Inc.) - Initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.jdt.internal;
+package org.eclipse.lsp4e.jdt;
 
 import java.net.URI;
 import java.util.Collection;
@@ -30,8 +30,6 @@ import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.LanguageServerWrapper;
 import org.eclipse.lsp4e.LanguageServers;
 import org.eclipse.lsp4e.LanguageServers.LanguageServerDocumentExecutor;
-import org.eclipse.lsp4e.jdt.LanguageServerJdtPlugin;
-import org.eclipse.lsp4e.jdt.LspJdtConstants;
 import org.eclipse.lsp4e.operations.semanticTokens.SemanticHighlightReconcilerStrategy;
 import org.eclipse.lsp4j.SemanticTokensLegend;
 import org.eclipse.lsp4j.SemanticTokensParams;

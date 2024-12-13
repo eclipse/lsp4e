@@ -9,7 +9,7 @@
  * Contributors:
  *  - Alex Boyko (VMware Inc.) - Initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.jdt.internal;
+package org.eclipse.lsp4e.jdt;
 
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.text.DocumentEvent;

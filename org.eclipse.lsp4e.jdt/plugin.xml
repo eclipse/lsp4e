@@ -9,7 +9,7 @@
       <javaCompletionProposalComputer
             activate="true"
             categoryId="org.eclipse.lsp4e.jdt.ls-based-java-completion-computer"
-            class="org.eclipse.lsp4e.jdt.internal.LSJavaCompletionProposalComputer"
+            class="org.eclipse.lsp4e.jdt.LSJavaCompletionProposalComputer"
             needsSortingAfterFiltering="false"
             requiresUIThread="false">
       </javaCompletionProposalComputer>
@@ -20,7 +20,7 @@
          point="org.eclipse.jdt.ui.javaEditorTextHovers">
       <hover
             activate="true"
-            class="org.eclipse.lsp4e.jdt.internal.LSJavaHoverProvider"
+            class="org.eclipse.lsp4e.jdt.LSJavaHoverProvider"
             id="org.eclipse.lsp4e.jdt.hoverprovider">
       </hover>
    </extension>
@@ -35,7 +35,7 @@
    <extension
          point="org.eclipse.jdt.ui.quickAssistProcessors">
       <quickAssistProcessor
-            class="org.eclipse.lsp4e.jdt.internal.LspJavaQuickAssistProcessor"
+            class="org.eclipse.lsp4e.jdt.LspJavaQuickAssistProcessor"
             id="org.eclipse.lsp4e.jdt.quickAssistProcessor"
             name="LS Java Quick Proposals">
       </quickAssistProcessor>
@@ -43,13 +43,13 @@
    <extension
          point="org.eclipse.jdt.ui.semanticTokens">
       <provider
-            class="org.eclipse.lsp4e.jdt.internal.LSJavaSemanticTokensProvider">
+            class="org.eclipse.lsp4e.jdt.LSJavaSemanticTokensProvider">
       </provider>
    </extension>
    <extension
          point="org.eclipse.core.runtime.preferences">
       <initializer
-            class="org.eclipse.lsp4e.jdt.internal.LspJdtPrefsInitializer">
+            class="org.eclipse.lsp4e.jdt.LspJdtPrefsInitializer">
       </initializer>
    </extension>
 

@@ -9,7 +9,7 @@
  * Contributors:
  *  Martin Lippert (Pivotal Inc.) - initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.jdt.internal;
+package org.eclipse.lsp4e.jdt;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.osgi.util.NLS;

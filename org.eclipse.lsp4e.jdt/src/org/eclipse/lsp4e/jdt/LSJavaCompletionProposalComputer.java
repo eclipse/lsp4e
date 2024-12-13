@@ -9,7 +9,7 @@
  * Contributors:
  *  - Martin Lippert (Pivotal Inc.) - Initial implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.jdt.internal;
+package org.eclipse.lsp4e.jdt;
 
 import java.util.Collections;
 import java.util.List;

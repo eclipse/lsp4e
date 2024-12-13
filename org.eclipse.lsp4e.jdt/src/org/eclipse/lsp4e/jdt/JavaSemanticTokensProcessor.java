@@ -8,7 +8,7 @@
  * Contributors:
  *     Broadcom, Inc. - initial API and implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.jdt.internal;
+package org.eclipse.lsp4e.jdt;
 
 import java.util.ArrayList;
 import java.util.BitSet;

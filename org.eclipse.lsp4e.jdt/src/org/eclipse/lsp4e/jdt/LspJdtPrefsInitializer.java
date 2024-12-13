@@ -8,12 +8,10 @@
  * Contributors:
  *     Broadcom, Inc. - initial API and implementation
  *******************************************************************************/
-package org.eclipse.lsp4e.jdt.internal;
+package org.eclipse.lsp4e.jdt;
 
 import org.eclipse.core.runtime.preferences.AbstractPreferenceInitializer;
 import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.lsp4e.jdt.LanguageServerJdtPlugin;
-import org.eclipse.lsp4e.jdt.LspJdtConstants;
 
 public class LspJdtPrefsInitializer extends AbstractPreferenceInitializer {
 	
