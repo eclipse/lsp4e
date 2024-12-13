@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.resources.IResource;
+import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.ui.text.java.ISemanticTokensProvider;
@@ -42,7 +43,7 @@ import org.eclipse.lsp4j.ServerCapabilities;
 public class LSJavaSemanticTokensProvider implements ISemanticTokensProvider {
 	
 	@Override
-	public Collection<ISemanticTokensProvider.SemanticToken> computeSemanticTokens(CompilationUnit ast) {
+	public @NonNull Collection<ISemanticTokensProvider.SemanticToken> computeSemanticTokens(CompilationUnit ast) {
 		IPreferenceStore prefStore = LanguageServerPlugin.getDefault().getPreferenceStore();
 		IPreferenceStore jstPrefStore = LanguageServerJdtPlugin.getDefault().getPreferenceStore();
 		
@@ -61,28 +62,35 @@ public class LSJavaSemanticTokensProvider implements ISemanticTokensProvider {
 			return Collections.emptyList();
 		}
 		
+		SemanticTokensParams params = getSemanticTokensParams(theDocument);
+		if (params == null) {
+			return Collections.emptyList();
+		}
+		
 		LanguageServerDocumentExecutor executor = LanguageServers.forDocument(theDocument)
 				.withFilter(this::hasSemanticTokensFull);
 			
 		try {
-			return executor//
-				.computeFirst((w, ls) -> ls.getTextDocumentService().semanticTokensFull(getSemanticTokensParams(theDocument))//
-						.thenApply(semanticTokens -> {
-							if (semanticTokens == null) {
-								return Collections.<SemanticToken>emptyList();
-							}
-							SemanticTokensLegend legend = getSemanticTokensLegend(w);
-							if (legend == null) {
-								return Collections.<SemanticToken>emptyList();
-							}
-							return new JavaSemanticTokensProcessor(this::mapToTokenType, p -> {
-								try {
-									return LSPEclipseUtils.toOffset(p, theDocument);
-								} catch (BadLocationException e) {
-									throw new RuntimeException(e);
+			return executor
+				.computeFirst((w, ls) -> {
+					return ls.getTextDocumentService().semanticTokensFull(params)
+							.thenApply(semanticTokens -> {
+								if (semanticTokens == null) {
+									return Collections.<SemanticToken>emptyList();
 								}
-							}).getSemanticTokens(semanticTokens.getData(), legend);
-						}))
+								SemanticTokensLegend legend = getSemanticTokensLegend(w);
+								if (legend == null) {
+									return Collections.<SemanticToken>emptyList();
+								}
+								return new JavaSemanticTokensProcessor(this::mapToTokenType, p -> {
+									try {
+										return LSPEclipseUtils.toOffset(p, theDocument);
+									} catch (BadLocationException e) {
+										throw new RuntimeException(e);
+									}
+								}).getSemanticTokens(semanticTokens.getData(), legend);
+							});
+				})
 				.thenApply(o -> o.orElse(Collections.emptyList())).get(300, TimeUnit.MILLISECONDS);
 		} catch (InterruptedException | ExecutionException | TimeoutException e) {
 			LanguageServerPlugin.logError("Failed to fetch semantic tokens for '%s' from Language Servers".formatted(resource.getLocation()), e);
