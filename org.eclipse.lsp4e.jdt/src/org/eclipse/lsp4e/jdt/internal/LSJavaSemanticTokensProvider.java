@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.core.resources.IResource;
-import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.ui.text.java.ISemanticTokensProvider;
@@ -43,7 +42,7 @@ import org.eclipse.lsp4j.ServerCapabilities;
 public class LSJavaSemanticTokensProvider implements ISemanticTokensProvider {
 	
 	@Override
-	public @NonNull Collection<ISemanticTokensProvider.SemanticToken> computeSemanticTokens(CompilationUnit ast) {
+	public @Nullable Collection<ISemanticTokensProvider.SemanticToken> computeSemanticTokens(CompilationUnit ast) {
 		IPreferenceStore prefStore = LanguageServerPlugin.getDefault().getPreferenceStore();
 		IPreferenceStore jstPrefStore = LanguageServerJdtPlugin.getDefault().getPreferenceStore();
 		
