@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.jdt;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jdt.internal.ui.javaeditor.JavaEditor;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -23,7 +24,7 @@ import org.osgi.framework.BundleContext;
 
 public class LanguageServerJdtPlugin extends AbstractUIPlugin {
 	
-	private static LanguageServerJdtPlugin plugin;
+	private static @Nullable LanguageServerJdtPlugin plugin;
 	
 	private final IPropertyChangeListener prefsLisetner = new IPropertyChangeListener() {
 		
@@ -45,7 +46,7 @@ public class LanguageServerJdtPlugin extends AbstractUIPlugin {
 		}
 	};
 	
-	public static final LanguageServerJdtPlugin getDefault() {
+	public static final @Nullable LanguageServerJdtPlugin getDefault() {
 		return plugin;
 	}
 

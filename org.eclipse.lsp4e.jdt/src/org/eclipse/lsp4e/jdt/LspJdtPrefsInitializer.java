@@ -20,7 +20,11 @@ public class LspJdtPrefsInitializer extends AbstractPreferenceInitializer {
 
 	@Override
 	public void initializeDefaultPreferences() {
-		IPreferenceStore store = LanguageServerJdtPlugin.getDefault().getPreferenceStore();
+		LanguageServerJdtPlugin plugin = LanguageServerJdtPlugin.getDefault();
+		if (plugin == null) {
+			throw new IllegalStateException("Plugin hasn't been started!");
+		}
+		IPreferenceStore store = plugin.getPreferenceStore();
 		
 		store.setDefault(LspJdtConstants.PREF_SEMANTIC_TOKENS_SWITCH, true);
 	}

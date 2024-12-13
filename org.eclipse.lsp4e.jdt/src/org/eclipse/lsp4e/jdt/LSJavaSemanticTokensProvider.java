@@ -41,7 +41,11 @@ public class LSJavaSemanticTokensProvider implements ISemanticTokensProvider {
 	@Override
 	public Collection<ISemanticTokensProvider.SemanticToken> computeSemanticTokens(CompilationUnit ast) {
 		IPreferenceStore prefStore = LanguageServerPlugin.getDefault().getPreferenceStore();
-		IPreferenceStore jstPrefStore = LanguageServerJdtPlugin.getDefault().getPreferenceStore();
+		LanguageServerJdtPlugin plugin = LanguageServerJdtPlugin.getDefault();
+		if (plugin == null) {
+			throw new IllegalStateException("Plugin hasn't been started!");
+		}
+		IPreferenceStore jstPrefStore = plugin.getPreferenceStore();
 		
 		if (prefStore.getBoolean(SemanticHighlightReconcilerStrategy.SEMANTIC_HIGHLIGHT_RECONCILER_DISABLED)
 				|| !jstPrefStore.getBoolean(LspJdtConstants.PREF_SEMANTIC_TOKENS_SWITCH)) {
