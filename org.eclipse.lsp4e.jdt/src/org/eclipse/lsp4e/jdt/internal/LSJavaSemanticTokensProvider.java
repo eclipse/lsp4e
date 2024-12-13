@@ -38,11 +38,10 @@ import org.eclipse.lsp4j.SemanticTokensParams;
 import org.eclipse.lsp4j.SemanticTokensWithRegistrationOptions;
 import org.eclipse.lsp4j.ServerCapabilities;
 
-@SuppressWarnings("null")
 public class LSJavaSemanticTokensProvider implements ISemanticTokensProvider {
 	
 	@Override
-	public @Nullable Collection<ISemanticTokensProvider.SemanticToken> computeSemanticTokens(CompilationUnit ast) {
+	public Collection<ISemanticTokensProvider.SemanticToken> computeSemanticTokens(CompilationUnit ast) {
 		IPreferenceStore prefStore = LanguageServerPlugin.getDefault().getPreferenceStore();
 		IPreferenceStore jstPrefStore = LanguageServerJdtPlugin.getDefault().getPreferenceStore();
 		
