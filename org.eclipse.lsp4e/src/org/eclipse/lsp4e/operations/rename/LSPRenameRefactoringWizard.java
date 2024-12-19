@@ -13,6 +13,7 @@ package org.eclipse.lsp4e.operations.rename;
 
 import static org.eclipse.lsp4e.internal.NullSafetyHelper.lateNonNull;
 
+import org.eclipse.jdt.annotation.Nullable;
 import org.eclipse.jface.wizard.IWizardPage;
 import org.eclipse.lsp4e.ui.Messages;
 import org.eclipse.ltk.core.refactoring.Refactoring;
@@ -82,7 +83,7 @@ public class LSPRenameRefactoringWizard extends RefactoringWizard {
 		}
 
 		@Override
-		public IWizardPage getNextPage() {
+		public @Nullable IWizardPage getNextPage() {
 			this.setNewName();
 			return super.getNextPage();
 		}

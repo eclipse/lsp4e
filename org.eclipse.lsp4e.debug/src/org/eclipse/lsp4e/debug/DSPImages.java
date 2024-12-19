@@ -62,7 +62,7 @@ public final class DSPImages {
 		return result;
 	}
 
-	public static Image get(String key) {
+	public static @Nullable Image get(String key) {
 		return imageRegistry.get(key);
 	}
 

@@ -522,8 +522,7 @@ public class LanguageServerWrapper {
 
 	private void logMessage(Message message) {
 		if (message instanceof ResponseMessage responseMessage && responseMessage.getError() != null
-				&& responseMessage.getId()
-						.equals(Integer.toString(ResponseErrorCode.RequestCancelled.getValue()))) {
+				&& Integer.toString(ResponseErrorCode.RequestCancelled.getValue()).equals(responseMessage.getId())) {
 			LanguageServerPlugin.logError(new ResponseErrorException(responseMessage.getError()));
 		} else if (LanguageServerPlugin.DEBUG) {
 			LanguageServerPlugin.logInfo(message.getClass().getSimpleName() + '\n' + message);

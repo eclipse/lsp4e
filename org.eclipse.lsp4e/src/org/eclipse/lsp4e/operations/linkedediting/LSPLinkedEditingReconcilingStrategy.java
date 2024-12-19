@@ -224,7 +224,10 @@ public class LSPLinkedEditingReconcilingStrategy extends LSPLinkedEditingBase
 		highlightJob.schedule();
 	}
 
-	private @Nullable String getValueInRange(IRegion selectedRegion, VerifyEvent event, int offset, int length) {
+	private @Nullable String getValueInRange(@Nullable IRegion selectedRegion, VerifyEvent event, int offset, int length) {
+		if (selectedRegion == null)
+			return null;
+
 		if (offset < selectedRegion.getOffset() || offset > selectedRegion.getOffset() + selectedRegion.getLength()) {
 			return null;
 		}

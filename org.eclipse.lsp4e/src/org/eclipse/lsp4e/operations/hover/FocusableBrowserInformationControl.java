@@ -216,7 +216,7 @@ public class FocusableBrowserInformationControl extends BrowserInformationContro
 	}
 
 	@Override
-	public IInformationControlCreator getInformationPresenterControlCreator() {
+	public @Nullable IInformationControlCreator getInformationPresenterControlCreator() {
 		return parent -> {
 			if (BrowserInformationControl.isAvailable(parent)) {
 				final var res = new FocusableBrowserInformationControl(parent, JFaceResources.DEFAULT_FONT, true);

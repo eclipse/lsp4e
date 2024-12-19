@@ -307,12 +307,12 @@ public class DSPMainTab extends AbstractLaunchConfigurationTab {
 	}
 
 	@Override
-	public String getId() {
+	public @Nullable String getId() {
 		return "org.eclipse.lsp4e.debug.launcher.DSPMainTab";
 	}
 
 	@Override
-	public Image getImage() {
+	public @Nullable Image getImage() {
 		return DSPImages.get(DSPImages.IMG_VIEW_DEBUGGER_TAB);
 	}
 

@@ -8,6 +8,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e.debug.launcher;
 
+import org.eclipse.jdt.annotation.Nullable;
+
 public class DSPOverrideSettingsTab extends DSPMainTab {
 
 	public DSPOverrideSettingsTab() {
@@ -15,7 +17,7 @@ public class DSPOverrideSettingsTab extends DSPMainTab {
 	}
 
 	@Override
-	public String getId() {
+	public @Nullable String getId() {
 		return "org.eclipse.lsp4e.debug.launcher.DSPOverrideSettingsTab";
 	}
 }
