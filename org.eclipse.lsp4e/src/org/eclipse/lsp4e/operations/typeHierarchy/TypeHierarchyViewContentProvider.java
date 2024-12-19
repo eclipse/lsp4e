@@ -92,16 +92,9 @@ public class TypeHierarchyViewContentProvider implements ITreeContentProvider {
 		ITreeContentProvider.super.inputChanged(viewer, oldInput, newInput);
 
 		if (newInput instanceof HierarchyViewInput viewInput) {
-
-			var document = viewInput.getDocument();
-			this.document = document;
-			if (document != null) {
-				try {
-					initialise(document, viewInput.getOffset(), (TreeViewer) viewer);
-				} catch (BadLocationException e) {
-					handleRootError();
-				}
-			} else {
+			try {
+				initialise(viewInput.getDocument(), viewInput.getOffset(), (TreeViewer) viewer);
+			} catch (BadLocationException e) {
 				handleRootError();
 			}
 		} else {
