@@ -1053,15 +1053,13 @@ public final class LSPEclipseUtils {
 			.filter(Objects::nonNull)
 			.findFirst();
 
-		doc.ifPresent(document -> {
-			UI.getDisplay().syncExec(() -> {
-				try {
-					LSPEclipseUtils.applyEdits(document, firstDocumentEdits);
-				} catch (BadLocationException ex) {
-					LanguageServerPlugin.logError(ex);
-				}
-			});
-		});
+		doc.ifPresent(document -> UI.getDisplay().syncExec(() -> {
+			try {
+				LSPEclipseUtils.applyEdits(document, firstDocumentEdits);
+			} catch (BadLocationException ex) {
+				LanguageServerPlugin.logError(ex);
+			}
+		}));
 		return doc.isPresent();
 	}
 

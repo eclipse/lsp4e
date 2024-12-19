@@ -130,7 +130,7 @@ public class DynamicRegistrationTest extends AbstractTestWithProject {
 	}
 
 	private Predicate<ServerCapabilities> handlesCommand(String command) {
-		return (cap) -> {
+		return cap -> {
 			ExecuteCommandOptions commandProvider = cap.getExecuteCommandProvider();
 			return commandProvider != null && commandProvider.getCommands().contains(command);
 		};
