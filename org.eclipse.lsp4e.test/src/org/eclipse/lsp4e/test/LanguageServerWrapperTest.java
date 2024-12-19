@@ -130,15 +130,13 @@ public class LanguageServerWrapperTest extends AbstractTestWithProject {
 			}
 		} while (ForkJoinPool.commonPool().getActiveThreadCount() > startingActiveThreads && System.currentTimeMillis() < timeOut);
 		
-		if (ForkJoinPool.commonPool().getActiveThreadCount() > startingActiveThreads) {
+		if (ForkJoinPool.commonPool().getActiveThreadCount() > startingActiveThreads)
 			throw new AssertionError("timeout waiting for ForkJoinPool.commonPool to go quiet");
-		} else {
+
+		Integer cpStartCount= MockConnectionProviderMultiRootFolders.getStartCount();
+		Integer cpStopCount= MockConnectionProviderMultiRootFolders.getStopCount();
 			
-			Integer cpStartCount= MockConnectionProviderMultiRootFolders.getStartCount();
-			Integer cpStopCount= MockConnectionProviderMultiRootFolders.getStopCount();
-			
-			assertEquals("startCount == stopCount", cpStartCount, cpStopCount);
-		}
+		assertEquals("startCount == stopCount", cpStartCount, cpStopCount);
 	}
 
 }
