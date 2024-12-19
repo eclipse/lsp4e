@@ -62,10 +62,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: 
-        # https://github.com/actions/runner-images#available-images
+        os:  # https://github.com/actions/runner-images#available-images
         #- ubuntu-latest # TODO builds are extremely slow for no apparent reason and job currently times out after 15 minutes
-        - macos-12 # Intel
+        - macos-13 # Intel
         - macos-14 # ARM
         - windows-latest
     runs-on: ${{ matrix.os }}
