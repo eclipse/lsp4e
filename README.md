@@ -1,8 +1,8 @@
 # Eclipse LSP4E - Language Server Protocol client for Eclipse IDE
 
 [![Jenkins Tests](https://img.shields.io/jenkins/tests?jobUrl=https%3A%2F%2Fci.eclipse.org%2Flsp4e%2Fjob%2Flsp4e-github%2Fjob%2Fmain%2F&logo=jenkins&logoColor=white&label=Jenkins%20Tests)](https://ci.eclipse.org/lsp4e/job/lsp4e-github/job/main/)
-[![GitHub Actions](https://github.com/eclipse/eclipse-lsp4e/actions/workflows/build.yml/badge.svg)](https://github.com/eclipse-lsp4e/lsp4e/actions/workflows/build.yml)
-[![License](https://img.shields.io/github/license/eclipse/lsp4e.svg?color=blue)](LICENSE)
+[![GitHub Actions](https://github.com/eclipse-lsp4e/lsp4e/actions/workflows/build.yml/badge.svg)](https://github.com/eclipse-lsp4e/lsp4e/actions/workflows/build.yml)
+[![License](https://img.shields.io/github/license/eclipse-lsp4e/lsp4e.svg?color=blue)](LICENSE)
 
 [![Clone to Eclipse IDE](https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/cloneToEclipseBadge.png)](https://mickaelistria.github.io/redirctToEclipseIDECloneCommand/redirect.html)
 

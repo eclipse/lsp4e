@@ -72,7 +72,7 @@ public class LanguageServerWrapperTest extends AbstractTestWithProject {
 
 	/**
 	 * Check if {@code isActive()} is correctly synchronized with  {@code stop()}
-	 * @see https://github.com/eclipse/lsp4e/pull/688
+	 * @see https://github.com/eclipse-lsp4e/lsp4e/pull/688
 	 */
 	@Test
 	public void testStartStopAndActive() throws CoreException, AssertionError, InterruptedException, ExecutionException {

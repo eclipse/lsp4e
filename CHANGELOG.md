@@ -1,6 +1,6 @@
 ## LSP4E Changelog and New and Noteworthy
 
-The [GitHub releases page](https://github.com/eclipse/lsp4e/releases) provides changelog and details on all releases.
+The [GitHub releases page](https://github.com/eclipse-lsp4e/lsp4e/releases) provides changelog and details on all releases.
 Older releases are listed below.
 
 ### 0.20.2
@@ -19,7 +19,7 @@ Among others:
 
 📅 Release Date: November 24th, 2021
 
-Bugfixes (including fix for regression [Issue #3 - Avoid error in compare editor](https://github.com/eclipse/lsp4e/issues/3)) and code improvements
+Bugfixes (including fix for regression [Issue #3 - Avoid error in compare editor](https://github.com/eclipse-lsp4e/lsp4e/issues/3)) and code improvements
 
 
 ### 0.20.0
@@ -76,7 +76,7 @@ Bugfixes (including fix for regression [Issue #3 - Avoid error in compare editor
 * Highlight.js is now being used for lsp4e's completion documentation. See [Bug 565496](https://bugs.eclipse.org/bugs/show_bug.cgi?id=565496)
 * LSP4E's format menu item has been relocated Generic Editor Source submenu
 * New icon for unit completion kind. See [Bug 567812 ](https://bugs.eclipse.org/bugs/show_bug.cgi?id=567812)
-* [CommandExecutor](org.eclipse.lsp4e/src/org/eclipse/lsp4e/command/CommandExecutor.java) has been updated with the improvements that were originally developed in WildWebDeveloper. Migrating those changes back to LSP4E makes these improvements available for all consumers of LSP4E.
+* [CommandExecutor](org.eclipse.lsp4e/src/org/eclipse-lsp4e/lsp4e/command/CommandExecutor.java) has been updated with the improvements that were originally developed in WildWebDeveloper. Migrating those changes back to LSP4E makes these improvements available for all consumers of LSP4E.
 
 See also the [Bugzilla issues](https://bugs.eclipse.org/bugs/buglist.cgi?product=lsp4e&target_milestone=0.17.0) for details of bug fixes and other items changed in this release.
 

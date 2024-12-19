@@ -55,7 +55,7 @@ abstract class TokenTypeMapper implements Function<String, @Nullable IToken> {
 			}
 
 			// Do NOT fallback to default theme, as this may result in a deadlock!
-			// See https://github.com/eclipse/lsp4e/issues/1028
+			// See https://github.com/eclipse-lsp4e/lsp4e/issues/1028
 			// return TMUIPlugin.getThemeManager().getDefaultTheme().getToken(tokenType);
 			return null;
 		}
