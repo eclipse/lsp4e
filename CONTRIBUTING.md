@@ -58,24 +58,26 @@ Latest snapshot builds, for testing, can usually be found at `https://download.e
 
 ### 🏗️ Build
 
-1. From the command line: run `mvn clean verify`
-1. From within Eclipse : right-click on the LSP4E root folder > Run As > Maven build
+- From the command line run:
+  - on Windows `mvnw clean verify`
+  - on Linux/MacOS `./mvnw clean verify`
+- From within Eclipse: right-click on the LSP4E root folder > Run As > Maven build
 
 ### Running single unit tests via the command line
 
 To run single unit tests via the command line, one can use the following command from the project's root:
 ```
-mvn -Dtest=<TestClassName>#<MethodName> -DfailIfNoTests=false verify
+./mvnw -Dtest=<TestClassName>#<MethodName> -DfailIfNoTests=false verify
 ```
 
 For example:
 ```
-mvn -Dtest=HighlightTest#testCheckIfOtherAnnotationsRemains -DfailIfNoTests=false verify
+./mvnw -Dtest=HighlightTest#testCheckIfOtherAnnotationsRemains -DfailIfNoTests=false verify
 ```
 
 To run a unit test in JVM debug mode via the command line one can use:
 ```
-mvn -Dtest=<TestClassName>#<MethodName> -DfailIfNoTests=false -Dtycho.testArgLine="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=localhost:8000" verify
+./mvnw -Dtest=<TestClassName>#<MethodName> -DfailIfNoTests=false -Dtycho.testArgLine="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=localhost:8000" verify
 ```
 Once Maven is about to execute the test it will wait for you to attach to the test JVM using a remote debugger, e.g. using Eclipse's `Remote Java Application` debug configuration.
 

@@ -4,19 +4,22 @@ pipeline {
 		buildDiscarder(logRotator(numToKeepStr: '10'))
 		disableConcurrentBuilds(abortPrevious: true)
 	}
+
 	agent {
 		label 'centos-latest'
 	}
+
 	tools {
-		maven 'apache-maven-latest'
 		jdk 'temurin-jdk17-latest'
 	}
+
 	stages {
+
 		stage('Build') {
 			steps {
 				wrap([$class: 'Xvnc', useXauthority: true]) {
 					sh """
-						mvn clean verify \
+						./mvnw clean verify \
 							org.eclipse.dash:license-tool-plugin:license-check \
 							-B ${env.BRANCH_NAME=='main' ? '-Psign': ''} \
 							-Dmaven.test.failure.ignore=true \
@@ -32,6 +35,7 @@ pipeline {
 				}
 			}
 		}
+
 		stage('Deploy Snapshot') {
 			when {
 				branch 'main'
@@ -49,5 +53,6 @@ pipeline {
 				}
 			}
 		}
+
 	}
 }
