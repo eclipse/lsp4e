@@ -136,21 +136,23 @@ public class LSPRenameProcessor extends RefactoringProcessor {
 	}
 
 	public String getPlaceholder() {
-		@Nullable
-		String placeholder = null;
-		if (prepareRenameResult != null) {
-			placeholder = prepareRenameResult.map(range -> {
+		final var prepareRenameResult = this.prepareRenameResult;
+		if (prepareRenameResult == null)
+			return "newName"; //$NON-NLS-1$
+
+		final String placeholder = prepareRenameResult.map(range -> {
 				try {
 					int startOffset = LSPEclipseUtils.toOffset(range.getStart(), document);
 					int endOffset = LSPEclipseUtils.toOffset(range.getEnd(), document);
 					return document.get(startOffset, endOffset - startOffset);
 				} catch (BadLocationException e) {
 					LanguageServerPlugin.logError(e);
-					return null;
+					return ""; //$NON-NLS-1$
 				}
-			}, PrepareRenameResult::getPlaceholder, options -> null);
-		}
-		return placeholder != null && !placeholder.isBlank() ? placeholder : "newName"; //$NON-NLS-1$
+			}, PrepareRenameResult::getPlaceholder, options -> ""); //$NON-NLS-1$
+		return placeholder != null && !placeholder.isBlank()
+				? placeholder
+				: "newName"; //$NON-NLS-1$
 	}
 
 	public static boolean isPrepareRenameProvider(@Nullable ServerCapabilities serverCapabilities) {

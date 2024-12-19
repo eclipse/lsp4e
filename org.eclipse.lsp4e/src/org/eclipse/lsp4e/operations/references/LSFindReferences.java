@@ -22,9 +22,9 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.lsp4e.LSPEclipseUtils;
 import org.eclipse.lsp4e.LanguageServerPlugin;
 import org.eclipse.lsp4e.internal.LSPDocumentAbstractHandler;
+import org.eclipse.lsp4e.ui.UI;
 import org.eclipse.lsp4j.ServerCapabilities;
 import org.eclipse.search.ui.NewSearchUI;
-import org.eclipse.ui.handlers.HandlerUtil;
 import org.eclipse.ui.texteditor.ITextEditor;
 
 /**
@@ -41,7 +41,7 @@ public class LSFindReferences extends LSPDocumentAbstractHandler implements IHan
 			if (document != null) {
 				try {
 					final var query = new LSSearchQuery(textSelection.getOffset(), document);
-					HandlerUtil.getActiveShell(event).getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
+					UI.getDisplay().asyncExec(() -> NewSearchUI.runQueryInBackground(query));
 				} catch (Exception e) {
 					LanguageServerPlugin.logError(e);
 				}

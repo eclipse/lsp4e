@@ -42,26 +42,29 @@ public class LSPRenameHandler extends LSPDocumentAbstractHandler {
 
 		if (provider != null && provider.getSelection() instanceof ITextSelection textSelection && !textSelection.isEmpty()) {
 			IDocument document = LSPEclipseUtils.getDocument(textEditor);
-			if (document != null) {
-				IEditorPart part = HandlerUtil.getActiveEditor(event);
-				Shell shell = part.getSite().getShell();
-				LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getRenameProvider);
-				if (executor.anyMatching()) {
-					int offset = textSelection.getOffset();
+			if (document == null)
+				return;
 
-					final var processor = new LSPRenameProcessor(document, offset);
-					final var refactoring = new ProcessorBasedRefactoring(processor);
-					final var wizard = new LSPRenameRefactoringWizard(refactoring);
-					final var operation = new RefactoringWizardOpenOperation(wizard);
-					shell.getDisplay().asyncExec(() -> {
-						try {
-							operation.run(shell, Messages.rename_title);
-						} catch (InterruptedException e1) {
-							LanguageServerPlugin.logError(e1);
-							Thread.currentThread().interrupt();
-						}
-					});
-				}
+			IEditorPart part = HandlerUtil.getActiveEditor(event);
+			if(part == null)
+				return;
+			Shell shell = part.getSite().getShell();
+			LanguageServerDocumentExecutor executor = LanguageServers.forDocument(document).withCapability(ServerCapabilities::getRenameProvider);
+			if (executor.anyMatching()) {
+				int offset = textSelection.getOffset();
+
+				final var processor = new LSPRenameProcessor(document, offset);
+				final var refactoring = new ProcessorBasedRefactoring(processor);
+				final var wizard = new LSPRenameRefactoringWizard(refactoring);
+				final var operation = new RefactoringWizardOpenOperation(wizard);
+				shell.getDisplay().asyncExec(() -> {
+					try {
+						operation.run(shell, Messages.rename_title);
+					} catch (InterruptedException e1) {
+						LanguageServerPlugin.logError(e1);
+						Thread.currentThread().interrupt();
+					}
+				});
 			}
 		}
 	}

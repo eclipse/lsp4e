@@ -130,14 +130,14 @@ public final class LSPImages {
 	/**
 	 * Returns the <code>Image</code> identified by the given key, or <code>null</code> if it does not exist.
 	 */
-	public static Image getImage(String key) {
+	public static @Nullable Image getImage(String key) {
 		return getImageRegistry().get(key);
 	}
 
 	/**
 	 * Returns the <code>ImageDescriptor</code> identified by the given key, or <code>null</code> if it does not exist.
 	 */
-	public static ImageDescriptor getImageDescriptor(String key) {
+	public static @Nullable ImageDescriptor getImageDescriptor(String key) {
 		return getImageRegistry().getDescriptor(key);
 	}
 

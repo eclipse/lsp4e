@@ -118,28 +118,29 @@ public class LanguageServersView extends ViewPart {
 		createColumn(EMPTY, 26, new ColumnLabelProvider() {
 			@Override
 			public void update(final ViewerCell cell) {
-				final var lsWrapper = (LanguageServerWrapper) cell.getElement();
-				final var item = (TableItem) cell.getItem();
-				final var buttons = actionButtons.computeIfAbsent(lsWrapper, unused -> {
-					final var toolBar = new ToolBar((Composite) cell.getViewerRow().getControl(), SWT.FLAT);
-					toolBar.setBackground(cell.getBackground());
-					final var terminateButton = new ToolItem(toolBar, SWT.PUSH);
-					terminateButton.setImage(LSPImages.getImage(LSPImages.IMG_TERMINATE_CO));
-					terminateButton.setToolTipText("Terminate this language server"); //$NON-NLS-1$
-					terminateButton.addSelectionListener(new SelectionAdapter() {
-						@Override
-						public void widgetSelected(SelectionEvent ev) {
-							lsWrapper.stop();
-							updateViewerInput();
-						}
+				if(cell.getElement() instanceof LanguageServerWrapper lsWrapper) {
+					final var item = (TableItem) cell.getItem();
+					final var buttons = actionButtons.computeIfAbsent(lsWrapper, unused -> {
+						final var toolBar = new ToolBar((Composite) cell.getViewerRow().getControl(), SWT.FLAT);
+						toolBar.setBackground(cell.getBackground());
+						final var terminateButton = new ToolItem(toolBar, SWT.PUSH);
+						terminateButton.setImage(LSPImages.getImage(LSPImages.IMG_TERMINATE_CO));
+						terminateButton.setToolTipText("Terminate this language server"); //$NON-NLS-1$
+						terminateButton.addSelectionListener(new SelectionAdapter() {
+							@Override
+							public void widgetSelected(SelectionEvent ev) {
+								lsWrapper.stop();
+								updateViewerInput();
+							}
+						});
+						return toolBar;
 					});
-					return toolBar;
-				});
-				final var editor = new TableEditor(item.getParent());
-				editor.setEditor(buttons, item, cell.getColumnIndex());
-				editor.grabHorizontal = true;
-				editor.grabVertical = true;
-				editor.layout();
+					final var editor = new TableEditor(item.getParent());
+					editor.setEditor(buttons, item, cell.getColumnIndex());
+					editor.grabHorizontal = true;
+					editor.grabVertical = true;
+					editor.layout();
+				}
 			}
 		});
 

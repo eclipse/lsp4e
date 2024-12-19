@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.lsp4e;
 
+import static org.eclipse.lsp4e.internal.NullSafetyHelper.castNonNull;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -293,7 +295,7 @@ public class LanguageServersRegistry {
 								try {
 									String description = enabledWhen.getAttribute(ENABLED_WHEN_DESC);
 									expression = new EnablementTester(this::evaluationContext,
-											ExpressionConverter.getDefault().perform(enabledWhenChildren[0]),
+											castNonNull(ExpressionConverter.getDefault().perform(enabledWhenChildren[0])),
 											description);
 								} catch (CoreException e) {
 									LanguageServerPlugin.logWarning(e.getMessage(), e);
