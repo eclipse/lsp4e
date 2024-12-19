@@ -45,9 +45,7 @@ public class LSPSymbolInFileHandler extends LSPDocumentAbstractHandler {
 		LanguageServers.forDocument(document).withCapability(ServerCapabilities::getDocumentSymbolProvider)
 				.computeFirst((w, ls) -> CompletableFuture.completedFuture(w))
 				.thenAcceptAsync(oW -> oW.ifPresent(w -> {
-					if (w != null) {
-						new LSPSymbolInFileDialog(shell, textEditor, document, w).open();
-					}
+					new LSPSymbolInFileDialog(shell, textEditor, document, w).open();
 				}), shell.getDisplay());
 	}
 
