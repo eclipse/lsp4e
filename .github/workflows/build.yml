@@ -158,12 +158,6 @@ jobs:
         key: ${{ runner.os }}-${{ runner.arch }}-repo-tycho-${{ hashFiles('target-platforms/target-platform-latest/target-platform-latest.target') }}
 
 
-    - name: "Install: Maven"
-      uses: stCarolas/setup-maven@v5  # https://github.com/stCarolas/setup-maven
-      with:
-        maven-version: 3.9.8
-
-
     - name: "Build with Maven 🔨"
       uses: nick-fields/retry@v3
       with:
@@ -172,7 +166,7 @@ jobs:
         shell: bash
         command: |
           set -eu
-   
+
           MAVEN_OPTS="${MAVEN_OPTS:-}"
           if [[ "${{ runner.os }}" == "Windows" ]]; then
             MAVEN_OPTS+=" -Djava.security.egd=file:/dev/urandom" # https://www.baeldung.com/java-security-egd#bd-testing-the-effect-of-javasecurityegd
@@ -189,10 +183,10 @@ jobs:
           else
             maven_args="--no-transfer-progress"
           fi
-   
+
           # prevent "org.eclipse.swt.SWTError: No more handles [gtk_init_check() failed]" on Linux
           ${{ runner.os == 'Linux' && 'xvfb-run --auto-servernum --server-args="-screen 0 1600x900x24" \' || '' }}
-          mvn \
+          ./mvnw \
             --errors \
             --update-snapshots \
             --batch-mode \

@@ -38,7 +38,7 @@ jobs:
     - name: Mask Dash IP Token
       if: ${{ inputs.dash-iplab-token != '' }}
       run: |
-        DASH_IPLAB_TOKEN=$(jq -r '.inputs.dash-iplab-token' $GITHUB_EVENT_PATH)
+        DASH_IPLAB_TOKEN=$(jq -r '.inputs."dash-iplab-token"' $GITHUB_EVENT_PATH)
         DASH_IPLAB_TOKEN=$(echo "$DASH_IPLAB_TOKEN" | xargs) # trim string
         echo "::add-mask::$DASH_IPLAB_TOKEN"
         echo "DASH_IPLAB_TOKEN=$DASH_IPLAB_TOKEN" >> $GITHUB_ENV
@@ -88,12 +88,6 @@ jobs:
         key: ${{ runner.os }}-${{ runner.arch }}-repo-tycho-${{ hashFiles('target-platforms/target-platform-latest/target-platform-latest.target') }}
 
 
-    - name: "Install: Maven"
-      uses: stCarolas/setup-maven@v5  # https://github.com/stCarolas/setup-maven
-      with:
-        maven-version: 3.9.8
-
-
     - name: Dash License check  # see https://github.com/eclipse/dash-licenses
       run: |
         set -eu
@@ -126,7 +120,7 @@ jobs:
         # This content is either not correctly mapped by the system, or requires review.
         # Error: Dependency license check failed. Some dependencies need to be vetted. 
 
-        (set -x; mvn \
+        (set -x; ./mvnw \
           --errors \
           --update-snapshots \
           --batch-mode \
