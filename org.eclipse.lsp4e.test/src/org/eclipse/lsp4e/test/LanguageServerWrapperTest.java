@@ -56,7 +56,7 @@ public class LanguageServerWrapperTest extends AbstractTestWithProject {
 		assertEquals(1, wrappers.size());
 
 		LanguageServerWrapper wrapper = wrappers.iterator().next();
-		waitForAndAssertCondition(2_000, () -> wrapper.isActive());
+		waitForAndAssertCondition(2_000, wrapper::isActive);
 
 		// e.g. LanguageServerWrapper@69fe8c75 [serverId=org.eclipse.lsp4e.test.server-with-multi-root-support, initialPath=null, initialProject=P/LanguageServerWrapperTest_testConnect_11691664858710, isActive=true]
 		assertThat(wrapper.toString(), matchesPattern("LanguageServerWrapper@[0-9a-f]+ \\[serverId=org.eclipse.lsp4e.test.server-with-multi-root-support, initialPath=null, initialProject=P\\/LanguageServerWrapperTest_testConnect_[0-9]+, isActive=true, pid=(null|[0-9])+\\]"));
