@@ -2,7 +2,7 @@
 
 Welcome to the Eclipse LSP4E contributor land, and thanks in advance for your help in making Eclipse LSP4E better and better!
 
-🏠 Official Eclipse LSP4E Git repo is [https://github.com/eclipse/lsp4e](https://github.com/eclipse/lsp4e) . (All other repositories, mirrors and so on are legacy repositories that should be removed at some point, so please don't use them!)
+🏠 Official Eclipse LSP4E Git repo is [https://github.com/eclipse-lsp4e/lsp4e](https://github.com/eclipse-lsp4e/lsp4e) . (All other repositories, mirrors and so on are legacy repositories that should be removed at some point, so please don't use them!)
 
 ## ⚖️ Legal and Eclipse Foundation terms
 
@@ -25,7 +25,7 @@ For more information, please see the Eclipse Committer Handbook:
 
 Eclipse LSP4E use mainly 2 channels for strategical and technical discussions
 
-* 🐞 View and report issues through uses GitHub Issues at https://github.com/eclipse/lsp4e/issues.
+* 🐞 View and report issues through uses GitHub Issues at https://github.com/eclipse-lsp4e/lsp4e/issues.
 * 📧 Join the lsp4e-dev@eclipse.org mailing-list to get in touch with other contributors about project organization and planning, and browse archive at 📜 [https://accounts.eclipse.org/mailing-list/lsp4e-dev](https://accounts.eclipse.org/mailing-list/lsp4e-dev)
 
 
@@ -118,7 +118,7 @@ The delta for version bumps are:
 
 ### ➕ Submit changes
 
-LSP4E only accepts contributions via GitHub Pull Requests against [https://github.com/eclipse/lsp4e](https://github.com/eclipse/lsp4e) repository.
+LSP4E only accepts contributions via GitHub Pull Requests against [https://github.com/eclipse-lsp4e/lsp4e](https://github.com/eclipse-lsp4e/lsp4e) repository.
 
 Before sending us a pull request, please ensure that:
 
